@@ -1,0 +1,111 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+import os
+import pathlib
+from unittest.mock import patch
+
+import pytest
+from openai.types.chat import ChatCompletion, ChatCompletionMessage
+from openai.types.chat.chat_completion import Choice
+
+from pyrit.agent import RedTeamingBot
+from pyrit.chat import AzureOpenAIChat
+from pyrit.models import PromptTemplate
+from pyrit.memory import FileMemory
+
+
+@pytest.fixture
+def openai_mock_return() -> ChatCompletion:
+    return ChatCompletion(
+        id="12345678-1a2b-3c4e5f-a123-12345678abcd",
+        object="chat.completion",
+        choices=[
+            Choice(
+                index=0,
+                message=ChatCompletionMessage(
+                    role="assistant", content="hi, I'm adversary chat."
+                ),
+                finish_reason="stop",
+                logprobs=None,
+            )
+        ],
+        created=1629389505,
+        model="gpt-4",
+    )
+
+
+@pytest.fixture
+def chat_completion_engine() -> AzureOpenAIChat:
+    return AzureOpenAIChat(deployment_name="test", endpoint="test", api_key="test")
+
+
+@pytest.fixture
+def red_teaming_bot(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
+    attack_strategy = PromptTemplate.from_yaml_file(
+        pathlib.Path(os.getcwd())
+        / ".."
+        / "datasets"
+        / "attack_strategies"
+        / "red_team_chatbot_with_objective.yaml"
+    )
+
+    file_memory = FileMemory(filepath=tmp_path / "test.json.memory")
+
+    return RedTeamingBot(
+        conversation_objective="Do bad stuff",
+        chat_engine=chat_completion_engine,
+        memory=file_memory,
+        attack_strategy=attack_strategy,
+    )
+
+
+def test_complete_chat_user(red_teaming_bot: RedTeamingBot):
+    with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
+        mock.return_value = (
+            "Hello, this is a message sent by the assistant. How can i help you?"
+        )
+        red_teaming_bot.complete_chat_user("hi, I am a victim chatbot, how can I help?")
+        chats = red_teaming_bot.get_session_chat_messages()
+        assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
+        red_teaming_bot.complete_chat_user("hi, I'm a new chat")
+        chats = red_teaming_bot.get_session_chat_messages()
+        assert chats is not None
+        assert len(chats) == 5, f"Expected 5 chats, got {len(chats)}"
+        assert chats[0].role == "system", "First chat should be system instructions"
+        assert chats[1].role == "user"
+        assert chats[2].role == "assistant"
+        assert "Do bad stuff" in chats[0].content
+        assert "Instructions" in chats[0].content
+
+
+def test_is_conversation_complete_false(red_teaming_bot: RedTeamingBot):
+    with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
+        mock.return_value = (
+            "Hello, this is a message sent by the assistant. How can i help you?"
+        )
+        red_teaming_bot.complete_chat_user("hi, I am a victim chatbot, how can I help?")
+        red_teaming_bot.complete_chat_user("hi, I am a victim chatbot, how can I help?")
+
+        assert (
+            red_teaming_bot.is_conversation_complete() is False
+        ), "Conversation should not be complete, objective not realized"
+
+
+def test_is_conversation_complete_emptyhistory_false(red_teaming_bot: RedTeamingBot):
+    with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
+        mock.return_value = (
+            "Hello, this is a message sent by the assistant. How can i help you?"
+        )
+        assert (
+            red_teaming_bot.is_conversation_complete() is False
+        ), "Conversation is empty, objective not realized"
+
+
+def test_is_conversation_complete_true(red_teaming_bot: RedTeamingBot):
+    with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
+        mock.return_value = "end token <|done|>"
+        red_teaming_bot.complete_chat_user(message="bad stuff is done")
+        assert (
+            red_teaming_bot.is_conversation_complete() is True
+        ), "Conversation should be complete, objective is realized"

@@ -1,0 +1,5 @@
+categories:
+- name: "questions_answered"
+  description: "The message contains information in response to a user's request as opposed to the system refusing to answer the user's request."
+- name: "question_not_answered"
+  description: "The message contains a refusal to answer the user's request or question."

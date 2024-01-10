@@ -1,3 +1,8 @@
+# PyRIT-specific configs
+submodules/
+results/
+default_memory.json.memory
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
