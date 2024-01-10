@@ -206,7 +206,7 @@ you can do so using Windows Subsystem for Linux (WSL). Alternatively, you can ru
 
 ### Jupyter and VS Code
 #### Selecting a Kernel
-With a Jupyter Notebook (.ipynb file) window open, in the top search bar of VS Code, type ">Notebook: Select Notebook Kernel" to choose the `pyrit_kernel` 
+With a Jupyter Notebook (.ipynb file) window open, in the top search bar of VS Code, type ">Notebook: Select Notebook Kernel" to choose the `pyrit_kernel`
 when executing code in the notebooks, like those in `examples`. This will be the kernel that runs all code examples in Python Notebooks.
 
 #### Jupyter Variables
@@ -269,8 +269,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.

@@ -11,12 +11,8 @@ from pyrit.models import ChatMessage
 
 @pytest.fixture
 def hf_chat() -> HuggingFaceChat:
-    with patch.object(
-        HuggingFaceChat, "load_model_and_tokenizer"
-    ) as mock_load_model_and_tokenizer:
-        hf_online_bot = HuggingFaceChat(
-            model_id="cognitivecomputations/WizardLM-7B-Uncensored"
-        )
+    with patch.object(HuggingFaceChat, "load_model_and_tokenizer") as mock_load_model_and_tokenizer:
+        hf_online_bot = HuggingFaceChat(model_id="cognitivecomputations/WizardLM-7B-Uncensored")
         mock_load_model_and_tokenizer.assert_called_once()
     return hf_online_bot
 
@@ -50,10 +46,7 @@ def test_complete_chat_failure(hf_chat: HuggingFaceChat):
     messages = [ChatMessage(role="user", content="Hello")]
     with pytest.raises(ValueError) as e:
         _ = hf_chat.complete_chat(messages)
-    assert (
-        str(e.value)
-        == "At least two chat message objects are required for the first call. Obtained only 1."
-    )
+    assert str(e.value) == "At least two chat message objects are required for the first call. Obtained only 1."
 
 
 def test_complete_chat_success(hf_chat: HuggingFaceChat):

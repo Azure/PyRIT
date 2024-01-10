@@ -72,25 +72,17 @@ class MockChatCompletionsAsync(AbstractAsyncContextManager):
     "openai.resources.chat.AsyncCompletions.create",
     new_callable=lambda: MockChatCompletionsAsync(),
 )
-def test_complete_chat_async_return(
-    mock_chat_create: AsyncMock, chat_engine: AzureOpenAIChat
-):
+def test_complete_chat_async_return(mock_chat_create: AsyncMock, chat_engine: AzureOpenAIChat):
     ret = _loop.run_until_complete(
-        chat_engine.complete_chat_async(
-            messages=[ChatMessage(role="user", content="hello")]
-        )
+        chat_engine.complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
     )
     assert ret == "hi"
 
 
-def test_complete_chat_return(
-    openai_mock_return: ChatCompletion, chat_engine: AzureOpenAIChat
-):
+def test_complete_chat_return(openai_mock_return: ChatCompletion, chat_engine: AzureOpenAIChat):
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
-        ret = chat_engine.complete_chat(
-            messages=[ChatMessage(role="user", content="hello")]
-        )
+        ret = chat_engine.complete_chat(messages=[ChatMessage(role="user", content="hello")])
         assert ret == "hi"
 
 

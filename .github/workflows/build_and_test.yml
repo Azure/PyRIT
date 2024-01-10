@@ -12,7 +12,7 @@ on:
       - "release/**"
   workflow_dispatch:
 
-concurrency: 
+concurrency:
   # This ensures after each commit the old jobs are cancelled and the new ones
   # run instead.
   group: ${{ github.head_ref || github.run_id }}

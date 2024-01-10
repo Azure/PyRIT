@@ -101,9 +101,7 @@ def test_json_memory_handler_save_conversation():
 
 def test_json_memory_handler_default_filepath():
     storage_handler = FileMemory()
-    expected_default_memory = pathlib.Path(
-        RESULTS_PATH, storage_handler.default_memory_file
-    ).resolve()
+    expected_default_memory = pathlib.Path(RESULTS_PATH, storage_handler.default_memory_file).resolve()
     assert storage_handler.filepath == expected_default_memory
 
 
@@ -146,9 +144,7 @@ def test_json_memory_handler_saves_and_stores_the_same_data(
 ):
     with NamedTemporaryFile(suffix=MEMORY_FILE_EXTENSION, delete=False) as tmp_file:
         storage_handler = FileMemory(filepath=tmp_file.name)
-        storage_handler.save_conversation_memory_entries(
-            simple_conversation.conversations
-        )
+        storage_handler.save_conversation_memory_entries(simple_conversation.conversations)
 
         records = storage_handler.get_all_memory()
 

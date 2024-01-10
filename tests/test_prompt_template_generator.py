@@ -26,13 +26,8 @@ def test_generate_default_template_first_call_requires_two_messages(
     prompt_template_generator: PromptTemplateGenerator,
 ):
     with pytest.raises(ValueError) as e:
-        prompt_template_generator.generate_template(
-            [ChatMessage(role="role1", content="content1")]
-        )
-    assert (
-        str(e.value)
-        == "At least two chat message objects are required for the first call. Obtained only 1."
-    )
+        prompt_template_generator.generate_template([ChatMessage(role="role1", content="content1")])
+    assert str(e.value) == "At least two chat message objects are required for the first call. Obtained only 1."
 
 
 def test_generate_default_template_first_call_success(
@@ -62,8 +57,6 @@ def test_generate_template_subsequent_call(
         ChatMessage(role="assistant", content="assistant1"),
         ChatMessage(role="user", content="user content2"),
     ]
-    final_prompt_template = prompt_template_generator.generate_template(
-        chat_messages_with_history
-    )
+    final_prompt_template = prompt_template_generator.generate_template(chat_messages_with_history)
     expected_template = "SYSTEM:system contentUSER:user contentASSISTANT:assistant1USER:user content2ASSISTANT:"
     assert final_prompt_template == expected_template

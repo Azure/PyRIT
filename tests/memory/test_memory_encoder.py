@@ -23,9 +23,7 @@ class MockEmbeddingGenerator(EmbeddingSupport):
             data=[DEFAULT_EMBEDDING_DATA],
         )
 
-    def generate_text_embedding_async(
-        self, text: str, **kwargs
-    ) -> Coroutine[Any, Any, EmbeddingResponse]:
+    def generate_text_embedding_async(self, text: str, **kwargs) -> Coroutine[Any, Any, EmbeddingResponse]:
         raise NotImplementedError()
 
 
@@ -36,9 +34,7 @@ class MockChatGenerator(EmbeddingSupport):
     def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
         return super().generate_text_embedding(text, **kwargs)
 
-    def generate_text_embedding_async(
-        self, text: str, **kwargs
-    ) -> Coroutine[Any, Any, EmbeddingResponse]:
+    def generate_text_embedding_async(self, text: str, **kwargs) -> Coroutine[Any, Any, EmbeddingResponse]:
         return super().generate_text_embedding_async(text, **kwargs)
 
 
@@ -60,9 +56,7 @@ def test_memory_encoding_chat_message(
         role="my_role",
         session="my_session",
     )
-    metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(
-        chat_memory=chat_memory
-    )
+    metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(chat_memory=chat_memory)
     assert metadata.uuid == chat_memory.uuid
     assert metadata.embedding == DEFAULT_EMBEDDING_DATA.embedding
     assert metadata.embedding_type_name == "MockEmbeddingGenerator"

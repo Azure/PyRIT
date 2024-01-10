@@ -42,15 +42,9 @@ def test_count_of_memories_matches_number_of_conversations_added_1(
 
 def test_add_chate_message_to_memory_added(memory: MemoryInterface):
     expected_count = 3
-    memory.add_chat_message_to_memory(
-        conversation=ChatMessage(role="user", content="Hello 1"), session="1"
-    )
-    memory.add_chat_message_to_memory(
-        conversation=ChatMessage(role="user", content="Hello 2"), session="1"
-    )
-    memory.add_chat_message_to_memory(
-        conversation=ChatMessage(role="user", content="Hello 3"), session="1"
-    )
+    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 1"), session="1")
+    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 2"), session="1")
+    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 3"), session="1")
     assert len(memory.get_all_memory()) == expected_count
 
 

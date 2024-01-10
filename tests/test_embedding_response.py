@@ -37,9 +37,7 @@ def test_can_save_embeddings(my_embedding: EmbeddingResponse):
         assert Path(output_file).exists()
 
 
-def test_embedding_creation_is_idempotent(
-    my_embedding: EmbeddingResponse, my_embedding_data: dict
-):
+def test_embedding_creation_is_idempotent(my_embedding: EmbeddingResponse, my_embedding_data: dict):
     new_embedding = EmbeddingResponse(**my_embedding_data)
     assert new_embedding == my_embedding
 

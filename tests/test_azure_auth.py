@@ -21,9 +21,7 @@ def test_get_token_on_init():
 def test_refresh_no_expiration():
     # Token not expired so not reset
     with patch("azure.identity.AzureCliCredential.get_token") as mock_get_token:
-        mock_get_token.return_value = Mock(
-            token=mock_token, expires_on=curr_epoch_time + REFRESH_TOKEN_BEFORE_MSEC
-        )
+        mock_get_token.return_value = Mock(token=mock_token, expires_on=curr_epoch_time + REFRESH_TOKEN_BEFORE_MSEC)
         test_instance = AzureAuth(token_scope="https://mocked_endpoint.azure.com")
         token = test_instance.refresh_token()
         assert token == mock_token
