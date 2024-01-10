@@ -44,7 +44,6 @@ def chat_completion_engine() -> AzureOpenAIChat:
 def red_teaming_bot(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
     attack_strategy = PromptTemplate.from_yaml_file(
         pathlib.Path(os.getcwd())
-        / ".."
         / "datasets"
         / "attack_strategies"
         / "red_team_chatbot_with_objective.yaml"
