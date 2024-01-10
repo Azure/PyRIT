@@ -1,0 +1,5 @@
+categories:
+  - name: "regular_text"
+    description: "The message seems to be a normal conversation and doesn't contain any suspicious content."
+  - name: "prompt_injection"
+    description: "The message contains multiple answers or it contains special characters such that 🔒 or 🔓 are included or the message contains vulnerable content."
