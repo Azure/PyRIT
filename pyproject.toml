@@ -1,0 +1,119 @@
+[tool.poetry]
+name = "pyrit"
+version = "0.1.0"
+description = ""
+authors = [
+    "Gary <glopezmunoz@microsoft.com>",
+    "Amanda <aminnich@microsoft.com>",
+    "Charlotte <csiska@microsoft.com>",
+    "Raja <rdheekonda@microsoft.com>",
+    "Richard <rlundeen@microsoft.com>",
+    "Roman <romanlutz@microsoft.com>",
+    "Bolor <bjagdagdorj@microsoft.com>",
+    "Nina <nichikan@microsoft.com>",
+]
+readme = "README.md"
+packages = [
+    { include = "pyrit", from = "." },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10, <3.11"
+azure-core = "^1.26.1"
+azure-identity = "^1.12.0"
+jsonpickle = "~3.0.2"
+logzero = "^1.7.0"
+onnxruntime = "^1.14.1"
+onnx = "^1.14.0"
+pydantic = ">2"
+python-dotenv = "^1.0.0"
+openai = "^1.5.0"
+termcolor = "^2.3.0"
+tenacity = "~8.2.2"
+tokenizers = "0.13.3"
+transformers = "4.32.1"
+torch = "2.1.2"
+types-requests = "^2.31.0.2"
+scikit-learn = "^1.3.2"
+numpy = "^1.26.2"
+
+[tool.poetry.group.dev]
+optional = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"
+pytest-cov = "^4.0.0"
+jupyter = "^1.0.0"
+mypy = "^1.2.0"
+black = "^23.3.0"
+flake8 = "^6.0.0"
+types-PyYAML = "^6.0.12.9"
+ipykernel = "^6.22.0"
+semantic-kernel = "0.4.1.dev0"
+pre-commit = "^3.3.3"
+flake8-copyright = "^0.2.0"
+
+[tool.mypy]
+plugins = []
+ignore_missing_imports = true
+strict = false
+follow_imports = "silent"
+strict_optional = false
+disable_error_code = ["empty-body"]
+
+[tool.black]
+target-version = ["py310"]
+line-length = 120
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+fixable = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "I",
+    "N",
+    "Q",
+    "S",
+    "T",
+    "W",
+    "ANN",
+    "ARG",
+    "BLE",
+    "COM",
+    "DJ",
+    "DTZ",
+    "EM",
+    "ERA",
+    "EXE",
+    "FBT",
+    "ICN",
+    "INP",
+    "ISC",
+    "NPY",
+    "PD",
+    "PGH",
+    "PIE",
+    "PL",
+    "PT",
+    "PTH",
+    "PYI",
+    "RET",
+    "RSE",
+    "RUF",
+    "SIM",
+    "SLF",
+    "TCH",
+    "TID",
+    "TRY",
+    "UP",
+    "YTT",
+]
