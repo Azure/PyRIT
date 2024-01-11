@@ -128,7 +128,7 @@ This is a guide for how to install PyRIT. Alternatively, take a look at the <a h
 
 Check the following example to learn how to set up PyRIT with a target:
 
-- [PyRIT extracts passwords from Gandalf](./../examples/demo/1_gandalf.ipynb)
+- [PyRIT extracts passwords from Gandalf](./examples/demo/1_gandalf.ipynb)
 
 ## Troubleshooting
 
