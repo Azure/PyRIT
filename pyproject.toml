@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pyrit"
 version = "0.1.0"
-description = ""
+description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     "Gary <glopezmunoz@microsoft.com>",
     "Amanda <aminnich@microsoft.com>",
@@ -16,6 +16,28 @@ readme = "README.md"
 packages = [
     { include = "pyrit", from = "." },
 ]
+license = "MIT"
+repository = "https://github.com/Azure/PyRIT"
+documentation = "https://github.com/Azure/PyRIT/wiki"
+keywords = [
+    "llm",
+    "ai-security",
+    "ai-red-team",
+    "ai-robustness",
+    "ai-robustness-testing",
+    "ai-risk-assessment"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+[tool.poetry.urls]
+"Issue Tracker" = "https://github.com/Azure/PyRIT/issues"
+"Wiki" = "https://github.com/Azure/PyRIT/wiki"
 
 [tool.poetry.dependencies]
 python = ">=3.10, <3.11"
