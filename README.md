@@ -40,7 +40,7 @@ prompt and obtain other useful information that would otherwise not be
 available.
 
 Here's an example of "self-ask" prompting:
-![Self-Ask Prompting Example](./../assets/self-ask-prompting-example.png)
+![Self-Ask Prompting Example](./assets/self-ask-prompting-example.png)
 
 The library leverages the extra information returned by the LLM to perform
 different classification tasks and to determine the overall score
