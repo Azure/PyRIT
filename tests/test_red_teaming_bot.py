@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 import pathlib
 from unittest.mock import patch
 
@@ -13,6 +12,7 @@ from pyrit.agent import RedTeamingBot
 from pyrit.chat import AzureOpenAIChat
 from pyrit.models import PromptTemplate
 from pyrit.memory import FileMemory
+from pyrit.common.path import HOME_PATH
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def chat_completion_engine() -> AzureOpenAIChat:
 @pytest.fixture
 def red_teaming_bot(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
     attack_strategy = PromptTemplate.from_yaml_file(
-        pathlib.Path(os.getcwd()) / "datasets" / "attack_strategies" / "red_team_chatbot_with_objective.yaml"
+        pathlib.Path(HOME_PATH) / "datasets" / "attack_strategies" / "red_team_chatbot_with_objective.yaml"
     )
 
     file_memory = FileMemory(filepath=tmp_path / "test.json.memory")
@@ -69,6 +69,17 @@ def test_complete_chat_user(red_teaming_bot: RedTeamingBot):
         assert chats[2].role == "assistant"
         assert "Do bad stuff" in chats[0].content
         assert "Instructions" in chats[0].content
+
+
+def test_complete_chat_user_calls_complete_chat(red_teaming_bot: RedTeamingBot):
+    with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
+        mock.return_value = "Hello, this is a message sent by the assistant. How can i help you?"
+        red_teaming_bot.complete_chat_user("new chat")
+
+        args, kwargs = mock.call_args
+        assert kwargs["messages"] is not None
+        assert kwargs["messages"][0].role == "system"
+        assert kwargs["messages"][1].content == "new chat"
 
 
 def test_is_conversation_complete_false(red_teaming_bot: RedTeamingBot):
