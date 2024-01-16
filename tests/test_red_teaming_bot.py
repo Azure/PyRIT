@@ -23,7 +23,9 @@ def openai_mock_return() -> ChatCompletion:
         choices=[
             Choice(
                 index=0,
-                message=ChatCompletionMessage(role="assistant", content="hi, I'm adversary chat."),
+                message=ChatCompletionMessage(
+                    role="assistant", content="hi, I'm adversary chat."
+                ),
                 finish_reason="stop",
                 logprobs=None,
             )
@@ -56,7 +58,9 @@ def red_teaming_bot(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.P
 
 def test_complete_chat_user(red_teaming_bot: RedTeamingBot):
     with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
-        mock.return_value = "Hello, this is a message sent by the assistant. How can i help you?"
+        mock.return_value = (
+            "Hello, this is a message sent by the assistant. How can i help you?"
+        )
         red_teaming_bot.complete_chat_user("hi, I am a victim chatbot, how can I help?")
         chats = red_teaming_bot.get_session_chat_messages()
         assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
@@ -84,7 +88,9 @@ def test_complete_chat_user_calls_complete_chat(red_teaming_bot: RedTeamingBot):
 
 def test_is_conversation_complete_false(red_teaming_bot: RedTeamingBot):
     with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
-        mock.return_value = "Hello, this is a message sent by the assistant. How can i help you?"
+        mock.return_value = (
+            "Hello, this is a message sent by the assistant. How can i help you?"
+        )
         red_teaming_bot.complete_chat_user("hi, I am a victim chatbot, how can I help?")
         red_teaming_bot.complete_chat_user("hi, I am a victim chatbot, how can I help?")
 
@@ -95,8 +101,12 @@ def test_is_conversation_complete_false(red_teaming_bot: RedTeamingBot):
 
 def test_is_conversation_complete_emptyhistory_false(red_teaming_bot: RedTeamingBot):
     with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
-        mock.return_value = "Hello, this is a message sent by the assistant. How can i help you?"
-        assert red_teaming_bot.is_conversation_complete() is False, "Conversation is empty, objective not realized"
+        mock.return_value = (
+            "Hello, this is a message sent by the assistant. How can i help you?"
+        )
+        assert (
+            red_teaming_bot.is_conversation_complete() is False
+        ), "Conversation is empty, objective not realized"
 
 
 def test_is_conversation_complete_true(red_teaming_bot: RedTeamingBot):
