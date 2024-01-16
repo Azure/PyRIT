@@ -62,15 +62,21 @@ class RedTeamingBot:
         return self._conversation_memory.get_chat_messages_with_session_id(session_id=self.session_id)
 
     def complete_chat_user(self, message: str, labels: list[str] = []) -> str:
-        session_messages: list[ChatMessage] = self.get_session_chat_messages()
-        if not session_messages:
+        message_list: list[ChatMessage] = []
+        if not self.get_session_chat_messages():
             # If there are no messages, then this is the first message of the conversation
-            self._add_chat_message_to_memory(ChatMessage(role="system", content=self._system_prompt), labels)
+            message_list.append(ChatMessage(role="system", content=self._system_prompt))
 
-        self._add_chat_message_to_memory(ChatMessage(role="user", content=message), labels)
+        message_list.append(ChatMessage(role="user", content=message))
 
-        response_msg = self._chat_engine.complete_chat(messages=session_messages)
-        self._add_chat_message_to_memory(ChatMessage(role="assistant", content=response_msg), labels)
+        response_msg = self._chat_engine.complete_chat(messages=message_list)
+        message_list.append(ChatMessage(role="assistant", content=response_msg))
+
+        self._conversation_memory.add_chat_messages_to_memory(
+            conversations=message_list,
+            session=self.session_id,
+            labels=self._global_memory_labels + labels,
+        )
 
         return response_msg
 
@@ -91,10 +97,3 @@ class RedTeamingBot:
             # If the last message contains the conversation end token, then the conversation is complete
             return True
         return False
-
-    def _add_chat_message_to_memory(self, message: ChatMessage, labels: list[str]):
-        self._conversation_memory.add_chat_message_to_memory(
-            conversation=message,
-            session=self.session_id,
-            labels=self._global_memory_labels + labels,
-        )
