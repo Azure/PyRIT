@@ -55,4 +55,4 @@ jobs:
           output: both
           thresholds: '60 80'
       - name: "Run pre-commit hooks"
-        run: git ls-files -- . | xargs poetry run pre-commit run --files
+        run: poetry run pre-commit run --all-files
