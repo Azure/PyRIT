@@ -37,7 +37,10 @@ class MemoryEmbedding:
         )
         return embedding_data
 
-def default_memory_embedding_factory() -> MemoryEmbedding | None:
+def default_memory_embedding_factory(embedding_model: EmbeddingSupport= None) -> MemoryEmbedding | None:
+    if embedding_model:
+        return MemoryEmbedding(embedding_model=embedding_model)
+
     api_key = configuration.get_env_variable("AZURE_OPENAI_EMBEDDING_KEY")
     api_base = configuration.get_env_variable("AZURE_OPENAI_EMBEDDING_ENDPOINT")
     deployment = configuration.get_env_variable("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")

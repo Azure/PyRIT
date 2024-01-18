@@ -41,18 +41,9 @@ class FileMemory(MemoryInterface):
     file_extension = ".json.memory"
     default_memory_file = "default_memory.json.memory"
 
-    _default_embedding_argument = object()
+    def __init__(self, *, filepath: Path | str = None, embedding_model: EmbeddingSupport = None):
 
-    def __init__(self, *, filepath: Path | str = None, embedding_model: EmbeddingSupport = _default_embedding_argument):
-
-        if not embedding_model:
-            # if the embedding model is explicitly sent as None, respect that
-            self.memory_embedding = None
-        elif embedding_model == self._default_embedding_argument:
-            self.memory_embedding = default_memory_embedding_factory()
-        else:
-            self.memory_embedding = MemoryEmbedding(embedding_model=embedding_model)
-
+        self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
 
         if filepath is None:
             filepath = pathlib.Path(RESULTS_PATH, self.default_memory_file).resolve()
