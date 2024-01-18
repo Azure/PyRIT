@@ -4,6 +4,9 @@
 import dotenv
 import os
 
+dotenv.load_dotenv()
+
+
 def get_env_variable(key: str, default: str = None) -> str:
     """
     Get the value of an environment variable or return a default value
@@ -15,6 +18,4 @@ def get_env_variable(key: str, default: str = None) -> str:
     Returns:
         The value of the environment variable or the default value
     """
-    dotenv.load_dotenv()
-
     return os.environ.get(key, default)

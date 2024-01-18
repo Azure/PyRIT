@@ -28,21 +28,6 @@ class MemoryInterface(abc.ABC):
         which are extremely useful for comparing chat messages and similarities, but also includes overhead
     """
 
-    _default_argument = object()
-
-    def __init__(
-        self,
-        *,
-        embedding_model: EmbeddingSupport = _default_argument,
-    ):
-        if embedding_model:
-            self.memory_embedding = MemoryEmbedding(embedding_model=embedding_model)
-        elif embedding_model == self._default_argument:
-            self.memory_embedding = default_memory_embedding_factory()
-        else:
-            # if the embedding model is explicitly sent as None, respect that
-            self.memory_embedding = None
-
     @abc.abstractmethod
     def get_all_memory(self) -> list[ConversationMemoryEntry]:
         """
