@@ -10,9 +10,6 @@ import uuid
 from tempfile import NamedTemporaryFile
 from pathlib import Path
 
-import pyrit.memory.file_memory
-import pyrit.memory.memory_embedding
-
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 
 from pyrit.memory.file_memory import FileMemory
@@ -195,10 +192,6 @@ def test_file_memory_labels_included(
     assert len(mem) == 1
     assert mem[0].labels == ["label1", "label2"]
 
-def test_default_embedding_model_set_none():
-    with NamedTemporaryFile(suffix=".json.memory") as tmp:
-        memory = FileMemory(filepath=tmp.name, embedding_model=None)
-        assert memory.memory_embedding is None
 
 def test_explicit_embedding_model_set():
     embedding = AzureTextEmbedding(api_key="testkey", api_base="testbase", model="deployment")
@@ -209,17 +202,20 @@ def test_explicit_embedding_model_set():
 
 
 def test_default_embedding_model_set_none():
-    with NamedTemporaryFile(suffix=".json.memory") as tmp, \
-    patch('pyrit.memory.file_memory.default_memory_embedding_factory') as mock:
+    with NamedTemporaryFile(suffix=".json.memory") as tmp, patch(
+        "pyrit.memory.file_memory.default_memory_embedding_factory"
+    ) as mock:
         mock.return_value = None
         memory = FileMemory(filepath=tmp.name)
         assert memory.memory_embedding is None
 
+
 def test_default_embedding_model_set_correctly():
     embedding = AzureTextEmbedding(api_key="testkey", api_base="testbase", model="deployment")
 
-    with NamedTemporaryFile(suffix=".json.memory") as tmp, \
-    patch('pyrit.memory.file_memory.default_memory_embedding_factory') as mock:
+    with NamedTemporaryFile(suffix=".json.memory") as tmp, patch(
+        "pyrit.memory.file_memory.default_memory_embedding_factory"
+    ) as mock:
         mock.return_value = embedding
         memory = FileMemory(filepath=tmp.name)
         assert memory.memory_embedding is embedding

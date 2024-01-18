@@ -37,7 +37,8 @@ class MemoryEmbedding:
         )
         return embedding_data
 
-def default_memory_embedding_factory(embedding_model: EmbeddingSupport= None) -> MemoryEmbedding | None:
+
+def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -> MemoryEmbedding | None:
     if embedding_model:
         return MemoryEmbedding(embedding_model=embedding_model)
 

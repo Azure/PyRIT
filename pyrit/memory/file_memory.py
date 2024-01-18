@@ -6,19 +6,18 @@ import pathlib
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from pyrit.common.path import RESULTS_PATH
 
-from pyrit.interfaces import EmbeddingSupport
-from pyrit.memory.memory_embedding import (
-    MemoryEmbedding,
-    default_memory_embedding_factory,
-)
+from pyrit.common.path import RESULTS_PATH
+from pyrit.memory.memory_embedding import default_memory_embedding_factory
+
 
 from pyrit.memory.memory_models import (
     ConversationMemoryEntry,
     ConversationMemoryEntryList,
     ConversationMessageWithSimilarity,
 )
+
+from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory.memory_interface import MemoryInterface
 
 
@@ -42,7 +41,6 @@ class FileMemory(MemoryInterface):
     default_memory_file = "default_memory.json.memory"
 
     def __init__(self, *, filepath: Path | str = None, embedding_model: EmbeddingSupport = None):
-
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
 
         if filepath is None:
