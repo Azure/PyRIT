@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.common import configuration
+import os
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory.memory_models import ConversationMemoryEntry, EmbeddingMemoryData
@@ -42,9 +42,9 @@ def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -
     if embedding_model:
         return MemoryEmbedding(embedding_model=embedding_model)
 
-    api_key = configuration.get_env_variable("AZURE_OPENAI_EMBEDDING_KEY")
-    api_base = configuration.get_env_variable("AZURE_OPENAI_EMBEDDING_ENDPOINT")
-    deployment = configuration.get_env_variable("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
+    api_key = os.environ.get("AZURE_OPENAI_EMBEDDING_KEY")
+    api_base = os.environ.get("AZURE_OPENAI_EMBEDDING_ENDPOINT")
+    deployment = os.environ.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
     if api_key and api_base and deployment:
         model = AzureTextEmbedding(api_key=api_key, api_base=api_base, model=deployment)
         return MemoryEmbedding(embedding_model=model)
