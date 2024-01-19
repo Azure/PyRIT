@@ -5,9 +5,8 @@ import abc
 from hashlib import sha256
 
 from uuid import uuid4
-
-from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory.memory_embedding import MemoryEmbedding
+
 from pyrit.memory.memory_models import (
     ConversationMemoryEntry,
     ConversationMessageWithSimilarity,
@@ -25,15 +24,7 @@ class MemoryInterface(abc.ABC):
         which are extremely useful for comparing chat messages and similarities, but also includes overhead
     """
 
-    def __init__(
-        self,
-        *,
-        embedding_model: EmbeddingSupport = None,
-    ):
-        if embedding_model:
-            self.memory_embedding = MemoryEmbedding(embedding_model=embedding_model)
-        else:
-            self.memory_embedding = None
+    memory_embedding: MemoryEmbedding = None
 
     @abc.abstractmethod
     def get_all_memory(self) -> list[ConversationMemoryEntry]:
