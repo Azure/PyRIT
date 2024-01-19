@@ -26,6 +26,12 @@ jobs:
         python: ["3.10"]
         package_name: ["pyrit"]
     runs-on: ${{ matrix.os }}
+    # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
