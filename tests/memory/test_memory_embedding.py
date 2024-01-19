@@ -7,6 +7,7 @@ import pytest
 from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory import MemoryEmbedding, ConversationMemoryEntry
 from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
+from pyrit.memory.memory_embedding import default_memory_embedding_factory
 
 
 DEFAULT_EMBEDDING_DATA = EmbeddingData(embedding=[0.0], index=0, object="mock_object")
@@ -60,3 +61,28 @@ def test_memory_encoding_chat_message(
     assert metadata.uuid == chat_memory.uuid
     assert metadata.embedding == DEFAULT_EMBEDDING_DATA.embedding
     assert metadata.embedding_type_name == "MockEmbeddingGenerator"
+
+
+def test_default_memory_embedding_factory_with_embedding_model():
+    embedding_model = MockEmbeddingGenerator()
+    memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
+    assert isinstance(memory_embedding, MemoryEmbedding)
+    assert memory_embedding.embedding_model == embedding_model
+
+
+def test_default_memory_embedding_factory_with_azure_environment_variables(monkeypatch):
+    monkeypatch.setenv("AZURE_OPENAI_EMBEDDING_KEY", "mock_key")
+    monkeypatch.setenv("AZURE_OPENAI_EMBEDDING_ENDPOINT", "mock_endpoint")
+    monkeypatch.setenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "mock_deployment")
+
+    memory_embedding = default_memory_embedding_factory()
+    assert isinstance(memory_embedding, MemoryEmbedding)
+
+
+def test_default_memory_embedding_factory_without_embedding_model_and_environment_variables(monkeypatch):
+    monkeypatch.delenv("AZURE_OPENAI_EMBEDDING_KEY", raising=False)
+    monkeypatch.delenv("AZURE_OPENAI_EMBEDDING_ENDPOINT", raising=False)
+    monkeypatch.delenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", raising=False)
+
+    memory_embedding = default_memory_embedding_factory()
+    assert memory_embedding is None
