@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
+from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory.memory_models import ConversationMemoryEntry, EmbeddingMemoryData
 
@@ -34,3 +36,17 @@ class MemoryEmbedding:
             uuid=chat_memory.uuid,
         )
         return embedding_data
+
+
+def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -> MemoryEmbedding | None:
+    if embedding_model:
+        return MemoryEmbedding(embedding_model=embedding_model)
+
+    api_key = os.environ.get("AZURE_OPENAI_EMBEDDING_KEY")
+    api_base = os.environ.get("AZURE_OPENAI_EMBEDDING_ENDPOINT")
+    deployment = os.environ.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
+    if api_key and api_base and deployment:
+        model = AzureTextEmbedding(api_key=api_key, api_base=api_base, model=deployment)
+        return MemoryEmbedding(embedding_model=model)
+    else:
+        return None
