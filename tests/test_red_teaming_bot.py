@@ -8,7 +8,7 @@ import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
-from pyrit.agent import RedTeamingBot
+from pyrit.orchestrator import RedTeamingBot
 from pyrit.chat import AzureOpenAIChat
 from pyrit.models import PromptTemplate
 from pyrit.memory import FileMemory
