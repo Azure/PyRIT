@@ -14,7 +14,7 @@ misuse (e.g., bias), and prohibited content (e.g., harassment).
 PyRIT automates AI Red Teaming tasks to allow operators to focus on more
 complicated and time-consuming tasks and can also identify security harms such
 as misuse (e.g., malware generation, jailbreaking), and privacy harms
-(e.g., ransomware generation).​
+(e.g., identity theft).​
 
 The goal is to allow researchers to have a baseline of how well their model
 and entire inference pipeline is doing against different harm categories and
