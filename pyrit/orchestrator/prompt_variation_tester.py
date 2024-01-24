@@ -7,7 +7,10 @@ from pyrit.prompt_normalizer.prompt import Prompt
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.prompt_transformer.prompt_transformer import PromptTransformer
 
-class PromptNormalizer(abc.ABC):
+class PromptVariationTester():
+    """
+    This orchestrator takes a set of prompts, attempts them on a target
+    """
     memory: MemoryInterface
 
     def __init__(self,
