@@ -1,24 +1,20 @@
-[tool.poetry]
+[project]
 name = "pyrit"
 version = "0.1.0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
-    "dlmgary",
-    "amandajean119",
-    "microsiska",
-    "rdheekonda",
-    "rlundeen2",
-    "romanlutz",
-    "jbolor21",
-    "nina-msft",
+    {name = "Microsoft AI Red Team", email = "airedteam@microsoft.com"},
+    {name = "dlmgary"},
+    {name = "amandajean119"},
+    {name = "microsiska"},
+    {name = "rdheekonda"},
+    {name = "rlundeen2"},
+    {name = "romanlutz"},
+    {name = "jbolor21"},
+    {name = "nina-msf}t",
 ]
 readme = "README.md"
-packages = [
-    { include = "pyrit", from = "." },
-]
-license = "MIT"
-repository = "https://github.com/Azure/PyRIT"
-documentation = "https://github.com/Azure/PyRIT/wiki"
+license = {text = "MIT"}
 keywords = [
     "llm",
     "ai-security",
@@ -32,46 +28,41 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.10",
 ]
+requires-python = ">=3.10, <3.11"
+dependencies = [
+    "azure-core>=1.26.1",
+    "azure-identity>=1.12.0",
+    "jsonpickle>=3.0.2",
+    "logzero>=1.7.0",
+    "onnxruntime>=1.14.1",
+    "onnx>=1.14.0",
+    "pydantic>2",
+    "python-dotenv>=1.0.0",
+    "openai>=1.5.0",
+    "termcolor>=2.3.0",
+    "tenacity>=8.2.2",
+    "tokenizers>=0.15.0",
+    "transformers>=4.36.0",
+    "torch==2.1.2",
+    "types-requests>=2.31.0.2",
+    "scikit-learn>=1.3.2",
+    "numpy>=1.26.2"
+]
 
-[tool.poetry.urls]
-"Issue Tracker" = "https://github.com/Azure/PyRIT/issues"
-"Wiki" = "https://github.com/Azure/PyRIT/wiki"
-
-[tool.poetry.dependencies]
-python = ">=3.10, <3.11"
-azure-core = "^1.26.1"
-azure-identity = "^1.12.0"
-jsonpickle = "~3.0.2"
-logzero = "^1.7.0"
-onnxruntime = "^1.14.1"
-onnx = "^1.14.0"
-pydantic = ">2"
-python-dotenv = "^1.0.0"
-openai = "^1.5.0"
-termcolor = "^2.3.0"
-tenacity = "~8.2.2"
-tokenizers = "^0.15.0"
-transformers = "~4.36.0"
-torch = "2.1.2"
-types-requests = "^2.31.0.2"
-scikit-learn = "^1.3.2"
-numpy = "^1.26.2"
-
-[tool.poetry.group.dev]
-optional = false
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.3.1"
-pytest-cov = "^4.0.0"
-jupyter = "^1.0.0"
-mypy = "^1.2.0"
-black = "^23.3.0"
-flake8 = "^6.0.0"
-types-PyYAML = "^6.0.12.9"
-ipykernel = "^6.22.0"
-semantic-kernel = "0.4.1.dev0"
-pre-commit = "^3.3.3"
-flake8-copyright = "^0.2.0"
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.3.1",
+    "pytest-cov>=4.0.0",
+    "jupyter>=1.0.0",
+    "mypy>=1.2.0",
+    "black>=23.3.0",
+    "flake8>=6.0.0",
+    "types-PyYAML>=6.0.12.9",
+    "ipykernel>=6.22.0",
+    "semantic-kernel==0.4.1.dev0",
+    "pre-commit>=3.3.3",
+    "flake8-copyright>=0.2.0"
+]
 
 [tool.mypy]
 plugins = []
@@ -86,8 +77,11 @@ target-version = ["py310"]
 line-length = 120
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pyrit"]
 
 [tool.ruff]
 line-length = 120
