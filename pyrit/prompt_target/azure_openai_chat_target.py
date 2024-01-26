@@ -1,20 +1,50 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
 from pyrit.chat.azure_openai_chat import AzureOpenAIChat
+from pyrit.memory import memory_interface
+from pyrit.models import ChatMessage
 
 from pyrit.prompt_target.prompt_target import PromptTarget
 
 
-class AzureOpenAIChatTartget(PromptTarget, AzureOpenAIChat):
+class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
     def __init__(
         self,
         *,
         deployment_name: str,
         endpoint: str,
         api_key: str,
+        memory: memory_interface,
         api_version: str = "2023-08-01-preview",
+        temperature: float = 1.0,
     ) -> None:
         super().__init__(deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version)
 
-    def send_prompt(self, normalized_prompt: str) -> None:
-        return super().send_prompt(normalized_prompt)
+        self.memory = memory
+        self.temperature = temperature
+
+    def send_prompt(self,
+                    normalized_prompt: str,
+                    conversation_id: str,
+                    normalizer_id: str) -> None:
+        
+        messages = self.memory.get_memories_with_conversation_id(conversation_id)
+
+        msg = ChatMessage(role="assistant", content=normalized_prompt)
+
+        messages.append(msg)
+
+        self.memory.add_chat_message_to_memory(
+            conversation=msg,
+            conversation_id=conversation_id,
+            normalizer_id=normalizer_id)
+        
+        resp = super().complete_chat(messages=messages, temperature=self.temperature)
+
+        self.memory.add_chat_message_to_memory(
+            conversation=resp,
+            conversation_id=conversation_id,
+            normalizer_id=normalizer_id)
+        
+        return resp

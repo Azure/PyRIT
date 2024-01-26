@@ -8,12 +8,14 @@ class PromptTarget(abc.ABC):
     memory: MemoryInterface
     supported_transformers: list
 
-    def __init__(self, memory: MemoryInterface, session_id: str) -> None:
+    def __init__(self, memory: MemoryInterface) -> None:
         self.memory = memory
-        self.session_id = session_id
 
     @abc.abstractmethod
-    def send_prompt(self, normalized_prompt: str) -> None:
+    def send_prompt(self,
+                    normalized_prompt: str,
+                    conversation_id: str,
+                    normalizer_id: str) -> None:
         """
         Sennds a normalized prompt to the prompt target.
         """

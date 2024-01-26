@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
+from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.prompt_normalizer.prompt import Prompt
 from pyrit.prompt_target.prompt_target import PromptTarget
@@ -12,20 +13,21 @@ class PromptNormalizer(abc.ABC):
 
     def __init__(self,
                  memory: MemoryInterface,
-                 session_id = None) -> None:
+                 prompts: list[Prompt] = []) -> None:
 
         self.memory = memory
-        self.session_id = session_id
+        self.id = uuid4()
+        self.prompts = prompts
 
     def send_prompt(self, prompt: Prompt):
         """
-        Sends the prompt to the prompt target.
+        Sends a prompt to the prompt targets.
         """
-        self.memory.
-        prompt.prompt_target.send_prompt(self.prompt_transformer.transform(self.prompt_text))
+        prompt.send_prompt(normalizer_id=self.id)
 
     def send_prompts(self):
         """
-        Sends the prompt to the prompt target.
+        Sends all prompts to the prompt targets.
         """
-        self.prompt_target.send_prompt(self.prompt_transformer.transform(self.prompt_text))
+        for prompt in self.prompts:
+            prompt.send_prompt(normalizer_id=self.id)

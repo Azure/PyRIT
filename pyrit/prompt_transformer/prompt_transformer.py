@@ -4,7 +4,7 @@
 import abc
 
 class PromptTransformer(abc.ABC):
-    def transofrm(self, prompt) -> str:
+    def transform(self, prompt: str) -> str:
         """
         By default, the base transformer class does nothing to the prompt.
         """

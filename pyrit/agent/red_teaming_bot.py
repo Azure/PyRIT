@@ -74,7 +74,7 @@ class RedTeamingBot:
 
         self._conversation_memory.add_chat_messages_to_memory(
             conversations=message_list,
-            session=self.session_id,
+            conversation_id=self.session_id,
             labels=self._global_memory_labels + labels,
         )
 

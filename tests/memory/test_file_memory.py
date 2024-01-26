@@ -52,25 +52,25 @@ def simple_conversation() -> ConversationMemoryEntryList:
                 uuid=id,
                 role="user",
                 content="Hello World!",
-                session="1",
+                conversation_id="1",
                 timestamp_in_ns=0,
             ),
             ConversationMemoryEntry(
                 role="bot",
                 content="Hello from Bot!",
-                session="1",
+                conversation_id="1",
                 timestamp_in_ns=0,
             ),
             ConversationMemoryEntry(
                 role="user",
                 content="Hi, bot! How are you?",
-                session="1",
+                conversation_id="1",
                 timestamp_in_ns=0,
             ),
             ConversationMemoryEntry(
                 role="user",
                 content="I am unrelated",
-                session="2",
+                conversation_id="2",
                 timestamp_in_ns=0,
             ),
         ]
@@ -84,7 +84,7 @@ def memory(simple_conversation: ConversationMemoryEntryList) -> FileMemory:
         for entry in simple_conversation.conversations:
             m.add_chat_message_to_memory(
                 conversation=ChatMessage(role=entry.role, content=entry.content),
-                session=entry.session,
+                conversation_id=entry.conversation_id,
             )
         return m
 
@@ -94,7 +94,7 @@ def test_json_memory_handler_save_conversation():
         storage_handler = FileMemory(filepath=tmp_file.name)
         msg = ChatMessage(role="user", content="Hello 1")
         session = "1"
-        storage_handler.add_chat_message_to_memory(conversation=msg, session=session)
+        storage_handler.add_chat_message_to_memory(conversation=msg, conversation_id=session)
         json_text = json.loads(tmp_file.read())
         assert len(json_text.get("conversations")) == 1
         assert json_text.get("conversations")[0].get("role") == "user"
@@ -124,7 +124,7 @@ def test_json_memory_handler_loads_conversation(chat_memory_json: dict):
         assert len(record) == 2
         assert record[0].role == "user"
         assert record[0].content == "Hello 1"
-        assert record[0].session == "1"
+        assert record[0].conversation_id == "1"
     os.remove(tmp_file.name)
 
 
@@ -185,10 +185,10 @@ def test_file_memory_labels_included(
 ):
     memory.add_chat_message_to_memory(
         conversation=ChatMessage(role="user", content="Hello 1"),
-        session="333",
+        conversation_id="333",
         labels=["label1", "label2"],
     )
-    mem = memory.get_memories_with_session_id(session_id="333")
+    mem = memory.get_memories_with_conversation_id(session_id="333")
     assert len(mem) == 1
     assert mem[0].labels == ["label1", "label2"]
 

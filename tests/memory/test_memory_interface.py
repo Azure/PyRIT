@@ -35,16 +35,16 @@ def test_count_of_memories_matches_number_of_conversations_added_1(
 ):
     expected_count = 1
     message = ChatMessage(role="user", content="Hello")
-    memory.add_chat_message_to_memory(conversation=message, session="1", labels=[])
+    memory.add_chat_message_to_memory(conversation=message, conversation_id="1", labels=[])
     c = memory.get_all_memory()
     assert len(c) == expected_count
 
 
 def test_add_chate_message_to_memory_added(memory: MemoryInterface):
     expected_count = 3
-    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 1"), session="1")
-    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 2"), session="1")
-    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 3"), session="1")
+    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 1"), conversation_id="1")
+    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 2"), conversation_id="1")
+    memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 3"), conversation_id="1")
     assert len(memory.get_all_memory()) == expected_count
 
 
@@ -54,5 +54,5 @@ def test_add_chate_messages_to_memory_added(memory: MemoryInterface):
         ChatMessage(role="user", content="Hello 2"),
     ]
 
-    memory.add_chat_messages_to_memory(conversations=messages, session="1")
+    memory.add_chat_messages_to_memory(conversations=messages, conversation_id="1")
     assert len(memory.get_all_memory()) == len(messages)

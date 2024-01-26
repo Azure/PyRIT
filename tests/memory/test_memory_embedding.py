@@ -55,7 +55,7 @@ def test_memory_encoding_chat_message(
     chat_memory = ConversationMemoryEntry(
         content="hello world!",
         role="my_role",
-        session="my_session",
+        conversation_id="my_session",
     )
     metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(chat_memory=chat_memory)
     assert metadata.uuid == chat_memory.uuid
