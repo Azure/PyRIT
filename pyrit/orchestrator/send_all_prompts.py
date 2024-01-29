@@ -12,19 +12,19 @@ from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.prompt_transformer.prompt_transformer import PromptTransformer
 
-class SendAllPrompts():
+class SendAllPromptsOrchestrator():
     """
     This orchestrator takes a set of prompts, transforms them, and attempts them on a target
     """
 
     def __init__(self,
-                 prompt_files: list[Path],
+                 prompts: list[str],
                  prompt_target: PromptTarget,
                  prompt_transformer: PromptTransformer = None,
                  classifier: SupportTextClassification = None,
                  memory: MemoryInterface = None) -> None:
 
-        self.prompt_files = prompt_files
+        self.prompts = list[str]
         self.prompt_target = prompt_target
         self.classifier = classifier
 
@@ -56,5 +56,4 @@ class SendAllPrompts():
         # use classifier to check success
 
     def _create_prompts(self):
-
 

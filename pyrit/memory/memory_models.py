@@ -18,9 +18,9 @@ class ConversationMemoryEntry(BaseModel, extra=Extra.forbid):
     role: str
     content: str
     conversation_id: str
-    normalizer_id: str
     timestamp_in_ns: int = Field(default_factory=time.time_ns)
     uuid: UUID = Field(default_factory=uuid4)
+    normalizer_id: str = ""
     sha256: str = ""
     embedding_memory_data: Optional[EmbeddingMemoryData] = None
     labels: Optional[list[str]] = None
