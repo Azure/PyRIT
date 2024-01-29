@@ -1,6 +1,6 @@
 .PHONY: all pre-commit mypy test test-cov-html test-cov-xml
 
-CMD:=poetry run
+CMD:=python -m
 PYMODULE:=pyrit
 TESTS:=tests
 

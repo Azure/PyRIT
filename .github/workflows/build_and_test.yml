@@ -37,10 +37,10 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ inputs.python }}
-      - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-      - name: Create Poetry Environment
-        run: poetry install --with=dev
+      - name: Install setuptools and pip
+        run: pip install --upgrade setuptools pip
+      - name: Install PyRIT with pip
+        run: pip install .[dev]
       - name: Run unit tests with code coverage
         run: make test-cov-xml
       - name: Publish Pytest Results
@@ -61,4 +61,4 @@ jobs:
           output: both
           thresholds: '60 80'
       - name: "Run pre-commit hooks"
-        run: poetry run pre-commit run --all-files
+        run: pre-commit run --all-files
