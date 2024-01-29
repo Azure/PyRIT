@@ -26,6 +26,7 @@ repos:
     hooks:
       - id: pylint
         args: [ --disable=all, --enable=unused-import ]
+        exclude: NOTICE.txt
 
   # Calling local version of mypy rather the one from GitHub https://github.com/pre-commit/mirrors-mypy
   # because there is no way to sync the configs in pyproject.toml and the .pre-commit-config.yaml
