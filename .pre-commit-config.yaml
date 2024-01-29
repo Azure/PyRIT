@@ -3,7 +3,9 @@ repos:
     rev: v4.4.0
     hooks:
       - id: trailing-whitespace
+        exclude: NOTICE.txt
       - id: end-of-file-fixer
+        exclude: NOTICE.txt
       - id: check-yaml
       - id: check-added-large-files
       - id: detect-private-key
