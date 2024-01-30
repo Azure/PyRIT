@@ -41,7 +41,7 @@ def chat_completion_engine() -> AzureOpenAIChat:
 @pytest.fixture
 def red_teaming_bot(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
     attack_strategy = PromptTemplate.from_yaml_file(
-        pathlib.Path(HOME_PATH) / "datasets" / "attack_strategies" / "red_team_chatbot_with_objective.yaml"
+        pathlib.Path(HOME_PATH) / "datasets" / "attack_strategies" / "multi_turn_chat" / "red_team_chatbot_with_objective.yaml"
     )
 
     file_memory = FileMemory(filepath=tmp_path / "test.json.memory")

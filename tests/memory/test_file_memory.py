@@ -30,13 +30,13 @@ def chat_memory_json() -> dict:
             {
                 "role": "user",
                 "content": "Hello 1",
-                "session": "1",
+                "conversation_id": "1",
                 "uuid": "30f01cfb-b965-41aa-b33a-c3f8354d3538",
             },
             {
                 "role": "assistant",
                 "content": "Hello back",
-                "session": "1",
+                "conversation_id": "1",
                 "uuid": "30f01cfb-b965-41aa-b33a-c3f8354d3538",
             },
         ]
