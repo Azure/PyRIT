@@ -26,7 +26,7 @@ Additionally, this tool allows researchers to iterate and improve their
 mitigations against different harms.
 For example, at Microsoft we are using this tool to iterate on different
 versions of a product (and its metaprompt) so that we can more effectively
-protect against prompt extraction attacks.
+protect against prompt injection attacks.
 
 ![PyRIT architecture](./assets/pyrit_architecture.png)
 
