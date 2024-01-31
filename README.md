@@ -33,7 +33,7 @@ protect against prompt injection attacks.
 ## Where can I learn more?
 
 Check out our [Wiki](https://github.com/Azure/PyRIT/wiki/) for more information
-on how to [get started}(https://github.com/Azure/PyRIT/wiki/Getting-started),
+on how to [get started](https://github.com/Azure/PyRIT/wiki/Getting-started),
 our [user guide](https://github.com/Azure/PyRIT/wiki/User-guide) and more,
 as well as our [examples](./examples/) folder.
 
