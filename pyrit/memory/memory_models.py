@@ -25,6 +25,9 @@ class ConversationMemoryEntry(BaseModel, extra=Extra.forbid):
     embedding_memory_data: Optional[EmbeddingMemoryData] = None
     labels: Optional[list[str]] = None
 
+    def __str__(self):
+        return f"{self.role}: {self.content}"
+
 
 # This class is convenient for serialization
 class ConversationMemoryEntryList(BaseModel, extra=Extra.forbid):
