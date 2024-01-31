@@ -1,7 +1,4 @@
 # Run Component Governance to register all dependencies.
-# Component Detection with Poetry is currently in beta,
-# so as a workaround we generate the requirements.txt file
-# to help Component Governance detect the components.
 
 trigger:
   - main
@@ -10,24 +7,4 @@ pool:
   vmImage: "ubuntu-latest"
 
 steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.10'
-    displayName: 'Use Python 3.10'
-
-  - script: |
-      curl -sSL https://install.python-poetry.org | python3 -
-    displayName: Install Poetry
-
-  - script: |
-      poetry install --with=dev
-    displayName: Create Poetry Environment
-
-  - task: CmdLine@2
-    displayName: 'Generate requirements.txt using poetry'
-    inputs:
-      script: |
-        poetry export --without-hashes --format=requirements.txt > requirements.txt
-        cat requirements.txt
-
   - task: ComponentGovernanceComponentDetection@0
