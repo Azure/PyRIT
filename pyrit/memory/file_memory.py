@@ -125,12 +125,12 @@ class FileMemory(MemoryInterface):
                 )
         return matched_conversations
 
-    def get_memories_with_conversation_id(self, *, session_id: str) -> list[ConversationMemoryEntry]:
+    def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[ConversationMemoryEntry]:
         """
         implements the get_memories_with_session_id method from the Memory interface.
         """
         memories: list[ConversationMemoryEntry] = []
         for mem_entry in self.get_all_memory():
-            if mem_entry.conversation_id == session_id:
+            if mem_entry.conversation_id == conversation_id:
                 memories.append(mem_entry)
         return memories

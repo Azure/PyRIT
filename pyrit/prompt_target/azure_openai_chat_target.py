@@ -24,14 +24,29 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
         self.memory = memory
         self.temperature = temperature
 
+    def set_system_prompt(self,
+                    prompt: str,
+                    conversation_id: str,
+                    normalizer_id: str) -> None:
+
+        messages = self.memory.get_memories_with_conversation_id(conversation_id=conversation_id)
+
+        if messages:
+           raise(RuntimeError("Conversation already exists, system prompt needs to be set at the beginning"))
+
+        self.memory.add_chat_message_to_memory(
+            conversation=ChatMessage(role="system", content=prompt),
+            conversation_id=conversation_id,
+            normalizer_id=normalizer_id)
+
     def send_prompt(self,
                     normalized_prompt: str,
                     conversation_id: str,
                     normalizer_id: str) -> None:
-        
-        messages = self.memory.get_memories_with_conversation_id(conversation_id)
 
-        msg = ChatMessage(role="assistant", content=normalized_prompt)
+        messages = self.memory.get_memories_with_conversation_id(conversation_id=conversation_id)
+
+        msg = ChatMessage(role="user", content=normalized_prompt)
 
         messages.append(msg)
 
@@ -39,12 +54,12 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
             conversation=msg,
             conversation_id=conversation_id,
             normalizer_id=normalizer_id)
-        
+
         resp = super().complete_chat(messages=messages, temperature=self.temperature)
 
         self.memory.add_chat_message_to_memory(
-            conversation=resp,
+            conversation=ChatMessage(role="assistant", content=normalized_prompt),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id)
-        
+
         return resp

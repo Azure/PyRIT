@@ -23,7 +23,7 @@ class Prompt(abc.ABC):
 
         if not isinstance(prompt_text, str):
             raise ValueError("prompt_text must be a str")
-        
+
         if not isinstance(conversation_id, str):
             raise ValueError("conversation_id must be a str")
 
@@ -38,4 +38,5 @@ class Prompt(abc.ABC):
         """
         self.prompt_target.send_prompt(
             normalized_prompt=self.prompt_transformer.transform(self.prompt_text),
+            conversation_id=self.conversation_id,
             normalizer_id=normalizer_id)

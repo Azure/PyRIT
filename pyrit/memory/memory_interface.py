@@ -39,12 +39,12 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_memories_with_conversation_id(self, *, session_id: str) -> list[ConversationMemoryEntry]:
+    def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[ConversationMemoryEntry]:
         """
         Retrieves a list of ConversationMemoryEntry objects that have the specified session ID.
 
         Args:
-            session_id (str): The session ID to match.
+            conversation_id (str): The session ID to match.
 
         Returns:
             list[ConversationMemoryEntry]: A list of chat memory entries with the specified session ID.
@@ -159,7 +159,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[ChatMessage]: The list of chat messages.
         """
-        memory_entries = self.get_memories_with_conversation_id(session_id=session_id)
+        memory_entries = self.get_memories_with_conversation_id(conversation_id=session_id)
         return [ChatMessage(role=me.role, content=me.content) for me in memory_entries]
 
     def _create_chat_message_memory_entry(

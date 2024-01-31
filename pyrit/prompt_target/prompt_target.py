@@ -12,10 +12,19 @@ class PromptTarget(abc.ABC):
         self.memory = memory
 
     @abc.abstractmethod
+    def set_system_prompt(self,
+                    prompt: str,
+                    conversation_id: str,
+                    normalizer_id: str) -> None:
+        """
+        Sets the system prompt for the prompt target
+        """
+
+    @abc.abstractmethod
     def send_prompt(self,
                     normalized_prompt: str,
                     conversation_id: str,
                     normalizer_id: str) -> None:
         """
-        Sennds a normalized prompt to the prompt target.
+        Sends a normalized prompt to the prompt target.
         """

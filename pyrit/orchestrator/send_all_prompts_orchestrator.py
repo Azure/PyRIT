@@ -18,42 +18,27 @@ class SendAllPromptsOrchestrator():
     """
 
     def __init__(self,
-                 prompts: list[str],
                  prompt_target: PromptTarget,
                  prompt_transformer: PromptTransformer = None,
-                 classifier: SupportTextClassification = None,
                  memory: MemoryInterface = None) -> None:
 
         self.prompts = list[str]
         self.prompt_target = prompt_target
-        self.classifier = classifier
-
-        if not self.prompt_transformer:
-            self.prompt_transformer = PromptTransformer()
-        if not self.classifier:
-            #TODO build default classifier factory
-            raise("Not implemented")
 
         self.prompt_transformer = prompt_transformer if prompt_transformer else PromptTransformer()
-        self.memory = memory if memory else file_memory()
-
-
-
-
-    def send_prompts(self):
-        """
-        Sends the prompt to the prompt target.
-        """
-        # TODO
-        # Create list of prompts
-        # Create prompt normalizer
-        # for each prompt, send it, and use classifier to check success
-
+        self.memory = memory if memory else file_memory.FileMemory()
         self.prompt_normalizer = PromptNormalizer(memory=self.memory)
 
 
-        self.prompt_normalizer.send_prompts()
-        # use classifier to check success
 
-    def _create_prompts(self):
+    def send_prompts(self, prompts: list[str]):
+        """
+        Sends the prompt to the prompt target.
+        """
+        for str_prompt in prompts:
+            prompt = Prompt(prompt_target=self.prompt_target,
+                            prompt_transformer=self.prompt_transformer,
+                            prompt_text=str_prompt,
+                            conversation_id=str(uuid4()))
 
+            self.prompt_normalizer.send_prompt(prompt=prompt)

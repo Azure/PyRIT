@@ -24,10 +24,3 @@ class PromptNormalizer(abc.ABC):
         Sends a prompt to the prompt targets.
         """
         prompt.send_prompt(normalizer_id=self.id)
-
-    def send_prompts(self):
-        """
-        Sends all prompts to the prompt targets.
-        """
-        for prompt in self.prompts:
-            prompt.send_prompt(normalizer_id=self.id)
