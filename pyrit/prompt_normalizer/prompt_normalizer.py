@@ -16,7 +16,7 @@ class PromptNormalizer(abc.ABC):
                  prompts: list[Prompt] = []) -> None:
 
         self.memory = memory
-        self.id = uuid4()
+        self.id = str(uuid4())
         self.prompts = prompts
 
     def send_prompt(self, prompt: Prompt):

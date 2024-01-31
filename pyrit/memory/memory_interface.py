@@ -41,13 +41,25 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[ConversationMemoryEntry]:
         """
-        Retrieves a list of ConversationMemoryEntry objects that have the specified session ID.
+        Retrieves a list of ConversationMemoryEntry objects that have the specified conversation ID.
 
         Args:
-            conversation_id (str): The session ID to match.
+            conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[ConversationMemoryEntry]: A list of chat memory entries with the specified session ID.
+            list[ConversationMemoryEntry]: A list of chat memory entries with the specified conversation ID.
+        """
+
+    @abc.abstractmethod
+    def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[ConversationMemoryEntry]:
+        """
+        Retrieves a list of ConversationMemoryEntry objects that have the specified normalizer ID.
+
+        Args:
+            normalizer_id (str): The normalizer ID to match.
+
+        Returns:
+            list[ConversationMemoryEntry]: A list of chat memory entries with the specified normalizer ID.
         """
 
     @abc.abstractmethod
@@ -149,7 +161,8 @@ class MemoryInterface(abc.ABC):
             )
         self.save_conversation_memory_entries(chat_list)
 
-    def get_chat_messages_with_session_id(self, *, session_id: str) -> list[ChatMessage]:
+
+    def get_chat_messages_with_conversation_id(self, *, converation_id: str) -> list[ChatMessage]:
         """
         Returns the memory for a given session ID.
 
@@ -159,8 +172,9 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[ChatMessage]: The list of chat messages.
         """
-        memory_entries = self.get_memories_with_conversation_id(conversation_id=session_id)
+        memory_entries = self.get_memories_with_conversation_id(conversation_id=converation_id)
         return [ChatMessage(role=me.role, content=me.content) for me in memory_entries]
+
 
     def _create_chat_message_memory_entry(
         self,
@@ -176,6 +190,7 @@ class MemoryInterface(abc.ABC):
             role=conversation.role,
             content=conversation.content,
             conversation_id=conversation_id,
+            normalizer_id=normalizer_id,
             uuid=uuid,
             labels=labels if labels else [],
             sha256=sha256(conversation.content.encode()).hexdigest(),

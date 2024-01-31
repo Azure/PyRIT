@@ -2,10 +2,9 @@
 # Licensed under the MIT license.
 
 from pyrit.chat.azure_openai_chat import AzureOpenAIChat
-from pyrit.memory import memory_interface
+from pyrit.memory import memory_interface,file_memory
 from pyrit.models import ChatMessage
-
-from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget
 
 
 class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
@@ -15,13 +14,13 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
         deployment_name: str,
         endpoint: str,
         api_key: str,
-        memory: memory_interface,
+        memory: memory_interface = None,
         api_version: str = "2023-08-01-preview",
         temperature: float = 1.0,
     ) -> None:
         super().__init__(deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version)
 
-        self.memory = memory
+        self.memory = memory if memory else file_memory.FileMemory()
         self.temperature = temperature
 
     def set_system_prompt(self,
@@ -58,7 +57,7 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
         resp = super().complete_chat(messages=messages, temperature=self.temperature)
 
         self.memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="assistant", content=normalized_prompt),
+            conversation=ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id)
 

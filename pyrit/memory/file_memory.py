@@ -60,6 +60,7 @@ class FileMemory(MemoryInterface):
                 Memory files must have extension '{self.file_extension}'."
             )
 
+
     def get_all_memory(self) -> list[ConversationMemoryEntry]:
         """
         Implements the get_all_memory method from the Memory interface.
@@ -71,6 +72,7 @@ class FileMemory(MemoryInterface):
         memory_data = self.filepath.read_text(encoding="utf-8")
         return ConversationMemoryEntryList.parse_raw(memory_data).conversations
 
+
     def save_conversation_memory_entries(self, new_entries: list[ConversationMemoryEntry]):
         """
         Implements the save_conversation_memory_entries method from the Memory interface.
@@ -80,6 +82,7 @@ class FileMemory(MemoryInterface):
 
         entryList = ConversationMemoryEntryList(conversations=entries)
         self.filepath.write_text(entryList.model_dump_json(), encoding="utf-8")
+
 
     def get_memory_by_exact_match(self, *, memory_entry_content: str) -> list[ConversationMessageWithSimilarity | None]:
         """
@@ -97,6 +100,7 @@ class FileMemory(MemoryInterface):
                     )
                 )
         return msg_matches
+
 
     def get_memory_by_embedding_similarity(
         self, *, memory_entry_emb: list[float], threshold: float = 0.8
@@ -125,12 +129,24 @@ class FileMemory(MemoryInterface):
                 )
         return matched_conversations
 
+
     def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[ConversationMemoryEntry]:
         """
-        implements the get_memories_with_session_id method from the Memory interface.
+        implements the get_memories_with_conversation_id method from the Memory interface.
         """
         memories: list[ConversationMemoryEntry] = []
         for mem_entry in self.get_all_memory():
             if mem_entry.conversation_id == conversation_id:
+                memories.append(mem_entry)
+        return memories
+
+
+    def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[ConversationMemoryEntry]:
+        """
+        implements the get_memories_with_normalizer_id method from the Memory interface.
+        """
+        memories: list[ConversationMemoryEntry] = []
+        for mem_entry in self.get_all_memory():
+            if mem_entry.normalizer_id == normalizer_id:
                 memories.append(mem_entry)
         return memories

@@ -29,6 +29,7 @@ class SendAllPromptsOrchestrator():
         self.memory = memory if memory else file_memory.FileMemory()
         self.prompt_normalizer = PromptNormalizer(memory=self.memory)
 
+        self.prompt_target.memory = self.memory
 
 
     def send_prompts(self, prompts: list[str]):
@@ -42,3 +43,8 @@ class SendAllPromptsOrchestrator():
                             conversation_id=str(uuid4()))
 
             self.prompt_normalizer.send_prompt(prompt=prompt)
+
+
+    def get_memory(self):
+        id = self.prompt_normalizer.id
+        return self.memory.get_memories_with_normalizer_id(normalizer_id=id)

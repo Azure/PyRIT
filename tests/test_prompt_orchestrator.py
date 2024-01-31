@@ -57,3 +57,8 @@ def test_send_prompts_b64_transform(mock_target: MockPromptTarget):
 
     orchestrator.send_prompts(["Hello"])
     assert mock_target.prompt == 'SGVsbG8='
+
+def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
+    orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target)
+
+    assert orchestrator.memory is mock_target.memory

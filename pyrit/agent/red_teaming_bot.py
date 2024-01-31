@@ -59,7 +59,7 @@ class RedTeamingBot:
         return f"Red Team bot ID {self.session_id}"
 
     def get_session_chat_messages(self) -> list[ChatMessage]:
-        return self._conversation_memory.get_chat_messages_with_session_id(session_id=self.session_id)
+        return self._conversation_memory.get_chat_messages_with_conversation_id(converation_id=self.session_id)
 
     def complete_chat_user(self, message: str, labels: list[str] = []) -> str:
         message_list: list[ChatMessage] = []
