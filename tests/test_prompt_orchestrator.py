@@ -1,21 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pathlib
 import tempfile
 from unittest.mock import patch
 
 import pytest
-from openai.types.chat import ChatCompletion, ChatCompletionMessage
-from openai.types.chat.chat_completion import Choice
 
-from pyrit.agent import RedTeamingBot
-from pyrit.chat import AzureOpenAIChat
-from pyrit.models import PromptTemplate, Score
 from pyrit.memory import FileMemory
-from pyrit.common.path import HOME_PATH
 from pyrit.orchestrator.send_all_prompts_orchestrator import SendAllPromptsOrchestrator
-from pyrit.prompt_target.azure_openai_chat_target import AzureOpenAIChatTarget
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_transformer.base64_transformer import Base64Transformer
 
