@@ -113,7 +113,7 @@ class MemoryInterface(abc.ABC):
         *,
         conversation: ChatMessage,
         conversation_id: str,
-        normalizer_id: str = None,
+        normalizer_id: str = "",
         labels: list[str] = None,
     ):
         """
@@ -137,7 +137,7 @@ class MemoryInterface(abc.ABC):
         *,
         conversations: list[ChatMessage],
         conversation_id: str,
-        normalizer_id: str = None,
+        normalizer_id: str = "",
         labels: list[str] = None,
     ):
         """
