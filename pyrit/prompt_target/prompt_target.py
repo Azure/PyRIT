@@ -19,7 +19,7 @@ class PromptTarget(abc.ABC):
         """
 
     @abc.abstractmethod
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
+    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         """
         Sends a normalized prompt to the prompt target.
         """

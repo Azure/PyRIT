@@ -160,7 +160,7 @@ class MemoryInterface(abc.ABC):
             )
         self.save_conversation_memory_entries(chat_list)
 
-    def get_chat_messages_with_conversation_id(self, *, converation_id: str) -> list[ChatMessage]:
+    def get_chat_messages_with_conversation_id(self, *, conversation_id: str) -> list[ChatMessage]:
         """
         Returns the memory for a given session ID.
 
@@ -170,7 +170,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[ChatMessage]: The list of chat messages.
         """
-        memory_entries = self.get_memories_with_conversation_id(conversation_id=converation_id)
+        memory_entries = self.get_memories_with_conversation_id(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.content) for me in memory_entries]
 
     def _create_chat_message_memory_entry(
