@@ -188,7 +188,7 @@ def test_test_file_memory_get_memory_by_exact_match_no_match(
 
 
 def test_file_memory_get_memory_by_conversation_id(memory: FileMemory):
-    mem = memory.get_chat_messages_with_conversation_id(converation_id="1")
+    mem = memory.get_chat_messages_with_conversation_id(conversation_id="1")
     assert len(mem) == 3
 
 
