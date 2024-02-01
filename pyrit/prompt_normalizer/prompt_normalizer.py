@@ -4,7 +4,7 @@
 import abc
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
-from pyrit.prompt_normalizer import Prompt
+from pyrit.prompt_normalizer.prompt_class import Prompt
 
 
 class PromptNormalizer(abc.ABC):
