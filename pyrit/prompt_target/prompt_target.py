@@ -4,6 +4,7 @@
 import abc
 from pyrit.memory import MemoryInterface
 
+
 class PromptTarget(abc.ABC):
     memory: MemoryInterface
     supported_transformers: list
@@ -12,19 +13,13 @@ class PromptTarget(abc.ABC):
         self.memory = memory
 
     @abc.abstractmethod
-    def set_system_prompt(self,
-                    prompt: str,
-                    conversation_id: str,
-                    normalizer_id: str) -> None:
+    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
         """
         Sets the system prompt for the prompt target
         """
 
     @abc.abstractmethod
-    def send_prompt(self,
-                    normalized_prompt: str,
-                    conversation_id: str,
-                    normalizer_id: str) -> None:
+    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
         """
         Sends a normalized prompt to the prompt target.
         """

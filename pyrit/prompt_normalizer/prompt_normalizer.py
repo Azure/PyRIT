@@ -4,17 +4,13 @@
 import abc
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
-from pyrit.prompt_normalizer.prompt import Prompt
-from pyrit.prompt_target.prompt_target import PromptTarget
-from pyrit.prompt_transformer.prompt_transformer import PromptTransformer
+from pyrit.prompt_normalizer import Prompt
+
 
 class PromptNormalizer(abc.ABC):
     memory: MemoryInterface
 
-    def __init__(self,
-                 memory: MemoryInterface,
-                 prompts: list[Prompt] = []) -> None:
-
+    def __init__(self, memory: MemoryInterface, prompts: list[Prompt] = []) -> None:
         self.memory = memory
         self.id = str(uuid4())
         self.prompts = prompts

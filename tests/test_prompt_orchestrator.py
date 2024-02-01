@@ -2,14 +2,12 @@
 # Licensed under the MIT license.
 
 import tempfile
-from unittest.mock import patch
-
 import pytest
 
 from pyrit.memory import FileMemory
 from pyrit.orchestrator.send_all_prompts_orchestrator import SendAllPromptsOrchestrator
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_transformer.base64_transformer import Base64Transformer
+from pyrit.prompt_transformer import Base64Transformer
 
 
 class MockPromptTarget(PromptTarget):
@@ -26,14 +24,16 @@ class MockPromptTarget(PromptTarget):
 @pytest.fixture
 def mock_target() -> MockPromptTarget:
     fd, path = tempfile.mkstemp(suffix=".json.memory")
-    file_memory = FileMemory(filepath= path)
+    file_memory = FileMemory(filepath=path)
     return MockPromptTarget(memory=file_memory)
+
 
 def test_send_prompt_no_transformer(mock_target: MockPromptTarget):
     orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target)
 
     orchestrator.send_prompts(["Hello"])
     assert mock_target.prompt == "Hello"
+
 
 def test_send_multiple_prompts_no_transformer(mock_target: MockPromptTarget):
     orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target)
@@ -48,7 +48,8 @@ def test_send_prompts_b64_transform(mock_target: MockPromptTarget):
     orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target, prompt_transformer=transformer)
 
     orchestrator.send_prompts(["Hello"])
-    assert mock_target.prompt == 'SGVsbG8='
+    assert mock_target.prompt == "SGVsbG8="
+
 
 def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
     orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target)

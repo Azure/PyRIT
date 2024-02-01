@@ -10,8 +10,7 @@ from openai.types.chat.chat_completion import Choice
 
 from pyrit.chat import AzureOpenAIChat
 from pyrit.memory import FileMemory
-from pyrit.common.path import HOME_PATH
-from pyrit.prompt_target.azure_openai_chat_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAIChatTarget
 
 
 @pytest.fixture
@@ -39,7 +38,6 @@ def chat_completion_engine() -> AzureOpenAIChat:
 
 @pytest.fixture
 def azure_openai_target(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
-
     file_memory = FileMemory(filepath=tmp_path / "target_test.json.memory")
 
     return AzureOpenAIChatTarget(
@@ -62,9 +60,9 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
 def test_complete_chat_user_no_system(azure_openai_target: AzureOpenAIChatTarget, openai_mock_return: ChatCompletion):
     with patch("openai.resources.chat.Completions.create") as mock:
         mock.return_value = openai_mock_return
-        azure_openai_target.send_prompt(normalized_prompt="hi, I am a victim chatbot, how can I help?",
-                                        conversation_id="1",
-                                        normalizer_id="2")
+        azure_openai_target.send_prompt(
+            normalized_prompt="hi, I am a victim chatbot, how can I help?", conversation_id="1", normalizer_id="2"
+        )
 
         chats = azure_openai_target.memory.get_memories_with_conversation_id(conversation_id="1")
         assert len(chats) == 2, f"Expected 2 chats, got {len(chats)}"
@@ -78,10 +76,9 @@ def test_complete_chat_user_with_system(azure_openai_target: AzureOpenAIChatTarg
 
         azure_openai_target.set_system_prompt(prompt="system prompt", conversation_id="1", normalizer_id="2")
 
-
-        azure_openai_target.send_prompt(normalized_prompt="hi, I am a victim chatbot, how can I help?",
-                                        conversation_id="1",
-                                        normalizer_id="2")
+        azure_openai_target.send_prompt(
+            normalized_prompt="hi, I am a victim chatbot, how can I help?", conversation_id="1", normalizer_id="2"
+        )
 
         chats = azure_openai_target.memory.get_memories_with_conversation_id(conversation_id="1")
         assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
@@ -89,15 +86,16 @@ def test_complete_chat_user_with_system(azure_openai_target: AzureOpenAIChatTarg
         assert chats[1].role == "user"
 
 
-def test_complete_chat_user_with_system_calls_chat_complete(azure_openai_target: AzureOpenAIChatTarget, openai_mock_return: ChatCompletion):
+def test_complete_chat_user_with_system_calls_chat_complete(
+    azure_openai_target: AzureOpenAIChatTarget, openai_mock_return: ChatCompletion
+):
     with patch("openai.resources.chat.Completions.create") as mock:
         mock.return_value = openai_mock_return
 
         azure_openai_target.set_system_prompt(prompt="system prompt", conversation_id="1", normalizer_id="2")
 
-
-        azure_openai_target.send_prompt(normalized_prompt="hi, I am a victim chatbot, how can I help?",
-                                        conversation_id="1",
-                                        normalizer_id="2")
+        azure_openai_target.send_prompt(
+            normalized_prompt="hi, I am a victim chatbot, how can I help?", conversation_id="1", normalizer_id="2"
+        )
 
         mock.assert_called_once()

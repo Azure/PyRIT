@@ -125,10 +125,8 @@ class MemoryInterface(abc.ABC):
             labels (list[str]): A list of labels to be added to the memory entry.
         """
         chats = self._create_chat_message_memory_entry(
-            conversation=conversation,
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-            labels=labels)
+            conversation=conversation, conversation_id=conversation_id, normalizer_id=normalizer_id, labels=labels
+        )
 
         self.save_conversation_memory_entries([chats])
 
@@ -157,10 +155,10 @@ class MemoryInterface(abc.ABC):
                     conversation=conversation,
                     conversation_id=conversation_id,
                     normalizer_id=normalizer_id,
-                    labels=labels)
+                    labels=labels,
+                )
             )
         self.save_conversation_memory_entries(chat_list)
-
 
     def get_chat_messages_with_conversation_id(self, *, converation_id: str) -> list[ChatMessage]:
         """
@@ -174,7 +172,6 @@ class MemoryInterface(abc.ABC):
         """
         memory_entries = self.get_memories_with_conversation_id(conversation_id=converation_id)
         return [ChatMessage(role=me.role, content=me.content) for me in memory_entries]
-
 
     def _create_chat_message_memory_entry(
         self,

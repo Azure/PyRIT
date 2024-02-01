@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
 import base64
 
-from pyrit.prompt_transformer.prompt_transformer import PromptTransformer
+from pyrit.prompt_transformer import PromptTransformer
+
 
 class Base64Transformer(PromptTransformer):
     def transform(self, prompt: str) -> str:

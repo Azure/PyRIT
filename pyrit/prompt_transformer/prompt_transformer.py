@@ -3,6 +3,7 @@
 
 import abc
 
+
 class PromptTransformer(abc.ABC):
     def transform(self, prompt: str) -> str:
         """
