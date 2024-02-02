@@ -10,10 +10,9 @@ from pyrit.prompt_normalizer.prompt_class import Prompt
 class PromptNormalizer(abc.ABC):
     memory: MemoryInterface
 
-    def __init__(self, memory: MemoryInterface, prompts: list[Prompt] = []) -> None:
+    def __init__(self, memory: MemoryInterface) -> None:
         self.memory = memory
         self.id = str(uuid4())
-        self.prompts = prompts
 
     def send_prompt(self, prompt: Prompt):
         """

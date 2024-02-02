@@ -5,7 +5,7 @@ import tempfile
 import pytest
 
 from pyrit.memory import FileMemory
-from pyrit.orchestrator.send_all_prompts_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_transformer import Base64Transformer
 

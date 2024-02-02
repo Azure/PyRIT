@@ -7,6 +7,11 @@ from pyrit.memory import MemoryInterface
 
 class PromptTarget(abc.ABC):
     memory: MemoryInterface
+
+    """
+    A list of transformers the prompt target supports
+    An empty list implies that the prompt target supports all transformers
+    """
     supported_transformers: list
 
     def __init__(self, memory: MemoryInterface) -> None:
