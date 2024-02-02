@@ -9,9 +9,9 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_transformer import PromptTransformer
 
 
-class SendAllPromptsOrchestrator:
+class PromptSendingOrchestrator:
     """
-    This orchestrator takes a set of prompts, transforms them, and attempts them on a target
+    This simple orchestrator takes a set of prompts, transforms them, and attempts them on a target
     """
 
     def __init__(

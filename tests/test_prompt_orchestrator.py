@@ -5,7 +5,7 @@ import tempfile
 import pytest
 
 from pyrit.memory import FileMemory
-from pyrit.orchestrator.send_all_prompts_orchestrator import SendAllPromptsOrchestrator
+from pyrit.orchestrator.send_all_prompts_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_transformer import Base64Transformer
 
@@ -29,14 +29,14 @@ def mock_target() -> MockPromptTarget:
 
 
 def test_send_prompt_no_transformer(mock_target: MockPromptTarget):
-    orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     orchestrator.send_prompts(["Hello"])
     assert mock_target.prompt == "Hello"
 
 
 def test_send_multiple_prompts_no_transformer(mock_target: MockPromptTarget):
-    orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     orchestrator.send_prompts(["Hello", "my", "name"])
     assert mock_target.prompt == "name"
@@ -45,13 +45,13 @@ def test_send_multiple_prompts_no_transformer(mock_target: MockPromptTarget):
 
 def test_send_prompts_b64_transform(mock_target: MockPromptTarget):
     transformer = Base64Transformer()
-    orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target, prompt_transformer=transformer)
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_transformer=transformer)
 
     orchestrator.send_prompts(["Hello"])
     assert mock_target.prompt == "SGVsbG8="
 
 
 def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
-    orchestrator = SendAllPromptsOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     assert orchestrator.memory is mock_target.memory

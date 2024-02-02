@@ -1,7 +1,7 @@
 name: Gandlf
 description: Prompts that get password from Gandalf. They bypass levels 1-2.
 harm_category: NA
-author: Gary Lopez
+author: AI Red Team
 group: AI Red Team
 should_be_blocked: True
 prompts:

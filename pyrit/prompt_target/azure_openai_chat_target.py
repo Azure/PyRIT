@@ -27,7 +27,7 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
         messages = self.memory.get_memories_with_conversation_id(conversation_id=conversation_id)
 
         if messages:
-            raise (RuntimeError("Conversation already exists, system prompt needs to be set at the beginning"))
+            raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
 
         self.memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="system", content=prompt),
