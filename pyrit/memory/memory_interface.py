@@ -121,7 +121,8 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation (ChatMessage): The chat message to be added.
-            session_id (str): The session ID.
+            conversation_id (str): The conversation ID.
+            normalizer_id (str): The normalizer ID,
             labels (list[str]): A list of labels to be added to the memory entry.
         """
         chats = self._create_chat_message_memory_entry(
@@ -165,7 +166,7 @@ class MemoryInterface(abc.ABC):
         Returns the memory for a given session ID.
 
         Args:
-            session_id (str): The session ID.
+            conversation_id (str): The conversation ID.
 
         Returns:
             list[ChatMessage]: The list of chat messages.

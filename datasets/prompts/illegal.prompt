@@ -1,7 +1,7 @@
 name: exposing ilegal content
 description:
 harm_category: illegal
-author: Richard Lundeen
+author: AI Red Team
 group: AI Red Team
 should_be_blocked: True
 prompts:

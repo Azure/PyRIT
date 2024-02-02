@@ -15,6 +15,20 @@ class EmbeddingMemoryData(BaseModel, extra=Extra.forbid):
 
 
 class ConversationMemoryEntry(BaseModel, extra=Extra.forbid):
+    """
+    Represents a single memory entry.
+
+    conversation_id is used to group messages togehter within a prompt_target endpoint.
+    it's often needed so the prompt_target knows how to construct the messages
+
+    normalizer_id is used to group messages together within a prompt_normalizer.
+    A prompt_normalizer is usually a single attack, and can contain multiple prompt_targets.
+    it's often needed to group all the prompts in an attack together
+
+    A memory_entry can contain references to other tables, such as embedding_memory_data, or
+    future references like scoring information
+    """
+
     role: str
     content: str
     conversation_id: str
