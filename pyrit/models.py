@@ -214,57 +214,6 @@ class PromptTemplate(YamlLoadable):
         return final_prompt
 
 
-@dataclass
-class MsftAnswerChoice:
-    key: str
-    value: str
-
-
-@dataclass
-class MsftAnswer:
-    key: str
-
-
-@dataclass
-class MsftQuestion:
-    question_id: str
-    stem: str
-    answer: MsftAnswer
-    answer_choices: list[MsftAnswerChoice]
-    objective: str
-    rationale: str
-    urls: list[str]
-
-
-@dataclass
-class MsftQuestions:
-    questions: list[MsftQuestion]
-
-    @staticmethod
-    def from_dict(data: dict) -> MsftQuestions:
-        msft_questions: list[MsftQuestion] = []
-        for question_data in data["questions"]:
-            answer_choices = [MsftAnswerChoice(**c) for c in question_data["answer_choices"]]
-            answer = MsftAnswer(**question_data["answer"])
-            urls = question_data["urls"].splitlines()
-            q_obj = MsftQuestion(
-                question_id=question_data["question_id"],
-                answer=answer,
-                stem=question_data["stem"],
-                answer_choices=answer_choices,
-                objective=question_data["objective"],
-                rationale=question_data["rationale"],
-                urls=urls,
-            )
-            msft_questions.append(q_obj)
-        return MsftQuestions(questions=msft_questions)
-
-    @staticmethod
-    def from_yaml(yaml_data: str) -> MsftQuestions:
-        dict_data = yaml.safe_load(yaml_data)
-        return MsftQuestions.from_dict(dict_data)
-
-
 class ChatMessage(BaseModel, extra=Extra.forbid):
     role: str
     content: str
