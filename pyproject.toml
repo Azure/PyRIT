@@ -80,9 +80,6 @@ line-length = 120
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["pyrit"]
-
 [tool.setuptools.packages.find]
 include = ["pyrit", "pyrit.*"]
 
