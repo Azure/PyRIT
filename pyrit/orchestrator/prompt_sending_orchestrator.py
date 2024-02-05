@@ -30,11 +30,11 @@ class PromptSendingOrchestrator:
         """
         Sends the prompt to the prompt target.
         """
-        for str_prompt in prompts:
+        for prompt_text in prompts:
             prompt = Prompt(
                 prompt_target=self.prompt_target,
                 prompt_transformer=self.prompt_transformer,
-                prompt_text=str_prompt,
+                prompt_text=prompt_text,
                 conversation_id=str(uuid4()),
             )
 
