@@ -10,7 +10,7 @@ class PromptTarget(abc.ABC):
 
     """
     A list of transformers that are supported by the prompt target.
-    An empty list implies that the prompt target supports all transformers
+    An empty list implies that the prompt target supports all transformers.
     """
     supported_transformers: list
 
