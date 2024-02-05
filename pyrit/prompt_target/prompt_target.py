@@ -9,8 +9,8 @@ class PromptTarget(abc.ABC):
     memory: MemoryInterface
 
     """
-    A list of transformers the prompt target supports
-    An empty list implies that the prompt target supports all transformers
+    A list of transformers that are supported by the prompt target.
+    An empty list implies that the prompt target supports all transformers.
     """
     supported_transformers: list
 
