@@ -58,19 +58,19 @@ def simple_conversation() -> ConversationMemoryEntryList:
                 uuid=id,
                 role="user",
                 content="Hello World",
-                session="1",
+                conversation_id="1",
                 timestamp_in_ns=0,
             ),
             ConversationMemoryEntry(
                 role="bot",
                 content="Hello from Bot!",
-                session="1",
+                conversation_id="1",
                 timestamp_in_ns=0,
             ),
             ConversationMemoryEntry(
                 role="user",
                 content="Hi, bot! How are you?",
-                session="1",
+                conversation_id="1",
                 timestamp_in_ns=0,
             ),
         ]
@@ -84,7 +84,7 @@ def memory(simple_conversation: ConversationMemoryEntryList, text_embedding: Moc
         for entry in simple_conversation.conversations:
             m.add_chat_message_to_memory(
                 conversation=ChatMessage(role=entry.role, content=entry.content),
-                session=entry.session,
+                conversation_id=entry.conversation_id,
             )
         return m
 

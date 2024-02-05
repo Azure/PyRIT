@@ -22,7 +22,7 @@ class RedTeamingBot:
         attack_strategy: PromptTemplate,
         attack_strategy_kwargs: dict[str, str] = None,
         memory: MemoryInterface = None,
-        session_id: str = None,
+        conversation_id: str = None,
         memory_labels: list[str] = ["red-teaming-bot"],
     ) -> None:
         """Created an adversarial chatbot that can be used to test the security of a chatbot.
@@ -36,7 +36,7 @@ class RedTeamingBot:
                 achieve the conversation objective by itself.
             attack_strategy_kwargs: The attack strategy parameters to use to fill the attack strategy template.
             memory: The memory to use to store the chat messages. If not provided, a FileMemory will be used.
-            session_id: The session ID to use for the bot. If not provided, a random UUID will be used.
+            conversation_id: The session ID to use for the bot. If not provided, a random UUID will be used.
             memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
         """
         self._chat_engine = chat_engine
@@ -53,13 +53,13 @@ class RedTeamingBot:
         else:
             self._conversation_memory = memory
 
-        self.session_id = session_id if session_id else str(uuid4())
+        self.conversation_id = conversation_id if conversation_id else str(uuid4())
 
     def __str__(self):
-        return f"Red Team bot ID {self.session_id}"
+        return f"Red Team bot ID {self.conversation_id}"
 
     def get_session_chat_messages(self) -> list[ChatMessage]:
-        return self._conversation_memory.get_chat_messages_with_session_id(session_id=self.session_id)
+        return self._conversation_memory.get_chat_messages_with_conversation_id(conversation_id=self.conversation_id)
 
     def complete_chat_user(self, message: str, labels: list[str] = []) -> str:
         message_list: list[ChatMessage] = []
@@ -74,7 +74,7 @@ class RedTeamingBot:
 
         self._conversation_memory.add_chat_messages_to_memory(
             conversations=message_list,
-            session=self.session_id,
+            conversation_id=self.conversation_id,
             labels=self._global_memory_labels + labels,
         )
 
