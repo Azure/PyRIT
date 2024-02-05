@@ -1,13 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
+from pyrit.prompt_transformer import PromptTransformer
 
 
-class PromptTransformer(abc.ABC):
-    @abc.abstractmethod
+class NoOpTransformer(PromptTransformer):
     def transform(self, prompt: str) -> str:
         """
         By default, the base transformer class does nothing to the prompt.
         """
-        pass
+        return prompt
