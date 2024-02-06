@@ -62,10 +62,10 @@ def test_complete_chat_user(red_teaming_bot: RedTeamingBot):
     with patch.object(red_teaming_bot._chat_engine, "complete_chat") as mock:
         mock.return_value = "Hello, this is a message sent by the assistant. How can i help you?"
         red_teaming_bot.complete_chat_user("hi, I am a victim chatbot, how can I help?")
-        chats = red_teaming_bot.get_session_chat_messages()
+        chats = red_teaming_bot.get_conversation_chat_messages()
         assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
         red_teaming_bot.complete_chat_user("hi, I'm a new chat")
-        chats = red_teaming_bot.get_session_chat_messages()
+        chats = red_teaming_bot.get_conversation_chat_messages()
         assert chats is not None
         assert len(chats) == 5, f"Expected 5 chats, got {len(chats)}"
         assert chats[0].role == "system", "First chat should be system instructions"
@@ -80,10 +80,21 @@ def test_complete_chat_user_calls_complete_chat(red_teaming_bot: RedTeamingBot):
         mock.return_value = "Hello, this is a message sent by the assistant. How can i help you?"
         red_teaming_bot.complete_chat_user("new chat")
 
-        args, kwargs = mock.call_args
+        args, kwargs = mock.call_args_list[0]
         assert kwargs["messages"] is not None
         assert kwargs["messages"][0].role == "system"
         assert kwargs["messages"][1].content == "new chat"
+
+        red_teaming_bot.complete_chat_user("new chat2")
+        args2, kwargs2 = mock.call_args_list[1]
+
+        assert kwargs2["messages"][0].role == "system"
+        assert kwargs2["messages"][1].content == "new chat"
+        assert kwargs2["messages"][1].role == "user"
+        assert kwargs2["messages"][2].content == "Hello, this is a message sent by the assistant. How can i help you?"
+        assert kwargs2["messages"][2].role == "assistant"
+        assert kwargs2["messages"][3].content == "new chat2"
+        assert kwargs2["messages"][3].role == "user"
 
 
 def test_is_conversation_complete_false(red_teaming_bot: RedTeamingBot):
