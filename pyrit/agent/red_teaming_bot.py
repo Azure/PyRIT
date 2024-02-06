@@ -63,12 +63,10 @@ class RedTeamingBot:
 
     def complete_chat_user(self, message: str, labels: list[str] = []) -> str:
         chat_entries = self.get_conversation_chat_messages()
-        memory_messages = 2
 
         if not chat_entries:
             # If there are no messages, then this is the first message of the conversation
             chat_entries.append(ChatMessage(role="system", content=self._system_prompt))
-            memory_messages += 1
 
         chat_entries.append(ChatMessage(role="user", content=message))
 
@@ -76,9 +74,12 @@ class RedTeamingBot:
 
         chat_entries.append(ChatMessage(role="assistant", content=response_msg))
 
+        # Determine the number of messages to add to memory based on if we included the system message
+        memory_messages = 3 if len(chat_entries) <= 3 else 2
+
         # Add the last two or three new messages to memory
         self._conversation_memory.add_chat_messages_to_memory(
-            conversations=chat_entries[-1 * memory_messages :],
+            conversations=chat_entries[-memory_messages :],
             conversation_id=self.conversation_id,
             labels=self._global_memory_labels + labels,
         )
