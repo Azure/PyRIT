@@ -79,7 +79,7 @@ class RedTeamingBot:
 
         # Add the last two or three new messages to memory
         self._conversation_memory.add_chat_messages_to_memory(
-            conversations=chat_entries[-memory_messages :],
+            conversations=chat_entries[-memory_messages:],
             conversation_id=self.conversation_id,
             labels=self._global_memory_labels + labels,
         )
