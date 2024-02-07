@@ -8,6 +8,7 @@ import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
+import pyrit.agent.red_teaming_bot
 from pyrit.agent import RedTeamingBot
 from pyrit.chat import AzureOpenAIChat
 from pyrit.models import PromptTemplate
@@ -121,3 +122,12 @@ def test_is_conversation_complete_true(red_teaming_bot: RedTeamingBot):
         assert (
             red_teaming_bot.is_conversation_complete() is True
         ), "Conversation should be complete, objective is realized"
+
+
+def test_default_attack_strategy_set_with_end_token(chat_completion_engine: ChatCompletion, tmp_path: pathlib.Path):
+    file_memory = FileMemory(filepath=tmp_path / "test.json.memory")
+
+    bot = RedTeamingBot(conversation_objective="Do bad stuff", chat_engine=chat_completion_engine, memory=file_memory)
+
+    assert bot._attack_strategy is not None
+    assert pyrit.agent.red_teaming_bot.RED_TEAM_CONVERSATION_END_TOKEN in bot._attack_strategy.template
