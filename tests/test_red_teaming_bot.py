@@ -124,7 +124,7 @@ def test_is_conversation_complete_true(red_teaming_bot: RedTeamingBot):
         ), "Conversation should be complete, objective is realized"
 
 
-def test_default_attack_strategy_set_with_end_token(chat_completion_engine: ChatCompletion, tmp_path: pathlib.Path):
+def test_default_attack_strategy_set_with_end_token(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
     file_memory = FileMemory(filepath=tmp_path / "test.json.memory")
 
     bot = RedTeamingBot(conversation_objective="Do bad stuff", chat_engine=chat_completion_engine, memory=file_memory)
@@ -133,7 +133,7 @@ def test_default_attack_strategy_set_with_end_token(chat_completion_engine: Chat
     assert pyrit.agent.red_teaming_bot.RED_TEAM_CONVERSATION_END_TOKEN in bot._attack_strategy.template
 
 
-def test_attack_strategy_without_token_raises(chat_completion_engine: ChatCompletion, tmp_path: pathlib.Path):
+def test_attack_strategy_without_token_raises(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
     file_memory = FileMemory(filepath=tmp_path / "test.json.memory")
 
     invalid_strategy = PromptTemplate(template="This is a bad strategy")
