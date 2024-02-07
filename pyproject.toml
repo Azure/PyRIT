@@ -54,6 +54,7 @@ dev = [
     "pytest>=7.3.1",
     "pytest-cov>=4.0.0",
     "jupyter>=1.0.0",
+    "jupytext>=1.16.0",
     "mypy>=1.2.0",
     "black>=23.3.0",
     "flake8>=6.0.0",
@@ -82,6 +83,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["pyrit", "pyrit.*"]
+
+[tool.jupytext]
+formats = "ipynb,py:percent"
 
 [tool.ruff]
 line-length = 120
