@@ -53,6 +53,11 @@ class RedTeamingBot:
             )
         )
 
+        if RED_TEAM_CONVERSATION_END_TOKEN not in self._attack_strategy.template:
+            raise ValueError(
+                f"Attack strategy must have a way to detect end of conversation and include {RED_TEAM_CONVERSATION_END_TOKEN} token."
+            )
+
         self._global_memory_labels = memory_labels
 
         # Form the system prompt

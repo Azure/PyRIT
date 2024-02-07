@@ -131,3 +131,17 @@ def test_default_attack_strategy_set_with_end_token(chat_completion_engine: Chat
 
     assert bot._attack_strategy is not None
     assert pyrit.agent.red_teaming_bot.RED_TEAM_CONVERSATION_END_TOKEN in bot._attack_strategy.template
+
+
+def test_attack_strategy_without_token_raises(chat_completion_engine: ChatCompletion, tmp_path: pathlib.Path):
+    file_memory = FileMemory(filepath=tmp_path / "test.json.memory")
+
+    invalid_strategy = PromptTemplate(template="This is a bad strategy")
+
+    with pytest.raises(ValueError):
+        RedTeamingBot(
+            conversation_objective="Do bad stuff",
+            attack_strategy=invalid_strategy,
+            chat_engine=chat_completion_engine,
+            memory=file_memory,
+        )
