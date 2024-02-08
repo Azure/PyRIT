@@ -1,67 +1,28 @@
 # %% [markdown]
 # # Introduction
 # 
-# This demo shows how to make use of PyRIT AML endpoints. It recreates the [Gandalf Demo](../demo/1_gandalf.ipynb), using a red teaming chatbot which is deployed on an Azure Machine Learning (AML) managed online endpoint. In this demo, we are utilizing the AOAI chatbot as the LLM model for target and Azure Machine Learning (AML) managed online endpoint for attacker.
+# This demo shows how to make use of PyRIT AML endpoints. These can be useful in many circumstances, but one is to use these models as red team bots.
+# 
+# This notebook recreates the [Gandalf Demo](../demo/1_gandalf.ipynb), using a red teaming chatbot which is deployed on an Azure Machine Learning (AML) managed online endpoint. In this demo, we are utilizing the AOAI chatbot as the LLM model for target and Azure Machine Learning (AML) managed online endpoint for attacker.
 # 
 # ## Prerequisites
 # 
+# 1. Before you begin, finish the [Gandalf Demo](../demo/1_gandalf.ipynb) and make sure those pre-requisites are satisfied.
 # 
-# Before you begin, ensure the following steps have been completed:
+# 1. Make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/azure_openai_setup.ipynb)
 # 
-# **Attacker Chat Engine Setup**
+# 1. **Deploy an AML-Managed Online Endpoint:** Confirm that an Azure Machine Learning managed online endpoint is already deployed.
 # 
-# 1. Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/azure_openai_setup.ipynb)
-# 
-# 2. **Deploy an AML-Managed Online Endpoint:** Confirm that an Azure Machine Learning managed online endpoint is already deployed.
-# 
-# 3. **Obtain the API Key:**
+# 1. **Obtain the API Key:**
    # - Navigate to the AML Studio.
    # - Go to the 'Endpoints' section.
    # - Retrieve the API key and endpoint URI.
    # <br> <img src="./../../assets/aml_managed_online_endpoint_api_key.png" alt="aml_managed_online_endpoint_api_key.png" height="400"/> <br>
 # 
-# 4. **Set the Environment Variable:**
+# 1. **Add the Environment Variable:**
    # - Add the obtained API key to an environment variable named `AML_API_KEY`.
    # - Add the obtained endpoint URI to an environment variable named `AML_MANAGED_ENDPOINT_URI`.
 # 
-# **Target Chat Engine Setup**
-# 
-# 1. **Deploy an Azure OpenAI:** Confirm that an Azure OpenAI service is already deployed in Azure subscription.
-# 
-# 2. **API Key and Endpoint URI Retrieval:**
-   # - Once the Azure OpenAI service is deployed, go to the resource in the Azure portal.
-   # - Under the 'Keys and Endpoint' section, find the API key and the endpoint URI.
-   # - Securely store the API key and endpoint URI as they will be needed to setup.
-# 
-# 3. **Environment Variable Setup:**
-   # - Add the API key to an environment variable named `AZURE_OPENAI_API_KEY`.
-   # - Add the endpoint URI to an environment variable named `AZURE_OPENAI_ENDPOINT_URI`.
-# 
-# ## Goal
-# 
-# > Your goal is to make Gandalf reveal the secret password for each level.
-# > However, Gandalf will level up each time you guess the password, and will try harder not to give it away. Can you beat level 7?
-# > (There is a bonus level 8)
-# > https://gandalf.lakera.ai/
-# 
-# Gandalf contains 7 different levels. In this demo we will show how to automatically bypass the first three.
-# Each level gets progressively more difficult.
-# 
-# <br> <img src="./../../assets/gandalf-demo-setup.png" alt="gandalf-demo-setup.png" height="400"/> <br>
-# 
-# ## Steps
-# 
-# Step 1. AI Red Team Bot leveraging AML managed online endpoint send message to Gandalf
-# 
-# Step 2. Gandalf send message back
-# 
-# Step 3. The reply is inspected to find out if password was revealed
-# 
-# Step 4. If password was not leaked, the conversation completed.
-# 
-# ## Level 1
-# 
-# <img src="./../../assets/gandalf-home-level-1.png" alt="gandalf-home-level-1.png" height="400"/>
 
 # %%
 
