@@ -10,6 +10,7 @@ import requests
 from pyrit.common.constants import MAX_RETRY_API_COUNT
 from pyrit.common.net import HttpClientSession
 from pyrit.common.prompt_template_generator import PromptTemplateGenerator
+from pyrit.common import environment_variables
 from pyrit.interfaces import ChatSupport
 from pyrit.models import ChatMessage
 
@@ -28,17 +29,16 @@ class AMLOnlineEndpointChat(ChatSupport):
     def __init__(
         self,
         *,
-        endpoint_uri: str,
-        api_key: str,
+        endpoint_uri: str = None,
+        api_key: str = None,
     ) -> None:
         """
         Args:
             endpoint_uri: AML online endpoint URI.
             api_key: api key for the endpoint
         """
-        # AML online endpoint details
-        self.endpoint_uri: str = endpoint_uri
-        self.api_key: str = api_key
+        self.endpoint_uri: str = environment_variables.get_required_value("AZURE_AML_API_KEY", endpoint_uri)
+        self.api_key: str = environment_variables.get_required_value("AZURE_AML_MANAGED_ENDPOINT", api_key)
 
         self.prompt_template_generator = PromptTemplateGenerator()
 
