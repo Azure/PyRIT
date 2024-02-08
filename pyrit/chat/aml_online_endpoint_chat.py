@@ -26,6 +26,9 @@ class AMLOnlineEndpointChat(ChatSupport):
         ChatSupport (abc.ABC): Implementing methods for interactions with the AML endpoint
     """
 
+    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_ML_API_KEY"
+    ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_ML_MANAGED_ENDPOINT"
+
     def __init__(
         self,
         *,
@@ -37,8 +40,10 @@ class AMLOnlineEndpointChat(ChatSupport):
             endpoint_uri: AML online endpoint URI.
             api_key: api key for the endpoint
         """
-        self.endpoint_uri: str = environment_variables.get_required_value("AZURE_AML_API_KEY", endpoint_uri)
-        self.api_key: str = environment_variables.get_required_value("AZURE_AML_MANAGED_ENDPOINT", api_key)
+        self.endpoint_uri: str = environment_variables.get_required_value(
+            self.API_KEY_ENVIRONMENT_VARIABLE, endpoint_uri
+        )
+        self.api_key: str = environment_variables.get_required_value(self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, api_key)
 
         self.prompt_template_generator = PromptTemplateGenerator()
 

@@ -9,6 +9,9 @@ from pyrit.models import ChatMessage
 
 
 class AzureOpenAIChat(ChatSupport):
+    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_API_KEY"
+    ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_ENDPOINT"
+
     def __init__(
         self,
         *,
@@ -19,8 +22,8 @@ class AzureOpenAIChat(ChatSupport):
     ) -> None:
         self._deployment_name = deployment_name
 
-        endpoint = environment_variables.get_required_value("AZURE_OPENAI_ENDPOINT", endpoint)
-        api_key = environment_variables.get_required_value("AZURE_OPENAI_API_KEY", api_key)
+        endpoint = environment_variables.get_required_value(self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, endpoint)
+        api_key = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
 
         self._client = AzureOpenAI(
             api_key=api_key,

@@ -89,7 +89,7 @@ def test_complete_chat_return(openai_mock_return: ChatCompletion, chat_engine: A
 
 
 def test_invalid_key_raises():
-    os.environ["AZURE_OPENAI_API_KEY"] = ""
+    os.environ[AzureOpenAIChat.API_KEY_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
         AzureOpenAIChat(
             deployment_name="gpt-4",
@@ -100,7 +100,7 @@ def test_invalid_key_raises():
 
 
 def test_invalid_endpoint_raises():
-    os.environ["AZURE_OPENAI_ENDPOINT"] = ""
+    os.environ[AzureOpenAIChat.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
         AzureOpenAIChat(
             deployment_name="gpt-4",
