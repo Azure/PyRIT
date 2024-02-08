@@ -98,6 +98,7 @@ def test_invalid_key_raises():
             api_version="some_version",
         )
 
+
 def test_invalid_endpoint_raises():
     os.environ["AZURE_OPENAI_ENDPOINT"] = ""
     with pytest.raises(ValueError):

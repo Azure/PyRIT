@@ -3,6 +3,7 @@
 
 import os
 
+
 def get_required_value(environment_variable_name: str, passed_value: str) -> str:
     if passed_value:
         return passed_value

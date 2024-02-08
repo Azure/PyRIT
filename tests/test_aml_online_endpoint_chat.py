@@ -32,10 +32,12 @@ def test_initialization_with_required_parameters(
     assert aml_online_chat.endpoint_uri == "http://aml-test-endpoint.com"
     assert aml_online_chat.api_key == "valid_api_key"
 
+
 def test_initialization_with_no_key_raises():
     os.environ["AZURE_AML_API_KEY"] = ""
     with pytest.raises(ValueError):
         AMLOnlineEndpointChat(endpoint_uri="http://aml-test-endpoint.com")
+
 
 def test_initialization_with_no_api_raises():
     os.environ["AZURE_AML_MANAGED_ENDPOINT"] = ""
