@@ -1,11 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pathlib
 from uuid import uuid4
 
 from pyrit.interfaces import ChatSupport
 from pyrit.memory import FileMemory, MemoryInterface
 from pyrit.models import ChatMessage, PromptTemplate
+from pyrit.common.path import HOME_PATH
 
 RED_TEAM_CHATBOT_ROLE_PREFIX = "airt-bot-uuid"
 RED_TEAM_CONVERSATION_END_TOKEN = "<|done|>"
@@ -19,7 +21,7 @@ class RedTeamingBot:
         *,
         conversation_objective: str,
         chat_engine: ChatSupport,
-        attack_strategy: PromptTemplate,
+        attack_strategy: PromptTemplate = None,
         attack_strategy_kwargs: dict[str, str] = None,
         memory: MemoryInterface = None,
         conversation_id: str = None,
@@ -32,15 +34,31 @@ class RedTeamingBot:
             base args: Arguments for AzureOpenAIChat
             attack_strategy: The attack strategy to follow by the bot. This can be used to guide the bot to achieve
                 the conversation objective in a more direct and structured way. It is a string that can be written in
-                a single sentence or paragraph. If not provided, the bot will use an empty string and it will try to
-                achieve the conversation objective by itself.
+                a single sentence or paragraph. If not provided, the bot will use red_team_chatbot_with_objective.
             attack_strategy_kwargs: The attack strategy parameters to use to fill the attack strategy template.
             memory: The memory to use to store the chat messages. If not provided, a FileMemory will be used.
             conversation_id: The session ID to use for the bot. If not provided, a random UUID will be used.
             memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
         """
         self._chat_engine = chat_engine
-        self._attack_strategy = attack_strategy
+        self._attack_strategy = (
+            attack_strategy
+            if attack_strategy
+            else PromptTemplate.from_yaml_file(
+                pathlib.Path(HOME_PATH)
+                / "datasets"
+                / "attack_strategies"
+                / "multi_turn_chat"
+                / "red_team_chatbot_with_objective.yaml"
+            )
+        )
+
+        if RED_TEAM_CONVERSATION_END_TOKEN not in self._attack_strategy.template:
+            raise ValueError(
+                f"Attack strategy must have a way to detect end of conversation and include \
+                {RED_TEAM_CONVERSATION_END_TOKEN} token."
+            )
+
         self._global_memory_labels = memory_labels
 
         # Form the system prompt
@@ -48,11 +66,7 @@ class RedTeamingBot:
         kwargs_to_apply["conversation_objective"] = conversation_objective
         self._system_prompt = self._attack_strategy.apply_custom_metaprompt_parameters(**kwargs_to_apply)
 
-        if not memory:
-            self._conversation_memory = FileMemory()
-        else:
-            self._conversation_memory = memory
-
+        self._conversation_memory = memory if memory else FileMemory()
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
 
     def __str__(self):
