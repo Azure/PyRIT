@@ -5,6 +5,12 @@ import os
 
 
 def get_required_value(environment_variable_name: str, passed_value: str) -> str:
+    """
+    Gets a required value from an environment variable or a passed value,
+    prefering the passed value
+
+    If no value is found, raises a ValueError
+    """
     if passed_value:
         return passed_value
 
