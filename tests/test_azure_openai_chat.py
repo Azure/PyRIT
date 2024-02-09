@@ -2,6 +2,8 @@
 # Licensed under the MIT license.
 
 import asyncio
+import os
+
 from contextlib import AbstractAsyncContextManager
 from unittest.mock import AsyncMock, patch
 
@@ -86,11 +88,23 @@ def test_complete_chat_return(openai_mock_return: ChatCompletion, chat_engine: A
         assert ret == "hi"
 
 
-def test_invalid_endpoint_raises():
+def test_invalid_key_raises():
+    os.environ[AzureOpenAIChat.API_KEY_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
         AzureOpenAIChat(
             deployment_name="gpt-4",
             endpoint="https://mock.azure.com/",
             api_key="",
+            api_version="some_version",
+        )
+
+
+def test_invalid_endpoint_raises():
+    os.environ[AzureOpenAIChat.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
+    with pytest.raises(ValueError):
+        AzureOpenAIChat(
+            deployment_name="gpt-4",
+            endpoint="",
+            api_key="xxxxx",
             api_version="some_version",
         )
