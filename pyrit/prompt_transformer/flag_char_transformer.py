@@ -9,4 +9,4 @@ class FlagCharTransformer(PromptTransformer):
         """
         Simple transformer that just encodes the prompt as invisible flag emoji characters.
         """
-        return ''.join(chr(0xE0000 + ord(ch)) for ch in prompt)
+        return "".join(chr(0xE0000 + ord(ch)) for ch in prompt)
