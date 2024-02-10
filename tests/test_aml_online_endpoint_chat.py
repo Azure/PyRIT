@@ -50,25 +50,25 @@ def test_get_headers_with_valid_api_key(aml_online_chat: AMLOnlineEndpointChat):
         "Content-Type": "application/json",
         "Authorization": "Bearer valid_api_key",
     }
-    assert aml_online_chat.get_headers() == expected_headers
+    assert aml_online_chat._get_headers() == expected_headers
 
 
 def test_get_headers_with_empty_api_key(aml_online_chat: AMLOnlineEndpointChat):
     aml_online_chat.api_key = ""
     with pytest.raises(ValueError):
-        aml_online_chat.get_headers()
+        aml_online_chat._get_headers()
 
 
 def test_extract_first_response_message_normal(aml_online_chat: AMLOnlineEndpointChat):
     response_message = [{"0": "response from model"}]
-    assert aml_online_chat.extract_first_response_message(response_message) == "response from model"
+    assert aml_online_chat._extract_first_response_message(response_message) == "response from model"
 
 
 def test_extract_first_response_message_empty_list(
     aml_online_chat: AMLOnlineEndpointChat,
 ):
     with pytest.raises(ValueError) as excinfo:
-        aml_online_chat.extract_first_response_message([])
+        aml_online_chat._extract_first_response_message([])
     assert "The response_message list is empty." in str(excinfo.value)
 
 
@@ -77,7 +77,7 @@ def test_extract_first_response_message_missing_key(
 ):
     response_message = [{"1": "response from model"}]
     with pytest.raises(ValueError) as excinfo:
-        aml_online_chat.extract_first_response_message(response_message)
+        aml_online_chat._extract_first_response_message(response_message)
     assert "Key '0' does not exist in the first response message." in str(excinfo.value)
 
 
