@@ -34,6 +34,7 @@ dependencies = [
     "azure-identity>=1.12.0",
     "jsonpickle>=3.0.2",
     "logzero>=1.7.0",
+    "ipykernel>=6.22.0",
     "onnxruntime>=1.14.1",
     "onnx>=1.14.0",
     "pydantic>2",
@@ -58,7 +59,6 @@ dev = [
     "black>=23.3.0",
     "flake8>=6.0.0",
     "types-PyYAML>=6.0.12.9",
-    "ipykernel>=6.22.0",
     "semantic-kernel==0.4.1.dev0",
     "pre-commit>=3.3.3",
     "flake8-copyright>=0.2.0"
