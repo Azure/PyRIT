@@ -45,8 +45,6 @@ class AMLOnlineEndpointChat(ChatSupport):
         )
         self.api_key: str = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
 
-        self.prompt_template_generator = PromptTemplateGenerator()
-
 
     def complete_chat(
         self,
@@ -71,15 +69,14 @@ class AMLOnlineEndpointChat(ChatSupport):
             str: The generated response message.
         """
 
-        prompt_template = self.prompt_template_generator.generate_template(messages)
         headers = self._get_headers()
-        payload = self._construct_http_body(prompt_template, max_tokens, temperature, top_p)
+        payload = self._construct_http_body(messages, max_tokens, temperature, top_p)
 
         response = net_utility.make_request_and_raise_if_error(self.endpoint_uri, method="POST", json_body=payload, headers=headers)
         return response.json()
 
 
-    def _construct_http_body(self, prompt_template: str, max_tokens: int, temperature: float, top_p: int) -> dict:
+    def _construct_http_body(self, messages: list[ChatMessage], max_tokens: int, temperature: float, top_p: int) -> dict:
         """Constructs a http body in the format required by the endpoint.
 
         Args:
@@ -93,11 +90,16 @@ class AMLOnlineEndpointChat(ChatSupport):
         """
         data = {
             "input_data": {
-                "inputs": {"input_string": [prompt_template]},
+                "input_string": {"input_string": messages},
                 "parameters": {
                     "max_new_tokens": max_tokens,
                     "temperature": temperature,
                     "top_p": top_p,
+                    "top_k": 50,
+                    "stop": ["</s>"],
+                    "stop_sequences": ["</s>"],
+                    "return_full_text": False,
+                    "repetition_penalty": 1.2
                 },
             }
         }
