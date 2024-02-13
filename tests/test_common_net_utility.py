@@ -1,55 +1,58 @@
-import json
-from unittest.mock import patch, MagicMock
 import pytest
+import httpx
+import respx
+from tenacity import RetryError
+from pyrit.common.net_utility import get_httpx_client, make_request_and_raise_if_error
 
-from pyrit.common.net_utility import make_request_and_raise_if_error
-
-
-@pytest.fixture
-def mock_http():
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_response():
-    response = MagicMock()
-    response.status = 200
-    response.reason = "OK"
-    response.data = b"Response data"
-    return response
+@pytest.mark.parametrize("use_async, expected_type", [
+    (False, httpx.Client),
+    (True, httpx.AsyncClient),
+])
+def test_get_httpx_client_type(use_async, expected_type):
+    client = get_httpx_client(use_async=use_async)
+    assert isinstance(client, expected_type)
 
 
-def test_make_request_and_raise_if_error_http_error(mock_http, mock_response):
-    mock_response.status = 404
-    mock_response.reason = "Not Found"
-    mock_response.data = b"Error message"
-    mock_http.request.return_value = mock_response
 
-    with patch("pyrit.common.net_utility.get_pool_manager", return_value=mock_http):
-        with pytest.raises(RuntimeError) as exc_info:
-            make_request_and_raise_if_error(
-                endpoint_uri="http://example.com",
-                method="GET",
-                request_body=None,
-                headers={},
-                retries=3,
-                use_proxy=False,
-            )
-        assert str(exc_info.value) == "HTTP error: Not Found\nError message."
+@respx.mock
+def test_make_request_and_raise_if_error_success():
+    url = "http://testserver/api/test"
+    method = "GET"
+    mock_route = respx.get(url).respond(200, json={"status": "ok"})
+    response = make_request_and_raise_if_error(endpoint_uri=url, method=method)
+    assert mock_route.called
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
+@respx.mock
+def test_make_request_and_raise_if_error_failure():
+    url = "http://testserver/api/fail"
+    method = "GET"
+    mock_route = respx.get(url).respond(500)
 
-def test_make_request_and_raise_if_error_with_json_body(mock_http, mock_response):
-    mock_http.request.return_value = mock_response
+    with pytest.raises(RetryError) as retry_error:
+        make_request_and_raise_if_error(endpoint_uri=url, method=method)
+    assert mock_route.called
 
-    with patch("pyrit.common.net_utility.get_pool_manager", return_value=mock_http):
-        response = make_request_and_raise_if_error(
-            endpoint_uri="http://example.com",
-            method="POST",
-            request_body={"key": "value"},
-            headers={},
-            retries=3,
-            use_proxy=False,
-        )
-        assert response == mock_response
-        assert mock_http.request.call_args[1]["body"] == json.dumps({"key": "value"}).encode("utf-8")
-        assert mock_http.request.call_args[1]["headers"]["Content-Type"] == "application/json"
+    last_exception = retry_error.value.last_attempt.exception()
+    assert isinstance(last_exception, httpx.HTTPStatusError)
+
+@respx.mock
+def test_make_request_and_raise_if_error_retries():
+    url = "http://testserver/api/retry"
+    method = "GET"
+    call_count = 0
+
+    def response_callback(request):
+        nonlocal call_count
+        call_count += 1
+        if call_count < 3:
+            return httpx.Response(500)
+        return httpx.Response(200, json={"status": "ok"})
+
+    mock_route = respx.route(method=method, url=url).mock(side_effect=response_callback)
+
+    with pytest.raises(RetryError):
+        make_request_and_raise_if_error(endpoint_uri=url, method=method)
+    assert call_count == 2, "The request should have been retried exactly once."
+    assert mock_route.called
