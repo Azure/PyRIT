@@ -45,6 +45,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         max_tokens: int = 400,
         temperature: float = 1.0,
         top_p: int = 1,
+        repetition_penalty: float = 1.2,
     ) -> str:
         """Completes a chat interaction by generating a response to the given input prompt.
         This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
@@ -63,7 +64,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         """
 
         headers = self._get_headers()
-        payload = self._construct_http_body(messages, max_tokens, temperature, top_p)
+        payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
 
         response = net_utility.make_request_and_raise_if_error(
             self.endpoint_uri, method="POST", request_body=payload, headers=headers
@@ -71,7 +72,12 @@ class AMLOnlineEndpointChat(ChatSupport):
         return response.json()
 
     def _construct_http_body(
-        self, messages: list[ChatMessage], max_tokens: int, temperature: float, top_p: int
+        self,
+        messages: list[ChatMessage],
+        max_tokens: int,
+        temperature: float,
+        top_p: int,
+        repetition_penalty: float,
     ) -> dict:
         """Constructs a http body in the format required by the endpoint.
 
@@ -97,7 +103,7 @@ class AMLOnlineEndpointChat(ChatSupport):
                     "stop": ["</s>"],
                     "stop_sequences": ["</s>"],
                     "return_full_text": False,
-                    "repetition_penalty": 1.2,
+                    "repetition_penalty": repetition_penalty,
                 },
             }
         }
