@@ -94,6 +94,8 @@ class ScoreAnswers:
     name: str = ""
     version: str = ""
     description: str = ""
+    author: str = ""
+    group: str = ""
     source: str = ""
 
     @staticmethod
@@ -160,7 +162,9 @@ class PromptDataset(YamlLoadable):
     name: str
     description: str
     harm_category: str
-    source: str
+    author: str = ""
+    group: str = ""
+    source: str = ""
     should_be_blocked: bool
     prompts: list[str] = field(default_factory=list)
 
@@ -182,6 +186,8 @@ class PromptTemplate(YamlLoadable):
     description: str = ""
     should_be_blocked: bool = False
     harm_category: str = ""
+    author: str = ""
+    group: str = ""
     source: str = ""
     parameters: list[str] = field(default_factory=list)
 
