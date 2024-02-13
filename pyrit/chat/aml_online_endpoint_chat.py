@@ -53,8 +53,9 @@ class AMLOnlineEndpointChat(ChatSupport):
         Args:
             messages (list[ChatMessage]): The chat messages objects containing the role and content.
             max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-            temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
+            temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0. 1 is more random, 0 is less.
+            top_p (int, optional): Controls diversity of the response generation. Defaults to 1. 1 is more random, 0 is less.
+            repetition_penalty (float, optional): Controls repetition in the response generation. Defaults to 1.2.
 
         Raises:
             Exception: For any errors during the process.
@@ -69,7 +70,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         response = net_utility.make_request_and_raise_if_error(
             self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
-        return response.json()
+        return response.json()["output"]
 
     def _construct_http_body(
         self,
@@ -79,17 +80,8 @@ class AMLOnlineEndpointChat(ChatSupport):
         top_p: int,
         repetition_penalty: float,
     ) -> dict:
-        """Constructs a http body in the format required by the endpoint.
-
-        Args:
-            prompt_template (str): The template string for the prompt to be sent to the endpoint.
-            max_tokens (int): The maximum number of tokens to be used in the response.
-            temperature (float): The temperature setting for the model creativity in generating responses.
-            top_p (int): The top_p setting controlling the diversity of the response.
-
-        Returns:
-            dict: A payload dictionary formatted as per the endpoint's requirements.
-        """
+        """Constructs the HTTP request body for the AML online endpoint."""
+        
         messages_dict = [message.dict() for message in messages]
 
         data = {
@@ -108,32 +100,6 @@ class AMLOnlineEndpointChat(ChatSupport):
             }
         }
         return data
-
-    def _extract_first_response_message(self, response_message: list[dict[str, str]]) -> str:
-        """Extracts the first message from a list of response messages.
-
-        Each message in the list is expected to be a dictionary with a key '0' that holds the message string.
-        This function retrieves the message corresponding to the key '0' from the first dictionary in the list.
-
-        Args:
-            response_message (list[dict[str, str]]): A list of dictionaries containing response messages.
-
-        Raises:
-            ValueError: If the list is empty or the first dictionary does not contain the key '0'.
-
-        Returns:
-            str: The first response message extracted from the list.
-        """
-        if not response_message:
-            raise ValueError("The response_message list is empty.")
-        first_response_dict = response_message[0]
-        if "0" not in first_response_dict:
-            raise ValueError(
-                f"Key '0' does not exist in the first response message. "
-                f"Unable to retrieve first response message from the endpoint {self.endpoint_uri}. "
-                f"Response message: {first_response_dict}"
-            )
-        return first_response_dict["0"]
 
     def _get_headers(self) -> dict:
         """Headers for accessing inference endpoint deployed in AML.

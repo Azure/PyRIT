@@ -46,28 +46,6 @@ def test_get_headers_with_valid_api_key(aml_online_chat: AMLOnlineEndpointChat):
     assert aml_online_chat._get_headers() == expected_headers
 
 
-def test_extract_first_response_message_normal(aml_online_chat: AMLOnlineEndpointChat):
-    response_message = [{"0": "response from model"}]
-    assert aml_online_chat._extract_first_response_message(response_message) == "response from model"
-
-
-def test_extract_first_response_message_empty_list(
-    aml_online_chat: AMLOnlineEndpointChat,
-):
-    with pytest.raises(ValueError) as excinfo:
-        aml_online_chat._extract_first_response_message([])
-    assert "The response_message list is empty." in str(excinfo.value)
-
-
-def test_extract_first_response_message_missing_key(
-    aml_online_chat: AMLOnlineEndpointChat,
-):
-    response_message = [{"1": "response from model"}]
-    with pytest.raises(ValueError) as excinfo:
-        aml_online_chat._extract_first_response_message(response_message)
-    assert "Key '0' does not exist in the first response message." in str(excinfo.value)
-
-
 def test_complete_chat(aml_online_chat: AMLOnlineEndpointChat):
     messages = [
         ChatMessage(role="user", content="user content"),
@@ -75,8 +53,20 @@ def test_complete_chat(aml_online_chat: AMLOnlineEndpointChat):
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
         mock_response = Mock()
-        mock_response.json.return_value = "extracted response"
+        mock_response.json.return_value = {"output" : "extracted response"}
         mock.return_value = mock_response
         response = aml_online_chat.complete_chat(messages)
         assert response == "extracted response"
         mock.assert_called_once()
+
+def test_complete_chat_bad_json_response(aml_online_chat: AMLOnlineEndpointChat):
+    messages = [
+        ChatMessage(role="user", content="user content"),
+    ]
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
+        mock_response = Mock()
+        mock_response.json.return_value = {"bad response"}
+        mock.return_value = mock_response
+        with pytest.raises(TypeError):
+            aml_online_chat.complete_chat(messages)

@@ -37,3 +37,4 @@ def make_request_and_raise_if_error(
         response.raise_for_status()  # This will automatically raise an exception for 4xx and 5xx responses
 
     return response
+
