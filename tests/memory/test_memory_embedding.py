@@ -35,9 +35,6 @@ class MockChatGenerator(EmbeddingSupport):
     def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
         return super().generate_text_embedding(text, **kwargs)
 
-    def generate_text_embedding_async(self, text: str, **kwargs) -> Coroutine[Any, Any, EmbeddingResponse]:
-        return super().generate_text_embedding_async(text, **kwargs)
-
 
 def test_memory_encoder():
     memory_encoder = MemoryEmbedding(embedding_model=MockEmbeddingGenerator())
