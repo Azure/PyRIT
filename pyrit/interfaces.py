@@ -86,6 +86,19 @@ class EmbeddingSupport(abc.ABC):
         """
         raise NotImplementedError("generate_text_embedding method not implemented")
 
+    @abstractmethod
+    async def generate_text_embedding_async(self, text: str, **kwargs) -> EmbeddingResponse:
+        """Generate text embedding
+
+        Args:
+            text: The text to generate the embedding for
+            **kwargs: Additional arguments to pass to the function.
+
+        Returns:
+            The embedding response
+        """
+        raise NotImplementedError("generate_text_embedding_async method not implemented")
+
 
 class CompletionSupport(abc.ABC):
     @abstractmethod
@@ -99,6 +112,18 @@ class CompletionSupport(abc.ABC):
             The completed text
         """
         raise NotImplementedError("complete_text method not implemented")
+
+    @abstractmethod
+    async def complete_text_async(self, text: str, **kwargs) -> PromptResponse:
+        """Complete text based on a given prompt
+
+        Args:
+            text:  The prompt to complete
+
+        Returns:
+            The completed text
+        """
+        raise NotImplementedError("complete_text_async method not implemented")
 
 
 class ChatSupport(abc.ABC):

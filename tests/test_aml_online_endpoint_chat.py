@@ -6,7 +6,6 @@ from unittest.mock import Mock, patch
 
 import os
 import pytest
-import requests
 
 from pyrit.chat.aml_online_endpoint_chat import AMLOnlineEndpointChat
 from pyrit.models import ChatMessage

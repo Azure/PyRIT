@@ -4,9 +4,11 @@ import pytest
 
 from pyrit.common.net_utility import make_request_and_raise_if_error
 
+
 @pytest.fixture
 def mock_http():
     return MagicMock()
+
 
 @pytest.fixture
 def mock_response():
@@ -28,12 +30,13 @@ def test_make_request_and_raise_if_error_http_error(mock_http, mock_response):
             make_request_and_raise_if_error(
                 endpoint_uri="http://example.com",
                 method="GET",
-                json_body=None,
+                request_body=None,
                 headers={},
                 retries=3,
-                use_proxy=False
+                use_proxy=False,
             )
         assert str(exc_info.value) == "HTTP error: Not Found\nError message."
+
 
 def test_make_request_and_raise_if_error_with_json_body(mock_http, mock_response):
     mock_http.request.return_value = mock_response
@@ -42,10 +45,10 @@ def test_make_request_and_raise_if_error_with_json_body(mock_http, mock_response
         response = make_request_and_raise_if_error(
             endpoint_uri="http://example.com",
             method="POST",
-            json_body={"key": "value"},
+            request_body={"key": "value"},
             headers={},
             retries=3,
-            use_proxy=False
+            use_proxy=False,
         )
         assert response == mock_response
         assert mock_http.request.call_args[1]["body"] == json.dumps({"key": "value"}).encode("utf-8")

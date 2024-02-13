@@ -39,7 +39,6 @@ class AMLOnlineEndpointChat(ChatSupport):
         )
         self.api_key: str = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
 
-
     def complete_chat(
         self,
         messages: list[ChatMessage],
@@ -66,11 +65,14 @@ class AMLOnlineEndpointChat(ChatSupport):
         headers = self._get_headers()
         payload = self._construct_http_body(messages, max_tokens, temperature, top_p)
 
-        response = net_utility.make_request_and_raise_if_error(self.endpoint_uri, method="POST", json_body=payload, headers=headers)
+        response = net_utility.make_request_and_raise_if_error(
+            self.endpoint_uri, method="POST", request_body=payload, headers=headers
+        )
         return response.json()
 
-
-    def _construct_http_body(self, messages: list[ChatMessage], max_tokens: int, temperature: float, top_p: int) -> dict:
+    def _construct_http_body(
+        self, messages: list[ChatMessage], max_tokens: int, temperature: float, top_p: int
+    ) -> dict:
         """Constructs a http body in the format required by the endpoint.
 
         Args:
@@ -95,43 +97,11 @@ class AMLOnlineEndpointChat(ChatSupport):
                     "stop": ["</s>"],
                     "stop_sequences": ["</s>"],
                     "return_full_text": False,
-                    "repetition_penalty": 1.2
+                    "repetition_penalty": 1.2,
                 },
             }
         }
         return data
-
-    async def _generate_and_extract_response(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int,
-        temperature: float,
-        top_p: int,
-        is_async: bool = False,
-    ) -> str:
-        """
-        Generates and extracts response from the AML endpoint.
-
-        Args:
-            messages (list[ChatMessage]): The chat messages objects containing the role and content.
-            max_tokens (int): The maximum number of tokens to generate.
-            temperature (float): Controls randomness in the response generation.
-            top_p (int): Controls diversity of the response generation.
-            is_async (bool): Flag to determine if the request is asynchronous.
-
-        Returns:
-            str: The generated response message.
-        """
-        prompt_template = self.prompt_template_generator.generate_template(messages)
-        headers = self._get_headers()
-        payload = self._construct_http_body(prompt_template, max_tokens, temperature, top_p)
-
-        if is_async:
-            response = await self._send_async_request(headers, payload)
-        else:
-            response = self._send_sync_request(headers, payload)
-        return self._extract_first_response_message(response)
-
 
     def _extract_first_response_message(self, response_message: list[dict[str, str]]) -> str:
         """Extracts the first message from a list of response messages.
@@ -159,7 +129,6 @@ class AMLOnlineEndpointChat(ChatSupport):
             )
         return first_response_dict["0"]
 
-
     def _get_headers(self) -> dict:
         """Headers for accessing inference endpoint deployed in AML.
         Returns:
@@ -172,4 +141,3 @@ class AMLOnlineEndpointChat(ChatSupport):
         }
 
         return headers
-
