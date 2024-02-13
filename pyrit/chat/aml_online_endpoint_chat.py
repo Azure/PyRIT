@@ -47,15 +47,19 @@ class AMLOnlineEndpointChat(ChatSupport):
         top_p: int = 1,
         repetition_penalty: float = 1.2,
     ) -> str:
-        """Completes a chat interaction by generating a response to the given input prompt.
+        """
+        Completes a chat interaction by generating a response to the given input prompt.
         This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
 
         Args:
             messages (list[ChatMessage]): The chat messages objects containing the role and content.
             max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-            temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0. 1 is more random, 0 is less.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1. 1 is more random, 0 is less.
-            repetition_penalty (float, optional): Controls repetition in the response generation. Defaults to 1.2.
+            temperature (float, optional): Controls randomness in the response generation. Defaults
+                                           to 1.0. 1 is more random, 0 is less.
+            top_p (int, optional): Controls diversity of the response generation. Defaults to 1. 1
+                                   is more random, 0 is less.
+            repetition_penalty (float, optional): Controls repetition in the response generation.
+                                                  Defaults to 1.2.
 
         Raises:
             Exception: For any errors during the process.
