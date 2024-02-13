@@ -61,7 +61,8 @@ dev = [
     "ipykernel>=6.22.0",
     "semantic-kernel==0.4.1.dev0",
     "pre-commit>=3.3.3",
-    "flake8-copyright>=0.2.0"
+    "flake8-copyright>=0.2.0",
+    "respx>=0.20.2"
 ]
 
 [tool.mypy]
