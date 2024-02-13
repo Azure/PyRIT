@@ -16,20 +16,18 @@ def get_pool_manager(retries: int = 3, use_proxy: bool = False) -> PoolManager:
     )
 
     if use_proxy:
-        # Use ProxyManager if the use_proxy flag is True
+        # Useful for debugging
         return ProxyManager(retries=retry_strategy, proxy_url="http://localhost:8080")
     else:
-        # Use PoolManager if no proxy is needed
         return PoolManager(retries=retry_strategy)
 
 
-# TODO make proxy false
 def make_request_and_raise_if_error(endpoint_uri: str,
                            method: str,
                            json_body: dict[str, str],
                            headers: dict[str, str],
                            retries: int = 3,
-                           use_proxy: bool = True) -> BaseHTTPResponse:
+                           use_proxy: bool = False) -> BaseHTTPResponse:
     """Make a request and raise an exception if it fails"""
     http = get_pool_manager(retries=retries, use_proxy=use_proxy)
 

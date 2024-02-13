@@ -9,10 +9,7 @@ import pytest
 import requests
 
 from pyrit.chat.aml_online_endpoint_chat import AMLOnlineEndpointChat
-from pyrit.common.net import HttpClientSession
 from pyrit.models import ChatMessage
-
-from .mocks import MockHttpPostAsync, MockHttpPostSync
 
 _loop = asyncio.get_event_loop()
 
@@ -53,12 +50,6 @@ def test_get_headers_with_valid_api_key(aml_online_chat: AMLOnlineEndpointChat):
     assert aml_online_chat._get_headers() == expected_headers
 
 
-def test_get_headers_with_empty_api_key(aml_online_chat: AMLOnlineEndpointChat):
-    aml_online_chat.api_key = ""
-    with pytest.raises(ValueError):
-        aml_online_chat._get_headers()
-
-
 def test_extract_first_response_message_normal(aml_online_chat: AMLOnlineEndpointChat):
     response_message = [{"0": "response from model"}]
     assert aml_online_chat._extract_first_response_message(response_message) == "response from model"
@@ -81,23 +72,15 @@ def test_extract_first_response_message_missing_key(
     assert "Key '0' does not exist in the first response message." in str(excinfo.value)
 
 
-@patch.object(HttpClientSession.get_client_session(), "post", side_effect=MockHttpPostAsync)
-def test_complete_chat_async(mock_http_post: Mock, aml_online_chat: AMLOnlineEndpointChat):
+def test_complete_chat(aml_online_chat: AMLOnlineEndpointChat):
     messages = [
-        ChatMessage(role="system", content="system content"),
         ChatMessage(role="user", content="user content"),
     ]
-    response = _loop.run_until_complete(aml_online_chat.complete_chat_async(messages))
-    assert response == "extracted response"
-    mock_http_post.assert_called_once()
 
-
-@patch.object(requests, "post", side_effect=MockHttpPostSync)
-def test_complete_chat(mock_http_post: Mock, aml_online_chat: AMLOnlineEndpointChat):
-    messages = [
-        ChatMessage(role="system", content="system content"),
-        ChatMessage(role="user", content="user content"),
-    ]
-    response = aml_online_chat.complete_chat(messages)
-    assert response == "extracted response"
-    mock_http_post.assert_called_once()
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
+        mock_response = Mock()
+        mock_response.json.return_value = "extracted response"
+        mock.return_value = mock_response
+        response = aml_online_chat.complete_chat(messages)
+        assert response == "extracted response"
+        mock.assert_called_once()

@@ -3,13 +3,7 @@
 
 import asyncio
 import logging
-import time
 
-import requests
-
-from pyrit.common.constants import MAX_RETRY_API_COUNT
-from pyrit.common.net import HttpClientSession
-from pyrit.common.prompt_template_generator import PromptTemplateGenerator
 from pyrit.common import environment_variables, net_utility
 from pyrit.interfaces import ChatSupport
 from pyrit.models import ChatMessage
@@ -88,9 +82,11 @@ class AMLOnlineEndpointChat(ChatSupport):
         Returns:
             dict: A payload dictionary formatted as per the endpoint's requirements.
         """
+        messages_dict = [message.dict() for message in messages]
+
         data = {
             "input_data": {
-                "input_string": {"input_string": messages},
+                "input_string": messages_dict,
                 "parameters": {
                     "max_new_tokens": max_tokens,
                     "temperature": temperature,
@@ -136,6 +132,7 @@ class AMLOnlineEndpointChat(ChatSupport):
             response = self._send_sync_request(headers, payload)
         return self._extract_first_response_message(response)
 
+
     def _extract_first_response_message(self, response_message: list[dict[str, str]]) -> str:
         """Extracts the first message from a list of response messages.
 
@@ -162,42 +159,6 @@ class AMLOnlineEndpointChat(ChatSupport):
             )
         return first_response_dict["0"]
 
-    async def _send_async_request(self, headers: dict, payload: dict) -> list[dict[str, str]]:
-        """
-        Sends an asynchronous request to the AML endpoint.
-
-        Args:
-            headers(dict): contains bearer token as aml key and content-type: JSON
-            payload (dict): Request payload.
-
-        Returns:
-            str: The generated response message.
-        """
-        generated_response: list[dict[str, str]] = None
-        try:
-            http_session = HttpClientSession.get_client_session()
-            curr_retry_count = 0
-            while True:
-                async with http_session.post(url=self.endpoint_uri, json=payload, headers=headers) as response:
-                    if response.status == 429 or response.status == 408:
-                        await asyncio.sleep(10)
-                        continue
-
-                    if response.status >= 500 and curr_retry_count < MAX_RETRY_API_COUNT:
-                        curr_retry_count += 1
-                        await asyncio.sleep(10)
-                        continue
-
-                    if response.status >= 400:
-                        text = await response.text()
-                        raise RuntimeError(f"HTTP error: {response.status}\n{text}")
-                generated_response = await response.json()
-                break
-            return generated_response
-        except Exception as e:
-            logger.error(f"Error occured during inference: {e}")
-            raise
-
 
     def _get_headers(self) -> dict:
         """Headers for accessing inference endpoint deployed in AML.
@@ -211,29 +172,4 @@ class AMLOnlineEndpointChat(ChatSupport):
         }
 
         return headers
-
-
-    async def complete_chat_async(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int = 400,
-        temperature: float = 1.0,
-        top_p: int = 1,
-    ) -> str:
-        """Async method that completes a chat interaction by generating a response to the given input prompt.
-
-        Args:
-            message (ChatMessage): The chat message object containing the role and content.
-            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 512.
-            temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
-
-        Raises:
-            Exception: For any errors during the process.
-
-        Returns:
-            str: The generated response message.
-        """
-        return await self._generate_and_extract_response(messages, max_tokens, temperature, top_p, is_async=True)
-
 
