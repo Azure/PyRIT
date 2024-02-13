@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 from unittest.mock import Mock, patch
 
 import os
@@ -9,8 +8,6 @@ import pytest
 
 from pyrit.chat.aml_online_endpoint_chat import AMLOnlineEndpointChat
 from pyrit.models import ChatMessage
-
-_loop = asyncio.get_event_loop()
 
 
 @pytest.fixture
