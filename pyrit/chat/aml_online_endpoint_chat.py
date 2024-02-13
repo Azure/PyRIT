@@ -81,7 +81,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         repetition_penalty: float,
     ) -> dict:
         """Constructs the HTTP request body for the AML online endpoint."""
-        
+
         messages_dict = [message.dict() for message in messages]
 
         data = {

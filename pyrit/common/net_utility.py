@@ -4,6 +4,7 @@
 import httpx
 from tenacity import retry, stop_after_attempt, wait_fixed
 
+
 def get_httpx_client(use_async: bool = False, debug: bool = False) -> httpx.Client:
     """Get the httpx client for making requests."""
 
@@ -37,4 +38,3 @@ def make_request_and_raise_if_error(
         response.raise_for_status()  # This will automatically raise an exception for 4xx and 5xx responses
 
     return response
-

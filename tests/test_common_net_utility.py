@@ -4,14 +4,17 @@ import respx
 from tenacity import RetryError
 from pyrit.common.net_utility import get_httpx_client, make_request_and_raise_if_error
 
-@pytest.mark.parametrize("use_async, expected_type", [
-    (False, httpx.Client),
-    (True, httpx.AsyncClient),
-])
+
+@pytest.mark.parametrize(
+    "use_async, expected_type",
+    [
+        (False, httpx.Client),
+        (True, httpx.AsyncClient),
+    ],
+)
 def test_get_httpx_client_type(use_async, expected_type):
     client = get_httpx_client(use_async=use_async)
     assert isinstance(client, expected_type)
-
 
 
 @respx.mock
@@ -23,6 +26,7 @@ def test_make_request_and_raise_if_error_success():
     assert mock_route.called
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
 
 @respx.mock
 def test_make_request_and_raise_if_error_failure():
@@ -36,6 +40,7 @@ def test_make_request_and_raise_if_error_failure():
 
     last_exception = retry_error.value.last_attempt.exception()
     assert isinstance(last_exception, httpx.HTTPStatusError)
+
 
 @respx.mock
 def test_make_request_and_raise_if_error_retries():
