@@ -1,6 +1,8 @@
 import pytest
 import httpx
 import respx
+
+from unittest.mock import patch, MagicMock
 from tenacity import RetryError
 from pyrit.common.net_utility import get_httpx_client, make_request_and_raise_if_error
 
@@ -61,3 +63,13 @@ def test_make_request_and_raise_if_error_retries():
         make_request_and_raise_if_error(endpoint_uri=url, method=method)
     assert call_count == 2, "The request should have been retried exactly once."
     assert mock_route.called
+
+
+def test_debug_is_false_by_default():
+    with patch("pyrit.common.net_utility.get_httpx_client") as mock_get_httpx_client:
+        mock_client_instance = MagicMock()
+        mock_get_httpx_client.return_value = mock_client_instance
+
+        make_request_and_raise_if_error(endpoint_uri="http://example.com", method="GET")
+
+        mock_get_httpx_client.assert_called_with(debug=False)
