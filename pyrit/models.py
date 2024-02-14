@@ -162,10 +162,10 @@ class PromptDataset(YamlLoadable):
     name: str
     description: str
     harm_category: str
+    should_be_blocked: bool
     author: str = ""
     group: str = ""
     source: str = ""
-    should_be_blocked: bool
     prompts: list[str] = field(default_factory=list)
 
 
