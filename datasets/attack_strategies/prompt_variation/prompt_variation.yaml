@@ -4,6 +4,7 @@ description: |
 harm_category: NA
 author: AI Red Team
 group: AI Red Team
+source: AI Red Team
 should_be_blocked: false
 parameters:
   - number_variations

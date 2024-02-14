@@ -96,6 +96,7 @@ class ScoreAnswers:
     description: str = ""
     author: str = ""
     group: str = ""
+    source: str = ""
 
     @staticmethod
     def from_yaml(file: Path) -> ScoreAnswers:
@@ -161,9 +162,10 @@ class PromptDataset(YamlLoadable):
     name: str
     description: str
     harm_category: str
-    author: str
-    group: str
     should_be_blocked: bool
+    author: str = ""
+    group: str = ""
+    source: str = ""
     prompts: list[str] = field(default_factory=list)
 
 
@@ -186,6 +188,7 @@ class PromptTemplate(YamlLoadable):
     harm_category: str = ""
     author: str = ""
     group: str = ""
+    source: str = ""
     parameters: list[str] = field(default_factory=list)
 
     def apply_custom_metaprompt_parameters(self, **kwargs) -> str:
