@@ -139,15 +139,3 @@ class ChatSupport(abc.ABC):
             The completed chat
         """
         raise NotImplementedError("complete_chat method not implemented")
-
-    async def complete_chat_async(self, *, messages: list[ChatMessage]) -> str:
-        """Complete chat based on a given message.
-           Update _chat_messages with the messages used in the completion.
-
-        Args:
-            messages: The list of chat messages to be used in the chat completion
-
-        Returns:
-            The completed chat
-        """
-        raise NotImplementedError("complete_chat_async method not implemented")
