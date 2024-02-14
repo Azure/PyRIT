@@ -22,7 +22,7 @@ def make_request_and_raise_if_error(
     method: str,
     request_body: dict[str, str] = None,
     headers: dict[str, str] = None,
-    use_proxy: bool = True,
+    use_proxy: bool = False,
 ) -> httpx.Response:
     """Make a request and raise an exception if it fails."""
     headers = headers or {}

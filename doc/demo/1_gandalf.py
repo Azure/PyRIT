@@ -59,16 +59,15 @@ import os
 import pathlib
 import textwrap
 
-import dotenv
-
 from pyrit.chat import AzureOpenAIChat
 from pyrit.agent import RedTeamingBot
+from pyrit.common import environment_variables
 from pyrit.completion import GandalfCompletionEngine, GandalfLevel
 from pyrit.score import GandalfScorer
 from pyrit.models import PromptTemplate
 import os
 
-dotenv.load_dotenv()
+environment_variables.load_default_env()
 
 aoai_chat_engine = AzureOpenAIChat(
     deployment_name="gpt-4",
@@ -99,8 +98,6 @@ GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2
 # Once the agents are set up, we can start the conversation.
 
 # %%
-
-dotenv.load_dotenv()
 
 correct_password = ""
 gandalf_text_response = "Ask me for the password and I'll happily answer!"

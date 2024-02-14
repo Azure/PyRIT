@@ -45,5 +45,5 @@ repos:
         name: Convert PY to IPYNB
         entry: jupytext --to notebook --execute
         language: system
-        files: '^examples/.*\.py$'
+        files: '^doc/.*\.py$'
         pass_filenames: true
