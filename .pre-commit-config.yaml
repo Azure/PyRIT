@@ -20,6 +20,7 @@ repos:
     rev: 6.0.0
     hooks:
       - id: flake8
+        exclude: examples/deployment/
 
   - repo: https://github.com/pycqa/pylint
     rev: v2.16.2

@@ -1,29 +1,29 @@
 # %% [markdown]
 # ## Importing and Registering Hugging Face Models into Azure ML
-# 
+#
 # This notebook demonstrates the process of importing models from the [Hugging Face hub](https://huggingface.co/models) and registering them into Azure Machine Learning (AML) for further use in various machine learning tasks.
-# 
+#
 # ### Why Hugging Face Models in PyRIT?
 # The primary goal of PyRIT is to assess the robustness of LLM endpoints against different harm categories such as fabrication/ungrounded content (e.g., hallucination), misuse (e.g., bias), and prohibited content (e.g., harassment). Hugging Face serves as a comprehensive repository of LLMs, capable of generating a diverse and complex prompts when given appropriate system prompt. Models such as:
 # - ["TheBloke/llama2_70b_chat_uncensored-GGML"](https://huggingface.co/TheBloke/llama2_70b_chat_uncensored-GGML)
 # - ["cognitivecomputations/Wizard-Vicuna-30B-Uncensored"](https://huggingface.co/cognitivecomputations/Wizard-Vicuna-30B-Uncensored)
 # - ["lmsys/vicuna-13b-v1.1"](https://huggingface.co/lmsys/vicuna-13b-v1.1)
-# 
+#
 # are particularly useful for generating prompts or scenarios without content moderation. These can be configured as part of a `RedTeamingBot` in PyRIT to create challenging and uncensored prompts/scenarios. These prompts are then submitted to the target chat bot, helping assess its ability to handle potentially unsafe, unexpected, or adversarial inputs.
-# 
+#
 # ### Important Note on Deploying Quantized Models
 # When deploying quantized models, especially those suffixed with GGML, FP16, or GPTQ, it's crucial to have GPU support. These models are optimized for performance but require the computational capabilities of GPUs to run. Ensure your deployment environment is equipped with the necessary GPU resources to handle these models.
-# 
+#
 # ### Supported Tasks
 # The import process supports a variety of tasks, including but not limited to:
 # - Text classification
 # - Text generation
 # - Question answering
 # - Summarization
-# 
+#
 # ### Import Process
 # The process involves downloading models from the Hugging Face hub, converting them to MLflow format for compatibility with Azure ML, and then registering them for easy access and deployment.
-# 
+#
 # ### Prerequisites
 # - An Azure account with an active subscription. [Create one for free](https://azure.microsoft.com/free/).
 # - An Azure ML workspace set up. [Learn how to set up a workspace](https://docs.microsoft.com/en-us/azure/machine-learning/how-to-manage-workspace).
@@ -36,18 +36,18 @@
 
 # %% [markdown]
 # ## 1. Connect to Azure Machine Learning Workspace
-# 
+#
 # Before we start, we need to connect to our Azure ML workspace. The workspace is the top-level resource for Azure ML, providing a centralized place to work with all the artifacts you create.
-# 
+#
 # ### Steps:
 # 1. **Import Required Libraries**: We'll start by importing the necessary libraries from the Azure ML SDK.
 # 2. **Set Up Credentials**: We'll use `DefaultAzureCredential` or `InteractiveBrowserCredential` for authentication.
 # 3. **Access Workspace and Registry**: We'll obtain handles to our AML workspace and the model registry.
-# 
+#
 
 # %% [markdown]
 # ### 1.1 Import Required Libraries
-# 
+#
 # Import the Azure ML SDK components required for workspace connection and model management.
 
 # %%
@@ -60,71 +60,72 @@ from azure.core.exceptions import ResourceNotFoundError
 
 # %% [markdown]
 # ### 1.2 Load Environment Variables
-# 
+#
 # Load necessary environment variables from an `.env` file.
-# 
+#
 # To execute the following job on an AML compute cluster, set `AML_COMPUTE_TYPE` to `amlcompute` and specify `AML_INSTANCE_SIZE` as `STANDARD_D4_V2` (or other as you see fit). When utilizing the model import component, `AML_REGISTRY_NAME` should be set to `azureml`, and `AML_MODEL_IMPORT_VERSION` can be either `latest` or a specific version like `0.0.22`. For Hugging Face models, the `TASK_NAME` might be `text-generation` for text generation models. For default values and further guidance, please see the `.env_example` file.
-# 
+#
 # ### Environment Variables
-# 
+#
 # For ex., to download the Hugging Face model `cognitivecomputations/Wizard-Vicuna-13B-Uncensored` into your Azure environment, below are the environment variables that needs to be set in `.env` file:
-# 
+#
 # 1. **AZURE_SUBSCRIPTION_ID**
 #    - Obtain your Azure Subscription ID, essential for accessing Azure services.
-# 
+#
 # 2. **AZURE_RESOURCE_GROUP**
 #    - Identify the Resource Group where your Azure Machine Learning (AML) workspace is located.
-# 
+#
 # 3. **AML_WORKSPACE_NAME**
 #    - Specify the name of your AML workspace where the model will be registered.
-# 
+#
 # 4. **AML_REGISTRY_NAME**
 #    - Choose a name for registering the model in your AML workspace, such as "HuggingFace". This helps in identifying if the model already exists in your AML Hugging Face registry.
-# 
+#
 # 5. **HF_MODEL_ID**
 #    - For instance, `cognitivecomputations/Wizard-Vicuna-13B-Uncensored` as the model ID for the Hugging Face model you wish to download and register.
-# 
+#
 # 6. **TASK_NAME**
 #    - Task name for which you're using the model, for example, `text-generation` for text generation tasks.
-# 
+#
 # 7. **AML_COMPUTE_NAME**
 #    - AML Compute where this script runs, specifically an AML compute cluster suitable for these tasks.
-# 
+#
 # 8. **AML_INSTANCE_SIZE**
 #    - Select the size of the compute instance of AML compute cluster, ensuring it's at least double the size of the model to accommodate it effectively.
-# 
+#
 # 9. **AML_COMPUTE_NAME**
 #    - If you already have an AML compute cluster, provide its name. If not, the script will create one based on the instance size and the specified minimum and maximum instances.
 #    <br> <img src="./../../assets/aml_compute_cluster.png" alt="aml_compute_cluster.png" height="400"/> <br>
-# 
+#
 # 10. **IDLE_TIME_BEFORE_SCALE_DOWN**
 #     - Set the duration for the AML cluster to remain active before scaling down due to inactivity, ensuring efficient resource use. Typically, 3-4 hours is ideal for large size models.
-# 
-# 
+#
+#
 
 # %%
 from dotenv import load_dotenv
 import os
+from typing import Union
 
 # Load the environment variables from the .env file
 load_dotenv()
 
-subscription_id = os.getenv('AZURE_SUBSCRIPTION_ID')
-resource_group = os.getenv('AZURE_RESOURCE_GROUP')
-workspace_name = os.getenv('AML_WORKSPACE_NAME')
-registry_name = os.getenv('AML_REGISTRY_NAME')
-aml_import_model_version = os.getenv('AML_MODEL_IMPORT_VERSION') # values could be 'latest' or any version
+subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
+resource_group = os.getenv("AZURE_RESOURCE_GROUP")
+workspace_name = os.getenv("AML_WORKSPACE_NAME")
+registry_name = os.getenv("AML_REGISTRY_NAME")
+aml_import_model_version = os.getenv("AML_MODEL_IMPORT_VERSION")  # values could be 'latest' or any version
 
 # Model and Compute Configuration
-model_id = os.getenv('HF_MODEL_ID')
-task_name = os.getenv('TASK_NAME')
+model_id = os.getenv("HF_MODEL_ID")
+task_name = os.getenv("TASK_NAME")
 aml_compute_type = os.getenv("AML_COMPUTE_TYPE")
-instance_size = os.getenv('AML_INSTANCE_SIZE')
-compute_name = os.getenv('AML_COMPUTE_NAME')
+instance_size = os.getenv("AML_INSTANCE_SIZE")
+compute_name = os.getenv("AML_COMPUTE_NAME")
 experiment_name = f"Import Model Pipeline Hugging Face model {model_id}"
-min_instances = os.getenv("AML_MIN_INSTANCES")
-max_instances = os.getenv("AML_MAX_INSTANCES")
-idle_time_before_scale_down = os.getenv("IDLE_TIME_BEFORE_SCALE_DOWN")
+min_instances = int(os.getenv("AML_MIN_INSTANCES"))
+max_instances = int(os.getenv("AML_MAX_INSTANCES"))
+idle_time_before_scale_down = int(os.getenv("IDLE_TIME_BEFORE_SCALE_DOWN"))
 
 # %%
 print(f"Subscription ID: {subscription_id}")
@@ -144,14 +145,14 @@ print(f"Idle time before scale down in seconds: {idle_time_before_scale_down}")
 
 # %% [markdown]
 # ### 1.3 Configure Credentials
-# 
+#
 # Set up the `DefaultAzureCredential` for seamless authentication with Azure services. This method should handle most authentication scenarios. If you encounter issues, refer to the [Azure Identity documentation](https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity?view=azure-python) for alternative credentials.
-# 
+#
 
 # %%
 # Setup Azure credentials, preferring DefaultAzureCredential and falling back to InteractiveBrowserCredential if necessary
 try:
-    credential = DefaultAzureCredential()
+    credential: Union[DefaultAzureCredential, InteractiveBrowserCredential] = DefaultAzureCredential()
     # Verify if the default credential can fetch a token successfully
     credential.get_token("https://management.azure.com/.default")
 except Exception as ex:
@@ -161,9 +162,9 @@ except Exception as ex:
 
 # %% [markdown]
 # ### 1.4 Access Azure ML Workspace and Registry
-# 
+#
 # Using the Azure ML SDK, we'll connect to our workspace. This requires having a configuration file or setting up the workspace parameters directly in the code. Ensure your workspace is configured with a compute instance or cluster for running the jobs.
-# 
+#
 
 # %%
 # Initialize MLClient for AML workspace and registry access
@@ -182,20 +183,20 @@ ml_client_registry = MLClient(credential, registry_name=registry_name)
 
 # %% [markdown]
 # ### 1.5 Compute Target Setup
-# 
+#
 # For model operations, we need a compute target. Here, we'll either attach an existing AmlCompute or create a new one. Note that creating a new AmlCompute can take approximately 5 minutes.
-# 
+#
 # - **Existing AmlCompute**: If an AmlCompute with the specified name exists, we'll use it.
 # - **New AmlCompute**: If it doesn't exist, we'll create a new one. Be aware of the [resource limits](https://docs.microsoft.com/en-us/azure/machine-learning/how-to-manage-quotas) in Azure ML.
-# 
+#
 # **Important Note for AML Compute Setup:**
-# 
+#
 # When configuring the AML compute cluster for running pipelines, please ensure the following:
-# 
+#
 # 1. **Idle Time to Scale Down**: If there is an existing AML compute cluster you wish to use, set the idle time to scale down to at least 4 hours. This helps in managing compute resources efficiently to run long-running jobs, helpful if the Hugging Face model is large in size.
-# 
+#
 # 2. **Memory Requirements for Hugging Face Models**: When planning to download and register a Hugging Face model, ensure the compute size memory is at least double the size of the Hugging Face model. For example, if the Hugging Face model size is around 32 GB, the AML cluster node size should be at least 64 GB to avoid any issues during the download and registration process.
-# 
+#
 
 # %%
 # Setup or retrieve the compute target for model training
@@ -212,31 +213,32 @@ except ResourceNotFoundError:
         size=instance_size,
         min_instances=min_instances,
         max_instances=max_instances,
-        idle_time_before_scale_down=idle_time_before_scale_down
+        idle_time_before_scale_down=idle_time_before_scale_down,
     )
     ml_client_ws.begin_create_or_update(compute_config).result()
 
 
 # %% [markdown]
 # ## 2. Create an AML Pipeline for Hugging Face Models
-# 
+#
 # In this section, we'll set up a pipeline to import and register Hugging Face models into Azure ML.
-# 
+#
 # ### Steps:
 # 1. **Load Pipeline Component**: We'll load the necessary pipeline component from the Azure ML registry.
 # 2. **Define Pipeline Parameters**: We'll specify parameters such as the Hugging Face model ID and compute target.
 # 3. **Create Pipeline**: Using the loaded component and parameters, we'll define the pipeline.
 # 4. **Execute Pipeline**: We'll submit the pipeline job to Azure ML and monitor its progress.
-# 
+#
 
 # %% [markdown]
 # ### 2.1 Load Pipeline Component
-# 
+#
 # Load the `import_model` pipeline component from the Azure ML registry. This component is responsible for downloading the Hugging Face model, converting it to MLflow format, and registering it in Azure ML.
-# 
+#
 
 # %%
 import_model = ml_client_registry.components.get(name="import_model", version=aml_import_model_version)
+
 
 # %%
 def get_max_model_version(models: list) -> str:
@@ -278,10 +280,11 @@ def check_model_in_registry(client, model_id: str):
     if models:
         model_version = get_max_model_version(models)
         return True, model_version
-    return False, '0'
+    return False, "0"
+
 
 # %%
-# Check if Hugging Face model exists in both the Azure ML Hugging Face model catalog registry and the AML workspace model registry 
+# Check if Hugging Face model exists in both the Azure ML Hugging Face model catalog registry and the AML workspace model registry
 # Initially assume the model does not exist in either registry
 huggingface_model_exists_in_aml_registry = False
 registered_model_id = model_id.replace("/", "-")  # model name in registry doesn't contain '/'
@@ -289,13 +292,17 @@ try:
     # Check in Azure ML model catalog registry
     exists_in_catalog, catalog_version = check_model_in_registry(ml_client_registry, registered_model_id)
     if exists_in_catalog:
-        print(f"Model already exists in Azure ML model catalog with name {registered_model_id} and maximum version {catalog_version}")
+        print(
+            f"Model already exists in Azure ML model catalog with name {registered_model_id} and maximum version {catalog_version}"
+        )
         huggingface_model_exists_in_aml_registry = True
     else:
         # If not found in the model catalog, check in AML workspace model registry
         exists_in_workspace, workspace_version = check_model_in_registry(ml_client_ws, registered_model_id)
         if exists_in_workspace:
-            print(f"Model already exists in AML workspace model registry with name {registered_model_id} and maximum version {workspace_version}")
+            print(
+                f"Model already exists in AML workspace model registry with name {registered_model_id} and maximum version {workspace_version}"
+            )
             huggingface_model_exists_in_aml_registry = True
 
     # If the model doesn't exist in either registry, indicate it needs to be imported
@@ -308,9 +315,10 @@ except Exception as e:
 
 # %% [markdown]
 # ### 2.2 Create and Configure the Pipeline
-# 
+#
 # Define the pipeline using the `import_model` component and the specified parameters. We'll also set up the User Identity Configuration for the pipeline, allowing individual components to access identity credentials if required.
-# 
+#
+
 
 # %%
 # Define a AML pipeline for importing models into Azure ML
@@ -339,10 +347,7 @@ def model_import_pipeline(model_id, compute, task_name, instance_type):
 # %%
 # Configure the pipeline object with necessary parameters and identity
 pipeline_object = model_import_pipeline(
-    model_id=model_id,
-    compute=compute_name,
-    task_name=task_name,
-    instance_type=instance_size
+    model_id=model_id, compute=compute_name, task_name=task_name, instance_type=instance_size
 )
 pipeline_object.identity = UserIdentityConfiguration()
 pipeline_object.settings.force_rerun = True
@@ -357,17 +362,12 @@ print(f"Need to schedule run for importing {model_id}: {schedule_huggingface_mod
 
 # %% [markdown]
 # ### 2.3 Submit the Pipeline Job
-# 
+#
 # Submit the pipeline job to Azure ML for execution. The job will import the specified Hugging Face model and register it in Azure ML. We'll monitor the job's progress and output.
-# 
+#
 
 # %%
 # Submit and monitor the pipeline job if model import is scheduled
 if schedule_huggingface_model_import:
-    huggingface_pipeline_job = ml_client_ws.jobs.create_or_update(
-        pipeline_object, experiment_name=experiment_name
-    )
+    huggingface_pipeline_job = ml_client_ws.jobs.create_or_update(pipeline_object, experiment_name=experiment_name)
     ml_client_ws.jobs.stream(huggingface_pipeline_job.name)  # Stream logs to monitor the job
-
-
-
