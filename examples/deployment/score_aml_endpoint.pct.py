@@ -1,13 +1,13 @@
 # %% [markdown]
-# ## Score AML Managed Online Endpoint
+# ## Score Azure ML Managed Online Endpoint
 #
-# This notebook demonstrates testing the Azure Machine Learning (AML) models that have been deployed to AML managed online endpoints.
-
+# This notebook demonstrates testing the Azure Machine Learning (Azure ML) models that have been deployed to Azure ML managed online endpoints.
+#
 # ## Prerequisites
 #
 # Before proceeding with this notebook, ensure the following prerequisites are met:
 #
-# 1. **AML Model Deployment**: Your AML model must be deployed to an AML managed online endpoint. If your model is not yet deployed, please follow the instructions in the [deployment notebook](./deploy_hf_model_aml.ipynb).
+# 1. **Azure ML Model Deployment**: Your Azure ML model must be deployed to an Azure ML managed online endpoint. If your model is not yet deployed, please follow the instructions in the [deployment notebook](./deploy_hf_model_aml.ipynb).
 # 2. Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/azure_openai_setup.ipynb)
 #
 #
@@ -15,16 +15,16 @@
 #
 # Below are the environment variables that needs to be set in `.env` file:
 #
-# 1. **AML_SCORE_DEPLOYMENT_NAME**
-#    - This deployment name can be acquired from the AML managed online endpoint, as illustrated in image below.
+# 1. **AZURE_ML_SCORE_DEPLOYMENT_NAME**
+#    - This deployment name can be acquired from the Azure ML managed online endpoint, as illustrated in image below.
 #    <br> <img src="./../../assets/aml_deployment_name.png" alt="aml_deployment_name.png" height="400"/> <br>
 #
-# 2. **AML_SCORE_URI**
-#    - To obtain the score URI, navigate through the AML workspace by selecting 'Launch Studio', then 'Endpoints' on the left side, followed by 'Consume'. Copy the REST endpoint as depicted below.
+# 2. **AZURE_ML_SCORE_URI**
+#    - To obtain the score URI, navigate through the Azure ML workspace by selecting 'Launch Studio', then 'Endpoints' on the left side, followed by 'Consume'. Copy the REST endpoint as depicted below.
 #     <br> <img src="./../../assets/aml_score_uri.png" alt="aml_score_uri.png" height="400"/> <br>
 #
-# 3. **AML_SCORE_API_KEY**
-#    - Navigate through the AML workspace by selecting 'Launch Studio', then 'Endpoints' on the left side, followed by 'Consume'. The primary key can be obtained as shown in the subsequent image.
+# 3. **AZURE_ML_SCORE_API_KEY**
+#    - Navigate through the Azure ML workspace by selecting 'Launch Studio', then 'Endpoints' on the left side, followed by 'Consume'. The primary key can be obtained as shown in the subsequent image.
 #    <br> <img src="./../../assets/aml_score_key.png" alt="aml_score_key.png" height="400"/> <br>
 #
 #
@@ -35,25 +35,25 @@ import os
 
 # Load the environment variables from the .env file
 load_dotenv()
-deployment_name = os.getenv("AML_SCORE_DEPLOYMENT_NAME")  # ex., "mistralai-mixtral-8x7b-instru-1"
+deployment_name = os.getenv("AZURE_ML_SCORE_DEPLOYMENT_NAME")  # ex., "mistralai-mixtral-8x7b-instru-1"
 # The URL for the request
-url = os.getenv("AML_SCORE_URI")
+url = os.getenv("AZURE_ML_SCORE_URI")
 
 # Replace this with your API key or token
-api_key = os.getenv("AML_SCORE_API_KEY")
+api_key = os.getenv("AZURE_ML_SCORE_API_KEY")
 
 # %%
 print(f"Deployment name {deployment_name}")
-print(f"AML endpoint uri: {url}")
+print(f"Azure ML endpoint uri: {url}")
 print(f"API key: {api_key}")
 
 # %% [markdown]
-# **AML endpoint JSON body**
+# **Azure ML endpoint JSON body**
 #
-# The JSON body can be acquired by the following method: Access the Hugging Face model within the AML model catalog by going to the workspace, then to the studio, selecting 'Model Catalog', and using the search bar to find the model ID. Open the model to view the sample input schema as shown in the image below.
+# The JSON body can be acquired by the following method: Access the Hugging Face model within the Azure ML model catalog by going to the workspace, then to the studio, selecting 'Model Catalog', and using the search bar to find the model ID. Open the model to view the sample input schema as shown in the image below.
 # <br> <img src="./../../assets/aml_model_endpoint_schema.png" alt="aml_model_endpoint_schema.png" height="400"/> <br>
 #
-# In addition, we have compiled the details of the request and response for the Hugging Face models hosted on the Azure Machine Learning (AML) endpoint. Please review the [provided link](./HF%20AML%20Model%20Endpoint%20Guide.md) to access the JSON request body and response for the AML endpoint. Additionally, you can deduce the schema from the response if a bad request was sent to the inference endpoint.
+# In addition, we have compiled the details of the request and response for the Hugging Face models hosted on the Azure Machine Learning (Azure ML) endpoint. Please review the [provided link](./HF%20AML%20Model%20Endpoint%20Guide.md) to access the JSON request body and response for the Azure ML endpoint. Additionally, you can deduce the schema from the response if a bad request was sent to the inference endpoint.
 
 # %%
 import requests

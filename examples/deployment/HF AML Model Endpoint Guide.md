@@ -1,7 +1,7 @@
 # Hugging Face LLMs on Azure ML: Endpoint Interaction Guide
 
 ## Introduction
-This document serves as a comprehensive guide for interacting with Hugging Face's Large Language Models (LLMs) deployed on Azure Machine Learning (AML) managed online endpoints. It's intended to help users with the necessary information to effectively communicate with these models, detailing the request body and response details.
+This document serves as a comprehensive guide for interacting with Hugging Face's Large Language Models (LLMs) deployed on Azure Machine Learning (AZURE_ML) managed online endpoints. It's intended to help users with the necessary information to effectively communicate with these models, detailing the request body and response details.
 
 ## Models
 - [mistralai/Mixtral-8x7B-Instruct-v0.1](#mistralaimixtral-8x7b-instruct-v01)

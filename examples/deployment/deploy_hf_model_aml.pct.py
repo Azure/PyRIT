@@ -1,10 +1,10 @@
 # %% [markdown]
 # ## Deploying Hugging Face Models into Azure ML Managed Online Endpoint
 #
-# This notebook demonstrates the process of deploying registered models in AML workspace
-# to an AML managed online endpoint for real-time inference.
+# This notebook demonstrates the process of deploying registered models in Azure ML workspace
+# to an AZURE ML managed online endpoint for real-time inference.
 #
-# [Learn more about AML Managed Online Endpoints](https://learn.microsoft.com/en-us/azure/machine-learning/concept-endpoints-onlineview=azureml-api-2)
+# [Learn more about Azure ML Managed Online Endpoints](https://learn.microsoft.com/en-us/azure/machine-learning/concept-endpoints-onlineview=azureml-api-2)
 #
 # ### Prerequisites
 # - An Azure account with an active subscription. [Create one for free](https://azure.microsoft.com/free/).
@@ -15,7 +15,7 @@
 #      pip install azure-identity
 #   ```
 # - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/azure_openai_setup.ipynb)
-# - A Hugging Face model should be present in the AML model catalog. If it is missing, execute the [notebook](./download_and_register_hf_model_aml.ipynb) to download and register the Hugging Face model in the AML registry.
+# - A Hugging Face model should be present in the AZURE ML model catalog. If it is missing, execute the [notebook](./download_and_register_hf_model_aml.ipynb) to download and register the Hugging Face model in the AZURE ML registry.
 
 # %% [markdown]
 # ### Load Environment Variables
@@ -30,30 +30,30 @@
 #    - Obtain your Azure Subscription ID, essential for accessing Azure services.
 #
 # 2. **AZURE_RESOURCE_GROUP**
-#    - Identify the Resource Group where your Azure Machine Learning (AML) workspace is located.
+#    - Identify the Resource Group where your Azure Machine Learning (AZURE ML) workspace is located.
 #
-# 3. **AML_WORKSPACE_NAME**
-#    - Specify the name of your AML workspace where the model will be registered.
+# 3. **AZURE_ML_WORKSPACE_NAME**
+#    - Specify the name of your AZURE ML workspace where the model will be registered.
 #
-# 4. **AML_REGISTRY_NAME**
-#    - Choose a name for registering the model in your AML workspace, such as "HuggingFace". This helps in identifying if the model already exists in your AML Hugging Face registry.
+# 4. **AZURE_ML_REGISTRY_NAME**
+#    - Choose a name for registering the model in your AZURE ML workspace, such as "HuggingFace". This helps in identifying if the model already exists in your AZURE ML Hugging Face registry.
 #
-# 5. **AML_MODEL_NAME_TO_DEPLOY**
-#    - If the model is listed in the AML Hugging Face model catalog, then supply the model name as shown in the following image.
+# 5. **AZURE_ML_MODEL_NAME_TO_DEPLOY**
+#    - If the model is listed in the AZURE ML Hugging Face model catalog, then supply the model name as shown in the following image.
 #    <br> <img src="./../../assets/aml_hf_model.png" alt="aml_hf_model.png" height="400"/> <br>
-#    - If you intend to deploy the model from the AML workspace model registry, then use the model name as shown in the subsequent image.
+#    - If you intend to deploy the model from the AZURE ML workspace model registry, then use the model name as shown in the subsequent image.
 #    <br> <img src="./../../assets/aml_ws_model.png" alt="aml_ws_model.png" height="400"/> <br>
-# 6. **AML_MODEL_VERSION_TO_DEPLOY**
+# 6. **AZURE_ML_MODEL_VERSION_TO_DEPLOY**
 #    - You can find the details of the model version in the images from previous step associated with the respective model.
 #
-# 7. **AML_MODEL_DEPLOY_INSTANCE_SIZE**
+# 7. **AZURE_ML_MODEL_DEPLOY_INSTANCE_SIZE**
 #    - Select the size of the compute instance of for deploying the model, ensuring it's at least double the size of the model to effective inference.
 #
-# 9. **AML_MODEL_DEPLOY_INSTANCE_COUNT**
+# 9. **AZURE_ML_MODEL_DEPLOY_INSTANCE_COUNT**
 #    - Number of compute instances for model deployment.
 #
-# 10. **AML_MODEL_DEPLOY_REQUEST_TIMEOUT_MS**
-#     - Set the AML inference endpoint request timeout, recommended value is 60000 (in millis).
+# 10. **AZURE_ML_MODEL_DEPLOY_REQUEST_TIMEOUT_MS**
+#     - Set the AZURE ML inference endpoint request timeout, recommended value is 60000 (in millis).
 #
 #
 
@@ -67,13 +67,13 @@ load_dotenv()
 
 subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
 resource_group = os.getenv("AZURE_RESOURCE_GROUP")
-workspace_name = os.getenv("AML_WORKSPACE_NAME")
-registry_name = os.getenv("AML_REGISTRY_NAME")
-model_to_deploy = os.getenv("AML_MODEL_NAME_TO_DEPLOY")
-model_version = os.getenv("AML_MODEL_VERSION_TO_DEPLOY")
-instance_type = os.getenv("AML_MODEL_DEPLOY_INSTANCE_SIZE")
-instance_count = int(os.getenv("AML_MODEL_DEPLOY_INSTANCE_COUNT"))
-request_timeout_ms = os.getenv("AML_MODEL_DEPLOY_REQUEST_TIMEOUT_MS")
+workspace_name = os.getenv("AZURE_ML_WORKSPACE_NAME")
+registry_name = os.getenv("AZURE_ML_REGISTRY_NAME")
+model_to_deploy = os.getenv("AZURE_ML_MODEL_NAME_TO_DEPLOY")
+model_version = os.getenv("AZURE_ML_MODEL_VERSION_TO_DEPLOY")
+instance_type = os.getenv("AZURE_ML_MODEL_DEPLOY_INSTANCE_SIZE")
+instance_count = int(os.getenv("AZURE_ML_MODEL_DEPLOY_INSTANCE_COUNT"))
+request_timeout_ms = os.getenv("AZURE_ML_MODEL_DEPLOY_REQUEST_TIMEOUT_MS")
 
 # %%
 print(f"Subscription ID: {subscription_id}")
@@ -117,7 +117,7 @@ def check_model_version_exists(client, model_name, version) -> bool:
     This function lists all models with the given name in the registry using the provided client. It then checks if the specified version exists among those models.
 
     Args:
-        client: The client object used to interact with the model registry. This can be an Azure ML model catalog client or an AML workspace model client.
+        client: The client object used to interact with the model registry. This can be an Azure ML model catalog client or an Azure ML workspace model client.
         model_name (str): The name of the model to check in the registry.
         version (str): The specific version of the model to check for.
 
@@ -134,33 +134,33 @@ def check_model_version_exists(client, model_name, version) -> bool:
 
 
 # %%
-# Check if the Hugging Face model exists in the AML workspace model registry
+# Check if the Hugging Face model exists in the Azure ML workspace model registry
 model = None
 if check_model_version_exists(workspace_ml_client, model_to_deploy, model_version):
-    print("Model found in the AML workspace model registry.")
+    print("Model found in the Azure ML workspace model registry.")
     model = workspace_ml_client.models.get(model_to_deploy, model_version)
     print(
         "\n\nUsing model name: {0}, version: {1}, id: {2} for inferencing".format(model.name, model.version, model.id)
     )
-# Check if the Hugging Face model exists in the AML model catalog registry
+# Check if the Hugging Face model exists in the Azure ML model catalog registry
 elif check_model_version_exists(registry_ml_client, model_to_deploy, model_version):
-    print("Model found in the AML model catalog registry.")
+    print("Model found in the Azure ML model catalog registry.")
     model = registry_ml_client.models.get(model_to_deploy, model_version)
     print(
         "\n\nUsing model name: {0}, version: {1}, id: {2} for inferencing".format(model.name, model.version, model.id)
     )
 else:
     raise ValueError(
-        f"Model {model_to_deploy} not found in any registry. Please run the notebook (download_and_register_hf_model_aml.ipynb) to download and register Hugging Face model to AML workspace model registry."
+        f"Model {model_to_deploy} not found in any registry. Please run the notebook (download_and_register_hf_model_aml.ipynb) to download and register Hugging Face model to Azure ML workspace model registry."
     )
 endpoint_name = model_to_deploy + str(model_version)
 
 # %%
-# Using the first 32 characters because AML endpoint names must be between 3 and 32 characters in length.
+# Using the first 32 characters because Azure ML endpoint names must be between 3 and 32 characters in length.
 endpoint_name = endpoint_name[:32]
 
 # %% [markdown]
-# **Create an AML managed online endpoint**
+# **Create an Azure ML managed online endpoint**
 # To define an endpoint, you need to specify:
 #
 # Endpoint name: The name of the endpoint. It must be unique in the Azure region. For more information on the naming rules, see managed online endpoint limits.
@@ -180,7 +180,7 @@ endpoint = ManagedOnlineEndpoint(
 workspace_ml_client.begin_create_or_update(endpoint).wait()
 
 # %% [markdown]
-# **Add deployment to an AML endpoint created above**
+# **Add deployment to an Azure ML endpoint created above**
 #
 # Please be aware that deploying, particularly larger models, may take some time. Once the deployment is finished, the provisioning state will be marked as 'Succeeded', as illustrated in the image below.
 # ![image.png](attachment:image.png)
