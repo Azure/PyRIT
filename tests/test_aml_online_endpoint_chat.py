@@ -8,6 +8,7 @@ import pytest
 
 from pyrit.chat.aml_online_endpoint_chat import AMLOnlineEndpointChat
 from pyrit.models import ChatMessage
+from pyrit.chat_message_normalizer import ChatMessageNop, GenericSystemSquash, ChatMessageNormalizer
 
 
 @pytest.fixture
@@ -59,7 +60,15 @@ def test_complete_chat(aml_online_chat: AMLOnlineEndpointChat):
         assert response == "extracted response"
         mock.assert_called_once()
 
-def test_complete_chat_squashes_system(aml_online_chat: AMLOnlineEndpointChat):
+
+# The None parameter checks the default is the same as ChatMessageNop
+@pytest.mark.parametrize("message_normalizer", [None, ChatMessageNop()])
+def test_complete_chat_with_nop_normalizer(
+    aml_online_chat: AMLOnlineEndpointChat, message_normalizer: ChatMessageNormalizer
+):
+    if message_normalizer:
+        aml_online_chat.chat_message_normalizer = message_normalizer
+
     messages = [
         ChatMessage(role="system", content="system content"),
         ChatMessage(role="user", content="user content"),
@@ -74,9 +83,34 @@ def test_complete_chat_squashes_system(aml_online_chat: AMLOnlineEndpointChat):
 
         args, kwargs = mock.call_args
         body = kwargs["request_body"]
+
+        assert body
+        assert len(body["input_data"]["input_string"]) == 2
+        assert body["input_data"]["input_string"][0]["role"] == "system"
+
+
+def test_complete_chat_with_squashnormalizer(aml_online_chat: AMLOnlineEndpointChat):
+    aml_online_chat.chat_message_normalizer = GenericSystemSquash()
+
+    messages = [
+        ChatMessage(role="system", content="system content"),
+        ChatMessage(role="user", content="user content"),
+    ]
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
+        mock_response = Mock()
+        mock_response.json.return_value = {"output": "extracted response"}
+        mock.return_value = mock_response
+        response = aml_online_chat.complete_chat(messages)
+        assert response == "extracted response"
+
+        args, kwargs = mock.call_args
+        body = kwargs["request_body"]
+
         assert body
         assert len(body["input_data"]["input_string"]) == 1
         assert body["input_data"]["input_string"][0]["role"] == "user"
+
 
 def test_complete_chat_bad_json_response(aml_online_chat: AMLOnlineEndpointChat):
     messages = [

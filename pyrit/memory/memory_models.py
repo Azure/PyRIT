@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import time
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Extra, Field
@@ -29,7 +29,7 @@ class ConversationMemoryEntry(BaseModel, extra=Extra.forbid):
     future references like scoring information.
     """
 
-    role: str
+    role: Literal["user", "assistant", "system"]
     content: str
     conversation_id: str
     timestamp_in_ns: int = Field(default_factory=time.time_ns)
