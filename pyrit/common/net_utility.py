@@ -22,13 +22,13 @@ def make_request_and_raise_if_error(
     method: str,
     request_body: dict[str, str] = None,
     headers: dict[str, str] = None,
-    use_proxy: bool = False,
+    debug: bool = False,
 ) -> httpx.Response:
     """Make a request and raise an exception if it fails."""
     headers = headers or {}
     request_body = request_body or {}
 
-    with get_httpx_client(debug=use_proxy) as client:
+    with get_httpx_client(debug=debug) as client:
         if request_body:
             headers["Content-Type"] = "application/json"
             response = client.request(method=method, url=endpoint_uri, json=request_body, headers=headers)

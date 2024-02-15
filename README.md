@@ -34,8 +34,8 @@ protect against prompt injection attacks.
 
 Check out our [Wiki](https://github.com/Azure/PyRIT/wiki/) for more information
 on how to [get started](https://github.com/Azure/PyRIT/wiki/Getting-started),
-our [user guide](https://github.com/Azure/PyRIT/wiki/User-guide) and more,
-as well as our [examples](./examples/) folder.
+our [How to Guide](https://github.com/Azure/PyRIT/wiki/PyRIT-Framework-How-to-Guide)
+and more, as well as our [examples](./examples/) folder.
 
 ## Trademarks
 
