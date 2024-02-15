@@ -218,7 +218,7 @@ class PromptTemplate(YamlLoadable):
 
 
 class ChatMessage(BaseModel, extra=Extra.forbid):
-    role: str
+    role: Literal["system", "user", "assistant"]
     content: str
 
 

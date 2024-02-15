@@ -62,7 +62,7 @@ def simple_conversation() -> ConversationMemoryEntryList:
                 timestamp_in_ns=0,
             ),
             ConversationMemoryEntry(
-                role="bot",
+                role="assistant",
                 content="Hello from Bot!",
                 conversation_id="1",
                 timestamp_in_ns=0,

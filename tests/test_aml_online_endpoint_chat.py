@@ -59,6 +59,24 @@ def test_complete_chat(aml_online_chat: AMLOnlineEndpointChat):
         assert response == "extracted response"
         mock.assert_called_once()
 
+def test_complete_chat_squashes_system(aml_online_chat: AMLOnlineEndpointChat):
+    messages = [
+        ChatMessage(role="system", content="system content"),
+        ChatMessage(role="user", content="user content"),
+    ]
+
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
+        mock_response = Mock()
+        mock_response.json.return_value = {"output": "extracted response"}
+        mock.return_value = mock_response
+        response = aml_online_chat.complete_chat(messages)
+        assert response == "extracted response"
+
+        args, kwargs = mock.call_args
+        body = kwargs["request_body"]
+        assert body
+        assert len(body["input_data"]["input_string"]) == 1
+        assert body["input_data"]["input_string"][0]["role"] == "user"
 
 def test_complete_chat_bad_json_response(aml_online_chat: AMLOnlineEndpointChat):
     messages = [

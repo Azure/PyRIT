@@ -5,6 +5,7 @@ import asyncio
 import logging
 
 from pyrit.common import environment_variables, net_utility
+from pyrit.common.chat_message_normalizer import squash_system_message
 from pyrit.interfaces import ChatSupport
 from pyrit.models import ChatMessage
 
@@ -72,7 +73,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
 
         response = net_utility.make_request_and_raise_if_error(
-            self.endpoint_uri, method="POST", request_body=payload, headers=headers
+            endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
         return response.json()["output"]
 
@@ -86,7 +87,8 @@ class AMLOnlineEndpointChat(ChatSupport):
     ) -> dict:
         """Constructs the HTTP request body for the AML online endpoint."""
 
-        messages_dict = [message.dict() for message in messages]
+        squashed_messages = squash_system_message(messages)
+        messages_dict = [message.dict() for message in squashed_messages]
 
         data = {
             "input_data": {
