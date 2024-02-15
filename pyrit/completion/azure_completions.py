@@ -3,20 +3,27 @@
 
 from openai import AzureOpenAI
 
+from pyrit.common import environment_variables
 from pyrit.interfaces import CompletionSupport
 from pyrit.models import PromptResponse
 
 
 class AzureCompletion(CompletionSupport):
-    def __init__(self, api_key: str, api_base: str, model: str, api_version: str = "2023-05-15"):
-        self._model = model
-        self._api_version = api_version
-        self._api_base = api_base
+    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_COMPLETION_KEY"
+    ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_COMPLETION_ENDPOINT"
+    DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_COMPLETION_DEPLOYMENT"
+
+    def __init__(
+        self, api_key: str = None, endpoint: str = None, deployment: str = None, api_version: str = "2023-05-15"
+    ):
+        api_key = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
+        endpoint = environment_variables.get_required_value(self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, endpoint)
+        self._model = environment_variables.get_required_value(self.DEPLOYMENT_ENVIRONMENT_VARIABLE, deployment)
 
         self._client = AzureOpenAI(
             api_key=api_key,
             api_version=api_version,
-            azure_endpoint=api_base,
+            azure_endpoint=endpoint,
         )
 
     def complete_text(self, text: str, **kwargs) -> PromptResponse:
