@@ -4,6 +4,7 @@
 from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNormalizer
 
+
 class GenericSystemSquash(ChatMessageNormalizer):
     def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
         """
@@ -12,11 +13,11 @@ class GenericSystemSquash(ChatMessageNormalizer):
         """
 
         normalized_messages = ChatMessageNormalizer.squash_system_message(
-                                messages=messages,
-                                squash_function=GenericSystemSquash.combine_system_user_message)
+            messages=messages, squash_function=GenericSystemSquash.combine_system_user_message
+        )
         return normalized_messages
 
-
+    @staticmethod
     def combine_system_user_message(system_message: ChatMessage, user_message: ChatMessage) -> str:
         """Combines the system message with the user message.
 

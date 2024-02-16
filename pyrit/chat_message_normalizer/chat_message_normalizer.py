@@ -4,6 +4,7 @@
 import abc
 from pyrit.models import ChatMessage
 
+
 class ChatMessageNormalizer(abc.ABC):
     @abc.abstractmethod
     def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
@@ -12,7 +13,7 @@ class ChatMessageNormalizer(abc.ABC):
         """
         pass
 
-
+    @staticmethod
     def squash_system_message(messages: list[ChatMessage], squash_function) -> list[ChatMessage]:
         """
         Combines the system message into the first user request.
@@ -35,5 +36,3 @@ class ChatMessageNormalizer(abc.ABC):
             return [first_user_message] + messages[2:]
 
         return messages
-
-

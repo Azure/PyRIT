@@ -2,7 +2,8 @@
 # Licensed under the MIT license.
 
 from pyrit.models import ChatMessage
-from pyrit.chat_message_normalizer  import ChatMessageNormalizer
+from pyrit.chat_message_normalizer import ChatMessageNormalizer
+
 
 class ChatMessageNop(ChatMessageNormalizer):
     def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
