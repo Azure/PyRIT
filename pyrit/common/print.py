@@ -4,18 +4,16 @@
 import textwrap
 
 import termcolor
-
 from pyrit.memory.memory_models import ConversationMemoryEntry
 from pyrit.models import ChatMessage
-
-_COLOR_TYPE = termcolor._types.Color
+from termcolor._types import Color
 
 
 def print_chat_messages_with_color(
     messages: list[ChatMessage | ConversationMemoryEntry],
     max_content_character_width: int = 80,
     left_padding_width: int = 20,
-    custom_colors: dict[str, _COLOR_TYPE] = None,
+    custom_colors: dict[str, Color] = None,
 ) -> None:
     """Print chat messages with color to console.
 
@@ -29,7 +27,7 @@ def print_chat_messages_with_color(
     Returns:
         None
     """
-    role_to_color: dict[str, _COLOR_TYPE] = {
+    role_to_color: dict[str, Color] = {
         "system": "red",
         "user": "green",
         "assistant": "blue",

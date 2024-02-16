@@ -3,25 +3,25 @@ name = "pyrit"
 version = "0.1.0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
-    {name = "Microsoft AI Red Team", email = "airedteam@microsoft.com"},
-    {name = "dlmgary"},
-    {name = "amandajean119"},
-    {name = "microsiska"},
-    {name = "rdheekonda"},
-    {name = "rlundeen2"},
-    {name = "romanlutz"},
-    {name = "jbolor21"},
-    {name = "nina-msft"},
+    { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
+    { name = "dlmgary" },
+    { name = "amandajean119" },
+    { name = "microsiska" },
+    { name = "rdheekonda" },
+    { name = "rlundeen2" },
+    { name = "romanlutz" },
+    { name = "jbolor21" },
+    { name = "nina-msft" },
 ]
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 keywords = [
     "llm",
     "ai-security",
     "ai-red-team",
     "ai-robustness",
     "ai-robustness-testing",
-    "ai-risk-assessment"
+    "ai-risk-assessment",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -48,7 +48,7 @@ dependencies = [
     "tokenizers>=0.15.0",
     "torch==2.1.2",
     "transformers>=4.36.0",
-    "types-requests>=2.31.0.2"
+    "types-requests>=2.31.0.2",
 ]
 
 [project.optional-dependencies]
@@ -56,7 +56,7 @@ dev = [
     "black>=23.3.0",
     "flake8>=6.0.0",
     "flake8-copyright>=0.2.0",
-    "mypy>=1.2.0",
+    "mypy>=1.8.0",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",
     "pytest-cov>=4.0.0",
