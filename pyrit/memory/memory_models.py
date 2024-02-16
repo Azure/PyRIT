@@ -2,10 +2,12 @@
 # Licensed under the MIT license.
 
 import time
-from typing import Literal, Optional
+from typing import Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from pyrit.models import ChatMessageRole
 
 
 class EmbeddingMemoryData(BaseModel):
@@ -31,7 +33,7 @@ class ConversationMemoryEntry(BaseModel):
     """
 
     model_config = ConfigDict(extra="forbid")
-    role: Literal["user", "assistant", "system"]
+    role: ChatMessageRole
     content: str
     conversation_id: str
     timestamp_in_ns: int = Field(default_factory=time.time_ns)

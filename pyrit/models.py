@@ -15,6 +15,10 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 
 
+# Originally derived from this:
+# https://github.com/openai/openai-python/blob/7f9e85017a0959e3ba07834880d92c748f8f67ab/src/openai/types/chat/chat_completion_role.py#L4
+ChatMessageRole = Literal["system", "user", "assistant", "tool", "function"]
+
 @dataclass
 class Score:
     score_type: Literal["int", "float", "str", "bool"]
@@ -220,7 +224,7 @@ class PromptTemplate(YamlLoadable):
 
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    role: Literal["system", "user", "assistant"]
+    role: ChatMessageRole
     content: str
 
 
