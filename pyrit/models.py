@@ -12,7 +12,12 @@ from pathlib import Path
 from typing import Literal, Optional, Type, TypeVar
 
 import yaml
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, ConfigDict
+
+
+# Originally derived from this:
+# https://github.com/openai/openai-python/blob/7f9e85017a0959e3ba07834880d92c748f8f67ab/src/openai/types/chat/chat_completion_role.py#L4
+ChatMessageRole = Literal["system", "user", "assistant", "tool", "function"]
 
 
 @dataclass
@@ -23,7 +28,8 @@ class Score:
     score_explanation: str = ""
 
 
-class PromptResponse(BaseModel, extra=Extra.forbid):
+class PromptResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     # The text response for the prompt
     completion: str
     # The original prompt
@@ -217,23 +223,27 @@ class PromptTemplate(YamlLoadable):
         return final_prompt
 
 
-class ChatMessage(BaseModel, extra=Extra.forbid):
-    role: str
+class ChatMessage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: ChatMessageRole
     content: str
 
 
-class EmbeddingUsageInformation(BaseModel, extra=Extra.forbid):
+class EmbeddingUsageInformation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     prompt_tokens: int
     total_tokens: int
 
 
-class EmbeddingData(BaseModel, extra=Extra.forbid):
+class EmbeddingData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     embedding: list[float]
     index: int
     object: str
 
 
-class EmbeddingResponse(BaseModel, extra=Extra.forbid):
+class EmbeddingResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     model: str
     object: str
     usage: EmbeddingUsageInformation

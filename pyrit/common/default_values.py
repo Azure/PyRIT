@@ -19,7 +19,7 @@ def load_default_env() -> None:
 
     dotenv.load_dotenv(file_path, override=True)
 
-def get_required_value(environment_variable_name: str, passed_value: str) -> str:
+def get_required_value(*, env_var_name: str, passed_value: str) -> str:
     """
     Gets a required value from an environment variable or a passed value,
     prefering the passed value
@@ -37,8 +37,8 @@ def get_required_value(environment_variable_name: str, passed_value: str) -> str
     if passed_value:
         return passed_value
 
-    value = os.environ.get(environment_variable_name)
+    value = os.environ.get(env_var_name)
     if value:
         return value
 
-    raise ValueError(f"Environment variable {environment_variable_name} is required")
+    raise ValueError(f"Environment variable {env_var_name} is required")
