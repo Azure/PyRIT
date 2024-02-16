@@ -5,16 +5,17 @@ import time
 from typing import Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class EmbeddingMemoryData(BaseModel, extra=Extra.forbid):
+class EmbeddingMemoryData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     uuid: UUID = Field(default_factory=uuid4)
     embedding: list[float]
     embedding_type_name: str
 
 
-class ConversationMemoryEntry(BaseModel, extra=Extra.forbid):
+class ConversationMemoryEntry(BaseModel):
     """
     Represents a single memory entry.
 
@@ -29,6 +30,7 @@ class ConversationMemoryEntry(BaseModel, extra=Extra.forbid):
     future references like scoring information.
     """
 
+    model_config = ConfigDict(extra="forbid")
     role: str
     content: str
     conversation_id: str
@@ -44,11 +46,13 @@ class ConversationMemoryEntry(BaseModel, extra=Extra.forbid):
 
 
 # This class is convenient for serialization
-class ConversationMemoryEntryList(BaseModel, extra=Extra.forbid):
+class ConversationMemoryEntryList(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     conversations: list[ConversationMemoryEntry]
 
 
-class ConversationMessageWithSimilarity(BaseModel, extra=Extra.forbid):
+class ConversationMessageWithSimilarity(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     role: str
     content: str
     metric: str
