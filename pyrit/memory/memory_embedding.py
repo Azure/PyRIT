@@ -46,7 +46,7 @@ def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -
     api_base = os.environ.get("AZURE_OPENAI_EMBEDDING_ENDPOINT")
     deployment = os.environ.get("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
     if api_key and api_base and deployment:
-        model = AzureTextEmbedding(api_key=api_key, api_base=api_base, model=deployment)
+        model = AzureTextEmbedding(api_key=api_key, endpoint=api_base, deployment=deployment)
         return MemoryEmbedding(embedding_model=model)
     else:
         return None

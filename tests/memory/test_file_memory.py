@@ -209,7 +209,7 @@ def test_file_memory_labels_included(memory: FileMemory):
 
 
 def test_explicit_embedding_model_set():
-    embedding = AzureTextEmbedding(api_key="testkey", api_base="testbase", model="deployment")
+    embedding = AzureTextEmbedding(api_key="testkey", endpoint="testbase", deployment="deployment")
 
     with NamedTemporaryFile(suffix=".json.memory") as tmp:
         memory = FileMemory(filepath=tmp.name, embedding_model=embedding)
@@ -227,7 +227,7 @@ def test_default_embedding_model_set_none():
 
 
 def test_default_embedding_model_set_correctly():
-    embedding = AzureTextEmbedding(api_key="testkey", api_base="testbase", model="deployment")
+    embedding = AzureTextEmbedding(api_key="testkey", endpoint="testbase", deployment="deployment")
 
     with (
         NamedTemporaryFile(suffix=".json.memory") as tmp,

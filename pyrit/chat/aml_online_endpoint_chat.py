@@ -4,7 +4,7 @@
 import asyncio
 import logging
 
-from pyrit.common import environment_variables, net_utility
+from pyrit.common import default_values, net_utility
 from pyrit.interfaces import ChatSupport
 from pyrit.models import ChatMessage
 
@@ -34,10 +34,12 @@ class AMLOnlineEndpointChat(ChatSupport):
             endpoint_uri: AML online endpoint URI.
             api_key: api key for the endpoint
         """
-        self.endpoint_uri: str = environment_variables.get_required_value(
-            self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, endpoint_uri
+        self.endpoint_uri: str = default_values.get_required_value(
+            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri
         )
-        self.api_key: str = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
+        self.api_key: str = default_values.get_required_value(
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
 
     def complete_chat(
         self,
