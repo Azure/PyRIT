@@ -1,23 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import logging
 
 from pyrit.common import default_values, net_utility
+from pyrit.chat_message_normalizer import ChatMessageNormalizer, ChatMessageNop
 from pyrit.interfaces import ChatSupport
 from pyrit.models import ChatMessage
 
 logger = logging.getLogger(__name__)
-_loop = asyncio.get_event_loop()
 
 
 class AMLOnlineEndpointChat(ChatSupport):
-    """The AMLOnlineEndpointChat interacts with AML-managed online endpoints, specifically
+    """
+    The AMLOnlineEndpointChat interacts with AML-managed online endpoints, specifically
     for conducting red teaming activities.
-
-    Args:
-        ChatSupport (abc.ABC): Implementing methods for interactions with the AML endpoint
     """
 
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_ML_API_KEY"
@@ -28,11 +25,14 @@ class AMLOnlineEndpointChat(ChatSupport):
         *,
         endpoint_uri: str = None,
         api_key: str = None,
+        chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
     ) -> None:
         """
         Args:
             endpoint_uri: AML online endpoint URI.
             api_key: api key for the endpoint
+            chat_message_normalizer: The chat message normalizer to use. Some models expect
+                different formats for system prompts and this class provides that
         """
         self.endpoint_uri: str = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri
@@ -40,6 +40,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         self.api_key: str = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
+        self.chat_message_normalizer = chat_message_normalizer
 
     def complete_chat(
         self,
@@ -74,7 +75,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
 
         response = net_utility.make_request_and_raise_if_error(
-            self.endpoint_uri, method="POST", request_body=payload, headers=headers
+            endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
         return response.json()["output"]
 
@@ -88,7 +89,8 @@ class AMLOnlineEndpointChat(ChatSupport):
     ) -> dict:
         """Constructs the HTTP request body for the AML online endpoint."""
 
-        messages_dict = [message.dict() for message in messages]
+        squashed_messages = self.chat_message_normalizer.normalize(messages)
+        messages_dict = [message.dict() for message in squashed_messages]
 
         data = {
             "input_data": {

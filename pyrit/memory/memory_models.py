@@ -7,6 +7,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from pyrit.models import ChatMessageRole
+
 
 class EmbeddingMemoryData(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -31,7 +33,7 @@ class ConversationMemoryEntry(BaseModel):
     """
 
     model_config = ConfigDict(extra="forbid")
-    role: str
+    role: ChatMessageRole
     content: str
     conversation_id: str
     timestamp_in_ns: int = Field(default_factory=time.time_ns)
