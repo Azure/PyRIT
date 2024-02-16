@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 from openai import AsyncAzureOpenAI, AzureOpenAI
 from openai.types.chat import ChatCompletion
-from pyrit.common import environment_variables
+from pyrit.common import default_values
 
 from pyrit.interfaces import ChatSupport
 from pyrit.models import ChatMessage
@@ -22,8 +22,12 @@ class AzureOpenAIChat(ChatSupport):
     ) -> None:
         self._deployment_name = deployment_name
 
-        endpoint = environment_variables.get_required_value(self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, endpoint)
-        api_key = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
+        endpoint = default_values.get_required_value(
+            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
+        )
+        api_key = default_values.get_required_value(
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
 
         self._client = AzureOpenAI(
             api_key=api_key,

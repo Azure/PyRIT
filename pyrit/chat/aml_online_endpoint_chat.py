@@ -3,7 +3,7 @@
 
 import logging
 
-from pyrit.common import environment_variables, net_utility
+from pyrit.common import default_values, net_utility
 from pyrit.chat_message_normalizer import ChatMessageNormalizer, ChatMessageNop
 from pyrit.interfaces import ChatSupport
 from pyrit.models import ChatMessage
@@ -34,10 +34,12 @@ class AMLOnlineEndpointChat(ChatSupport):
             chat_message_normalizer: The chat message normalizer to use. Some models expect
                 different formats for system prompts and this class provides that
         """
-        self.endpoint_uri: str = environment_variables.get_required_value(
-            self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, endpoint_uri
+        self.endpoint_uri: str = default_values.get_required_value(
+            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri
         )
-        self.api_key: str = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
+        self.api_key: str = default_values.get_required_value(
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
         self.chat_message_normalizer = chat_message_normalizer
 
     def complete_chat(

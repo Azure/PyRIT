@@ -10,31 +10,29 @@ repos:
       - id: check-added-large-files
       - id: detect-private-key
 
-  - repo: https://github.com/psf/black
-    rev: 23.7.0
+  # https://black.readthedocs.io/en/stable/integrations/source_version_control.html
+  # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 24.2.0
     hooks:
       - id: black
         language_version: python3.10
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
+    rev: 7.0.0
     hooks:
       - id: flake8
+        exclude: examples/deployment/
 
   - repo: https://github.com/pycqa/pylint
-    rev: v2.16.2
+    rev: v3.0.3
     hooks:
       - id: pylint
-        args: [ --disable=all, --enable=unused-import ]
+        args: [--disable=all, --enable=unused-import]
         exclude: NOTICE.txt
 
-  # Calling local version of mypy rather the one from GitHub https://github.com/pre-commit/mirrors-mypy
-  # because there is no way to sync the configs in pyproject.toml and the .pre-commit-config.yaml
-  # See https://stackoverflow.com/a/75003826/4956355
-  - repo: local
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
     hooks:
       - id: mypy
-        name: mypy
-        entry: mypy
-        language: system
-        types: [ python ]
+        args: [--install-types, --non-interactive, --ignore-missing-imports]
