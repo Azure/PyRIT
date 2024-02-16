@@ -61,13 +61,13 @@ import textwrap
 
 from pyrit.chat import AzureOpenAIChat
 from pyrit.agent import RedTeamingBot
-from pyrit.common import environment_variables
+from pyrit.common import default_values
 from pyrit.completion import GandalfCompletionEngine, GandalfLevel
 from pyrit.score import GandalfScorer
 from pyrit.models import PromptTemplate
 import os
 
-environment_variables.load_default_env()
+default_values.load_default_env()
 
 aoai_chat_engine = AzureOpenAIChat(
     deployment_name="gpt-4",
