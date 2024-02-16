@@ -14,17 +14,27 @@ class AzureCompletion(CompletionSupport):
     DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_COMPLETION_DEPLOYMENT"
 
     def __init__(
-        self, api_key: str = None, endpoint: str = None, deployment: str = None, api_version: str = "2023-05-15"
-    ):
-        api_key = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
-        endpoint = environment_variables.get_required_value(self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, endpoint)
-        self._model = environment_variables.get_required_value(self.DEPLOYMENT_ENVIRONMENT_VARIABLE, deployment)
+            self, api_key: str = None, endpoint: str = None, deployment: str = None, api_version: str = "2023-05-15"
+        ):
+            """
+            Initializes an instance of the AzureCompletions class.
 
-        self._client = AzureOpenAI(
-            api_key=api_key,
-            api_version=api_version,
-            azure_endpoint=endpoint,
-        )
+            Args:
+                api_key (str, optional): The API key for accessing the Azure OpenAI service. Defaults to environment variable.
+                endpoint (str, optional): The endpoint URL for the Azure OpenAI service. Defaults to environment variable.
+                deployment (str, optional): The deployment name for the Azure OpenAI service. Defaults to environment variable.
+                api_version (str, optional): The API version for the Azure OpenAI service. Defaults to "2023-05-15".
+            """
+
+            api_key = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
+            endpoint = environment_variables.get_required_value(self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, endpoint)
+            self._model = environment_variables.get_required_value(self.DEPLOYMENT_ENVIRONMENT_VARIABLE, deployment)
+
+            self._client = AzureOpenAI(
+                api_key=api_key,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+            )
 
     def complete_text(self, text: str, **kwargs) -> PromptResponse:
         """Complete the text using the Azure Completion API.

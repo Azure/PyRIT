@@ -18,10 +18,11 @@ class AzureTextEmbedding(_TextEmbedding):
         """Generate embedding using the Azure API
 
         Args:
-            api_key: The API key to use
-            endpoint: The API base to use
-            deployment: The engine to use, usually name of the deployment
-            api_version: The API version to use
+            api_key: The API key to use. Defaults to environment variable.
+            endpoint: The API base to use, sometimes referred to as the api_base. Defaults to environment variable.
+            deployment: The engine to use, in AOAI referred to as deployment, in some APIs referred to as model.
+                        Defaults to environment variable.
+            api_version: The API version to use. Defaults to "2023-05-15".
         """
 
         api_key = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
