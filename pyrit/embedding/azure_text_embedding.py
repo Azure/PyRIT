@@ -3,7 +3,7 @@
 
 from openai import AzureOpenAI
 
-from pyrit.common import environment_variables
+from pyrit.common import default_values
 from pyrit.embedding._text_embedding import _TextEmbedding
 
 
@@ -25,9 +25,15 @@ class AzureTextEmbedding(_TextEmbedding):
             api_version: The API version to use. Defaults to "2023-05-15".
         """
 
-        api_key = environment_variables.get_required_value(self.API_KEY_ENVIRONMENT_VARIABLE, api_key)
-        endpoint = environment_variables.get_required_value(self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, endpoint)
-        deployment = environment_variables.get_required_value(self.DEPLOYMENT_ENVIRONMENT_VARIABLE, deployment)
+        api_key = default_values.get_required_value(
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
+        endpoint = default_values.get_required_value(
+            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
+        )
+        deployment = default_values.get_required_value(
+            env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment
+        )
 
         self._client = AzureOpenAI(
             api_key=api_key,
