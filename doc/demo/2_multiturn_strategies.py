@@ -67,15 +67,15 @@ while not objective_achieved:
         print (f"{Fore.RED}Unable to achieve the objective after 2 attempts.")
         break
 
-    print(f"{Fore.GREEN}#### Attempt #{attempts}")
-    print(f"#### Sending the following to the target bot: {adversarial_bot_message}")
+    print(f"{Fore.YELLOW}#### Attempt #{attempts}")
+    print(f"{Fore.GREEN}#### Sending the following to the target bot: {adversarial_bot_message}")
     print()
 
     multi_turn_messages.append(ChatMessage(role="user", content=adversarial_bot_message))
 
     target_bot_response = target_bot.complete_chat(messages=multi_turn_messages)
 
-    print (f"Response from target bot: {target_bot_response}")
+    print (f"{Fore.WHITE}Response from target bot: {target_bot_response}")
     multi_turn_messages.append(ChatMessage(role="assistant", content=target_bot_response))
 
     attempts += 1

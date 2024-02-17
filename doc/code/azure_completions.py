@@ -14,9 +14,9 @@
 
 # %%
 import os
-from pyrit.common import environment_variables
+from pyrit.common import default_values
 
-environment_variables.load_default_env()
+default_values.load_default_env()
 
 api_base = os.environ.get("AZURE_OPENAI_COMPLETION_ENDPOINT")
 api_key = os.environ.get("AZURE_OPENAI_COMPLETION_KEY")
@@ -39,8 +39,9 @@ prompt = "hello world!"
 
 davinci_engine = AzureCompletion(
     api_key=api_key,
-    api_base=api_base,
-    model=deployment_name)
+    endpoint=api_base,
+    deployment=deployment_name)
+
 text_response = davinci_engine.complete_text(text=prompt)
 
 pprint(text_response, width=280, compact=True)
