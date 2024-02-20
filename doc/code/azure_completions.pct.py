@@ -1,15 +1,15 @@
 # %% [markdown]
 # ## Introduction
-# 
+#
 # This Jupyter notebook gives an introduction on how to use PyRIT to abstract dealing
 # with different [embedding](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/understand-embeddings) and [completion](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/completions) endpoints, and gives an introduction
 # for how to add custom endpoints for your own use cases.
-# 
+#
 # There will be three main parts to this notebook:
 # 1. Work with Azure OpenAI Completions
 # 2. Work with Azure OpenAI Embeddings
 # 3. Embeddings serialization
-# 
+#
 # Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/azure_openai_setup.ipynb)
 
 # %%
@@ -37,12 +37,8 @@ from pyrit.completion.azure_completions import AzureCompletion
 
 prompt = "hello world!"
 
-davinci_engine = AzureCompletion(
-    api_key=api_key,
-    endpoint=api_base,
-    deployment=deployment_name)
+davinci_engine = AzureCompletion(api_key=api_key, endpoint=api_base, deployment=deployment_name)
 
 text_response = davinci_engine.complete_text(text=prompt)
 
 pprint(text_response, width=280, compact=True)
-

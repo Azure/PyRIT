@@ -20,12 +20,12 @@ embedding_response = ada_embedding_engine.generate_text_embedding(text=input_tex
 pprint(embedding_response, width=280, compact=True)
 
 # %% [markdown]
-# 
+#
 # ### Embeddings Serialization
-# 
+#
 # All the PyRIT's embeddings are easily serializable. This allows you to easily save and load embeddings for later use, and be able to inspect the value of the embeddings offline (since
 # embeddings are stored as JSON objects).
-# 
+#
 
 # %% [markdown]
 # To view the json of an embedding

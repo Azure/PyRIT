@@ -5,10 +5,11 @@
 
 from pyrit.memory import FileMemory
 from pyrit.models import ChatMessage
+
 memory = FileMemory()
 message_list = [
     ChatMessage(role="user", content="Hi, chat bot! This is my initial prompt."),
-    ChatMessage(role="assistant", content="Nice to meet you! This is my response.")
+    ChatMessage(role="assistant", content="Nice to meet you! This is my response."),
 ]
 next_message = ChatMessage(role="user", content="Wonderful! This is my second prompt to the chat bot.")
 message_list.append(next_message)

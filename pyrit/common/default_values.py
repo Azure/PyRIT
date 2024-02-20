@@ -6,6 +6,7 @@ import os
 
 from pyrit.common import path
 
+
 def load_default_env() -> None:
     """
     Loads an environment file from the given path, or the $PROJECT_ROOT/.env file if no path is given
@@ -18,6 +19,7 @@ def load_default_env() -> None:
         raise FileNotFoundError(f"Environment file not found at {file_path}")
 
     dotenv.load_dotenv(file_path, override=True)
+
 
 def get_required_value(*, env_var_name: str, passed_value: str) -> str:
     """
