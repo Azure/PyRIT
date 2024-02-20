@@ -22,13 +22,13 @@
 # After deploying a model and populating your env file, creating an endpointis as simple as the following
 # %%
 
-from pyrit.common import environment_variables
+from pyrit.common import default_values
 
 from pyrit.models import ChatMessage
 from pyrit.chat import AMLOnlineEndpointChat
 
 
-environment_variables.load_default_env()
+default_values.load_default_env()
 
 red_team_chat_engine = AMLOnlineEndpointChat()
 red_team_chat_engine.complete_chat(messages=[ChatMessage(role="user", content="Hello world!")])
@@ -49,7 +49,7 @@ from pyrit.agent import RedTeamingBot
 from pyrit.chat import AMLOnlineEndpointChat
 from pyrit.models import PromptTemplate
 
-environment_variables.load_default_env()
+default_values.load_default_env()
 
 
 red_team_chat_engine = AMLOnlineEndpointChat()
