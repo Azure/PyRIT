@@ -41,11 +41,11 @@ repos:
         language: system
         types: [ python ]
 
-  - repo: local
-    hooks:
-      - id: jupytext
-        name: Convert PY to IPYNB
-        entry: jupytext --to notebook --execute
-        language: system
-        files: '^doc/.*\.py$'
-        pass_filenames: true
+#  - repo: local
+#    hooks:
+#      - id: jupytext
+#        name: Convert PY to IPYNB
+#        entry: jupytext --to notebook --execute
+#        language: system
+#        files: '^doc/.*\.py$'
+#        pass_filenames: true

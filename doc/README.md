@@ -13,5 +13,6 @@ Most of our documentation should be located within the doc pyrit directory
   - Do not update `.ipynb` files directly. These are meant for consumption only and will be overwritten
 - The code should be able to execute one time in a reasonable timeframe, our goal is to run this in build pipelines
   - Short term, before we have it in our build pipelines, please run it manually with any big changes and check there are no errors
-  - `pre-commit run jupytext --all-files`
+  - Currently, run: ` jupytext --execute --to notebook  ./doc/demo/*.py` then `jupytext --execute --to notebook  ./doc/code/*.py`
+  - Soon this will be: `pre-commit run jupytext --all-files`
   - Please do not re-commit updated generated files if nothing has changed
