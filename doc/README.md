@@ -1,11 +1,13 @@
 # Documentation Structure
 
-Most of our documentation should be located within the doc pyrit directory
+Most of our documentation is located within the `doc` directory:
 
-- [Setup](./setup/) includes any help setting PyRIT up.
+- [About PyRIT](./about_pyrit.md) includes high-level information about PyRIT.
+- [Setup](./setup/) includes any help setting PyRIT and related resources up.
 - [Code](./code) includes concise examples that exercise a single code concept.
 - [Demos](./demo) include end-to-end scenarios.
 - [Deployment](./deployment/) includes code to download, deploy, and score open-source models (such as those from Hugging Face) on Azure.
+- [FAQs](./faqs.md)
 
 # Documentation Contributor Guide
 
