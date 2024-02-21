@@ -28,17 +28,17 @@ For example, at Microsoft we are using this tool to iterate on different
 versions of a product (and its metaprompt) so that we can more effectively
 protect against prompt injection attacks.
 
-![PyRIT architecture](./assets/pyrit_architecture.png)
+![PyRIT architecture](https://github.com/azure/pyrit/blob/release/v0.1.0/assets/pyrit_architecture.png)
 
 ## Where can I learn more?
 
 Microsoft Learn has a
 [dedicated page on AI Red Teaming](https://learn.microsoft.com/en-us/security/ai-red-team).
 
-Check out our [docs](./doc/README.md) for more information
-on how to [install PyRIT](./doc/setup/install_pyrit.md),
-our [How to Guide](./doc/how_to_guide.ipynb),
-and more, as well as our [demos](./doc/demo/) folder.
+Check out our [docs](https://github.com/azure/pyrit/blob/release/v0.1.0/doc/README.md) for more information
+on how to [install PyRIT](https://github.com/azure/pyrit/blob/release/v0.1.0/doc/setup/install_pyrit.md),
+our [How to Guide](https://github.com/azure/pyrit/blob/release/v0.1.0/doc/how_to_guide.ipynb),
+and more, as well as our [demos](https://github.com/azure/pyrit/blob/release/v0.1.0/doc/demo/) folder.
 
 ## Trademarks
 
