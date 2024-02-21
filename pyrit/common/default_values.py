@@ -10,7 +10,6 @@ from pyrit.common import path
 def load_default_env() -> None:
     """
     Loads an environment file from the given path, or the $PROJECT_ROOT/.env file if no path is given
-
     Throws an exception if the file is not found
     """
     file_path = path.HOME_PATH / ".env"

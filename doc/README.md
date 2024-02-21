@@ -3,6 +3,7 @@
 Most of our documentation should be located within the doc pyrit directory
 
 - [Setup](./setup/) includes any help setting PyRIT up.
+- [How to Guide](./how_to_guide.ipynb) to provide an overview of the PyRIT framework.
 - [Code](./code) includes concise examples that exercise a single code concept.
 - [Demos](./demo) include end-to-end scenarios.
 - [Deployment](./deployment/) includes code to download, deploy, and score open-source models (such as those from Hugging Face) on Azure.
