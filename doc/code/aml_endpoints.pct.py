@@ -20,7 +20,7 @@
 
 # ## Create a AMLOnlineEndpointChat
 
-# After deploying a model and populating your env file, creating an endpointis as simple as the following
+# After deploying a model and populating your env file, creating an endpoint is as simple as the following
 # %%
 
 from pyrit.common import default_values
