@@ -31,7 +31,7 @@ This error typically occurs when the container initialization takes longer than 
 #### Step 2: Adjust Environment Variable
 1. Locate the `.env` file in your project directory.
 2. Modify the environment variable `AZURE_ML_MODEL_DEPLOY_LIVENESS_PROBE_INIT_DELAY_SECS` related to liveness probe initial delay time to a value greater than the default. For instance, the default value is 600 seconds, you might change it to 1800 seconds.
-3. Save the changes to your `.env` file. 
+3. Save the changes to your `.env` file.
 
 #### Step 3: Redeploy
 Redeploy your model by running the deployment script again. This will apply the new settings.
