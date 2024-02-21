@@ -15,4 +15,4 @@ Most of our documentation should be located within the doc pyrit directory
   - Short term, before we have it in our build pipelines, please run it manually with any big changes and check there are no errors
   - Currently, run: ` jupytext --execute --to notebook  ./doc/demo/*.py` and `jupytext --execute --to notebook  ./doc/code/*.py`
   - Soon this will be: `pre-commit run jupytext --all-files`
-  - Please do not re-commit updated generated files if nothing has changed
+  - Please do not re-commit updated generated `.ipynb` files with slight changes if nothing has changed in the source
