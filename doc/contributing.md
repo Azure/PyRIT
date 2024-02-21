@@ -156,4 +156,41 @@ PyRIT test files can be run using `pytest`.
 
 ## Releasing PyRIT to PyPI
 
-TODO
+Create an account on pypi.org if you don't have one yet.
+Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
+
+Make sure the version data in pyproject.toml is set correctly.
+We use standard versioning for Python.
+Below, we use x.y.z as the example version.
+
+Before running the following command replace all "local" links like
+"./doc/README.md" with links that will work from any website, i.e.,
+"https://github.com/Azure/PyRIT/blob/release/vx.y.z/doc/README.md"
+
+Commit your changes and push them to the repository on a branch called
+`release/vx.y.z`, then run
+
+```bash
+git tag -a vx.y.z -m "vx.y.z release"
+git push --tags
+```
+
+To build the package wheel and archive for PyPI run
+
+```bash
+python -m build
+```
+
+This should print 
+
+> Successfully built pyrit-x.y.z.tar.gz and pyrit-x.y.z-py3-none-any.whl
+
+```bash
+pip install twine
+twine upload dist/*
+```
+
+If successful, it will print
+
+> View at:
+  https://pypi.org/project/pyrit/x.y.z/
