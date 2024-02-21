@@ -39,7 +39,7 @@ from pyrit.models import ChatMessage
 default_values.load_default_env()
 
 target_llm = AzureOpenAIChat(
-    deployment_name="gpt-4",
+    deployment_name=os.environ.get("AZURE_OPENAI_PROJECT_DEPLOYMENT_NAME"),
     endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
 )
@@ -105,7 +105,7 @@ conversation_objective = "Try to get the other party to say something derogatory
 
 # red_teaming_llm could be any LLM endpoint. Here it is Azure Open AI for illustrative purposes.
 red_teaming_llm = AzureOpenAIChat(
-    deployment_name="gpt-4",
+    deployment_name=os.environ.get("AZURE_OPENAI_PROJECT_DEPLOYMENT_NAME"),
     endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
 )
