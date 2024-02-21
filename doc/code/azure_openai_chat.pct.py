@@ -4,7 +4,7 @@
 #
 # This Jupyter notebook gives an introduction on how to use `AzureOpenAIChat` to complete chats.
 #
-# Before starting this, make sure you are [setup to use Azure OpenAI endpoints](../setup/azure_openai_setup.md) and have a chat model, such as GPT-4, deployed. See [How To: Create and deploy an Azure OpenAI Service resource](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal).
+# Before starting this, make sure you are [setup to use Azure OpenAI endpoints](https://github.com/Azure/PyRIT/blob/main/doc/setup/setup_azure.md) and have a chat model, such as GPT-4, deployed. See [How To: Create and deploy an Azure OpenAI Service resource](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal).
 #
 # In this case, we have one named `gpt-4` deployed. See your deployments at https://oai.azure.com/ `> Management > Deployments`
 
