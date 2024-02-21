@@ -35,6 +35,7 @@ dependencies = [
     "azure-ai-ml==1.13.0",
     "jsonpickle>=3.0.2",
     "jupyter>=1.0.0",
+    "ipykernel>=6.22.0",
     "logzero>=1.7.0",
     "numpy>=1.26.2",
     "onnxruntime>=1.14.1",
@@ -56,15 +57,17 @@ dev = [
     "black>=23.3.0",
     "flake8>=6.0.0",
     "flake8-copyright>=0.2.0",
+    "ipykernel>=6.22.0",
+    "jupyter>=1.0.0",
+    "jupytext>=1.16.0",
     "mypy>=1.8.0",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",
     "pytest-cov>=4.0.0",
-    "semantic-kernel==0.4.1.dev0",
-    "pre-commit>=3.3.3",
-    "types-PyYAML>=6.0.12.9",
     "respx>=0.20.2",
-    "flake8-copyright>=0.2.0",
+    "semantic-kernel==0.4.1.dev0",
+    "types-PyYAML>=6.0.12.9",
+    "types-PyYAML>=6.0.12.9",
 ]
 
 [tool.mypy]
@@ -85,6 +88,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["pyrit", "pyrit.*"]
+
+[tool.jupytext]
+formats = "ipynb,py:percent"
 
 [tool.ruff]
 line-length = 120

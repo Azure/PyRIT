@@ -3,10 +3,11 @@
 
 import json
 import textwrap
+import yaml
+
 from dataclasses import dataclass
 from pathlib import Path
-
-import yaml
+from typing import Union
 
 from pyrit.interfaces import ChatMessage, ChatSupport, SupportTextClassification
 from pyrit.models import Score
@@ -32,7 +33,7 @@ def _load_categories_from_yaml(yaml_path: Path) -> list[Category]:
 
 
 class SelfAskGptClassifier(SupportTextClassification):
-    def __init__(self, content_classifier: str, gpt_4: ChatSupport) -> None:
+    def __init__(self, content_classifier: Union[str, Path], gpt_4: ChatSupport) -> None:
         # Load classifier
         self._categories = _load_categories_from_yaml(yaml_path=Path(content_classifier))
         self._gpt_chat = gpt_4
