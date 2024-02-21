@@ -32,6 +32,9 @@ protect against prompt injection attacks.
 
 ## Where can I learn more?
 
+Microsoft Learn has a
+[dedicated page on AI Red Teaming](https://learn.microsoft.com/en-us/security/ai-red-team).
+
 Check out our [docs](./doc/README.md) for more information
 on how to [install PyRIT](./doc/setup/install_pyrit.md),
 our [How to Guide](./doc/how_to_guide.ipynb),
