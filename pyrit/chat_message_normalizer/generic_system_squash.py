@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import ChatMessage
+from pyrit.models import ChatMessage, ChatMessageRole
 from pyrit.chat_message_normalizer import ChatMessageNormalizer
 
 
@@ -18,7 +18,9 @@ class GenericSystemSquash(ChatMessageNormalizer):
         return normalized_messages
 
     @staticmethod
-    def combine_system_user_message(system_message: ChatMessage, user_message: ChatMessage) -> str:
+    def combine_system_user_message(
+        system_message: ChatMessage, user_message: ChatMessage, msg_type: ChatMessageRole = "user"
+    ) -> ChatMessage:
         """Combines the system message with the user message.
 
         Args:
@@ -26,7 +28,7 @@ class GenericSystemSquash(ChatMessageNormalizer):
             user_message (str): The user message.
 
         Returns:
-            str: The combined message.
+            ChatMessage: The combined message.
         """
         content = f"### Instructions ###\n\n{system_message.content}\n\n######\n\n{user_message.content}"
-        return ChatMessage(role="user", content=content)
+        return ChatMessage(role=msg_type, content=content)
