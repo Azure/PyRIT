@@ -8,7 +8,7 @@ The Python Risk Identification Tool for generative AI (PyRIT) is an open access 
 
 The PyRIT framework architecture is designed to evaluate the robustness of Large Language Models (LLMs). The framework is composed of several key components, each serving a distinct purpose.
 
-* **Target**: The "Target Component" represents the Large Language Model (LLM) and can be configured in distinct roles such as an attacker, target, or scorer. 
+* **Target**: The "Target Component" represents the Large Language Model (LLM) and can be configured in distinct roles such as an attacker, target, or scorer.
 It accommodates both local models, like ONNX, and models hosted on platforms such as Hugging Face, as well as models deployed in Azure Machine Learning (AML) managed online endpoint and Azure OpenAI (AOAI) service.
 The attacker LLM, also referred to as the red teaming bot, generates challenging prompts or scenarios to test the target LLM for any vulnerabilities. In addition, the scorer LLM evaluates the input according to the system instructions provided.
 
@@ -16,7 +16,7 @@ The attacker LLM, also referred to as the red teaming bot, generates challenging
 
 * **Scoring Engine**: The "Scoring Engine" assesses the responses produced by the target LLM during probing sessions, utilizing techniques such as self-ask for evaluation.
 
-* **Attack Strategy**: The "Attack Strategy" component outlines the attack methodologies for probing the target LLM. It supports single-turn and multi-turn attacks. 
+* **Attack Strategy**: The "Attack Strategy" component outlines the attack methodologies for probing the target LLM. It supports single-turn and multi-turn attacks.
 In a single-turn scenario, a prompt is submitted to the target LLM system, and its response is observed and evaluated once. Conversely, in multi-turn scenarios, a red teaming bot persistently engages the target, submitting a series of prompts until a specific objective is met, involving multiple interactions.
 
 * **Memory**: The "Memory Component" is designed to persist all the conversations that occur while probing the target LLM. It allows the analysis of repeated conversations, helps in finding any conversation, and sharing with others.

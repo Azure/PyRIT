@@ -84,7 +84,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
     az login
     ```
 
-## Dev Resources 
+## Dev Resources
 
 ### Environment Setup
 PyRIT is compatible with Windows, Linux, and MacOS.
@@ -123,12 +123,12 @@ pre-commit run --files <file_name>
 #### Overview
 Testing plays a crucial role in PyRIT development. Ensuring robust tests in PyRIT is crucial for verifying that functionalities are implemented correctly and for preventing unintended alterations to these functionalities when changes are made to PyRIT.
 
-For running PyRIT tests, you need to have `pytest` package installed, but if you've already set up your development dependencies with the command 
+For running PyRIT tests, you need to have `pytest` package installed, but if you've already set up your development dependencies with the command
 `pip install -e .[dev]`, `pytest` should be included in that setup.
 
 
 #### Running PyRIT test files
-PyRIT test files can be run using `pytest`. 
+PyRIT test files can be run using `pytest`.
 
 **Pytest**
   * To run test_aml_online_endpoint.py, from the PyRIT directory, use:
