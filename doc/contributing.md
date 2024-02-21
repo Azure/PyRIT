@@ -165,10 +165,10 @@ Below, we use x.y.z as the example version.
 
 Before running the following command replace all "local" links like
 "./doc/README.md" with links that will work from any website, i.e.,
-"https://github.com/Azure/PyRIT/blob/release/vx.y.z/doc/README.md"
+"https://github.com/Azure/PyRIT/blob/releases/vx.y.z/doc/README.md"
 
 Commit your changes and push them to the repository on a branch called
-`release/vx.y.z`, then run
+`releases/vx.y.z`, then run
 
 ```bash
 git tag -a vx.y.z -m "vx.y.z release"
