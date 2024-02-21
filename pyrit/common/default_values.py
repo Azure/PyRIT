@@ -18,7 +18,7 @@ def load_default_env() -> None:
         raise FileNotFoundError(f"Environment file not found at {file_path}")
 
     dotenv.load_dotenv(file_path, override=True)
-    
+
 
 def get_required_value(*, env_var_name: str, passed_value: str) -> str:
     """
