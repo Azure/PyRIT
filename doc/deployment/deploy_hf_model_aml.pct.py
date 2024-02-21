@@ -55,6 +55,8 @@
 # 10. **AZURE_ML_MODEL_DEPLOY_REQUEST_TIMEOUT_MS**
 #     - Set the AZURE ML inference endpoint request timeout, recommended value is 60000 (in millis).
 #
+# 11. **AZURE_ML_MODEL_DEPLOY_LIVENESS_PROBE_INIT_DELAY_SECS**
+#     - Configure the liveness probe initial delay value for the Azure ML container hosting your model. The default `initial_delay` value for the liveness probe, as established by Azure ML managed compute, is 600 seconds. Consider raising this value for the deployment of larger models.
 #
 
 # %%
@@ -73,7 +75,8 @@ model_to_deploy = os.getenv("AZURE_ML_MODEL_NAME_TO_DEPLOY")
 model_version = os.getenv("AZURE_ML_MODEL_VERSION_TO_DEPLOY")
 instance_type = os.getenv("AZURE_ML_MODEL_DEPLOY_INSTANCE_SIZE")
 instance_count = int(os.getenv("AZURE_ML_MODEL_DEPLOY_INSTANCE_COUNT"))
-request_timeout_ms = os.getenv("AZURE_ML_MODEL_DEPLOY_REQUEST_TIMEOUT_MS")
+request_timeout_ms = int(os.getenv("AZURE_ML_MODEL_DEPLOY_REQUEST_TIMEOUT_MS"))
+liveness_probe_initial_delay = int(os.getenv("AZURE_ML_MODEL_DEPLOY_LIVENESS_PROBE_INIT_DELAY_SECS"))
 
 # %%
 print(f"Subscription ID: {subscription_id}")
@@ -84,6 +87,7 @@ print(f"Model to deploy: {model_to_deploy}")
 print(f"Instance type: {instance_type}")
 print(f"Instance count: {instance_count}")
 print(f"Request timeout in millis: {request_timeout_ms}")
+print(f"Liveness probe initial delay in secs: {liveness_probe_initial_delay}")
 
 # %% [markdown]
 # ### Configure Credentials
@@ -167,11 +171,7 @@ endpoint_name = endpoint_name[:32]
 # Authentication mode: The authentication method for the endpoint. Choose between key-based authentication and Azure Machine Learning token-based authentication. A key doesn't expire, but a token does expire.
 
 # %%
-from azure.ai.ml.entities import (
-    ManagedOnlineEndpoint,
-    ManagedOnlineDeployment,
-    OnlineRequestSettings,
-)
+from azure.ai.ml.entities import ManagedOnlineEndpoint, ManagedOnlineDeployment, OnlineRequestSettings, ProbeSettings
 
 # create an online endpoint
 endpoint = ManagedOnlineEndpoint(
@@ -188,15 +188,16 @@ workspace_ml_client.begin_create_or_update(endpoint).wait()
 
 # %%
 # create a deployment
+# Create probe settings
+liveness_probe = ProbeSettings(initial_delay=liveness_probe_initial_delay)
 deployment = ManagedOnlineDeployment(
     name=f"{endpoint_name}",
     endpoint_name=endpoint_name,
     model=model.id,
     instance_type=instance_type,
     instance_count=instance_count,
-    request_settings=OnlineRequestSettings(
-        request_timeout_ms=60000,
-    ),
+    request_settings=OnlineRequestSettings(request_timeout_ms=request_timeout_ms),
+    liveness_probe=liveness_probe,
 )
 workspace_ml_client.online_deployments.begin_create_or_update(deployment).wait()
 workspace_ml_client.begin_create_or_update(endpoint).result()
