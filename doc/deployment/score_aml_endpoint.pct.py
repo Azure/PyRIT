@@ -53,7 +53,7 @@ print(f"API key: {api_key}")
 # The JSON body can be acquired by the following method: Access the Hugging Face model within the Azure ML model catalog by going to the workspace, then to the studio, selecting 'Model Catalog', and using the search bar to find the model ID. Open the model to view the sample input schema as shown in the image below.
 # <br> <img src="./../../assets/aml_model_endpoint_schema.png" alt="aml_model_endpoint_schema.png" height="400"/> <br>
 #
-# In addition, we have compiled the details of the request and response for the Hugging Face models hosted on the Azure Machine Learning (Azure ML) endpoint. Please review the [provided link](./HF%20AML%20Model%20Endpoint%20Guide.md) to access the JSON request body and response for the Azure ML endpoint. Additionally, you can deduce the schema from the response if a bad request was sent to the inference endpoint.
+# In addition, we have compiled the details of the request and response for the Hugging Face models hosted on the Azure Machine Learning (Azure ML) endpoint. Please review the [provided link](./HF_AzureML_Model_Endpoint_Guide.md) to access the JSON request body and response for the Azure ML endpoint. Additionally, you can deduce the schema from the response if a bad request was sent to the inference endpoint.
 
 # %%
 import requests
