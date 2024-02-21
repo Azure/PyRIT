@@ -39,7 +39,7 @@
 # > https://gandalf.lakera.ai/
 #
 #
-# Gandalf contains 7 different levels. In this demo we will show how to automatically bypass the first three.
+# Gandalf contains 7 different levels. In this demo we will show how to automatically bypass the first couple.
 # Each level gets progressively more difficult.
 #
 #

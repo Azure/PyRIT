@@ -7,7 +7,7 @@
 # 1. Making/using a `PromptTarget`
 # 1. Making/using a set of initial prompts
 # 1. Making/using a `PromptTransformer` (default is often to not transform)
-# 1. Making/using a `Scorer` (default is often to self ask)
+# 1. Making/using a `Scorer` (this is often to self ask)
 # 1. Making/using an `Orchestrator`
 #
 # Orchestrators can tackle complicated scenarios, but this example is about as simple as it gets (while still being useful). Here, we'll send all prompts in a file, use a transformer to base64-encode the prompts, and send them to a PromptTarget.
