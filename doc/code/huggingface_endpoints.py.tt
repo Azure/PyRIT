@@ -1,21 +1,21 @@
 # %% [markdown]
 # # Introduction
 
-# This code shows how to use PyRIT Huggingface managed online endpoints. Huggingface support is currently experimental
+# This code shows how to use Hugging Face managed online endpoints with PyRIT. Hugging Face support is currently experimental
 # and may not work as intended.
 
 # ## Prerequisites
 
-# Before beginning, ensure that you have the model id obtained from the HuggingFace as shown below.
+# Before beginning, ensure that you have the model id obtained from the Hugging Face as shown below.
 # <br> <img src="./../../assets/huggingface_model_id.png" alt="huggingface_model_id.png" height="400"/> <br>
 
-# After deploying a model and populating your env file, creating an endpointis as simple as the following
+# After deploying a model and populating your env file, creating an endpoint is as simple as the following
 # %%
 
 from pyrit.common import default_values
 
 from pyrit.models import ChatMessage
-from pyrit.chat import  HuggingFaceChat
+from pyrit.chat import HuggingFaceChat
 
 
 default_values.load_default_env()

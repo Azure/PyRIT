@@ -1,6 +1,6 @@
 # %% [markdown]
 #
-# The Orchestrator is a top level component that operators will interact with most. It is responsible for telling PyRIT what endpoints to connect to and how to send prompts.
+# The Orchestrator is a top level component that red team operators will interact with most. It is responsible for telling PyRIT what endpoints to connect to and how to send prompts.
 #
 # In general, a strategy for tackling a scenario will be
 #

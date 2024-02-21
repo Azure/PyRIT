@@ -22,10 +22,10 @@ api_base = os.environ.get("AZURE_OPENAI_COMPLETION_ENDPOINT")
 api_key = os.environ.get("AZURE_OPENAI_COMPLETION_KEY")
 deployment_name = os.environ.get("AZURE_OPENAI_COMPLETION_DEPLOYMENT")
 
-# %% [markdown]sd
+# %% [markdown]
 # ## Azure OpenAI Completions
 #
-# Once you are configured, then you will be able to get completions for your text. In this case, we will use the "davinci" endpoint. The
+# Once you are configured, then you will be able to get completions for your text. The
 # `complete_text()` response returns a wrapper for the OpenAI completion API that will allow you to
 # easily get all the different fields.
 
@@ -37,8 +37,8 @@ from pyrit.completion.azure_completions import AzureCompletion
 
 prompt = "hello world!"
 
-davinci_engine = AzureCompletion(api_key=api_key, endpoint=api_base, deployment=deployment_name)
+engine = AzureCompletion(api_key=api_key, endpoint=api_base, deployment=deployment_name)
 
-text_response = davinci_engine.complete_text(text=prompt)
+text_response = engine.complete_text(text=prompt)
 
 pprint(text_response, width=280, compact=True)
