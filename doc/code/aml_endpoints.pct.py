@@ -1,7 +1,7 @@
 # %% [markdown]
 # # Introduction
 
-# This code shows how to use PyRIT Azure Machine Learning (AML) managed online endpoints.
+# This code shows how to use Azure Machine Learning (AML) managed online endpoints with PyRIT.
 
 # ## Prerequisites
 
