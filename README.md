@@ -32,6 +32,9 @@ protect against prompt injection attacks.
 
 ## Where can I learn more?
 
+Microsoft Learn has a
+[dedicated page on AI Red Teaming](https://learn.microsoft.com/en-us/security/ai-red-team).
+
 Check out our [Wiki](https://github.com/Azure/PyRIT/wiki/) for more information
 on how to [get started](https://github.com/Azure/PyRIT/wiki/Getting-started),
 our [How to Guide](https://github.com/Azure/PyRIT/wiki/PyRIT-Framework-How-to-Guide)
