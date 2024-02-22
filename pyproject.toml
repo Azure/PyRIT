@@ -87,7 +87,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["pyrit", "pyrit.*"]
+include = ["pyrit", "pyrit.*", "datasets", "datasets.*"]
 
 [tool.jupytext]
 formats = "ipynb,py:percent"
