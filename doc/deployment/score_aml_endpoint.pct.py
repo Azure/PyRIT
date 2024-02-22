@@ -8,7 +8,7 @@
 # Before proceeding with this notebook, ensure the following prerequisites are met:
 #
 # 1. **Azure ML Model Deployment**: Your Azure ML model must be deployed to an Azure ML managed online endpoint. If your model is not yet deployed, please follow the instructions in the [deployment notebook](./deploy_hf_model_aml.ipynb).
-# 2. Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](https://github.com/Azure/PyRIT/blob/main/doc/setup/setup_azure.md)
+# 2. Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/setup_azure.md)
 #
 #
 # ### Environment Variables

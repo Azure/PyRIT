@@ -2,7 +2,7 @@
 #
 # This Jupyter notebook gives an introduction on how to use PyRIT to score responses. We set up a `SelfAskGptClassifier`, which uses Azure Open AI to score a response. In this example, we mock a response from a targeted endpoint and ask if it matches any classifier.
 #
-# Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](https://github.com/Azure/PyRIT/blob/main/doc/setup/setup_azure.md)
+# Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/setup_azure.md)
 
 # %%
 
