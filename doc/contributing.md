@@ -84,9 +84,9 @@ This is a guide for how to install PyRIT into a `conda` environment.
     az login
     ```
 
-## Set up for Contribution with Git
+## Set Up: Contribute with Git
 
-Before creating your first Pull Request, set up to contribute to PyRIT by following these steps:
+Before creating your first pull request, set up your fork to contribute to PyRIT by following these steps:
 
 1. [Fork](https://github.com/Azure/PyRIT/fork) the repo from the main branch. By default, forks are named the same as their upstream repository. This will create a new repo called `GITHUB_USERNAME/PyRIT` (where `GITHUB_USERNAME` is a variable for your GitHub username).
 2. Add this new repo locally wherever you cloned PyRIT
@@ -98,12 +98,11 @@ git remote -v
 git remote add REMOTE_NAME https://github.com/GITHUB_USERNAME/PyRIT.git
 ```
 
-To add your contribution to the repo, the flow typically looks like:
+To add your contribution to the repo, the flow typically looks as follows:
 ```
-# execute commands from wherever you cloned PyRIT locally
 git checkout main
 git pull # pull from origin
-git checkout -b users/GITHUB_USERNAME/mybranch
+git checkout -b mybranch
 
 ... # make changes
 
@@ -114,8 +113,8 @@ git push REMOTE_NAME
 
 After pushing changes, you'll see a link to create a PR:
 ```
-remote: Create a pull request for 'users/GITHUB_USERNAME/mybranch' on GitHub by visiting:
-remote:      https://github.com/GITHUB_USERNAME/PyRIT/pull/new/users/GITHUB_USERNAME/mybranch
+remote: Create a pull request for 'mybranch' on GitHub by visiting:
+remote:      https://github.com/GITHUB_USERNAME/PyRIT/pull/new/mybranch
 ```
 
 See more on [creating a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
