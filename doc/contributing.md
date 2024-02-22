@@ -84,6 +84,29 @@ This is a guide for how to install PyRIT into a `conda` environment.
     az login
     ```
 
+## Set up for Contribution with Git
+
+Before creating your first Pull Request, set up to contribute to PyRIT by following these steps:
+
+1. [Fork](https://github.com/Azure/PyRIT/fork) the repo from the main branch. By default, forks are named the same as their upstream repository. This will create a new repo called `GITHUB_USERNAME/pyrit` (where `GITHUB_USERNAME` is a variable for your GitHub username).
+2. Add this new repo locally wherever you cloned PyRIT
+```
+# to see existing remotes
+git remote -v
+
+# add your fork as a remote named `REMOTE_NAME`
+git remote add REMOTE_NAME https://github.com/GITHUB_USERNAME/pyrit.git
+```
+
+To add your contribution to the repo, the flow typically looks like:
+```
+# execute commands from wherever you cloned PyRIT locally
+git checkout main
+git pull # pull from origin
+git checkout -b users/GITHUB_USERNAME/mybranch
+git push REMOTE_NAME
+```
+
 ## Dev Resources
 
 ### Environment Setup
