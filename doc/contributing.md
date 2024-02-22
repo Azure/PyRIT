@@ -104,7 +104,9 @@ To add your contribution to the repo, the flow typically looks like:
 git checkout main
 git pull # pull from origin
 git checkout -b users/GITHUB_USERNAME/mybranch
+
 ... # make changes
+
 git add .
 git commit -m "changes were made"
 git push REMOTE_NAME
@@ -115,6 +117,8 @@ After pushing changes, you'll see a link to create a PR:
 remote: Create a pull request for 'users/GITHUB_USERNAME/mybranch' on GitHub by visiting:
 remote:      https://github.com/GITHUB_USERNAME/PyRIT/pull/new/users/GITHUB_USERNAME/mybranch
 ```
+
+From your forked repo, there is also a "Contribute" button where you can open a pull request against `Azure/PyRIT:main` with a button.
 
 ## Dev Resources
 
