@@ -104,6 +104,9 @@ To add your contribution to the repo, the flow typically looks like:
 git checkout main
 git pull # pull from origin
 git checkout -b users/GITHUB_USERNAME/mybranch
+... # make changes
+git add .
+git commit -m "changes were made"
 git push REMOTE_NAME
 ```
 
