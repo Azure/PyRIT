@@ -118,7 +118,7 @@ remote: Create a pull request for 'users/GITHUB_USERNAME/mybranch' on GitHub by 
 remote:      https://github.com/GITHUB_USERNAME/PyRIT/pull/new/users/GITHUB_USERNAME/mybranch
 ```
 
-From your forked repo, there is also a "Contribute" button where you can open a pull request against `Azure/PyRIT:main` with a button.
+See more on [creating a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
 
 ## Dev Resources
 
