@@ -160,6 +160,9 @@ Create an account on pypi.org if you don't have one yet.
 Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
 
 Make sure the version data in pyproject.toml is set correctly.
+Keep that version in sync with `__init__.py` which is usually set to
+the next version (e.g., x.y.z+1) with suffix `.dev0`.
+For the release branch, we can remove this suffix.
 We use standard versioning for Python.
 Below, we use x.y.z as the example version.
 
@@ -194,3 +197,7 @@ If successful, it will print
 
 > View at:
   https://pypi.org/project/pyrit/x.y.z/
+
+Finally, make sure to create a PR for the `main` branch where the only change
+is the version increase in `__init__.py` (while keeping suffix `.dev0`).
+This should be something like `x.y.z+1.dev0`.
