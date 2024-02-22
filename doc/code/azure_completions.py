@@ -10,7 +10,7 @@
 # 2. Work with Azure OpenAI Embeddings
 # 3. Embeddings serialization
 #
-# Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/azure_openai_setup.ipynb)
+# Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/setup_azure.md)
 
 # %%
 import os

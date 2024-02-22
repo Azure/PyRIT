@@ -12,7 +12,7 @@
 #
 # Orchestrators can tackle complicated scenarios, but this example is about as simple as it gets (while still being useful). Here, we'll send all prompts in a file, use a transformer to base64-encode the prompts, and send them to a PromptTarget.
 #
-# Note to run this demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/azure_openai_setup.ipynb)
+# Note to run this demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md)
 
 # %%
 

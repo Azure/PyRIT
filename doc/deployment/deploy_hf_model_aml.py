@@ -4,17 +4,17 @@
 # This notebook demonstrates the process of deploying registered models in Azure ML workspace
 # to an AZURE ML managed online endpoint for real-time inference.
 #
-# [Learn more about Azure ML Managed Online Endpoints](https://learn.microsoft.com/en-us/azure/machine-learning/concept-endpoints-onlineview=azureml-api-2)
+# [Learn more about Azure ML Managed Online Endpoints](https://learn.microsoft.com/en-us/azure/machine-learning/concept-endpoints-online?view=azureml-api-2)
 #
 # ### Prerequisites
 # - An Azure account with an active subscription. [Create one for free](https://azure.microsoft.com/free/).
-# - An Azure ML workspace set up. [Learn how to set up a workspace](https://docs.microsoft.com/en-us/azure/machine-learninghow-to-manage-workspace).
+# - An Azure ML workspace set up. [Learn how to set up a workspace](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-workspace?view=azureml-api-2&tabs=python).
 # - Install the Azure ML client library for Python with pip.
 #   ```bash
 #      pip install azure-ai-ml
 #      pip install azure-identity
 #   ```
-# - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/azure_openai_setup.ipynb)
+# - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/setup_azure.md)
 # - A Hugging Face model should be present in the AZURE ML model catalog. If it is missing, execute the [notebook](./download_and_register_hf_model_aml.ipynb) to download and register the Hugging Face model in the AZURE ML registry.
 
 # %% [markdown]
@@ -161,7 +161,7 @@ endpoint_name = model_to_deploy + str(model_version)
 
 # %%
 # Using the first 32 characters because Azure ML endpoint names must be between 3 and 32 characters in length.
-endpoint_name = endpoint_name[:32]
+endpoint_name = endpoint_name[:30]
 
 # %% [markdown]
 # **Create an Azure ML managed online endpoint**
@@ -201,3 +201,5 @@ deployment = ManagedOnlineDeployment(
 )
 workspace_ml_client.online_deployments.begin_create_or_update(deployment).wait()
 workspace_ml_client.begin_create_or_update(endpoint).result()
+
+# %%
