@@ -127,8 +127,8 @@ RedTeamingBot(
 # for example, `datasets/attack_strategies/multi-turn-chat/red_team_chatbot_with_objective.yaml`).
 #
 # PyRIT offers various integration choices for the `RedTeamingBot`, including
-# [Azure ML managed online endpoints](https://github.com/Azure/PyRIT/blob/main/doc/code/aml_endpoints.ipynb),
-# [Hugging Face](https://github.com/Azure/PyRIT/blob/main/doc/code/huggingface_endpoints.ipynb),
+# [Azure ML managed online endpoints](../doc/code/aml_endpoints.ipynb),
+# [Hugging Face](../doc/code/huggingface_endpoints.ipynb),
 # and Azure OpenAI models (as shown above).
 #
 # ## Output scoring

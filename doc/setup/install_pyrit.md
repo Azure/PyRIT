@@ -14,4 +14,4 @@ Once the environment with the correct Python version is set up, run
 pip install pyrit
 ```
 
-Next, check out our [docs](https://github.com/Azure/PyRIT/tree/main/doc) and run the notebooks in your environment!
+Next, check out our [docs](../../doc/) and run the notebooks in your environment!
