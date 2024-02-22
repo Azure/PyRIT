@@ -110,6 +110,12 @@ git commit -m "changes were made"
 git push REMOTE_NAME
 ```
 
+After pushing changes, you'll see a link to create a PR:
+```
+remote: Create a pull request for 'users/GITHUB_USERNAME/mybranch' on GitHub by visiting:
+remote:      https://github.com/GITHUB_USERNAME/PyRIT/pull/new/users/GITHUB_USERNAME/mybranch
+```
+
 ## Dev Resources
 
 ### Environment Setup
