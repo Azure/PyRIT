@@ -11,7 +11,7 @@ RESULTS_PATH.mkdir(parents=True, exist_ok=True)
 LOG_PATH = pathlib.Path(PYRIT_PATH, "..", "results", "logs.txt").resolve()
 LOG_PATH.touch(exist_ok=True)
 
-DATASETS_PATH = pathlib.Path(PYRIT_PATH, "..", "datasets").resolve()
+DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
 
 # Points to the root of the project
 HOME_PATH = pathlib.Path(PYRIT_PATH, "..").resolve()

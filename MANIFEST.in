@@ -1,0 +1,2 @@
+recursive-include pyrit *.yaml
+recursive-include pyrit *.prompt

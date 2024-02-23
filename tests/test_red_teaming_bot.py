@@ -13,7 +13,7 @@ from pyrit.agent import RedTeamingBot
 from pyrit.chat import AzureOpenAIChat
 from pyrit.models import PromptTemplate
 from pyrit.memory import FileMemory
-from pyrit.common.path import HOME_PATH
+from pyrit.common.path import DATASETS_PATH
 
 
 @pytest.fixture
@@ -42,8 +42,7 @@ def chat_completion_engine() -> AzureOpenAIChat:
 @pytest.fixture
 def red_teaming_bot(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
     attack_strategy = PromptTemplate.from_yaml_file(
-        pathlib.Path(HOME_PATH)
-        / "datasets"
+        pathlib.Path(DATASETS_PATH)
         / "attack_strategies"
         / "multi_turn_chat"
         / "red_team_chatbot_with_objective.yaml"

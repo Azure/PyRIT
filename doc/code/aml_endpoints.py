@@ -69,6 +69,7 @@ red_teamer_bot = RedTeamingBot(
         pathlib.Path(os.getcwd())
         / ".."
         / ".."
+        / "pyrit"
         / "datasets"
         / "attack_strategies"
         / "multi_turn_chat"

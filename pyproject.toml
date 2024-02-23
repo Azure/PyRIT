@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.1.0"
+version = "0.1.2.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -83,11 +83,11 @@ target-version = ["py310"]
 line-length = 120
 
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["pyrit", "pyrit.*", "datasets", "datasets.*"]
+include = ["pyrit", "pyrit.*"] 
 
 [tool.jupytext]
 formats = "ipynb,py:percent"

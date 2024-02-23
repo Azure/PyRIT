@@ -7,7 +7,7 @@ from uuid import uuid4
 from pyrit.interfaces import ChatSupport
 from pyrit.memory import FileMemory, MemoryInterface
 from pyrit.models import ChatMessage, PromptTemplate
-from pyrit.common.path import HOME_PATH
+from pyrit.common.path import DATASETS_PATH
 
 RED_TEAM_CHATBOT_ROLE_PREFIX = "airt-bot-uuid"
 RED_TEAM_CONVERSATION_END_TOKEN = "<|done|>"
@@ -45,8 +45,7 @@ class RedTeamingBot:
             attack_strategy
             if attack_strategy
             else PromptTemplate.from_yaml_file(
-                pathlib.Path(HOME_PATH)
-                / "datasets"
+                pathlib.Path(DATASETS_PATH)
                 / "attack_strategies"
                 / "multi_turn_chat"
                 / "red_team_chatbot_with_objective.yaml"
