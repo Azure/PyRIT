@@ -87,7 +87,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["pyrit", "pyrit.*"] 
+include = ["pyrit", "pyrit.*"]
 
 [tool.jupytext]
 formats = "ipynb,py:percent"
