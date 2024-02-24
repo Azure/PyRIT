@@ -124,7 +124,7 @@ RedTeamingBot(
 # %% [markdown]
 # This way, the red teamer can create lots of different conversations based on a relatively small number
 # of templates. For better maintainability, we suggest storing the prompt templates in YAML files (see,
-# for example, `datasets/attack_strategies/multi-turn-chat/red_team_chatbot_with_objective.yaml`).
+# for example, `pyrit/datasets/attack_strategies/multi-turn-chat/red_team_chatbot_with_objective.yaml`).
 #
 # PyRIT offers various integration choices for the `RedTeamingBot`, including
 # [Azure ML managed online endpoints](../doc/code/aml_endpoints.ipynb),
