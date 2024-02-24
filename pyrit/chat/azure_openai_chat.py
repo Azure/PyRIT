@@ -34,7 +34,7 @@ class AzureOpenAIChat(ChatSupport):
             api_version=api_version,
             azure_endpoint=endpoint,
         )
-        self._asynch_client = AsyncAzureOpenAI(
+        self._async_client = AsyncAzureOpenAI(
             api_key=api_key,
             api_version=api_version,
             azure_endpoint=endpoint,
@@ -79,7 +79,7 @@ class AzureOpenAIChat(ChatSupport):
         Returns:
             str: The generated response message
         """
-        response: ChatCompletion = await self._asynch_client.chat.completions.create(
+        response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_tokens=max_tokens,
             temperature=temperature,
