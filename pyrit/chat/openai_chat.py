@@ -30,7 +30,7 @@ class OpenAIChat(ChatSupport):
             api_key=api_key,
             base_url=base_url,
         )
-        self._asynch_client = AsyncOpenAI(
+        self._async_client = AsyncOpenAI(
             api_key=api_key,
             base_url=base_url,
         )
@@ -73,7 +73,7 @@ class OpenAIChat(ChatSupport):
         Returns:
             str: The generated response message
         """
-        response: ChatCompletion = await self._asynch_client.chat.completions.create(
+        response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._model,
             stream=False,
             max_tokens=max_tokens,
