@@ -6,7 +6,7 @@ from uuid import uuid4
 from pyrit.memory import MemoryInterface, file_memory
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_transformer import PromptTransformer, NoOpTransformer
+from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
 
 class PromptSendingOrchestrator:
@@ -15,12 +15,12 @@ class PromptSendingOrchestrator:
     """
 
     def __init__(
-        self, prompt_target: PromptTarget, prompt_transformer: PromptTransformer = None, memory: MemoryInterface = None
+        self, prompt_target: PromptTarget, prompt_transformer: PromptConverter = None, memory: MemoryInterface = None
     ) -> None:
         self.prompts = list[str]
         self.prompt_target = prompt_target
 
-        self.prompt_transformer = prompt_transformer if prompt_transformer else NoOpTransformer()
+        self.prompt_transformer = prompt_transformer if prompt_transformer else NoOpConverter()
         self.memory = memory if memory else file_memory.FileMemory()
         self.prompt_normalizer = PromptNormalizer(memory=self.memory)
 

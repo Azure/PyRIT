@@ -7,7 +7,7 @@ import pytest
 from pyrit.memory import FileMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_transformer import Base64Transformer
+from pyrit.prompt_converter import Base64Converter
 
 
 class MockPromptTarget(PromptTarget):
@@ -44,7 +44,7 @@ def test_send_multiple_prompts_no_transformer(mock_target: MockPromptTarget):
 
 
 def test_send_prompts_b64_transform(mock_target: MockPromptTarget):
-    transformer = Base64Transformer()
+    transformer = Base64Converter()
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_transformer=transformer)
 
     orchestrator.send_prompts(["Hello"])
