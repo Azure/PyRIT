@@ -191,19 +191,48 @@ PyRIT test files can be run using `pytest`.
 
 ## Releasing PyRIT to PyPI
 
-Create an account on pypi.org if you don't have one yet.
-Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
+This section is for maintainers only.
+If you don't know who the maintainers are but you need to reach them
+please file an issue or (if it needs to remain private) contact the
+email address listed in pyproject.toml
+
+First, decide what the next release version is going to be.
+We follow semantic versioning for Python projects; see
+https://semver.org/ for more details.
+Below, we refer to the version as `x.y.z`.
+`x` is the major version, `y` the minor version, and `z` the patch version.
+Every Python project starts at `0.1.0`.
+Patches such as bugfixes without breaking changes increase the patch version.
+Importantly, they are backward compatible, so upgrading from `0.1.0` to
+`0.1.1` (or higher ones like `0.1.38`) should not break your code.
+More significant changes such as major features.
+They should still be backwards compatible, so if you're upgrading from
+`1.1.0` to `1.2.0` your code shouldn't break.
+In reality, the major version `1.0.0` is the first "stable" release.
+Anything before (i.e., leading with major version `0`) indicates that it is
+not stable and anything may change at any time.
+For that reason, we the minor version may indicate breaking changes, too,
+at least until we hit major version `1`.
+
+With that in mind, the reason for the release and the set of changes
+that happened since the last release will influence the new version number.
 
 Make sure the version data in pyproject.toml is set correctly.
 Keep that version in sync with `__init__.py` which is usually set to
-the next version (e.g., x.y.z+1) with suffix `.dev0`.
-For the release branch, we can remove this suffix.
-We use standard versioning for Python.
-Below, we use x.y.z as the example version.
+the next planned version with suffix `.dev0`.
+This makes it easier to distinguish versions when someone submits a bug
+as we will be able to tell if it's a release version or dev version.
+For the release branch, we have to remove this suffix.
 
 Before running the following command replace all "local" links like
 "./doc/README.md" with links that will work from any website, i.e.,
-"https://github.com/Azure/PyRIT/blob/releases/vx.y.z/doc/README.md"
+"https://github.com/Azure/PyRIT/blob/releases/vx.y.z/doc/README.md".
+For images, the past releases didn't succeed in getting them to render.
+For the next release, let's try and modify the image links to the "raw"
+link, e.g.,
+"https://raw.githubusercontent.com/Azure/PyRIT/releases/vx.y.z/assets/pyrit_architecture.png".
+This is required for the release branch because PyPI does not pick up
+other files besides the README, which results in local links breaking.
 
 Commit your changes and push them to the repository on a branch called
 `releases/vx.y.z`, then run
@@ -219,9 +248,12 @@ To build the package wheel and archive for PyPI run
 python -m build
 ```
 
-This should print 
+This should print
 
 > Successfully built pyrit-x.y.z.tar.gz and pyrit-x.y.z-py3-none-any.whl
+
+Create an account on pypi.org if you don't have one yet.
+Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
 
 ```bash
 pip install twine
