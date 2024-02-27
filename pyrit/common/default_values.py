@@ -9,13 +9,14 @@ from pyrit.common import path
 
 def load_default_env() -> None:
     """
-    Loads an environment file from the given path, or the $PROJECT_ROOT/.env file if no path is given
-    Throws an exception if the file is not found
+    Loads an environment file from the $PROJECT_ROOT/.env file if it exists,
+    or if not, loads from the default dotenv .env file
     """
     file_path = path.HOME_PATH / ".env"
 
     if not file_path.exists():
-        raise FileNotFoundError(f"Environment file not found at {file_path}")
+        dotenv.load_dotenv()
+        return
 
     dotenv.load_dotenv(file_path, override=True)
 

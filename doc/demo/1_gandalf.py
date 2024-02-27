@@ -1,15 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.1
-# ---
-
 # %% [markdown]
 # # Introduction
 #
@@ -19,7 +7,7 @@
 #
 # Before you begin, ensure the following steps have been completed:
 #
-# 1. Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/azure_openai_setup.ipynb)
+# 1. Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/setup_azure.md)
 #
 # 2. **Deploy an Azure OpenAI:** Confirm that an Azure OpenAI service is already deployed in Azure subscription.
 #
@@ -88,6 +76,7 @@ red_teamer_bot = RedTeamingBot(
         pathlib.Path(os.getcwd())
         / ".."
         / ".."
+        / "pyrit"
         / "datasets"
         / "attack_strategies"
         / "multi_turn_chat"
@@ -100,7 +89,6 @@ gandalf_bot = GandalfCompletionEngine(level=GandalfLevel.LEVEL_1)
 gandalf_password_scorer = GandalfScorer(level=GandalfLevel.LEVEL_1, chat_engine=aoai_chat_engine)
 
 GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2
-
 
 # %% [markdown]
 # Once the agents are set up, we can start the conversation.
@@ -140,7 +128,6 @@ while not correct_password and attempt < 3:
 
 # %% [markdown]
 # Once this is complete, we can use the `GandalfScorer` to score the response from Gandalf.
-
 
 # %%
 gandalf_password_scorer_l1 = GandalfScorer(level=GandalfLevel.LEVEL_1, chat_engine=aoai_chat_engine)
