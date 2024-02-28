@@ -43,7 +43,7 @@ def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget):
     assert mock_target.count == 3
 
 
-def test_send_prompts_b64_transform(mock_target: MockPromptTarget):
+def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
     converter = Base64Converter()
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converter=converter)
 
