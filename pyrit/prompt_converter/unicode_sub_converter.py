@@ -10,7 +10,7 @@ class UnicodeSubstitutionConverter(PromptConverter):
 
     def convert(self, prompt: str) -> str:
         """
-        Simple transformer that just encodes the prompt using any unicode starting point.
+        Simple converter that just encodes the prompt using any unicode starting point.
         Default is to use invisible flag emoji characters.
         """
         return "".join(chr(self.startValue + ord(ch)) for ch in prompt)

@@ -7,6 +7,6 @@ from pyrit.prompt_converter import PromptConverter
 class NoOpConverter(PromptConverter):
     def convert(self, prompt: str) -> str:
         """
-        By default, the base transformer class does nothing to the prompt.
+        By default, the base converter class does nothing to the prompt.
         """
         return prompt
