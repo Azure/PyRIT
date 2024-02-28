@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.prompt_converter import Base64Converter, NoOpConverter, UnicodeSubstitutionConverter, StrJoinConverter
+from pyrit.prompt_converter import Base64Converter, NoOpConverter, UnicodeSubstitutionConverter, StringJoinConverter
 
 
 def test_prompt_converter() -> None:
@@ -25,10 +25,10 @@ def test_unicode_sub_ascii_prompt_converter() -> None:
 
 
 def test_str_join_converter_default() -> None:
-    converter = StrJoinConverter()
+    converter = StringJoinConverter()
     assert converter.convert("test") == "t-e-s-t"
 
 
 def test_str_join_converter_init() -> None:
-    converter = StrJoinConverter("***")
+    converter = StringJoinConverter("***")
     assert converter.convert("test") == "t***e***s***t"
