@@ -202,7 +202,7 @@ https://semver.org/ for more details.
 Below, we refer to the version as `x.y.z`.
 `x` is the major version, `y` the minor version, and `z` the patch version.
 Every Python project starts at `0.1.0`.
-Patches such as bugfixes without breaking changes increase the patch version.
+Backwards compatible bug fixes increase the patch version.
 Importantly, they are backward compatible, so upgrading from `0.1.0` to
 `0.1.1` (or higher ones like `0.1.38`) should not break your code.
 More significant changes, such as major features, require at least a new
