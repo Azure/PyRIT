@@ -11,7 +11,7 @@ from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
 class PromptSendingOrchestrator:
     """
-    This orchestrator takes a set of prompts, transforms them, and sends them to a target.
+    This orchestrator takes a set of prompts, converts them using the list of PromptConverters, and sends them to a target.
     """
 
     def __init__(
