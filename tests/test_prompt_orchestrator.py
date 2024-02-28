@@ -45,7 +45,7 @@ def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget):
 
 def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
     converter = Base64Converter()
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converter=converter)
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converters=converter)
 
     orchestrator.send_prompts(["Hello"])
     assert mock_target.prompt == "SGVsbG8="
