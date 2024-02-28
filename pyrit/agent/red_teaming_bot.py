@@ -110,7 +110,7 @@ class RedTeamingBot:
             return False
         if current_messages[-1].role == "system":
             # If the last message is a system message, then the conversation is complete
-            return False
+            return True
 
         if RED_TEAM_CONVERSATION_END_TOKEN in current_messages[-1].content:
             # If the last message contains the conversation end token, then the conversation is complete
