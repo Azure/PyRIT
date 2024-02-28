@@ -9,10 +9,10 @@ class PromptTarget(abc.ABC):
     memory: MemoryInterface
 
     """
-    A list of transformers that are supported by the prompt target.
-    An empty list implies that the prompt target supports all transformers.
+    A list of PromptConverters that are supported by the prompt target.
+    An empty list implies that the prompt target supports all converters.
     """
-    supported_transformers: list
+    supported_converters: list
 
     def __init__(self, memory: MemoryInterface) -> None:
         self.memory = memory

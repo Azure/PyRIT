@@ -7,7 +7,7 @@ import pytest
 from pyrit.memory import FileMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_transformer import Base64Transformer
+from pyrit.prompt_converter import Base64Converter
 
 
 class MockPromptTarget(PromptTarget):
@@ -28,14 +28,14 @@ def mock_target() -> MockPromptTarget:
     return MockPromptTarget(memory=file_memory)
 
 
-def test_send_prompt_no_transformer(mock_target: MockPromptTarget):
+def test_send_prompt_no_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     orchestrator.send_prompts(["Hello"])
     assert mock_target.prompt == "Hello"
 
 
-def test_send_multiple_prompts_no_transformer(mock_target: MockPromptTarget):
+def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     orchestrator.send_prompts(["Hello", "my", "name"])
@@ -43,9 +43,9 @@ def test_send_multiple_prompts_no_transformer(mock_target: MockPromptTarget):
     assert mock_target.count == 3
 
 
-def test_send_prompts_b64_transform(mock_target: MockPromptTarget):
-    transformer = Base64Transformer()
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_transformer=transformer)
+def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
+    converter = Base64Converter()
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converter=converter)
 
     orchestrator.send_prompts(["Hello"])
     assert mock_target.prompt == "SGVsbG8="
