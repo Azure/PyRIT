@@ -205,13 +205,14 @@ Every Python project starts at `0.1.0`.
 Patches such as bugfixes without breaking changes increase the patch version.
 Importantly, they are backward compatible, so upgrading from `0.1.0` to
 `0.1.1` (or higher ones like `0.1.38`) should not break your code.
-More significant changes such as major features.
+More significant changes, such as major features, require at least a new
+minor version.
 They should still be backwards compatible, so if you're upgrading from
 `1.1.0` to `1.2.0` your code shouldn't break.
-In reality, the major version `1.0.0` is the first "stable" release.
+The major version `1.0.0` is the first "stable" release.
 Anything before (i.e., leading with major version `0`) indicates that it is
 not stable and anything may change at any time.
-For that reason, we the minor version may indicate breaking changes, too,
+For that reason, the minor version may indicate breaking changes, too,
 at least until we hit major version `1`.
 
 With that in mind, the reason for the release and the set of changes
