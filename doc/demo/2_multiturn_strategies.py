@@ -36,8 +36,8 @@ conversation_objective = (
 )
 
 # The adversarial_bot is the used to generate prompts that are sent to the target
-# In this case, it's a custom deployed AML endpoint
-# In this example, our endpoint disallows system prompts, so we create the endpoint as follows
+# In this case, it's a deployed AML endpoint, in this case mistralai-mixtral-8x7b-instru-2
+# mixtral disallows system prompts, so we create the endpoint as follows
 chat_engine = AMLOnlineEndpointChat(chat_message_normalizer=GenericSystemSquash())
 
 adversarial_bot = RedTeamingBot(conversation_objective=conversation_objective, chat_engine=chat_engine)
