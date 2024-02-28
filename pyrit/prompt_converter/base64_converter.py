@@ -3,13 +3,13 @@
 
 import base64
 
-from pyrit.prompt_transformer import PromptTransformer
+from pyrit.prompt_converter import PromptConverter
 
 
-class Base64Transformer(PromptTransformer):
-    def transform(self, prompt: str) -> str:
+class Base64Converter(PromptConverter):
+    def convert(self, prompt: str) -> str:
         """
-        Simple transformer that just base64 encodes the prompt
+        Simple converter that just base64 encodes the prompt
         """
         string_bytes = prompt.encode("utf-8")
         encoded_bytes = base64.b64encode(string_bytes)
