@@ -11,8 +11,8 @@ class StringJoinConverter(PromptConverter):
 
     def convert(self, prompt: str) -> str:
         """
-        Simple converter that uses str join for letters between. E.g. with a "-"
-        it converts a promtp of test to t-e-s-t
+        Simple converter that uses str join for letters between. E.g. with a `-`
+        it converts a prompt of `test` to `t-e-s-t`
 
         This can sometimes bypass LLM logic
 
