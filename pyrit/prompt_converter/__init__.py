@@ -8,8 +8,10 @@ from pyrit.prompt_converter.str_join_converter import StrJoinConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 
 
-__all__ = ["PromptConverter",
-           "Base64Converter",
-           "NoOpConverter",
-           "StrJoinConverter",
-           "UnicodeSubstitutionConverter",]
+__all__ = [
+    "PromptConverter",
+    "Base64Converter",
+    "NoOpConverter",
+    "StrJoinConverter",
+    "UnicodeSubstitutionConverter",
+]

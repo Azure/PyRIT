@@ -23,9 +23,11 @@ def test_unicode_sub_ascii_prompt_converter() -> None:
     converter = UnicodeSubstitutionConverter(0x00000)
     assert converter.convert("test") == "\U00000074\U00000065\U00000073\U00000074"
 
+
 def test_str_join_converter_default() -> None:
     converter = StrJoinConverter()
     assert converter.convert("test") == "t-e-s-t"
+
 
 def test_str_join_converter_init() -> None:
     converter = StrJoinConverter("***")
