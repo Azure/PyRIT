@@ -11,16 +11,20 @@ from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
 class PromptSendingOrchestrator:
     """
-    This orchestrator takes a set of prompts, transforms them, and sends them to a target.
+    This orchestrator takes a set of prompts, converts them using the list of PromptConverters,
+    and sends them to a target.
     """
 
     def __init__(
-        self, prompt_target: PromptTarget, prompt_converter: PromptConverter = None, memory: MemoryInterface = None
+        self,
+        prompt_target: PromptTarget,
+        prompt_converters: list[PromptConverter] = None,
+        memory: MemoryInterface = None,
     ) -> None:
         self.prompts = list[str]
         self.prompt_target = prompt_target
 
-        self.prompt_converter = prompt_converter if prompt_converter else NoOpConverter()
+        self.prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
         self.memory = memory if memory else file_memory.FileMemory()
         self.prompt_normalizer = PromptNormalizer(memory=self.memory)
 
@@ -33,7 +37,7 @@ class PromptSendingOrchestrator:
         for prompt_text in prompts:
             prompt = Prompt(
                 prompt_target=self.prompt_target,
-                prompt_converter=self.prompt_converter,
+                prompt_converters=self.prompt_converters,
                 prompt_text=prompt_text,
                 conversation_id=str(uuid4()),
             )
