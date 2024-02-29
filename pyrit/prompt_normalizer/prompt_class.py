@@ -11,18 +11,21 @@ class Prompt(abc.ABC):
     memory: MemoryInterface
 
     def __init__(
-        self, prompt_target: PromptTarget,
+        self,
+        prompt_target: PromptTarget,
         prompt_converters: list[PromptConverter],
         prompt_text: str,
-        conversation_id: str
+        conversation_id: str,
     ) -> None:
         if not isinstance(prompt_target, PromptTarget):
             raise ValueError("prompt_target must be a PromptTarget")
 
-        if not isinstance(prompt_converters, list) or \
-           len(prompt_converters) == 0 or \
-           not all(isinstance(converter, PromptConverter) for converter in prompt_converters):
-                raise ValueError("prompt_converters must be a list[PromptConverter] and be non-empty")
+        if (
+            not isinstance(prompt_converters, list)
+            or len(prompt_converters) == 0
+            or not all(isinstance(converter, PromptConverter) for converter in prompt_converters)
+        ):
+            raise ValueError("prompt_converters must be a list[PromptConverter] and be non-empty")
 
         if not all(isinstance(converter, PromptConverter) for converter in prompt_converters):
             raise ValueError("the list prompt_con")

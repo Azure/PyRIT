@@ -50,6 +50,7 @@ def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
     orchestrator.send_prompts(["Hello"])
     assert mock_target.prompt == "SGVsbG8="
 
+
 def test_send_prompts_multiple_converters(mock_target: MockPromptTarget):
     b64_converter = Base64Converter()
     join_converter = StringJoinConverter("_")

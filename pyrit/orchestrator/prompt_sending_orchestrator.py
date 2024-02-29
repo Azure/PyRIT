@@ -15,7 +15,10 @@ class PromptSendingOrchestrator:
     """
 
     def __init__(
-        self, prompt_target: PromptTarget, prompt_converters: list[PromptConverter] = None, memory: MemoryInterface = None
+        self,
+        prompt_target: PromptTarget,
+        prompt_converters: list[PromptConverter] = None,
+        memory: MemoryInterface = None,
     ) -> None:
         self.prompts = list[str]
         self.prompt_target = prompt_target
