@@ -41,7 +41,7 @@ class Prompt(abc.ABC):
     def send_prompt(self, normalizer_id: str):
         """
         Sends the prompt to the prompt target, by first converting the prompt
-        The prompte runs through every converter
+        The prompt runs through every converter
         """
 
         converted_prompt = self.prompt_text
