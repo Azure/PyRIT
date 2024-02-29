@@ -5,8 +5,10 @@ import abc
 
 
 class PromptConverter(abc.ABC):
+    include_original: bool = False
+
     @abc.abstractmethod
-    def convert(self, prompts: list[str], include_original: bool = False) -> list[str]:
+    def convert(self, prompts: list[str]) -> list[str]:
         """
         This is the class that changes a prompt into N different representations (N>0).
 

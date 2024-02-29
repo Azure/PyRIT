@@ -16,7 +16,9 @@ def test_base64_prompt_converter() -> None:
 
 def test_prompt_converter_keeps_original() -> None:
     converter = Base64Converter()
-    prompts = converter.convert(prompts=["test"], include_original=True)
+    converter.include_original = True
+
+    prompts = converter.convert(prompts=["test"])
     assert prompts == ["test", "dGVzdA=="]
 
 
