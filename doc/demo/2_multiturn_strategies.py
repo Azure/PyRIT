@@ -36,7 +36,7 @@ conversation_objective = (
 )
 
 # The adversarial_bot is the used to generate prompts that are sent to the target
-# In this case, it's a deployed AML endpoint, in this case mistralai-mixtral-8x7b-instru-2
+# In this case, it's a deployed AML endpoint called mistralai-mixtral-8x7b-instru-2
 # but it can be any supported endpoint
 # mixtral disallows system prompts, so we include a chat_message_normalizer to squash them
 chat_engine = AMLOnlineEndpointChat(chat_message_normalizer=GenericSystemSquash())
@@ -59,7 +59,7 @@ while not objective_achieved:
     adversarial_bot_message = adversarial_bot.complete_chat_user(message=target_bot_response)
 
     if adversarial_bot.is_conversation_complete():
-        print(f"{Fore.RED}Adversarial bot has completed the conversation and achieved the objective.")
+        print(f"{Fore.YELLOW}Adversarial bot has completed the conversation and achieved the objective.")
         break
 
     if attempts > 2:
