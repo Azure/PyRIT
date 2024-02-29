@@ -27,10 +27,6 @@ class Prompt(abc.ABC):
         if not all(isinstance(converter, PromptConverter) for converter in prompt_converters):
             raise ValueError("the list prompt_con")
 
-        if not isinstance(prompt_converters, list[PromptConverter]) or \
-          len(prompt_converters) == 0:
-            raise ValueError("prompt_converters must be a list[Promptconverter]")
-
         if not isinstance(prompt_text, str):
             raise ValueError("prompt_text must be a str")
 
