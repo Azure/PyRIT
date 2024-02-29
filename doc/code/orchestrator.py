@@ -43,3 +43,5 @@ memory = orchestrator.get_memory()
 
 for entry in memory:
     print(entry)
+
+# %%

@@ -6,12 +6,13 @@ from pyrit.prompt_converter import Base64Converter, NoOpConverter, UnicodeSubsti
 
 def test_prompt_converter() -> None:
     converter = NoOpConverter()
-    assert converter.convert("test") == "test"
+    assert converter.convert(["test"]) == ["test"]
 
 
 def test_base64_prompt_converter() -> None:
     converter = Base64Converter()
     assert converter.convert(["test"]) == ["dGVzdA=="]
+
 
 def test_prompt_converter_keeps_original() -> None:
     converter = Base64Converter()
