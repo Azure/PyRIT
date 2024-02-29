@@ -34,7 +34,7 @@ class Prompt(abc.ABC):
             raise ValueError("conversation_id must be a str")
 
         self.prompt_target = prompt_target
-        self.prompt_converter = prompt_converters
+        self.prompt_converters = prompt_converters
         self.prompt_text = prompt_text
         self.conversation_id = conversation_id
 
@@ -44,13 +44,14 @@ class Prompt(abc.ABC):
         The prompt runs through every converter
         """
 
-        converted_prompt = self.prompt_text
+        converted_prompts = [self.prompt_text]
 
-        for converter in self.prompt_converter:
-            converted_prompt = converter.convert(converted_prompt)
+        for converter in self.prompt_converters:
+            converted_prompts = converter.convert(converted_prompts)
 
-        self.prompt_target.send_prompt(
-            normalized_prompt=converted_prompt,
-            conversation_id=self.conversation_id,
-            normalizer_id=normalizer_id,
-        )
+        for converted_prompt in converted_prompts:
+            self.prompt_target.send_prompt(
+                normalized_prompt=converted_prompt,
+                conversation_id=self.conversation_id,
+                normalizer_id=normalizer_id,
+            )

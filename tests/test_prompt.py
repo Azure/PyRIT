@@ -36,7 +36,7 @@ def test_prompt_init_valid_arguments():
     prompt = Prompt(prompt_target, prompt_converters, prompt_text, conversation_id)
 
     assert prompt.prompt_target == prompt_target
-    assert prompt.prompt_converter == prompt_converters
+    assert prompt.prompt_converters == prompt_converters
     assert prompt.prompt_text == prompt_text
     assert prompt.conversation_id == conversation_id
 

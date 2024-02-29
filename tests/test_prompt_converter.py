@@ -11,24 +11,29 @@ def test_prompt_converter() -> None:
 
 def test_base64_prompt_converter() -> None:
     converter = Base64Converter()
-    assert converter.convert("test") == "dGVzdA=="
+    assert converter.convert(["test"]) == ["dGVzdA=="]
+
+def test_prompt_converter_keeps_original() -> None:
+    converter = Base64Converter()
+    prompts = converter.convert(prompts=["test"], include_original=True)
+    assert prompts == ["test", "dGVzdA=="]
 
 
 def test_unicode_sub_default_prompt_converter() -> None:
     converter = UnicodeSubstitutionConverter()
-    assert converter.convert("test") == "\U000e0074\U000e0065\U000e0073\U000e0074"
+    assert converter.convert(["test"]) == ["\U000e0074\U000e0065\U000e0073\U000e0074"]
 
 
 def test_unicode_sub_ascii_prompt_converter() -> None:
     converter = UnicodeSubstitutionConverter(0x00000)
-    assert converter.convert("test") == "\U00000074\U00000065\U00000073\U00000074"
+    assert converter.convert(["test"]) == ["\U00000074\U00000065\U00000073\U00000074"]
 
 
 def test_str_join_converter_default() -> None:
     converter = StringJoinConverter()
-    assert converter.convert("test") == "t-e-s-t"
+    assert converter.convert(["test"]) == ["t-e-s-t"]
 
 
 def test_str_join_converter_init() -> None:
     converter = StringJoinConverter("***")
-    assert converter.convert("test") == "t***e***s***t"
+    assert converter.convert(["test"]) == ["t***e***s***t"]
