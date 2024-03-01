@@ -6,9 +6,8 @@ from pyrit.prompt_converter import PromptConverter
 
 class StringJoinConverter(PromptConverter):
 
-    def __init__(self, *, join_value="-", include_original=False):
+    def __init__(self, *, join_value="-"):
         self.join_value = join_value
-        self.include_original = include_original
 
     def convert(self, prompts: list[str]) -> list[str]:
         """

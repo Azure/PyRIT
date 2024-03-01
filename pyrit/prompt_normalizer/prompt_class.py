@@ -16,7 +16,22 @@ class Prompt(abc.ABC):
         prompt_converters: list[PromptConverter],
         prompt_text: str,
         conversation_id: str,
+        include_original: bool = False,
     ) -> None:
+        """
+        Initialize a PromptClass object.
+
+        Args:
+            prompt_target (PromptTarget): The target for the prompt.
+            prompt_converters (list[PromptConverter]): A list of prompt converters.
+            prompt_text (str): The text of the prompt.
+            conversation_id (str): The ID of the conversation.
+            include_original (bool, optional): Whether to include the original prompt. Defaults to False.
+
+        Raises:
+            ValueError: If any of the arguments are of incorrect type.
+
+        """
         if not isinstance(prompt_target, PromptTarget):
             raise ValueError("prompt_target must be a PromptTarget")
 
@@ -37,17 +52,20 @@ class Prompt(abc.ABC):
         self.prompt_converters = prompt_converters
         self.prompt_text = prompt_text
         self.conversation_id = conversation_id
+        self.include_original = include_original
 
     def send_prompt(self, normalizer_id: str) -> None:
         """
         Sends the prompt to the prompt target, by first converting the prompt
         The prompt runs through every converter
         """
-
         converted_prompts = [self.prompt_text]
 
         for converter in self.prompt_converters:
             converted_prompts = converter.convert(converted_prompts)
+
+        if self.include_original:
+            converted_prompts.insert(0, self.prompt_text)
 
         for converted_prompt in converted_prompts:
             self.prompt_target.send_prompt(

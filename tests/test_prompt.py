@@ -2,22 +2,11 @@
 # Licensed under the MIT license.
 
 import pytest
+
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer.prompt_class import Prompt, PromptTarget, PromptConverter
+from pyrit.prompt_normalizer.prompt_class import Prompt, PromptConverter
 
-
-class MockPromptTarget(PromptTarget):
-    prompt_sent: list[str]
-
-    def __init__(self, id=None) -> None:
-        self.id = id
-        self.prompt_sent = []
-
-    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        pass
-
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.prompt_sent.append(normalized_prompt)
+from tests.mocks import MockPromptTarget
 
 
 class MockPromptConverter(PromptConverter):
@@ -95,7 +84,7 @@ def test_prompt_init_invalid_conversation_id():
 
 def test_send_prompt_multiple_converters():
     prompt_target = MockPromptTarget()
-    prompt_converters = [Base64Converter(), StringJoinConverter("_")]
+    prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
     prompt_text = "Hello"
     conversation_id = "123"
 
@@ -109,13 +98,13 @@ def test_send_prompt_multiple_converters():
 
 def test_send_prompt_multiple_converters_include_original():
     prompt_target = MockPromptTarget()
-    prompt_converters = [Base64Converter(include_original=True), StringJoinConverter("_")]
+    prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
     prompt_text = "Hello"
     conversation_id = "123"
 
-    prompt = Prompt(prompt_target, prompt_converters, prompt_text, conversation_id)
+    prompt = Prompt(prompt_target, prompt_converters, prompt_text, conversation_id, include_original=True)
 
     normalizer_id = "456"
     prompt.send_prompt(normalizer_id)
 
-    assert prompt_target.prompt_sent == ["H_e_l_l_o", "S_G_V_s_b_G_8_="]
+    assert prompt_target.prompt_sent == ["Hello", "S_G_V_s_b_G_8_="]
