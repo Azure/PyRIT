@@ -7,7 +7,7 @@ from pyrit.prompt_converter import PromptConverter
 
 
 class Base64Converter(PromptConverter):
-    def __init__(self, include_original=False):
+    def __init__(self, *, include_original=False):
         self.include_original = include_original
 
     def convert(self, prompts: list[str]) -> list[str]:
