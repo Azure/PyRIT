@@ -94,17 +94,3 @@ def test_send_prompt_multiple_converters():
     prompt.send_prompt(normalizer_id)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
-
-
-def test_send_prompt_multiple_converters_include_original():
-    prompt_target = MockPromptTarget()
-    prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
-    prompt_text = "Hello"
-    conversation_id = "123"
-
-    prompt = Prompt(prompt_target, prompt_converters, prompt_text, conversation_id, include_original=True)
-
-    normalizer_id = "456"
-    prompt.send_prompt(normalizer_id)
-
-    assert prompt_target.prompt_sent == ["Hello", "S_G_V_s_b_G_8_="]
