@@ -5,16 +5,25 @@ import abc
 
 
 class PromptConverter(abc.ABC):
+    """
+    A prompt converter is responsible for converting prompts into multiple representations.
+
+    Attributes:
+        include_original (bool): Flag indicating whether to include the original prompt in the
+                                 converted representations.
+    """
+
     include_original: bool = False
 
     @abc.abstractmethod
     def convert(self, prompts: list[str]) -> list[str]:
         """
-        This is the class that changes a prompt into N different representations (N>0).
+        Converts the given prompts into multiple representations.
 
-        In this sense, a prompt is any input we give to an LLM endpoint. It can be text, code, an image, etc.
+        Args:
+            prompts (list[str]): The prompts to be converted.
 
-        Currently, there are base64, Unicode, but also there will be "word doc" and "pdf" converters.
-        These converters can also be probabilistic, like using an LLM to find N prompt variations.
+        Returns:
+            list[str]: The converted representations of the prompts.
         """
         pass
