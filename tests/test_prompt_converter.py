@@ -15,13 +15,6 @@ def test_base64_prompt_converter() -> None:
     assert converter.convert(["test"]) == ["dGVzdA=="]
 
 
-def test_prompt_converter_keeps_original() -> None:
-    converter = Base64Converter()
-
-    prompts = converter.convert(prompts=["test"])
-    assert prompts == ["test", "dGVzdA=="]
-
-
 def test_unicode_sub_default_prompt_converter() -> None:
     converter = UnicodeSubstitutionConverter()
     assert converter.convert(["test"]) == ["\U000e0074\U000e0065\U000e0073\U000e0074"]
