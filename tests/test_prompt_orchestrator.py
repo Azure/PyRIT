@@ -53,7 +53,7 @@ def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
 
 def test_send_prompts_multiple_converters(mock_target: MockPromptTarget):
     b64_converter = Base64Converter()
-    join_converter = StringJoinConverter("_")
+    join_converter = StringJoinConverter(join_value="_")
 
     # This should base64 encode the prompt and then join the characters with an underscore
     converters = [b64_converter, join_converter]

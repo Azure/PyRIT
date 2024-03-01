@@ -5,7 +5,7 @@ from pyrit.prompt_converter import PromptConverter
 
 
 class UnicodeSubstitutionConverter(PromptConverter):
-    def __init__(self, start_value=0xE0000, include_original=False):
+    def __init__(self, *, start_value=0xE0000, include_original=False):
         self.startValue = start_value
         self.include_original = include_original
 
