@@ -22,7 +22,7 @@ class StringJoinConverter(PromptConverter):
             include_original (bool): Whether or not to include original prompt in the output
 
         Returns:
-            list[str]: The converted prompt.
+            list[str]: The converted prompts.
         """
         ret_list = prompts[:] if self.include_original else []
 
