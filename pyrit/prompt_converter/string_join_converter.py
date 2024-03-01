@@ -26,7 +26,4 @@ class StringJoinConverter(PromptConverter):
         """
         ret_list = prompts[:] if self.include_original else []
 
-        for prompt in prompts:
-            ret_list.append(self.join_value.join(prompt))
-
-        return ret_list
+        return [self.join_value.join(prompt) for prompt in prompts]
