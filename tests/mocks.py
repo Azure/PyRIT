@@ -3,6 +3,8 @@
 
 from contextlib import AbstractAsyncContextManager
 
+from pyrit.prompt_target import PromptTarget
+
 
 class MockHttpPostAsync(AbstractAsyncContextManager):
     def __init__(self, url, headers=None, json=None, params=None, ssl=None):
@@ -41,3 +43,18 @@ class MockHttpPostSync:
     def raise_for_status(self):
         if not (200 <= self.status < 300):
             raise Exception(f"HTTP Error {self.status}")
+
+
+class MockPromptTarget(PromptTarget):
+    prompt_sent: list[str]
+
+    def __init__(self, id=None, memory=None) -> None:
+        self.id = id
+        self.prompt_sent = []
+        self.memory = memory
+
+    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
+        self.system_prompt = prompt
+
+    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
+        self.prompt_sent.append(normalized_prompt)

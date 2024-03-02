@@ -5,12 +5,17 @@ from pyrit.prompt_converter import PromptConverter
 
 
 class UnicodeSubstitutionConverter(PromptConverter):
-    def __init__(self, start_value=0xE0000):
+    def __init__(self, *, start_value=0xE0000):
         self.startValue = start_value
 
-    def convert(self, prompt: str) -> str:
+    def convert(self, prompts: list[str]) -> list[str]:
         """
         Simple converter that just encodes the prompt using any unicode starting point.
         Default is to use invisible flag emoji characters.
         """
-        return "".join(chr(self.startValue + ord(ch)) for ch in prompt)
+        ret_list = []
+
+        for prompt in prompts:
+            ret_list.append("".join(chr(self.startValue + ord(ch)) for ch in prompt))
+
+        return ret_list
