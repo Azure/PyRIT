@@ -2,20 +2,11 @@
 # Licensed under the MIT license.
 
 import pytest
+
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer.prompt_class import Prompt, PromptTarget, PromptConverter
+from pyrit.prompt_normalizer.prompt_class import Prompt, PromptConverter
 
-
-class MockPromptTarget(PromptTarget):
-    def __init__(self, id=None) -> None:
-        self.id = id
-
-    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        pass
-
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.prompt_sent = normalized_prompt
-        pass
+from tests.mocks import MockPromptTarget
 
 
 class MockPromptConverter(PromptConverter):
@@ -23,8 +14,8 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, prompt: str) -> str:
-        return prompt
+    def convert(self, prompts: list[str], include_original: bool = False) -> list[str]:
+        return prompts
 
 
 def test_prompt_init_valid_arguments():
@@ -36,7 +27,7 @@ def test_prompt_init_valid_arguments():
     prompt = Prompt(prompt_target, prompt_converters, prompt_text, conversation_id)
 
     assert prompt.prompt_target == prompt_target
-    assert prompt.prompt_converter == prompt_converters
+    assert prompt.prompt_converters == prompt_converters
     assert prompt.prompt_text == prompt_text
     assert prompt.conversation_id == conversation_id
 
@@ -91,9 +82,9 @@ def test_prompt_init_invalid_conversation_id():
         Prompt(prompt_target, prompt_converters, prompt_text, conversation_id)
 
 
-def test_prompt_send_prompt():
+def test_send_prompt_multiple_converters():
     prompt_target = MockPromptTarget()
-    prompt_converters = [Base64Converter(), StringJoinConverter("_")]
+    prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
     prompt_text = "Hello"
     conversation_id = "123"
 
@@ -102,4 +93,4 @@ def test_prompt_send_prompt():
     normalizer_id = "456"
     prompt.send_prompt(normalizer_id)
 
-    assert prompt_target.prompt_sent == "S_G_V_s_b_G_8_="
+    assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]

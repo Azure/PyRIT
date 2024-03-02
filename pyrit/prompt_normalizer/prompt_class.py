@@ -17,6 +17,19 @@ class Prompt(abc.ABC):
         prompt_text: str,
         conversation_id: str,
     ) -> None:
+        """
+        Initialize a PromptClass object.
+
+        Args:
+            prompt_target (PromptTarget): The target for the prompt.
+            prompt_converters (list[PromptConverter]): A list of prompt converters.
+            prompt_text (str): The text of the prompt.
+            conversation_id (str): The ID of the conversation.
+
+        Raises:
+            ValueError: If any of the arguments are of incorrect type.
+
+        """
         if not isinstance(prompt_target, PromptTarget):
             raise ValueError("prompt_target must be a PromptTarget")
 
@@ -34,23 +47,24 @@ class Prompt(abc.ABC):
             raise ValueError("conversation_id must be a str")
 
         self.prompt_target = prompt_target
-        self.prompt_converter = prompt_converters
+        self.prompt_converters = prompt_converters
         self.prompt_text = prompt_text
         self.conversation_id = conversation_id
 
-    def send_prompt(self, normalizer_id: str):
+    def send_prompt(self, normalizer_id: str) -> None:
         """
-        Sends the prompt to the prompt target, by first converting the prompt
-        The prompt runs through every converter
+        Sends the prompt to the prompt target, by first converting the prompt.
+        The prompt runs through every converter (the output of one converter is
+        the input of the next converter).
         """
+        converted_prompts = [self.prompt_text]
 
-        converted_prompt = self.prompt_text
+        for converter in self.prompt_converters:
+            converted_prompts = converter.convert(converted_prompts)
 
-        for converter in self.prompt_converter:
-            converted_prompt = converter.convert(converted_prompt)
-
-        self.prompt_target.send_prompt(
-            normalized_prompt=converted_prompt,
-            conversation_id=self.conversation_id,
-            normalizer_id=normalizer_id,
-        )
+        for converted_prompt in converted_prompts:
+            self.prompt_target.send_prompt(
+                normalized_prompt=converted_prompt,
+                conversation_id=self.conversation_id,
+                normalizer_id=normalizer_id,
+            )

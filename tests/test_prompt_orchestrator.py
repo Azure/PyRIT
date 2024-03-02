@@ -6,19 +6,9 @@ import pytest
 
 from pyrit.memory import FileMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 
-
-class MockPromptTarget(PromptTarget):
-    count: int = 0
-
-    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.system_prompt = prompt
-
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.count += 1
-        self.prompt = normalized_prompt
+from tests.mocks import MockPromptTarget
 
 
 @pytest.fixture
@@ -32,15 +22,14 @@ def test_send_prompt_no_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     orchestrator.send_prompts(["Hello"])
-    assert mock_target.prompt == "Hello"
+    assert mock_target.prompt_sent == ["Hello"]
 
 
 def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     orchestrator.send_prompts(["Hello", "my", "name"])
-    assert mock_target.prompt == "name"
-    assert mock_target.count == 3
+    assert mock_target.prompt_sent == ["Hello", "my", "name"]
 
 
 def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
@@ -48,12 +37,12 @@ def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converters=[converter])
 
     orchestrator.send_prompts(["Hello"])
-    assert mock_target.prompt == "SGVsbG8="
+    assert mock_target.prompt_sent == ["SGVsbG8="]
 
 
 def test_send_prompts_multiple_converters(mock_target: MockPromptTarget):
     b64_converter = Base64Converter()
-    join_converter = StringJoinConverter("_")
+    join_converter = StringJoinConverter(join_value="_")
 
     # This should base64 encode the prompt and then join the characters with an underscore
     converters = [b64_converter, join_converter]
@@ -61,7 +50,22 @@ def test_send_prompts_multiple_converters(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converters=converters)
 
     orchestrator.send_prompts(["Hello"])
-    assert mock_target.prompt == "S_G_V_s_b_G_8_="
+    assert mock_target.prompt_sent == ["S_G_V_s_b_G_8_="]
+
+
+def test_send_prompts_multiple_converters_include_original(mock_target: MockPromptTarget):
+    b64_converter = Base64Converter()
+    join_converter = StringJoinConverter(join_value="_")
+
+    # This should base64 encode the prompt and then join the characters with an underscore
+    converters = [b64_converter, join_converter]
+
+    orchestrator = PromptSendingOrchestrator(
+        prompt_target=mock_target, prompt_converters=converters, include_original_prompts=True
+    )
+
+    orchestrator.send_prompts(["Hello"])
+    assert mock_target.prompt_sent == ["Hello", "S_G_V_s_b_G_8_="]
 
 
 def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
