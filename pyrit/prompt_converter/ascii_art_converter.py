@@ -6,7 +6,7 @@ from art import text2art
 
 
 class AsciiArtConverter(PromptConverter):
-    "Converts a string to ASCII art"
+    """Converts a string to ASCII art"""
 
     def __init__(self, font="rand"):
         self.font_value = font
