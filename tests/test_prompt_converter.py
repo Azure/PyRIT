@@ -1,7 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.prompt_converter import Base64Converter, NoOpConverter, UnicodeSubstitutionConverter, StringJoinConverter
+from pyrit.prompt_converter import (
+    Base64Converter,
+    NoOpConverter,
+    UnicodeSubstitutionConverter,
+    StringJoinConverter,
+    AsciiArtConverter,
+)
 
 
 def test_prompt_converter() -> None:
@@ -32,3 +38,11 @@ def test_str_join_converter_default() -> None:
 def test_str_join_converter_init() -> None:
     converter = StringJoinConverter("***")
     assert converter.convert("test") == "t***e***s***t"
+
+
+def test_ascii_art() -> None:
+    converter = AsciiArtConverter("block")
+    assert (
+        converter.convert("test")
+        == "\n .----------------.  .----------------.  .----------------.  .----------------. \n| .--------------. || .--------------. || .--------------. || .--------------. |\n| |  _________   | || |  _________   | || |    _______   | || |  _________   | |\n| | |  _   _  |  | || | |_   ___  |  | || |   /  ___  |  | || | |  _   _  |  | |\n| | |_/ | | \\_|  | || |   | |_  \\_|  | || |  |  (__ \\_|  | || | |_/ | | \\_|  | |\n| |     | |      | || |   |  _|  _   | || |   '.___`-.   | || |     | |      | |\n| |    _| |_     | || |  _| |___/ |  | || |  |`\\____) |  | || |    _| |_     | |\n| |   |_____|    | || | |_________|  | || |  |_______.'  | || |   |_____|    | |\n| |              | || |              | || |              | || |              | |\n| '--------------' || '--------------' || '--------------' || '--------------' |\n '----------------'  '----------------'  '----------------'  '----------------' \n"
+    )
