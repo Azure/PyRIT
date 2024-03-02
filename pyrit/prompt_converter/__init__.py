@@ -15,5 +15,5 @@ __all__ = [
     "NoOpConverter",
     "StringJoinConverter",
     "UnicodeSubstitutionConverter",
-    "ROT13Converter"
+    "ROT13Converter",
 ]

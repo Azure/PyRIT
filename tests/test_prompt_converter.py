@@ -1,7 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.prompt_converter import Base64Converter, NoOpConverter, UnicodeSubstitutionConverter, StringJoinConverter, ROT13Converter
+from pyrit.prompt_converter import (
+    Base64Converter,
+    NoOpConverter,
+    UnicodeSubstitutionConverter,
+    StringJoinConverter,
+    ROT13Converter,
+)
 
 
 def test_prompt_converter() -> None:
@@ -32,6 +38,7 @@ def test_str_join_converter_default() -> None:
 def test_str_join_converter_init() -> None:
     converter = StringJoinConverter("***")
     assert converter.convert("test") == "t***e***s***t"
+
 
 def test_rot13_converter_init() -> None:
     converter = ROT13Converter()
