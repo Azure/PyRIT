@@ -11,13 +11,13 @@ class AsciiArtConverter(PromptConverter):
     def __init__(self, font="rand"):
         self.font_value = font
 
-    def convert(self, prompt: str) -> str:
+    def convert(self, prompts: list[str]) -> list[str]:
         """
-        Converter that uses art to convert a string to ASCII art
+        Converter that uses art to convert strings to ASCII art
         This can sometimes bypass LLM filters
         Args:
-            prompt (str): The prompt to be converted.
+            prompt (list[str]): The prompts to be converted.
         Returns:
-            str: The converted prompt.
+            list[str]: The converted prompts.
         """
-        return text2art(prompt, font=self.font_value)
+        return [text2art(prompt, font=self.font_value) for prompt in prompts]
