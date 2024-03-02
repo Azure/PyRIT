@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pytest
 from pyrit.prompt_converter import (
     Base64Converter,
     NoOpConverter,
