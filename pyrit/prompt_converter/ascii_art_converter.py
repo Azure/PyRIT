@@ -13,7 +13,7 @@ class AsciiArtConverter(PromptConverter):
 
     def convert(self, prompts: list[str]) -> list[str]:
         """
-        Converter that uses art to convert strings to ASCII art
+        Converter that uses art to convert strings to ASCII art.
         This can sometimes bypass LLM filters
         Args:
             prompt (list[str]): The prompts to be converted.
