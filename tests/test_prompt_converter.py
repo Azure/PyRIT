@@ -7,6 +7,7 @@ from pyrit.prompt_converter import (
     UnicodeSubstitutionConverter,
     StringJoinConverter,
     ROT13Converter,
+    AsciiArtConverter,
 )
 import pytest
 
@@ -55,3 +56,10 @@ def test_str_join_converter_none_raises() -> None:
     converter = StringJoinConverter()
     with pytest.raises(TypeError):
         assert converter.convert(None)
+
+
+def test_ascii_art() -> None:
+    converter = AsciiArtConverter(font="block")
+    assert converter.convert(["test"]) == [
+        "\n .----------------.  .----------------.  .----------------.  .----------------. \n| .--------------. || .--------------. || .--------------. || .--------------. |\n| |  _________   | || |  _________   | || |    _______   | || |  _________   | |\n| | |  _   _  |  | || | |_   ___  |  | || |   /  ___  |  | || | |  _   _  |  | |\n| | |_/ | | \\_|  | || |   | |_  \\_|  | || |  |  (__ \\_|  | || | |_/ | | \\_|  | |\n| |     | |      | || |   |  _|  _   | || |   '.___`-.   | || |     | |      | |\n| |    _| |_     | || |  _| |___/ |  | || |  |`\\____) |  | || |    _| |_     | |\n| |   |_____|    | || | |_________|  | || |  |_______.'  | || |   |_____|    | |\n| |              | || |              | || |              | || |              | |\n| '--------------' || '--------------' || '--------------' || '--------------' |\n '----------------'  '----------------'  '----------------'  '----------------' \n"  # noqa: E501
+    ]
