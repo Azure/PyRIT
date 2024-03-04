@@ -20,9 +20,11 @@ def test_base64_prompt_converter() -> None:
     converter = Base64Converter()
     assert converter.convert(["test"]) == ["dGVzdA=="]
 
+
 def test_rot13_converter_init() -> None:
     converter = ROT13Converter()
-    assert converter.convert("test") == "grfg"
+    assert converter.convert(["test"]) == ["grfg"]
+
 
 def test_unicode_sub_default_prompt_converter() -> None:
     converter = UnicodeSubstitutionConverter()
