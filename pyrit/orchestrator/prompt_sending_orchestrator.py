@@ -3,7 +3,7 @@
 
 from uuid import uuid4
 
-from pyrit.memory import MemoryInterface, file_memory
+from pyrit.memory import MemoryInterface, FileMemory
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
@@ -17,29 +17,28 @@ class PromptSendingOrchestrator:
     def __init__(
         self, prompt_target: PromptTarget, prompt_converter: PromptConverter = None, memory: MemoryInterface = None
     ) -> None:
-        self.prompts = list[str]
-        self.prompt_target = prompt_target
+        self._prompt_converter = prompt_converter if prompt_converter else NoOpConverter()
+        self._memory = memory if memory else FileMemory()
+        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
 
-        self.prompt_converter = prompt_converter if prompt_converter else NoOpConverter()
-        self.memory = memory if memory else file_memory.FileMemory()
-        self.prompt_normalizer = PromptNormalizer(memory=self.memory)
-
-        self.prompt_target.memory = self.memory
+        self._prompt_target = prompt_target
+        self._prompt_target._memory = self._memory
 
     def send_prompts(self, prompts: list[str]):
         """
         Sends the prompt to the prompt target.
         """
+        responses = []
         for prompt_text in prompts:
             prompt = Prompt(
-                prompt_target=self.prompt_target,
-                prompt_converter=self.prompt_converter,
+                prompt_target=self._prompt_target,
+                prompt_converter=self._prompt_converter,
                 prompt_text=prompt_text,
                 conversation_id=str(uuid4()),
             )
 
-            self.prompt_normalizer.send_prompt(prompt=prompt)
+            responses.append(self._prompt_normalizer.send_prompt(prompt=prompt))
+        return responses
 
     def get_memory(self):
-        id = self.prompt_normalizer.id
-        return self.memory.get_memories_with_normalizer_id(normalizer_id=id)
+        return self._memory.get_memories_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)

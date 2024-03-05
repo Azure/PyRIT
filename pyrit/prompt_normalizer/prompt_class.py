@@ -11,7 +11,12 @@ class Prompt(abc.ABC):
     memory: MemoryInterface
 
     def __init__(
-        self, prompt_target: PromptTarget, prompt_converter: PromptConverter, prompt_text: str, conversation_id: str
+        self,
+        *,
+        prompt_target: PromptTarget,
+        prompt_converter: PromptConverter,
+        prompt_text: str,
+        conversation_id: str,
     ) -> None:
         if not isinstance(prompt_target, PromptTarget):
             raise ValueError("prompt_target must be a PromptTarget")
@@ -25,17 +30,17 @@ class Prompt(abc.ABC):
         if not isinstance(conversation_id, str):
             raise ValueError("conversation_id must be a str")
 
-        self.prompt_target = prompt_target
-        self.prompt_converter = prompt_converter
-        self.prompt_text = prompt_text
+        self._prompt_target = prompt_target
+        self._prompt_converter = prompt_converter
+        self._prompt_text = prompt_text
         self.conversation_id = conversation_id
 
-    def send_prompt(self, normalizer_id: str):
+    def send_prompt(self, normalizer_id: str) -> str:
         """
         Sends the prompt to the prompt target.
         """
-        self.prompt_target.send_prompt(
-            normalized_prompt=self.prompt_converter.convert(self.prompt_text),
+        return self._prompt_target.send_prompt(
+            normalized_prompt=self._prompt_converter.convert(self._prompt_text),
             conversation_id=self.conversation_id,
             normalizer_id=normalizer_id,
         )
