@@ -63,6 +63,8 @@
 
 from dotenv import load_dotenv
 import os
+import random
+import string
 
 # Load the environment variables from the .env file
 load_dotenv()
@@ -84,6 +86,7 @@ print(f"Resource group: {resource_group}")
 print(f"Workspace name: {workspace_name}")
 print(f"Registry name: {registry_name}")
 print(f"Model to deploy: {model_to_deploy}")
+print(f"Model version: {model_version}")
 print(f"Instance type: {instance_type}")
 print(f"Instance count: {instance_count}")
 print(f"Request timeout in millis: {request_timeout_ms}")
@@ -133,7 +136,7 @@ def check_model_version_exists(client, model_name, version) -> bool:
         models = list(client.models.list(name=model_name))
         model_found = any(model.version == version for model in models)
     except ResourceNotFoundError as rnfe:
-        print("Model not found in the registry")
+        print(f"Model not found in the registry{registry_name}, please try other registry.")
     return model_found
 
 
@@ -159,9 +162,31 @@ else:
     )
 endpoint_name = model_to_deploy + str(model_version)
 
+
 # %%
-# Using the first 32 characters because Azure ML endpoint names must be between 3 and 32 characters in length.
-endpoint_name = endpoint_name[:30]
+def get_updated_endpoint_name(endpoint_name):
+    """
+    Generates a unique string based on the Azure ML endpoint name.
+
+    This function takes the first 26 characters of the given endpoint name and appends
+    a 5-character random alphanumeric string with hypen to ensure uniqueness.
+    """
+    # Take the first 26 characters of the endpoint name
+    base_name = endpoint_name[:26]
+
+    # Generate a 5-char random alphanumeric string and append to '-'
+    random_suffix = "-" + "".join(random.choices(string.ascii_letters + string.digits, k=5))
+
+    updated_name = f"{base_name}{random_suffix}"
+
+    return updated_name
+
+
+# %%
+endpoint_name = get_updated_endpoint_name(endpoint_name)
+
+# %%
+print(f"Endpoint name: {endpoint_name}")
 
 # %% [markdown]
 # **Create an Azure ML managed online endpoint**

@@ -15,7 +15,7 @@
 #    <br> <img src="./../../assets/aml_managed_online_endpoint_api_key.png" alt="aml_managed_online_endpoint_api_key.png" height="400"/> <br>
 
 # 1. **Set the Environment Variable:**
-#    - Add the obtained API key to an environment variable named `AZURE_ML_API_KEY`.
+#    - Add the obtained API key to an environment variable named `AZURE_ML_KEY`.
 #    - Add the obtained endpoint URI to an environment variable named `AZURE_ML_MANAGED_ENDPOINT`.
 
 # ## Create a AMLOnlineEndpointChat

@@ -57,7 +57,7 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
     assert chats[0].content == "system prompt"
 
 
-def test_complete_chat_user_no_system(azure_openai_target: AzureOpenAIChatTarget, openai_mock_return: ChatCompletion):
+def test_send_prompt_user_no_system(azure_openai_target: AzureOpenAIChatTarget, openai_mock_return: ChatCompletion):
     with patch("openai.resources.chat.Completions.create") as mock:
         mock.return_value = openai_mock_return
         azure_openai_target.send_prompt(
@@ -70,7 +70,7 @@ def test_complete_chat_user_no_system(azure_openai_target: AzureOpenAIChatTarget
         assert chats[1].role == "assistant"
 
 
-def test_complete_chat_user_with_system(azure_openai_target: AzureOpenAIChatTarget, openai_mock_return: ChatCompletion):
+def test_send_prompt_with_system(azure_openai_target: AzureOpenAIChatTarget, openai_mock_return: ChatCompletion):
     with patch("openai.resources.chat.Completions.create") as mock:
         mock.return_value = openai_mock_return
 
@@ -86,7 +86,7 @@ def test_complete_chat_user_with_system(azure_openai_target: AzureOpenAIChatTarg
         assert chats[1].role == "user"
 
 
-def test_complete_chat_user_with_system_calls_chat_complete(
+def test_send_prompt_with_system_calls_chat_complete(
     azure_openai_target: AzureOpenAIChatTarget, openai_mock_return: ChatCompletion
 ):
     with patch("openai.resources.chat.Completions.create") as mock:

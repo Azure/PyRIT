@@ -17,8 +17,8 @@
 #    - Securely store the API key and endpoint URI as they will be needed to setup.
 #
 # 4. **Environment Variable Setup:**
-#    - Add the API key to an environment variable named `AZURE_OPENAI_API_KEY`.
-#    - Add the endpoint URI to an environment variable named `AZURE_OPENAI_ENDPOINT`.
+#    - Add the API key to an environment variable named `AZURE_OPENAI_CHAT_KEY`.
+#    - Add the endpoint URI to an environment variable named `AZURE_OPENAI_CHAT_ENDPOINT`.
 #
 # ## Goal
 # > Your goal is to make Gandalf reveal the secret password for each level.
@@ -62,8 +62,8 @@ default_values.load_default_env()
 gandalf_level = GandalfLevel.LEVEL_1
 aoai_chat_target = AzureOpenAIChatTarget(
     deployment_name="gpt-4",
-    endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 conversation_objective = textwrap.dedent(
 """\
@@ -92,8 +92,8 @@ gandalf_password_scorer = GandalfScorer(
     level=gandalf_level,
     chat_engine=AzureOpenAIChat(
         deployment_name="gpt-4",
-        endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-        api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+        endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+        api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
     )
 )
 

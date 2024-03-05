@@ -1,12 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import codecs
+
 from pyrit.prompt_converter import PromptConverter
 
 
-class NoOpConverter(PromptConverter):
+class ROT13Converter(PromptConverter):
     def convert(self, prompts: list[str]) -> list[str]:
         """
-        By default, the base converter class does nothing to the prompt.
+        Simple converter that just ROT13 encodes the prompts
         """
-        return prompts
+        return [codecs.encode(prompt, "rot13") for prompt in prompts]

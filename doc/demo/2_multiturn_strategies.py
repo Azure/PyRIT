@@ -41,15 +41,16 @@ attack_strategy = AttackStrategy(
 )
 
 # The red_teaming_target is the used to generate prompts that are sent to the target.
-# In this case, it's a custom deployed AML endpoint.
-# In this example, our endpoint disallows system prompts, so we create the endpoint as follows:
+# In this case, it's a deployed AML endpoint called mistralai-mixtral-8x7b-instru-2
+# but it can be any supported endpoint.
+# mixtral disallows system prompts, so we include a chat_message_normalizer to squash them:
 red_teaming_target = AMLOnlineEndpointChatTarget(
     chat_message_normalizer=GenericSystemSquash())
 
 prompt_target = AzureOpenAIChatTarget(
     deployment_name="defense-gpt35",
-    endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT_URI"),
-    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
 red_teaming_orchestrator = RedTeamingOrchestrator(
