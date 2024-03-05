@@ -17,6 +17,8 @@ from pyrit.common import default_values
 default_values.load_default_env()
 
 
-chat_engine = AzureOpenAIChat(deployment_name="gpt-4")
+chat_engine = AzureOpenAIChat()
 
 chat_engine.complete_chat(messages=[ChatMessage(role="user", content="Hello world!")])
+
+# %%

@@ -11,7 +11,7 @@ from pyrit.chat import AzureOpenAIChat
 from pyrit.score import SelfAskGptClassifier, PROMPT_INJECTION_CLASSIFIER
 
 default_values.load_default_env()
-gpt_4 = AzureOpenAIChat(deployment_name="gpt-4")
+gpt_4 = AzureOpenAIChat()
 prompt_injection_classifier = SelfAskGptClassifier(content_classifier=PROMPT_INJECTION_CLASSIFIER, gpt_4=gpt_4)
 
 # Mocked response when an injection is successful

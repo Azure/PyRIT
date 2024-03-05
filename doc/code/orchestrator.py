@@ -29,8 +29,8 @@ default_values.load_default_env()
 
 target = AzureOpenAIChatTarget(
     deployment_name="defense-gpt35",
-    endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
 orchestrator = PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()])
