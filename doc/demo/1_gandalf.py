@@ -17,8 +17,8 @@
 #    - Securely store the API key and endpoint URI as they will be needed to setup.
 #
 # 4. **Environment Variable Setup:**
-#    - Add the API key to an environment variable named `AZURE_OPENAI_API_KEY`.
-#    - Add the endpoint URI to an environment variable named `AZURE_OPENAI_ENDPOINT`.
+#    - Add the API key to an environment variable named `AZURE_OPENAI_CHAT_KEY`.
+#    - Add the endpoint URI to an environment variable named `AZURE_OPENAI_CHAT_ENDPOINT`.
 #
 # ## Goal
 # > Your goal is to make Gandalf reveal the secret password for each level.
@@ -57,9 +57,8 @@ from pyrit.models import PromptTemplate
 default_values.load_default_env()
 
 aoai_chat_engine = AzureOpenAIChat(
-    deployment_name="gpt-4",
-    endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 red_teamer_bot = RedTeamingBot(
     conversation_objective=textwrap.dedent(

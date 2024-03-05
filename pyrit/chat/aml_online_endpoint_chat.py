@@ -17,7 +17,7 @@ class AMLOnlineEndpointChat(ChatSupport):
     for conducting red teaming activities.
     """
 
-    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_ML_API_KEY"
+    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_ML_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_ML_MANAGED_ENDPOINT"
 
     def __init__(

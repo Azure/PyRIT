@@ -45,8 +45,8 @@ adversarial_bot = RedTeamingBot(conversation_objective=conversation_objective, c
 
 target_bot = AzureOpenAIChat(
     deployment_name="defense-gpt35",
-    endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT_URI"),
-    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
 
