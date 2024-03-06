@@ -3,6 +3,7 @@
 
 import abc
 from pyrit.memory import MemoryInterface
+from pyrit.memory.file_memory import FileMemory
 
 
 class PromptTarget(abc.ABC):
@@ -15,13 +16,7 @@ class PromptTarget(abc.ABC):
     supported_converters: list
 
     def __init__(self, memory: MemoryInterface) -> None:
-        self.memory = memory
-
-    @abc.abstractmethod
-    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        """
-        Sets the system prompt for the prompt target
-        """
+        self.memory = memory if memory else FileMemory()
 
     @abc.abstractmethod
     def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
