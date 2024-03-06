@@ -72,21 +72,21 @@ jobs:
           with:
             python-version: ${{ matrix.python }}
         - name: Setting environment test secrets
-            env:
-              AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
-              AZURE_OPENAI_CHAT_KEY: ${{ secrets.AZURE_OPENAI_CHAT_KEY }}
-              AZURE_OPENAI_CHAT_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}
-              AZURE_OPENAI_COMPLETION_ENDPOINT: ${{ secrets.AZURE_OPENAI_COMPLETION_ENDPOINT }}
-              AZURE_OPENAI_COMPLETION_KEY: ${{ secrets.AZURE_OPENAI_COMPLETION_KEY }}
-              AZURE_OPENAI_COMPLETION_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_COMPLETION_DEPLOYMENT }}
-              AZURE_OPENAI_EMBEDDING_ENDPOINT: ${{ secrets.AZURE_OPENAI_EMBEDDING_ENDPOINT }}
-              AZURE_OPENAI_EMBEDDING_KEY: ${{ secrets.AZURE_OPENAI_EMBEDDING_KEY }}
-              AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
-              AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
-              AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
-            run: |
-                  if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
-                    echo "Secret is not available or is blank."
-                  else
-                    echo "Secret is available."
-                  fi
+          env:
+            AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
+            AZURE_OPENAI_CHAT_KEY: ${{ secrets.AZURE_OPENAI_CHAT_KEY }}
+            AZURE_OPENAI_CHAT_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}
+            AZURE_OPENAI_COMPLETION_ENDPOINT: ${{ secrets.AZURE_OPENAI_COMPLETION_ENDPOINT }}
+            AZURE_OPENAI_COMPLETION_KEY: ${{ secrets.AZURE_OPENAI_COMPLETION_KEY }}
+            AZURE_OPENAI_COMPLETION_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_COMPLETION_DEPLOYMENT }}
+            AZURE_OPENAI_EMBEDDING_ENDPOINT: ${{ secrets.AZURE_OPENAI_EMBEDDING_ENDPOINT }}
+            AZURE_OPENAI_EMBEDDING_KEY: ${{ secrets.AZURE_OPENAI_EMBEDDING_KEY }}
+            AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
+            AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
+            AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
+          run: |
+                if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
+                  echo "Secret is not available or is blank."
+                else
+                  echo "Secret is available."
+                fi
