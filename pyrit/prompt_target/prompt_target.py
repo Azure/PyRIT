@@ -18,12 +18,6 @@ class PromptTarget(abc.ABC):
         self._memory = memory if memory else FileMemory()
 
     @abc.abstractmethod
-    def set_system_prompt(self, *, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        """
-        Sets the system prompt for the prompt target
-        """
-
-    @abc.abstractmethod
     def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         """
         Sends a normalized prompt to the prompt target.

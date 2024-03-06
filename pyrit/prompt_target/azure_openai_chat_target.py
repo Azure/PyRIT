@@ -4,10 +4,10 @@
 from pyrit.chat import AzureOpenAIChat
 from pyrit.memory import FileMemory, MemoryInterface
 from pyrit.models import ChatMessage
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 
 
-class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
+class AzureOpenAIChatTarget(AzureOpenAIChat, PromptChatTarget):
     def __init__(
         self,
         *,
@@ -18,7 +18,10 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptTarget):
         api_version: str = "2023-08-01-preview",
         temperature: float = 1.0,
     ) -> None:
-        super().__init__(deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version)
+        AzureOpenAIChat.__init__(
+            self, deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
+        )
+        PromptChatTarget.__init__(self, memory=memory)
 
         self._memory = memory if memory else FileMemory()
         self._temperature = temperature
