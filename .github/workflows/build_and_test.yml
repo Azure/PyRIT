@@ -51,7 +51,7 @@ jobs:
           AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
           AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
         run: |
-              if [ -z "${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}" ]; then
+              if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
                 echo "Secret is not available or is blank."
               else
                 echo "Secret is available."
