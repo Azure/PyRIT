@@ -41,6 +41,21 @@ jobs:
         run: pip install --upgrade setuptools pip
       - name: Install PyRIT with pip
         run: pip install .[dev]
+      - name: Setting environment test secrets
+        env:
+          AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
+          AZURE_OPENAI_CHAT_KEY: ${{ secrets.AZURE_OPENAI_CHAT_KEY }}
+          AZURE_OPENAI_CHAT_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}
+          AZURE_OPENAI_COMPLETION_ENDPOINT: ${{ secrets.AZURE_OPENAI_COMPLETION_ENDPOINT }}
+          AZURE_OPENAI_COMPLETION_KEY: ${{ secrets.AZURE_OPENAI_COMPLETION_KEY }}
+          AZURE_OPENAI_COMPLETION_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_COMPLETION_DEPLOYMENT }}
+          AZURE_OPENAI_EMBEDDING_ENDPOINT: ${{ secrets.AZURE_OPENAI_EMBEDDING_ENDPOINT }}
+          AZURE_OPENAI_EMBEDDING_KEY: ${{ secrets.AZURE_OPENAI_EMBEDDING_KEY }}
+          AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
+          AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_ML_KEY }}
+          AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
+        run: |
+          echo "Check test secret with non secret: $AZURE_OPENAI_CHAT_DEPLOYMENT"
       - name: Run unit tests with code coverage
         run: make test-cov-xml
       - name: Publish Pytest Results

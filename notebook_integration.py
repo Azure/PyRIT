@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 """
-This script is used to execute Jupytext on a notebook file.
+This script is used to execute all notebook root python files that link to notebooks
 It is intended to be used as a pre-commit hook to ensure that notebooks
 execute successfully without errors
 """
