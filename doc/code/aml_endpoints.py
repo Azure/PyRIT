@@ -39,6 +39,7 @@
 # %%
 
 from pyrit.common import default_values
+from pyrit.common.path import DATASETS_PATH
 
 from pyrit.models import ChatMessage
 from pyrit.chat import AMLOnlineEndpointChat
@@ -57,7 +58,6 @@ red_team_chat_engine.complete_chat(messages=[ChatMessage(role="user", content="H
 # %%
 
 
-import os
 import pathlib
 import textwrap
 
@@ -81,13 +81,6 @@ red_teamer_bot = RedTeamingBot(
     ),
     chat_engine=red_team_chat_engine,
     attack_strategy=PromptTemplate.from_yaml_file(
-        pathlib.Path(os.getcwd())
-        / ".."
-        / ".."
-        / "pyrit"
-        / "datasets"
-        / "attack_strategies"
-        / "multi_turn_chat"
-        / "red_team_chatbot_with_objective.yaml"
+        pathlib.Path(DATASETS_PATH) / "attack_strategies" / "multi_turn_chat" / "red_team_chatbot_with_objective.yaml"
     ),
 )

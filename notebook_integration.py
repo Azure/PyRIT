@@ -13,9 +13,7 @@ execute successfully without errors
 
 def execute_doc(file_path):
     try:
-        result = subprocess.run(
-            ["python", file_path], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-        )
+        subprocess.run(["python", file_path], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         print(f"Successfully executed python linked file: {file_path}")
     except subprocess.CalledProcessError as e:
         print(f"Failed to execute python linked file: {file_path}")
