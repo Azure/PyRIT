@@ -3,7 +3,7 @@
 
 import logging
 from typing import Optional, Union
-from pyrit.interfaces import SupportTextClassification
+from pyrit.interfaces import ChatSupport, SupportTextClassification
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
@@ -21,7 +21,7 @@ class ScoringRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
         *,
         attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
-        red_teaming_target: PromptTarget,
+        red_teaming_chat: ChatSupport,
         initial_red_teaming_prompt: str,
         scorer: SupportTextClassification,
         prompt_converter: Optional[PromptConverter] = None,
@@ -37,7 +37,7 @@ class ScoringRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
                 a single sentence or paragraph. If not provided, the bot will use red_team_chatbot_with_objective.
                 Should be of type string or AttackStrategy (which has a __str__ method).
             prompt_target: The target to send the prompts to.
-            red_teaming_target: The endpoint that creates prompts that are sent to the prompt target.
+            red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
@@ -52,7 +52,7 @@ class ScoringRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
         super().__init__(
             attack_strategy=attack_strategy,
             prompt_target=prompt_target,
-            red_teaming_target=red_teaming_target,
+            red_teaming_chat=red_teaming_chat,
             initial_red_teaming_prompt=initial_red_teaming_prompt,
             prompt_converter=prompt_converter,
             memory=memory,
@@ -72,7 +72,7 @@ class ScoringRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
         if messages[-1].role == "system":
             # If the last message is a system message, then the conversation is not yet complete.
             return False
-        score = self._scorer.score_text(messages[-1].content)
+        score = self._scorer.score_text(text=messages[-1].content)
         if score.score_type != "bool":
             raise ValueError(f"The scorer must return a boolean score. The score type is {score.score_type}.")
         return score.score_value

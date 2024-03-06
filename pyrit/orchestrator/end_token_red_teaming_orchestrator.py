@@ -3,6 +3,7 @@
 
 import logging
 from typing import Optional, Union
+from pyrit.interfaces import ChatSupport
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
@@ -22,7 +23,7 @@ class EndTokenRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
         *,
         attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
-        red_teaming_target: PromptTarget,
+        red_teaming_chat: ChatSupport,
         initial_red_teaming_prompt: str,
         end_token: Optional[str] = RED_TEAM_CONVERSATION_END_TOKEN,
         prompt_converter: Optional[PromptConverter] = None,
@@ -38,7 +39,7 @@ class EndTokenRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
                 a single sentence or paragraph. If not provided, the bot will use red_team_chatbot_with_objective.
                 Should be of type string or AttackStrategy (which has a __str__ method).
             prompt_target: The target to send the prompts to.
-            red_teaming_target: The endpoint that creates prompts that are sent to the prompt target.
+            red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
@@ -53,7 +54,7 @@ class EndTokenRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
         super().__init__(
             attack_strategy=attack_strategy,
             prompt_target=prompt_target,
-            red_teaming_target=red_teaming_target,
+            red_teaming_chat=red_teaming_chat,
             initial_red_teaming_prompt=initial_red_teaming_prompt,
             prompt_converter=prompt_converter,
             memory=memory,

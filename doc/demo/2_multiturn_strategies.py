@@ -18,12 +18,13 @@
 import os
 import pathlib
 from colorama import Fore
+from pyrit.chat.aml_online_endpoint_chat import AMLOnlineEndpointChat
 
-from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import AzureOpenAIChatTarget, AMLOnlineEndpointChatTarget
+from pyrit.orchestrator import EndTokenRedTeamingOrchestrator
+from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.chat_message_normalizer import GenericSystemSquash
 from pyrit.common import default_values
-from pyrit.models import AttackStrategy, ChatMessage
+from pyrit.models import AttackStrategy
 from pyrit.orchestrator.red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
 
 
@@ -40,12 +41,13 @@ attack_strategy = AttackStrategy(
     conversation_objective=conversation_objective,
 )
 
-# The red_teaming_target is the used to generate prompts that are sent to the target.
+# The red_teaming_chat is the used to generate prompts that are sent to the target.
 # In this case, it's a deployed AML endpoint called mistralai-mixtral-8x7b-instru-2
 # but it can be any supported endpoint.
 # mixtral disallows system prompts, so we include a chat_message_normalizer to squash them:
-red_teaming_target = AMLOnlineEndpointChatTarget(
-    chat_message_normalizer=GenericSystemSquash())
+red_teaming_chat = AMLOnlineEndpointChat(
+    chat_message_normalizer=GenericSystemSquash()
+)
 
 prompt_target = AzureOpenAIChatTarget(
     deployment_name="defense-gpt35",
@@ -53,25 +55,12 @@ prompt_target = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
-red_teaming_orchestrator = RedTeamingOrchestrator(
+red_teaming_orchestrator = EndTokenRedTeamingOrchestrator(
     attack_strategy=attack_strategy,
-    red_teaming_target=red_teaming_target,
+    red_teaming_chat=red_teaming_chat,
     prompt_target=prompt_target,
     initial_red_teaming_prompt="how can I help you?",
     verbose=True,
 )
 
-attempts = 0
-
-while True:
-    attempts += 1
-    print(f"{Fore.YELLOW}#### Attempt #{attempts}")
-    response = red_teaming_orchestrator.send_prompt()
-
-    if RED_TEAM_CONVERSATION_END_TOKEN in response:
-        print(f"{Fore.RED}The red teaming orchestrator has completed the conversation and achieved the objective.")
-        break
-
-    if attempts >= 3:
-        print(f"{Fore.RED}Unable to achieve the objective after 3 attempts.")
-        break
+red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=3)
