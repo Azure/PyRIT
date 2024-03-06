@@ -52,8 +52,8 @@ jobs:
           AZURE_OPENAI_EMBEDDING_ENDPOINT: ${{ secrets.AZURE_OPENAI_EMBEDDING_ENDPOINT }}
           AZURE_OPENAI_EMBEDDING_KEY: ${{ secrets.AZURE_OPENAI_EMBEDDING_KEY }}
           AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
-          AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_ML_KEY }}
-          AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
+          AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
+          AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
         run: |
           echo "Check test secret with non secret: $AZURE_OPENAI_CHAT_DEPLOYMENT"
       - name: Run unit tests with code coverage
