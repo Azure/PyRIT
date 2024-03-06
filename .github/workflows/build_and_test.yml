@@ -51,8 +51,11 @@ jobs:
           AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
           AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
         run: |
-          echo "printing non-secret for a test"
-          echo ${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}
+              if [ -z "${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}" ]; then
+                echo "Secret is not available or is blank."
+              else
+                echo "Secret is available."
+              fi
 #      - name: Install setuptools and pip
 #        run: pip install --upgrade setuptools pip
 #      - name: Install PyRIT with pip
