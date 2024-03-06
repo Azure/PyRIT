@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit_kernel
+#     language: python
+#     name: pyrit_kernel
+# ---
+
 # %% [markdown]
 #
 # This Jupyter notebook gives an introduction on how to use PyRIT to score responses. We set up a `SelfAskGptClassifier`, which uses Azure Open AI to score a response. In this example, we mock a response from a targeted endpoint and ask if it matches any classifier.
