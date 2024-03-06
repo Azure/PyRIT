@@ -55,7 +55,8 @@ jobs:
           AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
           AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
         run: |
-          echo "Check test secret with non secret: $AZURE_OPENAI_CHAT_DEPLOYMENT"
+          echo "printing non-secret for a test"
+          echo ${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}
       - name: Run unit tests with code coverage
         run: make test-cov-xml
       - name: Publish Pytest Results
