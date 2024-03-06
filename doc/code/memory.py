@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit_kernel
+#     language: python
+#     name: pyrit_kernel
+# ---
+
 # %% [markdown]
 # The `pyrit.memory` module provides functionality to keep track of the conversation history. In a nutshell, this can be used as follows
 
