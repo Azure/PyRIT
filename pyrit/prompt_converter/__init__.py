@@ -8,7 +8,7 @@ from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.rot13_converter import ROT13Converter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
-
+from pyrit.prompt_converter.variation_converter import VariationConverter
 
 __all__ = [
     "PromptConverter",
@@ -18,4 +18,5 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "ROT13Converter",
     "AsciiArtConverter",
+    "VariationConverter"
 ]
