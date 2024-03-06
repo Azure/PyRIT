@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  main-job:
+  basic-checks:
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -36,26 +36,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
         with:
-          python-version: ${{ inputs.python }}
-      - name: Setting environment test secrets
-        env:
-          AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
-          AZURE_OPENAI_CHAT_KEY: ${{ secrets.AZURE_OPENAI_CHAT_KEY }}
-          AZURE_OPENAI_CHAT_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}
-          AZURE_OPENAI_COMPLETION_ENDPOINT: ${{ secrets.AZURE_OPENAI_COMPLETION_ENDPOINT }}
-          AZURE_OPENAI_COMPLETION_KEY: ${{ secrets.AZURE_OPENAI_COMPLETION_KEY }}
-          AZURE_OPENAI_COMPLETION_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_COMPLETION_DEPLOYMENT }}
-          AZURE_OPENAI_EMBEDDING_ENDPOINT: ${{ secrets.AZURE_OPENAI_EMBEDDING_ENDPOINT }}
-          AZURE_OPENAI_EMBEDDING_KEY: ${{ secrets.AZURE_OPENAI_EMBEDDING_KEY }}
-          AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
-          AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
-          AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
-        run: |
-              if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
-                echo "Secret is not available or is blank."
-              else
-                echo "Secret is available."
-              fi
+          python-version: ${{ matrix.python }}
 #      - name: Install setuptools and pip
 #        run: pip install --upgrade setuptools pip
 #      - name: Install PyRIT with pip
@@ -81,3 +62,31 @@ jobs:
 #          thresholds: '60 80'
 #      - name: "Run pre-commit hooks"
 #        run: pre-commit run --all-files
+  integration-tests:
+      needs: basic-checks
+      runs-on: ${{ matrix.os }}
+      environment: Build Integration Test
+      steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v3
+          with:
+            python-version: ${{ matrix.python }}
+        - name: Setting environment test secrets
+            env:
+              AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
+              AZURE_OPENAI_CHAT_KEY: ${{ secrets.AZURE_OPENAI_CHAT_KEY }}
+              AZURE_OPENAI_CHAT_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}
+              AZURE_OPENAI_COMPLETION_ENDPOINT: ${{ secrets.AZURE_OPENAI_COMPLETION_ENDPOINT }}
+              AZURE_OPENAI_COMPLETION_KEY: ${{ secrets.AZURE_OPENAI_COMPLETION_KEY }}
+              AZURE_OPENAI_COMPLETION_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_COMPLETION_DEPLOYMENT }}
+              AZURE_OPENAI_EMBEDDING_ENDPOINT: ${{ secrets.AZURE_OPENAI_EMBEDDING_ENDPOINT }}
+              AZURE_OPENAI_EMBEDDING_KEY: ${{ secrets.AZURE_OPENAI_EMBEDDING_KEY }}
+              AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_EMBEDDING_DEPLOYMENT }}
+              AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
+              AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
+            run: |
+                  if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
+                    echo "Secret is not available or is blank."
+                  else
+                    echo "Secret is available."
+                  fi
