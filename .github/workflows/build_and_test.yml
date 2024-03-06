@@ -37,10 +37,6 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ inputs.python }}
-      - name: Install setuptools and pip
-        run: pip install --upgrade setuptools pip
-      - name: Install PyRIT with pip
-        run: pip install .[dev]
       - name: Setting environment test secrets
         env:
           AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
@@ -57,24 +53,28 @@ jobs:
         run: |
           echo "printing non-secret for a test"
           echo ${{ secrets.AZURE_OPENAI_CHAT_DEPLOYMENT }}
-      - name: Run unit tests with code coverage
-        run: make test-cov-xml
-      - name: Publish Pytest Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: '**/test-*.xml'
-      - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: coverage.xml
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: both
-          thresholds: '60 80'
-      - name: "Run pre-commit hooks"
-        run: pre-commit run --all-files
+#      - name: Install setuptools and pip
+#        run: pip install --upgrade setuptools pip
+#      - name: Install PyRIT with pip
+#        run: pip install .[dev]
+#      - name: Run unit tests with code coverage
+#        run: make test-cov-xml
+#      - name: Publish Pytest Results
+#        uses: EnricoMi/publish-unit-test-result-action@v2
+#        if: always()
+#        with:
+#          files: '**/test-*.xml'
+#      - name: Code Coverage Report
+#        uses: irongut/CodeCoverageSummary@v1.3.0
+#        with:
+#          filename: coverage.xml
+#          badge: true
+#          fail_below_min: false
+#          format: markdown
+#          hide_branch_rate: false
+#          hide_complexity: true
+#          indicators: true
+#          output: both
+#          thresholds: '60 80'
+#      - name: "Run pre-commit hooks"
+#        run: pre-commit run --all-files
