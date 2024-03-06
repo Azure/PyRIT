@@ -1,13 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import abc
 import logging
 import pathlib
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from uuid import uuid4
 
 from pyrit.memory import FileMemory, MemoryInterface
-from pyrit.models import AttackStrategy
+from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -20,20 +21,38 @@ RED_TEAM_CHATBOT_ROLE_PREFIX = "airt-bot-uuid"
 RED_TEAM_CONVERSATION_END_TOKEN = "<|done|>"
 
 
+def _default_is_conversation_complete(messages: list[ChatMessage]) -> bool:
+    """
+    Returns True if the conversation is complete, False otherwise.
+    This function checks for the presence of the conversation end token <|done|>.
+    """
+    if not messages:
+        # If there are no messages, then the conversation is not complete
+        return False
+    if messages[-1].role == "system":
+        # If the last message is a system message, then the conversation is not yet complete
+        return False
+    if RED_TEAM_CONVERSATION_END_TOKEN in messages[-1].content:
+        # If the last message contains the conversation end token, then the conversation is complete
+        return True
+    return False
+    
+
 class RedTeamingOrchestrator:
     _memory: MemoryInterface
 
     def __init__(
         self,
         *,
-        attack_strategy: Optional[Union[str, AttackStrategy]] = None,
+        attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
         red_teaming_target: PromptTarget,
+        initial_red_teaming_prompt: str,
+        is_conversation_complete: Callable[[list[ChatMessage]], bool] = _default_is_conversation_complete,
         prompt_converter: Optional[PromptConverter] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: list[str] = ["red-teaming-orchestrator"],
         verbose: bool = False,
-        initial_red_teaming_prompt: Optional[str] = None,
     ) -> None:
         """Creates an orchestrator to manage conversations between
 
@@ -44,48 +63,30 @@ class RedTeamingOrchestrator:
                 Should be of type string or AttackStrategy (which has a __str__ method).
             prompt_target: The target to send the prompts to.
             red_teaming_target: The endpoint that creates prompts that are sent to the prompt target.
+            initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
+                The attack_strategy only provides the strategy, but not the starting point of the conversation.
+                The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
             prompt_converter: The prompt converter to use to convert the prompts before sending them to the prompt
                 target. The converter is not applied in messages to the red teaming target.
             memory: The memory to use to store the chat messages. If not provided, a FileMemory will be used.
             memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
             verbose: Whether to print debug information.
-            initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
-                The attack_strategy only provides the strategy, but not the starting point of the conversation.
-                The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
         """
         self._verbose = verbose
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
         self._prompt_target = prompt_target
-
         self._prompt_converter = prompt_converter if prompt_converter else NoOpConverter()
         self._memory = memory if memory else FileMemory()
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-
         self._prompt_target.memory = self._memory
         self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_target_conversation_id = str(uuid4())
         self._red_teaming_target = red_teaming_target
-        self._attack_strategy = (
-            str(attack_strategy)
-            if attack_strategy
-            else str(AttackStrategy.from_yaml_file(
-                pathlib.Path(DATASETS_PATH)
-                / "attack_strategies"
-                / "multi_turn_chat"
-                / "red_team_chatbot_with_objective.yaml"
-            ))
-        )
-
-        self._initial_red_teaming_prompt = initial_red_teaming_prompt or ""
-
-        if RED_TEAM_CONVERSATION_END_TOKEN not in self._attack_strategy:
-            raise ValueError(
-                f"Attack strategy must have a way to detect end of conversation and include \
-                {RED_TEAM_CONVERSATION_END_TOKEN} token."
-            )
-
+        self._attack_strategy = str(attack_strategy)
+        self._initial_red_teaming_prompt = initial_red_teaming_prompt
         self._global_memory_labels = memory_labels
+        self._is_conversation_complete = is_conversation_complete
 
         # Form the system prompt
         self._red_teaming_target.set_system_prompt(self._attack_strategy, self._red_teaming_target_conversation_id, self._prompt_normalizer.id)
@@ -93,23 +94,18 @@ class RedTeamingOrchestrator:
     def get_memory(self):
         return self._memory.get_memories_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)        
 
-    def is_conversation_complete(self) -> bool:
+    def apply_attack_strategy_until_completion(self, max_turns: int = 10):
         """
-        Returns True if the conversation is complete, False otherwise.
+        Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
         """
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=self._red_teaming_target_conversation_id)
-
-        if not messages:
-            # If there are no messages, then the conversation is not complete
-            return False
-        if messages[-1].role == "system":
-            # If the last message is a system message, then the conversation is not yet complete
-            return False
-
-        if RED_TEAM_CONVERSATION_END_TOKEN in messages[-1].content:
-            # If the last message contains the conversation end token, then the conversation is complete
-            return True
-        return False
+        turn = 0
+        while turn < max_turns and \
+                not self._is_conversation_complete(
+                    self._memory.get_chat_messages_with_conversation_id(
+                        conversation_id=self._red_teaming_target_conversation_id)
+                ) and turn < max_turns:
+            self.send_prompt()
+            turn += 1
 
     def send_prompt(self, prompt: Optional[str] = None):
         """
