@@ -40,3 +40,12 @@ repos:
         entry: mypy
         language: system
         types: [ python ]
+
+  - repo: local
+    hooks:
+      - id: jupytext
+        name: jupytext test notebook execution syntax
+        entry: python jupytext_build.py
+        language: system
+        files: '^doc/(code|demo)/.*\.py$'
+        pass_filenames: true
