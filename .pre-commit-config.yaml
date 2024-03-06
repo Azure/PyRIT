@@ -43,9 +43,18 @@ repos:
 
   - repo: local
     hooks:
-      - id: jupytext
-        name: jupytext test notebook execution syntax
-        entry: python jupytext_build.py
+      - id: jupytext-sync
+        name: Jupytext Sync All Notebooks
+        entry: jupytext --pre-commit-mode --sync
+        language: system
+        files: '^doc/.*\.py$'
+        pass_filenames: true
+
+  - repo: local
+    hooks:
+      - id: notebook-integration-test
+        name: Executing all notebooks to ensure syntax
+        entry: python notebook_integration.py
         language: system
         files: '^doc/(code|demo)/.*\.py$'
         pass_filenames: true

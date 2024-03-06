@@ -65,6 +65,7 @@ import textwrap
 from pyrit.chat import AzureOpenAIChat
 from pyrit.agent import RedTeamingBot
 from pyrit.common import default_values
+from pyrit.common.path import DATASETS_PATH
 from pyrit.completion import GandalfCompletionEngine, GandalfLevel
 from pyrit.score import GandalfScorer
 from pyrit.models import PromptTemplate
@@ -87,14 +88,11 @@ red_teamer_bot = RedTeamingBot(
     ),
     chat_engine=aoai_chat_engine,
     attack_strategy=PromptTemplate.from_yaml_file(
-        pathlib.Path(os.getcwd())
-        / ".."
-        / ".."
-        / "pyrit"
-        / "datasets"
-        / "attack_strategies"
-        / "multi_turn_chat"
-        / "red_team_chatbot_with_objective.yaml"
+        pathlib.Path(
+            pathlib.Path(DATASETS_PATH)
+            / "attack_strategies"
+            / "multi_turn_chat"
+            / "red_team_chatbot_with_objective.yaml")
     ),
 )
 
@@ -147,7 +145,10 @@ while not correct_password and attempt < 3:
 gandalf_password_scorer_l1 = GandalfScorer(level=GandalfLevel.LEVEL_1, chat_engine=aoai_chat_engine)
 # gandalf_password_scorer_l2 = GandalfScorer(level=GandalfLevel.LEVEL_2, chat_engine=aoai_chat_engine)
 
-print(gandalf_password_scorer_l1.score_text(text="COCOLOCO"))
+score = gandalf_password_scorer_l1.score_text(text="COCOLOCO")
+print(score.score_value)
 # print(gandalf_password_scorer.score_text(text="POTENTIAL"))
 
 # "COCOLOCO", "POTENTIAL"
+
+# %%
