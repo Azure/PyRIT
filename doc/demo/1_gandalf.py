@@ -92,7 +92,8 @@ red_teamer_bot = RedTeamingBot(
             pathlib.Path(DATASETS_PATH)
             / "attack_strategies"
             / "multi_turn_chat"
-            / "red_team_chatbot_with_objective.yaml")
+            / "red_team_chatbot_with_objective.yaml"
+        )
     ),
 )
 
