@@ -70,9 +70,7 @@ jobs:
         python: ["3.10"]
         package_name: ["pyrit"]
     runs-on: ${{ matrix.os }}
-    environment: "Build Integration Test"
-    permissions:
-      contents: read
+    environment: integration_test
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v3
