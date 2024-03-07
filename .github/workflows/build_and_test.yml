@@ -73,7 +73,6 @@ jobs:
     environment: "Build Integration Test"
     permissions:
       contents: read
-      secrets: read
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v3
