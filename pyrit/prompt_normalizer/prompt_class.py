@@ -57,10 +57,7 @@ class Prompt(abc.ABC):
         The prompt runs through every converter (the output of one converter is
         the input of the next converter).
         """
-        converted_prompts = [self.prompt_text]
-
-        for converter in self.prompt_converters:
-            converted_prompts = converter.convert(converted_prompts)
+        converted_prompts = self._get_converted_prompts()
 
         for converted_prompt in converted_prompts:
             self.prompt_target.send_prompt(
@@ -68,3 +65,26 @@ class Prompt(abc.ABC):
                 conversation_id=self.conversation_id,
                 normalizer_id=normalizer_id,
             )
+
+
+    async def send_prompt_async(self, normalizer_id: str) -> None:
+        """
+        Sends the prompt to the prompt target, by first converting the prompt.
+        The prompt runs through every converter (the output of one converter is
+        the input of the next converter).
+        """
+        converted_prompts = self._get_converted_prompts()
+
+        for converted_prompt in converted_prompts:
+            await self.prompt_target.send_prompt_async(
+                normalized_prompt=converted_prompt,
+                conversation_id=self.conversation_id,
+                normalizer_id=normalizer_id,
+            )
+
+    def _get_converted_prompts(self):
+        converted_prompts = [self.prompt_text]
+
+        for converter in self.prompt_converters:
+            converted_prompts = converter.convert(converted_prompts)
+        return converted_prompts

@@ -26,3 +26,6 @@ class NoOpTarget(PromptTarget):
         )
 
         return ""
+
+    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+        self.send_prompt(normalized_prompt, conversation_id, normalizer_id)
