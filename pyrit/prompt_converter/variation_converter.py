@@ -1,5 +1,5 @@
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter, NoOpConverter
+from pyrit.prompt_converter import PromptConverter
 from pyrit.models import PromptTemplate, ChatMessage
 import pathlib
 from pyrit.common.path import DATASETS_PATH
