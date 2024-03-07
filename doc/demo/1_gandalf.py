@@ -50,6 +50,7 @@ import textwrap
 from pyrit.chat import AzureOpenAIChat
 from pyrit.agent import RedTeamingBot
 from pyrit.common import default_values
+from pyrit.common.path import DATASETS_PATH
 from pyrit.completion import GandalfCompletionEngine, GandalfLevel
 from pyrit.score import GandalfScorer
 from pyrit.models import PromptTemplate
@@ -72,11 +73,7 @@ red_teamer_bot = RedTeamingBot(
     ),
     chat_engine=aoai_chat_engine,
     attack_strategy=PromptTemplate.from_yaml_file(
-        pathlib.Path(os.getcwd())
-        / ".."
-        / ".."
-        / "pyrit"
-        / "datasets"
+        pathlib.Path(DATASETS_PATH)
         / "attack_strategies"
         / "multi_turn_chat"
         / "red_team_chatbot_with_objective.yaml"

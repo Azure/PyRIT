@@ -11,9 +11,9 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptChatTarget):
     def __init__(
         self,
         *,
-        deployment_name: str,
-        endpoint: str,
-        api_key: str,
+        deployment_name: str = None,
+        endpoint: str = None,
+        api_key: str = None,
         memory: MemoryInterface = None,
         api_version: str = "2023-08-01-preview",
         temperature: float = 1.0,

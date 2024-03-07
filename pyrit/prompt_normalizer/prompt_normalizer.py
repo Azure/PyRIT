@@ -27,7 +27,7 @@ class PromptNormalizer(abc.ABC):
         """
         results = []
 
-        for prompts_batch in self.chunked_prompts(prompts, 10):
+        for prompts_batch in self._chunked_prompts(prompts, 10):
             tasks = [prompt.send_prompt_async(normalizer_id=self.id) for prompt in prompts_batch]
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
