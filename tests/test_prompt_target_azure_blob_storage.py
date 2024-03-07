@@ -19,15 +19,13 @@ def azure_blob_storage_target(tmp_path: pathlib.Path):
         memory=file_memory,
     )
 
+
 def test_send_prompt(azure_blob_storage_target: AzureBlobStorageTarget):
-    azure_blob_storage_target.send_prompt(
-        normalized_prompt="test",
-        conversation_id="1",
-        normalizer_id="2")
-    
+    azure_blob_storage_target.send_prompt(normalized_prompt="test", conversation_id="1", normalizer_id="2")
+
     # TODO: play around with this iterator, and make sure entries are being added to create blob URL
     # Already validated connecting and uploading file to storage account container
     print(azure_blob_storage_target.list_blob_names())
-    
+
     for entry in azure_blob_storage_target.created_blob_url_list:
         print(entry)
