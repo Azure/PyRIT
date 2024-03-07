@@ -74,7 +74,7 @@ class PromptResponse(BaseModel):
         return embedding_output_file_path.as_posix()
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()
 
     @staticmethod
     def load_from_file(file_path: Path) -> PromptResponse:
@@ -86,7 +86,7 @@ class PromptResponse(BaseModel):
             The loaded embedding response
         """
         embedding_json_data = file_path.read_text(encoding="utf-8")
-        return PromptResponse.parse_raw(embedding_json_data)
+        return PromptResponse.model_validate_json(embedding_json_data)
 
 
 @dataclass
@@ -175,6 +175,13 @@ class PromptDataset(YamlLoadable):
     prompts: list[str] = field(default_factory=list)
 
 
+class ChatMessagesDataset(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str
+    description: str
+    list_of_chat_messages: list[ChatMessages]
+
+
 @dataclass
 class AttackStrategy(YamlLoadable):
     """TODO. This is a temporary name and needs more discussion. We've thought about naming this Personality
@@ -223,10 +230,53 @@ class PromptTemplate(YamlLoadable):
         return final_prompt
 
 
+class ToolCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    type: str
+    function: str
+
+
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: ChatMessageRole
     content: str
+    name: Optional[str] = None
+    tool_calls: Optional[list[ToolCall]] = None
+    tool_call_id: Optional[str] = None
+
+
+class ChatMessages(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    messages: list[ChatMessage]
+
+    @staticmethod
+    def from_chatml(content: str) -> ChatMessages:
+        """Convert a chatML string to a list of chat messages"""
+        messages = []
+        matches = list(re.finditer(r"<\|im_start\|>(.*?)<\|im_end\|>", content, re.DOTALL | re.MULTILINE))
+        if not matches:
+            raise ValueError("No chat messages found in the chatML string")
+        for match in matches:
+            lines = match.group(1).split("\n")
+            role_line = lines[0].strip()
+            role_match = re.match(r"(?P<role>\w+)( name=(?P<name>\w+))?", role_line)
+            name = role_match.group("name") if role_match else None
+            role = role_match.group("role")
+            content = lines[1].strip()
+            messages.append(ChatMessage(role=role, content=content, name=name))
+        return ChatMessages(messages=messages)
+
+    def to_chatml(self) -> str:
+        """Convert a string of text to a ChatML string.
+        This is compliant with the ChatML specified in
+        https://github.com/openai/openai-python/blob/release-v0.28.0/chatml.md
+        """
+        final_string: str = ""
+
+        for m in self.messages:
+            final_string += f"<|im_start|>{m.role}{f' name={m.name}' if m.name else ''}\n{m.content}<|im_end|>\n"
+        return final_string
 
 
 class EmbeddingUsageInformation(BaseModel):
@@ -273,7 +323,7 @@ class EmbeddingResponse(BaseModel):
             The loaded embedding response
         """
         embedding_json_data = file_path.read_text(encoding="utf-8")
-        return EmbeddingResponse.parse_raw(embedding_json_data)
+        return EmbeddingResponse.model_validate_json(embedding_json_data)
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()
