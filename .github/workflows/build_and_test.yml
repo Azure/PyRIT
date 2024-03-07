@@ -92,7 +92,7 @@ jobs:
           AZURE_ML_KEY: ${{ secrets.AZURE_ML_KEY }}
           AZURE_ML_MANAGED_ENDPOINT: ${{ secrets.AZURE_ML_MANAGED_ENDPOINT }}
         run: |
-              echo "test value: $test_value"
+              echo "test value: $TEST"
               if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
                 echo "Secret is not available or is blank."
               else
