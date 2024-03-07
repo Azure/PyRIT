@@ -39,3 +39,12 @@ Once the notebook is open, you can select the kernel that matches the name you g
 To do this, go to `Kernel > Change kernel > pyrit_kernel`.
 
 Now your Jupyter Notebook should be able to find and import the libraries installed in your conda environment.
+
+## What if you are using a Windows 11 operating system and having issues installing PyRIT. 
+When running 'pip install pyrit' you may run into the long name path issue documented here: https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=powershell#enable-long-paths-in-windows-10-version-1607-and-later
+
+To resolve this via Powershell run the following with administrative permissions:
+```Powershell
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+-Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+```
