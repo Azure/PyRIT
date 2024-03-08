@@ -7,7 +7,7 @@ import json
 
 class VariationConverter(PromptConverter):
     def __init__(self, converter_target: PromptTarget = None, prompt_template: PromptTemplate = None):
-        self.converter_target = converter_target #TODO: make a default, if not given
+        self.converter_target = converter_target
         self.prompt_template = prompt_template
         # set to default strategy if not provided
         self.prompt_template = (
@@ -37,7 +37,6 @@ class VariationConverter(PromptConverter):
         for prompt in prompts:
             chat_entries.append(ChatMessage(role="user", content=prompt))
             response_msg = self.converter_target.complete_chat(messages=chat_entries)
-            #response_msg = self.converter_target.complete_chat(messages=chat_entries, response_format="json_object")
             try: 
                 response_dict = json.loads(response_msg)
                 for key in response_dict:
