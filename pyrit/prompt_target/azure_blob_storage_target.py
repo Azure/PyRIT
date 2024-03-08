@@ -9,15 +9,22 @@ import tempfile
 import uuid
 
 from pyrit.memory import MemoryInterface
+from pyrit.models import ChatMessage
 from pyrit.prompt_target import PromptTarget
 
 
 class AzureBlobStorageTarget(PromptTarget):
     """
-    The StorageAccountTarget takes prompts, saves the prompts to a file, and stores them as a blob in a given storage account container.
+    The StorageAccountTarget takes prompts, saves the prompts to a file, and stores them as a blob in a provided
+    storage account container.
 
-    container_url: TODO ADD PARAMETER DESCRIPTION
-    memory: TODO ADD PARAMETER DESCRIPTION
+    Args:
+        container_url: URL to the Azure Blob Storage Container.
+        sas_token: Blob SAS token required to authenticate blob operations if anonymous access is not enabled.
+        memory: MemoryInterface to use for the class. FileMemory by default.
+
+    Raises:
+        KeyError: Raises an exception
     """
 
     def __init__(
@@ -29,41 +36,50 @@ class AzureBlobStorageTarget(PromptTarget):
     ) -> None:
 
         load_dotenv()
-        if container_url == None:
+        if container_url is None:
             try:
-                container_url = os.getenv("AZURE_STORAGE_ACCOUNT_CONTAINER_URL")
-                self.container_url = container_url
-            except:
+                self.container_url = os.getenv("AZURE_STORAGE_ACCOUNT_CONTAINER_URL")
+            except KeyError:
                 raise Exception(
-                    "Make sure your .env file is populated with a value for 'AZURE_STORAGE_ACCOUNT_CONTAINER_URL' for this storage account container"
+                    """
+                    Make sure your .env file is populated with 'AZURE_STORAGE_ACCOUNT_CONTAINER_URL'
+                    for this storage account container.
+                    """
                 )
 
-        if sas_token == None:
+        if sas_token is None:
             try:
                 sas_token = os.getenv("AZURE_STORAGE_ACCOUNT_SAS_TOKEN")
-            except:
+            except KeyError:
                 raise Exception(
-                    "Make sure your .env file is populated with a value for 'AZURE_STORAGE_ACCOUNT_SAS_TOKEN' for this storage account container"
+                    """
+                    Make sure your .env file is populated with 'AZURE_STORAGE_ACCOUNT_SAS_TOKEN'
+                    for this storage account container
+                    """
                 )
 
-        self.container_client = ContainerClient.from_container_url(container_url=container_url, credential=sas_token)
+        # TODO: Modify this so it can be for anonymous access or with SAS_TOKEN
+        # If SAS_TOKEN is not None then append it to the end of the URL
+        # Otherwise, assume it is anonymous access
+        self.container_client = ContainerClient.from_container_url(
+            container_url=self.container_url, credential=sas_token
+        )
 
-        self.created_blob_url_list = []
+        self.created_blob_urls: list[str] = []
 
         super().__init__(memory)
 
-        # container URL / this is created by the operator and connection string + sas key given for this
-        # there can be containers that have anonymous access...how to factor this in? (by default it is private to the account owner) (can enable 'blob' or 'container' for anonymous list/read for the storage account scope)
+    def list_created_blob_urls(self) -> list[str]:
+        return self.created_blob_urls
 
-    """
-    List all blob names that are in the container
-    TODO: Double check if this is a necessary function
-    TODO: Alternatively can return the created_blob_url_list saved, with the full blob URL
-    TODO: Alternatively can use this, but prefix the blob names with container URLs depending on use case
-    """
+    def list_all_blob_urls(self) -> list[str]:
+        blob_names = self.container_client.list_blob_names()
 
-    def list_blob_names(self) -> list[str]:
-        return self.container_client.list_blob_names()
+        blob_urls = []
+        for name in blob_names:
+            blob_urls.append(self.container_url + "/" + name)
+
+        return blob_urls
 
     def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
 
@@ -85,13 +101,15 @@ class AzureBlobStorageTarget(PromptTarget):
                 )
 
         # Track created blob URL
-        self.created_blob_url_list.append(self.container_url + "/ " + local_file_name)
+        blob_url = self.container_url + "/" + local_file_name
+        self.created_blob_urls.append(blob_url)
 
         # Add prompt to memory
-        """
+        # TODO: Need a way to record the blob url with the prompt
         self.memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="user", content=normalized_prompt),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
         )
-        """
+
+        return blob_url
