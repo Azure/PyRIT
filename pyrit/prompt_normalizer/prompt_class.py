@@ -66,7 +66,6 @@ class Prompt(abc.ABC):
                 normalizer_id=normalizer_id,
             )
 
-
     async def send_prompt_async(self, normalizer_id: str) -> None:
         """
         Sends the prompt to the prompt target, by first converting the prompt.

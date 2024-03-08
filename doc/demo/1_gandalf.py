@@ -73,10 +73,7 @@ red_teamer_bot = RedTeamingBot(
     ),
     chat_engine=aoai_chat_engine,
     attack_strategy=PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH)
-        / "attack_strategies"
-        / "multi_turn_chat"
-        / "red_team_chatbot_with_objective.yaml"
+        pathlib.Path(DATASETS_PATH) / "attack_strategies" / "multi_turn_chat" / "red_team_chatbot_with_objective.yaml"
     ),
 )
 

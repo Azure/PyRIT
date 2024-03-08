@@ -34,7 +34,6 @@ class PromptNormalizer(abc.ABC):
 
         return results
 
-
     def _chunked_prompts(self, prompts, size):
         for i in range(0, len(prompts), size):
-            yield prompts[i:i + size]
+            yield prompts[i : i + size]

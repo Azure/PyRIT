@@ -58,7 +58,6 @@ class PromptSendingOrchestrator:
         for prompt in normalized_prompts:
             self.prompt_normalizer.send_prompt(prompt)
 
-
     async def send_parallel_prompts_async(self, prompts: list[str]):
         """
         Sends the prompt to the prompt target.
@@ -68,14 +67,12 @@ class PromptSendingOrchestrator:
 
         await self.prompt_normalizer.send_prompt_batch_async(normalized_prompts, batch_size=self.batch_size)
 
-
     def get_memory(self):
         """
         Retrieves the memory associated with the prompt normalizer.
         """
         id = self.prompt_normalizer.id
         return self.memory.get_memories_with_normalizer_id(normalizer_id=id)
-
 
     def _coallesce_prompts(self, prompts):
         normalized_prompts = []

@@ -57,15 +57,11 @@ target = AzureOpenAIChatTarget(deployment_name="defense-gpt35")
 orchestrator = PromptSendingOrchestrator(prompt_target=target)
 
 # loads prompts from a prompt dataset file
-prompts = PromptDataset.from_yaml_file(
-        pathlib.Path(DATASETS_PATH)
-        / "prompts"
-        / "illegal.prompt"
-    )
+prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
 
 
 # use async functions to send prompt in parallel
-await orchestrator.send_parallel_prompts_async(prompts.prompts)
+await orchestrator.send_parallel_prompts_async(prompts.prompts) # type: ignore this runs in a notebook
 
 memory = orchestrator.get_memory()
 
@@ -97,17 +93,12 @@ target = AzureOpenAIChatTarget(deployment_name="defense-gpt35")
 
 orchestrator = PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()])
 
-prompts = PromptDataset.from_yaml_file(
-        pathlib.Path(DATASETS_PATH)
-        / "prompts"
-        / "illegal.prompt"
-    )
+prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
 
 
-await orchestrator.send_parallel_prompts_async(prompts.prompts)
+await orchestrator.send_parallel_prompts_async(prompts.prompts) # type: ignore this runs in a notebook
 
 memory = orchestrator.get_memory()
 
 for entry in memory:
     print(entry)
-
