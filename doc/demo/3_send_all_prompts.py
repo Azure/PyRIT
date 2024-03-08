@@ -61,7 +61,8 @@ prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" /
 
 
 # use async functions to send prompt in parallel
-await orchestrator.send_parallel_prompts_async(prompts.prompts) # type: ignore this runs in a notebook
+# this is run in a Jupyter notebook, so we can use await
+await orchestrator.send_parallel_prompts_async(prompts.prompts)  # type: ignore
 
 memory = orchestrator.get_memory()
 
@@ -95,8 +96,8 @@ orchestrator = PromptSendingOrchestrator(prompt_target=target, prompt_converters
 
 prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
 
-
-await orchestrator.send_parallel_prompts_async(prompts.prompts) # type: ignore this runs in a notebook
+# this is run in a Jupyter notebook, so we can use await
+await orchestrator.send_parallel_prompts_async(prompts.prompts)  # type: ignore
 
 memory = orchestrator.get_memory()
 

@@ -59,5 +59,5 @@ class MockPromptTarget(PromptTarget):
     def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
         self.prompt_sent.append(normalized_prompt)
 
-    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
         self.prompt_sent.append(normalized_prompt)
