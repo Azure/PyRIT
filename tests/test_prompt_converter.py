@@ -8,8 +8,11 @@ from pyrit.prompt_converter import (
     StringJoinConverter,
     ROT13Converter,
     AsciiArtConverter,
+    VariationConverter,
 )
 import pytest
+
+from tests.mocks import MockPromptTarget
 
 
 def test_prompt_converter() -> None:
@@ -63,3 +66,13 @@ def test_ascii_art() -> None:
     assert converter.convert(["test"]) == [
         "\n .----------------.  .----------------.  .----------------.  .----------------. \n| .--------------. || .--------------. || .--------------. || .--------------. |\n| |  _________   | || |  _________   | || |    _______   | || |  _________   | |\n| | |  _   _  |  | || | |_   ___  |  | || |   /  ___  |  | || | |  _   _  |  | |\n| | |_/ | | \\_|  | || |   | |_  \\_|  | || |  |  (__ \\_|  | || | |_/ | | \\_|  | |\n| |     | |      | || |   |  _|  _   | || |   '.___`-.   | || |     | |      | |\n| |    _| |_     | || |  _| |___/ |  | || |  |`\\____) |  | || |    _| |_     | |\n| |   |_____|    | || | |_________|  | || |  |_______.'  | || |   |_____|    | |\n| |              | || |              | || |              | || |              | |\n| '--------------' || '--------------' || '--------------' || '--------------' |\n '----------------'  '----------------'  '----------------'  '----------------' \n"  # noqa: E501
     ]
+
+def test_prompt_variation_init_templates_not_null():
+    prompt_target = MockPromptTarget()
+    prompt_variation = VariationConverter(prompt_target)
+    assert prompt_variation.system_prompt
+
+def test_prompt_variation_init_templates_system():
+    prompt_target = MockPromptTarget()
+    prompt_variation = VariationConverter(prompt_target, number_variations=20)
+    assert "20 different responses" in prompt_variation.system_prompt

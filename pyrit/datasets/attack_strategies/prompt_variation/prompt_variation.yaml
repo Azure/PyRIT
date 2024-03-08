@@ -16,5 +16,5 @@ template: |
   - Do not include anything else in the output besides the variations of the seed prompt.
   - Do not try to answer the prompt, just rephrase the prompt.
   - Include {{ number_iterations }} different responses.
-  - Format output as a json.
+  - Format all output as a valid json list of variations. Each variation should be a new entry in the list. 
   - The given prompt to create a variation on is the first message from the user.

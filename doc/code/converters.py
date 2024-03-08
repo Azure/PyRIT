@@ -42,16 +42,10 @@ prompt_variation_converter = VariationConverter(converter_target=converter_targe
 
 
 # %%
-prompt_variation_converter.prompt_template
-
-# %%
 converted_prompts = prompt_variation_converter.convert(prompts)
 
 # %%
 converted_prompts
-
-# %% [markdown] jp-MarkdownHeadingCollapsed=true
-# ### Orchestrator:
 
 # %%
 
