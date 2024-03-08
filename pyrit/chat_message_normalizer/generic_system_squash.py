@@ -2,11 +2,11 @@
 # Licensed under the MIT license.
 
 from pyrit.models import ChatMessage, ChatMessageRole
-from pyrit.chat_message_normalizer import ChatMessageNormalizer
+from pyrit.chat_message_normalizer import ChatMessageNormalizer, NormalizedChatMessage
 
 
 class GenericSystemSquash(ChatMessageNormalizer):
-    def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
+    def normalize(self, messages: list[ChatMessage]) -> NormalizedChatMessage:
         """
         Returns the first system message combined with the first user message
         using a format that uses generic instruction tags

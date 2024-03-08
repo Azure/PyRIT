@@ -2,9 +2,15 @@
 # Licensed under the MIT license.
 
 
-from pyrit.chat_message_normalizer.chat_message_normalizer import ChatMessageNormalizer
+from pyrit.chat_message_normalizer.chat_message_normalizer import ChatMessageNormalizer, NormalizedChatMessage
 from pyrit.chat_message_normalizer.chat_message_nop import ChatMessageNop
 from pyrit.chat_message_normalizer.generic_system_squash import GenericSystemSquash
+from pyrit.chat_message_normalizer.chat_message_normalizer_chatml import ChatMessageNormalizerChatML
 
-
-__all__ = ["ChatMessageNormalizer", "ChatMessageNop", "GenericSystemSquash"]
+__all__ = [
+    "ChatMessageNormalizer",
+    "NormalizedChatMessage",
+    "ChatMessageNop",
+    "GenericSystemSquash",
+    "ChatMessageNormalizerChatML",
+]

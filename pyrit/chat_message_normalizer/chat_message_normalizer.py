@@ -4,10 +4,12 @@
 import abc
 from pyrit.models import ChatMessage
 
+NormalizedChatMessage = list[ChatMessage] | str
+
 
 class ChatMessageNormalizer(abc.ABC):
     @abc.abstractmethod
-    def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
+    def normalize(self, messages: list[ChatMessage]) -> NormalizedChatMessage:
         """
         Normalizes the list of chat messages into a compatible format for the model or target
         """
