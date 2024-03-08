@@ -3,13 +3,13 @@
 
 import re
 from pyrit.models import ChatMessage, ChatMessageRole, ALLOWED_CHAT_MESSAGE_ROLES
-from pyrit.chat_message_normalizer import ChatMessageNormalizer, NormalizedChatMessage
+from pyrit.chat_message_normalizer import ChatMessageNormalizer
 from typing import cast
 
 
-class ChatMessageNormalizerChatML(ChatMessageNormalizer):
+class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):
 
-    def normalize(self, messages: list[ChatMessage]) -> NormalizedChatMessage:
+    def normalize(self, messages: list[ChatMessage]) -> str:
         """Convert a string of text to a ChatML string.
         This is compliant with the ChatML specified in
         https://github.com/openai/openai-python/blob/release-v0.28.0/chatml.md

@@ -92,13 +92,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         squashed_messages = self.chat_message_normalizer.normalize(messages)
         messages_dict: list[dict] = []
         for message in squashed_messages:
-            if isinstance(message, ChatMessage):
-                messages_dict.append(message.model_dump())
-            else:
-                # It is possible for message to be a string if the normalizer returns a string.
-                # This is not expected to be the case for the default normalizer.
-                raise ValueError(f"Expected `ChatMessage`, got {type(message)}")
-
+            messages_dict.append(message.model_dump())
         data = {
             "input_data": {
                 "input_string": messages_dict,
