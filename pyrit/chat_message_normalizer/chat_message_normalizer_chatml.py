@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import re
-from pyrit.models import ChatMessage
+from pyrit.models import ChatMessage, ChatMessageRole, ALLOWED_CHAT_MESSAGE_ROLES
 from pyrit.chat_message_normalizer import ChatMessageNormalizer, NormalizedChatMessage
+from typing import cast
 
 
 class ChatMessageNormalizerChatML(ChatMessageNormalizer):
@@ -32,6 +33,8 @@ class ChatMessageNormalizerChatML(ChatMessageNormalizer):
             role_match = re.match(r"(?P<role>\w+)( name=(?P<name>\w+))?", role_line)
             name = role_match.group("name") if role_match else None
             role = role_match.group("role")
+            if role not in ALLOWED_CHAT_MESSAGE_ROLES:
+                raise ValueError(f"Role {role} is not allowed in chatML")
             content = lines[1].strip()
-            messages.append(ChatMessage(role=role, content=content, name=name))
+            messages.append(ChatMessage(role=cast(ChatMessageRole, role), content=content, name=name))
         return messages

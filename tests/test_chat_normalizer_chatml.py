@@ -40,9 +40,9 @@ def test_normalize_with_name(normalizer: ChatMessageNormalizerChatML):
     assert normalizer.normalize(messages) == expected
 
 
-def test_normalize_raises_error_when_empty(normalizer: ChatMessageNormalizerChatML):
-    with pytest.raises(AttributeError):
-        normalizer.normalize("n/a")
+def test_from_chatml_raises_error_when_invalid(normalizer: ChatMessageNormalizerChatML):
+    with pytest.raises(ValueError):
+        normalizer.from_chatml("asdf")
 
 
 def test_from_chatml(normalizer: ChatMessageNormalizerChatML):
