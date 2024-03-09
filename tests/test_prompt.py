@@ -4,7 +4,8 @@
 import pytest
 
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer.prompt_class import Prompt, PromptConverter
+from pyrit.prompt_normalizer import Prompt, PromptNormalizer
+from pyrit.prompt_converter import PromptConverter
 
 from tests.mocks import MockPromptTarget
 
@@ -93,4 +94,34 @@ def test_send_prompt_multiple_converters():
     normalizer_id = "456"
     prompt.send_prompt(normalizer_id)
 
+    assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_multiple_converters():
+    prompt_target = MockPromptTarget()
+    prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
+    prompt_text = "Hello"
+    conversation_id = "123"
+
+    prompt = Prompt(prompt_target, prompt_converters, prompt_text, conversation_id)
+
+    normalizer_id = "456"
+    await prompt.send_prompt_async(normalizer_id)
+
+    assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
+
+
+@pytest.mark.asyncio
+async def test_prompt_normalizyer_send_prompt_batch_async():
+    prompt_target = MockPromptTarget()
+    prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
+    prompt_text = "Hello"
+    conversation_id = "123"
+
+    prompt = Prompt(prompt_target, prompt_converters, prompt_text, conversation_id)
+
+    normalizer = PromptNormalizer(memory=None)
+
+    await normalizer.send_prompt_batch_async([prompt])
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
