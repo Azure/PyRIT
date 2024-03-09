@@ -1,7 +1,7 @@
 # %% [markdown]
 #
 # This demo is about when you have a list of prompts you want to try against a target. It includes the ways you can send the prompts,
-# how you can modify the prompts, and how you can view results. Before starting, I'm adding imports
+# how you can modify the prompts, and how you can view results. Before starting, import the necessary libraries.
 
 # %%
 
@@ -62,7 +62,7 @@ prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" /
 
 # use async functions to send prompt in parallel
 # this is run in a Jupyter notebook, so we can use await
-await orchestrator.send_parallel_prompts_async(prompts.prompts)  # type: ignore
+await orchestrator.send_prompts_batch_async(prompts.prompts)  # type: ignore
 
 memory = orchestrator.get_memory()
 
@@ -97,7 +97,7 @@ orchestrator = PromptSendingOrchestrator(prompt_target=target, prompt_converters
 prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
 
 # this is run in a Jupyter notebook, so we can use await
-await orchestrator.send_parallel_prompts_async(prompts.prompts)  # type: ignore
+await orchestrator.send_prompts_batch_async(prompts.prompts)  # type: ignore
 
 memory = orchestrator.get_memory()
 
