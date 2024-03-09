@@ -1,7 +1,7 @@
 # %% [markdown]
 # Prompt Targets are endpoints for where to send prompts.
 # In this demo, we show examples of the `AzureOpenAIChatTarget` and the `AzureBlobStorageTarget`.
-# 
+#
 # The `AzureBlobStorageTarget` inherits from `PromptTarget`, meaning it has functionality to send prompts.
 # This prompt target in particular will take in a prompt, convert it to a text file, and upload it as a blob to the provided Azure Storage Account Container.
 # This could be useful for XPIA scenarios, for example, where there is a jailbreak within a file.
@@ -43,4 +43,3 @@ aoi_prompt_target = AzureOpenAIChatTarget(
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
-

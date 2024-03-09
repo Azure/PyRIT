@@ -45,9 +45,7 @@ class AzureBlobStorageTarget(PromptTarget):
                 env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
             )
 
-        self._client = ContainerClient.from_container_url(
-            container_url=self._container_url, credential=sas_token
-        )
+        self._client = ContainerClient.from_container_url(container_url=self._container_url, credential=sas_token)
 
         self._created_blob_urls: list[str] = []
 
@@ -81,9 +79,7 @@ class AzureBlobStorageTarget(PromptTarget):
             print("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
 
             with open(file=upload_file_path, mode="rb") as file_data:
-                self._client.upload_blob(
-                    name=local_file_name, data=file_data, length=sys.getsizeof(upload_file_path)
-                )
+                self._client.upload_blob(name=local_file_name, data=file_data, length=sys.getsizeof(upload_file_path))
 
         # Temporary directory is removed at this point
 
@@ -101,7 +97,7 @@ class AzureBlobStorageTarget(PromptTarget):
         )
 
         return blob_url
-    
+
     # TODO: This will be the way to send prompts once https://github.com/Azure/PyRIT/pull/91/ merges
     async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
 
