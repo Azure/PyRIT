@@ -24,5 +24,5 @@ def test_send_prompt(azure_blob_storage_target: AzureBlobStorageTarget):
     # TODO: Change content to make some assertions,
     # Maybe also check memory here
     azure_blob_storage_target.send_prompt(normalized_prompt="test", conversation_id="1", normalizer_id="2")
-    azure_blob_storage_target.list_created_blob_urls()
-    azure_blob_storage_target.list_all_blob_urls()
+    print(azure_blob_storage_target.list_created_blob_urls()
+    print(azure_blob_storage_target.list_all_blob_urls())
