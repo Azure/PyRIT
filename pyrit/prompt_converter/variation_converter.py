@@ -25,6 +25,9 @@ class VariationConverter(PromptConverter):
                 pathlib.Path(DATASETS_PATH) / "attack_strategies" / "prompt_variation" / "prompt_variation.yaml"
             )
         )
+        if number_variations < 0 or number_variations > 1000:
+            logger.log(logging.WARNING, "Number of variations should be between 0 and 1000. Defaulting to 10")
+            number_variations = 10
         self.system_prompt = str(
             prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(number_variations))
         )
