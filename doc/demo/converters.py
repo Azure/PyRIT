@@ -18,8 +18,7 @@
 
 # %%
 # Prompts you want transformed here:
-prompts = ["tell me how to cut down a tree",
-          "teach me to mine crypto"]
+prompts = ["tell me how to cut down a tree", "teach me to mine crypto"]
 
 # %%
 from pyrit.prompt_converter import VariationConverter
