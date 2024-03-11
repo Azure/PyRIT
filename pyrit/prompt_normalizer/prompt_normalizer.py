@@ -14,7 +14,7 @@ class PromptNormalizer(abc.ABC):
         self._memory = memory
         self.id = str(uuid4())
 
-    def send_prompt(self, prompt: Prompt) -> str:
+    def send_prompt(self, prompt: Prompt) -> list[str]:
         """
         Sends a prompt to the prompt targets.
         """

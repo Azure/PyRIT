@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Optional
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface, FileMemory
@@ -18,7 +19,7 @@ class PromptSendingOrchestrator:
     def __init__(
         self,
         prompt_target: PromptTarget,
-        prompt_converters: list[PromptConverter] = None,
+        prompt_converters: Optional[list[PromptConverter]] = None,
         memory: MemoryInterface = None,
         include_original_prompts: bool = False,
     ) -> None:

@@ -15,7 +15,12 @@ from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
 
 logger = logging.getLogger(__name__)
-    
+
+
+class CompletionState:
+    def __init__(self, is_complete: bool):
+        self.is_complete = is_complete
+
 
 class BaseRedTeamingOrchestrator:
     _memory: MemoryInterface
@@ -26,8 +31,8 @@ class BaseRedTeamingOrchestrator:
         attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
         red_teaming_chat: ChatSupport,
-        initial_red_teaming_prompt: str,
-        prompt_converter: Optional[PromptConverter] = None,
+        initial_red_teaming_prompt: str = "Begin Conversation",
+        prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: list[str] = ["red-teaming-orchestrator"],
         verbose: bool = False,
@@ -35,17 +40,18 @@ class BaseRedTeamingOrchestrator:
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
 
         Args:
-            attack_strategy: The attack strategy to follow by the bot. This can be used to guide the bot to achieve
-                the conversation objective in a more direct and structured way. It is a string that can be written in
-                a single sentence or paragraph. If not provided, the bot will use red_team_chatbot_with_objective.
+            attack_strategy: The attack strategy for the red teaming bot to follow.
+                It is used as the metaprompt in the conversation with the red teaming bot.
+                This can be used to guide the bot to achieve the conversation objective in a more direct and
+                structured way.
                 Should be of type string or AttackStrategy (which has a __str__ method).
             prompt_target: The target to send the prompts to.
             red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
-            prompt_converter: The prompt converter to use to convert the prompts before sending them to the prompt
-                target. The converter is not applied in messages to the red teaming target.
+            prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
+                target. The converters are not applied on messages to the red teaming target.
             memory: The memory to use to store the chat messages. If not provided, a FileMemory will be used.
             memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
             verbose: Whether to print debug information.
@@ -54,7 +60,7 @@ class BaseRedTeamingOrchestrator:
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
         self._prompt_target = prompt_target
-        self._prompt_converter = prompt_converter if prompt_converter else NoOpConverter()
+        self._prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
         self._memory = memory if memory else FileMemory()
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target.memory = self._memory
@@ -69,23 +75,25 @@ class BaseRedTeamingOrchestrator:
         return self._memory.get_memories_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)        
 
     @abc.abstractmethod
-    def is_conversation_complete(self, messages: list[ChatMessage]) -> bool:
+    def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role) -> bool:
         """Returns True if the conversation is complete, False otherwise."""
         pass
 
-    def apply_attack_strategy_until_completion(self, max_turns: int = 10):
+    def apply_attack_strategy_until_completion(self, max_turns: int = 5):
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
         """
         turn = 1
         success = False
+        completion_state = CompletionState(is_complete=False)
+        overall_response = None
         while turn <= max_turns:
             logger.log(logging.INFO, f"Applying the attack strategy for turn {turn}.")
-            self.send_prompt()
-            if self.is_conversation_complete(
-                self._memory.get_chat_messages_with_conversation_id(
-                    conversation_id=self._red_teaming_chat_conversation_id)
-            ):
+            response = self.send_prompt(completion_state=completion_state)
+            # If the conversation is complete without a target response in the current iteration
+            # then the overall response is the last iteration's response.
+            overall_response = response if response else overall_response
+            if completion_state.is_complete:
                 success = True
                 logger.log(logging.INFO, "The red teaming orchestrator has completed the conversation and achieved the objective.")
                 break
@@ -93,8 +101,10 @@ class BaseRedTeamingOrchestrator:
 
         if not success:
             logger.log(logging.INFO, f"The red teaming orchestrator has not achieved the objective after the maximum number of turns ({max_turns}).")
+        
+        return overall_response
 
-    def send_prompt(self, prompt: Optional[str] = None):
+    def send_prompt(self, *, prompt: Optional[str] = None, completion_state: CompletionState = None):
         """
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
@@ -102,6 +112,9 @@ class BaseRedTeamingOrchestrator:
             prompt: The prompt to send to the target.
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
+            completion_state: The completion state of the conversation.
+                If the conversation is complete, the completion state is updated to True.
+                It is optional and not tracked if no object is passed.
         """
         if not prompt:
             # If no prompt is provided, then contact the red teaming target to generate one.
@@ -126,18 +139,34 @@ class BaseRedTeamingOrchestrator:
             # Determine the number of messages to add to memory based on if we included the system message
             memory_messages = 3 if len(messages) <= 3 else 2
             self._memory.add_chat_messages_to_memory(
-                messages=messages[-memory_messages:],
+                conversations=messages[-memory_messages:],
                 conversation_id=self._red_teaming_chat_conversation_id,
                 labels=self._global_memory_labels,
             )
 
+        if completion_state and self.is_conversation_complete(
+            messages, red_teaming_chat_role="assistant"
+        ):
+            completion_state.is_complete = True
+            return
+
         logger.log(logging.INFO, f"Sending the following prompt to the prompt target (after applying prompt converter operations) \"{prompt}\"")
         target_prompt_obj = Prompt(
             prompt_target=self._prompt_target,
-            prompt_converter=self._prompt_converter,
+            prompt_converters=self._prompt_converters,
             prompt_text=prompt,
             conversation_id=self._prompt_target_conversation_id,
         )
-        response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)
+        # TODO: what if we get multiple responses?
+        response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)[0]
         logger.log(logging.INFO, f"Received the following response from the prompt target \"{response}\"")
+        print(response)
+        if completion_state and self.is_conversation_complete(
+            target_messages + [
+                ChatMessage(role="user", content=prompt),
+                ChatMessage(role="assistant", content=response),
+            ],
+            red_teaming_chat_role="user"
+        ):
+            completion_state.is_complete = True
         return response

@@ -26,7 +26,7 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptChatTarget):
         self._memory = memory if memory else FileMemory()
         self._temperature = temperature
 
-    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
+    def set_system_prompt(self, *, prompt: str, conversation_id: str, normalizer_id: str) -> None:
         messages = self._memory.get_memories_with_conversation_id(conversation_id=conversation_id)
 
         if messages:
@@ -38,7 +38,7 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptChatTarget):
             normalizer_id=normalizer_id,
         )
 
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
 
         msg = ChatMessage(role="user", content=normalized_prompt)
@@ -49,7 +49,7 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptChatTarget):
             conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
         )
 
-        resp = super().complete_chat(messages=messages, temperature=self._temperature)
+        resp = self.complete_chat(messages=messages, temperature=self._temperature)
 
         self._memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="assistant", content=resp),

@@ -24,9 +24,9 @@ class EndTokenRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
         attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
         red_teaming_chat: ChatSupport,
-        initial_red_teaming_prompt: str,
+        initial_red_teaming_prompt: str = "Begin Conversation",
         end_token: Optional[str] = RED_TEAM_CONVERSATION_END_TOKEN,
-        prompt_converter: Optional[PromptConverter] = None,
+        prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: list[str] = ["red-teaming-orchestrator"],
         verbose: bool = False,
@@ -34,9 +34,10 @@ class EndTokenRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
 
         Args:
-            attack_strategy: The attack strategy to follow by the bot. This can be used to guide the bot to achieve
-                the conversation objective in a more direct and structured way. It is a string that can be written in
-                a single sentence or paragraph. If not provided, the bot will use red_team_chatbot_with_objective.
+            attack_strategy: The attack strategy for the red teaming bot to follow.
+                It is used as the metaprompt in the conversation with the red teaming bot.
+                This can be used to guide the bot to achieve the conversation objective in a more direct and
+                structured way.
                 Should be of type string or AttackStrategy (which has a __str__ method).
             prompt_target: The target to send the prompts to.
             red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
@@ -45,8 +46,8 @@ class EndTokenRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
             end_token: The token that indicates the end of the conversation.
                 If not provided, the default token <|done|> is used.
-            prompt_converter: The prompt converter to use to convert the prompts before sending them to the prompt
-                target. The converter is not applied in messages to the red teaming target.
+            prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
+                target. The converters are not applied on messages to the red teaming target.
             memory: The memory to use to store the chat messages. If not provided, a FileMemory will be used.
             memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
             verbose: Whether to print debug information.
@@ -56,23 +57,28 @@ class EndTokenRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
             prompt_target=prompt_target,
             red_teaming_chat=red_teaming_chat,
             initial_red_teaming_prompt=initial_red_teaming_prompt,
-            prompt_converter=prompt_converter,
+            prompt_converters=prompt_converters,
             memory=memory,
             memory_labels=memory_labels,
             verbose=verbose,
         )
         self._end_token = end_token
+        if end_token not in self._attack_strategy:
+            raise ValueError(
+                f"Attack strategy must have a way to detect end of conversation and include {end_token} token."
+            )
 
-    def is_conversation_complete(self, messages: list[ChatMessage]) -> bool:
+    def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role) -> bool:
         """
         Returns True if the conversation is complete, False otherwise.
-        This function checks for the presence of the conversation end token <|done|>.
+        This function checks for the presence of the conversation end token <|done|>
+        in the last message by the red teaming chat bot.
         """
         if not messages:
             # If there are no messages, then the conversation is not complete
             return False
-        if messages[-1].role == "system":
-            # If the last message is a system message, then the conversation is not yet complete
+        if messages[-1].role != red_teaming_chat_role:
+            # If the last message is not sent by the red teaming chat bot then the conversation is not yet complete
             return False
         if self._end_token in messages[-1].content:
             # If the last message contains the conversation end token, then the conversation is complete

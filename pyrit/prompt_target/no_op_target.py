@@ -15,9 +15,9 @@ class NoOpTarget(PromptTarget):
     """
 
     def __init__(self, *, memory: MemoryInterface = None) -> None:
-        super().__init__(memory)
+        super().__init__(memory=emory)
 
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         msg = ChatMessage(role="user", content=normalized_prompt)
         print(msg)
 

@@ -57,7 +57,7 @@ class Prompt(abc.ABC):
         The prompt runs through every converter (the output of one converter is
         the input of the next converter).
         """
-        converted_prompts = [self.prompt_text]
+        converted_prompts = [self._prompt_text]
 
         for converter in self._prompt_converters:
             converted_prompts = converter.convert(converted_prompts)
