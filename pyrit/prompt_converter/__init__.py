@@ -18,5 +18,5 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "ROT13Converter",
     "AsciiArtConverter",
-    "VariationConverter"
+    "VariationConverter",
 ]
