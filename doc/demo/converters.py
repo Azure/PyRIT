@@ -46,26 +46,3 @@ converted_prompts = prompt_variation_converter.convert(prompts)
 
 # %%
 converted_prompts
-
-# %%
-
-import os
-
-from pyrit.prompt_target import AzureOpenAIChatTarget, NoOpTarget
-
-from pyrit.common import default_values
-from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import VariationConverter
-
-
-default_values.load_default_env()
-
-target = AzureOpenAIChatTarget(
-    deployment_name="defense-gpt35",
-    endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
-)
-
-orchestrator = PromptSendingOrchestrator(
-    prompt_target=target, prompt_converters=[VariationConverter(converterLLM=target)]
-)
