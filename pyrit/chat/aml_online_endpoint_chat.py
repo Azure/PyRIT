@@ -90,8 +90,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         """Constructs the HTTP request body for the AML online endpoint."""
 
         squashed_messages = self.chat_message_normalizer.normalize(messages)
-        messages_dict = [message.dict() for message in squashed_messages]
-
+        messages_dict = [message.model_dump() for message in squashed_messages]
         data = {
             "input_data": {
                 "input_string": messages_dict,
