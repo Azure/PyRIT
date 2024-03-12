@@ -8,10 +8,11 @@ from pyrit.prompt_converter import PromptConverter
 
 
 class Prompt(abc.ABC):
-    memory: MemoryInterface
+    _memory: MemoryInterface
 
     def __init__(
         self,
+        *,
         prompt_target: PromptTarget,
         prompt_converters: list[PromptConverter],
         prompt_text: str,
@@ -51,16 +52,13 @@ class Prompt(abc.ABC):
         self._prompt_text = prompt_text
         self.conversation_id = conversation_id
 
-    def send_prompt(self, normalizer_id: str) -> list[str]:
+    def send_prompt(self, *, normalizer_id: str) -> list[str]:
         """
         Sends the prompt to the prompt target, by first converting the prompt.
         The prompt runs through every converter (the output of one converter is
         the input of the next converter).
         """
-        converted_prompts = [self._prompt_text]
-
-        for converter in self._prompt_converters:
-            converted_prompts = converter.convert(converted_prompts)
+        converted_prompts = self._get_converted_prompts()
 
         responses = []
         for converted_prompt in converted_prompts:
@@ -72,3 +70,25 @@ class Prompt(abc.ABC):
                 )
             )
         return responses
+
+    async def send_prompt_async(self, *, normalizer_id: str) -> None:
+        """
+        Sends the prompt to the prompt target, by first converting the prompt.
+        The prompt runs through every converter (the output of one converter is
+        the input of the next converter).
+        """
+        converted_prompts = self._get_converted_prompts()
+
+        for converted_prompt in converted_prompts:
+            await self.prompt_target.send_prompt_async(
+                normalized_prompt=converted_prompt,
+                conversation_id=self.conversation_id,
+                normalizer_id=normalizer_id,
+            )
+
+    def _get_converted_prompts(self):
+        converted_prompts = [self.prompt_text]
+
+        for converter in self.prompt_converters:
+            converted_prompts = converter.convert(converted_prompts)
+        return converted_prompts

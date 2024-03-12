@@ -5,7 +5,7 @@ from pyrit.models import ChatMessage, ChatMessageRole
 from pyrit.chat_message_normalizer import ChatMessageNormalizer
 
 
-class GenericSystemSquash(ChatMessageNormalizer):
+class GenericSystemSquash(ChatMessageNormalizer[list[ChatMessage]]):
     def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
         """
         Returns the first system message combined with the first user message

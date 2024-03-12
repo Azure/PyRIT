@@ -17,6 +17,7 @@ from pydantic import BaseModel, ConfigDict
 
 # Originally derived from this:
 # https://github.com/openai/openai-python/blob/7f9e85017a0959e3ba07834880d92c748f8f67ab/src/openai/types/chat/chat_completion_role.py#L4
+ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "tool", "function"]
 ChatMessageRole = Literal["system", "user", "assistant", "tool", "function"]
 
 
@@ -74,7 +75,7 @@ class PromptResponse(BaseModel):
         return embedding_output_file_path.as_posix()
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()
 
     @staticmethod
     def load_from_file(file_path: Path) -> PromptResponse:
@@ -86,7 +87,7 @@ class PromptResponse(BaseModel):
             The loaded embedding response
         """
         embedding_json_data = file_path.read_text(encoding="utf-8")
-        return PromptResponse.parse_raw(embedding_json_data)
+        return PromptResponse.model_validate_json(embedding_json_data)
 
 
 @dataclass
@@ -175,6 +176,23 @@ class PromptDataset(YamlLoadable):
     prompts: list[str] = field(default_factory=list)
 
 
+class ChatMessagesDataset(BaseModel):
+    """
+    Represents a dataset of chat messages.
+
+    Attributes:
+        model_config (ConfigDict): The model configuration.
+        name (str): The name of the dataset.
+        description (str): The description of the dataset.
+        list_of_chat_messages (list[list[ChatMessage]]): A list of chat messages.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    name: str
+    description: str
+    list_of_chat_messages: list[list[ChatMessage]]
+
+
 @dataclass
 class PromptTemplate(YamlLoadable):
     template: str
@@ -234,10 +252,21 @@ class AttackStrategy():
         """Returns a string representation of the attack strategy."""
         return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
 
+
+class ToolCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    type: str
+    function: str
+
+
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: ChatMessageRole
     content: str
+    name: Optional[str] = None
+    tool_calls: Optional[list[ToolCall]] = None
+    tool_call_id: Optional[str] = None
 
 
 class EmbeddingUsageInformation(BaseModel):
@@ -284,7 +313,7 @@ class EmbeddingResponse(BaseModel):
             The loaded embedding response
         """
         embedding_json_data = file_path.read_text(encoding="utf-8")
-        return EmbeddingResponse.parse_raw(embedding_json_data)
+        return EmbeddingResponse.model_validate_json(embedding_json_data)
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()

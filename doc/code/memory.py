@@ -3,8 +3,11 @@
 
 # %%
 
+from uuid import uuid4
 from pyrit.memory import FileMemory
 from pyrit.models import ChatMessage
+
+conversation_id = str(uuid4())
 
 memory = FileMemory()
 message_list = [
@@ -13,9 +16,11 @@ message_list = [
 ]
 next_message = ChatMessage(role="user", content="Wonderful! This is my second prompt to the chat bot.")
 message_list.append(next_message)
-memory.add_chat_messages_to_memory(conversations=message_list, conversation_id="11111")
+memory.add_chat_messages_to_memory(conversations=message_list, conversation_id=conversation_id)
 
 
 # To retrieve the items from memory
 
-memory.get_chat_messages_with_conversation_id(conversation_id="11111")
+memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
+
+# %%
