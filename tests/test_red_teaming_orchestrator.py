@@ -7,8 +7,6 @@ from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_target.prompt_target import PromptTarget
 
 import pytest
-from openai.types.chat import ChatCompletion, ChatCompletionMessage
-from openai.types.chat.chat_completion import Choice
 
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator
 from pyrit.orchestrator.end_token_red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN

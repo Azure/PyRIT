@@ -17,7 +17,6 @@
 
 import os
 import pathlib
-from colorama import Fore
 from pyrit.chat.aml_online_endpoint_chat import AMLOnlineEndpointChat
 
 from pyrit.orchestrator import EndTokenRedTeamingOrchestrator
@@ -25,7 +24,6 @@ from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.chat_message_normalizer import GenericSystemSquash
 from pyrit.common import default_values
 from pyrit.models import AttackStrategy
-from pyrit.orchestrator.red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
 
 
 default_values.load_default_env()
