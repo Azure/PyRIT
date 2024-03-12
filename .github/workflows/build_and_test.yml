@@ -19,46 +19,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  main-job:
+  integration-tests:
     strategy:
       matrix:
         os: [ubuntu-latest]
         python: ["3.10"]
         package_name: ["pyrit"]
     runs-on: ${{ matrix.os }}
-    # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
-    permissions:
-      contents: read
-      issues: read
-      checks: write
-      pull-requests: write
+    environment: integration_test
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       - uses: actions/setup-python@v3
         with:
-          python-version: ${{ inputs.python }}
-      - name: Install setuptools and pip
-        run: pip install --upgrade setuptools pip
-      - name: Install PyRIT with pip
-        run: pip install .[dev]
-      - name: Run unit tests with code coverage
-        run: make test-cov-xml
-      - name: Publish Pytest Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: '**/test-*.xml'
-      - name: Code Coverage Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: coverage.xml
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: both
-          thresholds: '60 80'
-      - name: "Run pre-commit hooks"
-        run: pre-commit run --all-files
+          python-version: ${{ matrix.python }}
+      - name: Setting environment test secrets
+        env:
+          AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
+          TEST_VAR: {{ vars.TEST }}
+        run: |
+              echo "test value: $TEST_VAR"
+              if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
+                echo "Secret is not available or is blank."
+              else
+                echo "Secret is available."
+              fi
