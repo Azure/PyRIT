@@ -15,9 +15,11 @@
 from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 
-messages = [ChatMessage(role="system", content="You are a helpful AI assistant"),
-            ChatMessage(role="user", content="Hello, how are you?"),
-            ChatMessage(role="assistant", content="I'm doing well, thanks for asking.")]
+messages = [
+    ChatMessage(role="system", content="You are a helpful AI assistant"),
+    ChatMessage(role="user", content="Hello, how are you?"),
+    ChatMessage(role="assistant", content="I'm doing well, thanks for asking."),
+]
 
 normalizer = ChatMessageNormalizerChatML()
 chatml_messages = normalizer.normalize(messages)
