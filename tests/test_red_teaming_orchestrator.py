@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import pathlib
+from typing import Union
 from unittest.mock import Mock, patch
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_target.prompt_target import PromptTarget
@@ -104,9 +105,9 @@ def test_send_prompt_twice(
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
-    attack_strategy = simple_attack_strategy
-    if attack_strategy_as_str:
-        attack_strategy = str(simple_attack_strategy)
+    attack_strategy: Union[str | AttackStrategy] = (
+        str(simple_attack_strategy) if attack_strategy_as_str else simple_attack_strategy
+    )
 
     kwargs = {
         "red_teaming_chat": chat_completion_engine,
@@ -169,9 +170,9 @@ def test_reach_goal_after_two_turns_end_token(
     memory: FileMemory,
     attack_strategy_as_str: bool,
 ):
-    attack_strategy = simple_attack_strategy
-    if attack_strategy_as_str:
-        attack_strategy = str(simple_attack_strategy)
+    attack_strategy: Union[str | AttackStrategy] = (
+        str(simple_attack_strategy) if attack_strategy_as_str else simple_attack_strategy
+    )
 
     red_teaming_orchestrator = EndTokenRedTeamingOrchestrator(
         red_teaming_chat=chat_completion_engine,

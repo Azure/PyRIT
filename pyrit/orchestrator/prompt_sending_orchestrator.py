@@ -66,7 +66,7 @@ class PromptSendingOrchestrator:
 
         normalized_prompts = self._coalesce_prompts(prompts)
 
-        await self.prompt_normalizer.send_prompt_batch_async(normalized_prompts, batch_size=self.batch_size)
+        await self._prompt_normalizer.send_prompt_batch_async(normalized_prompts, batch_size=self.batch_size)
 
     def _coalesce_prompts(self, prompts):
         normalized_prompts = []

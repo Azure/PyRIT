@@ -80,15 +80,15 @@ class Prompt(abc.ABC):
         converted_prompts = self._get_converted_prompts()
 
         for converted_prompt in converted_prompts:
-            await self.prompt_target.send_prompt_async(
+            await self._prompt_target.send_prompt_async(
                 normalized_prompt=converted_prompt,
                 conversation_id=self.conversation_id,
                 normalizer_id=normalizer_id,
             )
 
     def _get_converted_prompts(self):
-        converted_prompts = [self.prompt_text]
+        converted_prompts = [self._prompt_text]
 
-        for converter in self.prompt_converters:
+        for converter in self._prompt_converters:
             converted_prompts = converter.convert(converted_prompts)
         return converted_prompts

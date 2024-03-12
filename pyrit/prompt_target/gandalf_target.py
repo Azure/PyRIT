@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Any, Coroutine
 from pyrit.completion import GandalfCompletionEngine, GandalfLevel
 from pyrit.memory import FileMemory, MemoryInterface
 from pyrit.models import ChatMessage
@@ -36,3 +37,10 @@ class GandalfTarget(GandalfCompletionEngine, PromptTarget):
         )
 
         return response.completion
+
+    def send_prompt_async(
+        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str
+    ) -> Coroutine[Any, Any, str]:
+        return super().send_prompt_async(
+            normalized_prompt=normalized_prompt, conversation_id=conversation_id, normalizer_id=normalizer_id
+        )

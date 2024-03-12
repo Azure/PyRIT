@@ -74,7 +74,7 @@ class BaseRedTeamingOrchestrator:
 
         self._memory = memory if memory else FileMemory()
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._prompt_target.memory = self._memory
+        self._prompt_target._memory = self._memory
         self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._red_teaming_chat = red_teaming_chat
@@ -116,7 +116,8 @@ class BaseRedTeamingOrchestrator:
         if not success:
             logger.log(
                 logging.INFO,
-                f"The red teaming orchestrator has not achieved the objective after the maximum number of turns ({max_turns}).",
+                "The red teaming orchestrator has not achieved the objective after the maximum "
+                f"number of turns ({max_turns}).",
             )
 
         return overall_response
@@ -145,7 +146,7 @@ class BaseRedTeamingOrchestrator:
             if len(assistant_responses) > 0:
                 prompt_text = assistant_responses[-1].content
             else:  # If no assistant responses, then it's the first message
-                logger.log(logging.INFO, f"Using the specified initial red teaming prompt.")
+                logger.log(logging.INFO, "Using the specified initial red teaming prompt.")
                 prompt_text = self._initial_red_teaming_prompt
 
             logger.log(logging.INFO, f'Sending the following prompt to the red teaming prompt target "{prompt_text}"')

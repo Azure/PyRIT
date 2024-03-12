@@ -24,7 +24,7 @@ ChatMessageRole = Literal["system", "user", "assistant", "tool", "function"]
 @dataclass
 class Score:
     score_type: Literal["int", "float", "str", "bool"]
-    score_value: int | float | str
+    score_value: int | float | str | bool
     score_description: str = ""
     score_explanation: str = ""
 
@@ -239,7 +239,7 @@ class AttackStrategy:
         if isinstance(strategy, Path):
             self.strategy = PromptTemplate.from_yaml_file(strategy)
         else:
-            self.strategy = PromptTemplate(strategy=strategy, parameters=list(kwargs.keys()))
+            self.strategy = PromptTemplate(template=strategy, parameters=list(kwargs.keys()))
 
     def __str__(self):
         """Returns a string representation of the attack strategy."""

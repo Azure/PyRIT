@@ -24,7 +24,7 @@ class PromptTarget(abc.ABC):
         """
 
     @abc.abstractmethod
-    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         """
         Sends a normalized prompt async to the prompt target.
         """

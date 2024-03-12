@@ -71,9 +71,10 @@ class ScoringRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
             # If there are no messages, then the conversation is not complete.
             return False
         if messages[-1].role == red_teaming_chat_role or messages[-1].role == "system":
-            # If the last message is a system or red teaming chat bot message, then the conversation is not yet complete.
+            # If the last message is a system or red teaming chat bot message,
+            # then the conversation is not yet complete.
             return False
         score = self._scorer.score_text(text=messages[-1].content)
         if score.score_type != "bool":
             raise ValueError(f"The scorer must return a boolean score. The score type is {score.score_type}.")
-        return score.score_value
+        return bool(score.score_value)
