@@ -22,7 +22,7 @@ class VariationConverter(PromptConverter):
             prompt_template
             if prompt_template
             else PromptTemplate.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "attack_strategies" / "prompt_variation" / "prompt_variation.yaml"
+                pathlib.Path(DATASETS_PATH) / "prompt_variation" / "prompt_variation.yaml"
             )
         )
         if number_variations < 0 or number_variations > 1000:
