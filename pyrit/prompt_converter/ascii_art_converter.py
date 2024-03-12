@@ -21,3 +21,6 @@ class AsciiArtConverter(PromptConverter):
             list[str]: The converted prompts.
         """
         return [text2art(prompt, font=self.font_value) for prompt in prompts]
+
+    def is_one_to_one_converter(self) -> bool:
+        return True

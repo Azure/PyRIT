@@ -14,7 +14,7 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, prompts: list[str], include_original: bool = False) -> list[str]:
+    def convert(self, prompts: list[str]) -> list[str]:
         return prompts
 
 

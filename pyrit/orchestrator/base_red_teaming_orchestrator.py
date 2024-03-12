@@ -61,6 +61,18 @@ class BaseRedTeamingOrchestrator:
             logging.basicConfig(level=logging.INFO)
         self._prompt_target = prompt_target
         self._prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
+
+        # Ensure that all converters return exactly one prompt.
+        # Otherwise, there will be more than 1 conversation to manage.
+        one_to_many_converters = []
+        for converter in self._prompt_converters:
+            if not converter.is_one_to_one_converter():
+                one_to_many_converters.append(str(converter))
+        if one_to_many_converters:
+            one_to_many_converters_str = ", ".join(one_to_many_converters)
+            raise ValueError(
+                f"The following converters create more than one prompt: {one_to_many_converters_str}")
+
         self._memory = memory if memory else FileMemory()
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target.memory = self._memory
@@ -150,17 +162,18 @@ class BaseRedTeamingOrchestrator:
             completion_state.is_complete = True
             return
 
-        logger.log(logging.INFO, f"Sending the following prompt to the prompt target (after applying prompt converter operations) \"{prompt}\"")
+        logger.log(
+            logging.INFO,
+            "Sending the following prompt to the prompt target (after applying prompt "
+            f"converter operations) \"{prompt}\"")
         target_prompt_obj = Prompt(
             prompt_target=self._prompt_target,
             prompt_converters=self._prompt_converters,
             prompt_text=prompt,
             conversation_id=self._prompt_target_conversation_id,
         )
-        # TODO: what if we get multiple responses?
         response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)[0]
         logger.log(logging.INFO, f"Received the following response from the prompt target \"{response}\"")
-        print(response)
         if completion_state and self.is_conversation_complete(
             target_messages + [
                 ChatMessage(role="user", content=prompt),

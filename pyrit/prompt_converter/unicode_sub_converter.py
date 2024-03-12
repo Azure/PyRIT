@@ -19,3 +19,6 @@ class UnicodeSubstitutionConverter(PromptConverter):
             ret_list.append("".join(chr(self.startValue + ord(ch)) for ch in prompt))
 
         return ret_list
+
+    def is_one_to_one_converter(self) -> bool:
+        return True
