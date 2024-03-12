@@ -1,3 +1,4 @@
+# ---
 # jupyter:
 #   jupytext:
 #     text_representation:
@@ -44,3 +45,8 @@ converted_prompts = prompt_variation_converter.convert(prompts)
 
 # %%
 converted_prompts
+
+# %%
+len(converted_prompts)
+
+# %%
