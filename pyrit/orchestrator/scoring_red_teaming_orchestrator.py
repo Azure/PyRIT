@@ -13,7 +13,7 @@ from pyrit.prompt_converter import PromptConverter
 
 
 logger = logging.getLogger(__name__)
-    
+
 
 class ScoringRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
     def __init__(

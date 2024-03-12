@@ -46,7 +46,6 @@ class PromptSendingOrchestrator:
 
         self.batch_size = batch_size
 
-
     def send_prompts(self, prompts: list[str]):
         """
         Sends the prompt to the prompt target.
@@ -56,8 +55,7 @@ class PromptSendingOrchestrator:
         normalized_prompts = self._coalesce_prompts(prompts)
 
         for prompt in normalized_prompts:
-            responses.append(
-                self._prompt_normalizer.send_prompt(prompt=prompt))
+            responses.append(self._prompt_normalizer.send_prompt(prompt=prompt))
 
         return responses
 

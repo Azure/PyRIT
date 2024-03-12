@@ -232,21 +232,14 @@ class PromptTemplate(YamlLoadable):
 
 
 @dataclass
-class AttackStrategy():
-    def __init__(
-            self,
-            *,
-            strategy: Union[Path | str],
-            conversation_objective: str,
-            **kwargs):
-        kwargs['conversation_objective'] = conversation_objective
+class AttackStrategy:
+    def __init__(self, *, strategy: Union[Path | str], conversation_objective: str, **kwargs):
+        kwargs["conversation_objective"] = conversation_objective
         self.kwargs = kwargs
         if isinstance(strategy, Path):
             self.strategy = PromptTemplate.from_yaml_file(strategy)
         else:
-            self.strategy = PromptTemplate(
-                strategy=strategy,
-                parameters=list(kwargs.keys()))        
+            self.strategy = PromptTemplate(strategy=strategy, parameters=list(kwargs.keys()))
 
     def __str__(self):
         """Returns a string representation of the attack strategy."""

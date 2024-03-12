@@ -70,8 +70,7 @@ class BaseRedTeamingOrchestrator:
                 one_to_many_converters.append(str(converter))
         if one_to_many_converters:
             one_to_many_converters_str = ", ".join(one_to_many_converters)
-            raise ValueError(
-                f"The following converters create more than one prompt: {one_to_many_converters_str}")
+            raise ValueError(f"The following converters create more than one prompt: {one_to_many_converters_str}")
 
         self._memory = memory if memory else FileMemory()
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
@@ -84,7 +83,7 @@ class BaseRedTeamingOrchestrator:
         self._global_memory_labels = memory_labels
 
     def get_memory(self):
-        return self._memory.get_memories_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)        
+        return self._memory.get_memories_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
 
     @abc.abstractmethod
     def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role) -> bool:
@@ -107,13 +106,19 @@ class BaseRedTeamingOrchestrator:
             overall_response = response if response else overall_response
             if completion_state.is_complete:
                 success = True
-                logger.log(logging.INFO, "The red teaming orchestrator has completed the conversation and achieved the objective.")
+                logger.log(
+                    logging.INFO,
+                    "The red teaming orchestrator has completed the conversation and achieved the objective.",
+                )
                 break
             turn += 1
 
         if not success:
-            logger.log(logging.INFO, f"The red teaming orchestrator has not achieved the objective after the maximum number of turns ({max_turns}).")
-        
+            logger.log(
+                logging.INFO,
+                f"The red teaming orchestrator has not achieved the objective after the maximum number of turns ({max_turns}).",
+            )
+
         return overall_response
 
     def send_prompt(self, *, prompt: Optional[str] = None, completion_state: CompletionState = None):
@@ -133,16 +138,20 @@ class BaseRedTeamingOrchestrator:
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
             # A special case is the very first message, which means there are no prior messages.
             logger.log(logging.INFO, "No prompt for prompt target provided.")
-            target_messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=self._prompt_target_conversation_id)
+            target_messages = self._memory.get_chat_messages_with_conversation_id(
+                conversation_id=self._prompt_target_conversation_id
+            )
             assistant_responses = [m for m in target_messages if m.role == "assistant"]
             if len(assistant_responses) > 0:
                 prompt_text = assistant_responses[-1].content
-            else: # If no assistant responses, then it's the first message
+            else:  # If no assistant responses, then it's the first message
                 logger.log(logging.INFO, f"Using the specified initial red teaming prompt.")
                 prompt_text = self._initial_red_teaming_prompt
 
-            logger.log(logging.INFO, f"Sending the following prompt to the red teaming prompt target \"{prompt_text}\"")
-            messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=self._red_teaming_chat_conversation_id)
+            logger.log(logging.INFO, f'Sending the following prompt to the red teaming prompt target "{prompt_text}"')
+            messages = self._memory.get_chat_messages_with_conversation_id(
+                conversation_id=self._red_teaming_chat_conversation_id
+            )
             if not messages:
                 messages.append(ChatMessage(role="system", content=self._attack_strategy))
             messages.append(ChatMessage(role="user", content=prompt_text))
@@ -156,16 +165,15 @@ class BaseRedTeamingOrchestrator:
                 labels=self._global_memory_labels,
             )
 
-        if completion_state and self.is_conversation_complete(
-            messages, red_teaming_chat_role="assistant"
-        ):
+        if completion_state and self.is_conversation_complete(messages, red_teaming_chat_role="assistant"):
             completion_state.is_complete = True
             return
 
         logger.log(
             logging.INFO,
             "Sending the following prompt to the prompt target (after applying prompt "
-            f"converter operations) \"{prompt}\"")
+            f'converter operations) "{prompt}"',
+        )
         target_prompt_obj = Prompt(
             prompt_target=self._prompt_target,
             prompt_converters=self._prompt_converters,
@@ -173,13 +181,14 @@ class BaseRedTeamingOrchestrator:
             conversation_id=self._prompt_target_conversation_id,
         )
         response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)[0]
-        logger.log(logging.INFO, f"Received the following response from the prompt target \"{response}\"")
+        logger.log(logging.INFO, f'Received the following response from the prompt target "{response}"')
         if completion_state and self.is_conversation_complete(
-            target_messages + [
+            target_messages
+            + [
                 ChatMessage(role="user", content=prompt),
                 ChatMessage(role="assistant", content=response),
             ],
-            red_teaming_chat_role="user"
+            red_teaming_chat_role="user",
         ):
             completion_state.is_complete = True
         return response

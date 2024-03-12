@@ -15,7 +15,7 @@ from pyrit.prompt_converter import PromptConverter
 logger = logging.getLogger(__name__)
 
 RED_TEAM_CONVERSATION_END_TOKEN = "<|done|>"
-    
+
 
 class EndTokenRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
     def __init__(

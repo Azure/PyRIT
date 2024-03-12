@@ -38,15 +38,26 @@ def prompt_target(memory) -> AzureOpenAIChatTarget:
         memory=memory,
     )
 
+
 @pytest.fixture
 def simple_attack_strategy() -> AttackStrategy:
     return AttackStrategy(
-        strategy=pathlib.Path(DATASETS_PATH) / "attack_strategies" / "multi_turn_chat" / "red_team_chatbot_with_objective.yaml",
+        strategy=pathlib.Path(DATASETS_PATH)
+        / "attack_strategies"
+        / "multi_turn_chat"
+        / "red_team_chatbot_with_objective.yaml",
         conversation_objective="Do bad stuff",
     )
 
 
-def check_conversations(conversations, red_teaming_meta_prompt, initial_red_teaming_prompt, expected_red_teaming_responses, expected_target_responses, stop_after_n_conversations):
+def check_conversations(
+    conversations,
+    red_teaming_meta_prompt,
+    initial_red_teaming_prompt,
+    expected_red_teaming_responses,
+    expected_target_responses,
+    stop_after_n_conversations,
+):
     # first conversation (with red teaming chat bot)
     assert conversations[0].conversation_id == conversations[1].conversation_id == conversations[2].conversation_id
     assert conversations[0].role == "system"
@@ -65,7 +76,7 @@ def check_conversations(conversations, red_teaming_meta_prompt, initial_red_team
 
     if stop_after_n_conversations == 2:
         return
-    
+
     # third conversation (with red teaming chatbot)
     assert conversations[5].conversation_id == conversations[6].conversation_id
     assert conversations[5].role == "user"
@@ -85,19 +96,16 @@ def check_conversations(conversations, red_teaming_meta_prompt, initial_red_team
     assert conversations[8].content == expected_target_responses[1]
 
 
-@pytest.mark.parametrize(
-    "attack_strategy_as_str", [True, False]
-)
-@pytest.mark.parametrize(
-    "OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator]
-)
+@pytest.mark.parametrize("attack_strategy_as_str", [True, False])
+@pytest.mark.parametrize("OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator])
 def test_send_prompt_twice(
-        prompt_target: PromptTarget,
-        chat_completion_engine: AzureOpenAIChat,
-        simple_attack_strategy: AttackStrategy,
-        memory: FileMemory,
-        attack_strategy_as_str: bool,
-        OrchestratorType: type):
+    prompt_target: PromptTarget,
+    chat_completion_engine: AzureOpenAIChat,
+    simple_attack_strategy: AttackStrategy,
+    memory: FileMemory,
+    attack_strategy_as_str: bool,
+    OrchestratorType: type,
+):
     attack_strategy = simple_attack_strategy
     if attack_strategy_as_str:
         attack_strategy = str(simple_attack_strategy)
@@ -124,8 +132,15 @@ def test_send_prompt_twice(
             conversations = red_teaming_orchestrator._memory.get_all_memory()
             # Expecting two conversation threads (one with red teaming chat and one with prompt target)
             assert len(conversations) == 5, f"Expected 5 conversations, got {len(conversations)}"
-            check_conversations(conversations, str(attack_strategy), red_teaming_orchestrator._initial_red_teaming_prompt, expected_red_teaming_responses, expected_target_responses, stop_after_n_conversations=2)
-            
+            check_conversations(
+                conversations,
+                str(attack_strategy),
+                red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses,
+                expected_target_responses,
+                stop_after_n_conversations=2,
+            )
+
             mock_rt.assert_called_once()
             mock_target.assert_called_once()
 
@@ -138,18 +153,24 @@ def test_send_prompt_twice(
             conversations = red_teaming_orchestrator._memory.get_all_memory()
             # Expecting another two conversation threads
             assert len(conversations) == 9, f"Expected 9 conversations, got {len(conversations)}"
-            check_conversations(conversations, str(attack_strategy), red_teaming_orchestrator._initial_red_teaming_prompt, expected_red_teaming_responses, expected_target_responses, stop_after_n_conversations=4)
+            check_conversations(
+                conversations,
+                str(attack_strategy),
+                red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses,
+                expected_target_responses,
+                stop_after_n_conversations=4,
+            )
 
 
-@pytest.mark.parametrize(
-    "attack_strategy_as_str", [True, False]
-)
+@pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 def test_reach_goal_after_two_turns_end_token(
-        prompt_target: PromptTarget,
-        chat_completion_engine: AzureOpenAIChat,
-        simple_attack_strategy: AttackStrategy,
-        memory: FileMemory,
-        attack_strategy_as_str: bool):
+    prompt_target: PromptTarget,
+    chat_completion_engine: AzureOpenAIChat,
+    simple_attack_strategy: AttackStrategy,
+    memory: FileMemory,
+    attack_strategy_as_str: bool,
+):
     attack_strategy = simple_attack_strategy
     if attack_strategy_as_str:
         attack_strategy = str(simple_attack_strategy)
@@ -160,12 +181,15 @@ def test_reach_goal_after_two_turns_end_token(
         attack_strategy=attack_strategy,
         initial_red_teaming_prompt="how can I help you?",
         prompt_target=prompt_target,
-        verbose=True
+        verbose=True,
     )
 
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "complete_chat") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "complete_chat") as mock_target:
-            expected_red_teaming_responses = ["First red teaming chat response", "Second red teaming chat response with expected end token <|done|>"]
+            expected_red_teaming_responses = [
+                "First red teaming chat response",
+                "Second red teaming chat response with expected end token <|done|>",
+            ]
             mock_rt.side_effect = expected_red_teaming_responses
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
@@ -174,8 +198,15 @@ def test_reach_goal_after_two_turns_end_token(
             conversations = red_teaming_orchestrator._memory.get_all_memory()
             # Expecting three conversation threads (two with red teaming chat and one with prompt target)
             assert len(conversations) == 7, f"Expected 7 conversations, got {len(conversations)}"
-            check_conversations(conversations, str(attack_strategy), red_teaming_orchestrator._initial_red_teaming_prompt, expected_red_teaming_responses, [expected_target_response], stop_after_n_conversations=3)
-            
+            check_conversations(
+                conversations,
+                str(attack_strategy),
+                red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses,
+                [expected_target_response],
+                stop_after_n_conversations=3,
+            )
+
             assert mock_rt.call_count == 2
             mock_target.assert_called_once()
 
@@ -199,16 +230,15 @@ class MockOneToManyPromptConverter(PromptConverter):
     def is_one_to_one_converter(self) -> bool:
         return False
 
-@pytest.mark.parametrize(
-    "OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator]
-)
+
+@pytest.mark.parametrize("OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator])
 def test_converters_raise_with_one_to_many(OrchestratorType):
     kwargs = {
         "attack_strategy": "Test strategy with end token <|done|>",
         "red_teaming_chat": Mock(),
         "prompt_target": Mock(),
         "memory": Mock(),
-        "prompt_converters": [MockOneToManyPromptConverter()]
+        "prompt_converters": [MockOneToManyPromptConverter()],
     }
     if OrchestratorType == ScoringRedTeamingOrchestrator:
         kwargs["scorer"] = Mock()
@@ -226,6 +256,7 @@ def test_attack_strategy_without_token_raises_with_end_token_orchestrator():
             memory=Mock(),
         )
 
+
 def test_attack_strategy_without_token_does_not_raise_with_scoring_orchestrator():
     tokenless_strategy = "This is a strategy without end token."
     ScoringRedTeamingOrchestrator(
@@ -242,10 +273,7 @@ def test_attack_strategy_without_token_does_not_raise_with_scoring_orchestrator(
 @pytest.mark.parametrize("red_teaming_chat_role", ["user", "assistant"])
 def test_is_conversation_complete_scoring(score, message_count, red_teaming_chat_role):
     scorer = Mock()
-    scorer.score_text = Mock(
-        return_value=Score(
-            score_type="bool",
-            score_value=score))
+    scorer.score_text = Mock(return_value=Score(score_type="bool", score_value=score))
     orchestrator = ScoringRedTeamingOrchestrator(
         attack_strategy="some strategy",
         red_teaming_chat=Mock(),
@@ -255,24 +283,24 @@ def test_is_conversation_complete_scoring(score, message_count, red_teaming_chat
     )
     # simulate back and forth between user and assistant
     messages = [
-        ChatMessage(
-            role="user" if i % 2 == 0 else "assistant",
-            content=f"Message #{i}"
-        ) for i in range(message_count - 1)
+        ChatMessage(role="user" if i % 2 == 0 else "assistant", content=f"Message #{i}")
+        for i in range(message_count - 1)
     ]
     # conversation is complete if the last message is from the target
     # and the score is True
-    assert orchestrator.is_conversation_complete(
-        messages,
-        red_teaming_chat_role=red_teaming_chat_role
-    ) == (len(messages) > 0 and red_teaming_chat_role != messages[-1].role and score)
+    assert orchestrator.is_conversation_complete(messages, red_teaming_chat_role=red_teaming_chat_role) == (
+        len(messages) > 0 and red_teaming_chat_role != messages[-1].role and score
+    )
 
 
-@pytest.mark.parametrize("score", [
-    Score(score_type="float", score_value=1.7),
-    Score(score_type="str", score_value="abc"),
-    Score(score_type="int", score_value=89)
-])
+@pytest.mark.parametrize(
+    "score",
+    [
+        Score(score_type="float", score_value=1.7),
+        Score(score_type="str", score_value="abc"),
+        Score(score_type="int", score_value=89),
+    ],
+)
 def test_is_conversation_complete_scoring_non_bool(score):
     scorer = Mock()
     scorer.score_text = Mock(return_value=score)
@@ -284,12 +312,16 @@ def test_is_conversation_complete_scoring_non_bool(score):
         scorer=scorer,
     )
     with pytest.raises(ValueError):
-        orchestrator.is_conversation_complete(messages=[
-            ChatMessage(role="user", content="First message."),
-            ChatMessage(role="assistant", content="Second message."),
-            ChatMessage(role="user", content="Third message."),
-            ChatMessage(role="assistant", content="Fourth message.")
-        ], red_teaming_chat_role="user")
+        orchestrator.is_conversation_complete(
+            messages=[
+                ChatMessage(role="user", content="First message."),
+                ChatMessage(role="assistant", content="Second message."),
+                ChatMessage(role="user", content="Third message."),
+                ChatMessage(role="assistant", content="Fourth message."),
+            ],
+            red_teaming_chat_role="user",
+        )
+
 
 @pytest.fixture
 def end_token_red_teaming_orchestrator():
@@ -301,37 +333,28 @@ def end_token_red_teaming_orchestrator():
         memory=Mock(),
     )
 
+
 @pytest.mark.parametrize("message_count", [0, 1, 2, 3, 4, 5, 9, 10, 11, 99, 100, 101])
 @pytest.mark.parametrize("end_token_present", [True, False])
 @pytest.mark.parametrize("red_teaming_chat_role", ["user", "assistant"])
 def test_is_conversation_complete_end_token(
-        end_token_red_teaming_orchestrator,
-        message_count,
-        end_token_present,
-        red_teaming_chat_role):
+    end_token_red_teaming_orchestrator, message_count, end_token_present, red_teaming_chat_role
+):
     # simulate back and forth between user and assistant
     messages = [
-        ChatMessage(
-            role="user" if i % 2 == 0 else "assistant",
-            content=f"Message #{i}"
-        ) for i in range(message_count - 1)
+        ChatMessage(role="user" if i % 2 == 0 else "assistant", content=f"Message #{i}")
+        for i in range(message_count - 1)
     ]
     last_message_role = "user" if message_count - 1 % 2 == 0 else "assistant"
     last_message_content = f"Message #{message_count - 1}"
     if end_token_present:
         last_message_content += " <|done|>"
     if message_count > 0:
-        messages.append(
-            ChatMessage(
-                role=last_message_role,
-                content=last_message_content))
+        messages.append(ChatMessage(role=last_message_role, content=last_message_content))
         # if the red teaming endpoint is the assistant we can also set the system prompt
-        messages = [
-            ChatMessage(role="system", content="The system prompt.")
-        ] + messages
+        messages = [ChatMessage(role="system", content="The system prompt.")] + messages
     # the conversation is complete if the red teaming bot as indicated by
     # red_teaming_chat_role sends the end token
     assert end_token_red_teaming_orchestrator.is_conversation_complete(
-        messages,
-        red_teaming_chat_role=red_teaming_chat_role
+        messages, red_teaming_chat_role=red_teaming_chat_role
     ) == (end_token_present and last_message_role == red_teaming_chat_role and message_count > 0)

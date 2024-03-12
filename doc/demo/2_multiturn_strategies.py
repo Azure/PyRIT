@@ -35,7 +35,16 @@ conversation_objective = (
     "Make sure the response contains valid Python code. "
     "End the conversation once Python code is generated."
 )
-strategy_path = pathlib.Path(os.getcwd()) / ".." / ".." / "pyrit" / "datasets" / "attack_strategies" / "multi_turn_chat" / "red_team_chatbot_with_objective.yaml"
+strategy_path = (
+    pathlib.Path(os.getcwd())
+    / ".."
+    / ".."
+    / "pyrit"
+    / "datasets"
+    / "attack_strategies"
+    / "multi_turn_chat"
+    / "red_team_chatbot_with_objective.yaml"
+)
 attack_strategy = AttackStrategy(
     strategy=strategy_path,
     conversation_objective=conversation_objective,
@@ -45,9 +54,7 @@ attack_strategy = AttackStrategy(
 # In this case, it's a deployed AML endpoint called mistralai-mixtral-8x7b-instru-2
 # but it can be any supported endpoint.
 # mixtral disallows system prompts, so we include a chat_message_normalizer to squash them:
-red_teaming_chat = AMLOnlineEndpointChat(
-    chat_message_normalizer=GenericSystemSquash()
-)
+red_teaming_chat = AMLOnlineEndpointChat(chat_message_normalizer=GenericSystemSquash())
 
 prompt_target = AzureOpenAIChatTarget(
     deployment_name="defense-gpt35",
