@@ -1,11 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# TODO: import from azure.storage.blob.aio for async ops
+from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from azure.storage.blob import ContainerClient
-import os
 import sys
-import tempfile
 import uuid
 
 from pyrit.common import default_values
@@ -35,10 +33,14 @@ class AzureBlobStorageTarget(PromptTarget):
         sas_token: str = None,
         memory: MemoryInterface = None,
     ) -> None:
+        default_values.load_default_env()
+
         if container_url is None:
             self._container_url = default_values.get_required_value(
                 env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
             )
+        else:
+            self._container_url = container_url
 
         if sas_token is None:
             sas_token = default_values.get_required_value(
@@ -46,16 +48,21 @@ class AzureBlobStorageTarget(PromptTarget):
             )
 
         self._client = ContainerClient.from_container_url(container_url=self._container_url, credential=sas_token)
+        self._client_async = AsyncContainerClient.from_container_url(
+            container_url=self._container_url, credential=sas_token
+        )
 
         self._created_blob_urls: list[str] = []
 
         super().__init__(memory)
 
+    # QUESTION: Is there benefit to tracking which blob urls are created with each class object?
+    # If not, can remove this function and self._created_blob_urls list
     def list_created_blob_urls(self) -> list[str]:
         return self._created_blob_urls
 
+    # QUESTION: Is this useful to orchestrators? Imagining that contents would be listed and then consumed as input.
     def list_all_blob_urls(self) -> list[str]:
-        # TODO: When moving this to be async, this is no longer something we can iterate through...
         blob_names = self._client.list_blob_names()
 
         blob_urls = []
@@ -64,68 +71,48 @@ class AzureBlobStorageTarget(PromptTarget):
 
         return blob_urls
 
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    def _prep_prompt_to_upload(self, normalized_prompt: str) -> tuple[str, bytes]:
+        file_name = str(uuid.uuid4()) + ".txt"
+        data = str.encode(normalized_prompt)
+        print("\nUploading to Azure Storage as blob:\n\t" + file_name)
 
-        # Create temporary file to upload to Storage Account Container URL
-        local_file_name = str(uuid.uuid4()) + ".txt"
+        return file_name, data
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            upload_file_path = os.path.join(temp_dir, local_file_name)
-
-            file = open(file=upload_file_path, mode="w")
-            file.write(normalized_prompt)
-            file.close()
-
-            print("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
-
-            with open(file=upload_file_path, mode="rb") as file_data:
-                self._client.upload_blob(name=local_file_name, data=file_data, length=sys.getsizeof(upload_file_path))
-
-        # Temporary directory is removed at this point
-
-        # Track created blob URL
-        blob_url = self._container_url + "/" + local_file_name
+    def _post_upload_processing(self, blob_url: str, normalized_prompt: str, conversation_id: str, normalizer_id: str):
         self._created_blob_urls.append(blob_url)
 
-        # Add prompt to memory
-        # TODO: Need a way to record the blob url ~with~ the prompt
-        # TODO: Do we want to add the blob_url to memory instead of the message?
+        # QUESTION: Is this the right way / best way to associate blob_url with the prompt converted into a file?
         self.memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="user", content=normalized_prompt),
+            conversation_id=conversation_id,
+            normalizer_id=normalizer_id,
+            labels=[blob_url],
+        )
+
+    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+        file_name, data = self._prep_prompt_to_upload(normalized_prompt=normalized_prompt)
+
+        self._client.upload_blob(name=file_name, data=data, length=sys.getsizeof(data))
+        blob_url = self._container_url + "/" + file_name
+
+        self._post_upload_processing(
+            blob_url=blob_url,
+            normalized_prompt=normalized_prompt,
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
         )
 
         return blob_url
 
-    # TODO: This will be the way to send prompts once https://github.com/Azure/PyRIT/pull/91/ merges
     async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+        file_name, data = self._prep_prompt_to_upload(normalized_prompt=normalized_prompt)
 
-        # Create temporary file to upload to Storage Account Container URL
-        local_file_name = str(uuid.uuid4()) + ".txt"
+        await self._client_async.upload_blob(name=file_name, data=data, length=sys.getsizeof(data))
+        blob_url = self._container_url + "/" + file_name
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            upload_file_path = os.path.join(temp_dir, local_file_name)
-
-            file = open(file=upload_file_path, mode="w")
-            file.write(normalized_prompt)
-            file.close()
-
-            print("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
-
-            with open(file=upload_file_path, mode="rb") as file_data:
-                await self._client.upload_blob(
-                    name=local_file_name, data=file_data, length=sys.getsizeof(upload_file_path)
-                )
-
-        # Track created blob URL
-        blob_url = self._container_url + "/" + local_file_name
-        self._created_blob_urls.append(blob_url)
-
-        # Add prompt to memory
-        # TODO: Need a way to record the blob url with the prompt
-        self.memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="user", content=normalized_prompt),
+        self._post_upload_processing(
+            blob_url=blob_url,
+            normalized_prompt=normalized_prompt,
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
         )
