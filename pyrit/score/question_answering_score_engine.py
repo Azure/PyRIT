@@ -22,7 +22,8 @@ class QuestionHandler(Protocol):
         """Process an `QuestionAnsweringEntry` so that it's in a format compatible with the model under evaluation.
 
         Override this function when you wish you update the default behavior of the `QuestionHandler`. This is a good
-        place to add custom logic to handle the `QuestionAnsweringEntry` before sending it to the model under  evaluation.
+        place to add custom logic to handle the `QuestionAnsweringEntry` before sending it to the model under
+        evaluation.
 
         For example, the prompts used to query the model can be customized here or the question can be formatted in a
         specific way that is compatible with the model under evaluation.
