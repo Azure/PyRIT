@@ -25,10 +25,26 @@ def test_send_prompt_no_converter(mock_target: MockPromptTarget):
     assert mock_target.prompt_sent == ["Hello"]
 
 
+@pytest.mark.asyncio
+async def test_send_prompts_async_no_converter(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+
+    await orchestrator.send_prompts_batch_async(["Hello"])
+    assert mock_target.prompt_sent == ["Hello"]
+
+
 def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     orchestrator.send_prompts(["Hello", "my", "name"])
+    assert mock_target.prompt_sent == ["Hello", "my", "name"]
+
+
+@pytest.mark.asyncio
+async def test_send_multiple_prompts_async_no_converter(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+
+    await orchestrator.send_prompts_batch_async(["Hello", "my", "name"])
     assert mock_target.prompt_sent == ["Hello", "my", "name"]
 
 
