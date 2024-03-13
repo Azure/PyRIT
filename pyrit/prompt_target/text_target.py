@@ -25,7 +25,7 @@ class TextTarget(PromptTarget):
 
     def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         msg = ChatMessage(role="user", content=normalized_prompt)
-        self.io.write(msg)
+        self.io.write(str(msg))
 
         self.memory.add_chat_message_to_memory(
             conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
