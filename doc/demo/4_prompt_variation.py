@@ -15,28 +15,42 @@
 # %% [markdown]
 # ### Prompt Variation Demo
 #
-# Converters are used to transform prompts before sending them to the target.
-# This can be useful for a variety of reasons, such as encoding the prompt in a different format, or adding additional information to the prompt.
-# For example, you might want to convert a prompt to base64 before sending it to the target, or add a prefix to the prompt to indicate that it is a question.
-#
-# Converters can be used to perform these types of transformations.
+# This example shows how to use prompt variation converters. It's often useful for a researcher to get variations of a similar prompts.
+# This uses a NoOpTarget so these variations are simply added to memory and printed to the screen.
 
-# Here is a simple program that uses Rot13Converter converter and AsciiArtConverter
 # %%
 
-from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter
+from pyrit.common import default_values
+from pyrit.prompt_target import NoOpTarget, AzureOpenAIChatTarget
+from pyrit.prompt_converter import VariationConverter, StringJoinConverter
+from pyrit.orchestrator import PromptSendingOrchestrator
 
 
-prompts = ["tell me how to cut down a tree",
-          "teach me to mine crypto"]
+default_values.load_default_env()
+
+prompts = ["tell me how to cut down a tree"]
+
+# converter target to send prompt to
+converter_target = AzureOpenAIChatTarget()
+prompt_variation_converter = VariationConverter(converter_target=converter_target)
 
 
-print (ROT13Converter().convert(prompts))
-print (AsciiArtConverter().convert(prompts)[0])
+target = NoOpTarget()
 
+orchestrator = PromptSendingOrchestrator(prompt_target=target, prompt_converters=[prompt_variation_converter])
 
+orchestrator.send_prompts(prompts)
 
 # %% [markdown]
-# Converters should be thought of as a piece in the pipeine. They can use external infrastrucutre like attacker LLMs. An orchestrator will typically initialize these requests, and they are sent to a target. Converters can also stack, so a converter is used one after another.
+# ### Stacking Converters
 #
-# See [demo3](../demo/3_send_all_prompts.ipynb) and [demo4](../demo/4_prompt_variation.ipynb) for an example of how to use a converter in the pipeline.
+# Like in other examples, converters can be stacked. For example, you can take these variations and adds - between words
+
+# %%
+
+orchestrator = PromptSendingOrchestrator(
+    prompt_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
+)
+orchestrator.send_prompts(prompts)
+
+# %%

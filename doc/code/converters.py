@@ -25,13 +25,11 @@
 from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter
 
 
-prompts = ["tell me how to cut down a tree",
-          "teach me to mine crypto"]
+prompts = ["tell me how to cut down a tree", "teach me to mine crypto"]
 
 
-print (ROT13Converter().convert(prompts))
-print (AsciiArtConverter().convert(prompts)[0])
-
+print(ROT13Converter().convert(prompts))
+print(AsciiArtConverter().convert(prompts)[0])
 
 
 # %% [markdown]
