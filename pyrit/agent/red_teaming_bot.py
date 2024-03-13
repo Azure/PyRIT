@@ -5,7 +5,7 @@ import pathlib
 from uuid import uuid4
 
 from pyrit.interfaces import ChatSupport
-from pyrit.memory import FileMemory, MemoryInterface
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import ChatMessage, PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 
@@ -65,7 +65,7 @@ class RedTeamingBot:
         kwargs_to_apply["conversation_objective"] = conversation_objective
         self._system_prompt = self._attack_strategy.apply_custom_metaprompt_parameters(**kwargs_to_apply)
 
-        self._conversation_memory = memory if memory else FileMemory()
+        self._conversation_memory = memory if memory else DuckDBMemory()
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
 
     def __str__(self):

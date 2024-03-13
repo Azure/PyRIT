@@ -76,3 +76,12 @@ class PromptSendingOrchestrator:
         """
         id = self.prompt_normalizer.id
         return self.memory.get_memories_with_normalizer_id(normalizer_id=id)
+
+    def __del__(self):
+        """
+        TODO: needs robust testing, it might change.
+        Destructor method to ensure resources are cleaned up before the class instance is destroyed.
+        """
+        # Dispose of the database engine to release database connections and resources.
+        self.memory.dispose_engine()
+    
