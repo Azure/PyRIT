@@ -3,8 +3,14 @@
 name: build_and_test
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+      - "release/**"
+  workflow_dispatch:
 
 concurrency:
   # This ensures after each commit the old jobs are cancelled and the new ones
@@ -22,32 +28,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     environment: integration_test
     steps:
-      - name: Get User Permission
-        id: checkAccess
-        uses: actions-cool/check-user-permission@v2
-        with:
-          require: write
-          username: ${{ github.triggering_actor }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Check User Permission
-        if: steps.checkAccess.outputs.require-result == 'false'
-        run: |
-          echo "${{ github.triggering_actor }} does not have permissions on this repo."
-          echo "Current permission level is ${{ steps.checkAccess.outputs.user-permission }}"
-          echo "Job originally triggered by ${{ github.actor }}"
-          exit 1
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{  github.event.pull_request.head.sha }} # This allows access to secrets, this workflow must be approved
+      - uses: actions/checkout@v2
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
       - name: Setting environment test secrets
         env:
           AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
-          TEST_VAR: {{ vars.TEST }}
+          TEST_VAR: ${{ vars.TEST }}
         run: |
               echo "test value: $TEST_VAR"
               if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
