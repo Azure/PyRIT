@@ -15,8 +15,11 @@
 # %% [markdown]
 # ### Prompt Variation Demo
 #
-# This example shows how to use prompt variation converters. It's often useful for a researcher to get variations of a similar prompts.
-# This uses a NoOpTarget so these variations are simply added to memory and printed to the screen.
+# This example shows how to use prompt variation converters to make different prompts with essentially the same meaning.
+# It's often useful for a researcher to get variations of a similar prompts.
+#
+# This uses a NoOpTarget so these variations are simply added to memory and printed to the screen. This target
+# could be replaced with any other target.
 
 # %%
 
@@ -30,7 +33,7 @@ default_values.load_default_env()
 
 prompts = ["tell me how to cut down a tree"]
 
-# converter target to send prompt to
+# converter target to send prompt to; In this case configured to an Azure OpenAI Chat model
 converter_target = AzureOpenAIChatTarget()
 prompt_variation_converter = VariationConverter(converter_target=converter_target)
 
@@ -44,7 +47,9 @@ orchestrator.send_prompts(prompts)
 # %% [markdown]
 # ### Stacking Converters
 #
-# Like in other examples, converters can be stacked. For example, you can take these variations and adds - between words
+# Like in other examples, converters can be stacked. For example, you can take these variations and adds a dash between letters.
+# Remember that order matters. If `StringJoinConverter` came first, we would be asking the LLM to make variations of the prompt:
+# "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
 
 # %%
 

@@ -33,6 +33,8 @@ print(AsciiArtConverter().convert(prompts)[0])
 
 
 # %% [markdown]
-# Converters should be thought of as a piece in the pipeine. They can use external infrastrucutre like attacker LLMs. An orchestrator will typically initialize these requests, and they are sent to a target. Converters can also stack, so a converter is used one after another.
+# Converters should be thought of as a piece in the pipeine. They can use external infrastrucutre like attacker LLMs.
+# An orchestrator will typically initialize these requests, and they are sent to a target.
+# Converters can also stack, so a converter is used one after another.
 #
 # See [demo3](../demo/3_send_all_prompts.ipynb) and [demo4](../demo/4_prompt_variation.ipynb) for an example of how to use a converter in the pipeline.
