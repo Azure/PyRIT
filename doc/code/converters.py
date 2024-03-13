@@ -1,17 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.1
-#   kernelspec:
-#     display_name: pyrit_kernel
-#     language: python
-#     name: pyrit_kernel
-# ---
-
 # %% [markdown]
 # ### Converters
 #
@@ -34,6 +20,8 @@ print(AsciiArtConverter().convert(prompts)[0])
 
 # %% [markdown]
 # Converters should be thought of as a piece in the pipeine. They can use external infrastrucutre like attacker LLMs.
+# `VariationConverter` is a converter that does this.
+#
 # An orchestrator will typically initialize these requests, and they are sent to a target.
 # Converters can also stack, so a converter is used one after another.
 #
