@@ -3,14 +3,8 @@
 name: build_and_test
 
 on:
-  push:
-    branches:
-      - "main"
   pull_request_target:
-    branches:
-      - "main"
-      - "release/**"
-  workflow_dispatch:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   # This ensures after each commit the old jobs are cancelled and the new ones
