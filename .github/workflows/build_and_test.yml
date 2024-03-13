@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - "main"
-  pull_request:
+  pull_request_target:
     branches:
       - "main"
       - "release/**"
@@ -43,10 +43,6 @@ jobs:
           echo "Current permission level is ${{ steps.checkAccess.outputs.user-permission }}"
           echo "Job originally triggered by ${{ github.actor }}"
           exit 1
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          ref: ${{  github.event.pull_request.head.sha }}
       - name: Checkout code
         uses: actions/checkout@v3
         with:
