@@ -11,9 +11,9 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptChatTarget):
     def __init__(
         self,
         *,
-        deployment_name: str,
-        endpoint: str,
-        api_key: str,
+        deployment_name: str = None,
+        endpoint: str = None,
+        api_key: str = None,
         memory: MemoryInterface = None,
         api_version: str = "2023-08-01-preview",
         temperature: float = 1.0,
@@ -38,22 +38,34 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptChatTarget):
         )
 
     def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
-        messages = self.memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
-
-        msg = ChatMessage(role="user", content=normalized_prompt)
-
-        messages.append(msg)
-
-        self.memory.add_chat_message_to_memory(
-            conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
-        )
+        messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
         resp = super().complete_chat(messages=messages, temperature=self.temperature)
 
         self.memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="assistant", content=resp),
+            ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
         )
 
         return resp
+
+    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+        messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
+
+        resp = await super().complete_chat_async(messages=messages, temperature=self.temperature)
+
+        self.memory.add_chat_message_to_memory(
+            ChatMessage(role="assistant", content=resp),
+            conversation_id=conversation_id,
+            normalizer_id=normalizer_id,
+        )
+
+        return resp
+
+    def _prepare_message(self, normalized_prompt: str, conversation_id: str, normalizer_id: str):
+        messages = self.memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
+        msg = ChatMessage(role="user", content=normalized_prompt)
+        messages.append(msg)
+        self.memory.add_chat_message_to_memory(msg, conversation_id, normalizer_id)
+        return messages

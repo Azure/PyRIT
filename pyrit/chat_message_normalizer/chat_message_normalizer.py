@@ -3,11 +3,14 @@
 
 import abc
 from pyrit.models import ChatMessage
+from typing import TypeVar, Generic
+
+T = TypeVar("T", str, list[ChatMessage])
 
 
-class ChatMessageNormalizer(abc.ABC):
+class ChatMessageNormalizer(abc.ABC, Generic[T]):
     @abc.abstractmethod
-    def normalize(self, messages: list[ChatMessage]) -> list[ChatMessage]:
+    def normalize(self, messages: list[ChatMessage]) -> T:
         """
         Normalizes the list of chat messages into a compatible format for the model or target
         """

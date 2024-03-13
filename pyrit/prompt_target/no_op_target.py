@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
+
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target import PromptTarget
@@ -25,4 +27,9 @@ class NoOpTarget(PromptTarget):
             conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
         )
 
+        return ""
+
+    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+        self.send_prompt(normalized_prompt, conversation_id, normalizer_id)
+        await asyncio.sleep(0)
         return ""
