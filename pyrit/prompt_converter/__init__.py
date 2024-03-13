@@ -9,8 +9,10 @@ from pyrit.prompt_converter.no_op_converter import NoOpConverter
 from pyrit.prompt_converter.rot13_converter import ROT13Converter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
+from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
+
 
 __all__ = [
     "AsciiArtConverter",
@@ -19,7 +21,9 @@ __all__ = [
     "PromptConverter",
     "ROT13Converter",
     "StringJoinConverter",
+    "StringJoinConverter",
     "TranslationConverter",
+    "UnicodeConfusableConverter",
     "UnicodeSubstitutionConverter",
     "VariationConverter",
 ]
