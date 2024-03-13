@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import asyncio
-from io import TextIOBase
 import sys
+
+from typing import IO
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
@@ -19,13 +20,13 @@ class TextTarget(PromptTarget):
     but enter them manually.
     """
 
-    def __init__(self, *, io: TextIOBase = sys.stdout, memory: MemoryInterface = None) -> None:
+    def __init__(self, *, text_stream: IO[str] = sys.stdout, memory: MemoryInterface = None) -> None:
         super().__init__(memory)
-        self.io = io
+        self.text_stream = text_stream
 
     def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         msg = ChatMessage(role="user", content=normalized_prompt)
-        self.io.write(str(msg))
+        self.text_stream.write(str(msg))
 
         self.memory.add_chat_message_to_memory(
             conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
