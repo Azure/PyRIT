@@ -47,7 +47,7 @@ jobs:
       - name: Setting environment test secrets
         env:
           AZURE_OPENAI_CHAT_ENDPOINT: ${{ secrets.AZURE_OPENAI_CHAT_ENDPOINT }}
-          TEST_VAR: ${{ vars.TEST }}
+          TEST_VAR: {{ vars.TEST }}
         run: |
               echo "test value: $TEST_VAR"
               if [ -z "${AZURE_OPENAI_CHAT_ENDPOINT}" ]; then
