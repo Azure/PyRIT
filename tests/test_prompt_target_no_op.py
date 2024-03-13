@@ -6,7 +6,7 @@ import pathlib
 import pytest
 
 from pyrit.memory import FileMemory
-from pyrit.prompt_target import NoOpTarget
+from pyrit.prompt_target import TextTarget
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def memory(tmp_path: pathlib.Path):
 
 
 def test_send_prompt_user_no_system(memory: FileMemory):
-    no_op = NoOpTarget(memory=memory)
+    no_op = TextTarget(memory=memory)
 
     no_op.send_prompt(
         normalized_prompt="hi, I am a victim chatbot, how can I help?", conversation_id="1", normalizer_id="2"
