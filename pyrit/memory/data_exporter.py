@@ -110,11 +110,3 @@ class DataExporter:
             else:
                 model_dict[column.name] = value
         return model_dict
-
-    def __del__(self):
-        """
-        TODO: needs robust testing, it might change.
-        Destructor method to ensure resources are cleaned up before the class instance is destroyed.
-        """
-        # Dispose of the database engine to release database connections and resources.
-        self.memory_interface.dispose_engine()

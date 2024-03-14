@@ -150,27 +150,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error updating entries: {e}")
                 return False
 
-    def delete_entries(self, *, entries: list[Base]) -> None: # type: ignore
-        """
-        Deletes the given entries from the table.
-        TODO: More testing, do we need cascade delete on entries on EmbeddingStore for those UUIDs? 
-
-        Args:
-            entries (list[Base]): A list of SQLAlchemy model instances to be deleted.
-        """
-        with self.get_session() as session:
-            try:
-                for entry in entries:
-                    # Ensure the entry is part of the session. If it's detached, merge it.
-                    entry_in_session = session.merge(entry)
-                    session.delete(entry_in_session)
-                session.commit()
-                return True
-            except SQLAlchemyError as e:
-                session.rollback()
-                logger.exception(f"Error deleting entries: {e}")
-                return False
-
     def get_all_memory(self, model: Base): # type: ignore
         """
         Fetches all entries from the specified table and returns them as model instances.
@@ -228,28 +207,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             return False
 
         # Use the utility function to update the entries
-        return self.update_entries(entries=entries_to_update, update_fields=update_fields)   
-     
-    def delete_entries_by_conversation_id(self, *, conversation_id: str) -> bool:
-        """
-        Deletes entries for a given conversation ID.
-
-        Args:
-            conversation_id (str): The conversation ID of the entries to be deleted.
-
-        Returns:
-            bool: True if the deletion was successful, False otherwise.
-        """
-        # Fetch the relevant entries using query_entries
-        entries_to_delete = self.query_entries(ConversationData, conditions=ConversationData.conversation_id == conversation_id)
-        
-        # Check if there are entries to delete
-        if not entries_to_delete:
-            logger.info(f"No entries found with conversation_id {conversation_id} to delete.")
-            return False
-
-        # Use the utility function to delete the entries
-        return self.delete_entries(entries=entries_to_delete)
+        return self.update_entries(entries=entries_to_update, update_fields=update_fields)  
     
     def dispose_engine(self):
         """
