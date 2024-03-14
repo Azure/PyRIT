@@ -21,3 +21,8 @@ class PromptConverter(abc.ABC):
             list[str]: The converted representations of the prompts.
         """
         pass
+
+    @abc.abstractmethod
+    def is_one_to_one_converter(self) -> bool:
+        """Indicates if the conversion results in exactly one resulting prompt."""
+        pass

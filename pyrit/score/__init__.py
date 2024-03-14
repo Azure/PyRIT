@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.score.engine import evaluate, evaluate_async, score_text
-from pyrit.score.gandalf_classifier import GandalfScorer
+from pyrit.score.gandalf_classifier import GandalfScorer, GandalfBinaryScorer
 from pyrit.score.gpt_classifier import (
     PROMPT_INJECTION_CLASSIFIER,
     QUESTION_ANSWERING_CLASSIFIER,
@@ -18,6 +18,7 @@ __all__ = [
     "evaluate",
     "evaluate_async",
     "GandalfScorer",
+    "GandalfBinaryScorer",
     "SelfAskGptClassifier",
     "PROMPT_INJECTION_CLASSIFIER",
     "QUESTION_ANSWERING_CLASSIFIER",
