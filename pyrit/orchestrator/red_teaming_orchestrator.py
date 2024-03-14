@@ -14,6 +14,7 @@ from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
 
+logger = logging.getLogger(__name__)
 
 MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES = 3
 MESSAGE_COUNT_WITH_SYSTEM_MESSAGE = 3
@@ -95,14 +96,14 @@ class RedTeamingOrchestrator(Orchestrator):
         completion_state = CompletionState(is_complete=False)
         overall_response = None
         while turn <= max_turns:
-            self._logger.log(logging.INFO, f"Applying the attack strategy for turn {turn}.")
+            logger.log(logging.INFO, f"Applying the attack strategy for turn {turn}.")
             response = self.send_prompt(completion_state=completion_state)
             # If the conversation is complete without a target response in the current iteration
             # then the overall response is the last iteration's response.
             overall_response = response if response else overall_response
             if completion_state.is_complete:
                 success = True
-                self._logger.log(
+                logger.log(
                     logging.INFO,
                     "The red teaming orchestrator has completed the conversation and achieved the objective.",
                 )
@@ -110,7 +111,7 @@ class RedTeamingOrchestrator(Orchestrator):
             turn += 1
 
         if not success:
-            self._logger.log(
+            logger.log(
                 logging.INFO,
                 "The red teaming orchestrator has not achieved the objective after the maximum "
                 f"number of turns ({max_turns}).",
@@ -141,18 +142,16 @@ class RedTeamingOrchestrator(Orchestrator):
             # If no prompt is provided, then contact the red teaming target to generate one.
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
             # A special case is the very first message, which means there are no prior messages.
-            self._logger.log(logging.INFO, "No prompt for prompt target provided.")
+            logger.log(logging.INFO, "No prompt for prompt target provided.")
 
             assistant_responses = [m for m in target_messages if m.role == "assistant"]
             if len(assistant_responses) > 0:
                 prompt_text = assistant_responses[-1].content
             else:  # If no assistant responses, then it's the first message
-                self._logger.log(logging.INFO, "Using the specified initial red teaming prompt.")
+                logger.log(logging.INFO, "Using the specified initial red teaming prompt.")
                 prompt_text = self._initial_red_teaming_prompt
 
-            self._logger.log(
-                logging.INFO, f'Sending the following prompt to the red teaming prompt target "{prompt_text}"'
-            )
+            logger.log(logging.INFO, f'Sending the following prompt to the red teaming prompt target "{prompt_text}"')
             messages = self._memory.get_chat_messages_with_conversation_id(
                 conversation_id=self._red_teaming_chat_conversation_id
             )
@@ -177,7 +176,7 @@ class RedTeamingOrchestrator(Orchestrator):
             completion_state.is_complete = True
             return
 
-        self._logger.log(
+        logger.log(
             logging.INFO,
             "Sending the following prompt to the prompt target (after applying prompt "
             f'converter operations) "{prompt}"',
@@ -189,7 +188,7 @@ class RedTeamingOrchestrator(Orchestrator):
             conversation_id=self._prompt_target_conversation_id,
         )
         response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)[0]
-        self._logger.log(logging.INFO, f'Received the following response from the prompt target "{response}"')
+        logger.log(logging.INFO, f'Received the following response from the prompt target "{response}"')
         if completion_state and self.is_conversation_complete(
             target_messages
             + [

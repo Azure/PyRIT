@@ -12,6 +12,8 @@ from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
+logger = logging.getLogger(__name__)
+
 
 class PromptSendingOrchestrator(Orchestrator):
     """
@@ -97,13 +99,13 @@ class PromptSendingOrchestrator(Orchestrator):
             )
             normalized_prompts.append(converted_prompt)
 
-        self._logger.log(
+        logger.log(
             logging.INFO,
             f"Sending {len(normalized_prompts)} prompts to the prompt target.",
         )
 
         for normalized_prompt in normalized_prompts:
-            self._logger.log(logging.INFO, f"Prompt: {normalized_prompt}")
+            logger.log(logging.INFO, f"Prompt: {normalized_prompt}")
 
         return normalized_prompts
 

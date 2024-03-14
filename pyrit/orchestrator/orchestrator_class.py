@@ -29,7 +29,6 @@ class Orchestrator(abc.ABC):
         self._memory = memory or FileMemory()
         self._global_memory_labels = memory_labels
         self._verbose = verbose
-        self._logger = logging.getLogger(__name__)
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
