@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, Optional, Type, TypeVar
+from typing import Literal, Optional, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -24,7 +24,7 @@ ChatMessageRole = Literal["system", "user", "assistant", "tool", "function"]
 @dataclass
 class Score:
     score_type: Literal["int", "float", "str", "bool"]
-    score_value: int | float | str
+    score_value: int | float | str | bool
     score_description: str = ""
     score_explanation: str = ""
 
@@ -194,16 +194,6 @@ class ChatMessagesDataset(BaseModel):
 
 
 @dataclass
-class AttackStrategy(YamlLoadable):
-    """TODO. This is a temporary name and needs more discussion. We've thought about naming this Personality
-    or Objective as well."""
-
-    name: str
-    description: str
-    content: str
-
-
-@dataclass
 class PromptTemplate(YamlLoadable):
     template: str
     name: str = ""
@@ -239,6 +229,21 @@ class PromptTemplate(YamlLoadable):
                 )
             final_prompt = re.sub(pattern=regex, string=final_prompt, repl=value)
         return final_prompt
+
+
+@dataclass
+class AttackStrategy:
+    def __init__(self, *, strategy: Union[Path | str], conversation_objective: str, **kwargs):
+        kwargs["conversation_objective"] = conversation_objective
+        self.kwargs = kwargs
+        if isinstance(strategy, Path):
+            self.strategy = PromptTemplate.from_yaml_file(strategy)
+        else:
+            self.strategy = PromptTemplate(template=strategy, parameters=list(kwargs.keys()))
+
+    def __str__(self):
+        """Returns a string representation of the attack strategy."""
+        return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
 
 
 class ToolCall(BaseModel):

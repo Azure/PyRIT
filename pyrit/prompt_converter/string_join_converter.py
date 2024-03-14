@@ -18,9 +18,11 @@ class StringJoinConverter(PromptConverter):
 
         Args:
             prompt (str): The prompt to be converted.
-            include_original (bool): Whether or not to include original prompt in the output
 
         Returns:
             list[str]: The converted prompts.
         """
         return [self.join_value.join(prompt) for prompt in prompts]
+
+    def is_one_to_one_converter(self) -> bool:
+        return True

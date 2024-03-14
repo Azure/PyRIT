@@ -19,3 +19,6 @@ class Base64Converter(PromptConverter):
             ret_list.append(encoded_bytes.decode("utf-8"))
 
         return ret_list
+
+    def is_one_to_one_converter(self) -> bool:
+        return True

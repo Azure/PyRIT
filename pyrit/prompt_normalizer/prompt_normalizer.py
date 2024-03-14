@@ -9,17 +9,17 @@ from pyrit.prompt_normalizer.prompt_class import Prompt
 
 
 class PromptNormalizer(abc.ABC):
-    memory: MemoryInterface
+    _memory: MemoryInterface
 
-    def __init__(self, memory: MemoryInterface) -> None:
-        self.memory = memory
+    def __init__(self, *, memory: MemoryInterface, verbose=False) -> None:
+        self._memory = memory
         self.id = str(uuid4())
 
-    def send_prompt(self, prompt: Prompt):
+    def send_prompt(self, prompt: Prompt) -> list[str]:
         """
         Sends a prompt to the prompt targets.
         """
-        prompt.send_prompt(normalizer_id=self.id)
+        return prompt.send_prompt(normalizer_id=self.id)
 
     async def send_prompt_batch_async(self, prompts: list[Prompt], batch_size: int = 10):
         """

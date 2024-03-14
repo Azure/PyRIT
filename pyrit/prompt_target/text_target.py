@@ -24,7 +24,7 @@ class TextTarget(PromptTarget):
         super().__init__(memory)
         self.text_stream = text_stream
 
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         msg = ChatMessage(role="user", content=normalized_prompt)
         self.text_stream.write(str(msg))
 
@@ -34,7 +34,7 @@ class TextTarget(PromptTarget):
 
         return ""
 
-    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         self.send_prompt(normalized_prompt, conversation_id, normalizer_id)
         await asyncio.sleep(0)
         return ""
