@@ -29,10 +29,11 @@ def test_prompt_init_valid_arguments():
     conversation_id = "123"
 
     prompt = Prompt(
-            prompt_target=prompt_target,
-            prompt_converters=prompt_converters,
-            prompt_text=prompt_text,
-            conversation_id=conversation_id)
+        prompt_target=prompt_target,
+        prompt_converters=prompt_converters,
+        prompt_text=prompt_text,
+        conversation_id=conversation_id,
+    )
 
     assert prompt._prompt_target == prompt_target
     assert prompt._prompt_converters == prompt_converters
@@ -51,7 +52,8 @@ def test_prompt_init_invalid_prompt_target():
             prompt_target=prompt_target,
             prompt_converters=prompt_converters,
             prompt_text=prompt_text,
-            conversation_id=conversation_id)
+            conversation_id=conversation_id,
+        )
 
 
 def test_prompt_init_invalid_prompt_converters():
@@ -65,7 +67,8 @@ def test_prompt_init_invalid_prompt_converters():
             prompt_target=prompt_target,
             prompt_converters=prompt_converters,
             prompt_text=prompt_text,
-            conversation_id=conversation_id)
+            conversation_id=conversation_id,
+        )
 
 
 def test_prompt_init_empty_prompt_converters():
@@ -79,7 +82,8 @@ def test_prompt_init_empty_prompt_converters():
             prompt_target=prompt_target,
             prompt_converters=prompt_converters,
             prompt_text=prompt_text,
-            conversation_id=conversation_id)
+            conversation_id=conversation_id,
+        )
 
 
 def test_prompt_init_invalid_prompt_text():
@@ -93,7 +97,8 @@ def test_prompt_init_invalid_prompt_text():
             prompt_target=prompt_target,
             prompt_converters=prompt_converters,
             prompt_text=prompt_text,
-            conversation_id=conversation_id)
+            conversation_id=conversation_id,
+        )
 
 
 def test_prompt_init_invalid_conversation_id():
@@ -107,7 +112,8 @@ def test_prompt_init_invalid_conversation_id():
             prompt_target=prompt_target,
             prompt_converters=prompt_converters,
             prompt_text=prompt_text,
-            conversation_id=conversation_id)
+            conversation_id=conversation_id,
+        )
 
 
 def test_send_prompt_multiple_converters():
@@ -117,10 +123,11 @@ def test_send_prompt_multiple_converters():
     conversation_id = "123"
 
     prompt = Prompt(
-            prompt_target=prompt_target,
-            prompt_converters=prompt_converters,
-            prompt_text=prompt_text,
-            conversation_id=conversation_id)
+        prompt_target=prompt_target,
+        prompt_converters=prompt_converters,
+        prompt_text=prompt_text,
+        conversation_id=conversation_id,
+    )
 
     normalizer_id = "456"
     prompt.send_prompt(normalizer_id=normalizer_id)
@@ -136,10 +143,11 @@ async def test_send_prompt_async_multiple_converters():
     conversation_id = "123"
 
     prompt = Prompt(
-            prompt_target=prompt_target,
-            prompt_converters=prompt_converters,
-            prompt_text=prompt_text,
-            conversation_id=conversation_id)
+        prompt_target=prompt_target,
+        prompt_converters=prompt_converters,
+        prompt_text=prompt_text,
+        conversation_id=conversation_id,
+    )
 
     normalizer_id = "456"
     await prompt.send_prompt_async(normalizer_id=normalizer_id)
@@ -155,10 +163,11 @@ async def test_prompt_normalizyer_send_prompt_batch_async():
     conversation_id = "123"
 
     prompt = Prompt(
-            prompt_target=prompt_target,
-            prompt_converters=prompt_converters,
-            prompt_text=prompt_text,
-            conversation_id=conversation_id)
+        prompt_target=prompt_target,
+        prompt_converters=prompt_converters,
+        prompt_text=prompt_text,
+        conversation_id=conversation_id,
+    )
 
     normalizer = PromptNormalizer(memory=None)
 
