@@ -266,6 +266,21 @@ If successful, it will print
 > View at:
   https://pypi.org/project/pyrit/x.y.z/
 
-Finally, make sure to create a PR for the `main` branch where the only change
+After the release is on PyPI, make sure to create a PR for the `main` branch where the only change
 is the version increase in `__init__.py` (while keeping suffix `.dev0`).
 This should be something like `x.y.z+1.dev0`.
+
+Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select the "tag"
+for which you want to create the release notes. It should match the version that you just released
+to PyPI. Hit "Generate release notes". This will pre-populate the text field with all changes.
+Make sure that it starts where the last release left off.
+Sometimes this tool adds too many changes, or leaves a few out, so it's best to check.
+Add a header "## Full list of changes" below "## What's changed?".
+In addition to the full notes, we also want a shorter section with just the relevant
+changes that users should be aware of. The shorter section will be under "## What's changed"
+while the full list of changes will be right below.
+Maintenance changes, build pipeline updates, and documentation fixes are not really important for users.
+However, important bug fixes, new features, and breaking changes are good candidates to include.
+If you are unsure about whether to include certain changes please consult with your fellow
+maintainers.
+When you're done, hit "Publish release" and mark it as the latest release.
