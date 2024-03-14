@@ -8,5 +8,4 @@ from pyrit.prompt_target.gandalf_target import GandalfTarget
 from pyrit.prompt_target.text_target import TextTarget
 
 
-
 __all__ = ["AzureOpenAIChatTarget", "GandalfTarget", "PromptChatTarget", "PromptTarget", "TextTarget"]

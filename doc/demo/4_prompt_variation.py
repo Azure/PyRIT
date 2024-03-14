@@ -24,7 +24,7 @@
 # %%
 
 from pyrit.common import default_values
-from pyrit.prompt_target import NoOpTarget, AzureOpenAIChatTarget
+from pyrit.prompt_target import TextTarget, AzureOpenAIChatTarget
 from pyrit.prompt_converter import VariationConverter, StringJoinConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
 
@@ -38,7 +38,7 @@ converter_target = AzureOpenAIChatTarget()
 prompt_variation_converter = VariationConverter(converter_target=converter_target)
 
 
-target = NoOpTarget()
+target = TextTarget()
 
 orchestrator = PromptSendingOrchestrator(prompt_target=target, prompt_converters=[prompt_variation_converter])
 

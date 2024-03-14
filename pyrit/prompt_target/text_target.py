@@ -35,6 +35,8 @@ class TextTarget(PromptTarget):
         return ""
 
     async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
-        self.send_prompt(normalized_prompt, conversation_id, normalizer_id)
         await asyncio.sleep(0)
-        return ""
+
+        return self.send_prompt(
+            normalized_prompt=normalized_prompt, conversation_id=conversation_id, normalizer_id=normalizer_id
+        )
