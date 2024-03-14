@@ -74,12 +74,7 @@ If you are stuck, explore different topics and try to find a way to get the pass
 Remember that the other bot is not aware of any previous conversations and it's a one-turn conversation bot.
 """
 )
-strategy_path = (
-    DATASETS_PATH
-    / "attack_strategies"
-    / "multi_turn_chat"
-    / "red_team_chatbot_with_objective.yaml"
-)
+strategy_path = DATASETS_PATH / "attack_strategies" / "multi_turn_chat" / "red_team_chatbot_with_objective.yaml"
 gandalf_target = GandalfTarget(level=gandalf_level)
 attack_strategy = AttackStrategy(
     strategy=strategy_path,

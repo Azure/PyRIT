@@ -7,12 +7,12 @@ from typing import Optional, Union
 from uuid import uuid4
 from pyrit.interfaces import ChatSupport
 
-from pyrit.memory import FileMemory, MemoryInterface
+from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter, NoOpConverter
+from pyrit.prompt_converter import PromptConverter
 
 
 MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES = 3
@@ -62,10 +62,8 @@ class RedTeamingOrchestrator(Orchestrator):
         """
 
         super().__init__(
-            prompt_converters=prompt_converters,
-            memory=memory,
-            memory_labels=memory_labels,
-            verbose=verbose)
+            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+        )
 
         self._prompt_target = prompt_target
 
@@ -152,7 +150,9 @@ class RedTeamingOrchestrator(Orchestrator):
                 self._logger.log(logging.INFO, "Using the specified initial red teaming prompt.")
                 prompt_text = self._initial_red_teaming_prompt
 
-            self._logger.log(logging.INFO, f'Sending the following prompt to the red teaming prompt target "{prompt_text}"')
+            self._logger.log(
+                logging.INFO, f'Sending the following prompt to the red teaming prompt target "{prompt_text}"'
+            )
             messages = self._memory.get_chat_messages_with_conversation_id(
                 conversation_id=self._red_teaming_chat_conversation_id
             )

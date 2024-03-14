@@ -6,16 +6,14 @@ import logging
 
 
 from typing import Optional
-from uuid import uuid4
 
 from pyrit.memory import MemoryInterface, FileMemory
-from pyrit.prompt_normalizer import Prompt, PromptNormalizer
-from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
 logger = logging.getLogger(__name__)
 
-class Orchestrator:
+
+class Orchestrator(abc.ABC):
 
     _memory: MemoryInterface
 
@@ -33,7 +31,6 @@ class Orchestrator:
         self._verbose = verbose
         self._logger = logging.getLogger(__name__)
 
-
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
 
@@ -47,7 +44,6 @@ class Orchestrator:
             if one_to_many_converters:
                 one_to_many_converters_str = ", ".join(one_to_many_converters)
                 raise ValueError(f"The following converters create more than one prompt: {one_to_many_converters_str}")
-
 
     @abc.abstractmethod
     def requires_one_to_one_converters(self) -> bool:
