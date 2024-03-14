@@ -79,8 +79,7 @@ class PromptSendingOrchestrator:
 
     def dispose_engine(self):
         """
-        Destructor method to ensure resources are cleaned up before the class instance is destroyed.
+        Dispose of the database engine to release database connections and resources.
         """
-        # Dispose of the database engine to release database connections and resources.
         self.memory.dispose_engine()
     
