@@ -2,7 +2,7 @@
 <!--- DOC for documentation changes -->
 <!--- MAINT for maintenance changes, e.g., build pipeline fixes -->
 <!--- FIX for bug fixes -->
-<!--- TST for adding tests -->
+<!--- TEST for adding tests -->
 <!--- FEAT for new features and enhancements (which implies that tests + doc changes are included) -->
 <!--- Additionally, if your PR is not yet ready for review, create it as a "Draft" PR and prefix [DRAFT] -->
 
