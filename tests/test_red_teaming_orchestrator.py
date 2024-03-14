@@ -51,48 +51,59 @@ def simple_attack_strategy() -> AttackStrategy:
 
 def check_conversations(
     conversations,
+    *,
     red_teaming_meta_prompt,
     initial_red_teaming_prompt,
     expected_red_teaming_responses,
     expected_target_responses,
-    stop_after_n_conversations,
+    stop_after_n_conversations=4,
+    skip_initial_red_teaming_prompt_generation=False,
 ):
-    # first conversation (with red teaming chat bot)
-    assert conversations[0].conversation_id == conversations[1].conversation_id == conversations[2].conversation_id
-    assert conversations[0].role == "system"
-    assert conversations[0].content == red_teaming_meta_prompt
-    assert conversations[1].role == "user"
-    assert conversations[1].content == initial_red_teaming_prompt
-    assert conversations[2].role == "assistant"
-    assert conversations[2].content == expected_red_teaming_responses[0]
+    index_offset = 0
+    if skip_initial_red_teaming_prompt_generation:
+        index_offset = 3
+    else:
+        # first conversation (with red teaming chat bot)
+        assert conversations[0].conversation_id == conversations[1].conversation_id == conversations[2].conversation_id
+        assert conversations[0].role == "system"
+        assert conversations[0].content == red_teaming_meta_prompt
+        assert conversations[1].role == "user"
+        assert conversations[1].content == initial_red_teaming_prompt
+        assert conversations[2].role == "assistant"
+        assert conversations[2].content == expected_red_teaming_responses[0]
     # second conversation (with prompt target)
-    assert conversations[3].conversation_id == conversations[4].conversation_id
-    assert conversations[3].normalizer_id == conversations[4].normalizer_id
-    assert conversations[3].role == "user"
-    assert conversations[3].content == expected_red_teaming_responses[0]
-    assert conversations[4].role == "assistant"
-    assert conversations[4].content == expected_target_responses[0]
+    assert conversations[3-index_offset].conversation_id == conversations[4-index_offset].conversation_id
+    assert conversations[3-index_offset].normalizer_id == conversations[4-index_offset].normalizer_id
+    assert conversations[3-index_offset].role == "user"
+    assert conversations[3-index_offset].content == expected_red_teaming_responses[0]
+    assert conversations[4-index_offset].role == "assistant"
+    assert conversations[4-index_offset].content == expected_target_responses[0]
 
     if stop_after_n_conversations == 2:
         return
+    
+    if skip_initial_red_teaming_prompt_generation:
+        assert conversations[2].conversation_id == conversations[3].conversation_id == conversations[4].conversation_id
+        assert conversations[2].role == "system"
+        index_offset = 2
 
     # third conversation (with red teaming chatbot)
-    assert conversations[5].conversation_id == conversations[6].conversation_id
-    assert conversations[5].role == "user"
-    assert conversations[5].content == expected_target_responses[0]
-    assert conversations[6].role == "assistant"
-    assert conversations[6].content == expected_red_teaming_responses[1]
+    assert conversations[5-index_offset].conversation_id == conversations[6-index_offset].conversation_id
+    assert conversations[5-index_offset].role == "user"
+    assert conversations[5-index_offset].content == expected_target_responses[0]
+    assert conversations[6-index_offset].role == "assistant"
+    assert conversations[6-index_offset].content == expected_red_teaming_responses[1]
 
     if stop_after_n_conversations == 3:
         return
 
     # fourth conversation (with prompt target)
-    assert conversations[7].conversation_id == conversations[8].conversation_id
-    assert conversations[7].normalizer_id == conversations[8].normalizer_id
-    assert conversations[7].role == "user"
-    assert conversations[7].content == expected_red_teaming_responses[1]
-    assert conversations[8].role == "assistant"
-    assert conversations[8].content == expected_target_responses[1]
+    assert conversations[7-index_offset].conversation_id == conversations[8-index_offset].conversation_id
+    assert conversations[7-index_offset].normalizer_id == conversations[8-index_offset].normalizer_id
+    assert conversations[7-index_offset].role == "user"
+    assert conversations[7-index_offset].content == expected_red_teaming_responses[1]
+    assert conversations[8-index_offset].role == "assistant"
+    assert conversations[8-index_offset].content == expected_target_responses[1]
 
 
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
@@ -133,10 +144,10 @@ def test_send_prompt_twice(
             assert len(conversations) == 5, f"Expected 5 conversations, got {len(conversations)}"
             check_conversations(
                 conversations,
-                str(attack_strategy),
-                red_teaming_orchestrator._initial_red_teaming_prompt,
-                expected_red_teaming_responses,
-                expected_target_responses,
+                red_teaming_meta_prompt=str(attack_strategy),
+                initial_red_teaming_prompt=red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses=expected_red_teaming_responses,
+                expected_target_responses=expected_target_responses,
                 stop_after_n_conversations=2,
             )
 
@@ -154,12 +165,135 @@ def test_send_prompt_twice(
             assert len(conversations) == 9, f"Expected 9 conversations, got {len(conversations)}"
             check_conversations(
                 conversations,
-                str(attack_strategy),
-                red_teaming_orchestrator._initial_red_teaming_prompt,
-                expected_red_teaming_responses,
-                expected_target_responses,
+                red_teaming_meta_prompt=str(attack_strategy),
+                initial_red_teaming_prompt=red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses=expected_red_teaming_responses,
+                expected_target_responses=expected_target_responses,
                 stop_after_n_conversations=4,
             )
+
+
+@pytest.mark.parametrize("attack_strategy_as_str", [True, False])
+@pytest.mark.parametrize("OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator])
+def test_send_fixed_prompt_then_generated_prompt(
+    prompt_target: PromptTarget,
+    chat_completion_engine: AzureOpenAIChat,
+    simple_attack_strategy: AttackStrategy,
+    memory: FileMemory,
+    attack_strategy_as_str: bool,
+    OrchestratorType: type,
+):
+    attack_strategy: Union[str | AttackStrategy] = (
+        str(simple_attack_strategy) if attack_strategy_as_str else simple_attack_strategy
+    )
+
+    kwargs = {
+        "red_teaming_chat": chat_completion_engine,
+        "memory": memory,
+        "attack_strategy": attack_strategy,
+        "initial_red_teaming_prompt": "how can I help you?",
+        "prompt_target": prompt_target,
+    }
+    if OrchestratorType == ScoringRedTeamingOrchestrator:
+        kwargs["scorer"] = Mock()
+    red_teaming_orchestrator = OrchestratorType(**kwargs)
+
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "complete_chat") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "complete_chat") as mock_target:
+            fixed_input_prompt = "First prompt to target - set by user"
+            expected_target_responses = ["First target response"]
+            mock_target.return_value = expected_target_responses[0]
+            target_response = red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
+            assert target_response == expected_target_responses[0]
+            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            # Expecting two conversation threads (one with red teaming chat and one with prompt target)
+            assert len(conversations) == 2, f"Expected 2 conversations, got {len(conversations)}"
+            check_conversations(
+                conversations,
+                red_teaming_meta_prompt=str(attack_strategy),
+                initial_red_teaming_prompt=red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses=[fixed_input_prompt],
+                expected_target_responses=expected_target_responses,
+                stop_after_n_conversations=2,
+                skip_initial_red_teaming_prompt_generation=True,
+            )
+
+            mock_rt.assert_not_called()
+            mock_target.assert_called_once()
+
+            expected_generated_red_teaming_response = "Second red teaming chat response"
+            mock_rt.return_value = expected_generated_red_teaming_response
+            expected_target_responses.append("Second target response")
+            mock_target.return_value = expected_target_responses[1]
+            target_response = red_teaming_orchestrator.send_prompt()
+            assert target_response == expected_target_responses[1]
+            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            # Expecting another two conversation threads
+            assert len(conversations) == 7, f"Expected 7 conversations, got {len(conversations)}"
+            check_conversations(
+                conversations,
+                red_teaming_meta_prompt=str(attack_strategy),
+                initial_red_teaming_prompt=red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses=[fixed_input_prompt, expected_generated_red_teaming_response],
+                expected_target_responses=expected_target_responses,
+                skip_initial_red_teaming_prompt_generation=True,
+            )
+
+
+@pytest.mark.parametrize("attack_strategy_as_str", [True, False])
+@pytest.mark.parametrize("OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator])
+def test_send_fixed_prompt_beyond_first_iteration_failure(
+    prompt_target: PromptTarget,
+    chat_completion_engine: AzureOpenAIChat,
+    simple_attack_strategy: AttackStrategy,
+    memory: FileMemory,
+    attack_strategy_as_str: bool,
+    OrchestratorType: type,
+):
+    attack_strategy: Union[str | AttackStrategy] = (
+        str(simple_attack_strategy) if attack_strategy_as_str else simple_attack_strategy
+    )
+
+    kwargs = {
+        "red_teaming_chat": chat_completion_engine,
+        "memory": memory,
+        "attack_strategy": attack_strategy,
+        "initial_red_teaming_prompt": "how can I help you?",
+        "prompt_target": prompt_target,
+    }
+    if OrchestratorType == ScoringRedTeamingOrchestrator:
+        kwargs["scorer"] = Mock()
+    red_teaming_orchestrator = OrchestratorType(**kwargs)
+
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "complete_chat") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "complete_chat") as mock_target:
+            fixed_input_prompt = "First prompt to target - set by user"
+            expected_target_responses = ["First target response"]
+            mock_target.return_value = expected_target_responses[0]
+            target_response = red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
+            assert target_response == expected_target_responses[0]
+            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            # Expecting two conversation threads (one with red teaming chat and one with prompt target)
+            assert len(conversations) == 2, f"Expected 2 conversations, got {len(conversations)}"
+            check_conversations(
+                conversations,
+                red_teaming_meta_prompt=str(attack_strategy),
+                initial_red_teaming_prompt=red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses=[fixed_input_prompt],
+                expected_target_responses=expected_target_responses,
+                stop_after_n_conversations=2,
+                skip_initial_red_teaming_prompt_generation=True,
+            )
+
+            mock_rt.assert_not_called()
+            mock_target.assert_called_once()
+
+            second_fixed_input_prompt = "Second prompt to target - sent by user"
+            expected_target_responses.append("Second target response")
+            mock_target.return_value = expected_target_responses[1]
+            with pytest.raises(ValueError):
+                target_response = red_teaming_orchestrator.send_prompt(prompt=second_fixed_input_prompt)
+            mock_rt.assert_not_called()
 
 
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
@@ -199,10 +333,10 @@ def test_reach_goal_after_two_turns_end_token(
             assert len(conversations) == 7, f"Expected 7 conversations, got {len(conversations)}"
             check_conversations(
                 conversations,
-                str(attack_strategy),
-                red_teaming_orchestrator._initial_red_teaming_prompt,
-                expected_red_teaming_responses,
-                [expected_target_response],
+                red_teaming_meta_prompt=str(attack_strategy),
+                initial_red_teaming_prompt=red_teaming_orchestrator._initial_red_teaming_prompt,
+                expected_red_teaming_responses=expected_red_teaming_responses,
+                expected_target_responses=[expected_target_response],
                 stop_after_n_conversations=3,
             )
 

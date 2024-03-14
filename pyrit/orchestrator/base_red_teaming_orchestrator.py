@@ -16,6 +16,10 @@ from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
 logger = logging.getLogger(__name__)
 
+MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES = 3
+MESSAGE_COUNT_WITH_SYSTEM_MESSAGE = 3
+MESSAGE_COUNT_DEFAULT = 2
+
 
 class CompletionState:
     def __init__(self, is_complete: bool):
@@ -86,7 +90,7 @@ class BaseRedTeamingOrchestrator:
         return self._memory.get_memories_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
 
     @abc.abstractmethod
-    def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role) -> bool:
+    def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role: str) -> bool:
         """Returns True if the conversation is complete, False otherwise."""
         pass
 
@@ -130,18 +134,25 @@ class BaseRedTeamingOrchestrator:
             prompt: The prompt to send to the target.
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
+                This can only be specified for the first iteration at this point.
             completion_state: The completion state of the conversation.
                 If the conversation is complete, the completion state is updated to True.
                 It is optional and not tracked if no object is passed.
         """
-        if not prompt:
+        target_messages = self._memory.get_chat_messages_with_conversation_id(
+            conversation_id=self._prompt_target_conversation_id
+        )
+        if prompt:
+            if target_messages:
+                raise ValueError(
+                    "The prompt argument can only be provided on the first iteration. "
+                )
+        else:
             # If no prompt is provided, then contact the red teaming target to generate one.
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
             # A special case is the very first message, which means there are no prior messages.
             logger.log(logging.INFO, "No prompt for prompt target provided.")
-            target_messages = self._memory.get_chat_messages_with_conversation_id(
-                conversation_id=self._prompt_target_conversation_id
-            )
+            
             assistant_responses = [m for m in target_messages if m.role == "assistant"]
             if len(assistant_responses) > 0:
                 prompt_text = assistant_responses[-1].content
@@ -159,9 +170,13 @@ class BaseRedTeamingOrchestrator:
             prompt = self._red_teaming_chat.complete_chat(messages=messages)
             messages.append(ChatMessage(role="assistant", content=prompt))
             # Determine the number of messages to add to memory based on if we included the system message
-            memory_messages = 3 if len(messages) <= 3 else 2
+            memory_messages = MESSAGE_COUNT_DEFAULT
+            if len(messages) >= MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES:
+                memory_messages = MESSAGE_COUNT_WITH_SYSTEM_MESSAGE
+            conversations_to_be_added_to_memory = messages[-memory_messages:]
+                
             self._memory.add_chat_messages_to_memory(
-                conversations=messages[-memory_messages:],
+                conversations=conversations_to_be_added_to_memory,
                 conversation_id=self._red_teaming_chat_conversation_id,
                 labels=self._global_memory_labels,
             )
