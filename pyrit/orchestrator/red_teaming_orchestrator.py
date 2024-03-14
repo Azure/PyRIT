@@ -190,13 +190,13 @@ class RedTeamingOrchestrator(Orchestrator):
         )
         response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)[0]
         logger.log(logging.INFO, f'Received the following response from the prompt target "{response}"')
-        if completion_state and self.is_conversation_complete(
-            target_messages
-            + [
-                ChatMessage(role="user", content=prompt),
-                ChatMessage(role="assistant", content=response),
-            ],
-            red_teaming_chat_role="user",
-        ):
-            completion_state.is_complete = True
+        if completion_state:
+            completion_state.is_complete = self.is_conversation_complete(
+                target_messages
+                + [
+                    ChatMessage(role="user", content=prompt),
+                    ChatMessage(role="assistant", content=response),
+                ],
+                red_teaming_chat_role="user",
+            )
         return response
