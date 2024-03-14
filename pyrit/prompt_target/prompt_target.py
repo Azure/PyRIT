@@ -2,12 +2,11 @@
 # Licensed under the MIT license.
 
 import abc
-from pyrit.memory import MemoryInterface
-from pyrit.memory.file_memory import FileMemory
+from pyrit.memory import MemoryInterface, FileMemory
 
 
 class PromptTarget(abc.ABC):
-    memory: MemoryInterface
+    _memory: MemoryInterface
 
     """
     A list of PromptConverters that are supported by the prompt target.
@@ -15,17 +14,17 @@ class PromptTarget(abc.ABC):
     """
     supported_converters: list
 
-    def __init__(self, memory: MemoryInterface) -> None:
-        self.memory = memory if memory else FileMemory()
+    def __init__(self, *, memory: MemoryInterface) -> None:
+        self._memory = memory if memory else FileMemory()
 
     @abc.abstractmethod
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         """
         Sends a normalized prompt to the prompt target.
         """
 
     @abc.abstractmethod
-    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         """
         Sends a normalized prompt async to the prompt target.
         """
