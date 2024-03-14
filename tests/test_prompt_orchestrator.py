@@ -87,4 +87,4 @@ def test_send_prompts_multiple_converters_include_original(mock_target: MockProm
 def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
-    assert orchestrator.memory is mock_target.memory
+    assert orchestrator._memory is mock_target._memory

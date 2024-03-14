@@ -127,7 +127,7 @@ class FileMemory(MemoryInterface):
 
     def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[ConversationMemoryEntry]:
         """
-        implements the get_memories_with_conversation_id method from the Memory interface.
+        Implements the get_memories_with_conversation_id method from the Memory interface.
         """
         memories: list[ConversationMemoryEntry] = []
         for mem_entry in self.get_all_memory():

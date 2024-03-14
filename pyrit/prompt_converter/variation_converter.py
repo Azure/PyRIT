@@ -26,12 +26,13 @@ class VariationConverter(PromptConverter):
             )
         )
 
+        self.number_variations = number_variations
         if number_variations < 0 or number_variations > 1000:
             logger.log(logging.WARNING, "Number of variations should be between 0 and 1000. Defaulting to 10")
-            number_variations = 10
+            self.number_variations = 10
 
         self.system_prompt = str(
-            prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(number_variations))
+            prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(self.number_variations))
         )
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
@@ -58,3 +59,6 @@ class VariationConverter(PromptConverter):
             except json.JSONDecodeError:
                 logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
         return all_prompts
+
+    def is_one_to_one_converter(self) -> bool:
+        return self.number_variations == 1

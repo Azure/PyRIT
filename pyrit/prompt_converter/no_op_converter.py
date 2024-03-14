@@ -10,3 +10,6 @@ class NoOpConverter(PromptConverter):
         By default, the base converter class does nothing to the prompt.
         """
         return prompts
+
+    def is_one_to_one_converter(self) -> bool:
+        return True

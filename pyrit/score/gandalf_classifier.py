@@ -96,3 +96,14 @@ class GandalfScorer(SupportTextClassification):
 
     def score_embedding(self, embedding: list[float]) -> Score:
         raise NotImplementedError("Gandalf Scorer does not support embeddings")
+
+
+class GandalfBinaryScorer(GandalfScorer):
+    def score_text(self, text: str) -> Score:
+        score = super().score_text(text)
+        return Score(
+            score_type="bool",
+            score_value=bool(score.score_value),
+            score_description=score.score_description,
+            score_explanation=score.score_explanation,
+        )
