@@ -171,7 +171,7 @@ class BaseRedTeamingOrchestrator:
             messages.append(ChatMessage(role="assistant", content=prompt))
             # Determine the number of messages to add to memory based on if we included the system message
             memory_messages = MESSAGE_COUNT_DEFAULT
-            if len(messages) >= MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES:
+            if len(messages) <= MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES:
                 memory_messages = MESSAGE_COUNT_WITH_SYSTEM_MESSAGE
             conversations_to_be_added_to_memory = messages[-memory_messages:]
                 
