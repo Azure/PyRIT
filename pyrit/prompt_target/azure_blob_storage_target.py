@@ -14,7 +14,7 @@ from pyrit.prompt_target import PromptTarget
 
 class AzureBlobStorageTarget(PromptTarget):
     """
-    The StorageAccountTarget takes prompts, saves the prompts to a file, and stores them as a blob in a provided
+    The AzureBlobStorageTarget takes prompts, saves the prompts to a file, and stores them as a blob in a provided
     storage account container.
 
     Args:
