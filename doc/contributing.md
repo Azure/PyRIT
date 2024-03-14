@@ -78,7 +78,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
 
    The suffix `[dev]` installs development-specific requirements such as `pytest` and `pre-commit`.
 
-5. Authenticate with Azure.
+3. Authenticate with Azure.
 
     ```bash
     az login
@@ -188,6 +188,14 @@ PyRIT test files can be run using `pytest`.
      ```bash
      python -m pytest tests\test_aml_online_endpoint_chat.py::test_get_headers_with_empty_api_key
      ```
+
+### Documentation format
+
+We use the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+For [docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings),
+there are rules for modules, classes, and functions.
+While we can't expect all documentation to be perfect from day 1, we'll improve any docstring
+that we touch in a pull request to be compliant with this style guide.
 
 ## Releasing PyRIT to PyPI
 
