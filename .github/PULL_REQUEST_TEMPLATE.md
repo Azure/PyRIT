@@ -1,3 +1,11 @@
+<!--- Please add one of the following as a prefix to the pull request title: -->
+<!--- DOC for documentation changes -->
+<!--- MAINT for maintenance changes, e.g., build pipeline fixes -->
+<!--- FIX for bug fixes -->
+<!--- TST for adding tests -->
+<!--- FEAT for new features and enhancements (which implies that tests + doc changes are included) -->
+<!--- Additionally, if your PR is not yet ready for review, create it as a "Draft" PR and prefix [DRAFT] -->
+
 ## Description
 <!--- Provide a general summary of your changes. -->
 <!--- Mention related issues, pull requests, or discussions with #<issue/PR/discussion ID>. -->
