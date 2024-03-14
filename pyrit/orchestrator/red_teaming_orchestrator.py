@@ -76,6 +76,7 @@ class RedTeamingOrchestrator(Orchestrator):
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
 
+    @property
     def requires_one_to_one_converters(self) -> bool:
         return True
 

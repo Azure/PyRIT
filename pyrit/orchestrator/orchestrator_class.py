@@ -33,7 +33,7 @@ class Orchestrator(abc.ABC):
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
 
-        if self.requires_one_to_one_converters():
+        if self.requires_one_to_one_converters:
             # Ensure that all converters return exactly one prompt.
             # Otherwise, there will be more than 1 conversation to manage.
             one_to_many_converters = []
@@ -44,6 +44,7 @@ class Orchestrator(abc.ABC):
                 one_to_many_converters_str = ", ".join(one_to_many_converters)
                 raise ValueError(f"The following converters create more than one prompt: {one_to_many_converters_str}")
 
+    @property
     @abc.abstractmethod
     def requires_one_to_one_converters(self) -> bool:
         """Returns True if all prompt_converters must be 1:1, False otherwise."""

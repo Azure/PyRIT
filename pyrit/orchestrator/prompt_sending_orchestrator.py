@@ -52,6 +52,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self.batch_size = batch_size
 
+    @property
     def requires_one_to_one_converters(self) -> bool:
         return False
 
