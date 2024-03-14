@@ -21,14 +21,14 @@ class TextTarget(PromptTarget):
     """
 
     def __init__(self, *, text_stream: IO[str] = sys.stdout, memory: MemoryInterface = None) -> None:
-        super().__init__(memory)
+        super().__init__(memory=memory)
         self.text_stream = text_stream
 
     def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         msg = ChatMessage(role="user", content=normalized_prompt)
         self.text_stream.write(str(msg))
 
-        self.memory.add_chat_message_to_memory(
+        self._memory.add_chat_message_to_memory(
             conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
         )
 
