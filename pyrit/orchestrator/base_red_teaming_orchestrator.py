@@ -144,15 +144,13 @@ class BaseRedTeamingOrchestrator:
         )
         if prompt:
             if target_messages:
-                raise ValueError(
-                    "The prompt argument can only be provided on the first iteration. "
-                )
+                raise ValueError("The prompt argument can only be provided on the first iteration. ")
         else:
             # If no prompt is provided, then contact the red teaming target to generate one.
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
             # A special case is the very first message, which means there are no prior messages.
             logger.log(logging.INFO, "No prompt for prompt target provided.")
-            
+
             assistant_responses = [m for m in target_messages if m.role == "assistant"]
             if len(assistant_responses) > 0:
                 prompt_text = assistant_responses[-1].content
@@ -174,7 +172,7 @@ class BaseRedTeamingOrchestrator:
             if len(messages) <= MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES:
                 memory_messages = MESSAGE_COUNT_WITH_SYSTEM_MESSAGE
             conversations_to_be_added_to_memory = messages[-memory_messages:]
-                
+
             self._memory.add_chat_messages_to_memory(
                 conversations=conversations_to_be_added_to_memory,
                 conversation_id=self._red_teaming_chat_conversation_id,

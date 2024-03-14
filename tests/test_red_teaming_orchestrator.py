@@ -72,38 +72,38 @@ def check_conversations(
         assert conversations[2].role == "assistant"
         assert conversations[2].content == expected_red_teaming_responses[0]
     # second conversation (with prompt target)
-    assert conversations[3-index_offset].conversation_id == conversations[4-index_offset].conversation_id
-    assert conversations[3-index_offset].normalizer_id == conversations[4-index_offset].normalizer_id
-    assert conversations[3-index_offset].role == "user"
-    assert conversations[3-index_offset].content == expected_red_teaming_responses[0]
-    assert conversations[4-index_offset].role == "assistant"
-    assert conversations[4-index_offset].content == expected_target_responses[0]
+    assert conversations[3 - index_offset].conversation_id == conversations[4 - index_offset].conversation_id
+    assert conversations[3 - index_offset].normalizer_id == conversations[4 - index_offset].normalizer_id
+    assert conversations[3 - index_offset].role == "user"
+    assert conversations[3 - index_offset].content == expected_red_teaming_responses[0]
+    assert conversations[4 - index_offset].role == "assistant"
+    assert conversations[4 - index_offset].content == expected_target_responses[0]
 
     if stop_after_n_conversations == 2:
         return
-    
+
     if skip_initial_red_teaming_prompt_generation:
         assert conversations[2].conversation_id == conversations[3].conversation_id == conversations[4].conversation_id
         assert conversations[2].role == "system"
         index_offset = 2
 
     # third conversation (with red teaming chatbot)
-    assert conversations[5-index_offset].conversation_id == conversations[6-index_offset].conversation_id
-    assert conversations[5-index_offset].role == "user"
-    assert conversations[5-index_offset].content == expected_target_responses[0]
-    assert conversations[6-index_offset].role == "assistant"
-    assert conversations[6-index_offset].content == expected_red_teaming_responses[1]
+    assert conversations[5 - index_offset].conversation_id == conversations[6 - index_offset].conversation_id
+    assert conversations[5 - index_offset].role == "user"
+    assert conversations[5 - index_offset].content == expected_target_responses[0]
+    assert conversations[6 - index_offset].role == "assistant"
+    assert conversations[6 - index_offset].content == expected_red_teaming_responses[1]
 
     if stop_after_n_conversations == 3:
         return
 
     # fourth conversation (with prompt target)
-    assert conversations[7-index_offset].conversation_id == conversations[8-index_offset].conversation_id
-    assert conversations[7-index_offset].normalizer_id == conversations[8-index_offset].normalizer_id
-    assert conversations[7-index_offset].role == "user"
-    assert conversations[7-index_offset].content == expected_red_teaming_responses[1]
-    assert conversations[8-index_offset].role == "assistant"
-    assert conversations[8-index_offset].content == expected_target_responses[1]
+    assert conversations[7 - index_offset].conversation_id == conversations[8 - index_offset].conversation_id
+    assert conversations[7 - index_offset].normalizer_id == conversations[8 - index_offset].normalizer_id
+    assert conversations[7 - index_offset].role == "user"
+    assert conversations[7 - index_offset].content == expected_red_teaming_responses[1]
+    assert conversations[8 - index_offset].role == "assistant"
+    assert conversations[8 - index_offset].content == expected_target_responses[1]
 
 
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
