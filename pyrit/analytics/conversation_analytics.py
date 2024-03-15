@@ -14,6 +14,7 @@ class ConversationAnalytics:
     Handles analytics operations on conversation data, such as finding similar chat messages
     based on conversation history or embedding similarity.
     """
+
     def __init__(self, *, memory_interface: MemoryInterface):
         """
         Initializes the ConversationAnalytics with a memory interface for data access.
@@ -23,7 +24,9 @@ class ConversationAnalytics:
         """
         self.memory_interface = memory_interface
 
-    def get_similar_chat_messages_by_content(self, *, chat_message_content: str) -> list[ConversationMessageWithSimilarity]:
+    def get_similar_chat_messages_by_content(
+        self, *, chat_message_content: str
+    ) -> list[ConversationMessageWithSimilarity]:
         """
         Retrieves chat messages that are similar to the given content based on exact matches.
 
@@ -39,16 +42,20 @@ class ConversationAnalytics:
 
         for memory in all_memories:
             if memory.content == chat_message_content:
-                similar_messages.append(ConversationMessageWithSimilarity(
-                    score=1.0,  # Exact match
-                    role=memory.role,
-                    content=memory.content,
-                    metric="exact_match"
-                ))
+                similar_messages.append(
+                    ConversationMessageWithSimilarity(
+                        score=1.0, 
+                        role=memory.role, # type: ignore
+                        content=memory.content, # type: ignore
+                        metric="exact_match"  # Exact match
+                    )
+                )
 
         return similar_messages
 
-    def get_similar_chat_messages_by_embedding(self, *, chat_message_embedding: list[float], threshold: float = 0.8) -> list[ConversationMessageWithSimilarity]:
+    def get_similar_chat_messages_by_embedding(
+        self, *, chat_message_embedding: list[float], threshold: float = 0.8
+    ) -> list[EmbeddingMessageWithSimilarity]:
         """
         Retrieves chat messages that are similar to the given embedding based on cosine similarity.
 
@@ -66,17 +73,18 @@ class ConversationAnalytics:
         target_embedding = np.array(chat_message_embedding).reshape(1, -1)
 
         for memory in all_memories:
-            if not hasattr(memory, 'embedding') or memory.embedding is None:
+            if not hasattr(memory, "embedding") or memory.embedding is None:
                 continue
 
             memory_embedding = np.array(memory.embedding).reshape((1, -1))
             similarity_score = cosine_similarity(target_embedding, memory_embedding)[0][0]
 
             if similarity_score >= threshold:
-                similar_messages.append(EmbeddingMessageWithSimilarity(
-                    score=similarity_score,
-                    uuid=memory.uuid,
-                    metric="cosine_similarity"
-                ))
+                similar_messages.append(
+                    EmbeddingMessageWithSimilarity(score=similarity_score, 
+                                                   uuid=memory.uuid, # type: ignore
+                                                   metric="cosine_similarity"
+                                                   )
+                )
 
         return similar_messages

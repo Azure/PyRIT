@@ -24,7 +24,7 @@ class MemoryInterface(abc.ABC):
     memory_embedding: MemoryEmbedding = None
 
     @abc.abstractmethod
-    def get_all_memory(self) -> list[ConversationData]:
+    def get_all_memory(self, model: Base) -> list[ConversationData]:  # type: ignore
         """
         Loads all ConversationData from the memory storage handler.
         """
@@ -52,14 +52,20 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[ConversationData]: A list of chat memory entries with the specified normalizer ID.
         """
-    
+
     @abc.abstractmethod
-    def insert_entries(self, *, entries: list[Base]) -> None: # type: ignore
+    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """
         Inserts a list of entries into the memory storage.
-        
+
         Args:
             entries (list[Base]): The list of database model instances to be inserted.
+        """
+        
+    @abc.abstractmethod
+    def dispose_engine(self):
+        """
+        Dispose the engine and clean up resources.
         """
 
     def add_chat_message_to_memory(
@@ -71,7 +77,7 @@ class MemoryInterface(abc.ABC):
     ):
         """
         Adds a single chat conversation entry to the ConversationStore table.
-        If embddings are set, add corresponding embedding entry to the EmbeddingStore table. 
+        If embddings are set, add corresponding embedding entry to the EmbeddingStore table.
 
         Args:
             conversation (ChatMessage): The chat message to be added.
@@ -85,11 +91,9 @@ class MemoryInterface(abc.ABC):
         )
         entries_to_persist.append(chat_entry)
         if self.memory_embedding:
-            embedding_entry = self.memory_embedding.generate_embedding_memory_data(
-                chat_memory=chat_entry
-            )
+            embedding_entry = self.memory_embedding.generate_embedding_memory_data(chat_memory=chat_entry)
             entries_to_persist.append(embedding_entry)
-        
+
         self.insert_entries(entries=entries_to_persist)
 
     def add_chat_messages_to_memory(
@@ -114,14 +118,13 @@ class MemoryInterface(abc.ABC):
 
         for conversation in conversations:
             chat_entry = self._create_chat_message_memory_entry(
-            conversation=conversation, conversation_id=conversation_id, normalizer_id=normalizer_id, labels=labels)
+                conversation=conversation, conversation_id=conversation_id, normalizer_id=normalizer_id, labels=labels
+            )
             entries_to_persist.append(chat_entry)
             if self.memory_embedding:
-                embedding_entry = self.memory_embedding.generate_embedding_memory_data(
-                chat_memory=chat_entry
-            )
+                embedding_entry = self.memory_embedding.generate_embedding_memory_data(chat_memory=chat_entry)
                 entries_to_persist.append(embedding_entry)
-            
+
         self.insert_entries(entries=entries_to_persist)
 
     def get_chat_messages_with_conversation_id(self, *, conversation_id: str) -> list[ChatMessage]:

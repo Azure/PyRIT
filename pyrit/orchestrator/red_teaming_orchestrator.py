@@ -69,7 +69,7 @@ class RedTeamingOrchestrator(Orchestrator):
         self._prompt_target = prompt_target
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._prompt_target._memory = self._memory
+        self._prompt_target.memory = self._memory
         self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._red_teaming_chat = red_teaming_chat

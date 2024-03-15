@@ -20,18 +20,18 @@ from pyrit.memory import DuckDBMemory
 def setup_duckdb_database():
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
-    
+
     # Reset the database to ensure a clean state
     duckdb_memory.reset_database()
     inspector = inspect(duckdb_memory.engine)
-    
+
     # Verify that tables are created as expected
-    assert 'ConversationStore' in inspector.get_table_names(), "ConversationStore table not created."
-    assert 'EmbeddingStore' in inspector.get_table_names(), "EmbeddingStore table not created."
+    assert "ConversationStore" in inspector.get_table_names(), "ConversationStore table not created."
+    assert "EmbeddingStore" in inspector.get_table_names(), "EmbeddingStore table not created."
 
     yield duckdb_memory
     duckdb_memory.dispose_engine()
-    
+
 
 @pytest.fixture
 def mock_session():
@@ -47,84 +47,92 @@ def mock_session():
 
 def test_conversation_data_schema(setup_duckdb_database):
     inspector = inspect(setup_duckdb_database.engine)
-    columns = inspector.get_columns('ConversationStore')
-    column_names = [col['name'] for col in columns]
+    columns = inspector.get_columns("ConversationStore")
+    column_names = [col["name"] for col in columns]
 
     # Expected columns in ConversationData
-    expected_columns = ['uuid', 'role', 'content', 'conversation_id', 'timestamp', 'normalizer_id', 'sha256', 'labels']
+    expected_columns = ["uuid", "role", "content", "conversation_id", "timestamp", "normalizer_id", "sha256", "labels"]
     for column in expected_columns:
         assert column in column_names, f"{column} not found in ConversationStore schema."
 
 
 def test_embedding_data_schema(setup_duckdb_database):
     inspector = inspect(setup_duckdb_database.engine)
-    columns = inspector.get_columns('EmbeddingStore')
-    column_names = [col['name'] for col in columns]
+    columns = inspector.get_columns("EmbeddingStore")
+    column_names = [col["name"] for col in columns]
 
     # Expected columns in EmbeddingData
-    expected_columns = ['uuid', 'embedding', 'embedding_type_name']
+    expected_columns = ["uuid", "embedding", "embedding_type_name"]
     for column in expected_columns:
         assert column in column_names, f"{column} not found in EmbeddingStore schema."
 
 
 def test_conversation_data_column_types(setup_duckdb_database):
     inspector = inspect(setup_duckdb_database.engine)
-    columns = inspector.get_columns('ConversationStore')
-    column_types = {col['name']: type(col['type']) for col in columns}
+    columns = inspector.get_columns("ConversationStore")
+    column_types = {col["name"]: type(col["type"]) for col in columns}
 
     # Expected column types in ConversationData
     expected_column_types = {
-        'uuid': UUID,
-        'role': String,
-        'content': String,
-        'conversation_id': String,
-        'timestamp': DateTime,
-        'normalizer_id': String,
-        'sha256': String,
-        'labels': ARRAY,
+        "uuid": UUID,
+        "role": String,
+        "content": String,
+        "conversation_id": String,
+        "timestamp": DateTime,
+        "normalizer_id": String,
+        "sha256": String,
+        "labels": ARRAY,
     }
 
     for column, expected_type in expected_column_types.items():
         if column != "labels":
             assert column in column_types, f"{column} not found in ConversationStore schema."
-            assert issubclass(column_types[column], expected_type), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
+            assert issubclass(
+                column_types[column], expected_type
+            ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
 
     # Handle 'labels' column separately
-    assert 'labels' in column_types, "'labels' column not found in ConversationStore schema."
+    assert "labels" in column_types, "'labels' column not found in ConversationStore schema."
     # Check if 'labels' column type is either NullType (due to reflection issue) or ARRAY
-    assert column_types['labels'] in [NullType, ARRAY], f"Unexpected type for 'labels' column: {column_types['labels']}"
+    assert column_types["labels"] in [NullType, ARRAY], f"Unexpected type for 'labels' column: {column_types['labels']}"
 
 
 def test_embedding_data_column_types(setup_duckdb_database):
     inspector = inspect(setup_duckdb_database.engine)
-    columns = inspector.get_columns('EmbeddingStore')
-    column_types = {col['name']: col['type'].__class__ for col in columns}
+    columns = inspector.get_columns("EmbeddingStore")
+    column_types = {col["name"]: col["type"].__class__ for col in columns}
 
     # Expected column types in EmbeddingData
     expected_column_types = {
-        'uuid': UUID,
-        'embedding': ARRAY,
-        'embedding_type_name': String,
+        "uuid": UUID,
+        "embedding": ARRAY,
+        "embedding_type_name": String,
     }
 
     for column, expected_type in expected_column_types.items():
         if column != "embedding":
             assert column in column_types, f"{column} not found in EmbeddingStore schema."
             # Allow for flexibility in type representation (String vs. VARCHAR)
-            assert issubclass(column_types[column], expected_type), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."     
+            assert issubclass(
+                column_types[column], expected_type
+            ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
     # Handle 'embedding' column separately
-    assert 'embedding' in column_types, "'embedding' column not found in EmbeddingStore schema."
+    assert "embedding" in column_types, "'embedding' column not found in EmbeddingStore schema."
     # Check if 'embedding' column type is either NullType (due to reflection issue) or ARRAY
-    assert column_types['embedding'] in [NullType, ARRAY], f"Unexpected type for 'embedding' column: {column_types['embedding']}"
+    assert column_types["embedding"] in [
+        NullType,
+        ARRAY,
+    ], f"Unexpected type for 'embedding' column: {column_types['embedding']}"
 
 
 def test_insert_entry(setup_duckdb_database):
     session = setup_duckdb_database.get_session()
-    entry = ConversationData(conversation_id="123", 
-                             role="user", 
-                             content="Hello", 
-                             sha256="abc",
-                             )
+    entry = ConversationData(
+        conversation_id="123",
+        role="user",
+        content="Hello",
+        sha256="abc",
+    )
     # Use the insert_entry method to insert the entry into the database
     setup_duckdb_database.insert_entry(entry)
 
@@ -202,10 +210,7 @@ def test_insert_embedding_entry(setup_duckdb_database):
 
 def test_query_entries(setup_duckdb_database):
     # Insert some test data
-    entries = [
-        ConversationData(conversation_id=str(i), role="user", content=f"Message {i}")
-        for i in range(3)
-    ]
+    entries = [ConversationData(conversation_id=str(i), role="user", content=f"Message {i}") for i in range(3)]
     setup_duckdb_database.insert_entries(entries=entries)
 
     # Query entries without conditions
@@ -213,7 +218,9 @@ def test_query_entries(setup_duckdb_database):
     assert len(queried_entries) == 3
 
     # Query entries with a condition
-    specific_entry = setup_duckdb_database.query_entries(ConversationData, conditions=ConversationData.conversation_id == "1")
+    specific_entry = setup_duckdb_database.query_entries(
+        ConversationData, conditions=ConversationData.conversation_id == "1"
+    )
     assert len(specific_entry) == 1
     assert specific_entry[0].content == "Message 1"
 
@@ -224,7 +231,9 @@ def test_update_entries(setup_duckdb_database):
     setup_duckdb_database.insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = setup_duckdb_database.query_entries(ConversationData, conditions=ConversationData.conversation_id == "123")
+    entries_to_update = setup_duckdb_database.query_entries(
+        ConversationData, conditions=ConversationData.conversation_id == "123"
+    )
     setup_duckdb_database.update_entries(entries=entries_to_update, update_fields={"content": "Updated Hello"})
 
     # Verify the entry was updated
@@ -235,10 +244,7 @@ def test_update_entries(setup_duckdb_database):
 
 def test_get_all_memory(setup_duckdb_database):
     # Insert some test data
-    entries = [
-        ConversationData(conversation_id=str(i), role="user", content=f"Message {i}")
-        for i in range(3)
-    ]
+    entries = [ConversationData(conversation_id=str(i), role="user", content=f"Message {i}") for i in range(3)]
     setup_duckdb_database.insert_entries(entries=entries)
 
     # Fetch all entries
@@ -260,7 +266,7 @@ def test_get_memories_with_conversation_id(setup_duckdb_database):
             timestamp=datetime.datetime.utcnow(),
             normalizer_id="test_normalizer_id",
             sha256="test_sha256",
-            labels=["label1", "label2"]
+            labels=["label1", "label2"],
         )
 
         # Insert the ConversationData entry
@@ -268,7 +274,9 @@ def test_get_memories_with_conversation_id(setup_duckdb_database):
         session.commit()
 
         # Use the get_memories_with_conversation_id method to retrieve entries with the specific conversation_id
-        retrieved_entries = setup_duckdb_database.get_memories_with_conversation_id(conversation_id=specific_conversation_id)
+        retrieved_entries = setup_duckdb_database.get_memories_with_conversation_id(
+            conversation_id=specific_conversation_id
+        )
 
         # Verify that the retrieved entry matches the inserted entry
         assert len(retrieved_entries) == 1
@@ -289,9 +297,27 @@ def test_get_memories_with_normalizer_id(setup_duckdb_database):
 
     # Create a list of ConversationData entries, some with the specific normalizer_id
     entries = [
-        ConversationData(conversation_id="123", role="user", content="Hello 1", normalizer_id=specific_normalizer_id, timestamp=datetime.datetime.utcnow()),
-        ConversationData(conversation_id="456", role="user", content="Hello 2", normalizer_id="other_normalizer_id", timestamp=datetime.datetime.utcnow()),
-        ConversationData(conversation_id="789", role="user", content="Hello 3", normalizer_id=specific_normalizer_id, timestamp=datetime.datetime.utcnow())
+        ConversationData(
+            conversation_id="123",
+            role="user",
+            content="Hello 1",
+            normalizer_id=specific_normalizer_id,
+            timestamp=datetime.datetime.utcnow(),
+        ),
+        ConversationData(
+            conversation_id="456",
+            role="user",
+            content="Hello 2",
+            normalizer_id="other_normalizer_id",
+            timestamp=datetime.datetime.utcnow(),
+        ),
+        ConversationData(
+            conversation_id="789",
+            role="user",
+            content="Hello 3",
+            normalizer_id=specific_normalizer_id,
+            timestamp=datetime.datetime.utcnow(),
+        ),
     ]
 
     # Insert the ConversationData entries using the insert_entries method within a session
@@ -307,7 +333,7 @@ def test_get_memories_with_normalizer_id(setup_duckdb_database):
         for retrieved_entry in retrieved_entries:
             assert retrieved_entry.normalizer_id == specific_normalizer_id
             assert "Hello" in retrieved_entry.content  # Basic check to ensure content is as expected
-            
+
 
 def test_update_entries_by_conversation_id(setup_duckdb_database):
     # Define a specific conversation_id to update
@@ -315,9 +341,21 @@ def test_update_entries_by_conversation_id(setup_duckdb_database):
 
     # Create a list of ConversationData entries, some with the specific conversation_id
     entries = [
-        ConversationData(conversation_id=specific_conversation_id, role="user", content="Original content 1", timestamp=datetime.datetime.utcnow()),
-        ConversationData(conversation_id="other_id", role="user", content="Original content 2", timestamp=datetime.datetime.utcnow()),
-        ConversationData(conversation_id=specific_conversation_id, role="user", content="Original content 3", timestamp=datetime.datetime.utcnow())
+        ConversationData(
+            conversation_id=specific_conversation_id,
+            role="user",
+            content="Original content 1",
+            timestamp=datetime.datetime.utcnow(),
+        ),
+        ConversationData(
+            conversation_id="other_id", role="user", content="Original content 2", timestamp=datetime.datetime.utcnow()
+        ),
+        ConversationData(
+            conversation_id=specific_conversation_id,
+            role="user",
+            content="Original content 3",
+            timestamp=datetime.datetime.utcnow(),
+        ),
     ]
 
     # Insert the ConversationData entries using the insert_entries method within a session
@@ -329,11 +367,15 @@ def test_update_entries_by_conversation_id(setup_duckdb_database):
         update_fields = {"content": "Updated content", "role": "assistant"}
 
         # Use the update_entries_by_conversation_id method to update the entries
-        update_result = setup_duckdb_database.update_entries_by_conversation_id(conversation_id=specific_conversation_id, update_fields=update_fields)
+        update_result = setup_duckdb_database.update_entries_by_conversation_id(
+            conversation_id=specific_conversation_id, update_fields=update_fields
+        )
         assert update_result is True  # Ensure the update operation was reported as successful
 
         # Verify that the entries with the specific conversation_id were updated
-        updated_entries = setup_duckdb_database.query_entries(ConversationData, conditions=ConversationData.conversation_id == specific_conversation_id)
+        updated_entries = setup_duckdb_database.query_entries(
+            ConversationData, conditions=ConversationData.conversation_id == specific_conversation_id
+        )
         for entry in updated_entries:
             assert entry.content == "Updated content"
             assert entry.role == "assistant"

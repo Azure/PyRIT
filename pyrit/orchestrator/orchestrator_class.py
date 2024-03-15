@@ -49,7 +49,7 @@ class Orchestrator(abc.ABC):
     def requires_one_to_one_converters(self) -> bool:
         """Returns True if all prompt_converters must be 1:1, False otherwise."""
         return False
-    
+
     def dispose_db_engine(self) -> None:
         """
         Dispose DuckDB database engine to release database connections and resources.

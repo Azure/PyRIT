@@ -5,6 +5,7 @@
 # Export db tables to JSON
 from pyrit.memory import DuckDBMemory
 from pyrit.memory.data_exporter import DataExporter
+
 duckdb_memory = DuckDBMemory()
 data_exporter = DataExporter(duckdb_memory)
 data_exporter.export_all_tables()
@@ -14,6 +15,3 @@ data_exporter.export_all_tables()
 duckdb_memory.dispose_engine()
 
 # %%
-
-
-

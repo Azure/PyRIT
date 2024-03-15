@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import MemoryInterface
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -47,7 +47,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
 
         self._prompt_target = prompt_target
-        self._prompt_target._memory = self._memory
+        self._prompt_target.memory = self._memory
         self._include_original_prompts = include_original_prompts
 
         self.batch_size = batch_size

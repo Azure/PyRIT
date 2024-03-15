@@ -1,9 +1,9 @@
 # %% [markdown]
 # ### Prompt Variation Demo
-# 
+#
 # This example shows how to use prompt variation converters to make different prompts with essentially the same meaning.
 # It's often useful for a researcher to get variations of a similar prompts.
-# 
+#
 # This uses a NoOpTarget so these variations are simply added to memory and printed to the screen. This target
 # could be replaced with any other target.
 
@@ -32,7 +32,7 @@ orchestrator.send_prompts(prompts)
 
 # %% [markdown]
 # ### Stacking Converters
-# 
+#
 # Like in other examples, converters can be stacked. For example, you can take these variations and adds a dash between letters.
 # Remember that order matters. If `StringJoinConverter` came first, we would be asking the LLM to make variations of the prompt:
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
@@ -49,6 +49,3 @@ orchestrator.send_prompts(prompts)
 orchestrator.dispose_db_engine()
 
 # %%
-
-
-

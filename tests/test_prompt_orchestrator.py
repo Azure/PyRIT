@@ -14,7 +14,7 @@ from tests.mocks import MockPromptTarget
 @pytest.fixture
 def mock_target() -> MockPromptTarget:
     fd, path = tempfile.mkstemp(suffix=".json.memory")
-    file_memory = DuckDBMemory(filepath=path)
+    file_memory = DuckDBMemory(db_path=":memory:")
     return MockPromptTarget(memory=file_memory)
 
 

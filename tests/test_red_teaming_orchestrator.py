@@ -21,17 +21,17 @@ from pyrit.common.path import DATASETS_PATH
 
 
 @pytest.fixture
-def memory() -> DuckDBMemory:
+def memory() -> DuckDBMemory: # type: ignore
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
-    
+
     # Reset the database to ensure a clean state
     duckdb_memory.reset_database()
     inspector = inspect(duckdb_memory.engine)
-    
+
     # Verify that tables are created as expected
-    assert 'ConversationStore' in inspector.get_table_names(), "ConversationStore table not created."
-    assert 'EmbeddingStore' in inspector.get_table_names(), "EmbeddingStore table not created."
+    assert "ConversationStore" in inspector.get_table_names(), "ConversationStore table not created."
+    assert "EmbeddingStore" in inspector.get_table_names(), "EmbeddingStore table not created."
 
     yield duckdb_memory
     duckdb_memory.dispose_engine()
