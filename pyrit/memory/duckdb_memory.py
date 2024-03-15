@@ -37,9 +37,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         super(DuckDBMemory, self).__init__()
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
         if db_path == ":memory:":
-            self.db_path = ":memory:"
+            self.db_path: Union[Path, str] = ":memory:"
         else:
-            self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
+            self.db_path: Union[Path, str] = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
         self.engine = self._create_engine(has_echo=has_echo)
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
@@ -60,6 +60,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             return engine
         except SQLAlchemyError as e:
             logger.exception(f"Error creating the engine for the database: {e}")
+            raise
 
     def _create_tables_if_not_exist(self):
         """
@@ -177,9 +178,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         try:
             return self.query_entries(ConversationData, conditions=ConversationData.conversation_id == conversation_id)
         except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with conversation_id {conversation_id}. Error {e}"
-            )
+            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
     def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[ConversationData]:

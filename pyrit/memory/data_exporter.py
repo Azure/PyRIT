@@ -42,7 +42,7 @@ class DataExporter:
 
     def export_all_tables(self):
         """
-        Exports data for all tables in the database to files, creating one file per 
+        Exports data for all tables in the database to files, creating one file per
         table in the specified export format.
         """
         table_models = self.memory_interface.get_all_table_models()
@@ -56,7 +56,7 @@ class DataExporter:
     def export_by_conversation_id(self, conversation_id: str, *, json_suffix: str = "") -> None:
         """
         Exports data associated with a specific conversation ID to a file in the specified export format.
-        The filename is constructed using the conversation ID and an optional suffix, 
+        The filename is constructed using the conversation ID and an optional suffix,
         and it is stored under the results path.
 
         Args:
@@ -76,7 +76,7 @@ class DataExporter:
     def export_to_json(self, data: list[Base], table_name: str) -> None:  # type: ignore
         """
         Exports the provided data to a JSON file, naming the file after the table name.
-        Each item in the data list, representing a row from the table, 
+        Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
         Args:
@@ -92,7 +92,7 @@ class DataExporter:
 
     def model_to_dict(self, model_instance):
         """
-        Converts an SQLAlchemy model instance into a dictionary, serializing 
+        Converts an SQLAlchemy model instance into a dictionary, serializing
         special data types such as UUID and datetime to string representations.
         This ensures compatibility with JSON and other serialization formats.
 

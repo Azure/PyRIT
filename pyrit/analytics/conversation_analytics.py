@@ -44,10 +44,10 @@ class ConversationAnalytics:
             if memory.content == chat_message_content:
                 similar_messages.append(
                     ConversationMessageWithSimilarity(
-                        score=1.0, 
-                        role=memory.role, # type: ignore
-                        content=memory.content, # type: ignore
-                        metric="exact_match"  # Exact match
+                        score=1.0,
+                        role=memory.role,  # type: ignore
+                        content=memory.content,  # type: ignore
+                        metric="exact_match",  # Exact match
                     )
                 )
 
@@ -81,10 +81,9 @@ class ConversationAnalytics:
 
             if similarity_score >= threshold:
                 similar_messages.append(
-                    EmbeddingMessageWithSimilarity(score=similarity_score, 
-                                                   uuid=memory.uuid, # type: ignore
-                                                   metric="cosine_similarity"
-                                                   )
+                    EmbeddingMessageWithSimilarity(
+                        score=similarity_score, uuid=memory.uuid, metric="cosine_similarity"  # type: ignore
+                    )
                 )
 
         return similar_messages

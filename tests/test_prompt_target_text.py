@@ -12,7 +12,7 @@ from pyrit.prompt_target import TextTarget
 
 
 @pytest.fixture
-def memory() -> MemoryInterface:
+def memory() -> MemoryInterface:  # type: ignore
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 

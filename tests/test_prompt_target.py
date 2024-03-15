@@ -37,7 +37,7 @@ def chat_completion_engine() -> AzureOpenAIChat:
 
 
 @pytest.fixture
-def memory() -> MemoryInterface: # type: ignore
+def memory() -> MemoryInterface:  # type: ignore
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 

@@ -61,7 +61,7 @@ class MemoryInterface(abc.ABC):
         Args:
             entries (list[Base]): The list of database model instances to be inserted.
         """
-        
+
     @abc.abstractmethod
     def dispose_engine(self):
         """
@@ -138,7 +138,7 @@ class MemoryInterface(abc.ABC):
             list[ChatMessage]: The list of chat messages.
         """
         memory_entries = self.get_memories_with_conversation_id(conversation_id=conversation_id)
-        return [ChatMessage(role=me.role, content=me.content) for me in memory_entries]
+        return [ChatMessage(role=me.role, content=me.content) for me in memory_entries]  # type: ignore
 
     def _create_chat_message_memory_entry(
         self,

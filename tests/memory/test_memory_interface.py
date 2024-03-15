@@ -9,12 +9,11 @@ from sqlalchemy import inspect
 
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import ChatMessage
-from pyrit.memory import DuckDBMemory
 from pyrit.memory.memory_models import ConversationData
 
 
 @pytest.fixture
-def memory() -> MemoryInterface: # type: ignore
+def memory() -> MemoryInterface:  # type: ignore
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 

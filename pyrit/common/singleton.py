@@ -10,7 +10,7 @@ class Singleton(abc.ABCMeta):
     If an instance of the class exists, it returns that instance; if not, it creates and returns a new one.
     """
 
-    _instances = {}
+    _instances: dict = {}
 
     def __call__(cls, *args, **kwargs):
         """

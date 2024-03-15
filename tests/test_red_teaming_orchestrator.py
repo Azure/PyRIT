@@ -21,7 +21,7 @@ from pyrit.common.path import DATASETS_PATH
 
 
 @pytest.fixture
-def memory() -> DuckDBMemory: # type: ignore
+def memory() -> DuckDBMemory:  # type: ignore
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 
