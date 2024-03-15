@@ -5,11 +5,12 @@ import pathlib
 from unittest.mock import patch
 
 import pytest
+from sqlalchemy import inspect
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
 from pyrit.chat import AzureOpenAIChat
-from pyrit.memory import FileMemory
+from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.prompt_target import AzureOpenAIChatTarget
 
 
@@ -37,14 +38,31 @@ def chat_completion_engine() -> AzureOpenAIChat:
 
 
 @pytest.fixture
-def azure_openai_target(chat_completion_engine: AzureOpenAIChat, tmp_path: pathlib.Path):
-    file_memory = FileMemory(filepath=tmp_path / "target_test.json.memory")
+def memory() -> MemoryInterface:
+    # Create an in-memory DuckDB engine
+    duckdb_memory = DuckDBMemory(db_path=":memory:")
+    
+    # Reset the database to ensure a clean state
+    duckdb_memory.reset_database()
+    inspector = inspect(duckdb_memory.engine)
+    
+    # Verify that tables are created as expected
+    assert 'ConversationStore' in inspector.get_table_names(), "ConversationStore table not created."
+    assert 'EmbeddingStore' in inspector.get_table_names(), "EmbeddingStore table not created."
+
+    yield duckdb_memory
+    duckdb_memory.dispose_engine()
+    
+
+@pytest.fixture
+def azure_openai_target(memory: DuckDBMemory):
+    
 
     return AzureOpenAIChatTarget(
         deployment_name="test",
         endpoint="test",
         api_key="test",
-        memory=file_memory,
+        memory=memory,
     )
 
 

@@ -5,7 +5,8 @@ from typing import Any, Coroutine
 import pytest
 
 from pyrit.interfaces import EmbeddingSupport
-from pyrit.memory import MemoryEmbedding, ConversationMemoryEntry
+from pyrit.memory import MemoryEmbedding
+from pyrit.memory.memory_models import ConversationData
 from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
 
 
@@ -51,7 +52,7 @@ def memory_encoder_w_mock_embedding_generator():
 def test_memory_encoding_chat_message(
     memory_encoder_w_mock_embedding_generator: MemoryEmbedding,
 ):
-    chat_memory = ConversationMemoryEntry(
+    chat_memory = ConversationData(
         content="hello world!",
         role="user",
         conversation_id="my_session",
