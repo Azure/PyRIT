@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
+from contextlib import closing
 
 from pyrit.memory.memory_models import ConversationData, Base
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
@@ -98,7 +99,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Args:
             entry: An instance of a SQLAlchemy model to be added to the Table.
         """
-        with self.get_session() as session:
+        with closing(self.get_session()) as session:
             try:
                 session.add(entry)
                 session.commit()
@@ -108,7 +109,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
 
     def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
-        with self.get_session() as session:
+        with closing(self.get_session()) as session:
             try:
                 session.add_all(entries)
                 session.commit()
@@ -127,7 +128,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Returns:
             List of model instances representing the rows fetched from the table.
         """
-        with self.get_session() as session:
+        with closing(self.get_session()) as session:
             try:
                 query = session.query(model)
                 if conditions is not None:
@@ -144,7 +145,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             entries (list[Base]): A list of SQLAlchemy model instances to be updated.
             update_fields (dict): A dictionary of field names and their new values.
         """
-        with self.get_session() as session:
+        with closing(self.get_session()) as session:
             try:
                 for entry in entries:
                     # Ensure the entry is attached to the session. If it's detached, merge it.

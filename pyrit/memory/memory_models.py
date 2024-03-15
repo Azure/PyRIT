@@ -4,10 +4,9 @@
 from uuid import uuid4
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, DateTime, Float
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy import ForeignKey, Index
@@ -51,13 +50,13 @@ class ConversationData(Base):  # type: ignore
     __tablename__ = "ConversationStore"
     __table_args__ = {"extend_existing": True}
     uuid = Column(UUID(as_uuid=True), nullable=False, primary_key=True, default=uuid4)
-    role = Column(String, nullable=False)
-    content = Column(String)
+    role = Column(String, nullable=False)  # type: ignore
+    content = Column(String)  # type: ignore
     conversation_id = Column(String, nullable=False)
     timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
     normalizer_id = Column(String)
     sha256 = Column(String)
-    labels = Column(ARRAY(String))
+    labels = Column(ARRAY(String))  # type: ignore
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
     def __str__(self):
@@ -79,7 +78,7 @@ class EmbeddingData(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     uuid = Column(UUID(as_uuid=True), ForeignKey(f"{ConversationData.__tablename__}.uuid"), primary_key=True)
-    embedding = Column(ARRAY(Float))
+    embedding = Column(ARRAY(Float))  # type: ignore
     embedding_type_name = Column(String)
 
     def __str__(self):
