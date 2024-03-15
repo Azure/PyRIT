@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
-from azure.storage.blob import ContainerClient, ContentSettings, StorageErrorCode
+from azure.storage.blob import ContainerClient, ContentSettings
 import logging
 import sys
+import uuid
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
@@ -45,23 +45,30 @@ class AzureBlobStorageTarget(PromptTarget):
             env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
         )
 
-        try:
-            self._client = ContainerClient.from_container_url(
-                container_url=self._container_url, credential=self._sas_token
-            )
-        except ResourceNotFoundError as ex:
-            if ex.status_code == StorageErrorCode.CONTAINER_NOT_FOUND:
-                self._logger.exception(f"Container not found in the Azure subscription: {self._container_url}")
-            else:
-                # Possible exception: SAS_TOKEN is not valid
-                raise ex
+        self._client = ContainerClient.from_container_url(container_url=self._container_url, credential=self._sas_token)
 
-        # Async Client using same Container URL, no need to check exception twice
         self._client_async = AsyncContainerClient.from_container_url(
             container_url=self._container_url, credential=self._sas_token
         )
 
         super().__init__(memory=memory)
+
+    """
+    Handles uploading blob to given storage container.
+
+    Args:
+        file_name: File name to assign to uploaded blob.
+        data: Byte representation of content to upload to container.
+        content_type: Content type to upload.
+    """
+
+    def _upload_blob(self, file_name: str, data: bytes, content_type: str) -> None:
+        content_settings = ContentSettings(content_type=f"{content_type}")
+        print("\nUploading to Azure Storage as blob:\n\t" + file_name)
+
+        self._client.upload_blob(
+            name=file_name, data=data, length=sys.getsizeof(data), content_settings=content_settings
+        )
 
     def send_prompt(
         self,
@@ -70,17 +77,11 @@ class AzureBlobStorageTarget(PromptTarget):
         normalizer_id: str,
         content_type: str = "text/plain",
     ) -> str:
-        content_settings = ContentSettings(content_type=f"{content_type}")
-
-        file_name = f"{normalizer_id}.txt"
+        file_name = f"{uuid.uuid4()}.txt"
         data = str.encode(normalized_prompt)
-
-        print("\nUploading to Azure Storage as blob:\n\t" + file_name)
-        self._client.upload_blob(
-            name=file_name, data=data, length=sys.getsizeof(data), content_settings=content_settings
-        )
-
         blob_url = self._container_url + "/" + file_name
+
+        self._upload_blob(file_name=file_name, data=data, content_type=content_type)
 
         self._memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="user", content=normalized_prompt),
@@ -90,6 +91,23 @@ class AzureBlobStorageTarget(PromptTarget):
 
         return blob_url
 
+    """
+    (Async) Handles uploading blob to given storage container.
+
+    Args:
+        file_name: File name to assign to uploaded blob.
+        data: Byte representation of content to upload to container.
+        content_type: Content type to upload.
+    """
+
+    async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:
+        content_settings = ContentSettings(content_type=f"{content_type}")
+        print("\nUploading to Azure Storage as blob:\n\t" + file_name)
+
+        await self._client_async.upload_blob(
+            name=file_name, data=data, length=sys.getsizeof(data), content_settings=content_settings
+        )
+
     async def send_prompt_async(
         self,
         normalized_prompt: str,
@@ -97,16 +115,11 @@ class AzureBlobStorageTarget(PromptTarget):
         normalizer_id: str,
         content_type: str = "text/plain",
     ) -> str:
-        content_settings = ContentSettings(content_type=f"{content_type}")
-
-        file_name = f"{normalizer_id}.txt"
+        file_name = f"{uuid.uuid4()}.txt"
         data = str.encode(normalized_prompt)
-
-        print("\nUploading to Azure Storage as blob:\n\t" + file_name)
-        await self._client_async.upload_blob(
-            name=file_name, data=data, length=sys.getsizeof(data), content_settings=content_settings
-        )
         blob_url = self._container_url + "/" + file_name
+
+        await self._upload_blob_async(file_name=file_name, data=data, content_type=content_type)
 
         self._memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="user", content=normalized_prompt),
