@@ -24,8 +24,6 @@ memory.add_chat_messages_to_memory(conversations=message_list, conversation_id=c
 memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
 
 # %%
-conversation_id = str(uuid4())
-
 memory = DuckDBMemory()
 message_list = [
     ChatMessage(role="user", content="Hi, chat bot! This is my initial prompt."),
@@ -38,20 +36,23 @@ memory.add_chat_messages_to_memory(conversations=message_list, conversation_id=c
 
 # %%
 # To retrieve the items from memory
-memory.get_chat_messages_with_conversation_id(conversation_id="11111")
+memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
 
 # %%
 # update based on conversation_id
 update_fileds = {"content": "this is updated field"}
-memory.update_entries_by_conversation_id(conversation_id="11111", update_fields=update_fileds)
+memory.update_entries_by_conversation_id(conversation_id=conversation_id, update_fields=update_fileds)
 
 
 # %%
 # To retrieve the items from memory
-memory.get_chat_messages_with_conversation_id(conversation_id="11111")
+memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
 
 # %%
 # Cleanup memory resources
 memory.dispose_engine()
 
 # %%
+
+
+
