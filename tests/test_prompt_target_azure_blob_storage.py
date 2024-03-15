@@ -25,8 +25,6 @@ def azure_blob_storage_target(tmp_path: pathlib.Path):
 # Should this be checking that contents are in memory?
 def test_send_prompt(azure_blob_storage_target: AzureBlobStorageTarget):
     azure_blob_storage_target.send_prompt(normalized_prompt="data", conversation_id="1", normalizer_id="2")
-    print(azure_blob_storage_target.list_created_blob_urls())
-    print(azure_blob_storage_target.list_all_blob_urls())
 
     # TODO: Check if labels are applied correctly in memory - through manual inspection does not appear to be.
 
@@ -36,5 +34,3 @@ async def test_send_prompt_async(azure_blob_storage_target: AzureBlobStorageTarg
     # NOTE: Times out after 6min, with `aiohttp.client_exceptions.ServerTimeoutError: Timeout on
     # reading data from socket`
     await azure_blob_storage_target.send_prompt_async(normalized_prompt="data", conversation_id="1", normalizer_id="2")
-    print(azure_blob_storage_target.list_created_blob_urls())
-    print(azure_blob_storage_target.list_all_blob_urls())
