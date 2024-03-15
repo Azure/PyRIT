@@ -8,7 +8,8 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+import duckdb
 
 from pyrit.memory.memory_models import ConversationData, Base
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
@@ -32,7 +33,10 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
     def __init__(self, *, db_path: Union[Path, str] = None, embedding_model: EmbeddingSupport = None, has_echo: bool = False):
         super(DuckDBMemory, self).__init__()
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
-        self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
+        if db_path == ":memory:":
+            self.db_path = ":memory:"
+        else:
+            self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
         self.engine = self._create_engine(has_echo=has_echo)
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
@@ -212,8 +216,15 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
     def dispose_engine(self):
         """
         Dispose the engine and clean up resources.
-        TODO: Invoke this function in all orchestrators as the final step.
         """
         if self.engine:
             self.engine.dispose()
             logger.info("Engine disposed successfully.")
+            
+    def reset_database(self):
+        """Drop and recreate existing tables
+        """
+        # Drop all existing tables
+        Base.metadata.drop_all(self.engine)
+        # Recreate the tables
+        Base.metadata.create_all(self.engine, checkfirst=True)
