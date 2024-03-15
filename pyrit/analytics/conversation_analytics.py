@@ -5,7 +5,7 @@ import numpy as np
 
 from sklearn.metrics.pairwise import cosine_similarity
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import ConversationMessageWithSimilarity
+from pyrit.memory.memory_models import ConversationMessageWithSimilarity, EmbeddingMessageWithSimilarity
 from pyrit.memory.memory_models import ConversationData, EmbeddingData
 
 
@@ -73,10 +73,9 @@ class ConversationAnalytics:
             similarity_score = cosine_similarity(target_embedding, memory_embedding)[0][0]
 
             if similarity_score >= threshold:
-                similar_messages.append(ConversationMessageWithSimilarity(
+                similar_messages.append(EmbeddingMessageWithSimilarity(
                     score=similarity_score,
-                    role=memory.role,
-                    content=memory.content,
+                    uuid=memory.uuid,
                     metric="cosine_similarity"
                 ))
 

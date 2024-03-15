@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from uuid import UUID, uuid4
+import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
@@ -78,5 +79,12 @@ class ConversationMessageWithSimilarity(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: str
     content: str
+    metric: str
+    score: float = 0.0
+    
+
+class EmbeddingMessageWithSimilarity(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    uuid: uuid.UUID
     metric: str
     score: float = 0.0
