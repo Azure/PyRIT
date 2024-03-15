@@ -193,7 +193,5 @@ class RedTeamingOrchestrator(Orchestrator):
         if completion_state:
             target_messages.append(ChatMessage(role="user", content=prompt))
             target_messages.append(ChatMessage(role="assistant", content=response))
-            completion_state.is_complete = self.is_conversation_complete(
-                target_messages, red_teaming_chat_role="user"                
-            )
+            completion_state.is_complete = self.is_conversation_complete(target_messages, red_teaming_chat_role="user")
         return response
