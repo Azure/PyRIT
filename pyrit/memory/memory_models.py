@@ -51,13 +51,13 @@ class ConversationData(Base):  # type: ignore
     __tablename__ = "ConversationStore"
     __table_args__ = {"extend_existing": True}
     uuid = Column(UUID(as_uuid=True), nullable=False, primary_key=True, default=uuid4)
-    role: str = Column(String, nullable=False)
-    content: str = Column(String)
+    role = Column(String, nullable=False)
+    content = Column(String)
     conversation_id = Column(String, nullable=False)
     timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
     normalizer_id = Column(String)
     sha256 = Column(String)
-    labels: Optional[list[str]] = Column(ARRAY(String))
+    labels = Column(ARRAY(String))
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
     def __str__(self):
@@ -79,8 +79,8 @@ class EmbeddingData(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     uuid = Column(UUID(as_uuid=True), ForeignKey(f"{ConversationData.__tablename__}.uuid"), primary_key=True)
-    embedding: Optional[list[float]] = Column(ARRAY(Float))
-    embedding_type_name: str = Column(String)
+    embedding = Column(ARRAY(Float))
+    embedding_type_name = Column(String)
 
     def __str__(self):
         return f"{self.uuid}"

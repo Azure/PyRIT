@@ -39,7 +39,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         if db_path == ":memory:":
             self.db_path: Union[Path, str] = ":memory:"
         else:
-            self.db_path: Union[Path, str] = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
+            self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
         self.engine = self._create_engine(has_echo=has_echo)
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
