@@ -6,13 +6,13 @@ import pathlib
 import pytest
 from tempfile import NamedTemporaryFile
 
-from pyrit.memory import FileMemory
+from pyrit.memory import DuckDBMemory
 from pyrit.prompt_target import TextTarget
 
 
 @pytest.fixture
 def memory(tmp_path: pathlib.Path):
-    return FileMemory(filepath=tmp_path / "target_no_op_test.json.memory")
+    return DuckDBMemory()
 
 
 def test_send_prompt_user_no_system(memory: FileMemory):

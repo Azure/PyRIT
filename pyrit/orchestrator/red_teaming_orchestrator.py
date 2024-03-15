@@ -57,7 +57,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
-            memory: The memory to use to store the chat messages. If not provided, a FileMemory will be used.
+            memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
             memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
             verbose: Whether to print debug information.
         """

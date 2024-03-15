@@ -1,23 +1,9 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.1
-#   kernelspec:
-#     display_name: pyrit_kernel
-#     language: python
-#     name: pyrit_kernel
-# ---
-
 # %% [markdown]
 # ### Prompt Variation Demo
-#
+# 
 # This example shows how to use prompt variation converters to make different prompts with essentially the same meaning.
 # It's often useful for a researcher to get variations of a similar prompts.
-#
+# 
 # This uses a NoOpTarget so these variations are simply added to memory and printed to the screen. This target
 # could be replaced with any other target.
 
@@ -46,7 +32,7 @@ orchestrator.send_prompts(prompts)
 
 # %% [markdown]
 # ### Stacking Converters
-#
+# 
 # Like in other examples, converters can be stacked. For example, you can take these variations and adds a dash between letters.
 # Remember that order matters. If `StringJoinConverter` came first, we would be asking the LLM to make variations of the prompt:
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
@@ -59,3 +45,10 @@ orchestrator = PromptSendingOrchestrator(
 orchestrator.send_prompts(prompts)
 
 # %%
+# Release DuckDB resources
+orchestrator.dispose_db_engine()
+
+# %%
+
+
+

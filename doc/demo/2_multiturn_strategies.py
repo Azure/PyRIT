@@ -8,7 +8,7 @@
 # has not been achieved, the `RedTeamingOrchestrator` will generate a new prompt and send it to the
 # target chat bot. This process will continue until the objective is achieved or a maximum
 # number of attempts is reached.
-#
+# 
 # Note that for this to succeed, the `RedTeamingOrchestrator` requires an LLM endpoint
 # without content moderation or other kinds of safety filtering mechanisms.
 # And even then, it depends on the model, and may not succeed every time.
@@ -69,3 +69,12 @@ red_teaming_orchestrator = EndTokenRedTeamingOrchestrator(
 )
 
 red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=3)
+
+# %%
+# Release DuckDB resources
+red_teaming_orchestrator.dispose_db_engine()
+
+# %%
+
+
+

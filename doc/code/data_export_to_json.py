@@ -10,8 +10,8 @@ data_exporter = DataExporter(duckdb_memory)
 data_exporter.export_all_tables()
 
 # %%
-# Cleanup memory resources
-data_exporter.memory_interface.dispose_engine()
+# Cleanup DuckDB resources
+duckdb_memory.dispose_engine()
 
 # %%
 

@@ -199,7 +199,7 @@ classifier.score_text(text=text_to_be_scored)
 #
 # The `MemoryInterface` is at the core of the system, it serves as a blueprint for custom storage
 # solutions, accommodating various data storage needs, from JSON files to cloud databases. The
-# `FileMemory` class, a direct extension of MemoryInterface, specializes in handling conversation data
+# `DuckDBMemory` class, a direct extension of MemoryInterface, specializes in handling conversation data
 # through JSON serialization, ensuring easy manipulation and access to conversational data.
 #
 # Developers are encouraged to utilize the `MemoryInterface` for tailoring data storage mechanisms to

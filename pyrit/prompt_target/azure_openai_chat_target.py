@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.chat import AzureOpenAIChat
-from pyrit.memory import FileMemory, MemoryInterface
+from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target import PromptChatTarget
 
@@ -23,7 +23,7 @@ class AzureOpenAIChatTarget(AzureOpenAIChat, PromptChatTarget):
         )
         PromptChatTarget.__init__(self, memory=memory)
 
-        self._memory = memory if memory else FileMemory()
+        self._memory = memory if memory else DuckDBMemory()
         self._temperature = temperature
 
     def set_system_prompt(self, *, prompt: str, conversation_id: str, normalizer_id: str) -> None:
