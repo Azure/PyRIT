@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, Optional, Type, TypeVar
+from typing import Literal, Optional, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -17,13 +17,14 @@ from pydantic import BaseModel, ConfigDict
 
 # Originally derived from this:
 # https://github.com/openai/openai-python/blob/7f9e85017a0959e3ba07834880d92c748f8f67ab/src/openai/types/chat/chat_completion_role.py#L4
+ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "tool", "function"]
 ChatMessageRole = Literal["system", "user", "assistant", "tool", "function"]
 
 
 @dataclass
 class Score:
     score_type: Literal["int", "float", "str", "bool"]
-    score_value: int | float | str
+    score_value: int | float | str | bool
     score_description: str = ""
     score_explanation: str = ""
 
@@ -74,7 +75,7 @@ class PromptResponse(BaseModel):
         return embedding_output_file_path.as_posix()
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()
 
     @staticmethod
     def load_from_file(file_path: Path) -> PromptResponse:
@@ -86,7 +87,7 @@ class PromptResponse(BaseModel):
             The loaded embedding response
         """
         embedding_json_data = file_path.read_text(encoding="utf-8")
-        return PromptResponse.parse_raw(embedding_json_data)
+        return PromptResponse.model_validate_json(embedding_json_data)
 
 
 @dataclass
@@ -175,14 +176,21 @@ class PromptDataset(YamlLoadable):
     prompts: list[str] = field(default_factory=list)
 
 
-@dataclass
-class AttackStrategy(YamlLoadable):
-    """TODO. This is a temporary name and needs more discussion. We've thought about naming this Personality
-    or Objective as well."""
+class ChatMessagesDataset(BaseModel):
+    """
+    Represents a dataset of chat messages.
 
+    Attributes:
+        model_config (ConfigDict): The model configuration.
+        name (str): The name of the dataset.
+        description (str): The description of the dataset.
+        list_of_chat_messages (list[list[ChatMessage]]): A list of chat messages.
+    """
+
+    model_config = ConfigDict(extra="forbid")
     name: str
     description: str
-    content: str
+    list_of_chat_messages: list[list[ChatMessage]]
 
 
 @dataclass
@@ -223,10 +231,35 @@ class PromptTemplate(YamlLoadable):
         return final_prompt
 
 
+@dataclass
+class AttackStrategy:
+    def __init__(self, *, strategy: Union[Path | str], conversation_objective: str, **kwargs):
+        kwargs["conversation_objective"] = conversation_objective
+        self.kwargs = kwargs
+        if isinstance(strategy, Path):
+            self.strategy = PromptTemplate.from_yaml_file(strategy)
+        else:
+            self.strategy = PromptTemplate(template=strategy, parameters=list(kwargs.keys()))
+
+    def __str__(self):
+        """Returns a string representation of the attack strategy."""
+        return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
+
+
+class ToolCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    type: str
+    function: str
+
+
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: ChatMessageRole
     content: str
+    name: Optional[str] = None
+    tool_calls: Optional[list[ToolCall]] = None
+    tool_call_id: Optional[str] = None
 
 
 class EmbeddingUsageInformation(BaseModel):
@@ -273,7 +306,7 @@ class EmbeddingResponse(BaseModel):
             The loaded embedding response
         """
         embedding_json_data = file_path.read_text(encoding="utf-8")
-        return EmbeddingResponse.parse_raw(embedding_json_data)
+        return EmbeddingResponse.model_validate_json(embedding_json_data)
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()

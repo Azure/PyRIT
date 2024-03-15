@@ -12,3 +12,6 @@ class ROT13Converter(PromptConverter):
         Simple converter that just ROT13 encodes the prompts
         """
         return [codecs.encode(prompt, "rot13") for prompt in prompts]
+
+    def is_one_to_one_converter(self) -> bool:
+        return True

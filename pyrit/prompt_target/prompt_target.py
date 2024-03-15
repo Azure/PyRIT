@@ -7,7 +7,7 @@ from pyrit.memory import DuckDBMemory
 
 
 class PromptTarget(abc.ABC):
-    memory: MemoryInterface
+    _memory: MemoryInterface
 
     """
     A list of PromptConverters that are supported by the prompt target.
@@ -19,7 +19,13 @@ class PromptTarget(abc.ABC):
         self.memory = memory if memory else DuckDBMemory()
 
     @abc.abstractmethod
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         """
         Sends a normalized prompt to the prompt target.
+        """
+
+    @abc.abstractmethod
+    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+        """
+        Sends a normalized prompt async to the prompt target.
         """

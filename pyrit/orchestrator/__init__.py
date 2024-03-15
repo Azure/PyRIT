@@ -1,7 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator.red_teaming_orchestrator import RedTeamingOrchestrator
+from pyrit.orchestrator.end_token_red_teaming_orchestrator import EndTokenRedTeamingOrchestrator
+from pyrit.orchestrator.scoring_red_teaming_orchestrator import ScoringRedTeamingOrchestrator
 
-
-__all__ = ["PromptSendingOrchestrator"]
+__all__ = [
+    "Orchestrator",
+    "PromptSendingOrchestrator",
+    "RedTeamingOrchestrator",
+    "EndTokenRedTeamingOrchestrator",
+    "ScoringRedTeamingOrchestrator",
+]

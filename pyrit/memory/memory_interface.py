@@ -64,7 +64,6 @@ class MemoryInterface(abc.ABC):
 
     def add_chat_message_to_memory(
         self,
-        *,
         conversation: ChatMessage,
         conversation_id: str,
         normalizer_id: str = None,

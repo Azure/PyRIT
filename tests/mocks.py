@@ -51,10 +51,13 @@ class MockPromptTarget(PromptTarget):
     def __init__(self, id=None, memory=None) -> None:
         self.id = id
         self.prompt_sent = []
-        self.memory = memory
+        self._memory = memory
 
     def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
         self.system_prompt = prompt
 
     def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
+        self.prompt_sent.append(normalized_prompt)
+
+    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
         self.prompt_sent.append(normalized_prompt)
