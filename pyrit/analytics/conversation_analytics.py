@@ -45,8 +45,8 @@ class ConversationAnalytics:
                 similar_messages.append(
                     ConversationMessageWithSimilarity(
                         score=1.0,
-                        role=memory.role,  # type: ignore
-                        content=memory.content,  # type: ignore
+                        role=memory.role,
+                        content=memory.content,
                         metric="exact_match",  # Exact match
                     )
                 )

@@ -50,8 +50,8 @@ class ConversationData(Base):  # type: ignore
     __tablename__ = "ConversationStore"
     __table_args__ = {"extend_existing": True}
     uuid = Column(UUID(as_uuid=True), nullable=False, primary_key=True, default=uuid4)
-    role = Column(String, nullable=False)  # type: ignore
-    content = Column(String)  # type: ignore
+    role = Column(String, nullable=False)
+    content = Column(String)
     conversation_id = Column(String, nullable=False)
     timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
     normalizer_id = Column(String)
@@ -78,7 +78,7 @@ class EmbeddingData(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     uuid = Column(UUID(as_uuid=True), ForeignKey(f"{ConversationData.__tablename__}.uuid"), primary_key=True)
-    embedding = Column(ARRAY(Float))  # type: ignore
+    embedding = Column(ARRAY(Float))
     embedding_type_name = Column(String)
 
     def __str__(self):
