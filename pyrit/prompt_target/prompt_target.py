@@ -3,7 +3,7 @@
 
 import abc
 from pyrit.memory import MemoryInterface
-from pyrit.memory.file_memory import FileMemory
+from pyrit.memory import DuckDBMemory
 
 
 class PromptTarget(abc.ABC):
@@ -16,7 +16,7 @@ class PromptTarget(abc.ABC):
     supported_converters: list
 
     def __init__(self, memory: MemoryInterface) -> None:
-        self.memory = memory if memory else FileMemory()
+        self.memory = memory if memory else DuckDBMemory()
 
     @abc.abstractmethod
     def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:

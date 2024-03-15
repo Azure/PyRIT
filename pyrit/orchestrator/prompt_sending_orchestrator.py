@@ -3,7 +3,7 @@
 
 from uuid import uuid4
 
-from pyrit.memory import MemoryInterface, file_memory
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
@@ -39,7 +39,7 @@ class PromptSendingOrchestrator:
         self.prompt_target = prompt_target
 
         self.prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
-        self.memory = memory if memory else file_memory.FileMemory()
+        self.memory = memory if memory else DuckDBMemory()
         self.prompt_normalizer = PromptNormalizer(memory=self.memory)
 
         self.prompt_target.memory = self.memory
