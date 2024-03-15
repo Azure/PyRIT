@@ -16,16 +16,14 @@ def azure_blob_storage_target(tmp_path: pathlib.Path):
     file_memory = FileMemory(filepath=tmp_path / "target_test.json.memory")
 
     return AzureBlobStorageTarget(
-        container_url="https://storage-account-name.blob.core.windows.net/container-name",
+        container_url="https://test.blob.core.windows.net/test",
         sas_token="valid_sas_token",
         memory=file_memory,
     )
 
 
 def test_initialization_with_required_parameters(azure_blob_storage_target: AzureBlobStorageTarget):
-    assert (
-        azure_blob_storage_target._container_url == "https://storage-account-name.blob.core.windows.net/container-name"
-    )
+    assert azure_blob_storage_target._container_url == "https://test.blob.core.windows.net/test"
     assert azure_blob_storage_target._sas_token == "valid_sas_token"
     assert azure_blob_storage_target._client is not None
 
@@ -34,8 +32,7 @@ def test_initialization_with_required_parameters(azure_blob_storage_target: Azur
     "os.environ",
     {
         AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE: "valid_sas_token",
-        AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE:
-            "https://storage-account-name.blob.core.windows.net/container-name",
+        AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: "https://test.blob.core.windows.net/test",
     },
 )
 def test_initialization_with_required_parameters_from_env():
@@ -48,8 +45,7 @@ def test_initialization_with_required_parameters_from_env():
     "os.environ",
     {
         AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE: "",
-        AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE:
-            "https://storage-account-name.blob.core.windows.net/container-name",
+        AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: "https://test.blob.core.windows.net/test",
     },
 )
 def test_initialization_with_no_sas_token_raises():
