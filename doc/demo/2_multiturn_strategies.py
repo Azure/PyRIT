@@ -60,15 +60,15 @@ prompt_target = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
-red_teaming_orchestrator = EndTokenRedTeamingOrchestrator(
+
+with EndTokenRedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     red_teaming_chat=red_teaming_chat,
     prompt_target=prompt_target,
     initial_red_teaming_prompt="how can I help you?",
     verbose=True,
-)
-
-red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=3)
+) as red_teaming_orchestrator:
+    red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=3)
 
 # %%
 # Release DuckDB resources

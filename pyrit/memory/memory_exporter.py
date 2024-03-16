@@ -90,7 +90,7 @@ class MemoryExporter:
         with open(json_path, "w") as f:
             json.dump(export_data, f, indent=4)
 
-    def model_to_dict(self, model_instance: Base): # type: ignore
+    def model_to_dict(self, model_instance: Base):  # type: ignore
         """
         Converts an SQLAlchemy model instance into a dictionary, serializing
         special data types such as UUID and datetime to string representations.

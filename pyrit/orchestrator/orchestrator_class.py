@@ -50,6 +50,14 @@ class Orchestrator(abc.ABC):
         """Returns True if all prompt_converters must be 1:1, False otherwise."""
         return False
 
+    def __enter__(self):
+        """Enter the runtime context related to this object."""
+        return self  # You can return self or another object that should be used in the with-statement.
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the runtime context and perform any cleanup actions."""
+        self.dispose_db_engine()
+
     def dispose_db_engine(self) -> None:
         """
         Dispose DuckDB database engine to release database connections and resources.

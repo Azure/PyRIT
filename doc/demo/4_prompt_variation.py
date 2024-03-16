@@ -25,10 +25,8 @@ prompt_variation_converter = VariationConverter(converter_target=converter_targe
 
 
 target = TextTarget()
-
-orchestrator = PromptSendingOrchestrator(prompt_target=target, prompt_converters=[prompt_variation_converter])
-
-orchestrator.send_prompts(prompts)
+with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[prompt_variation_converter]) as orchestrator:
+    orchestrator.send_prompts(prompts)
 
 # %% [markdown]
 # ### Stacking Converters
@@ -38,14 +36,9 @@ orchestrator.send_prompts(prompts)
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
 
 # %%
-
-orchestrator = PromptSendingOrchestrator(
+with PromptSendingOrchestrator(
     prompt_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
-)
-orchestrator.send_prompts(prompts)
-
-# %%
-# Release DuckDB resources
-orchestrator.dispose_db_engine()
+) as orchestrator:
+    orchestrator.send_prompts(prompts)
 
 # %%
