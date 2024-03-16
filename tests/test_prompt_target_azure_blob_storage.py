@@ -73,6 +73,7 @@ def test_send_prompt(mock_upload, azure_blob_storage_target: AzureBlobStorageTar
     mock_upload.return_value = None
     blob_url = azure_blob_storage_target.send_prompt(normalized_prompt=__name__, conversation_id="1", normalizer_id="2")
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
+    assert blob_url.__contains__(".txt")
 
     chats = azure_blob_storage_target._memory.get_memories_with_conversation_id(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
@@ -88,6 +89,7 @@ async def test_send_prompt_async(mock_upload_async, azure_blob_storage_target: A
         normalized_prompt=__name__, conversation_id="1", normalizer_id="2"
     )
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
+    assert blob_url.__contains__(".txt")
 
     chats = azure_blob_storage_target._memory.get_memories_with_conversation_id(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"

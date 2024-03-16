@@ -45,10 +45,12 @@ class AzureBlobStorageTarget(PromptTarget):
             env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
         )
 
-        self._client = ContainerClient.from_container_url(container_url=self._container_url, credential=self._sas_token)
+        self._client = ContainerClient.from_container_url(
+            container_url=self._container_url, credential=self._sas_token, connection_timeout=60
+        )
 
         self._client_async = AsyncContainerClient.from_container_url(
-            container_url=self._container_url, credential=self._sas_token
+            container_url=self._container_url, credential=self._sas_token, connection_timeout=60
         )
 
         super().__init__(memory=memory)
@@ -72,6 +74,7 @@ class AzureBlobStorageTarget(PromptTarget):
 
     def send_prompt(
         self,
+        *,
         normalized_prompt: str,
         conversation_id: str,
         normalizer_id: str,
@@ -110,6 +113,7 @@ class AzureBlobStorageTarget(PromptTarget):
 
     async def send_prompt_async(
         self,
+        *,
         normalized_prompt: str,
         conversation_id: str,
         normalizer_id: str,

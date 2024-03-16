@@ -11,6 +11,7 @@
 # %%
 
 import os
+import uuid
 
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common import default_values
@@ -40,14 +41,12 @@ aoi_prompt_target.send_prompt(
     normalizer_id=test_normalizer_id,
 )
 
-
 # Alternatively, send prompts asynchronously
-async def send_prompt_async_example_aoi():
-    await aoi_prompt_target.send_prompt_async(
-        normalized_prompt="This contains a cool jailbreak that has been converted as specified with prompt converters!",
-        conversation_id=test_conversation_id,
-        normalizer_id=test_normalizer_id,
-    )
+await aoi_prompt_target.send_prompt_async(
+    normalized_prompt="This contains a cool jailbreak that has been converted as specified with prompt converters!",
+    conversation_id=test_conversation_id,
+    normalizer_id=test_normalizer_id,
+)  # type: ignore
 
 
 # %% [markdown]
@@ -86,9 +85,10 @@ abs_prompt_target.send_prompt(
 
 
 # Alternatively, send prompts asynchronously
-async def send_prompt_async_example_abs():
-    await abs_prompt_target.send_prompt_async(
-        normalized_prompt="This contains a cool jailbreak that has been converted as specified with prompt converters!",
-        conversation_id=test_conversation_id,
-        normalizer_id=test_normalizer_id,
-    )
+"""
+await abs_prompt_target.send_prompt_async(
+    normalized_prompt="This contains a cool jailbreak that has been converted as specified with prompt converters!",
+    conversation_id=test_conversation_id,
+    normalizer_id=test_normalizer_id,
+) # type: ignore
+"""
