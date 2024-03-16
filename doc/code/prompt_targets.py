@@ -9,7 +9,6 @@
 #
 #  Note: to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md)
 # %%
-
 import os
 import uuid
 
@@ -48,7 +47,6 @@ await aoi_prompt_target.send_prompt_async(
     normalizer_id=test_normalizer_id,
 )  # type: ignore
 
-
 # %% [markdown]
 # The `AzureBlobStorageTarget` inherits from `PromptTarget`, meaning it has functionality to send prompts.
 # This prompt target in particular will take in a prompt and upload it as a text file to the provided Azure Storage Account Container.
@@ -57,8 +55,6 @@ await aoi_prompt_target.send_prompt_async(
 # Note: to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure Storage Blob Container.
 # See the section within [.env_example](https://github.com/Azure/PyRIT/blob/main/.env_example) if not sure where to find values for each of these variables.
 # %%
-
-
 import os
 import uuid
 
