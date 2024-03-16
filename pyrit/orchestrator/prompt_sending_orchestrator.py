@@ -1,16 +1,21 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
+
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.memory import MemoryInterface, FileMemory
+from pyrit.memory import MemoryInterface
+from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
+logger = logging.getLogger(__name__)
 
-class PromptSendingOrchestrator:
+
+class PromptSendingOrchestrator(Orchestrator):
     """
     This orchestrator takes a set of prompts, converts them using the list of PromptConverters,
     and sends them to a target.
@@ -23,6 +28,7 @@ class PromptSendingOrchestrator:
         memory: MemoryInterface = None,
         batch_size: int = 10,
         include_original_prompts: bool = False,
+        verbose: bool = False,
     ) -> None:
         """
         Args:
@@ -36,8 +42,8 @@ class PromptSendingOrchestrator:
                                     before converting. This does not include intermediate steps from converters.
                                     Defaults to False.
         """
-        self._prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
-        self._memory = memory if memory else FileMemory()
+        super().__init__(prompt_converters=prompt_converters, memory=memory, verbose=verbose)
+
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
 
         self._prompt_target = prompt_target
@@ -45,6 +51,10 @@ class PromptSendingOrchestrator:
         self._include_original_prompts = include_original_prompts
 
         self.batch_size = batch_size
+
+    @property
+    def requires_one_to_one_converters(self) -> bool:
+        return False
 
     def send_prompts(self, prompts: list[str]):
         """
@@ -89,6 +99,15 @@ class PromptSendingOrchestrator:
                 conversation_id=str(uuid4()),
             )
             normalized_prompts.append(converted_prompt)
+
+        logger.log(
+            logging.INFO,
+            f"Sending {len(normalized_prompts)} prompts to the prompt target.",
+        )
+
+        for normalized_prompt in normalized_prompts:
+            logger.log(logging.INFO, f"Prompt: {normalized_prompt}")
+
         return normalized_prompts
 
     def get_memory(self):

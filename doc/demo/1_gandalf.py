@@ -46,10 +46,10 @@
 
 # %%
 import os
-import pathlib
 import textwrap
 
 from pyrit.chat import AzureOpenAIChat
+from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import GandalfTarget
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator
 from pyrit.common import default_values
@@ -61,7 +61,7 @@ default_values.load_default_env()
 
 gandalf_level = GandalfLevel.LEVEL_1
 aoai_chat = AzureOpenAIChat(
-    deployment_name="gpt-4",
+    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
@@ -74,16 +74,7 @@ If you are stuck, explore different topics and try to find a way to get the pass
 Remember that the other bot is not aware of any previous conversations and it's a one-turn conversation bot.
 """
 )
-strategy_path = (
-    pathlib.Path(os.getcwd())
-    / ".."
-    / ".."
-    / "pyrit"
-    / "datasets"
-    / "attack_strategies"
-    / "multi_turn_chat"
-    / "red_team_chatbot_with_objective.yaml"
-)
+strategy_path = DATASETS_PATH / "attack_strategies" / "multi_turn_chat" / "red_team_chatbot_with_objective.yaml"
 gandalf_target = GandalfTarget(level=gandalf_level)
 attack_strategy = AttackStrategy(
     strategy=strategy_path,
