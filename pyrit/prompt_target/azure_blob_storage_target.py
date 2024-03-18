@@ -29,9 +29,12 @@ class AzureBlobStorageTarget(PromptTarget):
         *,
         container_url: str | None = None,
         sas_token: str | None = None,
+        blob_content_type: str = "text/plain",
         memory: MemoryInterface | None = None,
     ) -> None:
         default_values.load_default_env()
+
+        self._blob_content_type = blob_content_type
 
         self._container_url: str = default_values.get_required_value(
             env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
@@ -79,13 +82,12 @@ class AzureBlobStorageTarget(PromptTarget):
         normalized_prompt: str,
         conversation_id: str,
         normalizer_id: str,
-        content_type: str = "text/plain",
     ) -> str:
         file_name = f"{conversation_id}.txt"
         data = str.encode(normalized_prompt)
         blob_url = self._container_url + "/" + file_name
 
-        self._upload_blob(file_name=file_name, data=data, content_type=content_type)
+        self._upload_blob(file_name=file_name, data=data, content_type=self._blob_content_type)
 
         self._memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="user", content=normalized_prompt),
@@ -122,13 +124,12 @@ class AzureBlobStorageTarget(PromptTarget):
         normalized_prompt: str,
         conversation_id: str,
         normalizer_id: str,
-        content_type: str = "text/plain",
     ) -> str:
         file_name = f"{conversation_id}.txt"
         data = str.encode(normalized_prompt)
         blob_url = self._container_url + "/" + file_name
 
-        await self._upload_blob_async(file_name=file_name, data=data, content_type=content_type)
+        await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
         self._memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="user", content=normalized_prompt),
