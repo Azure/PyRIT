@@ -12,9 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class TranslationConverter(PromptConverter):
-    def __init__(
-        self, *, converter_target: ChatSupport, languages: list[str], prompt_template: PromptTemplate = None
-    ):
+    def __init__(self, *, converter_target: ChatSupport, languages: list[str], prompt_template: PromptTemplate = None):
         """
         Initializes a TranslationConverter object.
 
@@ -37,15 +35,12 @@ class TranslationConverter(PromptConverter):
             )
         )
 
-        if not languages:
-            raise ValueError("Languages must be provided")
+        self._validate_languages(languages)
 
         self.languages = languages
-        language_str = ",".join(languages)
+        language_str = ", ".join(languages)
 
-        self.system_prompt = str(
-            prompt_template.apply_custom_metaprompt_parameters(languages=language_str)
-        )
+        self.system_prompt = str(prompt_template.apply_custom_metaprompt_parameters(languages=language_str))
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
     def convert(self, prompts: list[str]) -> list[str]:
@@ -63,18 +58,27 @@ class TranslationConverter(PromptConverter):
             ]
 
             response_msg = self.converter_target.complete_chat(messages=chat_entries)
-            try:
-                llm_response : dict[str:str] = json.loads(response_msg)["output"]
+            converted_prompts = []
 
-                converted_prompts = []
+            try:
+                llm_response: dict[str, str] = json.loads(response_msg)["output"]
 
                 for language in llm_response.keys():
                     converted_prompts.append(llm_response[language])
 
-                return converted_prompts
-            except:
+            except json.JSONDecodeError:
                 logger.log(level=logging.WARNING, msg=f"Error in LLM response {response_msg}")
                 raise RuntimeError("Error in LLM respons {response_msg}")
 
+            return converted_prompts
+
     def is_one_to_one_converter(self) -> bool:
         return len(self.languages) == 1
+
+    def _validate_languages(self, languages):
+        if not languages:
+            raise ValueError("Languages must be provided")
+
+        for language in languages:
+            if not language or "," in language:
+                raise ValueError("Language must be provided and not have a comma")
