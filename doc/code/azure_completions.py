@@ -33,9 +33,6 @@ deployment_name = os.environ.get("AZURE_OPENAI_COMPLETION_DEPLOYMENT")
 # easily get all the different fields.
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from pprint import pprint
 from pyrit.completion.azure_completions import AzureCompletion
 

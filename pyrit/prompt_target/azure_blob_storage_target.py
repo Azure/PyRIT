@@ -3,7 +3,6 @@
 
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from azure.storage.blob import ContainerClient, ContentSettings
-import sys
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
@@ -68,7 +67,10 @@ class AzureBlobStorageTarget(PromptTarget):
         print("\nUploading to Azure Storage as blob:\n\t" + file_name)
 
         self._client.upload_blob(
-            name=file_name, data=data, length=sys.getsizeof(data), content_settings=content_settings
+            name=file_name,
+            data=data,
+            content_settings=content_settings,
+            overwrite=True,
         )
 
     def send_prompt(
@@ -106,9 +108,13 @@ class AzureBlobStorageTarget(PromptTarget):
         content_settings = ContentSettings(content_type=f"{content_type}")
         print("\nUploading to Azure Storage as blob:\n\t" + file_name)
 
-        await self._client_async.upload_blob(
-            name=file_name, data=data, length=sys.getsizeof(data), content_settings=content_settings
-        )
+        async with self._client_async:
+            await self._client_async.upload_blob(
+                name=file_name,
+                data=data,
+                content_settings=content_settings,
+                overwrite=True,
+            )
 
     async def send_prompt_async(
         self,
