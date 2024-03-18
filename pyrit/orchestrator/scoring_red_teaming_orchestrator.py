@@ -1,21 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
 from typing import Optional, Union
 from pyrit.interfaces import ChatSupport, SupportTextClassification
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
-from pyrit.orchestrator.base_red_teaming_orchestrator import BaseRedTeamingOrchestrator
+from pyrit.orchestrator.red_teaming_orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
 
 
-logger = logging.getLogger(__name__)
-
-
-class ScoringRedTeamingOrchestrator(BaseRedTeamingOrchestrator):
+class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
     def __init__(
         self,
         *,
