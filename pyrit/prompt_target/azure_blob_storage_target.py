@@ -3,9 +3,7 @@
 
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from azure.storage.blob import ContainerClient, ContentSettings
-import logging
 import sys
-import uuid
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
@@ -35,7 +33,6 @@ class AzureBlobStorageTarget(PromptTarget):
         memory: MemoryInterface | None = None,
     ) -> None:
         default_values.load_default_env()
-        self._logger = logging.getLogger(__name__)
 
         self._container_url: str = default_values.get_required_value(
             env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
@@ -46,11 +43,13 @@ class AzureBlobStorageTarget(PromptTarget):
         )
 
         self._client = ContainerClient.from_container_url(
-            container_url=self._container_url, credential=self._sas_token, connection_timeout=60
+            container_url=self._container_url,
+            credential=self._sas_token,
         )
 
         self._client_async = AsyncContainerClient.from_container_url(
-            container_url=self._container_url, credential=self._sas_token, connection_timeout=60
+            container_url=self._container_url,
+            credential=self._sas_token,
         )
 
         super().__init__(memory=memory)
@@ -80,7 +79,7 @@ class AzureBlobStorageTarget(PromptTarget):
         normalizer_id: str,
         content_type: str = "text/plain",
     ) -> str:
-        file_name = f"{uuid.uuid4()}.txt"
+        file_name = f"{conversation_id}.txt"
         data = str.encode(normalized_prompt)
         blob_url = self._container_url + "/" + file_name
 
@@ -119,7 +118,7 @@ class AzureBlobStorageTarget(PromptTarget):
         normalizer_id: str,
         content_type: str = "text/plain",
     ) -> str:
-        file_name = f"{uuid.uuid4()}.txt"
+        file_name = f"{conversation_id}.txt"
         data = str.encode(normalized_prompt)
         blob_url = self._container_url + "/" + file_name
 
