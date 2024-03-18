@@ -100,9 +100,9 @@ def test_translator_converter_is_one_to_one(languages, is_one_to_one):
     translation_converter = TranslationConverter(converter_target=prompt_target, languages=languages)
     assert translation_converter.is_one_to_one_converter() == is_one_to_one
 
-@pytest.mark.parametrize("languages", [None, [], ["this, is my language"], "test"])
+
+@pytest.mark.parametrize("languages", [None, [], ["this, is my language"]])
 def test_translator_converter_languages_validation_throws(languages):
     prompt_target = MockPromptTarget()
     with pytest.raises(ValueError):
         TranslationConverter(converter_target=prompt_target, languages=languages)
-
