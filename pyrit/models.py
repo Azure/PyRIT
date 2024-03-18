@@ -95,62 +95,19 @@ class Prompt:
     content: str
 
 
-# @dataclass
-# class ScoreAnswers:
-#     answers: list[str]
-#     name: str = ""
-#     version: str = ""
-#     description: str = ""
-#     author: str = ""
-#     group: str = ""
-#     source: str = ""
+class TextScoreResult(BaseModel):
+    """Represents the result of scoring a text.
 
-#     @staticmethod
-#     def from_yaml(file: Path) -> ScoreAnswers:
-#         yaml_data = yaml.safe_load(file.read_text("utf-8"))
-#         return ScoreAnswers(**yaml_data)
+    Attributes:
+        provided_answer (str): The provided answer.
+        correct_answer (str): The correct answer.
+        is_correct (bool): Whether the provided answer is correct.
+    """
 
-
-# @dataclass
-# class ExamAnswer:
-#     answer: str
-#     explanation: str
-#     confidence: str
-
-
-# @dataclass
-# class ExamAnswers:
-#     answer: list[ExamAnswer] = field(default_factory=list)
-
-
-# @dataclass
-# class ScoringResults:
-#     failed: int
-#     passed: int
-#     # unknown: int
-#     questions_count: int
-#     passed_with_partial_credit: float
-
-
-class ScoringResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
     provided_answer: str
     correct_answer: str
     is_correct: bool
-
-
-class ScoringResults(BaseModel):
-    """
-    Represents the results of a scoring process.
-
-    Attributes:
-        failed (int): The number of failed cases.
-        passed (int): The number of passed cases.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-    failed: int
-    passed: int
 
 
 class AggregateScoringResults(BaseModel):
@@ -162,10 +119,6 @@ class AggregateScoringResults(BaseModel):
         total_passed (int): The total number of passed questions.
         total_questions_count (int): The total number of questions.
 
-    Methods:
-        add_results(results: ScoringResults): Adds the results of a single scoring to the aggregate results.
-        from_results_list(results_list: list[ScoringResults]) -> AggregateScoringResults: Creates an instance of
-        AggregateScoringResults from a list of ScoringResults.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -173,31 +126,39 @@ class AggregateScoringResults(BaseModel):
     total_passed: int = 0
     total_questions_count: int = 0
 
-    def add_results(self, results: ScoringResults):
+    def __str__(self) -> str:
+        msg = f"Total Passed: {self.total_passed}, \n"
+        msg += f"Total Failed: {self.total_failed}, \n"
+        msg += f"Total Question Count: {self.total_questions_count}"
+        return msg
+
+    def add_result(self, result: TextScoreResult):
         """
         Adds the results of a single scoring to the aggregate results.
 
         Args:
-            results (ScoringResults): The scoring results to be added.
+            result (TextScoreResult): The scoring results to be added.
         """
-        self.total_failed += results.failed
-        self.total_passed += results.passed
-        self.total_questions_count += results.failed + results.passed
+        if result.is_correct:
+            self.total_passed += 1
+        else:
+            self.total_failed += 1
+        self.total_questions_count = self.total_failed + self.total_passed
 
     @classmethod
-    def from_results_list(cls, results_list: list[ScoringResults]) -> AggregateScoringResults:
+    def from_results_list(cls, results_list: list[TextScoreResult]) -> AggregateScoringResults:
         """
-        Creates an instance of AggregateScoringResults from a list of ScoringResults.
+        Creates an instance of AggregateScoringResults from a list of TextScoreResult.
 
         Args:
-            results_list (list[ScoringResults]): The list of scoring results.
+            results_list (list[TextScoreResult]): The list of scoring results.
 
         Returns:
             AggregateScoringResults: An instance of AggregateScoringResults with aggregated results from the list.
         """
         instance = cls()
         for results in results_list:
-            instance.add_results(results)
+            instance.add_result(results)
         return instance
 
 
@@ -236,6 +197,9 @@ class QuestionAnsweringEntry(BaseModel):
     answer_type: Literal["int", "float", "str", "bool"]
     correct_answer: Union[int, str, float]
     choices: list[QuestionChoice]
+
+    def __hash__(self):
+        return hash(self.model_dump_json())
 
 
 class QuestionAnsweringDataset(BaseModel):

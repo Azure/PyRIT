@@ -10,7 +10,7 @@ from pyrit.score.gpt_classifier import (
     SelfAskGptClassifier,
 )
 from pyrit.score.markdown_injection import MarkdownInjectionClassifier
-from pyrit.score.scorer import ScoringEngine, classify_content
+from pyrit.score.question_answering_score_engine import ScoringEngine, classify_content
 from pyrit.score.text import TextConversationTokenFinder
 
 __all__ = [
