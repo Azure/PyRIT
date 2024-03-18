@@ -58,8 +58,6 @@ for entry in memory:
 
 from pyrit.orchestrator.benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
-from pyrit.chat.azure_openai_chat import AzureOpenAIChat
-
 
 qa_ds = QuestionAnsweringDataset(
     name="demo dataset",
