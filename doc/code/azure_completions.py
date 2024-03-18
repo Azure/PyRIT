@@ -13,6 +13,9 @@
 # Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/setup_azure.md)
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
 from pyrit.common import default_values
 
@@ -30,6 +33,8 @@ deployment_name = os.environ.get("AZURE_OPENAI_COMPLETION_DEPLOYMENT")
 # easily get all the different fields.
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pprint import pprint
 from pyrit.completion.azure_completions import AzureCompletion

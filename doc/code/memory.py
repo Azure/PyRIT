@@ -2,6 +2,8 @@
 # The `pyrit.memory` module provides functionality to keep track of the conversation history. In a nutshell, this can be used as follows
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from uuid import uuid4
 from pyrit.memory import FileMemory

@@ -7,6 +7,8 @@
 #
 # For these examples, we will use the Jailbreak PromptTemplate.
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 import pathlib
 
 from pyrit.models import PromptTemplate
@@ -23,6 +25,9 @@ print(jailbreak_prompt)
 #
 #  _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md)
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
 import uuid
 
@@ -71,6 +76,9 @@ await aoi_prompt_target.send_prompt_async(  # type: ignore
 # _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure Storage Blob Container.
 # See the section within [.env_example](https://github.com/Azure/PyRIT/blob/main/.env_example) if not sure where to find values for each of these variables.
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
 import uuid
 

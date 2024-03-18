@@ -22,6 +22,8 @@
 #
 # After deploying a model and populating your env file, creating an endpoint is as simple as the following
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.common import default_values
 
