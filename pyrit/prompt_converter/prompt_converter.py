@@ -15,7 +15,7 @@ class PromptConverter(abc.ABC):
         Converts the given prompts into multiple representations.
 
         Args:
-            prompts (list[str]): The prompts to be converted.d
+            prompts (list[str]): The prompts to be converted.
 
         Returns:
             list[str]: The converted representations of the prompts.
