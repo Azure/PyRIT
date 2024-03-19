@@ -2,9 +2,9 @@
 # ### Converters
 #
 # Converters are used to transform prompts before sending them to the target.
-# This can be useful for a variety of reasons, such as encoding the prompt in a different format, or adding additional information to the prompt.
-# For example, you might want to convert a prompt to base64 before sending it to the target, or add a prefix to the prompt to indicate that it is a question.
-
+#
+# This can be useful for a variety of reasons, such as encoding the prompt in a different format, or adding additional information to the prompt. For example, you might want to convert a prompt to base64 before sending it to the target, or add a prefix to the prompt to indicate that it is a question.
+#
 # Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter and AsciiArtConverter
 # %%
 # Copyright (c) Microsoft Corporation.
@@ -22,7 +22,7 @@ print(AsciiArtConverter().convert(prompts)[0])
 
 # %% [markdown]
 # Converters should be thought of as a piece in the pipeine. They can use external infrastrucutre like attacker LLMs.
-# `VariationConverter` is a converter that does this.
+# `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run.
 #
 # An orchestrator will typically initialize these requests, and they are sent to a target.
 # Converters can also stack, so a converter is used one after another.
