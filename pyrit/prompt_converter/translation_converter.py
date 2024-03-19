@@ -64,8 +64,8 @@ class TranslationConverter(PromptConverter):
             try:
                 llm_response: dict[str, str] = json.loads(response_msg)["output"]
 
-                for language in llm_response.keys():
-                    converted_prompts.append(llm_response[language])
+                for variation in llm_response.values():
+                    converted_prompts.append(variation)
 
             except json.JSONDecodeError:
                 logger.log(level=logging.WARNING, msg=f"Error in LLM response {response_msg}")
