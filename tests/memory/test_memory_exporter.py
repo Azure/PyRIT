@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import json
-from pathlib import Path
 
 import pytest
 
@@ -16,9 +15,9 @@ def sample_conversations():
     # Create some instances of ConversationStore with sample data
     return [
         ConversationData(role="User", content="Hello, how are you?", conversation_id="12345"),
-        ConversationData(role="Bot", content="I'm fine, thank you!", conversation_id="12345")
+        ConversationData(role="Bot", content="I'm fine, thank you!", conversation_id="12345"),
     ]
-    
+
 
 def model_to_dict(instance):
     """Converts a SQLAlchemy model instance into a dictionary."""
@@ -40,9 +39,9 @@ def test_export_to_json_creates_file(tmp_path, sample_conversations):
         expected_content = [model_to_dict(conv) for conv in sample_conversations]
 
         for expected, actual in zip(expected_content, content):
-            assert expected['role'] == actual['role']
-            assert expected['content'] == actual['content']
-            assert expected['conversation_id'] == actual['conversation_id']  
+            assert expected["role"] == actual["role"]
+            assert expected["content"] == actual["content"]
+            assert expected["conversation_id"] == actual["conversation_id"]
 
 
 def test_export_data_with_conversations(tmp_path, sample_conversations):

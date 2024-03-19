@@ -3,6 +3,7 @@
 
 import abc
 from hashlib import sha256
+from typing import Optional
 from pathlib import Path
 
 from uuid import uuid4
@@ -71,7 +72,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_all_table_models(self) -> list[Base]: # type: ignore
+    def get_all_table_models(self) -> list[Base]:  # type: ignore
         """
         Returns a list of all table models from the database.
 
@@ -80,7 +81,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]: # type: ignore
+    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 
