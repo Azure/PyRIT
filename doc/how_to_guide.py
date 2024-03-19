@@ -216,32 +216,6 @@ classifier.score_text(text=text_to_be_scored)
 #
 # When PyRIT is executed, it automatically generates a database file within the `pyrit/results` directory, named `pyrit_duckdb_storage`. This database is structured to include essential tables specifically designed for the storage of conversational data. These tables play a crucial role in the retrieval process, particularly when core components of PyRIT, such as orchestrators, require access to conversational information.
 #
-# The database comprises two primary tables: `ConversationStore` and `EmbeddingStore`.
-#
-# ### **ConversationStore** Table
-# The `ConversationStore` table is designed to efficiently store and manage conversational data, with each field tailored to capture specific aspects of the conversation with the LLM model:
-#
-# | Field            | Type          | Description                                                                                   |
-# |------------------|---------------|-----------------------------------------------------------------------------------------------|
-# | uuid             | UUID          | A unique identifier for each conversation entry, serving as the primary key.                  |
-# | role             | String        | Indicates the origin of the message within the conversation (e.g., "user", "assistant", "system"). |
-# | content          | String        | The actual text content of the conversation entry.                                            |
-# | conversation_id  | String        | Groups related conversation entries. Linked to a specific LLM model, it aggregates all related conversations under a single identifier. In multi-turn interactions involving two models, there will be two distinct conversation_ids. |
-# | timestamp        | DateTime      | The creation or log timestamp of the conversation entry, defaulting to the current UTC time.  |
-# | normalizer_id    | String        | Groups messages within a prompt_normalizer, aiding in organizing conversation flows.         |
-# | sha256           | String        | An optional SHA-256 hash of the content for integrity verification.                           |
-# | labels           | ARRAY(String) | An array of labels for categorizing or filtering conversation entries.                        |
-# | idx_conversation_id | Index       | An index on the `conversation_id` column to enhance query performance, particularly for retrieving conversation histories based on conversation_id. |
-#
-# ### **EmbeddingStore** Table
-# The EmbeddingStore table focuses on storing embeddings associated with the conversational data. Its structure includes:
-#
-# | Field          | Type          | Description                                                                                   |
-# |----------------|---------------|-----------------------------------------------------------------------------------------------|
-# | uuid           | UUID          | The primary key, which is a foreign key referencing the UUID in the ConversationStore table. |
-# | embedding      | ARRAY(String)          | An array of floats representing the embedding vector.       |
-# | embedding_type | String        | The name or type of the embedding, indicating the model or method used. |
-#
 # ### DuckDB Advantages for PyRIT
 #
 # - **Simple Setup**: DuckDB simplifies the installation process, eliminating the need for external dependencies or a dedicated server. The only requirement is a C++ compiler, making it straightforward to integrate into PyRIT's setup.
