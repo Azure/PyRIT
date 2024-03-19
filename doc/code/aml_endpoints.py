@@ -18,7 +18,7 @@
 #    - Add the obtained API key to an environment variable named `AZURE_ML_KEY`.
 #    - Add the obtained endpoint URI to an environment variable named `AZURE_ML_MANAGED_ENDPOINT`.
 #
-# ## Create a AMLOnlineEndpointChat
+# ## Create a AzureMLChatTarget
 #
 # After deploying a model and populating your env file, creating an endpoint is as simple as the following
 # %%
@@ -26,12 +26,12 @@
 from pyrit.common import default_values
 
 from pyrit.models import ChatMessage
-from pyrit.chat import AMLOnlineEndpointChat
+from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
 
 
 default_values.load_default_env()
 
-red_team_chat_engine = AMLOnlineEndpointChat()
+red_team_chat_engine = AzureMLChatTarget()
 red_team_chat_engine.complete_chat(messages=[ChatMessage(role="user", content="Hello world!")])
 
 
