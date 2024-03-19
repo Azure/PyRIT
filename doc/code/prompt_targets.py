@@ -26,7 +26,6 @@ print(jailbreak_prompt)
 # The `AzureOpenAIChatTarget` inherits from the `PromptChatTarget` class, which expands upon the `PromptTarget` class by adding functionality to set a system prompt.
 #
 # _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md).
-# Please ensure that your container URL points to an existing container and that your SAS key is valid.
 # %%
 import os
 import uuid
@@ -74,6 +73,7 @@ await aoi_prompt_target.send_prompt_async(  # type: ignore
 #
 # _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure Storage Blob Container.
 # See the section within [.env_example](https://github.com/Azure/PyRIT/blob/main/.env_example) if not sure where to find values for each of these variables.
+# **Please ensure that your container URL points to an existing container and that your SAS key is valid.**
 # %%
 import os
 import uuid
