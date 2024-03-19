@@ -28,6 +28,7 @@
 # the classes from the [pyrit.chat](https://github.com/Azure/PyRIT/tree/main/pyrit/chat) module (e.g.,
 # AzureOpenAIChat for Azure Open AI as below, HuggingFaceChat for Hugging Face, etc.) or by using other
 # packages (e.g., the [openai](https://github.com/openai/openai-python) Python package).
+
 # %%
 
 import os
@@ -53,6 +54,7 @@ target_llm.complete_chat(messages=[ChatMessage(content=prompt, role="user")])
 # Creating the same prompt 50 times for each type of food would result in semantically similar prompts
 # that are difficult to keep consistent. Instead, it’s easier to create a prompt template with template
 # parameters to fill in. The prompt template might look as follows:
+
 # %%
 
 from pyrit.models import PromptTemplate
@@ -66,6 +68,7 @@ template = PromptTemplate(
 # We can then substitute in a variety of pairs for `(food_item, food_location)` such as
 # `("pizza", "Italy")`, `("tacos", "Mexico")`, `("pretzels", "Germany")`, etc. and evaluate if the
 # LLM makes any objectionable statements about any of them.
+
 # %%
 
 prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_location="Italy")
@@ -107,6 +110,7 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 # - `ScoringRedTeamingOrchestrator` scores the output to determine if the goal is reached.
 #
 # It is possible to define your own criteria and thereby implement a custom orchestrator.
+
 # %%
 
 from textwrap import dedent
@@ -173,6 +177,7 @@ red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
 # can use the pre-populated derived class `SelfAskGptClassifier` to classify text based on different
 # categories. For example, users wishing to determine whether or not a text contains harmful content
 # can use the snipped code below:
+
 # %%
 
 from pyrit.score import SelfAskGptClassifier, SENTIMENT_CLASSIFIER
@@ -199,8 +204,8 @@ classifier.score_text(text=text_to_be_scored)
 #
 # The `MemoryInterface` is at the core of the system, it serves as a blueprint for custom storage
 # solutions, accommodating various data storage needs, from JSON files to cloud databases. The
-# `FileMemory` class, a direct extension of MemoryInterface, specializes in handling conversation data
-# through JSON serialization, ensuring easy manipulation and access to conversational data.
+# `DuckDBMemory` class, a direct extension of MemoryInterface, specializes in handling conversation data
+# using DuckDB database, ensuring easy manipulation and access to conversational data.
 #
 # Developers are encouraged to utilize the `MemoryInterface` for tailoring data storage mechanisms to
 # their specific requirements, be it for integration with Azure Table Storage or other database
@@ -209,5 +214,19 @@ classifier.score_text(text=text_to_be_scored)
 # efficiently captured and stored, leveraging the memory system to its full potential for enhanced bot
 # interaction and development.
 #
+# When PyRIT is executed, it automatically generates a database file within the `pyrit/results` directory, named `pyrit_duckdb_storage`. This database is structured to include essential tables specifically designed for the storage of conversational data. These tables play a crucial role in the retrieval process, particularly when core components of PyRIT, such as orchestrators, require access to conversational information.
+#
+# ### DuckDB Advantages for PyRIT
+#
+# - **Simple Setup**: DuckDB simplifies the installation process, eliminating the need for external dependencies or a dedicated server. The only requirement is a C++ compiler, making it straightforward to integrate into PyRIT's setup.
+#
+# - **Rich Data Types**: DuckDB supports a wide array of data types, including ARRAY and MAP, among others. This feature richness allows PyRIT to handle complex conversational data.
+#
+# - **High Performance**: At the core of DuckDB is a columnar-vectorized query execution engine. Unlike traditional row-by-row processing seen in systems like PostgreSQL, MySQL, or SQLite, DuckDB processes large batches of data in a single operation. This vectorized approach minimizes overhead and significantly boosts performance for OLAP queries, making it ideal for managing and querying large volumes of conversational data.
+#
+# - **Open Source**: DuckDB is completely open-source, with its source code readily available on GitHub.
+#
+#
 # To try out PyRIT, refer to notebooks in our [docs](https://github.com/Azure/PyRIT/tree/main/doc).
+
 # %%

@@ -2,11 +2,12 @@
 # Licensed under the MIT license.
 
 import abc
-from pyrit.memory import MemoryInterface, FileMemory
+from pyrit.memory import MemoryInterface
+from pyrit.memory import DuckDBMemory
 
 
 class PromptTarget(abc.ABC):
-    _memory: MemoryInterface
+    memory: MemoryInterface
 
     """
     A list of PromptConverters that are supported by the prompt target.
@@ -14,8 +15,8 @@ class PromptTarget(abc.ABC):
     """
     supported_converters: list
 
-    def __init__(self, *, memory: MemoryInterface) -> None:
-        self._memory = memory if memory else FileMemory()
+    def __init__(self, memory: MemoryInterface) -> None:
+        self.memory = memory if memory else DuckDBMemory()
 
     @abc.abstractmethod
     def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:

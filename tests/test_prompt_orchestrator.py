@@ -4,7 +4,7 @@
 import tempfile
 import pytest
 
-from pyrit.memory import FileMemory
+from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 
@@ -14,7 +14,7 @@ from tests.mocks import MockPromptTarget
 @pytest.fixture
 def mock_target() -> MockPromptTarget:
     fd, path = tempfile.mkstemp(suffix=".json.memory")
-    file_memory = FileMemory(filepath=path)
+    file_memory = DuckDBMemory(db_path=":memory:")
     return MockPromptTarget(memory=file_memory)
 
 

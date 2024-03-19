@@ -3,7 +3,7 @@
 
 from typing import Any, Coroutine
 from pyrit.completion import GandalfCompletionEngine, GandalfLevel
-from pyrit.memory import FileMemory, MemoryInterface
+from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target import PromptTarget
 
@@ -16,7 +16,7 @@ class GandalfTarget(GandalfCompletionEngine, PromptTarget):
         memory: MemoryInterface = None,
     ) -> None:
         super().__init__(level=level)
-        self._memory = memory if memory else FileMemory()
+        self._memory = memory if memory else DuckDBMemory()
 
     def set_system_prompt(self, *, prompt: str, conversation_id: str, normalizer_id: str) -> None:
         raise NotImplementedError("Cannot set system prompt with Gandalf.")
