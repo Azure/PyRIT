@@ -26,13 +26,13 @@ class TextTarget(PromptTarget):
 
     def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         msg = ChatMessage(role="user", content=normalized_prompt)
-        self.text_stream.write(str(msg))
+        self.text_stream.write(f"{str(msg)}\n")
 
-        self._memory.add_chat_message_to_memory(
+        self.memory.add_chat_message_to_memory(
             conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
         )
 
-        return ""
+        return str(msg)
 
     async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         await asyncio.sleep(0)
