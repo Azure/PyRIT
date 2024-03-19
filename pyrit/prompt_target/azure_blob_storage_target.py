@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from azure.core.exceptions import ClientAuthenticationError
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from azure.storage.blob import ContainerClient, ContentSettings
 import logging
@@ -59,6 +60,16 @@ class AzureBlobStorageTarget(PromptTarget):
 
         super().__init__(memory=memory)
 
+    def _upload_blob_exception_handling(self, exc: Exception) -> None:
+        if type(exc) is ClientAuthenticationError:
+            logger.exception(
+                msg="Authentication failed. Verify the container's existence in the Azure Storage Account and the validity of the provided SAS token."
+            )
+            raise
+        else:
+            logger.exception(msg=f"An unexpected error occurred: {exc}")
+            raise
+
     def _upload_blob(self, file_name: str, data: bytes, content_type: str) -> None:
         """
         Handles uploading blob to given storage container.
@@ -70,14 +81,17 @@ class AzureBlobStorageTarget(PromptTarget):
         """
 
         content_settings = ContentSettings(content_type=f"{content_type}")
-        logger.log("\nUploading to Azure Storage as blob:\n\t" + file_name)
+        logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
-        self._client.upload_blob(
-            name=file_name,
-            data=data,
-            content_settings=content_settings,
-            overwrite=True,
-        )
+        try:
+            self._client.upload_blob(
+                name=file_name,
+                data=data,
+                content_settings=content_settings,
+                overwrite=True,
+            )
+        except Exception as exc:
+            self._upload_blob_exception_handling(exc=exc)
 
     def send_prompt(
         self,
@@ -100,7 +114,7 @@ class AzureBlobStorageTarget(PromptTarget):
 
         return blob_url
 
-    async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:        
+    async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:
         """
         (Async) Handles uploading blob to given storage container.
 
@@ -111,15 +125,17 @@ class AzureBlobStorageTarget(PromptTarget):
         """
 
         content_settings = ContentSettings(content_type=f"{content_type}")
-        logger.log("\nUploading to Azure Storage as blob:\n\t" + file_name)
+        logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
-        async with self._client_async:
+        try:
             await self._client_async.upload_blob(
                 name=file_name,
                 data=data,
                 content_settings=content_settings,
                 overwrite=True,
             )
+        except Exception as exc:
+            self._upload_blob_exception_handling(exc=exc)
 
     async def send_prompt_async(
         self,
