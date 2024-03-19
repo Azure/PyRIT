@@ -95,64 +95,92 @@ class Prompt:
     content: str
 
 
-@dataclass
-class ScoreAnswers:
-    answers: list[str]
+class QuestionChoice(BaseModel):
+    """
+    Represents a choice for a question.
+
+    Attributes:
+        index (int): The index of the choice.
+        text (str): The text of the choice.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    index: int
+    text: str
+
+
+class QuestionAnsweringEntry(BaseModel):
+    """
+    Represents a question model.
+
+    Attributes:
+        question (str): The question text.
+        answer_type (Literal["int", "float", "str", "bool"]): The type of the answer.
+            - `int` for integer answers (e.g., when the answer is an index of the correct option in a multiple-choice
+               question).
+            - `float` for answers that are floating-point numbers.
+            - `str` for text-based answers.
+            - `bool` for boolean answers.
+        correct_answer (Union[int, str, float]): The correct answer.
+        choices (list[QuestionChoice]): The list of choices for the question.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    question: str
+    answer_type: Literal["int", "float", "str", "bool"]
+    correct_answer: Union[int, str, float]
+    choices: list[QuestionChoice]
+
+    def __hash__(self):
+        return hash(self.model_dump_json())
+
+
+class QuestionAnsweringDataset(BaseModel):
+    """
+    Represents a dataset for question answering.
+
+    Attributes:
+        name (str): The name of the dataset.
+        version (str): The version of the dataset.
+        description (str): A description of the dataset.
+        author (str): The author of the dataset.
+        group (str): The group associated with the dataset.
+        source (str): The source of the dataset.
+        questions (list[QuestionAnsweringEntry]): A list of question models.
+    """
+
+    model_config = ConfigDict(extra="forbid")
     name: str = ""
     version: str = ""
     description: str = ""
     author: str = ""
     group: str = ""
     source: str = ""
-
-    @staticmethod
-    def from_yaml(file: Path) -> ScoreAnswers:
-        yaml_data = yaml.safe_load(file.read_text("utf-8"))
-        return ScoreAnswers(**yaml_data)
-
-
-@dataclass
-class ExamAnswer:
-    answer: str
-    explanation: str
-    confidence: str
-
-
-@dataclass
-class ExamAnswers:
-    answer: list[ExamAnswer] = field(default_factory=list)
-
-
-@dataclass
-class ScoringResults:
-    failed: int
-    passed: int
-    # unknown: int
-    questions_count: int
-    passed_with_partial_credit: float
-
-
-@dataclass
-class CompletionConfig:
-    temperature: int
-    max_tokens: int
+    questions: list[QuestionAnsweringEntry]
 
 
 T = TypeVar("T", bound="YamlLoadable")
 
 
 class YamlLoadable(abc.ABC):
+    """
+    Abstract base class for objects that can be loaded from YAML files.
+    """
+
     @classmethod
     def from_yaml_file(cls: Type[T], file: Path) -> T:
         """
-        Creates a new object from a file
+        Creates a new object from a YAML file.
+
         Args:
-            file: The input file
+            file: The input file path.
 
         Returns:
-            A new T object
+            A new object of type T.
+
         Raises:
-            FileNotFoundError: if the input YAML file path does not exist
+            FileNotFoundError: If the input YAML file path does not exist.
+            ValueError: If the YAML file is invalid.
         """
         if not file.exists():
             raise FileNotFoundError(f"File '{file}' does not exist.")
