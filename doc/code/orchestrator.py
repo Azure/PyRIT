@@ -42,13 +42,6 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
     for entry in memory:
         print(entry)
 
-orchestrator.send_prompts(all_prompts)
-
-memory = orchestrator.get_memory()
-
-for entry in memory:
-    print(entry)
-
 # %% [markdown]
 # ## Benchmark Orchestrator
 # %%
