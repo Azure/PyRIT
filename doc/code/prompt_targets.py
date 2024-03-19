@@ -10,6 +10,7 @@
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
 import pathlib
 
 from pyrit.models import PromptTemplate
