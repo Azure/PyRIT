@@ -76,7 +76,7 @@ class TranslationConverter(PromptConverter):
     def is_one_to_one_converter(self) -> bool:
         return len(self.languages) == 1
 
-    def _validate_languages(self, languages):
+    def _validate_languages(self, languages): -> None
         if not languages:
             raise ValueError("Languages must be provided")
 
