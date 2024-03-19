@@ -26,7 +26,7 @@
 from pyrit.common import default_values
 
 from pyrit.models import ChatMessage
-from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
+from pyrit.prompt_target import AzureMLChatTarget
 
 
 default_values.load_default_env()
