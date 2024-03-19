@@ -67,8 +67,8 @@ class TranslationConverter(PromptConverter):
                 for variation in llm_response.values():
                     converted_prompts.append(variation)
 
-            except json.JSONDecodeError:
-                logger.log(level=logging.WARNING, msg=f"Error in LLM response {response_msg}")
+            except json.JSONDecodeError as e:
+                logger.log(level=logging.WARNING, msg=f"Error in LLM response {response_msg}: {e}")
                 raise RuntimeError(f"Error in LLM respons {response_msg}")
 
         return converted_prompts
@@ -76,7 +76,7 @@ class TranslationConverter(PromptConverter):
     def is_one_to_one_converter(self) -> bool:
         return len(self.languages) == 1
 
-    def _validate_languages(self, languages): -> None
+    def _validate_languages(self, languages) -> None:
         if not languages:
             raise ValueError("Languages must be provided")
 
