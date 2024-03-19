@@ -71,7 +71,3 @@ with EndTokenRedTeamingOrchestrator(
     red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=3)
 
 # %%
-# Release DuckDB resources
-red_teaming_orchestrator.dispose_db_engine()
-
-# %%
