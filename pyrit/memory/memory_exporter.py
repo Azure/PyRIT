@@ -2,92 +2,67 @@
 # Licensed under the MIT license.
 
 import json
-from pathlib import Path
-from typing import Union
 import uuid
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy.inspection import inspect
 
 from pyrit.memory.memory_models import Base
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.common.path import RESULTS_PATH
 
 
 class MemoryExporter:
     """
-    Handles the export of data from the database to various formats, currently supporting JSON.
+    Handles the export of data to various formats, currently supporting only JSON format.
     This class utilizes the strategy design pattern to select the appropriate export format.
     """
 
-    def __init__(
-        self, memory_interface: MemoryInterface, *, export_path: Union[Path, str] = None, export_type: str = "json"
-    ):
-        """Initializes the MemoryExporter with a memory interface, export path, and export type.
-
-        Args:
-            memory_interface (MemoryInterface): The memory interface to interact with the database.
-            export_path (Union[Path, str], optional): The path where exported files will be
-            stored. Defaults to RESULTS_PATH if not provided
-            export_type (str, optional): The format for exporting data. Currently supports 'json'. Defaults to "json".
-        """
-        self.memory_interface = memory_interface
-        self.results_path = Path(export_path) if export_path else RESULTS_PATH
-        self.export_type = export_type
+    def __init__(self):
         # Using strategy design pattern for export functionality.
         self.export_strategies = {
             "json": self.export_to_json,
             # Future formats can be added here, e.g., "csv": self._export_to_csv
         }
 
-    def export_all_tables(self):
+    def export_data(self, data: list[Base], *, file_path: Path = None, export_type: str = "json"):  # type: ignore
         """
-        Exports data for all tables in the database to files, creating one file per
-        table in the specified export format.
-        """
-        table_models = self.memory_interface.get_all_table_models()
-
-        for model in table_models:
-            data = self.memory_interface.query_entries(model)
-            export_func = self.export_strategies.get(self.export_type)
-            if export_func:
-                export_func(data, model.__tablename__)
-
-    def export_by_conversation_id(self, conversation_id: str, *, json_suffix: str = "") -> None:
-        """
-        Exports data associated with a specific conversation ID to a file in the specified export format.
-        The filename is constructed using the conversation ID and an optional suffix,
-        and it is stored under the results path.
+        Exports the provided data to a file in the specified format.
 
         Args:
-            conversation_id (str): The conversation ID for which to export the data.
-            json_suffix (str, optional): An optional suffix for the file name. Defaults to an empty string.
-        """
-        data = self.memory_interface.get_memories_with_conversation_id(conversation_id=conversation_id)
+            data (list[Base]): The data to be exported, typically a list of SQLAlchemy model instances.
+            file_path (str): The full path, including the file name, where the data will be exported.
+            export_type (str, optional): The format for exporting data. Defaults to "json".
 
-        # Construct the file name using the conversation_id and optional suffix
-        filename = (
-            f"{conversation_id}{json_suffix}.json" if self.export_type == "json" else f"{conversation_id}{json_suffix}"
-        )
-        export_func = self.export_strategies.get(self.export_type)
+        Raises:
+            ValueError: If no file_path is provided or if the specified export format is not supported.
+        """
+        if not file_path:
+            raise ValueError("Please provide a valid file path for exporting data.")
+
+        export_func = self.export_strategies.get(export_type)
         if export_func:
-            export_func(data, filename)
+            export_func(data, file_path)
+        else:
+            raise ValueError(f"Unsupported export format: {export_type}")
 
-    def export_to_json(self, data: list[Base], table_name: str) -> None:  # type: ignore
+    def export_to_json(self, data: list[Base], file_path: Path = None) -> None:  # type: ignore
         """
-        Exports the provided data to a JSON file, naming the file after the table name.
+        Exports the provided data to a JSON file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
         Args:
             data (list[Base]): The data to be exported, as a list of SQLAlchemy model instances.
-            table_name (str): The name of the table, used to construct the file name.
+            file_path (Path): The full path, including the file name, where the data will be exported.
+
+        Raises:
+            ValueError: If no file_path is provided.
         """
-        filename = f"{table_name}.json"
-        json_path = self.results_path / filename
+        if not file_path:
+            raise ValueError("Please provide a valid file path for exporting data.")
 
         export_data = [self.model_to_dict(instance) for instance in data]
-        with open(json_path, "w") as f:
+        with open(file_path, "w") as f:
             json.dump(export_data, f, indent=4)
 
     def model_to_dict(self, model_instance: Base):  # type: ignore

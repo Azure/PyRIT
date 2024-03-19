@@ -3,12 +3,15 @@
 
 import abc
 from hashlib import sha256
+from pathlib import Path
 
 from uuid import uuid4
 
 from pyrit.memory.memory_models import Base, ConversationData
 from pyrit.memory.memory_embedding import MemoryEmbedding
+from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
+from pyrit.common.path import RESULTS_PATH
 
 
 class MemoryInterface(abc.ABC):
@@ -22,6 +25,11 @@ class MemoryInterface(abc.ABC):
     """
 
     memory_embedding: MemoryEmbedding = None
+
+    def __init__(self, embedding_model=None):
+        self.memory_embedding = embedding_model
+        # Initialize the MemoryExporter instance
+        self.exporter = MemoryExporter()
 
     @abc.abstractmethod
     def get_all_memory(self, model: Base) -> list[ConversationData]:  # type: ignore
@@ -60,6 +68,28 @@ class MemoryInterface(abc.ABC):
 
         Args:
             entries (list[Base]): The list of database model instances to be inserted.
+        """
+
+    @abc.abstractmethod
+    def get_all_table_models(self) -> list[Base]: # type: ignore
+        """
+        Returns a list of all table models from the database.
+
+        Returns:
+            list[Base]: A list of SQLAlchemy models.
+        """
+
+    @abc.abstractmethod
+    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]: # type: ignore
+        """
+        Fetches data from the specified table model with optional conditions.
+
+        Args:
+            model: The SQLAlchemy model class corresponding to the table you want to query.
+            conditions: SQLAlchemy filter conditions (optional).
+
+        Returns:
+            List of model instances representing the rows fetched from the table.
         """
 
     @abc.abstractmethod
@@ -172,3 +202,40 @@ class MemoryInterface(abc.ABC):
         )
 
         return new_chat_memory
+
+    def export_all_tables(self, *, export_type: Path = "json"):
+        """
+        Exports all table data using the specified exporter.
+
+        Iterates over all tables, retrieves their data, and exports each to a file named after the table.
+
+        Args:
+            export_type (str): The format to export the data in (defaults to "json").
+        """
+        table_models = self.get_all_table_models()
+
+        for model in table_models:
+            data = self.query_entries(model)
+            table_name = model.__tablename__
+            file_extension = f".{export_type}"
+            file_path = RESULTS_PATH / f"{table_name}{file_extension}"
+            self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
+    def export_conversation_by_id(self, *, conversation_id: str, file_path: str = None, export_type: str = "json"):
+        """
+        Exports conversation data with the given conversation ID to a specified file.
+
+        Args:
+            conversation_id (str): The ID of the conversation to export.
+            file_path (str): The path to the file where the data will be exported.
+            If not provided, a default path using RESULTS_PATH will be constructed.
+            export_type (str): The format of the export. Defaults to "json".
+        """
+        data = self.get_memories_with_conversation_id(conversation_id=conversation_id)
+
+        # If file_path is not provided, construct a default using the exporter's results_path
+        if not file_path:
+            file_name = f"{conversation_id}.{export_type}"
+            file_path = RESULTS_PATH / file_name
+
+        self.exporter.export_data(data, file_path=file_path, export_type=export_type)

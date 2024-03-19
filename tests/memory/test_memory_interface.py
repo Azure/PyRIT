@@ -3,8 +3,8 @@
 
 import random
 from string import ascii_lowercase
-import pytest
 
+import pytest
 from sqlalchemy import inspect
 
 from pyrit.memory import DuckDBMemory, MemoryInterface
