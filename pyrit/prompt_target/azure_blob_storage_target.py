@@ -3,11 +3,14 @@
 
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from azure.storage.blob import ContainerClient, ContentSettings
+import logging
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target import PromptTarget
+
+logger = logging.getLogger(__name__)
 
 
 class AzureBlobStorageTarget(PromptTarget):
@@ -56,18 +59,18 @@ class AzureBlobStorageTarget(PromptTarget):
 
         super().__init__(memory=memory)
 
-    """
-    Handles uploading blob to given storage container.
-
-    Args:
-        file_name: File name to assign to uploaded blob.
-        data: Byte representation of content to upload to container.
-        content_type: Content type to upload.
-    """
-
     def _upload_blob(self, file_name: str, data: bytes, content_type: str) -> None:
+        """
+        Handles uploading blob to given storage container.
+
+        Args:
+            file_name: File name to assign to uploaded blob.
+            data: Byte representation of content to upload to container.
+            content_type: Content type to upload.
+        """
+
         content_settings = ContentSettings(content_type=f"{content_type}")
-        print("\nUploading to Azure Storage as blob:\n\t" + file_name)
+        logger.log("\nUploading to Azure Storage as blob:\n\t" + file_name)
 
         self._client.upload_blob(
             name=file_name,
@@ -97,18 +100,18 @@ class AzureBlobStorageTarget(PromptTarget):
 
         return blob_url
 
-    """
-    (Async) Handles uploading blob to given storage container.
+    async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:        
+        """
+        (Async) Handles uploading blob to given storage container.
 
-    Args:
-        file_name: File name to assign to uploaded blob.
-        data: Byte representation of content to upload to container.
-        content_type: Content type to upload.
-    """
+        Args:
+            file_name: File name to assign to uploaded blob.
+            data: Byte representation of content to upload to container.
+            content_type: Content type to upload.
+        """
 
-    async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:
         content_settings = ContentSettings(content_type=f"{content_type}")
-        print("\nUploading to Azure Storage as blob:\n\t" + file_name)
+        logger.log("\nUploading to Azure Storage as blob:\n\t" + file_name)
 
         async with self._client_async:
             await self._client_async.upload_blob(
