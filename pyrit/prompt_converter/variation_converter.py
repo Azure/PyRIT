@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class VariationConverter(PromptConverter):
     def __init__(
-        self, converter_target: ChatSupport, *, prompt_template: PromptTemplate = None, number_variations: int = 10
+        self, *, converter_target: ChatSupport, prompt_template: PromptTemplate = None, number_variations: int = 10
     ):
         self.converter_target = converter_target
 
@@ -22,7 +22,7 @@ class VariationConverter(PromptConverter):
             prompt_template
             if prompt_template
             else PromptTemplate.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "attack_strategies" / "prompt_variation" / "prompt_variation.yaml"
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "variation_converter.yaml"
             )
         )
 
@@ -58,6 +58,7 @@ class VariationConverter(PromptConverter):
                     all_prompts.append(variation)
             except json.JSONDecodeError:
                 logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
+                raise RuntimeError(f"Error in LLM response {response_msg}")
         return all_prompts
 
     def is_one_to_one_converter(self) -> bool:
