@@ -9,6 +9,7 @@ from pyrit.prompt_converter import (
     ROT13Converter,
     AsciiArtConverter,
     VariationConverter,
+    TranslationConverter,
 )
 import pytest
 
@@ -70,11 +71,38 @@ def test_ascii_art() -> None:
 
 def test_prompt_variation_init_templates_not_null():
     prompt_target = MockPromptTarget()
-    prompt_variation = VariationConverter(prompt_target)
+    prompt_variation = VariationConverter(converter_target=prompt_target)
     assert prompt_variation.system_prompt
 
 
 def test_prompt_variation_init_templates_system():
     prompt_target = MockPromptTarget()
-    prompt_variation = VariationConverter(prompt_target, number_variations=20)
+    prompt_variation = VariationConverter(converter_target=prompt_target, number_variations=20)
     assert "20 different responses" in prompt_variation.system_prompt
+
+
+@pytest.mark.parametrize("number_variations,is_one_to_one", [(1, True), (2, False), (5, False)])
+def test_prompt_variation_is_one_to_one(number_variations, is_one_to_one):
+    prompt_target = MockPromptTarget()
+    prompt_variation = VariationConverter(converter_target=prompt_target, number_variations=number_variations)
+    assert prompt_variation.is_one_to_one_converter() == is_one_to_one
+
+
+def test_prompt_translation_init_templates_not_null():
+    prompt_target = MockPromptTarget()
+    translation_converter = TranslationConverter(converter_target=prompt_target, languages=["en", "es"])
+    assert translation_converter.system_prompt
+
+
+@pytest.mark.parametrize("languages,is_one_to_one", [(["en", "es"], False), (["en"], True)])
+def test_translator_converter_is_one_to_one(languages, is_one_to_one):
+    prompt_target = MockPromptTarget()
+    translation_converter = TranslationConverter(converter_target=prompt_target, languages=languages)
+    assert translation_converter.is_one_to_one_converter() == is_one_to_one
+
+
+@pytest.mark.parametrize("languages", [None, [], ["this, is my language"]])
+def test_translator_converter_languages_validation_throws(languages):
+    prompt_target = MockPromptTarget()
+    with pytest.raises(ValueError):
+        TranslationConverter(converter_target=prompt_target, languages=languages)
