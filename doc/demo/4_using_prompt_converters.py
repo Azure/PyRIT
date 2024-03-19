@@ -5,7 +5,7 @@
 #
 # [Prompt Converters](../code/converters.ipynb) can be used to transform a prompt before they go to a target. They can be stacked, use LLMs, and are a powerful tool.
 #
-# In all of these examples, NopTargets are used so these prompts are simply printed and added to memory. This can be useful if you are red teaming something and need to manually enter prompts. However, the target can be replaced with any other target. E.g. if you have api access you can add a target there.
+# In all of these examples, NopTargets are used so these prompts are simply printed and added to memory. This can be useful if you are red teaming something and need to manually enter prompts. However, the target can be replaced with any other target. E.g., if you have API access you can add a target there.
 #
 # ### PromptVariation Converters
 #
@@ -37,7 +37,7 @@ output = orchestrator.send_prompts(prompts)
 # %% [markdown]
 # ### Stacking Converters
 #
-# Like in other examples, converters can be stacked. For example, you can take these variations and adds a dash between letters.
+# Like in other examples, converters can be stacked. For example, you can take these variations and add a dash between letters.
 # Remember that order matters. If `StringJoinConverter` came first, we would be asking the LLM to make variations of the prompt:
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
 
