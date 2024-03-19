@@ -143,13 +143,16 @@ class RedTeamingOrchestrator(Orchestrator):
             # If no prompt is provided, then contact the red teaming target to generate one.
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
             # A special case is the very first message, which means there are no prior messages.
-            logger.log(logging.INFO, "No prompt for prompt target provided.")
+            logger.log(
+                logging.INFO,
+                "No prompt for prompt target provided. "
+                "Generating a prompt for the prompt target using the red teaming LLM.")
 
             assistant_responses = [m for m in target_messages if m.role == "assistant"]
             if len(assistant_responses) > 0:
                 prompt_text = assistant_responses[-1].content
             else:  # If no assistant responses, then it's the first message
-                logger.log(logging.INFO, "Using the specified initial red teaming prompt.")
+                logger.log(logging.INFO, f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
                 prompt_text = self._initial_red_teaming_prompt
 
             logger.log(logging.INFO, f'Sending the following prompt to the red teaming prompt target "{prompt_text}"')
