@@ -1,11 +1,12 @@
 # %% [markdown]
 # ## Prompt Targets
-# Prompt Targets are endpoints for where to send prompts.
-# In this demo, we show examples of the `AzureOpenAIChatTarget` and the `AzureBlobStorageTarget`.
+# Prompt Targets are endpoints for where to send prompts. They are typically used with [orchestrators](https://github.com/Azure/PyRIT/blob/main/doc/code/orchestrator.ipynb),
+# but will be shown individually in this doc. An orchestrator's main job is to change prompts to a given format, apply any converters, and then send them off to prompt targets.
+# Within an orchestrator, prompt targets are (mostly) swappable, meaning you can use the same logic with different target endpoints.
 #
-# Prompt Targets are typically used with [orchestrators](https://github.com/Azure/PyRIT/blob/main/doc/code/orchestrator.ipynb), but will be shown individually here.
+# In this demo, we show examples of the `AzureOpenAIChatTarget` and the `AzureBlobStorageTarget` prompt targets.
 #
-# For these examples, we will use the Jailbreak PromptTemplate.
+# For these examples, we will use the Jailbreak `PromptTemplate`.
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -23,7 +24,7 @@ print(jailbreak_prompt)
 # %% [markdown]
 # The `AzureOpenAIChatTarget` inherits from the `PromptChatTarget` class, which expands upon the `PromptTarget` class by adding functionality to set a system prompt.
 #
-#  _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md)
+#  _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md).
 # %%
 import os
 import uuid
