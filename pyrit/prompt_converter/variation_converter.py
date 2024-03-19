@@ -58,7 +58,7 @@ class VariationConverter(PromptConverter):
                     all_prompts.append(variation)
             except json.JSONDecodeError:
                 logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
-                raise RuntimeError("Error in LLM respons {response_msg}")
+                raise RuntimeError(f"Error in LLM respons {response_msg}")
         return all_prompts
 
     def is_one_to_one_converter(self) -> bool:
