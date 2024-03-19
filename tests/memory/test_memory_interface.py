@@ -1,19 +1,32 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
 import random
 from string import ascii_lowercase
-from tempfile import NamedTemporaryFile
 
 import pytest
+from sqlalchemy import inspect
 
-from pyrit.memory import FileMemory, MemoryInterface
+from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import ChatMessage
+from pyrit.memory.memory_models import ConversationData
 
 
 @pytest.fixture
-def memory() -> MemoryInterface:
-    with NamedTemporaryFile(suffix=".json.memory") as tmp:
-        return FileMemory(filepath=tmp.name, embedding_model=None)
+def memory() -> MemoryInterface:  # type: ignore
+    # Create an in-memory DuckDB engine
+    duckdb_memory = DuckDBMemory(db_path=":memory:")
+
+    # Reset the database to ensure a clean state
+    duckdb_memory.reset_database()
+    inspector = inspect(duckdb_memory.engine)
+
+    # Verify that tables are created as expected
+    assert "ConversationStore" in inspector.get_table_names(), "ConversationStore table not created."
+    assert "EmbeddingStore" in inspector.get_table_names(), "EmbeddingStore table not created."
+
+    yield duckdb_memory
+    duckdb_memory.dispose_engine()
 
 
 def generate_random_string(length: int = 10) -> str:
@@ -26,7 +39,7 @@ def test_memory(memory: MemoryInterface):
 
 def test_conversation_memory_empty_by_default(memory: MemoryInterface):
     expected_count = 0
-    c = memory.get_all_memory()
+    c = memory.get_all_memory(ConversationData)
     assert len(c) == expected_count
 
 
@@ -36,7 +49,7 @@ def test_count_of_memories_matches_number_of_conversations_added_1(
     expected_count = 1
     message = ChatMessage(role="user", content="Hello")
     memory.add_chat_message_to_memory(conversation=message, conversation_id="1", labels=[])
-    c = memory.get_all_memory()
+    c = memory.get_all_memory(ConversationData)
     assert len(c) == expected_count
 
 
@@ -45,7 +58,7 @@ def test_add_chate_message_to_memory_added(memory: MemoryInterface):
     memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 1"), conversation_id="1")
     memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 2"), conversation_id="1")
     memory.add_chat_message_to_memory(conversation=ChatMessage(role="user", content="Hello 3"), conversation_id="1")
-    assert len(memory.get_all_memory()) == expected_count
+    assert len(memory.get_all_memory(ConversationData)) == expected_count
 
 
 def test_add_chate_messages_to_memory_added(memory: MemoryInterface):
@@ -55,4 +68,4 @@ def test_add_chate_messages_to_memory_added(memory: MemoryInterface):
     ]
 
     memory.add_chat_messages_to_memory(conversations=messages, conversation_id="1")
-    assert len(memory.get_all_memory()) == len(messages)
+    assert len(memory.get_all_memory(ConversationData)) == len(messages)

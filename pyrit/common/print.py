@@ -4,13 +4,13 @@
 import textwrap
 
 import termcolor
-from pyrit.memory.memory_models import ConversationMemoryEntry
+from pyrit.memory.memory_models import ConversationData
 from pyrit.models import ChatMessage
 from termcolor._types import Color
 
 
 def print_chat_messages_with_color(
-    messages: list[ChatMessage | ConversationMemoryEntry],
+    messages: list[ChatMessage | ConversationData],
     max_content_character_width: int = 80,
     left_padding_width: int = 20,
     custom_colors: dict[str, Color] = None,

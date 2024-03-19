@@ -8,19 +8,33 @@ from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_target.prompt_target import PromptTarget
 
 import pytest
+from sqlalchemy import inspect
 
+from pyrit.memory.memory_models import ConversationData
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator
 from pyrit.orchestrator.end_token_red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
 from pyrit.chat import AzureOpenAIChat
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.models import AttackStrategy, ChatMessage, Score
-from pyrit.memory import FileMemory
+from pyrit.memory import DuckDBMemory
 from pyrit.common.path import DATASETS_PATH
 
 
 @pytest.fixture
-def memory(tmp_path: pathlib.Path) -> FileMemory:
-    return FileMemory(filepath=tmp_path / "test.json.memory")
+def memory() -> DuckDBMemory:  # type: ignore
+    # Create an in-memory DuckDB engine
+    duckdb_memory = DuckDBMemory(db_path=":memory:")
+
+    # Reset the database to ensure a clean state
+    duckdb_memory.reset_database()
+    inspector = inspect(duckdb_memory.engine)
+
+    # Verify that tables are created as expected
+    assert "ConversationStore" in inspector.get_table_names(), "ConversationStore table not created."
+    assert "EmbeddingStore" in inspector.get_table_names(), "EmbeddingStore table not created."
+
+    yield duckdb_memory
+    duckdb_memory.dispose_engine()
 
 
 @pytest.fixture
@@ -112,7 +126,7 @@ def test_send_prompt_twice(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChat,
     simple_attack_strategy: AttackStrategy,
-    memory: FileMemory,
+    memory: DuckDBMemory,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -139,7 +153,7 @@ def test_send_prompt_twice(
             mock_target.return_value = expected_target_responses[0]
             target_response = red_teaming_orchestrator.send_prompt()
             assert target_response == expected_target_responses[0]
-            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            conversations = red_teaming_orchestrator._memory.get_all_memory(ConversationData)
             # Expecting two conversation threads (one with red teaming chat and one with prompt target)
             assert len(conversations) == 5, f"Expected 5 conversations, got {len(conversations)}"
             check_conversations(
@@ -160,7 +174,7 @@ def test_send_prompt_twice(
             mock_target.return_value = expected_target_responses[1]
             target_response = red_teaming_orchestrator.send_prompt()
             assert target_response == expected_target_responses[1]
-            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            conversations = red_teaming_orchestrator._memory.get_all_memory(ConversationData)
             # Expecting another two conversation threads
             assert len(conversations) == 9, f"Expected 9 conversations, got {len(conversations)}"
             check_conversations(
@@ -179,7 +193,7 @@ def test_send_fixed_prompt_then_generated_prompt(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChat,
     simple_attack_strategy: AttackStrategy,
-    memory: FileMemory,
+    memory: DuckDBMemory,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -205,7 +219,7 @@ def test_send_fixed_prompt_then_generated_prompt(
             mock_target.return_value = expected_target_responses[0]
             target_response = red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
             assert target_response == expected_target_responses[0]
-            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            conversations = red_teaming_orchestrator._memory.get_all_memory(ConversationData)
             # Expecting two conversation threads (one with red teaming chat and one with prompt target)
             assert len(conversations) == 2, f"Expected 2 conversations, got {len(conversations)}"
             check_conversations(
@@ -227,7 +241,7 @@ def test_send_fixed_prompt_then_generated_prompt(
             mock_target.return_value = expected_target_responses[1]
             target_response = red_teaming_orchestrator.send_prompt()
             assert target_response == expected_target_responses[1]
-            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            conversations = red_teaming_orchestrator._memory.get_all_memory(ConversationData)
             # Expecting another two conversation threads
             assert len(conversations) == 7, f"Expected 7 conversations, got {len(conversations)}"
             check_conversations(
@@ -246,7 +260,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChat,
     simple_attack_strategy: AttackStrategy,
-    memory: FileMemory,
+    memory: DuckDBMemory,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -272,7 +286,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
             mock_target.return_value = expected_target_responses[0]
             target_response = red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
             assert target_response == expected_target_responses[0]
-            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            conversations = red_teaming_orchestrator._memory.get_all_memory(ConversationData)
             # Expecting two conversation threads (one with red teaming chat and one with prompt target)
             assert len(conversations) == 2, f"Expected 2 conversations, got {len(conversations)}"
             check_conversations(
@@ -301,7 +315,7 @@ def test_reach_goal_after_two_turns_end_token(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChat,
     simple_attack_strategy: AttackStrategy,
-    memory: FileMemory,
+    memory: DuckDBMemory,
     attack_strategy_as_str: bool,
 ):
     attack_strategy: Union[str | AttackStrategy] = (
@@ -328,7 +342,7 @@ def test_reach_goal_after_two_turns_end_token(
             mock_target.return_value = expected_target_response
             target_response = red_teaming_orchestrator.apply_attack_strategy_until_completion()
             assert target_response == expected_target_response
-            conversations = red_teaming_orchestrator._memory.get_all_memory()
+            conversations = red_teaming_orchestrator._memory.get_all_memory(ConversationData)
             # Expecting three conversation threads (two with red teaming chat and one with prompt target)
             assert len(conversations) == 7, f"Expected 7 conversations, got {len(conversations)}"
             check_conversations(
