@@ -5,8 +5,6 @@
 
 from pyrit.prompt_target import PromptTarget
 from pyrit.chat import AzureOpenAIChat
-from pyrit.memory import FileMemory, MemoryInterface
-from pyrit.models import ChatMessage
 
 class ImageTarget(AzureOpenAIChat, PromptTarget):
     """
@@ -14,7 +12,7 @@ class ImageTarget(AzureOpenAIChat, PromptTarget):
     """
     def __init__(self, deployment_name: str = None, endpoint: str = None, 
                  api_key: str = None, api_version: str = "2024-02-01", num_images: int = 1,
-                 temperature: float = 1.0, memory: MemoryInterface = None,):
+                 temperature: float = 1.0):
         
         # make sure number of images is in a reasonable range
         if num_images < 1 or num_images > 100:
@@ -25,7 +23,6 @@ class ImageTarget(AzureOpenAIChat, PromptTarget):
         self.temperature = temperature
         self.deployment_name = deployment_name
 
-        self.memory = memory if memory else FileMemory()
         AzureOpenAIChat.__init__(
             self, deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
         )

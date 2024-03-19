@@ -1,5 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import os
+import requests
+import json
+
 from openai import AsyncAzureOpenAI, AzureOpenAI
 from openai.types.chat import ChatCompletion
 from pyrit.common import default_values
@@ -128,3 +132,36 @@ class AzureOpenAIChat(ChatSupport):
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
         return self.parse_chat_completion(response)
+
+    def parse_image(self, image_json: json, output_filename: str = "image.png"):
+        # Set the directory for the stored image
+        image_dir = os.path.join(os.curdir, 'images')
+
+        # If the directory doesn't exist, create it
+        if not os.path.isdir(image_dir):
+            os.mkdir(image_dir)
+
+        # Initialize the image path (note the filetype should be png)
+        image_path = os.path.join(image_dir, output_filename)
+        print(image_path)
+        # Retrieve the generated image
+        image_url = image_json["data"][0]["url"]  # extract image URL from response
+        generated_image = requests.get(image_url).content  # download the image
+        with open(image_path, "wb") as image_file:
+            image_file.write(generated_image)
+
+    def complete_image_chat(self, prompt: str, num_images: int):
+        print("HERE!!")
+        
+        response = self._client.images.generate(
+            model = self._deployment_name, 
+            prompt = prompt, 
+            n=num_images
+        )
+        try:
+            json_response = json.loads(response.model_dump_json())
+            #self.parse_image(image_json=json_response, output_filename="image_1.png")
+        except json.JSONDecodeError:
+            print("ERROR WITH RESPONSE")
+            return None
+        return json_response
