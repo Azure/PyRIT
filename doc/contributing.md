@@ -28,7 +28,7 @@ This is a list of the prerequisites needed to run this library.
 
 1. **Conda** Install [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to create Python environments. (Note: Both Miniconda and Anaconda Distribution work for PyRIT. Read [this guide](https://docs.anaconda.com/free/distro-or-miniconda/) for more on which download to choose.)
 
-2. **Git**. Git is required to clone the repo locally. It is available to download [here](https://git-scm.com/downloads).
+1. **Git**. Git is required to clone the repo locally. It is available to download [here](https://git-scm.com/downloads).
     ```bash
     git clone https://github.com/Azure/PyRIT
     ```
@@ -47,7 +47,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    cd $GIT_PROJECT_HOME/pyrit
    ```
 
-2. Initialize environment.
+1. Initialize environment.
 
     ```bash
     conda create -n pyrit-dev python=3.10
@@ -80,7 +80,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
 
    The suffix `[dev]` installs development-specific requirements such as `pytest` and `pre-commit`.
 
-5. Authenticate with Azure.
+1. Authenticate with Azure.
 
     ```bash
     az login
@@ -91,7 +91,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
 Before creating your first pull request, set up your fork to contribute to PyRIT by following these steps:
 
 1. [Fork](https://github.com/Azure/PyRIT/fork) the repo from the main branch. By default, forks are named the same as their upstream repository. This will create a new repo called `GITHUB_USERNAME/PyRIT` (where `GITHUB_USERNAME` is a variable for your GitHub username).
-2. Add this new repo locally wherever you cloned PyRIT
+1. Add this new repo locally wherever you cloned PyRIT
 ```
 # to see existing remotes
 git remote -v
@@ -190,6 +190,14 @@ PyRIT test files can be run using `pytest`.
      ```bash
      python -m pytest tests\test_aml_online_endpoint_chat.py::test_get_headers_with_empty_api_key
      ```
+
+### Documentation format
+
+We use the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+For [docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings),
+there are rules for modules, classes, and functions.
+While we can't expect all documentation to be perfect from day 1, we'll improve any docstring
+that we touch in a pull request to be compliant with this style guide.
 
 ## Releasing PyRIT to PyPI
 
