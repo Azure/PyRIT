@@ -111,4 +111,18 @@ benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
 
 benchmark_orchestrator.evaluate()
 
-print(benchmark_orchestrator.aggregated_results)
+
+# In[8]:
+
+
+correct_count = 0
+total_count = 0
+
+for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator.scorer.evaluation_results.items()):
+    print(f"Question {idx+1}: {qa_question_entry.question}")
+    print(f"Answer: {answer}")
+    print(f"")
+
+    correct_count += 1 if answer.is_correct else 0
+
+print(f"Correct count: {correct_count}/{len(benchmark_orchestrator.scorer.evaluation_results)}")

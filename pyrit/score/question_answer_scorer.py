@@ -30,58 +30,6 @@ class TextScoreResult(BaseModel):
         return msg
 
 
-class AggregateScoringResults(BaseModel):
-    """
-    Represents the aggregate scoring results.
-
-    Attributes:
-        total_failed (int): The total number of failed questions.
-        total_passed (int): The total number of passed questions.
-        total_questions_count (int): The total number of questions.
-
-    """
-
-    model_config = ConfigDict(extra="forbid")
-    total_failed: int = 0
-    total_passed: int = 0
-    total_questions_count: int = 0
-
-    def __str__(self) -> str:
-        msg = f"Total Passed: {self.total_passed}, \n"
-        msg += f"Total Failed: {self.total_failed}, \n"
-        msg += f"Total Question Count: {self.total_questions_count}"
-        return msg
-
-    def add_result(self, result: TextScoreResult):
-        """
-        Adds the results of a single scoring to the aggregate results.
-
-        Args:
-            result (TextScoreResult): The scoring results to be added.
-        """
-        if result.is_correct:
-            self.total_passed += 1
-        else:
-            self.total_failed += 1
-        self.total_questions_count = self.total_failed + self.total_passed
-
-    @classmethod
-    def from_results_list(cls, results_list: list[TextScoreResult]) -> AggregateScoringResults:
-        """
-        Creates an instance of AggregateScoringResults from a list of TextScoreResult.
-
-        Args:
-            results_list (list[TextScoreResult]): The list of scoring results.
-
-        Returns:
-            AggregateScoringResults: An instance of AggregateScoringResults with aggregated results from the list.
-        """
-        instance = cls()
-        for results in results_list:
-            instance.add_result(results)
-        return instance
-
-
 class QuestionAnswerScorer:
     """A class that represents a question answering scorer.
 

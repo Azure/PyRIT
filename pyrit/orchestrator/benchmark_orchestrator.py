@@ -4,7 +4,7 @@ import textwrap
 import yaml
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
-from pyrit.score.question_answer_scorer import QuestionAnswerScorer, AggregateScoringResults
+from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_target.prompt_chat_target import PromptChatTarget
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.common.path import DATASETS_PATH
@@ -20,7 +20,6 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     """
 
     _memory: MemoryInterface
-    aggregated_results: AggregateScoringResults
     chat_model_under_evaluation: PromptChatTarget
     conversation_id: str
     normalizer_id: str
@@ -58,7 +57,6 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         self.memory_labels = memory_labels
         self.conversation_id = str(uuid4())
         self.normalizer_id = str(uuid4())
-        self.aggregated_results = AggregateScoringResults()
 
         if evaluation_prompt:
             self.evaluation_system_prompt = evaluation_prompt
@@ -97,7 +95,6 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
             )
 
             curr_score = self.scorer.score_question(question=question_entry, answer=model_response)
-            self.aggregated_results.add_result(curr_score)
 
             if self._verbose:
                 msg = textwrap.dedent(
