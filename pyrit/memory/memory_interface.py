@@ -204,7 +204,7 @@ class MemoryInterface(abc.ABC):
 
         return new_chat_memory
 
-    def export_all_tables(self, *, export_type: Path = "json"):
+    def export_all_tables(self, *, export_type: str = "json"):
         """
         Exports all table data using the specified exporter.
 
@@ -222,7 +222,7 @@ class MemoryInterface(abc.ABC):
             file_path = RESULTS_PATH / f"{table_name}{file_extension}"
             self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
-    def export_conversation_by_id(self, *, conversation_id: str, file_path: str = None, export_type: str = "json"):
+    def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
         """
         Exports conversation data with the given conversation ID to a specified file.
 
