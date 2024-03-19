@@ -7,18 +7,18 @@ import os
 import pathlib
 import pytest
 
-from pyrit.memory import FileMemory
+from pyrit.memory import DuckDBMemory
 from pyrit.prompt_target import AzureBlobStorageTarget
 
 
 @pytest.fixture
 def azure_blob_storage_target(tmp_path: pathlib.Path):
-    file_memory = FileMemory(filepath=tmp_path / "target_test.json.memory")
+    memory = DuckDBMemory(db_path=":memory:")
 
     return AzureBlobStorageTarget(
         container_url="https://test.blob.core.windows.net/test",
         sas_token="valid_sas_token",
-        memory=file_memory,
+        memory=memory,
     )
 
 
@@ -75,7 +75,7 @@ def test_send_prompt(mock_upload, azure_blob_storage_target: AzureBlobStorageTar
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
     assert blob_url.__contains__(".txt")
 
-    chats = azure_blob_storage_target._memory.get_memories_with_conversation_id(conversation_id="1")
+    chats = azure_blob_storage_target.memory.get_memories_with_conversation_id(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "user"
     assert chats[0].content == __name__
@@ -86,12 +86,12 @@ def test_send_prompt(mock_upload, azure_blob_storage_target: AzureBlobStorageTar
 async def test_send_prompt_async(mock_upload_async, azure_blob_storage_target: AzureBlobStorageTarget):
     mock_upload_async.return_value = None
     blob_url = await azure_blob_storage_target.send_prompt_async(
-        normalized_prompt=__name__, conversation_id="1", normalizer_id="2"
+        normalized_prompt=__name__, conversation_id="2", normalizer_id="3"
     )
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
     assert blob_url.__contains__(".txt")
 
-    chats = azure_blob_storage_target._memory.get_memories_with_conversation_id(conversation_id="1")
+    chats = azure_blob_storage_target.memory.get_memories_with_conversation_id(conversation_id="2")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "user"
     assert chats[0].content == __name__

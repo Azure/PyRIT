@@ -63,7 +63,8 @@ class AzureBlobStorageTarget(PromptTarget):
     def _upload_blob_exception_handling(self, exc: Exception) -> None:
         if type(exc) is ClientAuthenticationError:
             logger.exception(
-                msg="Authentication failed. Verify the container's existence in the Azure Storage Account and the validity of the provided SAS token."
+                msg="Authentication failed. Verify the container's existence in the Azure Storage Account and "
+                + "the validity of the provided SAS token."
             )
             raise
         else:
@@ -106,7 +107,7 @@ class AzureBlobStorageTarget(PromptTarget):
 
         self._upload_blob(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        self._memory.add_chat_message_to_memory(
+        self.memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="user", content=normalized_prompt),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
@@ -150,7 +151,7 @@ class AzureBlobStorageTarget(PromptTarget):
 
         await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        self._memory.add_chat_message_to_memory(
+        self.memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="user", content=normalized_prompt),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
