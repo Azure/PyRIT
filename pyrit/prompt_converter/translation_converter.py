@@ -40,7 +40,7 @@ class TranslationConverter(PromptConverter):
         self.languages = languages
         language_str = ", ".join(languages)
 
-        self.system_prompt = str(prompt_template.apply_custom_metaprompt_parameters(languages=language_str))
+        self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language_str)
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
     def convert(self, prompts: list[str]) -> list[str]:
