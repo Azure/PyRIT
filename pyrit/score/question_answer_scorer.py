@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Generator
+from typing import Generator, Tuple
 from pydantic import BaseModel, ConfigDict
 from pyrit.models import QuestionAnsweringEntry, QuestionAnsweringDataset
 import textwrap
@@ -87,12 +87,13 @@ class QuestionAnswerScorer:
 
     Attributes:
         dataset (QuestionAnsweringDataset): The dataset containing the questions and answers.
-        evaluation_results (dict[QuestionAnsweringDataset, TextScoreResult]): A dictionary to store the evaluation results.
+        evaluation_results (dict[QuestionAnsweringDataset, TextScoreResult]): A dictionary to store the evaluation
+        results.
 
     """
 
     dataset: QuestionAnsweringDataset
-    evaluation_results: dict[QuestionAnsweringDataset, TextScoreResult]
+    evaluation_results: dict[QuestionAnsweringEntry, TextScoreResult]
 
     def __init__(self, dataset: QuestionAnsweringDataset):
         """
@@ -122,7 +123,7 @@ class QuestionAnswerScorer:
             """
         )
 
-    def get_next_question_prompt_pair(self) -> Generator[QuestionAnsweringEntry, str]:
+    def get_next_question_prompt_pair(self) -> Generator[Tuple[QuestionAnsweringEntry, str], None, None]:
         """
         Generates the next question-prompt pair from the dataset.
 
@@ -158,7 +159,7 @@ class QuestionAnswerScorer:
             # If the model response is not an integer, then the model might have returned the answer as a string
             pass
 
-        if question.correct_answer in answer:
+        if str(question.correct_answer) in answer:
             # Try to see if the model contains that answer as a substring.
             # If the correct answer is a substring of the model response, then mark the result as correct.
             is_answer_correct = True
