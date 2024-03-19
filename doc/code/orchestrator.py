@@ -55,6 +55,7 @@ for entry in memory:
 
 from pyrit.orchestrator.benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
+from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 qa_ds = QuestionAnsweringDataset(
     name="demo dataset",
@@ -100,14 +101,14 @@ qa_ds = QuestionAnsweringDataset(
     ],
 )
 
-benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
-    chat_model_under_evaluation=gpt_35_target, question_answering_ds=qa_ds, verbose=True
+qa_scorer = QuestionAnswerScorer(
+    dataset=qa_ds,
 )
 
+benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
+    chat_model_under_evaluation=gpt_35_target, scorer=qa_scorer, verbose=True
+)
 
 benchmark_orchestrator.evaluate()
 
 print(benchmark_orchestrator.aggregated_results)
-
-
-# In[ ]:
