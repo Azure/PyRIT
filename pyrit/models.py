@@ -234,7 +234,7 @@ class PromptTemplate(YamlLoadable):
     parameters: list[str] = field(default_factory=list)
 
     def apply_custom_metaprompt_parameters(self, **kwargs) -> str:
-        """Builds a new prompts from the metapromt template.
+        """Builds a new prompts from the metaprompt template.
         Args:
             **kwargs: the key value for the metaprompt template inputs
 
