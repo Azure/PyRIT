@@ -29,6 +29,27 @@ class AzureMLChatTarget(PromptChatTarget, ChatSupport):
         top_p: int = 1,
         repetition_penalty: float = 1.2,
     ) -> None:
+        """
+        Initializes an instance of the AzureMLChatTarget class.
+
+        Args:
+            endpoint_uri (str, optional): The URI of the Azure ML endpoint.
+                Defaults to None.
+            api_key (str, optional): The API key for accessing the Azure ML endpoint.
+                Defaults to None.
+            chat_message_normalizer (ChatMessageNormalizer, optional): The chat message normalizer.
+                Defaults to ChatMessageNop().
+            memory (MemoryInterface, optional): The memory interface.
+                Defaults to None.
+            max_tokens (int, optional): The maximum number of tokens to generate in the response.
+                Defaults to 400.
+            temperature (float, optional): The temperature for generating diverse responses.
+                Defaults to 1.0.
+            top_p (int, optional): The top-p value for generating diverse responses.
+                Defaults to 1.
+            repetition_penalty (float, optional): The repetition penalty for generating diverse responses.
+                Defaults to 1.2.
+        """
         PromptChatTarget.__init__(self, memory=memory)
 
         self.endpoint_uri: str = default_values.get_required_value(
@@ -93,78 +114,79 @@ class AzureMLChatTarget(PromptChatTarget, ChatSupport):
         return resp
 
     def complete_chat(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int = 400,
-        temperature: float = 1.0,
-        top_p: int = 1,
-        repetition_penalty: float = 1.2,
-    ) -> str:
-        """
-        Completes a chat interaction by generating a response to the given input prompt.
-        This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
+            self,
+            messages: list[ChatMessage],
+            max_tokens: int = 400,
+            temperature: float = 1.0,
+            top_p: int = 1,
+            repetition_penalty: float = 1.2,
+        ) -> str:
+            """
+            Completes a chat interaction by generating a response to the given input prompt.
 
-        Args:
-            messages (list[ChatMessage]): The chat messages objects containing the role and content.
-            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-            temperature (float, optional): Controls randomness in the response generation. Defaults
-                                           to 1.0. 1 is more random, 0 is less.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1. 1
-                                   is more random, 0 is less.
-            repetition_penalty (float, optional): Controls repetition in the response generation.
-                                                  Defaults to 1.2.
+            This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
 
-        Raises:
-            Exception: For any errors during the process.
+            Args:
+                messages (list[ChatMessage]): The chat messages objects containing the role and content.
+                max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
+                temperature (float, optional): Controls randomness in the response generation.
+                    Defaults to 1.0. 1 is more random, 0 is less.
+                top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
+                    1 is more random, 0 is less.
+                repetition_penalty (float, optional): Controls repetition in the response generation.
+                    Defaults to 1.2.
 
-        Returns:
-            str: The generated response message.
-        """
+            Raises:
+                Exception: For any errors during the process.
 
-        headers = self._get_headers()
-        payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
+            Returns:
+                str: The generated response message.
+            """
 
-        response = net_utility.make_request_and_raise_if_error(
-            endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
-        )
-        return response.json()["output"]
+            headers = self._get_headers()
+            payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
+
+            response = net_utility.make_request_and_raise_if_error(
+                endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
+            )
+            return response.json()["output"]
 
     async def complete_chat_async(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int = 400,
-        temperature: float = 1.0,
-        top_p: int = 1,
-        repetition_penalty: float = 1.2,
-    ) -> str:
-        """
-        Completes a chat interaction by generating a response to the given input prompt.
-        This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
+            self,
+            messages: list[ChatMessage],
+            max_tokens: int = 400,
+            temperature: float = 1.0,
+            top_p: int = 1,
+            repetition_penalty: float = 1.2,
+        ) -> str:
+            """
+            Completes a chat interaction by generating a response to the given input prompt.
 
-        Args:
-            messages (list[ChatMessage]): The chat messages objects containing the role and content.
-            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-            temperature (float, optional): Controls randomness in the response generation. Defaults
-                                           to 1.0. 1 is more random, 0 is less.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1. 1
-                                   is more random, 0 is less.
-            repetition_penalty (float, optional): Controls repetition in the response generation.
-                                                  Defaults to 1.2.
+            This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
 
-        Raises:
-            Exception: For any errors during the process.
+            Args:
+                messages (list[ChatMessage]): The chat messages objects containing the role and content.
+                max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
+                temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
+                    1 is more random, 0 is less.
+                top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
+                    1 is more random, 0 is less.
+                repetition_penalty (float, optional): Controls repetition in the response generation.
+                    Defaults to 1.2.
 
-        Returns:
-            str: The generated response message.
-        """
+            Raises:
+                Exception: For any errors during the process.
 
-        headers = self._get_headers()
-        payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
+            Returns:
+                str: The generated response message.
+            """
+            headers = self._get_headers()
+            payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
 
-        response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
-        )
-        return response.json()["output"]
+            response = await net_utility.make_request_and_raise_if_error_async(
+                endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
+            )
+            return response.json()["output"]
 
 
     def _prepare_message(self, normalized_prompt: str, conversation_id: str, normalizer_id: str):
