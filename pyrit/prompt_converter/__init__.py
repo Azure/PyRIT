@@ -21,7 +21,6 @@ __all__ = [
     "PromptConverter",
     "ROT13Converter",
     "StringJoinConverter",
-    "StringJoinConverter",
     "TranslationConverter",
     "UnicodeConfusableConverter",
     "UnicodeSubstitutionConverter",
