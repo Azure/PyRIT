@@ -7,6 +7,9 @@
 # This will export all DuckDB tables to JSON files, which will be stored in the `pyrit/results` folder.
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from pyrit.memory import DuckDBMemory
 from uuid import uuid4
 from pyrit.models import ChatMessage
