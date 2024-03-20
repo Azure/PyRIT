@@ -14,8 +14,7 @@ Most of our documentation is located within the `doc` directory:
 
 - All documentation should be a `.md` file or a `.py` file in the percent format file (this will generate to `.ipynb` for consumption)
   - Do not update `.ipynb` files directly. These are meant for consumption only and will be overwritten
-- The code should be able to execute one time in a reasonable timeframe, our goal is to run this in build pipelines
-  - Short term, before we have it in our build pipelines, please run it manually with any big changes and check there are no errors
+- The code should be able to execute one time in a reasonable timeframe.
+  - Short term, before we have it in our build pipelines, please run it manually with any decent and check there are no errors
   - Currently, run: ` jupytext --execute --to notebook  ./doc/demo/*.py` and `jupytext --execute --to notebook  ./doc/code/*.py`
-  - Soon this will be: `pre-commit run jupytext --all-files`
   - Please do not re-commit updated generated `.ipynb` files with slight changes if nothing has changed in the source
