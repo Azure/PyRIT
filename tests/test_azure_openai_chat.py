@@ -11,7 +11,7 @@ import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
-from pyrit.chat.azure_openai_chat import AzureOpenAIChat
+from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.models import ChatMessage
 
 _loop = asyncio.get_event_loop()
@@ -36,8 +36,8 @@ def openai_mock_return() -> ChatCompletion:
 
 
 @pytest.fixture
-def chat_engine() -> AzureOpenAIChat:
-    return AzureOpenAIChat(
+def chat_engine() -> AzureOpenAIChatTarget:
+    return AzureOpenAIChatTarget(
         deployment_name="gpt-4",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
@@ -74,14 +74,14 @@ class MockChatCompletionsAsync(AbstractAsyncContextManager):
     "openai.resources.chat.AsyncCompletions.create",
     new_callable=lambda: MockChatCompletionsAsync(),
 )
-def test_complete_chat_async_return(mock_chat_create: AsyncMock, chat_engine: AzureOpenAIChat):
+def test_complete_chat_async_return(mock_chat_create: AsyncMock, chat_engine: AzureOpenAIChatTarget):
     ret = _loop.run_until_complete(
         chat_engine.complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
     )
     assert ret == "hi"
 
 
-def test_complete_chat_return(openai_mock_return: ChatCompletion, chat_engine: AzureOpenAIChat):
+def test_complete_chat_return(openai_mock_return: ChatCompletion, chat_engine: AzureOpenAIChatTarget):
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
         ret = chat_engine.complete_chat(messages=[ChatMessage(role="user", content="hello")])
@@ -89,9 +89,9 @@ def test_complete_chat_return(openai_mock_return: ChatCompletion, chat_engine: A
 
 
 def test_invalid_key_raises():
-    os.environ[AzureOpenAIChat.API_KEY_ENVIRONMENT_VARIABLE] = ""
+    os.environ[AzureOpenAIChatTarget.API_KEY_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
-        AzureOpenAIChat(
+        AzureOpenAIChatTarget(
             deployment_name="gpt-4",
             endpoint="https://mock.azure.com/",
             api_key="",
@@ -100,15 +100,15 @@ def test_invalid_key_raises():
 
 
 def test_initialization_with_no_deployment_raises():
-    os.environ[AzureOpenAIChat.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
+    os.environ[AzureOpenAIChatTarget.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
-        AzureOpenAIChat()
+        AzureOpenAIChatTarget()
 
 
 def test_invalid_endpoint_raises():
-    os.environ[AzureOpenAIChat.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
+    os.environ[AzureOpenAIChatTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
-        AzureOpenAIChat(
+        AzureOpenAIChatTarget(
             deployment_name="gpt-4",
             endpoint="",
             api_key="xxxxx",
