@@ -39,6 +39,7 @@ def make_request_and_raise_if_error(
 
     return response
 
+
 @retry(stop=stop_after_attempt(2), wait=wait_fixed(1), reraise=True)
 async def make_request_and_raise_if_error_async(
     endpoint_uri: str,

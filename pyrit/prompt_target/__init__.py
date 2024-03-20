@@ -10,9 +10,11 @@ from pyrit.prompt_target.gandalf_target import GandalfTarget
 from pyrit.prompt_target.text_target import TextTarget
 
 
-__all__ = ["AzureMLChatTarget",
-           "AzureOpenAIChatTarget",
-           "GandalfTarget",
-           "PromptChatTarget",
-           "PromptTarget",
-           "TextTarget"]
+__all__ = [
+    "AzureMLChatTarget",
+    "AzureOpenAIChatTarget",
+    "GandalfTarget",
+    "PromptChatTarget",
+    "PromptTarget",
+    "TextTarget",
+]
