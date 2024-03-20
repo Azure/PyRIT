@@ -27,10 +27,16 @@ class UnicodeConfusableConverter(PromptConverter):
         """
         return ["".join(self._confusable(c) for c in prompt) for prompt in prompts]
 
+    def is_one_to_one_converter(self) -> bool:
+        return True
+
     def _confusable(self, char: str) -> str:
         """Pick a confusable character for the given character."""
         if char == " ":
             return char
 
-        choices = confusable_characters(char)
-        return choices[-1] if len(choices) == 1 or self.deterministic else random.choice(choices)
+        confusable_options = confusable_characters(char)
+        if len(confusable_options) < 2 or self.deterministic:
+            return confusable_options[-1]
+        else:
+            return random.choice(confusable_options)
