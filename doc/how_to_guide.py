@@ -34,12 +34,12 @@
 import os
 
 from pyrit.common import default_values
-from pyrit.chat import AzureOpenAIChat
+from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.models import ChatMessage
 
 default_values.load_default_env()
 
-target_llm = AzureOpenAIChat(
+target_llm = AzureOpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
@@ -129,7 +129,7 @@ When the conversation objective is reached, type <|done|> to end the conversatio
 )
 
 # red_teaming_llm could be any LLM endpoint. Here it is Azure Open AI for illustrative purposes.
-red_teaming_llm = AzureOpenAIChat(
+red_teaming_llm = AzureOpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
