@@ -5,6 +5,8 @@
 # Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/setup_azure.md)
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.common import default_values
 from pyrit.prompt_target import AzureOpenAIChatTarget

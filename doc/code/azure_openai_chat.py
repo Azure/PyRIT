@@ -9,6 +9,8 @@
 # In this case, we have one named `gpt-4` deployed. See your deployments at https://oai.azure.com/ `> Management > Deployments`
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.models import ChatMessage
 from pyrit.prompt_target import AzureOpenAIChatTarget

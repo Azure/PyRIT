@@ -156,7 +156,7 @@ async def test_send_prompt_async_multiple_converters():
 
 
 @pytest.mark.asyncio
-async def test_prompt_normalizyer_send_prompt_batch_async():
+async def test_prompt_normalizer_send_prompt_batch_async():
     prompt_target = MockPromptTarget()
     prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
     prompt_text = "Hello"
