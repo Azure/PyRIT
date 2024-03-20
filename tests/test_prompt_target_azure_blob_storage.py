@@ -1,20 +1,36 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import patch
-
 import os
 import pathlib
 import pytest
 
-from pyrit.memory import DuckDBMemory
+from sqlalchemy import inspect
+from unittest.mock import patch
+
+from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.prompt_target import AzureBlobStorageTarget
 
 
 @pytest.fixture
-def azure_blob_storage_target(tmp_path: pathlib.Path):
-    memory = DuckDBMemory(db_path=":memory:")
+def memory() -> MemoryInterface:  # type: ignore
+    # Create an in-memory DuckDB engine
+    duckdb_memory = DuckDBMemory(db_path=":memory:")
 
+    # Reset the database to ensure a clean state
+    duckdb_memory.reset_database()
+    inspector = inspect(duckdb_memory.engine)
+
+    # Verify that tables are created as expected
+    assert "ConversationStore" in inspector.get_table_names(), "ConversationStore table not created."
+    assert "EmbeddingStore" in inspector.get_table_names(), "EmbeddingStore table not created."
+
+    yield duckdb_memory
+    duckdb_memory.dispose_engine()
+
+
+@pytest.fixture
+def azure_blob_storage_target(memory: DuckDBMemory):
     return AzureBlobStorageTarget(
         container_url="https://test.blob.core.windows.net/test",
         sas_token="valid_sas_token",
