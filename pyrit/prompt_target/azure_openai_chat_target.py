@@ -86,12 +86,12 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
         )
 
     def set_system_prompt(self, *, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        messages = self.memory.get_memories_with_conversation_id(conversation_id=conversation_id)
+        messages = self._memory.get_memories_with_conversation_id(conversation_id=conversation_id)
 
         if messages:
             raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
 
-        self.memory.add_chat_message_to_memory(
+        self._memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="system", content=prompt),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
@@ -108,7 +108,7 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
             presence_penalty=self._presence_penalty,
         )
 
-        self.memory.add_chat_message_to_memory(
+        self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
@@ -127,7 +127,7 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
             presence_penalty=self._presence_penalty,
         )
 
-        self.memory.add_chat_message_to_memory(
+        self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
@@ -222,8 +222,8 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
         return self.parse_chat_completion(response)
 
     def _prepare_message(self, normalized_prompt: str, conversation_id: str, normalizer_id: str):
-        messages = self.memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
         msg = ChatMessage(role="user", content=normalized_prompt)
         messages.append(msg)
-        self.memory.add_chat_message_to_memory(msg, conversation_id, normalizer_id)
+        self._memory.add_chat_message_to_memory(msg, conversation_id, normalizer_id)
         return messages
