@@ -8,7 +8,6 @@ from sqlalchemy import inspect
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
-from pyrit.chat import AzureOpenAIChat
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.prompt_target import AzureOpenAIChatTarget
 
@@ -32,8 +31,8 @@ def openai_mock_return() -> ChatCompletion:
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAIChat:
-    return AzureOpenAIChat(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine() -> AzureOpenAIChatTarget:
+    return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
@@ -67,7 +66,7 @@ def azure_openai_target(memory: DuckDBMemory):
 def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
     azure_openai_target.set_system_prompt(prompt="system prompt", conversation_id="1", normalizer_id="2")
 
-    chats = azure_openai_target._memory.get_memories_with_conversation_id(conversation_id="1")
+    chats = azure_openai_target.memory.get_memories_with_conversation_id(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "system"
     assert chats[0].content == "system prompt"
@@ -80,7 +79,7 @@ def test_send_prompt_user_no_system(azure_openai_target: AzureOpenAIChatTarget, 
             normalized_prompt="hi, I am a victim chatbot, how can I help?", conversation_id="1", normalizer_id="2"
         )
 
-        chats = azure_openai_target._memory.get_memories_with_conversation_id(conversation_id="1")
+        chats = azure_openai_target.memory.get_memories_with_conversation_id(conversation_id="1")
         assert len(chats) == 2, f"Expected 2 chats, got {len(chats)}"
         assert chats[0].role == "user"
         assert chats[1].role == "assistant"
@@ -96,7 +95,7 @@ def test_send_prompt_with_system(azure_openai_target: AzureOpenAIChatTarget, ope
             normalized_prompt="hi, I am a victim chatbot, how can I help?", conversation_id="1", normalizer_id="2"
         )
 
-        chats = azure_openai_target._memory.get_memories_with_conversation_id(conversation_id="1")
+        chats = azure_openai_target.memory.get_memories_with_conversation_id(conversation_id="1")
         assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
         assert chats[0].role == "system"
         assert chats[1].role == "user"

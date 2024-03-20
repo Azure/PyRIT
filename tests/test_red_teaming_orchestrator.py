@@ -13,7 +13,6 @@ from sqlalchemy import inspect
 from pyrit.memory.memory_models import ConversationData
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator
 from pyrit.orchestrator.end_token_red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
-from pyrit.chat import AzureOpenAIChat
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.models import AttackStrategy, ChatMessage, Score
 from pyrit.memory import DuckDBMemory
@@ -38,8 +37,8 @@ def memory() -> DuckDBMemory:  # type: ignore
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAIChat:
-    return AzureOpenAIChat(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine() -> AzureOpenAIChatTarget:
+    return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
@@ -124,7 +123,7 @@ def check_conversations(
 @pytest.mark.parametrize("OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator])
 def test_send_prompt_twice(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChat,
+    chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory: DuckDBMemory,
     attack_strategy_as_str: bool,
@@ -191,7 +190,7 @@ def test_send_prompt_twice(
 @pytest.mark.parametrize("OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator])
 def test_send_fixed_prompt_then_generated_prompt(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChat,
+    chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory: DuckDBMemory,
     attack_strategy_as_str: bool,
@@ -258,7 +257,7 @@ def test_send_fixed_prompt_then_generated_prompt(
 @pytest.mark.parametrize("OrchestratorType", [ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator])
 def test_send_fixed_prompt_beyond_first_iteration_failure(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChat,
+    chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory: DuckDBMemory,
     attack_strategy_as_str: bool,
@@ -313,7 +312,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 def test_reach_goal_after_two_turns_end_token(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChat,
+    chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory: DuckDBMemory,
     attack_strategy_as_str: bool,
