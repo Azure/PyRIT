@@ -9,6 +9,8 @@
 # In this case, we have one named `gpt-4` deployed. See your deployments at https://oai.azure.com/ `> Management > Deployments`
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.models import ChatMessage
 from pyrit.chat.azure_openai_chat import AzureOpenAIChat
@@ -17,6 +19,8 @@ from pyrit.common import default_values
 default_values.load_default_env()
 
 
-chat_engine = AzureOpenAIChat(deployment_name="gpt-4")
+chat_engine = AzureOpenAIChat()
 
 chat_engine.complete_chat(messages=[ChatMessage(role="user", content="Hello world!")])
+
+# %%

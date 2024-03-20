@@ -17,7 +17,7 @@ class AMLOnlineEndpointChat(ChatSupport):
     for conducting red teaming activities.
     """
 
-    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_ML_API_KEY"
+    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_ML_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_ML_MANAGED_ENDPOINT"
 
     def __init__(
@@ -90,8 +90,7 @@ class AMLOnlineEndpointChat(ChatSupport):
         """Constructs the HTTP request body for the AML online endpoint."""
 
         squashed_messages = self.chat_message_normalizer.normalize(messages)
-        messages_dict = [message.dict() for message in squashed_messages]
-
+        messages_dict = [message.model_dump() for message in squashed_messages]
         data = {
             "input_data": {
                 "input_string": messages_dict,

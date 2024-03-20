@@ -99,6 +99,12 @@ def test_invalid_key_raises():
         )
 
 
+def test_initialization_with_no_deployment_raises():
+    os.environ[AzureOpenAIChat.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
+    with pytest.raises(ValueError):
+        AzureOpenAIChat()
+
+
 def test_invalid_endpoint_raises():
     os.environ[AzureOpenAIChat.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):

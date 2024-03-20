@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, Optional, Type, TypeVar
+from typing import Literal, Optional, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -17,13 +17,14 @@ from pydantic import BaseModel, ConfigDict
 
 # Originally derived from this:
 # https://github.com/openai/openai-python/blob/7f9e85017a0959e3ba07834880d92c748f8f67ab/src/openai/types/chat/chat_completion_role.py#L4
+ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "tool", "function"]
 ChatMessageRole = Literal["system", "user", "assistant", "tool", "function"]
 
 
 @dataclass
 class Score:
     score_type: Literal["int", "float", "str", "bool"]
-    score_value: int | float | str
+    score_value: int | float | str | bool
     score_description: str = ""
     score_explanation: str = ""
 
@@ -74,7 +75,7 @@ class PromptResponse(BaseModel):
         return embedding_output_file_path.as_posix()
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()
 
     @staticmethod
     def load_from_file(file_path: Path) -> PromptResponse:
@@ -86,7 +87,7 @@ class PromptResponse(BaseModel):
             The loaded embedding response
         """
         embedding_json_data = file_path.read_text(encoding="utf-8")
-        return PromptResponse.parse_raw(embedding_json_data)
+        return PromptResponse.model_validate_json(embedding_json_data)
 
 
 @dataclass
@@ -94,64 +95,92 @@ class Prompt:
     content: str
 
 
-@dataclass
-class ScoreAnswers:
-    answers: list[str]
+class QuestionChoice(BaseModel):
+    """
+    Represents a choice for a question.
+
+    Attributes:
+        index (int): The index of the choice.
+        text (str): The text of the choice.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    index: int
+    text: str
+
+
+class QuestionAnsweringEntry(BaseModel):
+    """
+    Represents a question model.
+
+    Attributes:
+        question (str): The question text.
+        answer_type (Literal["int", "float", "str", "bool"]): The type of the answer.
+            - `int` for integer answers (e.g., when the answer is an index of the correct option in a multiple-choice
+               question).
+            - `float` for answers that are floating-point numbers.
+            - `str` for text-based answers.
+            - `bool` for boolean answers.
+        correct_answer (Union[int, str, float]): The correct answer.
+        choices (list[QuestionChoice]): The list of choices for the question.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    question: str
+    answer_type: Literal["int", "float", "str", "bool"]
+    correct_answer: Union[int, str, float]
+    choices: list[QuestionChoice]
+
+    def __hash__(self):
+        return hash(self.model_dump_json())
+
+
+class QuestionAnsweringDataset(BaseModel):
+    """
+    Represents a dataset for question answering.
+
+    Attributes:
+        name (str): The name of the dataset.
+        version (str): The version of the dataset.
+        description (str): A description of the dataset.
+        author (str): The author of the dataset.
+        group (str): The group associated with the dataset.
+        source (str): The source of the dataset.
+        questions (list[QuestionAnsweringEntry]): A list of question models.
+    """
+
+    model_config = ConfigDict(extra="forbid")
     name: str = ""
     version: str = ""
     description: str = ""
     author: str = ""
     group: str = ""
     source: str = ""
-
-    @staticmethod
-    def from_yaml(file: Path) -> ScoreAnswers:
-        yaml_data = yaml.safe_load(file.read_text("utf-8"))
-        return ScoreAnswers(**yaml_data)
-
-
-@dataclass
-class ExamAnswer:
-    answer: str
-    explanation: str
-    confidence: str
-
-
-@dataclass
-class ExamAnswers:
-    answer: list[ExamAnswer] = field(default_factory=list)
-
-
-@dataclass
-class ScoringResults:
-    failed: int
-    passed: int
-    # unknown: int
-    questions_count: int
-    passed_with_partial_credit: float
-
-
-@dataclass
-class CompletionConfig:
-    temperature: int
-    max_tokens: int
+    questions: list[QuestionAnsweringEntry]
 
 
 T = TypeVar("T", bound="YamlLoadable")
 
 
 class YamlLoadable(abc.ABC):
+    """
+    Abstract base class for objects that can be loaded from YAML files.
+    """
+
     @classmethod
     def from_yaml_file(cls: Type[T], file: Path) -> T:
         """
-        Creates a new object from a file
+        Creates a new object from a YAML file.
+
         Args:
-            file: The input file
+            file: The input file path.
 
         Returns:
-            A new T object
+            A new object of type T.
+
         Raises:
-            FileNotFoundError: if the input YAML file path does not exist
+            FileNotFoundError: If the input YAML file path does not exist.
+            ValueError: If the YAML file is invalid.
         """
         if not file.exists():
             raise FileNotFoundError(f"File '{file}' does not exist.")
@@ -175,14 +204,21 @@ class PromptDataset(YamlLoadable):
     prompts: list[str] = field(default_factory=list)
 
 
-@dataclass
-class AttackStrategy(YamlLoadable):
-    """TODO. This is a temporary name and needs more discussion. We've thought about naming this Personality
-    or Objective as well."""
+class ChatMessagesDataset(BaseModel):
+    """
+    Represents a dataset of chat messages.
 
+    Attributes:
+        model_config (ConfigDict): The model configuration.
+        name (str): The name of the dataset.
+        description (str): The description of the dataset.
+        list_of_chat_messages (list[list[ChatMessage]]): A list of chat messages.
+    """
+
+    model_config = ConfigDict(extra="forbid")
     name: str
     description: str
-    content: str
+    list_of_chat_messages: list[list[ChatMessage]]
 
 
 @dataclass
@@ -198,7 +234,7 @@ class PromptTemplate(YamlLoadable):
     parameters: list[str] = field(default_factory=list)
 
     def apply_custom_metaprompt_parameters(self, **kwargs) -> str:
-        """Builds a new prompts from the metapromt template.
+        """Builds a new prompts from the metaprompt template.
         Args:
             **kwargs: the key value for the metaprompt template inputs
 
@@ -223,10 +259,35 @@ class PromptTemplate(YamlLoadable):
         return final_prompt
 
 
+@dataclass
+class AttackStrategy:
+    def __init__(self, *, strategy: Union[Path | str], conversation_objective: str, **kwargs):
+        kwargs["conversation_objective"] = conversation_objective
+        self.kwargs = kwargs
+        if isinstance(strategy, Path):
+            self.strategy = PromptTemplate.from_yaml_file(strategy)
+        else:
+            self.strategy = PromptTemplate(template=strategy, parameters=list(kwargs.keys()))
+
+    def __str__(self):
+        """Returns a string representation of the attack strategy."""
+        return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
+
+
+class ToolCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    type: str
+    function: str
+
+
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: ChatMessageRole
     content: str
+    name: Optional[str] = None
+    tool_calls: Optional[list[ToolCall]] = None
+    tool_call_id: Optional[str] = None
 
 
 class EmbeddingUsageInformation(BaseModel):
@@ -273,7 +334,7 @@ class EmbeddingResponse(BaseModel):
             The loaded embedding response
         """
         embedding_json_data = file_path.read_text(encoding="utf-8")
-        return EmbeddingResponse.parse_raw(embedding_json_data)
+        return EmbeddingResponse.model_validate_json(embedding_json_data)
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()

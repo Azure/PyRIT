@@ -149,7 +149,7 @@ class HuggingFaceChat(ChatSupport):
 
             response_message = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         except Exception as e:
-            logger.error(f"Error occured during inference: {e}")
+            logger.error(f"Error occurred during inference: {e}")
             raise
 
         # Clean the response message to remove specific tokens, if there are any

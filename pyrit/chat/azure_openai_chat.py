@@ -9,18 +9,21 @@ from pyrit.models import ChatMessage
 
 
 class AzureOpenAIChat(ChatSupport):
-    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_API_KEY"
-    ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_ENDPOINT"
+    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_KEY"
+    ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_ENDPOINT"
+    DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_DEPLOYMENT"
 
     def __init__(
         self,
         *,
-        deployment_name: str,
+        deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
         api_version: str = "2023-08-01-preview",
     ) -> None:
-        self._deployment_name = deployment_name
+        self._deployment_name = default_values.get_required_value(
+            env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
+        )
 
         endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
@@ -34,7 +37,7 @@ class AzureOpenAIChat(ChatSupport):
             api_version=api_version,
             azure_endpoint=endpoint,
         )
-        self._asynch_client = AsyncAzureOpenAI(
+        self._async_client = AsyncAzureOpenAI(
             api_key=api_key,
             api_version=api_version,
             azure_endpoint=endpoint,
@@ -79,7 +82,7 @@ class AzureOpenAIChat(ChatSupport):
         Returns:
             str: The generated response message
         """
-        response: ChatCompletion = await self._asynch_client.chat.completions.create(
+        response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_tokens=max_tokens,
             temperature=temperature,
