@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+# %% [markdown]
 #
 # The Orchestrator is a top level component that red team operators will interact with most. It is responsible for telling PyRIT what endpoints to connect to and how to send prompts.
 #
@@ -15,9 +13,9 @@
 # Orchestrators can tackle complicated scenarios, but this example is about as simple as it gets (while still being useful). Here, we'll send all prompts in a file, use a converter to base64-encode the prompts, and send them to a PromptTarget.
 #
 # Note to run this demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md)
-
-# In[1]:
-
+# %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 import os
 
@@ -44,18 +42,9 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
     for entry in memory:
         print(entry)
 
-orchestrator.send_prompts(all_prompts)
-
-memory = orchestrator.get_memory()
-
-for entry in memory:
-    print(entry)
-
-
+# %% [markdown]
 # ## Benchmark Orchestrator
-
-# In[ ]:
-
+# %%
 
 from pyrit.orchestrator.benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
@@ -115,10 +104,7 @@ benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
 
 benchmark_orchestrator.evaluate()
 
-
 # In[ ]:
-
-
 correct_count = 0
 total_count = 0
 

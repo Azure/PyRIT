@@ -10,6 +10,8 @@
 # <br> <img src="./../../assets/huggingface_model_id.png" alt="huggingface_model_id.png" height="400"/> <br>
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.common import default_values
 
