@@ -24,12 +24,44 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
         api_key: str = None,
         memory: MemoryInterface = None,
         api_version: str = "2023-08-01-preview",
+        max_tokens: int = 1024,
         temperature: float = 1.0,
+        top_p: int = 1,
+        frequency_penalty: float = 0.5,
+        presence_penalty: float = 0.5,
     ) -> None:
+        """
+        Initializes an instance of the AzureOpenAIChatTarget class.
 
+        Args:
+            deployment_name (str, optional): The name of the deployment. Defaults to the
+                DEPLOYMENT_ENVIRONMENT_VARIABLE environment variable .
+            endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
+                Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
+            api_key (str, optional): The API key for accessing the Azure OpenAI service.
+                Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
+            memory (MemoryInterface, optional): An instance of the MemoryInterface class
+                for storing conversation history. Defaults to None.
+            api_version (str, optional): The version of the Azure OpenAI API. Defaults to
+                "2023-08-01-preview".
+            max_tokens (int, optional): The maximum number of tokens to generate in the response.
+                Defaults to 1024.
+            temperature (float, optional): The temperature parameter for controlling the
+                randomness of the response. Defaults to 1.0.
+            top_p (int, optional): The top-p parameter for controlling the diversity of the
+                response. Defaults to 1.
+            frequency_penalty (float, optional): The frequency penalty parameter for penalizing
+                frequently generated tokens. Defaults to 0.5.
+            presence_penalty (float, optional): The presence penalty parameter for penalizing
+                tokens that are already present in the conversation history. Defaults to 0.5.
+        """
         PromptChatTarget.__init__(self, memory=memory)
 
+        self._max_tokens = max_tokens
         self._temperature = temperature
+        self._top_p = top_p
+        self._frequency_penalty = frequency_penalty
+        self._presence_penalty = presence_penalty
 
         self._deployment_name = default_values.get_required_value(
             env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
@@ -68,7 +100,13 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
     def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
-        resp = self.complete_chat(messages=messages, temperature=self._temperature)
+        resp = self.complete_chat(
+            messages=messages,
+            top_p=self._top_p,
+            temperature=self._temperature,
+            frequency_penalty=self._frequency_penalty,
+            presence_penalty=self._presence_penalty,
+        )
 
         self.memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
@@ -81,7 +119,13 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
     async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
-        resp = await super().complete_chat_async(messages=messages, temperature=self._temperature)
+        resp = await self.complete_chat_async(
+            messages=messages,
+            top_p=self._top_p,
+            temperature=self._temperature,
+            frequency_penalty=self._frequency_penalty,
+            presence_penalty=self._presence_penalty,
+        )
 
         self.memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),

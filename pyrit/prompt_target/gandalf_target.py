@@ -18,9 +18,6 @@ class GandalfTarget(GandalfCompletionEngine, PromptTarget):
         super().__init__(level=level)
         self._memory = memory if memory else DuckDBMemory()
 
-    def set_system_prompt(self, *, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        raise NotImplementedError("Cannot set system prompt with Gandalf.")
-
     def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         msg = ChatMessage(role="user", content=normalized_prompt)
 
