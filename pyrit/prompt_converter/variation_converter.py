@@ -28,7 +28,7 @@ class VariationConverter(PromptConverter):
 
         self.number_variations = number_variations
         if number_variations < 0 or number_variations > 1000:
-            logger.log(logging.WARNING, "Number of variations should be between 0 and 1000. Defaulting to 10")
+            logger.warn("Number of variations should be between 0 and 1000. Defaulting to 10")
             self.number_variations = 10
 
         self.system_prompt = str(
