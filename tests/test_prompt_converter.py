@@ -5,6 +5,7 @@ from pyrit.prompt_converter import (
     Base64Converter,
     NoOpConverter,
     UnicodeSubstitutionConverter,
+    UnicodeConfusableConverter,
     StringJoinConverter,
     ROT13Converter,
     AsciiArtConverter,
@@ -106,3 +107,8 @@ def test_translator_converter_languages_validation_throws(languages):
     prompt_target = MockPromptTarget()
     with pytest.raises(ValueError):
         TranslationConverter(converter_target=prompt_target, languages=languages)
+
+
+def test_unicode_confusable_converter() -> None:
+    converter = UnicodeConfusableConverter(deterministic=True)
+    assert converter.convert(["lorem ipsum dolor sit amet"]) == ["ïỎ𐒴ḕ𝗠 ïṗṡ𝘶𝗠 𝑫ỎïỎ𐒴 ṡï𝚝 ḁ𝗠ḕ𝚝"]
