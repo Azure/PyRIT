@@ -32,11 +32,10 @@ class UnicodeConfusableConverter(PromptConverter):
 
     def _confusable(self, char: str) -> str:
         """Pick a confusable character for the given character."""
-        if char == " ":
-            return char
-
         confusable_options = confusable_characters(char)
-        if len(confusable_options) < 2 or self.deterministic:
+        if not confusable_options or char == " ":
+            return char
+        elif self.deterministic or len(confusable_options) == 1:
             return confusable_options[-1]
         else:
             return random.choice(confusable_options)
