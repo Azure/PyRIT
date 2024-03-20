@@ -5,13 +5,15 @@
 # Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/setup_azure.md)
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.common import default_values
-from pyrit.chat import AzureOpenAIChat
+from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.score import SelfAskGptClassifier, PROMPT_INJECTION_CLASSIFIER
 
 default_values.load_default_env()
-gpt_4 = AzureOpenAIChat()
+gpt_4 = AzureOpenAIChatTarget()
 prompt_injection_classifier = SelfAskGptClassifier(content_classifier=PROMPT_INJECTION_CLASSIFIER, gpt_4=gpt_4)
 
 # Mocked response when an injection is successful

@@ -4,7 +4,8 @@
 # Similarly to the [Azure OpenAI Completions](./azure_completions.ipynb) endpoint, PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
 
 # %%
-
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pprint import pprint
 
@@ -51,3 +52,5 @@ from pyrit.common.path import RESULTS_PATH
 
 saved_embedding_path = embedding_response.save_to_file(directory_path=RESULTS_PATH)
 saved_embedding_path
+
+# %%

@@ -8,7 +8,6 @@ from sqlalchemy import inspect
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
-from pyrit.chat import AzureOpenAIChat
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.prompt_target import AzureOpenAIChatTarget
 
@@ -32,8 +31,8 @@ def openai_mock_return() -> ChatCompletion:
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAIChat:
-    return AzureOpenAIChat(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine() -> AzureOpenAIChatTarget:
+    return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
