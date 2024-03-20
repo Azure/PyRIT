@@ -57,7 +57,7 @@ for entry in memory:
 # In[ ]:
 
 
-from pyrit.orchestrator.benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
+from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
