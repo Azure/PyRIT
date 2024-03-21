@@ -43,14 +43,11 @@ def test_initialization_with_required_parameters(azure_blob_storage_target: Azur
     assert azure_blob_storage_target._client is not None
 
 
-@patch.dict(
-    "os.environ",
-    {
-        AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE: "valid_sas_token",
-        AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: "https://test.blob.core.windows.net/test",
-    },
-)
 def test_initialization_with_required_parameters_from_env():
+    os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
+    os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = (
+        "https://test.blob.core.windows.net/test"
+    )
     abs_target = AzureBlobStorageTarget()
     assert abs_target._container_url == os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
     assert abs_target._sas_token == os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE]
@@ -90,7 +87,7 @@ def test_send_prompt(mock_upload, azure_blob_storage_target: AzureBlobStorageTar
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
     assert blob_url.__contains__(".txt")
 
-    chats = azure_blob_storage_target.memory.get_memories_with_conversation_id(conversation_id="1")
+    chats = azure_blob_storage_target._memory.get_memories_with_conversation_id(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "user"
     assert chats[0].content == __name__
@@ -106,7 +103,7 @@ async def test_send_prompt_async(mock_upload_async, azure_blob_storage_target: A
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
     assert blob_url.__contains__(".txt")
 
-    chats = azure_blob_storage_target.memory.get_memories_with_conversation_id(conversation_id="2")
+    chats = azure_blob_storage_target._memory.get_memories_with_conversation_id(conversation_id="2")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "user"
     assert chats[0].content == __name__

@@ -17,8 +17,8 @@
 
 import os
 import pathlib
-from pyrit.chat.aml_online_endpoint_chat import AMLOnlineEndpointChat
 
+from pyrit.prompt_target import AzureMLChatTarget
 from pyrit.orchestrator import EndTokenRedTeamingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.chat_message_normalizer import GenericSystemSquash
@@ -52,7 +52,7 @@ attack_strategy = AttackStrategy(
 # In this case, it's a deployed AML endpoint called mistralai-mixtral-8x7b-instru-2
 # but it can be any supported endpoint.
 # mixtral disallows system prompts, so we include a chat_message_normalizer to squash them:
-red_teaming_chat = AMLOnlineEndpointChat(chat_message_normalizer=GenericSystemSquash())
+red_teaming_chat = AzureMLChatTarget(chat_message_normalizer=GenericSystemSquash())
 
 prompt_target = AzureOpenAIChatTarget(
     deployment_name="defense-gpt35",

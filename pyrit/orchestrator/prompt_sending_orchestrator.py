@@ -47,7 +47,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
 
         self._prompt_target = prompt_target
-        self._prompt_target.memory = self._memory
+        self._prompt_target._memory = self._memory
         self._include_original_prompts = include_original_prompts
 
         self.batch_size = batch_size
@@ -100,13 +100,12 @@ class PromptSendingOrchestrator(Orchestrator):
             )
             normalized_prompts.append(converted_prompt)
 
-        logger.log(
-            logging.INFO,
+        logger.info(
             f"Sending {len(normalized_prompts)} prompts to the prompt target.",
         )
 
         for normalized_prompt in normalized_prompts:
-            logger.log(logging.INFO, f"Prompt: {normalized_prompt}")
+            logger.info(f"Prompt: {normalized_prompt}")
 
         return normalized_prompts
 
