@@ -7,6 +7,8 @@
 #
 # Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter and AsciiArtConverter
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter
 

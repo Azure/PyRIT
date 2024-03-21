@@ -47,7 +47,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
 
         self._prompt_target = prompt_target
-        self._prompt_target.memory = self._memory
+        self._prompt_target._memory = self._memory
         self._include_original_prompts = include_original_prompts
 
         self.batch_size = batch_size
