@@ -13,13 +13,13 @@
 # Licensed under the MIT license.
 
 from pyrit.models import ChatMessage
-from pyrit.chat.azure_openai_chat import AzureOpenAIChat
+from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common import default_values
 
 default_values.load_default_env()
 
 
-chat_engine = AzureOpenAIChat()
+chat_engine = AzureOpenAIChatTarget()
 
 chat_engine.complete_chat(messages=[ChatMessage(role="user", content="Hello world!")])
 
