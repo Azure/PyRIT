@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import os
 
 from contextlib import AbstractAsyncContextManager
@@ -42,6 +41,7 @@ def azure_chat_engine() -> AzureOpenAIChatTarget:
         api_version="some_version",
     )
 
+
 @pytest.fixture
 def openai_chat_engine() -> OpenAIChatTarget:
     return OpenAIChatTarget(
@@ -80,26 +80,32 @@ class MockChatCompletionsAsync(AbstractAsyncContextManager):
     "openai.resources.chat.AsyncCompletions.create",
     new_callable=lambda: MockChatCompletionsAsync(),
 )
-
 @pytest.mark.asyncio
-async def test_azure_complete_chat_async_return(openai_mock_return: ChatCompletion, azure_chat_engine: AzureOpenAIChatTarget):
+async def test_azure_complete_chat_async_return(
+    openai_mock_return: ChatCompletion, azure_chat_engine: AzureOpenAIChatTarget
+):
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
         ret = await azure_chat_engine.complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
         assert ret == "hi"
 
+
 @pytest.mark.asyncio
-async def test_openai_complete_chat_async_return(openai_mock_return: ChatCompletion, openai_chat_engine: OpenAIChatTarget):
+async def test_openai_complete_chat_async_return(
+    openai_mock_return: ChatCompletion, openai_chat_engine: OpenAIChatTarget
+):
     with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = openai_mock_return
         ret = await openai_chat_engine.complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
         assert ret == "hi"
+
 
 def test_azure_complete_chat_return(openai_mock_return: ChatCompletion, azure_chat_engine: AzureOpenAIChatTarget):
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
         ret = azure_chat_engine.complete_chat(messages=[ChatMessage(role="user", content="hello")])
         assert ret == "hi"
+
 
 def test_openai_complete_chat_return(openai_mock_return: ChatCompletion, openai_chat_engine: OpenAIChatTarget):
     with patch("openai.resources.chat.Completions.create") as mock_create:
@@ -118,6 +124,7 @@ def test_azure_invalid_key_raises():
             api_version="some_version",
         )
 
+
 def test_openai_invalid_key_raises():
     os.environ[OpenAIChatTarget.API_KEY_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
@@ -132,6 +139,7 @@ def test_azure_initialization_with_no_deployment_raises():
     os.environ[AzureOpenAIChatTarget.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
         AzureOpenAIChatTarget()
+
 
 def test_openai_initialization_with_no_deployment_raises():
     os.environ[OpenAIChatTarget.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
@@ -148,6 +156,7 @@ def test_azure_invalid_endpoint_raises():
             api_key="xxxxx",
             api_version="some_version",
         )
+
 
 def test_openai_invalid_endpoint_raises():
     os.environ[OpenAIChatTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
