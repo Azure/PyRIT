@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-
+import json
+import requests
+import os
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.azure_openai_chat_target import AzureOpenAIChatTarget
 
@@ -23,15 +25,41 @@ class ImageTarget(PromptTarget):
         self.image_target = AzureOpenAIChatTarget(
             deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
         )
-        
-    def send_prompt(self, prompt: str, output_filename: str="image1.png"):
+        self.output_filename = "image1.png"
+    def dowhload_image(self, image_json: json):
+        """
+        Parses the JSON response to get the URL and downloads the image from that URL and stores image locally 
+        Parameters:
+            image_json: response from image target in JSON format
+            output_filename: (optional) name of file to store image in
+        Returns: file location
+        """
+        # Set the directory for the stored image
+        image_dir = os.path.join(os.curdir, 'images')
+
+        # If the directory doesn't exist, create it
+        if not os.path.isdir(image_dir):
+            os.mkdir(image_dir)
+
+        # Initialize the image path (note the filetype should be png)
+        image_path = os.path.join(image_dir, self.output_filename)
+        # Retrieve the generated image
+        image_url = image_json["data"][0]["url"]  # extract image URL from response
+        generated_image = requests.get(image_url).content  # download the image
+        with open(image_path, "wb") as image_file:
+            image_file.write(generated_image)
+        return image_path
+
+        # dirctory name here + filename is uuid
+    def send_prompt(self, prompt: str):
         """
         Sends prompt to image target and returns response
         Parameters:
             prompt: a string with the prompt to send
         Returns: response from target model in a JSON format
         """
-        resp = self.image_target.complete_image_chat(prompt=prompt, num_images=self.n, output_filename=output_filename)
+        resp = self.image_target.complete_image_chat(prompt=prompt, num_images=self.n)
+        image_location = self.dowhload_image(image_json = resp)
         return resp
     
     def send_prompt_async(): #TODO
