@@ -4,8 +4,12 @@
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.azure_blob_storage_target import AzureBlobStorageTarget
+<<<<<<< HEAD
 from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
 from pyrit.prompt_target.azure_openai_chat_target import AzureOpenAIChatTarget
+=======
+from pyrit.prompt_target.openai_chat_target import AzureOpenAIChatTarget, OpenAIChatTarget
+>>>>>>> main
 from pyrit.prompt_target.gandalf_target import GandalfTarget
 from pyrit.prompt_target.text_target import TextTarget
 
@@ -15,6 +19,7 @@ __all__ = [
     "AzureMLChatTarget",
     "AzureOpenAIChatTarget",
     "GandalfTarget",
+    "OpenAIChatTarget",
     "PromptChatTarget",
     "PromptTarget",
     "TextTarget",

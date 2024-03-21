@@ -43,14 +43,11 @@ def test_initialization_with_required_parameters(azure_blob_storage_target: Azur
     assert azure_blob_storage_target._client is not None
 
 
-@patch.dict(
-    "os.environ",
-    {
-        AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE: "valid_sas_token",
-        AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: "https://test.blob.core.windows.net/test",
-    },
-)
 def test_initialization_with_required_parameters_from_env():
+    os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
+    os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = (
+        "https://test.blob.core.windows.net/test"
+    )
     abs_target = AzureBlobStorageTarget()
     assert abs_target._container_url == os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
     assert abs_target._sas_token == os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE]
