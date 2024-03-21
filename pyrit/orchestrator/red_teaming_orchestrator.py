@@ -143,7 +143,8 @@ class RedTeamingOrchestrator(Orchestrator):
             # A special case is the very first message, which means there are no prior messages.
             logger.info(
                 "No prompt for prompt target provided. "
-                "Generating a prompt for the prompt target using the red teaming LLM.")
+                "Generating a prompt for the prompt target using the red teaming LLM."
+            )
 
             assistant_responses = [m for m in target_messages if m.role == "assistant"]
             if len(assistant_responses) > 0:
