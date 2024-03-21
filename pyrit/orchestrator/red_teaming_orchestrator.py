@@ -160,6 +160,8 @@ class RedTeamingOrchestrator(Orchestrator):
                 messages.append(ChatMessage(role="system", content=self._attack_strategy))
             messages.append(ChatMessage(role="user", content=prompt_text))
             prompt = self._red_teaming_chat.complete_chat(messages=messages)
+            if not prompt:
+                raise ValueError("The red teaming chat returned an empty prompt. Run with verbose=True to debug.")
             messages.append(ChatMessage(role="assistant", content=prompt))
             # Determine the number of messages to add to memory based on if we included the system message
             memory_messages = MESSAGE_COUNT_DEFAULT
