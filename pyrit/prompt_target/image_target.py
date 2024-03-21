@@ -29,8 +29,8 @@ class ImageTarget(PromptTarget):
             deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
         )
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
-        self.output_filename = "image1.png"
-    def dowhload_image(self, image_json: json):
+
+    def dowhload_image(self, image_json: json, output_filename: str):
         """
         Parses the JSON response to get the URL and downloads the image from that URL and stores image locally 
         Parameters:
@@ -44,24 +44,25 @@ class ImageTarget(PromptTarget):
             os.mkdir(self.output_dir)
 
         # Initialize the image path (note the filetype should be png)
-        image_path = self.output_dir / "image1.png"
+        image_path = self.output_dir / output_filename
         # Retrieve the generated image
         image_url = image_json["data"][0]["url"]  # extract image URL from response
         generated_image = requests.get(image_url).content  # download the image
         with open(image_path, "wb") as image_file:
             image_file.write(generated_image)
         return image_path
-
-        # dirctory name here + filename is uuid
-    def send_prompt(self, prompt: str):
+    
+    def send_prompt(self, prompt: str, conversation_id: str = None, normalizer_id: str = None):
         """
         Sends prompt to image target and returns response
         Parameters:
             prompt: a string with the prompt to send
         Returns: response from target model in a JSON format
         """
+        output_filename = conversation_id + "_" + normalizer_id + ".png" # name of file based on conversation ID and normalizer ID
         resp = self.image_target.complete_image_chat(prompt=prompt, num_images=self.n)
-        image_location = self.dowhload_image(image_json = resp)
+        image_location = self.dowhload_image(image_json = resp, output_filename=output_filename)
+        resp["image_file_location"] = image_location
         return resp
     
     def send_prompt_async(): #TODO

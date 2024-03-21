@@ -33,7 +33,7 @@ img_prompt_target = ImageTarget(deployment_name = "pyrit_dall-e-3",
 
 # %%
 image_resp = img_prompt_target.send_prompt(
-    prompt="Draw me a baby racoon. It should be the cutest racoon ever. Draw it cuddling a stuffed animal racoon")
+    prompt="Draw me a baby racoon. It should be the cutest racoon ever. Draw it cuddling a stuffed animal racoon", conversation_id = test_conversation_id, normalizer_id = test_normalizer_id)
 
 # %%
 image_resp
