@@ -28,7 +28,7 @@ class TextTarget(PromptTarget):
         msg = ChatMessage(role="user", content=normalized_prompt)
         self.text_stream.write(f"{str(msg)}\n")
 
-        self.memory.add_chat_message_to_memory(
+        self._memory.add_chat_message_to_memory(
             conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
         )
 

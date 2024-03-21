@@ -3,7 +3,7 @@
 ## I have an API endpoint. How can I use PyRIT to connect to it?
 
 To connect to your endpoint you need a client that knows how to work with that type of endpoint.
-Make sure to check the `pyrit.chat` [module](https://github.com/Azure/PyRIT/tree/main/pyrit/chat) for existing clients such as `AzureOpenAIChat`.
+Make sure to check the `pyrit.chat` [module](https://github.com/Azure/PyRIT/tree/main/pyrit/chat) for existing clients such as `AzureOpenAIChatTarget`.
 If no corresponding class exists, you can write your own and implement the `ChatSupport` interface.
 If you do this please consider contributing your new client back to PyRIT.
 
