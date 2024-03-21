@@ -244,6 +244,14 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
         return messages
     
     def dowhload_image(self, image_json: json, output_filename: str = "image.png"):
+        #TODO: change this path to store images
+        """
+        Parses the JSON response to get the URL and downloads the image from that URL and stores image locally 
+        Parameters:
+            image_json: response from image target in JSON format
+            output_filename: (optional) name of file to store image in
+        Returns: file location
+        """
         # Set the directory for the stored image
         image_dir = os.path.join(os.curdir, 'images')
 
@@ -253,14 +261,21 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
 
         # Initialize the image path (note the filetype should be png)
         image_path = os.path.join(image_dir, output_filename)
-        print(image_path)
         # Retrieve the generated image
         image_url = image_json["data"][0]["url"]  # extract image URL from response
         generated_image = requests.get(image_url).content  # download the image
         with open(image_path, "wb") as image_file:
             image_file.write(generated_image)
-
+        return image_path
     def complete_image_chat(self, prompt: str, num_images: int, output_filename:str):
+        """
+        Sends prompt to image target and returns response
+        Parameters:
+            prompt: a string with the prompt to send
+            num_images: number of images for model to generate
+            output_filename: name of file to store image in
+        Returns: response from target model in a JSON format
+        """
         response = self._client.images.generate(
             model = self._deployment_name, 
             prompt = prompt, 
@@ -268,7 +283,8 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
         )
         try:
             json_response = json.loads(response.model_dump_json())
-            self.dowhload_image(image_json=json_response, output_filename=output_filename)
+            image_location = self.dowhload_image(image_json=json_response, output_filename=output_filename)
+            json_response["image_file_location"] = image_location
         except json.JSONDecodeError:
             print("ERROR WITH RESPONSE")
             return None

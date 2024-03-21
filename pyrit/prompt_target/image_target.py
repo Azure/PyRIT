@@ -24,8 +24,13 @@ class ImageTarget(PromptTarget):
             deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
         )
         
-    def send_prompt(self, prompt: str, conversation_id: str, normalizer_id: str, output_filename: str="image1.png"):
-
+    def send_prompt(self, prompt: str, output_filename: str="image1.png"):
+        """
+        Sends prompt to image target and returns response
+        Parameters:
+            prompt: a string with the prompt to send
+        Returns: response from target model in a JSON format
+        """
         resp = self.image_target.complete_image_chat(prompt=prompt, num_images=self.n, output_filename=output_filename)
         return resp
     
