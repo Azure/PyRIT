@@ -48,7 +48,6 @@ class AzureBlobStorageTarget(PromptTarget):
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
         memory: MemoryInterface | None = None,
     ) -> None:
-        default_values.load_default_env()
 
         self._blob_content_type: str = blob_content_type.value
 
