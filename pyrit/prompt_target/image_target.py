@@ -3,6 +3,9 @@
 import json
 import requests
 import os
+import pathlib
+
+from pyrit.common.path import RESULTS_PATH
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.azure_openai_chat_target import AzureOpenAIChatTarget
 
@@ -25,6 +28,7 @@ class ImageTarget(PromptTarget):
         self.image_target = AzureOpenAIChatTarget(
             deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
         )
+        self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
         self.output_filename = "image1.png"
     def dowhload_image(self, image_json: json):
         """
@@ -34,15 +38,13 @@ class ImageTarget(PromptTarget):
             output_filename: (optional) name of file to store image in
         Returns: file location
         """
-        # Set the directory for the stored image
-        image_dir = os.path.join(os.curdir, 'images')
 
         # If the directory doesn't exist, create it
-        if not os.path.isdir(image_dir):
-            os.mkdir(image_dir)
+        if not os.path.isdir(self.output_dir):
+            os.mkdir(self.output_dir)
 
         # Initialize the image path (note the filetype should be png)
-        image_path = os.path.join(image_dir, self.output_filename)
+        image_path = self.output_dir / "image1.png"
         # Retrieve the generated image
         image_url = image_json["data"][0]["url"]  # extract image URL from response
         generated_image = requests.get(image_url).content  # download the image
