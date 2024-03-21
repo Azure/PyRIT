@@ -1,12 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-#from PIL import Image
-
 from pyrit.prompt_target import PromptTarget
-from pyrit.chat import AzureOpenAIChat
+from pyrit.prompt_target.azure_openai_chat_target import AzureOpenAIChatTarget
 
-class ImageTarget(AzureOpenAIChat, PromptTarget):
+class ImageTarget(PromptTarget):
     """
     The ImageTarget takes prompt and generates images
     """
@@ -22,28 +20,14 @@ class ImageTarget(AzureOpenAIChat, PromptTarget):
 
         self.temperature = temperature
         self.deployment_name = deployment_name
-
-        AzureOpenAIChat.__init__(
-            self, deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
+        self.image_target = AzureOpenAIChatTarget(
+            deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
         )
+        
+    def send_prompt(self, prompt: str, conversation_id: str, normalizer_id: str, output_filename: str="image1.png"):
 
-    def _prepare_data(self, normalized_prompt: str = None):
-        return str.encode(normalized_prompt)
-    
-    def send_prompt(self, prompt: str, conversation_id: str, normalizer_id: str):
-        print("send prompt: ", prompt)
-        message = self._prepare_data(prompt)
-        print(message)
-
-        resp = self.complete_image_chat(prompt=prompt, num_images=self.n)
-        """
-        self.memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="user", content=prompt),
-            conversation_id=conversation_id, 
-            normalizer_id=normalizer_id
-        )
-        """
+        resp = self.image_target.complete_image_chat(prompt=prompt, num_images=self.n, output_filename=output_filename)
         return resp
     
-    def send_prompt_async():
+    def send_prompt_async(): #TODO
         return
