@@ -38,19 +38,4 @@ image_resp = img_prompt_target.send_prompt(
 # %%
 image_resp
 
-# %% [markdown]
-# # Test ASYNC
-
-# %%
-import asyncio
-_loop = asyncio.get_event_loop()
-
-
-# %%
-resp = _loop.run_until_complete(
-    img_prompt_target.send_prompt_async(
-    prompt="Draw me a baby polar bear. It should be the cutest polar bear ever. Draw it cuddling a stuffed animal polar bear", 
-    conversation_id = test_conversation_id, normalizer_id = test_normalizer_id)
-)
-
 # %%
