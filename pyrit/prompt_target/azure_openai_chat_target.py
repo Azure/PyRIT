@@ -4,7 +4,7 @@ import json
 import requests
 import os
 
-from openai import AsyncAzureOpenAI, AzureOpenAI
+from openai import AsyncAzureOpenAI, AzureOpenAI, BadRequestError
 from openai.types.chat import ChatCompletion
 
 from pyrit.common import default_values
@@ -252,7 +252,31 @@ class AzureOpenAIChatTarget(ChatSupport, PromptChatTarget):
             output_filename: name of file to store image in
         Returns: response from target model in a JSON format
         """
-        response = self._client.images.generate(
+        try: 
+            response = self._client.images.generate(
+                model = self._deployment_name, 
+                prompt = prompt, 
+                n=num_images)
+        except BadRequestError as e:
+            print(e)
+            return None
+        try:
+            json_response = json.loads(response.model_dump_json())
+        except json.JSONDecodeError:
+            print("ERROR WITH RESPONSE")
+            return None
+        return json_response
+
+    async def complete_image_chat_async(self, prompt: str, num_images: int):
+        """
+        Sends prompt to image target and returns response
+        Parameters:
+            prompt: a string with the prompt to send
+            num_images: number of images for model to generate
+            output_filename: name of file to store image in
+        Returns: response from target model in a JSON format
+        """
+        response = await self._async_client.images.generate(
             model = self._deployment_name, 
             prompt = prompt, 
             n=num_images

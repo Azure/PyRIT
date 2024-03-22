@@ -51,7 +51,7 @@ class ImageTarget(PromptTarget):
         with open(image_path, "wb") as image_file:
             image_file.write(generated_image)
         return image_path
-    
+
     def send_prompt(self, prompt: str, conversation_id: str = None, normalizer_id: str = None):
         """
         Sends prompt to image target and returns response
@@ -61,9 +61,17 @@ class ImageTarget(PromptTarget):
         """
         output_filename = conversation_id + "_" + normalizer_id + ".png" # name of file based on conversation ID and normalizer ID
         resp = self.image_target.complete_image_chat(prompt=prompt, num_images=self.n)
+        if resp:
+            image_location = self.dowhload_image(image_json = resp, output_filename=output_filename)
+            resp["image_file_location"] = image_location
+            return resp
+        else:
+            return None
+    
+    async def send_prompt_async(self, prompt: str, conversation_id: str = None, normalizer_id: str = None): #TODO
+        output_filename = conversation_id + "_" + normalizer_id + ".png" # name of file based on conversation ID and normalizer ID
+        resp = await self.image_target.complete_image_chat_async(prompt=prompt, num_images=self.n)
         image_location = self.dowhload_image(image_json = resp, output_filename=output_filename)
         resp["image_file_location"] = image_location
         return resp
-    
-    def send_prompt_async(): #TODO
-        return
+        

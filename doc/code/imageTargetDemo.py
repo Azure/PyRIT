@@ -33,9 +33,24 @@ img_prompt_target = ImageTarget(deployment_name = "pyrit_dall-e-3",
 
 # %%
 image_resp = img_prompt_target.send_prompt(
-    prompt="Draw me a baby racoon. It should be the cutest racoon ever. Draw it cuddling a stuffed animal racoon", conversation_id = test_conversation_id, normalizer_id = test_normalizer_id)
+    prompt="Draw kids playing on the playground. They are playing with water guns", conversation_id = test_conversation_id, normalizer_id = test_normalizer_id)
 
 # %%
 image_resp
+
+# %% [markdown]
+# # Test ASYNC
+
+# %%
+import asyncio
+_loop = asyncio.get_event_loop()
+
+
+# %%
+resp = _loop.run_until_complete(
+    img_prompt_target.send_prompt_async(
+    prompt="Draw me a baby polar bear. It should be the cutest polar bear ever. Draw it cuddling a stuffed animal polar bear", 
+    conversation_id = test_conversation_id, normalizer_id = test_normalizer_id)
+)
 
 # %%
