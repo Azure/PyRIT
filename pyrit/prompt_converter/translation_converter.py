@@ -68,7 +68,7 @@ class TranslationConverter(PromptConverter):
                     converted_prompts.append(variation)
 
             except json.JSONDecodeError as e:
-                logger.log(level=logging.WARNING, msg=f"Error in LLM response {response_msg}: {e}")
+                logger.warn(f"Error in LLM response {response_msg}: {e}")
                 raise RuntimeError(f"Error in LLM respons {response_msg}")
 
         return converted_prompts
