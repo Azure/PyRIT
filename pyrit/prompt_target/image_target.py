@@ -20,8 +20,7 @@ class ImageTarget(PromptTarget):
     The ImageTarget takes prompt and generates images
     """
     def __init__(self, deployment_name: str = None, endpoint: str = None, 
-                 api_key: str = None, api_version: str = "2024-02-01", num_images: int = 1,
-                 temperature: float = 1.0):
+                 api_key: str = None, api_version: str = "2024-02-01", num_images: int = 1):
         
         # make sure number of images is in a reasonable range
         if num_images < 1 or num_images > 100:
@@ -29,14 +28,13 @@ class ImageTarget(PromptTarget):
 
         self.n = num_images
 
-        self.temperature = temperature
         self.deployment_name = deployment_name
         self.image_target = AzureOpenAIChatTarget(
             deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
         )
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
 
-    def dowhload_image(self, image_json: json, output_filename: str):
+    def download_image(self, image_json: json, output_filename: str):
         """
         Parses the JSON response to get the URL and downloads the image from that URL and stores image locally 
         Parameters:
@@ -68,7 +66,7 @@ class ImageTarget(PromptTarget):
         output_filename = conversation_id + "_" + normalizer_id + ".png" # name of file based on conversation ID and normalizer ID
         resp = self.complete_image_chat(prompt=prompt, num_images=self.n)
         if resp:
-            image_location = self.dowhload_image(image_json = resp, output_filename=output_filename)
+            image_location = self.download_image(image_json = resp, output_filename=output_filename)
             resp["image_file_location"] = image_location #append where stored image locally to response
             return resp
         else:
