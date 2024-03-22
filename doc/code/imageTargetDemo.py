@@ -33,7 +33,7 @@ img_prompt_target = ImageTarget(deployment_name = "pyrit_dall-e-3",
 
 # %%
 image_resp = img_prompt_target.send_prompt(
-    prompt="Draw kids playing on the playground. They are playing with water guns", conversation_id = test_conversation_id, normalizer_id = test_normalizer_id)
+    prompt="Draw a polar bear newborn cub cuddling a stuffed animal polar bear", conversation_id = test_conversation_id, normalizer_id = test_normalizer_id)
 
 # %%
 image_resp

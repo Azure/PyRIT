@@ -1,13 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import json
+from typing import Any, Coroutine
 import requests
 import os
 import pathlib
+import logging
+
+from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_target.azure_openai_chat_target import AzureOpenAIChatTarget
+from pyrit.prompt_target.openai_chat_target import AzureOpenAIChatTarget
+
+logger = logging.getLogger(__name__)
 
 class ImageTarget(PromptTarget):
     """
@@ -60,18 +66,39 @@ class ImageTarget(PromptTarget):
         Returns: response from target model in a JSON format
         """
         output_filename = conversation_id + "_" + normalizer_id + ".png" # name of file based on conversation ID and normalizer ID
-        resp = self.image_target.complete_image_chat(prompt=prompt, num_images=self.n)
+        resp = self.complete_image_chat(prompt=prompt, num_images=self.n)
         if resp:
             image_location = self.dowhload_image(image_json = resp, output_filename=output_filename)
-            resp["image_file_location"] = image_location
+            resp["image_file_location"] = image_location #append where stored image locally to response
             return resp
         else:
             return None
+    #TODO:
+    def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> Coroutine[Any, Any, str]:
+        return None
     
-    async def send_prompt_async(self, prompt: str, conversation_id: str = None, normalizer_id: str = None): #TODO
-        output_filename = conversation_id + "_" + normalizer_id + ".png" # name of file based on conversation ID and normalizer ID
-        resp = await self.image_target.complete_image_chat_async(prompt=prompt, num_images=self.n)
-        image_location = self.dowhload_image(image_json = resp, output_filename=output_filename)
-        resp["image_file_location"] = image_location
-        return resp
+    def complete_image_chat(self, prompt: str, num_images: int):
+        """
+        Sends prompt to image target and returns response
+        Parameters:
+            prompt: a string with the prompt to send
+            num_images: number of images for model to generate
+        Returns: response from target model in a JSON format
+        """
+        try: 
+            response = self.image_target._client.images.generate(
+                model = self.deployment_name, 
+                prompt = prompt, 
+                n=num_images)
+        except BadRequestError as e:
+            print(e)
+            logger.exception("Content Blocked\n" + e)
+            return None
+        try:
+            json_response = json.loads(response.model_dump_json())
+            image_file = self.dowhload_image(json_response, )
+        except json.JSONDecodeError:
+            print("ERROR WITH RESPONSE")
+            return None
+        return json_response
         
