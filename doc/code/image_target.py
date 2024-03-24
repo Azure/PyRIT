@@ -26,14 +26,20 @@ test_normalizer_id = "1"
 # %%
 default_values.load_default_env()
 
-img_prompt_target = ImageTarget(deployment_name = "pyrit_dall-e-3", 
-                                endpoint = os.environ.get("AZURE_DALLE_ENDPOINT"), 
-                                api_key = os.environ.get("AZURE_DALLE_API_KEY"),  
-                                api_version = "2024-02-01")
+img_prompt_target = ImageTarget(
+    deployment_name="pyrit_dall-e-3",
+    endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
+    api_key=os.environ.get("AZURE_DALLE_API_KEY"),
+    api_version="2024-02-01",
+    response_format="url",
+)
 
 # %%
 image_resp = img_prompt_target.send_prompt(
-    prompt="Draw a polar bear newborn cub cuddling a stuffed animal polar bear", conversation_id = test_conversation_id, normalizer_id = test_normalizer_id)
+    prompt="Draw the cutest baby red panda holding a pillow pet shaped like itself.",
+    conversation_id=test_conversation_id,
+    normalizer_id=test_normalizer_id,
+)
 
 # %%
 image_resp
