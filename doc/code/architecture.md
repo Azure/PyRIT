@@ -25,7 +25,7 @@ Orchestrators can be thought of as the brains of PyRIT. This is the code that's 
 
 This is the least defined component, because attacks can get *complicated*. They can be circular and modify prompts, support multiple conversation turns, upload documents to a storage account for later use, and do all sorts of other things. But orchestrators can make use of all the other components and orchestrate the attacks.
 
-Ways to contribute: Check out our [orchestrator docs](./orchestrator.ipynb) and [orchestrator code](../../pyrit/orchestrator/). There are hundreds of attacks outlined in research papers. A lot of these can be orchestrators (and the ones that can't, we want to try to make it easier to orchestrate these). Are there scenarios you can write orchestrators for?
+Ways to contribute: Check out our [orchestrator docs](./orchestrator.ipynb) and [orchestrator code](../../pyrit/orchestrator/). There are hundreds of attacks outlined in research papers. A lot of these can be orchestrators. If you find an attack that doesn't fit the orchestrator model please tell us since we want to try to make it easier to orchestrate these. Are there scenarios you can write orchestrators for?
 
 ## Converters
 
