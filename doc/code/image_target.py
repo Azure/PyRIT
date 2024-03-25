@@ -12,6 +12,13 @@
 #     name: pyrit_kernel
 # ---
 
+# %% [markdown]
+# ## Image Target Demo
+# This notebook demonstrates how to use the image target to create an image from a text-based prompt
+
+# %%
+PROMPT_TO_SEND = "Draw a pirate racoon named roakey"
+
 # %%
 import os
 import uuid
@@ -22,6 +29,9 @@ from pyrit.prompt_target import ImageTarget
 # When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
 test_conversation_id = str(uuid.uuid4())
 test_normalizer_id = "1"
+
+# %% [markdown]
+# ## Using DALLE model
 
 # %%
 default_values.load_default_env()
@@ -36,10 +46,13 @@ img_prompt_target = ImageTarget(
 
 # %%
 image_resp = img_prompt_target.send_prompt(
-    prompt="Draw the cutest baby red panda holding a pillow pet shaped like itself.",
+    normalized_prompt= PROMPT_TO_SEND,
     conversation_id=test_conversation_id,
     normalizer_id=test_normalizer_id,
 )
+
+# %% [markdown]
+# ### Viewing the response: 
 
 # %%
 image_resp

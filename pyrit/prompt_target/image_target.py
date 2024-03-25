@@ -81,7 +81,7 @@ class ImageTarget(PromptTarget):
             output_filename: (optional) name of file to store image in
         Returns: file location
         """
-
+        # This will likely be replaced once our memory is refactored!
         # If the directory doesn't exist, create it
         if not os.path.isdir(self.output_dir):
             os.mkdir(self.output_dir)
@@ -106,8 +106,8 @@ class ImageTarget(PromptTarget):
             conversation_id + "_" + normalizer_id + ".png"
         )  # name of file based on conversation ID and normalizer ID
         resp = self.complete_image_chat(prompt=normalized_prompt)
-        if resp:
-            if self.response_format == "url":
+        if resp: # This will likely be replaced once our memory is refactored
+            if self.response_format == "url": 
                 image_location = self.download_image(image_json=resp, output_filename=output_filename)
                 resp["image_file_location"] = image_location  # append where stored image locally to response
             return resp
@@ -134,11 +134,14 @@ class ImageTarget(PromptTarget):
                 prompt=prompt,
                 n=self.n,
                 size=self.image_size,
-                response_format=self.response_format
+                response_format=self.response_format,
             )
         except BadRequestError as e:
             print(e)
             logger.error("Content Blocked\n" + str(e))
+            return None
+        except Exception as e:
+            logger.error("API Call Error\n" + str(e))
             return None
         try:
             json_response = json.loads(response.model_dump_json())
