@@ -22,9 +22,5 @@
 <!--- Include a description of tests and documentation updated (if applicable) -->
 
 <!--- JupyText helps us see regressions in APIs or in our documentation by executing all code samples -->
-<!--- For external contributors, this is not required, but encouraged -->
-<!--- This is described here: https://github.com/Azure/PyRIT/tree/main/doc  -->
-<!--- Select all that apply by putting an x between the brackets: [x] -->
-- [ ] jupytext run on all doc files
-- [ ] jupytext run on selected doc files
-- [ ] jupytext not run
+<!--- Include how you/if ran JupyText here -->
+<!--- This is described at: https://github.com/Azure/PyRIT/tree/main/doc  -->
