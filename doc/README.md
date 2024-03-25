@@ -12,9 +12,16 @@ Most of our documentation is located within the `doc` directory:
 
 # Documentation Contributor Guide
 
-- All documentation should be a `.md` file or a `.py` file in the percent format file (this will generate to `.ipynb` for consumption)
-  - Do not update `.ipynb` files directly. These are meant for consumption only and will be overwritten
-- The code should be able to execute one time in a reasonable timeframe.
-  - Short term, before we have it in our build pipelines, please run it manually with any decent and check there are no errors
-  - Currently, run: ` jupytext --execute --to notebook  ./doc/demo/*.py` and `jupytext --execute --to notebook  ./doc/code/*.py`
-  - Please do not re-commit updated generated `.ipynb` files with slight changes if nothing has changed in the source
+All documentation should be a `.md` file or a `.py` file in the percent format file. We then use jupytext to execute this code and convert to `.ipynb` for consumption.
+
+We have several reasons for this. 1) `.py` and `.md` files are much easier to review. 2) documentation code was tough to keep up to date without running it (which we can do automatically with jupytext). 3) It gives us some level of integration testing; if models change from underneath us, we have some way of detecting the changes.
+
+Here are contributor guidelines:
+
+- Do not update `.ipynb` files directly. These are meant for consumption only and will be overwritten.
+- The code should be able to execute in a reasonable timeframe. Before we build out test infrastructure, we often run this manually and long running files are not ideal.
+- This connects to various endpoints so it may not be easy to run (not all contributors will have everything deployed). However, it is an expectation that maintainers have all documented infrastructure available and configured.
+  - Contributors: if your notebook updates something specifically, rerun it as ` jupytext --execute --to notebook  ./doc/affected_file.py`
+  - Maintainers (bonus if contributors do this also): If there are big changes, re-generate all notebooks by using [run_jupytext.ps1](./run_jupytext.ps1) or [run_jupytext.sh](./run_jupytext.sh)
+- Some users use jupytext to generate `.py` files from `.ipynb` files. This is also acceptable.
+- Please do not re-commit updated generated `.ipynb` files with slight changes if nothing has changed in the source
