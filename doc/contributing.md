@@ -14,9 +14,11 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Ways to contribute
 
-Contributions come in many forms such as *writing code* or *adding examples*. It can be just as useful to use the package and *file issues* for bugs or potential improvements as well as missing or inadequate documentation, though. Most open source developers start out with small contributions like this as it is a great way to learn about the project and the associated processes.
+Contributions come in many forms such as *writing code* or *adding examples*.
 
-Please note that we always recommend opening an issue before submitting a pull request. Opening the issue can help in clarifying the approach to addressing the problem. In some cases, this saves the author from spending time on a pull request that cannot be accepted.
+It can be just as useful to use the package and [file issues](https://github.com/Azure/PyRIT/issues) for bugs or potential improvements as well as missing or inadequate documentation. Most open source developers start out with small contributions like this as it is a great way to learn about the project and the associated processes. We often recommend opening an issue before submitting a pull request. Opening the issue can help in clarifying the approach to addressing the problem. In some cases, this saves the author from spending time on a pull request that cannot be accepted.
+
+For new features, it's important to understand our basic [architecture](./code/architecture.md). This can help you get on the right track to contributing.
 
 Importantly, all pull requests are expected to pass the various test/build pipelines. A pull request can only be merged by a maintainer (an AI Red Team member) who will check that tests were added (or updated) and relevant documentation was updated as necessary. We do not provide any guarantees on response times, although team members will do their best to respond within a business day.
 
