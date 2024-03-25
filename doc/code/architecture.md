@@ -21,7 +21,7 @@ Ways to contribute: Check out our prompts in [prompts](../../pyrit/datasets/prom
 
 ## Orchestrators
 
-Orchestrators can be thought of as the brains of PyRIT. This is the code that's responsible for putting all the other pieces together.
+Orchestrators are responsible for putting all the other pieces together.
 
 This is the least defined component, because attacks can get *complicated*. They can be circular and modify prompts, support multiple conversation turns, upload documents to a storage account for later use, and do all sorts of other things. But orchestrators can make use of all the other components and orchestrate the attacks.
 
