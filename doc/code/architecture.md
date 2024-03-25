@@ -64,7 +64,7 @@ To some extent, the ordering in this diagram matters. In the simplest cases, you
 
 But this simple view is complicated by the fact that an orchestrator can have multiple targets, converters can be stacked, scorers can use targets to score, etc.
 
-Sometimes, if a scenario requires specific data, we may need to modify the architecture. This happened recently when we thought a single target may take multiple separately prompts in a single request. Any time we need to modify the architecture like this, that's something that needs to be designed with the maintainers so we can consolidate our other supported scenarios and future plans.
+Sometimes, if a scenario requires specific data, we may need to modify the architecture. This happened recently when we thought a single target may take multiple prompts separately in a single request. Any time we need to modify the architecture like this, that's something that needs to be designed with the maintainers so we can consolidate our other supported scenarios and future plans.
 
 ## Notebooks
 
