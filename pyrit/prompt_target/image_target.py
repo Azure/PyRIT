@@ -37,15 +37,17 @@ class ImageTarget(PromptTarget):
             endpoint (str, optional): The endpoint URL for the service.
             api_key (str, optional): The API key for accessing the service.
             api_version (str, optional): The API version. Defaults to "2024-02-01".
-            image_size (str, optional): The size of the image to output. Defaults to 1024x1024.
-            response_format (str, optional): Format of output. Defaults to b64_json.
+            image_size (str, optional): The size of the image to output, must be a value of VALID_SIZES. 
+                Defaults to 1024x1024.
+            response_format (str, optional): Format of output (base64 or url). Defaults to b64_json.
             num_images (int, optional): The number of output images to generate.
-                Defaults to 1.
+                Defaults to 1. For DALLE-3, can only be 1, for DALLE-2 max is 10 images. 
             dalle_version (int, optional): Version of DALLE service. Defaults to 3.
 
         """
 
         VALID_SIZES = ["256x256", "512x512", "1024x1024"]
+        VALID_RESPONSES = ["b64_json", "url"]
 
         # make sure number of images is allowed by Dalle version
         if dalle_version == 3:
@@ -61,7 +63,7 @@ class ImageTarget(PromptTarget):
             raise ValueError(f"Invalid image size '{image_size}'. Image size must be one of {VALID_SIZES}.")
         self.image_size = image_size
 
-        if response_format != "url" and response_format != "b64_json":
+        if response_format not in VALID_RESPONSES:
             raise ValueError(f"Invalid response_format '{response_format}'. Must be url or b64_json.")
         self.response_format = response_format
 
@@ -120,7 +122,7 @@ class ImageTarget(PromptTarget):
     ) -> Coroutine[Any, Any, str]:
         return None
 
-    def complete_image_chat(self, prompt: str):
+    def generate_images(self, prompt: str):
         """
         Sends prompt to image target and returns response
         Parameters:
