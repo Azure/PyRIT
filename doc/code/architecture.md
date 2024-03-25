@@ -6,7 +6,7 @@ The main components of PyRIT are prompts, orchestrators, converters, targets, an
 
 As much as possible, each component is a Lego-brick of functionality. Prompts from one attack should be able to be used in another. An orchestrator for one scenarios can use different targets. And sometimes you completely skip components (e.g. almost every component can be a NoOp also).
 
-If you are contributing to PyRIT, that work should most likely should land in one of these buckets. The code should be as self-contained as possible. It isn't always this clean, but when an attack scenario doesn't quite fit, and that's okay! This is when it's good to brainstorm with the maintainers about how we can modify our glue.
+If you are contributing to PyRIT, that work should most likely land in one of these buckets. The code should be as self-contained as possible. It isn't always this clean, but when an attack scenario doesn't quite fit (and that's okay!) it's good to brainstorm with the maintainers about how we can modify our glue code.
 
 The remainder of this document talks about the different components, how they work, what their responsibilities are, and ways to contribute.
 
