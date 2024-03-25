@@ -17,7 +17,7 @@
 # This notebook demonstrates how to use the image target to create an image from a text-based prompt
 
 # %%
-PROMPT_TO_SEND = "Draw a pirate racoon named roakey"
+PROMPT_TO_SEND = "Draw me a cute red panda with a cute pillow pet"
 
 # %%
 import os
@@ -56,5 +56,26 @@ image_resp = img_prompt_target.send_prompt(
 
 # %%
 image_resp
+
+# %% [markdown]
+# ### Downloading and viewing the genereated image:
+# The `download_image` function will save the image locally and return back the location of the saved image. It is already called from within the `send_prompt` function and stored within the response. The value is shown below: 
+
+# %%
+image_location = image_resp['image_file_location']
+
+# %% [markdown]
+# The `download_image` function can be called on its own as well using an image url and output filename
+
+# %%
+downloaded_image_location = img_prompt_target.download_image(image_url = image_resp['data'][0]['url'], output_filename = "image0.png")
+
+# %% [markdown]
+# The image can be viewed using the code snippet below: 
+
+# %%
+from PIL import Image
+im = Image.open(image_location)
+im.show()
 
 # %%

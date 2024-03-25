@@ -75,12 +75,12 @@ class ImageTarget(PromptTarget):
         )
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
 
-    def download_image(self, image_json, output_filename: str):
+    def download_image(self, image_url, output_filename: str):
         """
-        Parses the JSON response to get the URL and downloads the image from that URL and stores image locally
+        Downloads the image from a URL and stores the image locally
         Parameters:
-            image_json: response from image target in JSON format
-            output_filename: (optional) name of file to store image in
+            image_url: string with URL which image is stored at
+            output_filename: name of file to store image in
         Returns: file location
         """
         # This will likely be replaced once our memory is refactored!
@@ -91,7 +91,7 @@ class ImageTarget(PromptTarget):
         # Initialize the image path
         image_path = self.output_dir / output_filename
         # Retrieve the generated image
-        image_url = image_json["data"][0]["url"]  # extract image URL from response
+        
         generated_image = requests.get(image_url).content  # download the image
         with open(image_path, "wb") as image_file:
             image_file.write(generated_image)
@@ -107,10 +107,11 @@ class ImageTarget(PromptTarget):
         output_filename = (
             conversation_id + "_" + normalizer_id + ".png"
         )  # name of file based on conversation ID and normalizer ID
-        resp = self.complete_image_chat(prompt=normalized_prompt)
+        resp = self.generate_images(prompt=normalized_prompt)
         if resp: # This will likely be replaced once our memory is refactored
             if self.response_format == "url": 
-                image_location = self.download_image(image_json=resp, output_filename=output_filename)
+                image_url = resp["data"][0]["url"]  # extract image URL from response
+                image_location = self.download_image(image_url=image_url, output_filename=output_filename)
                 resp["image_file_location"] = image_location  # append where stored image locally to response
             return resp
         else:
