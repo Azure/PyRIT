@@ -8,7 +8,7 @@ from pathlib import Path
 
 from uuid import uuid4
 
-from pyrit.memory.memory_models import Base, ConversationData
+from pyrit.memory.memory_models import Base, PromptMemoryEntry
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
@@ -33,13 +33,13 @@ class MemoryInterface(abc.ABC):
         self.exporter = MemoryExporter()
 
     @abc.abstractmethod
-    def get_all_memory(self, model: Base) -> list[ConversationData]:  # type: ignore
+    def get_all_memory(self, model: Base) -> list[PromptMemoryEntry]:  # type: ignore
         """
         Loads all ConversationData from the memory storage handler.
         """
 
     @abc.abstractmethod
-    def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[ConversationData]:
+    def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of ConversationData objects that have the specified conversation ID.
 
@@ -51,7 +51,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[ConversationData]:
+    def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of ConversationData objects that have the specified normalizer ID.
 
@@ -192,7 +192,7 @@ class MemoryInterface(abc.ABC):
             ConversationData: A new instance ready to be persisted in the memory storage.
         """
         uuid = uuid4()
-        new_chat_memory = ConversationData(
+        new_chat_memory = PromptMemoryEntry(
             role=conversation.role,
             content=conversation.content,
             conversation_id=conversation_id,

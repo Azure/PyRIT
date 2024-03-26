@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.analytics.conversation_analytics import ConversationAnalytics
-from pyrit.memory.memory_models import ConversationData, EmbeddingData
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 
 
 @pytest.fixture
@@ -19,9 +19,9 @@ def mock_memory_interface():
 def test_get_similar_chat_messages_by_content(mock_memory_interface):
     # Mock data returned by the memory interface
     mock_data = [
-        ConversationData(content="Hello, how are you?", role="user"),
-        ConversationData(content="I'm fine, thank you!", role="assistant"),
-        ConversationData(content="Hello, how are you?", role="assistant"),  # Exact match
+        PromptMemoryEntry(content="Hello, how are you?", role="user"),
+        PromptMemoryEntry(content="I'm fine, thank you!", role="assistant"),
+        PromptMemoryEntry(content="Hello, how are you?", role="assistant"),  # Exact match
     ]
     mock_memory_interface.get_all_memory.return_value = mock_data
 
@@ -39,8 +39,8 @@ def test_get_similar_chat_messages_by_content(mock_memory_interface):
 def test_get_similar_chat_messages_by_embedding(mock_memory_interface):
     # Mock ConversationData entries
     conversation_entries = [
-        ConversationData(uuid=uuid.uuid4(), conversation_id="1", role="user", content="Similar message"),
-        ConversationData(uuid=uuid.uuid4(), conversation_id="2", role="assistant", content="Different message"),
+        PromptMemoryEntry(uuid=uuid.uuid4(), conversation_id="1", role="user", content="Similar message"),
+        PromptMemoryEntry(uuid=uuid.uuid4(), conversation_id="2", role="assistant", content="Different message"),
     ]
 
     # Mock EmbeddingData entries linked to the ConversationData entries
@@ -49,8 +49,8 @@ def test_get_similar_chat_messages_by_embedding(mock_memory_interface):
     different_embedding = [0.9, 0.8, 0.7]
 
     mock_data = [
-        EmbeddingData(uuid=conversation_entries[0].uuid, embedding=similar_embedding, embedding_type_name="model1"),
-        EmbeddingData(uuid=conversation_entries[1].uuid, embedding=different_embedding, embedding_type_name="model2"),
+        EmbeddingData(uuid=conversation_entries[0].id, embedding=similar_embedding, embedding_type_name="model1"),
+        EmbeddingData(uuid=conversation_entries[1].id, embedding=different_embedding, embedding_type_name="model2"),
     ]
 
     # Mock the get_all_memory method to return the mock EmbeddingData entries

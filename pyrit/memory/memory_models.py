@@ -1,62 +1,77 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from uuid import uuid4
+import enum
 import uuid
+
 from datetime import datetime
+from typing import Dict
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import Column, String, DateTime, Float, Enum, JSON, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, String, DateTime, Float
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
-from sqlalchemy import ForeignKey, Index
 
 
 Base = declarative_base()
 
+class PromptType(enum.Enum):
+    SYSTEM = 'system'
+    REQUEST_SEGMENT = 'request_segment'
+    RESPONSE = 'response'
 
-class ConversationData(Base):  # type: ignore
+class PromptDataType(enum.Enum):
+    TEXT = 'text'
+    IMAGE = 'image'
+
+
+class PromptMemoryEntry(Base):  # type: ignore
     """
-    Represents the conversation data.
-
-    conversation_id is used to group messages together within a prompt_target endpoint.
-    It's often needed so the prompt_target knows how to construct the messages.
-
-    normalizer_id is used to group messages together within a prompt_normalizer.
-    A prompt_normalizer is usually a single attack, and can contain multiple prompt_targets.
-    It's often needed to group all the prompts in an attack together.
+    Represents the prompt data.
 
     Attributes:
-        uuid (UUID): A unique identifier for each conversation entry, serving as the primary key.
-        role (String): The role associated with the message, indicating its origin
-        within the conversation (e.g., "user", "assistant" or "system").
-        content (String): The actual text content of the conversation entry.
-        conversation_id (String): An identifier used to group related conversation entries.
-        The conversation_id is linked to a specific LLM model,
-        aggregating all related conversations under a single identifier.
-        In scenarios involving multi-turn interactions that utilize two models,
-        there will be two distinct conversation_ids, one for each model.
-        timestamp (DateTime): The timestamp when the conversation entry was created or
-        logged. Defaults to the current UTC time.
-        normalizer_id (String): An identifier used to group messages together within a prompt_normalizer.
-        sha256 (String): An optional SHA-256 hash of the content.
-        labels (ARRAY(String)): An array of labels associated with the conversation entry,
-        useful for categorization or filtering the final data.
-        idx_conversation_id (Index): An index on the `conversation_id` column to improve
-        query performance for operations involving obtaining conversation history based
-        on conversation_id.
+        __tablename__ (str): The name of the database table.
+        __table_args__ (dict): Additional arguments for the database table.
+        id (UUID): The unique identifier for the memory entry.
+        prompt_entry_type (PromptType): The type of the prompt entry (system, request_segment, response).
+        conversation_id (str): The identifier for the conversation which is associated with a single target.
+        timestamp (DateTime): The timestamp of the memory entry.
+        labels (Dict[str, str]): The labels associated with the memory entry.
+        prompt_metadata (JSON): The metadata associated with the prompt.
+        converters (list[PromptConverter]): The converters for the prompt.
+        prompt_target (PromptTarget): The target for the prompt.
+        original_prompt_data_type (PromptDataType): The data type of the original prompt (text, image)
+        original_prompt_text (str): The text of the original prompt. If prompt is an image, it's a link.
+        original_prompt_data_sha256 (str): The SHA256 hash of the original prompt data.
+        converted_prompt_data_type (PromptDataType): The data type of the converted prompt (text, image)
+        converted_prompt_text (str): The text of the converted prompt. If prompt is an image, it's a link.
+        original_prompt_data_sha256 (str): The SHA256 hash of the original prompt data.
+        idx_conversation_id (Index): The index for the conversation ID.
+
+    Methods:
+        __str__(): Returns a string representation of the memory entry.
     """
 
-    __tablename__ = "ConversationStore"
+    __tablename__ = "MemoryEntries"
     __table_args__ = {"extend_existing": True}
-    uuid = Column(UUID(as_uuid=True), nullable=False, primary_key=True, default=uuid4)
-    role = Column(String, nullable=False)
-    content = Column(String)
+    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True, default=uuid4)
+    prompt_entry_type = Column(Enum(PromptType))
     conversation_id = Column(String, nullable=False)
     timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
-    normalizer_id = Column(String)
-    sha256 = Column(String)
-    labels = Column(ARRAY(String))  # type: ignore
+    labels: Column[Dict[str, str]] = Column(JSON)
+    prompt_metadata = Column(JSON)
+    converters: 'Column[list[PromptConverter]]' = Column(JSON)
+    prompt_target: 'Column[PromptTarget]' = Column(JSON)
+
+    original_prompt_data_type = Column(Enum(PromptDataType))
+    original_prompt_text = Column(String)
+    original_prompt_data_sha256 = Column(String)
+
+    converted_prompt_data_type = Column(Enum(PromptDataType))
+    converted_prompt_text = Column(String)
+    original_prompt_data_sha256 = Column(String)
+
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
     def __str__(self):
@@ -69,15 +84,15 @@ class EmbeddingData(Base):  # type: ignore
     Each embedding is linked to a specific conversation entry via a 'uuid'.
 
     Attributes:
-        uuid (UUID): The primary key, which is a foreign key referencing the UUID in the ConversationStore table.
+        uuid (UUID): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.
         embedding (ARRAY(Float)): An array of floats representing the embedding vector.
         embedding_type_name (String): The name or type of the embedding, indicating the model or method used.
     """
 
-    __tablename__ = "EmbeddingStore"
+    __tablename__ = "EmbeddingData"
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
-    uuid = Column(UUID(as_uuid=True), ForeignKey(f"{ConversationData.__tablename__}.uuid"), primary_key=True)
+    uuid = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.uuid"), primary_key=True)
     embedding = Column(ARRAY(Float))
     embedding_type_name = Column(String)
 

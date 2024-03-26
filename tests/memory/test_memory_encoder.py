@@ -7,7 +7,7 @@ import pytest
 
 from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory import MemoryEmbedding
-from pyrit.memory.memory_models import ConversationData
+from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
 
 
@@ -53,12 +53,12 @@ def memory_encoder_w_mock_embedding_generator():
 def test_memory_encoding_chat_message(
     memory_encoder_w_mock_embedding_generator: MemoryEmbedding,
 ):
-    chat_memory = ConversationData(
+    chat_memory = PromptMemoryEntry(
         content="hello world!",
         role="user",
         conversation_id="my_session",
     )
     metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(chat_memory=chat_memory)
-    assert metadata.uuid == chat_memory.uuid
+    assert metadata.uuid == chat_memory.id
     assert metadata.embedding == DEFAULT_EMBEDDING_DATA.embedding
     assert metadata.embedding_type_name == "MockEmbeddingGenerator"

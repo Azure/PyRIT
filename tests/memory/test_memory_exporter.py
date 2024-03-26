@@ -6,7 +6,7 @@ import json
 import pytest
 
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.memory.memory_models import ConversationData
+from pyrit.memory.memory_models import PromptMemoryEntry
 from sqlalchemy.inspection import inspect
 
 
@@ -14,8 +14,8 @@ from sqlalchemy.inspection import inspect
 def sample_conversations():
     # Create some instances of ConversationStore with sample data
     return [
-        ConversationData(role="User", content="Hello, how are you?", conversation_id="12345"),
-        ConversationData(role="Bot", content="I'm fine, thank you!", conversation_id="12345"),
+        PromptMemoryEntry(role="User", content="Hello, how are you?", conversation_id="12345"),
+        PromptMemoryEntry(role="Bot", content="I'm fine, thank you!", conversation_id="12345"),
     ]
 
 
