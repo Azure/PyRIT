@@ -20,28 +20,29 @@ class ImageTarget(PromptTarget):
     # The ImageTarget takes prompt and generates images
     def __init__(
         self,
+        *,
         deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
-        api_version: str = "2024-02-01",
-        image_size: str = "1024x1024",
-        response_format: str = "b64_json",
-        num_images: int = 1,
-        dalle_version: int = 3,
+        api_version: str | None = "2024-02-01",
+        image_size: str | None = "1024x1024",
+        response_format: str | None = "b64_json",
+        num_images: int | None = 1,
+        dalle_version: int | None = 3,
     ):
         """
         Class that initializes a DALLE image target
 
         Args:
             deployment_name (str): The name of the deployment.
-            endpoint (str, optional): The endpoint URL for the service.
-            api_key (str, optional): The API key for accessing the service.
+            endpoint (str): The endpoint URL for the service.
+            api_key (str): The API key for accessing the service.
             api_version (str, optional): The API version. Defaults to "2024-02-01".
-            image_size (str, optional): The size of the image to output, must be a value of VALID_SIZES. 
+            image_size (str, optional): The size of the image to output, must be a value of VALID_SIZES.
                 Defaults to 1024x1024.
             response_format (str, optional): Format of output (base64 or url). Defaults to b64_json.
             num_images (int, optional): The number of output images to generate.
-                Defaults to 1. For DALLE-3, can only be 1, for DALLE-2 max is 10 images. 
+                Defaults to 1. For DALLE-3, can only be 1, for DALLE-2 max is 10 images.
             dalle_version (int, optional): Version of DALLE service. Defaults to 3.
 
         """
@@ -75,7 +76,7 @@ class ImageTarget(PromptTarget):
         )
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
 
-    def download_image(self, image_url, output_filename: str):
+    def download_image(self, image_url: str, output_filename: str):
         """
         Downloads the image from a URL and stores the image locally
         Parameters:
@@ -91,25 +92,23 @@ class ImageTarget(PromptTarget):
         # Initialize the image path
         image_path = self.output_dir / output_filename
         # Retrieve the generated image
-        
+
         generated_image = requests.get(image_url).content  # download the image
         with open(image_path, "wb") as image_file:
             image_file.write(generated_image)
         return image_path
 
-    def send_prompt(self, normalized_prompt: str, conversation_id: str = None, normalizer_id: str = None):
+    def send_prompt(self, normalized_prompt: str, conversation_id: str | None = None, normalizer_id: str | None = None):
         """
         Sends prompt to image target and returns response
         Parameters:
             prompt: a string with the prompt to send
         Returns: response from target model in a JSON format
         """
-        output_filename = (
-            conversation_id + "_" + normalizer_id + ".png"
-        )  # name of file based on conversation ID and normalizer ID
+        output_filename = f"{conversation_id}_{normalizer_id}.png"
         resp = self.generate_images(prompt=normalized_prompt)
-        if resp: # This will likely be replaced once our memory is refactored
-            if self.response_format == "url": 
+        if resp:
+            if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
                 resp["image_file_location"] = image_location  # append where stored image locally to response
@@ -123,12 +122,11 @@ class ImageTarget(PromptTarget):
     ) -> Coroutine[Any, Any, str]:
         return None
 
-    def generate_images(self, prompt: str):
+    def generate_images(self, prompt: str) -> dict:
         """
         Sends prompt to image target and returns response
         Parameters:
             prompt: a string with the prompt to send
-            num_images: number of images for model to generate
         Returns: response from target model in a JSON format
         """
         try:
@@ -149,7 +147,7 @@ class ImageTarget(PromptTarget):
         try:
             json_response = json.loads(response.model_dump_json())
         except json.JSONDecodeError:
-            logger.error("Response could not be formatted as a json")
+            logger.error("Response could not be interpreted in the JSON format")
             logger.error(json_response)
             return None
         return json_response

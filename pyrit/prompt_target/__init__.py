@@ -16,9 +16,9 @@ __all__ = [
     "AzureMLChatTarget",
     "AzureOpenAIChatTarget",
     "GandalfTarget",
+    "ImageTarget",
     "OpenAIChatTarget",
     "PromptChatTarget",
     "PromptTarget",
     "TextTarget",
-    "ImageTarget"
 ]
