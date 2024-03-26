@@ -8,12 +8,14 @@ from unittest.mock import MagicMock
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import inspect
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy import String, DateTime, Float, Enum, JSON, ForeignKey, Index, INTEGER, ARRAY
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.sqltypes import NullType
 from sqlalchemy.types import String, DateTime
 
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.memory import DuckDBMemory
+from pyrit.prompt_converter import PromptConverter
 
 
 @pytest.fixture
@@ -26,8 +28,8 @@ def setup_duckdb_database():
     inspector = inspect(duckdb_memory.engine)
 
     # Verify that tables are created as expected
-    assert "ConversationStore" in inspector.get_table_names(), "ConversationStore table not created."
-    assert "EmbeddingStore" in inspector.get_table_names(), "EmbeddingStore table not created."
+    assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
+    assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
 
     yield duckdb_memory
     duckdb_memory.dispose_engine()
@@ -47,54 +49,72 @@ def mock_session():
 
 def test_conversation_data_schema(setup_duckdb_database):
     inspector = inspect(setup_duckdb_database.engine)
-    columns = inspector.get_columns("ConversationStore")
+    columns = inspector.get_columns("PromptMemoryEntries")
     column_names = [col["name"] for col in columns]
 
     # Expected columns in ConversationData
-    expected_columns = ["uuid", "role", "content", "conversation_id", "timestamp", "normalizer_id", "sha256", "labels"]
+    expected_columns = ["id",
+                        "prompt_entry_type",
+                        "conversation_id",
+                        "sequence",
+                        "timestamp",
+                        "labels",
+                        "prompt_metadata",
+                        "converters",
+                        "prompt_target",
+                        "original_prompt_data_type",
+                        "original_prompt_text",
+                        "original_prompt_data_sha256",
+                        "converted_prompt_data_type",
+                        "converted_prompt_text",
+                        "converted_prompt_data_sha256"]
+
     for column in expected_columns:
-        assert column in column_names, f"{column} not found in ConversationStore schema."
+        assert column in column_names, f"{column} not found in PromptMemoryEntries schema."
 
 
 def test_embedding_data_schema(setup_duckdb_database):
     inspector = inspect(setup_duckdb_database.engine)
-    columns = inspector.get_columns("EmbeddingStore")
+    columns = inspector.get_columns("EmbeddingData")
     column_names = [col["name"] for col in columns]
 
     # Expected columns in EmbeddingData
     expected_columns = ["uuid", "embedding", "embedding_type_name"]
     for column in expected_columns:
-        assert column in column_names, f"{column} not found in EmbeddingStore schema."
+        assert column in column_names, f"{column} not found in EmbeddingData schema."
 
 
 def test_conversation_data_column_types(setup_duckdb_database):
     inspector = inspect(setup_duckdb_database.engine)
-    columns = inspector.get_columns("ConversationStore")
+    columns = inspector.get_columns("PromptMemoryEntries")
     column_types = {col["name"]: type(col["type"]) for col in columns}
 
     # Expected column types in ConversationData
     expected_column_types = {
-        "uuid": UUID,
-        "role": String,
-        "content": String,
+        "id": UUID,
+        "prompt_entry_type": Enum,
         "conversation_id": String,
+        "sequence": INTEGER,
         "timestamp": DateTime,
-        "normalizer_id": String,
-        "sha256": String,
-        "labels": ARRAY,
+        "labels": String,
+        "prompt_metadata": String,
+        "converters": String,
+        "prompt_target": String,
+        "original_prompt_data_type": String,
+        "original_prompt_text": String,
+        "original_prompt_data_sha256": String,
+        "converted_prompt_data_type": String,
+        "converted_prompt_text": String,
+        "converted_prompt_data_sha256": String,
     }
 
     for column, expected_type in expected_column_types.items():
         if column != "labels":
-            assert column in column_types, f"{column} not found in ConversationStore schema."
+            assert column in column_types, f"{column} not found in PromptMemoryEntries schema."
             assert issubclass(
                 column_types[column], expected_type
             ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
 
-    # Handle 'labels' column separately
-    assert "labels" in column_types, "'labels' column not found in ConversationStore schema."
-    # Check if 'labels' column type is either NullType (due to reflection issue) or ARRAY
-    assert column_types["labels"] in [NullType, ARRAY], f"Unexpected type for 'labels' column: {column_types['labels']}"
 
 
 def test_embedding_data_column_types(setup_duckdb_database):
