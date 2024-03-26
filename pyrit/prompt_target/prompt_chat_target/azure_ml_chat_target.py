@@ -4,7 +4,6 @@ import logging
 
 from pyrit.chat_message_normalizer import ChatMessageNormalizer, ChatMessageNop
 from pyrit.common import default_values, net_utility
-from pyrit.interfaces import ChatSupport
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target import PromptChatTarget
@@ -12,7 +11,7 @@ from pyrit.prompt_target import PromptChatTarget
 logger = logging.getLogger(__name__)
 
 
-class AzureMLChatTarget(PromptChatTarget, ChatSupport):
+class AzureMLChatTarget(PromptChatTarget):
 
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_ML_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_ML_MANAGED_ENDPOINT"

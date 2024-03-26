@@ -9,8 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
-from pyrit.interfaces import ChatMessage, ChatSupport, SupportTextClassification
-from pyrit.models import Score
+from pyrit.interfaces import SupportTextClassification
+from pyrit.models import Score, ChatMessage
+from pyrit.prompt_target import PromptChatTarget
 
 
 @dataclass
@@ -33,7 +34,7 @@ def _load_categories_from_yaml(yaml_path: Path) -> list[Category]:
 
 
 class SelfAskGptClassifier(SupportTextClassification):
-    def __init__(self, content_classifier: Union[str, Path], gpt_4: ChatSupport) -> None:
+    def __init__(self, content_classifier: Union[str, Path], gpt_4: PromptChatTarget) -> None:
         # Load classifier
         self._categories = _load_categories_from_yaml(yaml_path=Path(content_classifier))
         self._gpt_chat = gpt_4

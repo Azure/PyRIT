@@ -39,6 +39,6 @@ red_team_chat_engine.complete_chat(messages=[ChatMessage(role="user", content="H
 
 # %% [markdown]
 #
-# You can then use this cell anywhere you would use a `ChatSupport` object.
+# You can then use this cell anywhere you would use a `PromptChatTarget` object.
 # For example, you can create a red teaming orchestrator and do the entire [Gandalf Demo](../demo/1_gandalf.ipynb) but use this AML model.
 # This is also shown in the [Multiturn Demo](../demo/2_multiturn_strategies.ipynb).

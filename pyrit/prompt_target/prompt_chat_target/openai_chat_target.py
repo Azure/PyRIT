@@ -7,13 +7,12 @@ from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
 
 from pyrit.common import default_values
-from pyrit.interfaces import ChatSupport
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target import PromptChatTarget
 
 
-class OpenAIChatInterface(ChatSupport, PromptChatTarget):
+class OpenAIChatInterface(PromptChatTarget):
 
     _top_p: int
     _deployment_name: str

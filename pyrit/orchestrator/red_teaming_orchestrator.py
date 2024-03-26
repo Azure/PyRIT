@@ -5,13 +5,12 @@ import abc
 import logging
 from typing import Optional, Union
 from uuid import uuid4
-from pyrit.interfaces import ChatSupport
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 
 logger = logging.getLogger(__name__)
@@ -34,7 +33,7 @@ class RedTeamingOrchestrator(Orchestrator):
         *,
         attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
-        red_teaming_chat: ChatSupport,
+        red_teaming_chat: PromptChatTarget,
         initial_red_teaming_prompt: str = "Begin Conversation",
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,

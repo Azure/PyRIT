@@ -2,8 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
-from pyrit.memory import MemoryInterface
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import MemoryInterface, DuckDBMemory
 
 
 class PromptTarget(abc.ABC):

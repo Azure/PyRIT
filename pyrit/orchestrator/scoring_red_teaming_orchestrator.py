@@ -2,12 +2,12 @@
 # Licensed under the MIT license.
 
 from typing import Optional, Union
-from pyrit.interfaces import ChatSupport, SupportTextClassification
+from pyrit.interfaces import SupportTextClassification
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator.red_teaming_orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 
 
@@ -17,7 +17,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
         *,
         attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
-        red_teaming_chat: ChatSupport,
+        red_teaming_chat: PromptChatTarget,
         initial_red_teaming_prompt: str = "Begin Conversation",
         scorer: SupportTextClassification,
         prompt_converters: Optional[list[PromptConverter]] = None,
