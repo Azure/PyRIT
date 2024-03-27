@@ -32,10 +32,10 @@
 # %%
 
 import os
+import uuid
 
 from pyrit.common import default_values
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models import ChatMessage
 
 default_values.load_default_env()
 
@@ -46,7 +46,10 @@ target_llm = AzureOpenAIChatTarget(
 )
 
 prompt = "test"
-target_llm.complete_chat(messages=[ChatMessage(content=prompt, role="user")])
+target_llm.send_prompt(
+    normalized_prompt=prompt,
+    conversation_id=uuid.uuid4(),
+    normalizer_id="1")
 
 # %% [markdown]
 # To expand to a wider variety of harms, it may be beneficial to write prompt templates instead of the

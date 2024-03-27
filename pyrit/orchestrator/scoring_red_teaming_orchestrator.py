@@ -7,7 +7,7 @@ from pyrit.interfaces import SupportTextClassification
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator.red_teaming_orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 
 
@@ -16,8 +16,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
         self,
         *,
         attack_strategy: Union[str, AttackStrategy],
-        prompt_target: PromptTarget,
-        red_teaming_chat: PromptChatTarget,
+        prompt_chat_target: PromptChatTarget,
         initial_red_teaming_prompt: str = "Begin Conversation",
         scorer: SupportTextClassification,
         prompt_converters: Optional[list[PromptConverter]] = None,
@@ -33,8 +32,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
                 This can be used to guide the bot to achieve the conversation objective in a more direct and
                 structured way.
                 Should be of type string or AttackStrategy (which has a __str__ method).
-            prompt_target: The target to send the prompts to.
-            red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
+            prompt_chat_target: The chat target to send the prompts to.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
@@ -48,8 +46,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
         """
         super().__init__(
             attack_strategy=attack_strategy,
-            prompt_target=prompt_target,
-            red_teaming_chat=red_teaming_chat,
+            prompt_chat_target=prompt_chat_target,
             initial_red_teaming_prompt=initial_red_teaming_prompt,
             prompt_converters=prompt_converters,
             memory=memory,

@@ -12,7 +12,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import ChatMessage
+import uuid
+
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common import default_values
 
@@ -21,6 +22,13 @@ default_values.load_default_env()
 
 chat_engine = AzureOpenAIChatTarget()
 
-chat_engine.complete_chat(messages=[ChatMessage(role="user", content="Hello world!")])
+resp = chat_engine.send_prompt(
+    normalized_prompt="Hello world!",
+    conversation_id=uuid.uuid4(),
+    normalizer_id="1")
+
+print(resp)
+
+# TODO: Do we want to remove azure_openai_chat and aml_endpoints from doc/code in favor of a general prompt_chat_targets doc NB or the existing prompt_targets one?
 
 # %%

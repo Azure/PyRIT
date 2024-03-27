@@ -79,6 +79,11 @@ class AzureMLChatTarget(PromptChatTarget):
     def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
+        logger.info(
+            "Sending the following prompt to the prompt target (after applying prompt "
+            f'converter operations) "{normalized_prompt}"',
+        )
+
         resp = self._complete_chat(
             messages=messages,
             temperature=self._temperature,
@@ -88,6 +93,8 @@ class AzureMLChatTarget(PromptChatTarget):
 
         if not resp:
             raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+        
+        logger.info(f'Received the following response from the prompt target "{resp}"')
 
         messages.append(ChatMessage(role="assistant", content=resp))
         self._memory.add_chat_message_to_memory(
@@ -102,6 +109,11 @@ class AzureMLChatTarget(PromptChatTarget):
     async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
+        logger.info(
+            "Sending the following prompt to the prompt target (after applying prompt "
+            f'converter operations) "{normalized_prompt}"',
+        )
+
         resp = await self._complete_chat_async(
             messages=messages,
             temperature=self._temperature,
@@ -111,6 +123,8 @@ class AzureMLChatTarget(PromptChatTarget):
 
         if not resp:
             raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+        
+        logger.info(f'Received the following response from the prompt target "{resp}"')
 
         self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),

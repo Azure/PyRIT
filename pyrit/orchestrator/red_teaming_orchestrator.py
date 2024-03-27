@@ -10,14 +10,10 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 
 logger = logging.getLogger(__name__)
-
-MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES = 3
-MESSAGE_COUNT_WITH_SYSTEM_MESSAGE = 3
-MESSAGE_COUNT_DEFAULT = 2
 
 
 class CompletionState:
@@ -32,6 +28,7 @@ class RedTeamingOrchestrator(Orchestrator):
         self,
         *,
         attack_strategy: Union[str, AttackStrategy],
+        prompt_target: PromptTarget,
         red_teaming_chat: PromptChatTarget,
         initial_red_teaming_prompt: str = "Begin Conversation",
         prompt_converters: Optional[list[PromptConverter]] = None,
@@ -48,7 +45,8 @@ class RedTeamingOrchestrator(Orchestrator):
                 This can be used to guide the bot to achieve the conversation objective in a more direct and
                 structured way.
                 Should be of type string or AttackStrategy (which has a __str__ method).
-            red_teaming_chat: The target to send the prompts to.
+            prompt_target: The target to send the prompts to.
+            red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
@@ -63,10 +61,13 @@ class RedTeamingOrchestrator(Orchestrator):
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
         )
 
+        self._prompt_target = prompt_target
+
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._red_teaming_chat = red_teaming_chat
-        self._red_teaming_chat._memory = self._memory
+        self._prompt_target._memory = self._memory
+        self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_chat_conversation_id = str(uuid4())
+        self._red_teaming_chat = red_teaming_chat
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
 
@@ -114,7 +115,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
     def send_prompt(self, *, prompt: Optional[str] = None, completion_state: CompletionState = None):
         """
-        Either sends a user-provided prompt or generates a prompt to send to the prompt target.
+        Either sends a user-provided prompt or sends the default initial red teaming prompt to the prompt target.
 
         Args:
             prompt: The prompt to send to the target.
@@ -126,12 +127,11 @@ class RedTeamingOrchestrator(Orchestrator):
                 It is optional and not tracked if no object is passed.
         """
         target_messages = self._memory.get_chat_messages_with_conversation_id(
-            conversation_id=self._red_teaming_chat_conversation_id
+            conversation_id=self._prompt_target_conversation_id
         )
         if prompt:
-            prompt_text = prompt
             if target_messages:
-                raise ValueError("The prompt argument can only be provided on the first iteration. ")
+                raise ValueError("The prompt argument can only be provided on the first iteration.")
         else:
             # If no prompt is provided, then contact the red teaming target to generate one.
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
@@ -148,37 +148,39 @@ class RedTeamingOrchestrator(Orchestrator):
                 logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
                 prompt_text = self._initial_red_teaming_prompt
 
-            messages = self._memory.get_chat_messages_with_conversation_id(
+            red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
                 conversation_id=self._red_teaming_chat_conversation_id
             )
 
-            if not messages:
+            if not red_teaming_chat_messages:
                 self._red_teaming_chat.set_system_prompt(
                     prompt=self._attack_strategy,
                     conversation_id=self._red_teaming_chat_conversation_id,
                     normalizer_id=self._prompt_normalizer.id)
                 
-            # NOTE: Right now, this "else" block isn't calling into complete_chat()
-                # that is happening in prompt_normalizer.send_prompt(), which means even the prompt if provided
-                # is going through chat completion. 
-            # TODO: Double check that the functionality is as expected from this...The memory components should
-                # be taken care of but moving stuff around in favor of send prompt is a bit tricky
-                # I think that for now its either prompt provided, or initial red teaming prompt + setting system prompt
+            prompt = self._red_teaming_chat.send_prompt(
+                normalized_prompt=prompt_text,
+                conversation_id=self._red_teaming_chat_conversation_id,
+                normalizer_id=self._prompt_normalizer.id,
+                labels=self._global_memory_labels, # TODO: Do we want labels everywhere we use send_prompt in the orchestrator?
+            )
 
-        if completion_state and self.is_conversation_complete(messages, red_teaming_chat_role="assistant"):
+        red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
+                conversation_id=self._red_teaming_chat_conversation_id
+            )
+  
+        if completion_state and self.is_conversation_complete(red_teaming_chat_messages, red_teaming_chat_role="assistant"):
             completion_state.is_complete = True
             return
-
+                
         target_prompt_obj = Prompt(
-            prompt_target=self._red_teaming_chat,
+            prompt_target=self._prompt_target,
             prompt_converters=self._prompt_converters,
-            prompt_text=prompt_text,
-            conversation_id=self._red_teaming_chat_conversation_id,
+            prompt_text=prompt,
+            conversation_id=self._prompt_target_conversation_id,
         )
 
-        response = self._prompt_normalizer.send_prompt(
-            prompt=target_prompt_obj,
-            memory_labels=self._global_memory_labels)[0]
+        response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)[0]
 
         if completion_state:
             target_messages.append(ChatMessage(role="user", content=prompt_text))
