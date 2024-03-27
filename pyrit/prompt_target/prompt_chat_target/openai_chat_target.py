@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from abc import abstractmethod
+import logging
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
@@ -10,6 +11,8 @@ from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target import PromptChatTarget
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIChatInterface(PromptChatTarget):
@@ -41,10 +44,17 @@ class OpenAIChatInterface(PromptChatTarget):
             normalizer_id=normalizer_id,
         )
 
-    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
+        
+        # TODO: Finish adding logging to async method and to Azure ML Chat Target
+        # Do this after removing all complete_chat() instances
+        logger.info(
+            "Sending the following prompt to the prompt target (after applying prompt "
+            f'converter operations) "{normalized_prompt}"',
+        )
 
-        resp = self.complete_chat(
+        resp = self._complete_chat(
             messages=messages,
             top_p=self._top_p,
             temperature=self._temperature,
@@ -52,18 +62,24 @@ class OpenAIChatInterface(PromptChatTarget):
             presence_penalty=self._presence_penalty,
         )
 
+        if not resp:
+            raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+        
+        logger.info(f'Received the following response from the prompt target "{resp}"')
+
         self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
+            labels=labels,
         )
 
         return resp
 
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
-        resp = await self.complete_chat_async(
+        resp = await self._complete_chat_async(
             messages=messages,
             top_p=self._top_p,
             temperature=self._temperature,
@@ -71,10 +87,14 @@ class OpenAIChatInterface(PromptChatTarget):
             presence_penalty=self._presence_penalty,
         )
 
+        if not resp:
+            raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+
         self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
+            labels=labels,
         )
 
         return resp
@@ -98,7 +118,7 @@ class OpenAIChatInterface(PromptChatTarget):
                 raise RuntimeError(f"Error in Azure Chat. Response: {response}") from ex
         return response_message
 
-    async def complete_chat_async(
+    async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
         max_tokens: int = 1024,
@@ -142,7 +162,7 @@ class OpenAIChatInterface(PromptChatTarget):
         )
         return self.parse_chat_completion(response)
 
-    def complete_chat(
+    def _complete_chat(
         self,
         messages: list[ChatMessage],
         max_tokens: int = 1024,

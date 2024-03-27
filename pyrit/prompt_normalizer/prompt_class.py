@@ -52,7 +52,7 @@ class Prompt(abc.ABC):
         self._prompt_text = prompt_text
         self.conversation_id = conversation_id
 
-    def send_prompt(self, *, normalizer_id: str) -> list[str]:
+    def send_prompt(self, *, normalizer_id: str, labels: list[str] | None = None) -> list[str]:
         """
         Sends the prompt to the prompt target, by first converting the prompt.
         The prompt runs through every converter (the output of one converter is
@@ -67,11 +67,12 @@ class Prompt(abc.ABC):
                     normalized_prompt=converted_prompt,
                     conversation_id=self.conversation_id,
                     normalizer_id=normalizer_id,
+                    labels=labels,
                 )
             )
         return responses
 
-    async def send_prompt_async(self, *, normalizer_id: str) -> None:
+    async def send_prompt_async(self, *, normalizer_id: str, labels: list[str] | None = None) -> None:
         """
         Sends the prompt to the prompt target, by first converting the prompt.
         The prompt runs through every converter (the output of one converter is
@@ -84,6 +85,7 @@ class Prompt(abc.ABC):
                 normalized_prompt=converted_prompt,
                 conversation_id=self.conversation_id,
                 normalizer_id=normalizer_id,
+                labels=labels,
             )
 
     def _get_converted_prompts(self):

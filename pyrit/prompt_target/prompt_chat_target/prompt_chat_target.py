@@ -18,15 +18,3 @@ class PromptChatTarget(PromptTarget):
         """
         Sets the system prompt for the prompt target
         """
-
-    @abc.abstractmethod
-    def complete_chat(self, *, messages: list[ChatMessage]) -> str:
-        """Complete chat based on a message
-           Update _chat_messages with the messages used in the completion.
-
-        Args:
-            messages: The list of chat messages to be used in the chat completion
-
-        Returns:
-            The completed chat
-        """

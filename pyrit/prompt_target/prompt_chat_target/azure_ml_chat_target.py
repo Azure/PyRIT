@@ -76,43 +76,52 @@ class AzureMLChatTarget(PromptChatTarget):
             normalizer_id=normalizer_id,
         )
 
-    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
-        resp = self.complete_chat(
+        resp = self._complete_chat(
             messages=messages,
             temperature=self._temperature,
             top_p=self._top_p,
             repetition_penalty=self._repetition_penalty,
         )
 
+        if not resp:
+            raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+
+        messages.append(ChatMessage(role="assistant", content=resp))
         self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
+            labels=labels,
         )
 
         return resp
 
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
-        resp = await self.complete_chat_async(
+        resp = await self._complete_chat_async(
             messages=messages,
             temperature=self._temperature,
             top_p=self._top_p,
             repetition_penalty=self._repetition_penalty,
         )
 
+        if not resp:
+            raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+
         self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
+            labels=labels,
         )
 
         return resp
 
-    def complete_chat(
+    def _complete_chat(
         self,
         messages: list[ChatMessage],
         max_tokens: int = 400,
@@ -150,7 +159,7 @@ class AzureMLChatTarget(PromptChatTarget):
         )
         return response.json()["output"]
 
-    async def complete_chat_async(
+    async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
         max_tokens: int = 400,

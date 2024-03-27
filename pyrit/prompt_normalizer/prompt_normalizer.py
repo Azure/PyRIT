@@ -15,20 +15,20 @@ class PromptNormalizer(abc.ABC):
         self._memory = memory
         self.id = str(uuid4())
 
-    def send_prompt(self, prompt: Prompt) -> list[str]:
+    def send_prompt(self, prompt: Prompt, memory_labels: list[str] | None = None) -> list[str]:
         """
         Sends a prompt to the prompt targets.
         """
-        return prompt.send_prompt(normalizer_id=self.id)
+        return prompt.send_prompt(normalizer_id=self.id, memory_labels=memory_labels)
 
-    async def send_prompt_batch_async(self, prompts: list[Prompt], batch_size: int = 10):
+    async def send_prompt_batch_async(self, prompts: list[Prompt], memory_labels: list[str] | None = None, batch_size: int = 10):
         """
         Sends a batch of prompts to a target
         """
         results = []
 
         for prompts_batch in self._chunked_prompts(prompts, batch_size):
-            tasks = [prompt.send_prompt_async(normalizer_id=self.id) for prompt in prompts_batch]
+            tasks = [prompt.send_prompt_async(normalizer_id=self.id, memory_labels=memory_labels) for prompt in prompts_batch]
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
 
