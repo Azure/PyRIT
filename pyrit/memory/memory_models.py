@@ -30,11 +30,12 @@ class PromptMemoryEntry(Base):  # type: ignore
         __tablename__ (str): The name of the database table.
         __table_args__ (dict): Additional arguments for the database table.
         id (UUID): The unique identifier for the memory entry.
-        prompt_entry_type (PromptType): The type of the prompt entry (system, request_segment, response).
+        role (PromptType): system, request_segment, response
         conversation_id (str): The identifier for the conversation which is associated with a single target.
-        sequence (int): The order of the conversation within a conversation_id
+        sequence (int): The order of the conversation within a conversation_id.
+            Can be the same number for multi-part requests or responses.
         timestamp (DateTime): The timestamp of the memory entry.
-        labels (Dict[str, str]): The labels associated with the memory entry.
+        labels (Dict[str, str]): The labels associated with the memory entry. Several can be standardized.
         prompt_metadata (JSON): The metadata associated with the prompt.
         converters (list[PromptConverter]): The converters for the prompt.
         prompt_target (PromptTarget): The target for the prompt.
