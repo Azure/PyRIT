@@ -4,7 +4,7 @@
 import os
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 from pyrit.interfaces import EmbeddingSupport
-from pyrit.memory.memory_models import ConversationData, EmbeddingData
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 
 
 class MemoryEmbedding:
@@ -20,7 +20,7 @@ class MemoryEmbedding:
             raise ValueError("embedding_model must be set.")
         self.embedding_model = embedding_model
 
-    def generate_embedding_memory_data(self, *, chat_memory: ConversationData) -> EmbeddingData:
+    def generate_embedding_memory_data(self, *, chat_memory: PromptMemoryEntry) -> EmbeddingData:
         """
         Generates metadata for a chat memory entry.
 
@@ -33,7 +33,7 @@ class MemoryEmbedding:
         embedding_data = EmbeddingData(
             embedding=self.embedding_model.generate_text_embedding(text=chat_memory.content).data[0].embedding,
             embedding_type_name=self.embedding_model.__class__.__name__,
-            uuid=chat_memory.uuid,
+            uuid=chat_memory.id,
         )
         return embedding_data
 

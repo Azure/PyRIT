@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
+import json
 from pyrit.memory import MemoryInterface
 from pyrit.memory import DuckDBMemory
 
@@ -29,3 +30,9 @@ class PromptTarget(abc.ABC):
         """
         Sends a normalized prompt async to the prompt target.
         """
+
+    def to_dict(self):
+        public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        public_attributes['__type__'] = self.__class__.__name__
+        public_attributes['__module__'] = self.__class__.__module__
+        return json.dumps(public_attributes)

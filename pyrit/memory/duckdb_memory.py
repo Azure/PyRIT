@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
-from pyrit.memory.memory_models import ConversationData, Base
+from pyrit.memory.memory_models import PromptMemoryEntry, Base
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.interfaces import EmbeddingSupport
@@ -117,6 +117,10 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
 
+    #def query_entries_by_label(self, model, *, key: str, value: str) -> list[Base]:  # type: ignore
+    #
+    #    return self.query_entries(PromptMemoryEntry, conditions=model.labels[key] == value)
+
     def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
@@ -166,7 +170,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         result = self.query_entries(model)
         return result
 
-    def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[ConversationData]:
+    def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of ConversationData objects that have the specified conversation ID.
 
@@ -177,12 +181,12 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[ConversationData]: A list of ConversationData objects matching the specified conversation ID.
         """
         try:
-            return self.query_entries(ConversationData, conditions=ConversationData.conversation_id == conversation_id)
+            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id)
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[ConversationData]:
+    def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of ConversationData objects that have the specified normalizer ID.
 
@@ -193,7 +197,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[ConversationData]: A list of ConversationData objects matching the specified normalizer ID.
         """
         try:
-            return self.query_entries(ConversationData, conditions=ConversationData.normalizer_id == normalizer_id)
+            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.labels.op('->>')('normalizer_id') == normalizer_id)
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with normalizer_id {normalizer_id}. {e}"
@@ -213,7 +217,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         # Fetch the relevant entries using query_entries
         entries_to_update = self.query_entries(
-            ConversationData, conditions=ConversationData.conversation_id == conversation_id
+            PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
         )
 
         # Check if there are entries to update
