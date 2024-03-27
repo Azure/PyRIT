@@ -117,6 +117,10 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
 
+    #def query_entries_by_label(self, model, *, key: str, value: str) -> list[Base]:  # type: ignore
+    #
+    #    return self.query_entries(PromptMemoryEntry, conditions=model.labels[key] == value)
+
     def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
@@ -193,7 +197,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[ConversationData]: A list of ConversationData objects matching the specified normalizer ID.
         """
         try:
-            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.normalizer_id == normalizer_id)
+            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.labels["normalizer_id"] == normalizer_id)
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with normalizer_id {normalizer_id}. {e}"

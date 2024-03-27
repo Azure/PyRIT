@@ -16,10 +16,6 @@ from sqlalchemy.dialects.postgresql import UUID
 
 Base = declarative_base()
 
-class PromptType(enum.Enum):
-    SYSTEM = 'system'
-    REQUEST_SEGMENT = 'request_segment'
-    RESPONSE = 'response'
 
 class PromptDataType(enum.Enum):
     TEXT = 'text'
@@ -57,7 +53,7 @@ class PromptMemoryEntry(Base):  # type: ignore
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
     id = Column(UUID(as_uuid=True), nullable=False, primary_key=True, default=uuid4)
-    prompt_entry_type = Column(Enum(PromptType))
+    role: 'Column[ChatMessageRole]' = Column(String, nullable=False)
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False, default=0)
     timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -94,12 +90,12 @@ class EmbeddingData(Base):  # type: ignore
     __tablename__ = "EmbeddingData"
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
-    uuid = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
+    id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
     embedding = Column(ARRAY(Float))
     embedding_type_name = Column(String)
 
     def __str__(self):
-        return f"{self.uuid}"
+        return f"{self.id}"
 
 
 class ConversationMessageWithSimilarity(BaseModel):
