@@ -197,7 +197,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[ConversationData]: A list of ConversationData objects matching the specified normalizer ID.
         """
         try:
-            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.labels["normalizer_id"] == normalizer_id)
+            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.labels.op('->>')('normalizer_id') == normalizer_id)
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with normalizer_id {normalizer_id}. {e}"

@@ -375,8 +375,8 @@ def test_get_memories_with_normalizer_id(setup_duckdb_database):
         # Verify that the retrieved entries match the expected normalizer_id
         assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
         for retrieved_entry in retrieved_entries:
-            assert retrieved_entry.normalizer_id == specific_normalizer_id
-            assert "Hello" in retrieved_entry.content  # Basic check to ensure content is as expected
+            assert retrieved_entry.labels["normalizer_id"] == specific_normalizer_id
+            assert "Hello" in retrieved_entry.original_prompt_text  # Basic check to ensure content is as expected
 
 
 def test_update_entries_by_conversation_id(setup_duckdb_database):
