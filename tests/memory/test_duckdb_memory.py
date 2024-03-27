@@ -83,7 +83,7 @@ def test_embedding_data_schema(setup_duckdb_database):
     column_names = [col["name"] for col in columns]
 
     # Expected columns in EmbeddingData
-    expected_columns = ["uuid", "embedding", "embedding_type_name"]
+    expected_columns = ["id", "embedding", "embedding_type_name"]
     for column in expected_columns:
         assert column in column_names, f"{column} not found in EmbeddingData schema."
 
@@ -388,16 +388,19 @@ def test_update_entries_by_conversation_id(setup_duckdb_database):
         PromptMemoryEntry(
             conversation_id=specific_conversation_id,
             role="user",
-            content="Original content 1",
+            original_prompt_text="Original content 1",
             timestamp=datetime.datetime.utcnow(),
         ),
         PromptMemoryEntry(
-            conversation_id="other_id", role="user", content="Original content 2", timestamp=datetime.datetime.utcnow()
+            conversation_id="other_id",
+            role="user",
+            original_prompt_text="Original content 2",
+            timestamp=datetime.datetime.utcnow()
         ),
         PromptMemoryEntry(
             conversation_id=specific_conversation_id,
             role="user",
-            content="Original content 3",
+            original_prompt_text="Original content 3",
             timestamp=datetime.datetime.utcnow(),
         ),
     ]
@@ -408,7 +411,7 @@ def test_update_entries_by_conversation_id(setup_duckdb_database):
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id
-        update_fields = {"content": "Updated content", "role": "assistant"}
+        update_fields = {"original_prompt_text": "Updated content", "role": "assistant"}
 
         # Use the update_entries_by_conversation_id method to update the entries
         update_result = setup_duckdb_database.update_entries_by_conversation_id(
@@ -421,10 +424,10 @@ def test_update_entries_by_conversation_id(setup_duckdb_database):
             PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == specific_conversation_id
         )
         for entry in updated_entries:
-            assert entry.content == "Updated content"
+            assert entry.original_prompt_text == "Updated content"
             assert entry.role == "assistant"
 
         # Verify that the entry with a different conversation_id was not updated
         other_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="other_id").first()
-        assert other_entry.content == "Original content 2"  # Content should remain unchanged
+        assert other_entry.original_prompt_text == "Original content 2"  # Content should remain unchanged
         assert other_entry.role == "user"  # Role should remain unchanged
