@@ -19,13 +19,17 @@ class PromptTarget(abc.ABC):
         self._memory = memory if memory else DuckDBMemory()
 
     @abc.abstractmethod
-    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
+    def send_prompt(
+        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str,
+    ) -> str:
         """
         Sends a normalized prompt to the prompt target.
         """
 
     @abc.abstractmethod
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
+    async def send_prompt_async(
+        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str,
+    ) -> str:
         """
         Sends a normalized prompt async to the prompt target.
         """

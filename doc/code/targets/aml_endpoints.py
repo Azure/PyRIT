@@ -34,14 +34,11 @@ from pyrit.prompt_target import AzureMLChatTarget
 default_values.load_default_env()
 
 chat_engine = AzureMLChatTarget()
-chat_engine.send_prompt(
-    normalized_prompt="Hello world!",
-    conversation_id=uuid.uuid4(),
-    normalizer_id="1")
+chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=uuid.uuid4(), normalizer_id="1")
 
 
 # %% [markdown]
 #
-# You can then use this cell anywhere you would use a `PromptChatTarget` object.
+# You can then use this cell anywhere you would use a `PromptChatTarget` or `PromptTarget` object.
 # For example, you can create a red teaming orchestrator and do the entire [Gandalf Demo](../demo/1_gandalf.ipynb) but use this AML model.
 # This is also shown in the [Multiturn Demo](../demo/2_multiturn_strategies.ipynb).

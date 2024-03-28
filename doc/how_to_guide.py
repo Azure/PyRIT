@@ -46,10 +46,7 @@ target_llm = AzureOpenAIChatTarget(
 )
 
 prompt = "test"
-target_llm.send_prompt(
-    normalized_prompt=prompt,
-    conversation_id=uuid.uuid4(),
-    normalizer_id="1")
+target_llm.send_prompt(normalized_prompt=prompt, conversation_id=uuid.uuid4(), normalizer_id="1")
 
 # %% [markdown]
 # To expand to a wider variety of harms, it may be beneficial to write prompt templates instead of the

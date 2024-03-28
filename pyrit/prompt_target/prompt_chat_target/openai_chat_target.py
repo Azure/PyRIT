@@ -44,9 +44,11 @@ class OpenAIChatInterface(PromptChatTarget):
             normalizer_id=normalizer_id,
         )
 
-    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
+    def send_prompt(
+        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str,
+    ) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
-        
+
         logger.info(f"Sending the following normalized prompt to the prompt target: {normalized_prompt}")
 
         resp = self._complete_chat(
@@ -59,19 +61,20 @@ class OpenAIChatInterface(PromptChatTarget):
 
         if not resp:
             raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
-        
+
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
         self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
-            labels=labels,
         )
 
         return resp
 
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
+    async def send_prompt_async(
+        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str,
+    ) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
         logger.info(f"Sending the following normalized prompt to the prompt target: {normalized_prompt}")
@@ -86,14 +89,13 @@ class OpenAIChatInterface(PromptChatTarget):
 
         if not resp:
             raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
-        
+
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
         self._memory.add_chat_message_to_memory(
             ChatMessage(role="assistant", content=resp),
             conversation_id=conversation_id,
             normalizer_id=normalizer_id,
-            labels=labels,
         )
 
         return resp

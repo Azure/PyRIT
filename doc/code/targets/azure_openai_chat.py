@@ -22,10 +22,7 @@ default_values.load_default_env()
 
 chat_engine = AzureOpenAIChatTarget()
 
-resp = chat_engine.send_prompt(
-    normalized_prompt="Hello world!",
-    conversation_id=uuid.uuid4(),
-    normalizer_id="1")
+resp = chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=uuid.uuid4(), normalizer_id="1")
 
 print(resp)
 

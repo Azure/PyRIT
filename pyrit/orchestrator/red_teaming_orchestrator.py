@@ -156,23 +156,25 @@ class RedTeamingOrchestrator(Orchestrator):
                 self._red_teaming_chat.set_system_prompt(
                     prompt=self._attack_strategy,
                     conversation_id=self._red_teaming_chat_conversation_id,
-                    normalizer_id=self._prompt_normalizer.id)
-                
+                    normalizer_id=self._prompt_normalizer.id,
+                )
+
             prompt = self._red_teaming_chat.send_prompt(
                 normalized_prompt=prompt_text,
                 conversation_id=self._red_teaming_chat_conversation_id,
                 normalizer_id=self._prompt_normalizer.id,
-                labels=self._global_memory_labels, # TODO: Do we want labels everywhere we use send_prompt in the orchestrator?
             )
 
         red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
-                conversation_id=self._red_teaming_chat_conversation_id
-            )
-  
-        if completion_state and self.is_conversation_complete(red_teaming_chat_messages, red_teaming_chat_role="assistant"):
+            conversation_id=self._red_teaming_chat_conversation_id
+        )
+
+        if completion_state and self.is_conversation_complete(
+            red_teaming_chat_messages, red_teaming_chat_role="assistant"
+        ):
             completion_state.is_complete = True
             return
-                
+
         target_prompt_obj = Prompt(
             prompt_target=self._prompt_target,
             prompt_converters=self._prompt_converters,
@@ -185,8 +187,6 @@ class RedTeamingOrchestrator(Orchestrator):
         if completion_state:
             target_messages.append(ChatMessage(role="user", content=prompt_text))
             target_messages.append(ChatMessage(role="assistant", content=response))
-            completion_state.is_complete = self.is_conversation_complete(
-                target_messages,
-                red_teaming_chat_role="user")
-    
+            completion_state.is_complete = self.is_conversation_complete(target_messages, red_teaming_chat_role="user")
+
         return response
