@@ -60,7 +60,7 @@ class PromptMemoryEntry(Base):  # type: ignore
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
-    labels: Column[Dict[str, str]] = Column(JSON)
+    labels: Column[Dict[str, str]] = Column(JSON)  # type: ignore
     prompt_metadata = Column(JSON)
     converters: "Column[list[PromptConverter]]" = Column(JSON)  # type: ignore # noqa
     prompt_target: "Column[PromptTarget]" = Column(JSON)  # type: ignore # noqa
@@ -92,7 +92,7 @@ class PromptMemoryEntry(Base):  # type: ignore
         converted_prompt_data_type: PromptDataType = "text",
     ):
 
-        self.id = id if id else uuid4()
+        self.id = id if id else uuid4()  # type: ignore
 
         self.role = role
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
@@ -100,7 +100,7 @@ class PromptMemoryEntry(Base):  # type: ignore
 
         self.timestamp = datetime.utcnow()
         self.labels = labels
-        self.prompt_metadata = prompt_metadata
+        self.prompt_metadata = prompt_metadata  # type: ignore
 
         self.converters = converters.to_json() if converters else None
         self.prompt_target = prompt_target.to_dict() if prompt_target else None

@@ -6,7 +6,6 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import ConversationMessageWithSimilarity, EmbeddingMessageWithSimilarity
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 
 
 class ConversationAnalytics:
@@ -37,7 +36,7 @@ class ConversationAnalytics:
             list[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on content.
         """
-        all_memories = self.memory_interface.get_all_prompt_entries(PromptMemoryEntry)
+        all_memories = self.memory_interface.get_all_prompt_entries()
         similar_messages = []
 
         for memory in all_memories:
@@ -67,7 +66,8 @@ class ConversationAnalytics:
             List[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on embedding similarity.
         """
-        all_memories = self.memory_interface.get_all_prompt_entries(EmbeddingData)
+
+        all_memories = self.memory_interface.get_all_embeddings()
         similar_messages = []
 
         target_embedding = np.array(chat_message_embedding).reshape(1, -1)

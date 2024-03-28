@@ -31,7 +31,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         chat_model_under_evaluation: PromptChatTarget,
         scorer: QuestionAnswerScorer,
         memory: MemoryInterface | None = None,
-        memory_labels: dict[str:str] = None,
+        memory_labels: dict[str, str] = None,
         evaluation_prompt: str | None = None,
         batch_size: int = 1,
         verbose: bool = False,

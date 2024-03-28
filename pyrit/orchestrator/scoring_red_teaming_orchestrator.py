@@ -22,7 +22,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
         scorer: SupportTextClassification,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: list[str] = ["red-teaming-orchestrator"],
+        memory_labels: dict[str, str] = ["red-teaming-orchestrator"],
         verbose: bool = False,
     ) -> None:
         """Creates an orchestrator to manage conversations between a red teaming bot and a prompt target.

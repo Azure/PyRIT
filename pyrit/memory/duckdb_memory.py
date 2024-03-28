@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
-from pyrit.memory.memory_models import PromptMemoryEntry, Base
+from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.interfaces import EmbeddingSupport
@@ -89,6 +89,13 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Fetches all entries from the specified table and returns them as model instances.
         """
         result = self.query_entries(PromptMemoryEntry)
+        return result
+
+    def get_all_embeddings(self) -> list[EmbeddingData]:
+        """
+        Fetches all entries from the specified table and returns them as model instances.
+        """
+        result = self.query_entries(EmbeddingData)
         return result
 
     def get_prompt_entries_with_conversation_id(self, *, conversation_id: str) -> list[PromptMemoryEntry]:
@@ -254,6 +261,24 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error updating entries: {e}")
                 return False
+
+    def export_all_tables(self, *, export_type: str = "json"):
+        """
+        Exports all table data using the specified exporter.
+
+        Iterates over all tables, retrieves their data, and exports each to a file named after the table.
+
+        Args:
+            export_type (str): The format to export the data in (defaults to "json").
+        """
+        table_models = self.get_all_table_models()
+
+        for model in table_models:
+            data = self.query_entries(model)
+            table_name = model.__tablename__
+            file_extension = f".{export_type}"
+            file_path = RESULTS_PATH / f"{table_name}{file_extension}"
+            self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
     def dispose_engine(self):
         """

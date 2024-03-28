@@ -1,17 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Generator
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import inspect
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.prompt_target import AzureOpenAIChatTarget
 
-from tests.mocks import memory_fixture
+from tests.mocks import get_memory_interface
+
+
+@pytest.fixture
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
 
 
 @pytest.fixture
@@ -38,13 +43,13 @@ def chat_completion_engine() -> AzureOpenAIChatTarget:
 
 
 @pytest.fixture
-def azure_openai_target(memory_fixture: DuckDBMemory):
+def azure_openai_target(memory_interface: MemoryInterface):
 
     return AzureOpenAIChatTarget(
         deployment_name="test",
         endpoint="test",
         api_key="test",
-        memory=memory_fixture,
+        memory=memory_interface,
     )
 
 

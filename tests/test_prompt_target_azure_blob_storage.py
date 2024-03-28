@@ -2,23 +2,28 @@
 # Licensed under the MIT license.
 
 import os
+from typing import Generator
 import pytest
 
-from sqlalchemy import inspect
 from unittest.mock import patch
 
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory import MemoryInterface
 from pyrit.prompt_target import AzureBlobStorageTarget
 
-from tests.mocks import memory_fixture
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
-def azure_blob_storage_target(memory_fixture: DuckDBMemory):
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def azure_blob_storage_target(memory_interface: MemoryInterface):
     return AzureBlobStorageTarget(
         container_url="https://test.blob.core.windows.net/test",
         sas_token="valid_sas_token",
-        memory=memory_fixture,
+        memory=memory_interface,
     )
 
 

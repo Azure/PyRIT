@@ -2,23 +2,26 @@
 # Licensed under the MIT license.
 
 import pathlib
-from typing import Union
+from typing import Generator, Union
 from unittest.mock import Mock, patch
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_target.prompt_target import PromptTarget
 
 import pytest
-from sqlalchemy import inspect
 
-from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator
 from pyrit.orchestrator.end_token_red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.models import AttackStrategy, ChatMessage, Score
-from pyrit.memory import DuckDBMemory
 from pyrit.common.path import DATASETS_PATH
 
-from tests.mocks import memory_fixture
+from tests.mocks import get_memory_interface
+
+
+@pytest.fixture
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
 
 
 @pytest.fixture
@@ -27,12 +30,12 @@ def chat_completion_engine() -> AzureOpenAIChatTarget:
 
 
 @pytest.fixture
-def prompt_target(memory_fixture) -> AzureOpenAIChatTarget:
+def prompt_target(memory_interface) -> AzureOpenAIChatTarget:
     return AzureOpenAIChatTarget(
         deployment_name="test",
         endpoint="test",
         api_key="test",
-        memory=memory_fixture,
+        memory=memory_interface,
     )
 
 
@@ -116,7 +119,7 @@ def test_send_prompt_twice(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
-    memory_fixture: DuckDBMemory,
+    memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -126,7 +129,7 @@ def test_send_prompt_twice(
 
     kwargs = {
         "red_teaming_chat": chat_completion_engine,
-        "memory": memory_fixture,
+        "memory": memory_interface,
         "attack_strategy": attack_strategy,
         "initial_red_teaming_prompt": "how can I help you?",
         "prompt_target": prompt_target,
@@ -183,7 +186,7 @@ def test_send_fixed_prompt_then_generated_prompt(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
-    memory_fixture: DuckDBMemory,
+    memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -193,7 +196,7 @@ def test_send_fixed_prompt_then_generated_prompt(
 
     kwargs = {
         "red_teaming_chat": chat_completion_engine,
-        "memory": memory_fixture,
+        "memory": memory_interface,
         "attack_strategy": attack_strategy,
         "initial_red_teaming_prompt": "how can I help you?",
         "prompt_target": prompt_target,
@@ -250,7 +253,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
-    memory_fixture: DuckDBMemory,
+    memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -260,7 +263,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
 
     kwargs = {
         "red_teaming_chat": chat_completion_engine,
-        "memory": memory_fixture,
+        "memory": memory_interface,
         "attack_strategy": attack_strategy,
         "initial_red_teaming_prompt": "how can I help you?",
         "prompt_target": prompt_target,
@@ -305,7 +308,7 @@ def test_reach_goal_after_two_turns_end_token(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
-    memory_fixture: DuckDBMemory,
+    memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
 ):
     attack_strategy: Union[str | AttackStrategy] = (
@@ -314,7 +317,7 @@ def test_reach_goal_after_two_turns_end_token(
 
     red_teaming_orchestrator = EndTokenRedTeamingOrchestrator(
         red_teaming_chat=chat_completion_engine,
-        memory=memory_fixture,
+        memory=memory_interface,
         attack_strategy=attack_strategy,
         initial_red_teaming_prompt="how can I help you?",
         prompt_target=prompt_target,

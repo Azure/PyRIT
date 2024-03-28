@@ -2,8 +2,8 @@
 # Licensed under the MIT license.
 
 from contextlib import AbstractAsyncContextManager
+from typing import Generator
 
-import pytest
 from sqlalchemy import inspect
 
 from pyrit.memory import DuckDBMemory, MemoryInterface
@@ -68,8 +68,7 @@ class MockPromptTarget(PromptTarget):
         self.prompt_sent.append(normalized_prompt)
 
 
-@pytest.fixture
-def memory_fixture() -> MemoryInterface:  # type: ignore
+def get_memory_interface() -> Generator[MemoryInterface, None, None]:
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 
@@ -85,8 +84,7 @@ def memory_fixture() -> MemoryInterface:  # type: ignore
     duckdb_memory.dispose_engine()
 
 
-@pytest.fixture
-def sample_conversations_fixture():
+def get_sample_conversations():
     return [
         PromptMemoryEntry(
             role="user",

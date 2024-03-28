@@ -35,6 +35,12 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
+    def get_all_embeddings(self) -> list[EmbeddingData]:
+        """
+        Loads all EmbeddingData from the memory storage handler.
+        """
+
+    @abc.abstractmethod
     def get_prompt_entries_with_conversation_id(self, *, conversation_id: str) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of ConversationData objects that have the specified conversation ID.
@@ -93,7 +99,7 @@ class MemoryInterface(abc.ABC):
         conversation: ChatMessage,
         conversation_id: str,
         normalizer_id: str = None,
-        labels: list[str] = {},
+        labels: dict[str, str] = {},
     ):
         """
         Deprecated. Will be refactored and removed soon. It currently works incorrectly.
@@ -119,7 +125,7 @@ class MemoryInterface(abc.ABC):
         conversations: list[ChatMessage],
         conversation_id: str,
         normalizer_id: str = None,
-        labels: dict[str:str] = {},
+        labels: dict[str, str] = {},
     ):
         """
         Deprecated. Will be refactored and removed soon. It currently works incorrectly.
@@ -150,24 +156,6 @@ class MemoryInterface(abc.ABC):
             entries_to_add.append(entry)
 
         self.insert_prompt_entries(entries=entries_to_add)
-
-    def export_all_tables(self, *, export_type: str = "json"):
-        """
-        Exports all table data using the specified exporter.
-
-        Iterates over all tables, retrieves their data, and exports each to a file named after the table.
-
-        Args:
-            export_type (str): The format to export the data in (defaults to "json").
-        """
-        table_models = self.get_all_table_models()
-
-        for model in table_models:
-            data = self.query_entries(model)
-            table_name = model.__tablename__
-            file_extension = f".{export_type}"
-            file_path = RESULTS_PATH / f"{table_name}{file_extension}"
-            self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
         """
