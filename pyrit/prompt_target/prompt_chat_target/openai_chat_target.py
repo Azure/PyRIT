@@ -45,7 +45,11 @@ class OpenAIChatInterface(PromptChatTarget):
         )
 
     def send_prompt(
-        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str,
+        self,
+        *,
+        normalized_prompt: str,
+        conversation_id: str,
+        normalizer_id: str,
     ) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
@@ -73,7 +77,11 @@ class OpenAIChatInterface(PromptChatTarget):
         return resp
 
     async def send_prompt_async(
-        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str,
+        self,
+        *,
+        normalized_prompt: str,
+        conversation_id: str,
+        normalizer_id: str,
     ) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
