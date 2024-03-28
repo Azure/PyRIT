@@ -81,7 +81,7 @@ class RedTeamingOrchestrator(Orchestrator):
         return True
 
     def get_memory(self):
-        return self._memory.get_memories_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
+        return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
 
     @abc.abstractmethod
     def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role: str) -> bool:

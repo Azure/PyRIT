@@ -30,12 +30,15 @@ class MemoryEmbedding:
         Returns:
             ConversationMemoryEntryMetadata: The generated metadata.
         """
-        embedding_data = EmbeddingData(
-            embedding=self.embedding_model.generate_text_embedding(text=chat_memory.content).data[0].embedding,
-            embedding_type_name=self.embedding_model.__class__.__name__,
-            uuid=chat_memory.id,
-        )
-        return embedding_data
+        if chat_memory.converted_prompt_data_type == "text":
+            embedding_data = EmbeddingData(
+                embedding=self.embedding_model.generate_text_embedding(text=chat_memory.converted_prompt_text).data[0].embedding,
+                embedding_type_name=self.embedding_model.__class__.__name__,
+                id=chat_memory.id,
+            )
+            return embedding_data
+
+        raise ValueError("Only text data is supported for embedding.")
 
 
 def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -> MemoryEmbedding | None:

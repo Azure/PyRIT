@@ -341,7 +341,7 @@ def test_reach_goal_after_two_turns_end_token(
             mock_target.return_value = expected_target_response
             target_response = red_teaming_orchestrator.apply_attack_strategy_until_completion()
             assert target_response == expected_target_response
-            conversations = red_teaming_orchestrator._memory.get_all_memory(PromptMemoryEntry)
+            conversations = red_teaming_orchestrator._memory.get_all_prompt_entries(PromptMemoryEntry)
             # Expecting three conversation threads (two with red teaming chat and one with prompt target)
             assert len(conversations) == 7, f"Expected 7 conversations, got {len(conversations)}"
             check_conversations(

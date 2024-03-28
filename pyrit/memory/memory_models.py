@@ -2,10 +2,11 @@
 # Licensed under the MIT license.
 
 import enum
+import hashlib
 import uuid
 
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict
@@ -16,10 +17,13 @@ from sqlalchemy.dialects.postgresql import UUID
 
 Base = declarative_base()
 
-
+"""
 class PromptDataType(enum.Enum):
     TEXT = 'text'
-    IMAGE = 'image'
+    IMAGE_URL = 'image_url'
+"""
+
+PromptDataType = Literal["text", "image_url"]
 
 
 class PromptMemoryEntry(Base):  # type: ignore
@@ -53,34 +57,81 @@ class PromptMemoryEntry(Base):  # type: ignore
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True, default=uuid4)
+    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
     role: 'Column[ChatMessageRole]' = Column(String, nullable=False)
     conversation_id = Column(String, nullable=False)
-    sequence = Column(INTEGER, nullable=False, default=0)
-    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    sequence = Column(INTEGER, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
     labels: Column[Dict[str, str]] = Column(JSON)
     prompt_metadata = Column(JSON)
     converters: 'Column[list[PromptConverter]]' = Column(JSON)
     prompt_target: 'Column[PromptTarget]' = Column(JSON)
 
-    original_prompt_data_type = Column(Enum(PromptDataType))
-    original_prompt_text = Column(String)
+    original_prompt_data_type: PromptDataType = Column(String, nullable=False)
+    original_prompt_text = Column(String, nullable=False)
     original_prompt_data_sha256 = Column(String)
 
-    converted_prompt_data_type = Column(Enum(PromptDataType))
+    converted_prompt_data_type: PromptDataType = Column(String, nullable=False)
     converted_prompt_text = Column(String)
     converted_prompt_data_sha256 = Column(String)
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
+
+    def __init__(self,
+                 *,
+                 role: str,
+                 original_prompt_text: str,
+                 converted_prompt_text: str,
+                 id: uuid.UUID = None,
+                 conversation_id: str = None,
+                 sequence: int = -1,
+                 labels: Dict[str, str] = None,
+                 prompt_metadata: JSON = None,
+                 converters: 'PromptConverterList' = None,
+                 prompt_target: 'PromptTarget' = None,
+                 original_prompt_data_type: PromptDataType = "text",
+                 converted_prompt_data_type: PromptDataType = "text"
+                 ):
+
+
+        self.id = id if id else uuid4()
+
+        self.role = role
+        self.conversation_id = conversation_id if conversation_id else str(uuid4())
+        self.sequence = sequence
+
+        self.timestamp = datetime.utcnow()
+        self.labels = labels
+        self.prompt_metadata = prompt_metadata
+
+        self.converters = converters.to_json() if converters else None
+        self.prompt_target = prompt_target.to_dict() if prompt_target else None
+
+        self.original_prompt_text = original_prompt_text
+        self.original_prompt_data_type = original_prompt_data_type
+        self.original_prompt_data_sha256 = self._create_sha256(original_prompt_text)
+
+
+        self.converted_prompt_data_type = converted_prompt_data_type
+        self.converted_prompt_text = converted_prompt_text
+        self.converted_prompt_data_sha256 = self._create_sha256(converted_prompt_text)
+
+
+
+    def _create_sha256(self, text: str) -> str:
+        input_bytes = text.encode('utf-8')
+        hash_object = hashlib.sha256(input_bytes)
+        return hash_object.hexdigest()
+
     def __str__(self):
-        return f"{self.role}: {self.content}"
+        return f"{self.role}: {self.converted_prompt_text}"
 
 
 class EmbeddingData(Base):  # type: ignore
     """
     Represents the embedding data associated with conversation entries in the database.
-    Each embedding is linked to a specific conversation entry via a 'uuid'.
+    Each embedding is linked to a specific conversation entry via an id
 
     Attributes:
         uuid (UUID): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.

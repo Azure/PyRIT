@@ -33,15 +33,23 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
     DEFAULT_DB_FILE_NAME = "pyrit_duckdb_storage.db"
 
     def __init__(
-        self, *, db_path: Union[Path, str] = None, embedding_model: EmbeddingSupport = None, has_echo: bool = False
+        self,
+        *,
+        db_path: Union[Path, str] = None,
+        embedding_model: EmbeddingSupport = None,
+        disable_embedding: bool = False,
+        verbose: bool = False
     ):
         super(DuckDBMemory, self).__init__()
-        self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
+        if not disable_embedding:
+            self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
+
         if db_path == ":memory:":
             self.db_path: Union[Path, str] = ":memory:"
         else:
             self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
-        self.engine = self._create_engine(has_echo=has_echo)
+
+        self.engine = self._create_engine(has_echo=verbose)
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
 
@@ -75,6 +83,90 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             Base.metadata.create_all(self.engine, checkfirst=True)
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
+
+    def get_all_prompt_entries(self) -> list[PromptMemoryEntry]:
+        """
+        Fetches all entries from the specified table and returns them as model instances.
+        """
+        result = self.query_entries(PromptMemoryEntry)
+        return result
+
+    def get_prompt_entries_with_conversation_id(self, *, conversation_id: str) -> list[PromptMemoryEntry]:
+        """
+        Retrieves a list of ConversationData objects that have the specified conversation ID.
+
+        Args:
+            conversation_id (str): The conversation ID to filter the table.
+
+        Returns:
+            list[ConversationData]: A list of ConversationData objects matching the specified conversation ID.
+        """
+        try:
+            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id)
+        except Exception as e:
+            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
+            return []
+
+    def get_prompt_entries_with_normalizer_id(self, *, normalizer_id: str) -> list[PromptMemoryEntry]:
+        """
+        Retrieves a list of ConversationData objects that have the specified normalizer ID.
+
+        Args:
+            normalizer_id (str): The normalizer ID to filter the table.
+
+        Returns:
+            list[ConversationData]: A list of ConversationData objects matching the specified normalizer ID.
+        """
+        try:
+            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.labels.op('->>')('normalizer_id') == normalizer_id)
+        except Exception as e:
+            logger.exception(
+                f"Unexpected error: Failed to retrieve ConversationData with normalizer_id {normalizer_id}. {e}"
+            )
+            return []
+
+    def insert_prompt_entries(self, *, entries: list[PromptMemoryEntry]) -> None:
+        """
+        Inserts a list of prompt entries into the memory storage.
+        If necessary, generates embedding data for applicable entries
+
+        Args:
+            entries (list[Base]): The list of database model instances to be inserted.
+        """
+        embedding_entries = []
+
+        if self.memory_embedding:
+            for chat_entry in entries:
+
+                embedding_entry = self.memory_embedding.generate_embedding_memory_data(chat_memory=chat_entry)
+                embedding_entries.append(embedding_entry)
+
+        self.insert_entries(entries=entries)
+        self.insert_entries(entries=embedding_entries)
+
+    def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
+        """
+        Updates entries for a given conversation ID with the specified field values.
+
+        Args:
+            conversation_id (str): The conversation ID of the entries to be updated.
+            update_fields (dict): A dictionary of field names and their new values.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        # Fetch the relevant entries using query_entries
+        entries_to_update = self.query_entries(
+            PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
+        )
+
+        # Check if there are entries to update
+        if not entries_to_update:
+            logger.info(f"No entries found with conversation_id {conversation_id} to update.")
+            return False
+
+        # Use the utility function to update the entries
+        return self.update_entries(entries=entries_to_update, update_fields=update_fields)
 
     def get_all_table_models(self) -> list[Base]:  # type: ignore
         """
@@ -117,10 +209,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
 
-    #def query_entries_by_label(self, model, *, key: str, value: str) -> list[Base]:  # type: ignore
-    #
-    #    return self.query_entries(PromptMemoryEntry, conditions=model.labels[key] == value)
-
     def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
@@ -162,71 +250,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error updating entries: {e}")
                 return False
-
-    def get_all_memory(self, model: Base) -> list[Base]:  # type: ignore
-        """
-        Fetches all entries from the specified table and returns them as model instances.
-        """
-        result = self.query_entries(model)
-        return result
-
-    def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[PromptMemoryEntry]:
-        """
-        Retrieves a list of ConversationData objects that have the specified conversation ID.
-
-        Args:
-            conversation_id (str): The conversation ID to filter the table.
-
-        Returns:
-            list[ConversationData]: A list of ConversationData objects matching the specified conversation ID.
-        """
-        try:
-            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id)
-        except Exception as e:
-            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
-            return []
-
-    def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[PromptMemoryEntry]:
-        """
-        Retrieves a list of ConversationData objects that have the specified normalizer ID.
-
-        Args:
-            normalizer_id (str): The normalizer ID to filter the table.
-
-        Returns:
-            list[ConversationData]: A list of ConversationData objects matching the specified normalizer ID.
-        """
-        try:
-            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.labels.op('->>')('normalizer_id') == normalizer_id)
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with normalizer_id {normalizer_id}. {e}"
-            )
-            return []
-
-    def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
-        """
-        Updates entries for a given conversation ID with the specified field values.
-
-        Args:
-            conversation_id (str): The conversation ID of the entries to be updated.
-            update_fields (dict): A dictionary of field names and their new values.
-
-        Returns:
-            bool: True if the update was successful, False otherwise.
-        """
-        # Fetch the relevant entries using query_entries
-        entries_to_update = self.query_entries(
-            PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
-        )
-
-        # Check if there are entries to update
-        if not entries_to_update:
-            logger.info(f"No entries found with conversation_id {conversation_id} to update.")
-            return False
-
-        # Use the utility function to update the entries
-        return self.update_entries(entries=entries_to_update, update_fields=update_fields)
 
     def dispose_engine(self):
         """

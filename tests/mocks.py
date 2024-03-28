@@ -3,6 +3,10 @@
 
 from contextlib import AbstractAsyncContextManager
 
+import pytest
+from sqlalchemy import inspect
+
+from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.prompt_target import PromptTarget
 
 
@@ -61,3 +65,19 @@ class MockPromptTarget(PromptTarget):
 
     async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
         self.prompt_sent.append(normalized_prompt)
+
+@pytest.fixture
+def memory() -> MemoryInterface:  # type: ignore
+    # Create an in-memory DuckDB engine
+    duckdb_memory = DuckDBMemory(db_path=":memory:")
+
+    # Reset the database to ensure a clean state
+    duckdb_memory.reset_database()
+    inspector = inspect(duckdb_memory.engine)
+
+    # Verify that tables are created as expected
+    assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
+    assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
+
+    yield duckdb_memory
+    duckdb_memory.dispose_engine()

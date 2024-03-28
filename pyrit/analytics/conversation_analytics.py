@@ -24,11 +24,11 @@ class ConversationAnalytics:
         """
         self.memory_interface = memory_interface
 
-    def get_similar_chat_messages_by_content(
+    def get_prompt_entries_with_same_converted_content(
         self, *, chat_message_content: str
     ) -> list[ConversationMessageWithSimilarity]:
         """
-        Retrieves chat messages that are similar to the given content based on exact matches.
+        Retrieves chat messages that have the same converted content
 
         Args:
             chat_message_content (str): The content of the chat message to find similar messages for.
@@ -37,16 +37,16 @@ class ConversationAnalytics:
             list[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on content.
         """
-        all_memories = self.memory_interface.get_all_memory(PromptMemoryEntry)
+        all_memories = self.memory_interface.get_all_prompt_entries(PromptMemoryEntry)
         similar_messages = []
 
         for memory in all_memories:
-            if memory.content == chat_message_content:
+            if memory.converted_prompt_text == chat_message_content:
                 similar_messages.append(
                     ConversationMessageWithSimilarity(
                         score=1.0,
                         role=memory.role,
-                        content=memory.content,
+                        content=memory.converted_prompt_text,
                         metric="exact_match",  # Exact match
                     )
                 )
@@ -67,7 +67,7 @@ class ConversationAnalytics:
             List[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on embedding similarity.
         """
-        all_memories = self.memory_interface.get_all_memory(EmbeddingData)
+        all_memories = self.memory_interface.get_all_prompt_entries(EmbeddingData)
         similar_messages = []
 
         target_embedding = np.array(chat_message_embedding).reshape(1, -1)

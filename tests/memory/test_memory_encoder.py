@@ -54,9 +54,11 @@ def test_memory_encoding_chat_message(
     memory_encoder_w_mock_embedding_generator: MemoryEmbedding,
 ):
     chat_memory = PromptMemoryEntry(
-        content="hello world!",
+        original_prompt_text="hello world!",
+        converted_prompt_text="hello world!",
         role="user",
         conversation_id="my_session",
+        converted_prompt_data_type="text",
     )
     metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(chat_memory=chat_memory)
     assert metadata.id == chat_memory.id
