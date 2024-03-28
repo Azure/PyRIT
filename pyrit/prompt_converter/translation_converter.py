@@ -2,22 +2,24 @@ import json
 import logging
 import pathlib
 
-from pyrit.interfaces import ChatSupport
 from pyrit.prompt_converter import PromptConverter
 from pyrit.models import PromptTemplate, ChatMessage
 from pyrit.common.path import DATASETS_PATH
+from pyrit.prompt_target import PromptChatTarget
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 logger = logging.getLogger(__name__)
 
 
 class TranslationConverter(PromptConverter):
-    def __init__(self, *, converter_target: ChatSupport, languages: list[str], prompt_template: PromptTemplate = None):
+    def __init__(
+        self, *, converter_target: PromptChatTarget, languages: list[str], prompt_template: PromptTemplate = None
+    ):
         """
         Initializes a TranslationConverter object.
 
         Args:
-            converter_target (ChatSupport): The target chat support for the conversion which will translate
+            converter_target (PromptChatTarget): The target chat support for the conversion which will translate
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
             prompt_template (PromptTemplate, optional): The prompt template for the conversion.
 

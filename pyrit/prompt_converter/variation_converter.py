@@ -2,10 +2,10 @@ import json
 import logging
 import pathlib
 
-from pyrit.interfaces import ChatSupport
 from pyrit.prompt_converter import PromptConverter
 from pyrit.models import PromptTemplate, ChatMessage
 from pyrit.common.path import DATASETS_PATH
+from pyrit.prompt_target import PromptChatTarget
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class VariationConverter(PromptConverter):
     def __init__(
-        self, *, converter_target: ChatSupport, prompt_template: PromptTemplate = None, number_variations: int = 10
+        self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None, number_variations: int = 10
     ):
         self.converter_target = converter_target
 

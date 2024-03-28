@@ -7,7 +7,7 @@ import abc
 from abc import abstractmethod
 from dataclasses import dataclass
 
-from pyrit.models import ChatMessage, EmbeddingResponse, PromptResponse, Score
+from pyrit.models import EmbeddingResponse, PromptResponse, Score
 
 
 class SupportTextClassification(abc.ABC):
@@ -124,18 +124,3 @@ class CompletionSupport(abc.ABC):
             The completed text
         """
         raise NotImplementedError("complete_text_async method not implemented")
-
-
-class ChatSupport(abc.ABC):
-    @abstractmethod
-    def complete_chat(self, *, messages: list[ChatMessage]) -> str:
-        """Complete chat based on a message
-           Update _chat_messages with the messages used in the completion.
-
-        Args:
-            messages: The list of chat messages to be used in the chat completion
-
-        Returns:
-            The completed chat
-        """
-        raise NotImplementedError("complete_chat method not implemented")
