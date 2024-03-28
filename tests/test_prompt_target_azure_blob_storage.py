@@ -10,15 +10,15 @@ from unittest.mock import patch
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.prompt_target import AzureBlobStorageTarget
 
-from tests.mocks import memory
+from tests.mocks import memory_fixture
 
 
 @pytest.fixture
-def azure_blob_storage_target(memory: DuckDBMemory):
+def azure_blob_storage_target(memory_fixture: DuckDBMemory):
     return AzureBlobStorageTarget(
         container_url="https://test.blob.core.windows.net/test",
         sas_token="valid_sas_token",
-        memory=memory,
+        memory=memory_fixture,
     )
 
 

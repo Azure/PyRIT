@@ -69,7 +69,7 @@ class MockPromptTarget(PromptTarget):
 
 
 @pytest.fixture
-def memory() -> MemoryInterface:  # type: ignore
+def memory_fixture() -> MemoryInterface:  # type: ignore
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 
@@ -86,7 +86,7 @@ def memory() -> MemoryInterface:  # type: ignore
 
 
 @pytest.fixture
-def sample_conversations():
+def sample_conversations_fixture():
     return [
         PromptMemoryEntry(
             role="user",

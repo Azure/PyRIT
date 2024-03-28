@@ -2,13 +2,9 @@
 # Licensed under the MIT license.
 
 import abc
-from hashlib import sha256
-from typing import Optional
 from pathlib import Path
 
-from uuid import uuid4
-
-from pyrit.memory.memory_models import Base, PromptMemoryEntry, EmbeddingData
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage

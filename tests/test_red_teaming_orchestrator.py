@@ -18,7 +18,7 @@ from pyrit.models import AttackStrategy, ChatMessage, Score
 from pyrit.memory import DuckDBMemory
 from pyrit.common.path import DATASETS_PATH
 
-from tests.mocks import memory
+from tests.mocks import memory_fixture
 
 
 @pytest.fixture
@@ -27,12 +27,12 @@ def chat_completion_engine() -> AzureOpenAIChatTarget:
 
 
 @pytest.fixture
-def prompt_target(memory) -> AzureOpenAIChatTarget:
+def prompt_target(memory_fixture) -> AzureOpenAIChatTarget:
     return AzureOpenAIChatTarget(
         deployment_name="test",
         endpoint="test",
         api_key="test",
-        memory=memory,
+        memory=memory_fixture,
     )
 
 
@@ -116,7 +116,7 @@ def test_send_prompt_twice(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
-    memory: DuckDBMemory,
+    memory_fixture: DuckDBMemory,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -126,7 +126,7 @@ def test_send_prompt_twice(
 
     kwargs = {
         "red_teaming_chat": chat_completion_engine,
-        "memory": memory,
+        "memory": memory_fixture,
         "attack_strategy": attack_strategy,
         "initial_red_teaming_prompt": "how can I help you?",
         "prompt_target": prompt_target,
@@ -183,7 +183,7 @@ def test_send_fixed_prompt_then_generated_prompt(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
-    memory: DuckDBMemory,
+    memory_fixture: DuckDBMemory,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -193,7 +193,7 @@ def test_send_fixed_prompt_then_generated_prompt(
 
     kwargs = {
         "red_teaming_chat": chat_completion_engine,
-        "memory": memory,
+        "memory": memory_fixture,
         "attack_strategy": attack_strategy,
         "initial_red_teaming_prompt": "how can I help you?",
         "prompt_target": prompt_target,
@@ -250,7 +250,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
-    memory: DuckDBMemory,
+    memory_fixture: DuckDBMemory,
     attack_strategy_as_str: bool,
     OrchestratorType: type,
 ):
@@ -260,7 +260,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
 
     kwargs = {
         "red_teaming_chat": chat_completion_engine,
-        "memory": memory,
+        "memory": memory_fixture,
         "attack_strategy": attack_strategy,
         "initial_red_teaming_prompt": "how can I help you?",
         "prompt_target": prompt_target,
@@ -305,7 +305,7 @@ def test_reach_goal_after_two_turns_end_token(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
-    memory: DuckDBMemory,
+    memory_fixture: DuckDBMemory,
     attack_strategy_as_str: bool,
 ):
     attack_strategy: Union[str | AttackStrategy] = (
@@ -314,7 +314,7 @@ def test_reach_goal_after_two_turns_end_token(
 
     red_teaming_orchestrator = EndTokenRedTeamingOrchestrator(
         red_teaming_chat=chat_completion_engine,
-        memory=memory,
+        memory=memory_fixture,
         attack_strategy=attack_strategy,
         initial_red_teaming_prompt="how can I help you?",
         prompt_target=prompt_target,

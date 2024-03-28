@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import pytest
-import uuid
 from unittest.mock import MagicMock
 
 from pyrit.memory.memory_interface import MemoryInterface

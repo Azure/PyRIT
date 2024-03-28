@@ -4,19 +4,16 @@
 import json
 import pytest
 import uuid
-import datetime
 from unittest.mock import MagicMock
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import inspect
-from sqlalchemy import String, DateTime, Float, Enum, JSON, ForeignKey, Index, INTEGER, ARRAY
+from sqlalchemy import String, DateTime, INTEGER, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.sqltypes import NullType
-from sqlalchemy.types import String, DateTime
 
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData, PromptDataType
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.memory import DuckDBMemory
-from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.prompt_converter import PromptConverterList
 from pyrit.prompt_target.text_target import TextTarget

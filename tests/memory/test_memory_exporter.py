@@ -3,13 +3,10 @@
 
 import json
 
-import pytest
-
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.memory.memory_models import PromptMemoryEntry
 from sqlalchemy.inspection import inspect
 
-from tests.mocks import sample_conversations
+from tests.mocks import sample_conversations_fixture as sample_conversations # noqa: F401
 
 
 def model_to_dict(instance):

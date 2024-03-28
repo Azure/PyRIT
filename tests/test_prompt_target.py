@@ -11,7 +11,7 @@ from openai.types.chat.chat_completion import Choice
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.prompt_target import AzureOpenAIChatTarget
 
-from tests.mocks import memory
+from tests.mocks import memory_fixture
 
 
 @pytest.fixture
@@ -38,13 +38,13 @@ def chat_completion_engine() -> AzureOpenAIChatTarget:
 
 
 @pytest.fixture
-def azure_openai_target(memory: DuckDBMemory):
+def azure_openai_target(memory_fixture: DuckDBMemory):
 
     return AzureOpenAIChatTarget(
         deployment_name="test",
         endpoint="test",
         api_key="test",
-        memory=memory,
+        memory=memory_fixture,
     )
 
 

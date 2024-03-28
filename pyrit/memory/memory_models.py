@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import enum
 import hashlib
 import uuid
 
@@ -10,18 +9,13 @@ from typing import Dict, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, String, DateTime, Float, Enum, JSON, ForeignKey, Index, INTEGER, ARRAY
+from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
 
 Base = declarative_base()
 
-"""
-class PromptDataType(enum.Enum):
-    TEXT = 'text'
-    IMAGE_URL = 'image_url'
-"""
 
 PromptDataType = Literal["text", "image_url"]
 
@@ -29,6 +23,8 @@ PromptDataType = Literal["text", "image_url"]
 class PromptMemoryEntry(Base):  # type: ignore
     """
     Represents the prompt data.
+
+    Because of the nature of database and sql alchemy, type ignores are abundant :)
 
     Attributes:
         __tablename__ (str): The name of the database table.
@@ -60,20 +56,20 @@ class PromptMemoryEntry(Base):  # type: ignore
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
     id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
-    role: "Column[ChatMessageRole]" = Column(String, nullable=False)
+    role: "Column[ChatMessageRole]" = Column(String, nullable=False)  # type: ignore # noqa
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     labels: Column[Dict[str, str]] = Column(JSON)
     prompt_metadata = Column(JSON)
-    converters: "Column[list[PromptConverter]]" = Column(JSON)
-    prompt_target: "Column[PromptTarget]" = Column(JSON)
+    converters: "Column[list[PromptConverter]]" = Column(JSON)  # type: ignore # noqa
+    prompt_target: "Column[PromptTarget]" = Column(JSON)  # type: ignore # noqa
 
-    original_prompt_data_type: PromptDataType = Column(String, nullable=False)
+    original_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
     original_prompt_text = Column(String, nullable=False)
     original_prompt_data_sha256 = Column(String)
 
-    converted_prompt_data_type: PromptDataType = Column(String, nullable=False)
+    converted_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
     converted_prompt_text = Column(String)
     converted_prompt_data_sha256 = Column(String)
 
@@ -90,8 +86,8 @@ class PromptMemoryEntry(Base):  # type: ignore
         sequence: int = -1,
         labels: Dict[str, str] = None,
         prompt_metadata: JSON = None,
-        converters: "PromptConverterList" = None,
-        prompt_target: "PromptTarget" = None,
+        converters: "PromptConverterList" = None,  # type: ignore # noqa
+        prompt_target: "PromptTarget" = None,  # type: ignore # noqa
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
     ):
