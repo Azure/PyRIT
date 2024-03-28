@@ -175,7 +175,8 @@ class AzureMLChatTarget(PromptChatTarget):
         response = net_utility.make_request_and_raise_if_error(
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
-        return response.json()["output"]
+
+        return response.json()[0]["0"]
 
     async def _complete_chat_async(
         self,
@@ -212,7 +213,7 @@ class AzureMLChatTarget(PromptChatTarget):
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
-        return response.json()["output"]
+        return response.json()[0]["0"]
 
     def _prepare_message(self, normalized_prompt: str, conversation_id: str, normalizer_id: str):
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)

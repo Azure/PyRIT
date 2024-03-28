@@ -34,7 +34,7 @@ from pyrit.prompt_target import AzureMLChatTarget
 default_values.load_default_env()
 
 chat_engine = AzureMLChatTarget()
-chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=uuid.uuid4(), normalizer_id="1")
+chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id="1")
 
 
 # %% [markdown]

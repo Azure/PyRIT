@@ -21,10 +21,7 @@ default_values.load_default_env()
 
 
 chat_engine = AzureOpenAIChatTarget()
-
-resp = chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=uuid.uuid4(), normalizer_id="1")
-
-print(resp)
+chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id="1")
 
 # TODO: Do we want to remove azure_openai_chat and aml_endpoints from doc/code in favor of a general prompt_chat_targets doc NB or the existing prompt_targets one?
 

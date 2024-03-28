@@ -54,9 +54,9 @@ def test_complete_chat(aml_online_chat: AzureMLChatTarget):
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
         mock_response = Mock()
-        mock_response.json.return_value = {"output": "extracted response"}
+        mock_response.json.return_value = [{"0": "extracted response"}]
         mock.return_value = mock_response
-        response = aml_online_chat.complete_chat(messages)
+        response = aml_online_chat._complete_chat(messages)
         assert response == "extracted response"
         mock.assert_called_once()
 
@@ -76,9 +76,9 @@ def test_complete_chat_with_nop_normalizer(
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
         mock_response = Mock()
-        mock_response.json.return_value = {"output": "extracted response"}
+        mock_response.json.return_value = [{"0": "extracted response"}]
         mock.return_value = mock_response
-        response = aml_online_chat.complete_chat(messages)
+        response = aml_online_chat._complete_chat(messages)
         assert response == "extracted response"
 
         args, kwargs = mock.call_args
@@ -99,9 +99,9 @@ def test_complete_chat_with_squashnormalizer(aml_online_chat: AzureMLChatTarget)
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
         mock_response = Mock()
-        mock_response.json.return_value = {"output": "extracted response"}
+        mock_response.json.return_value = [{"0": "extracted response"}]
         mock.return_value = mock_response
-        response = aml_online_chat.complete_chat(messages)
+        response = aml_online_chat._complete_chat(messages)
         assert response == "extracted response"
 
         args, kwargs = mock.call_args
@@ -119,7 +119,7 @@ def test_complete_chat_bad_json_response(aml_online_chat: AzureMLChatTarget):
 
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
         mock_response = Mock()
-        mock_response.json.return_value = {"bad response"}
+        mock_response.json.return_value = [{"bad response"}]
         mock.return_value = mock_response
         with pytest.raises(TypeError):
-            aml_online_chat.complete_chat(messages)
+            aml_online_chat._complete_chat(messages)

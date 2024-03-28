@@ -163,7 +163,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 normalized_prompt=prompt_text,
                 conversation_id=self._red_teaming_chat_conversation_id,
                 normalizer_id=self._prompt_normalizer.id,
-            )
+            )  # TODO: Add a label to indicate this is coming from the red team orchestrator
 
         red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
             conversation_id=self._red_teaming_chat_conversation_id
