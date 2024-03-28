@@ -18,22 +18,7 @@ from pyrit.models import AttackStrategy, ChatMessage, Score
 from pyrit.memory import DuckDBMemory
 from pyrit.common.path import DATASETS_PATH
 
-
-@pytest.fixture
-def memory() -> DuckDBMemory:  # type: ignore
-    # Create an in-memory DuckDB engine
-    duckdb_memory = DuckDBMemory(db_path=":memory:")
-
-    # Reset the database to ensure a clean state
-    duckdb_memory.reset_database()
-    inspector = inspect(duckdb_memory.engine)
-
-    # Verify that tables are created as expected
-    assert "ConversationStore" in inspector.get_table_names(), "ConversationStore table not created."
-    assert "EmbeddingStore" in inspector.get_table_names(), "EmbeddingStore table not created."
-
-    yield duckdb_memory
-    duckdb_memory.dispose_engine()
+from tests.mocks import memory
 
 
 @pytest.fixture
@@ -79,18 +64,18 @@ def check_conversations(
         # first conversation (with red teaming chat bot)
         assert conversations[0].conversation_id == conversations[1].conversation_id == conversations[2].conversation_id
         assert conversations[0].role == "system"
-        assert conversations[0].content == red_teaming_meta_prompt
+        assert conversations[0].converted_prompt_text == red_teaming_meta_prompt
         assert conversations[1].role == "user"
-        assert conversations[1].content == initial_red_teaming_prompt
+        assert conversations[1].converted_prompt_text == initial_red_teaming_prompt
         assert conversations[2].role == "assistant"
-        assert conversations[2].content == expected_red_teaming_responses[0]
+        assert conversations[2].converted_prompt_text == expected_red_teaming_responses[0]
     # second conversation (with prompt target)
     assert conversations[3 - index_offset].conversation_id == conversations[4 - index_offset].conversation_id
-    assert conversations[3 - index_offset].normalizer_id == conversations[4 - index_offset].normalizer_id
+    assert conversations[3 - index_offset].labels["normalizer_id"] == conversations[4 - index_offset].labels["normalizer_id"]
     assert conversations[3 - index_offset].role == "user"
-    assert conversations[3 - index_offset].content == expected_red_teaming_responses[0]
+    assert conversations[3 - index_offset].converted_prompt_text == expected_red_teaming_responses[0]
     assert conversations[4 - index_offset].role == "assistant"
-    assert conversations[4 - index_offset].content == expected_target_responses[0]
+    assert conversations[4 - index_offset].converted_prompt_text == expected_target_responses[0]
 
     if stop_after_n_conversations == 2:
         return
@@ -103,20 +88,20 @@ def check_conversations(
     # third conversation (with red teaming chatbot)
     assert conversations[5 - index_offset].conversation_id == conversations[6 - index_offset].conversation_id
     assert conversations[5 - index_offset].role == "user"
-    assert conversations[5 - index_offset].content == expected_target_responses[0]
+    assert conversations[5 - index_offset].converted_prompt_text == expected_target_responses[0]
     assert conversations[6 - index_offset].role == "assistant"
-    assert conversations[6 - index_offset].content == expected_red_teaming_responses[1]
+    assert conversations[6 - index_offset].converted_prompt_text == expected_red_teaming_responses[1]
 
     if stop_after_n_conversations == 3:
         return
 
     # fourth conversation (with prompt target)
     assert conversations[7 - index_offset].conversation_id == conversations[8 - index_offset].conversation_id
-    assert conversations[7 - index_offset].normalizer_id == conversations[8 - index_offset].normalizer_id
+    assert conversations[7 - index_offset].labels["normalizer_id"] == conversations[8 - index_offset].labels["normalizer_id"]
     assert conversations[7 - index_offset].role == "user"
-    assert conversations[7 - index_offset].content == expected_red_teaming_responses[1]
+    assert conversations[7 - index_offset].converted_prompt_text == expected_red_teaming_responses[1]
     assert conversations[8 - index_offset].role == "assistant"
-    assert conversations[8 - index_offset].content == expected_target_responses[1]
+    assert conversations[8 - index_offset].converted_prompt_text == expected_target_responses[1]
 
 
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
@@ -152,7 +137,7 @@ def test_send_prompt_twice(
             mock_target.return_value = expected_target_responses[0]
             target_response = red_teaming_orchestrator.send_prompt()
             assert target_response == expected_target_responses[0]
-            conversations = red_teaming_orchestrator._memory.get_all_memory(PromptMemoryEntry)
+            conversations = red_teaming_orchestrator._memory.get_all_prompt_entries()
             # Expecting two conversation threads (one with red teaming chat and one with prompt target)
             assert len(conversations) == 5, f"Expected 5 conversations, got {len(conversations)}"
             check_conversations(
@@ -173,7 +158,7 @@ def test_send_prompt_twice(
             mock_target.return_value = expected_target_responses[1]
             target_response = red_teaming_orchestrator.send_prompt()
             assert target_response == expected_target_responses[1]
-            conversations = red_teaming_orchestrator._memory.get_all_memory(PromptMemoryEntry)
+            conversations = red_teaming_orchestrator._memory.get_all_prompt_entries()
             # Expecting another two conversation threads
             assert len(conversations) == 9, f"Expected 9 conversations, got {len(conversations)}"
             check_conversations(
@@ -218,7 +203,7 @@ def test_send_fixed_prompt_then_generated_prompt(
             mock_target.return_value = expected_target_responses[0]
             target_response = red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
             assert target_response == expected_target_responses[0]
-            conversations = red_teaming_orchestrator._memory.get_all_memory(PromptMemoryEntry)
+            conversations = red_teaming_orchestrator._memory.get_all_prompt_entries()
             # Expecting two conversation threads (one with red teaming chat and one with prompt target)
             assert len(conversations) == 2, f"Expected 2 conversations, got {len(conversations)}"
             check_conversations(
@@ -240,7 +225,7 @@ def test_send_fixed_prompt_then_generated_prompt(
             mock_target.return_value = expected_target_responses[1]
             target_response = red_teaming_orchestrator.send_prompt()
             assert target_response == expected_target_responses[1]
-            conversations = red_teaming_orchestrator._memory.get_all_memory(PromptMemoryEntry)
+            conversations = red_teaming_orchestrator._memory.get_all_prompt_entries()
             # Expecting another two conversation threads
             assert len(conversations) == 7, f"Expected 7 conversations, got {len(conversations)}"
             check_conversations(
@@ -285,7 +270,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
             mock_target.return_value = expected_target_responses[0]
             target_response = red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
             assert target_response == expected_target_responses[0]
-            conversations = red_teaming_orchestrator._memory.get_all_memory(PromptMemoryEntry)
+            conversations = red_teaming_orchestrator._memory.get_all_prompt_entries()
             # Expecting two conversation threads (one with red teaming chat and one with prompt target)
             assert len(conversations) == 2, f"Expected 2 conversations, got {len(conversations)}"
             check_conversations(
@@ -341,7 +326,7 @@ def test_reach_goal_after_two_turns_end_token(
             mock_target.return_value = expected_target_response
             target_response = red_teaming_orchestrator.apply_attack_strategy_until_completion()
             assert target_response == expected_target_response
-            conversations = red_teaming_orchestrator._memory.get_all_prompt_entries(PromptMemoryEntry)
+            conversations = red_teaming_orchestrator._memory.get_all_prompt_entries()
             # Expecting three conversation threads (two with red teaming chat and one with prompt target)
             assert len(conversations) == 7, f"Expected 7 conversations, got {len(conversations)}"
             check_conversations(

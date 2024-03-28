@@ -22,13 +22,17 @@ class Orchestrator(abc.ABC):
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: list[str] = [],
+        memory_labels: dict[str:str] = {},
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
         self._memory = memory or DuckDBMemory()
-        self._global_memory_labels = memory_labels
         self._verbose = verbose
+
+        if memory_labels:
+            self._global_memory_labels = memory_labels
+
+        self._global_memory_labels = {"orchestrator": str(self.__class__.__name__)}
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)

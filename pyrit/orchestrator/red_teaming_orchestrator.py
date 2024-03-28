@@ -38,7 +38,7 @@ class RedTeamingOrchestrator(Orchestrator):
         initial_red_teaming_prompt: str = "Begin Conversation",
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: list[str] = ["red-teaming-orchestrator"],
+        memory_labels: dict[str:str] = None,
         verbose: bool = False,
     ) -> None:
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.

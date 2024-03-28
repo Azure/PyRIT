@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy import inspect
 
 from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.prompt_target import PromptTarget
 
 
@@ -81,3 +82,25 @@ def memory() -> MemoryInterface:  # type: ignore
 
     yield duckdb_memory
     duckdb_memory.dispose_engine()
+
+@pytest.fixture
+def sample_conversations():
+    return [
+        PromptMemoryEntry(
+            role="user",
+            original_prompt_text="original prompt text",
+            converted_prompt_text="Hello, how are you?",
+            conversation_id="12345"),
+        PromptMemoryEntry(
+            role="assistant",
+            original_prompt_text="original prompt text",
+            converted_prompt_text="I'm fine, thank you!",
+            conversation_id="12345"
+            ),
+        PromptMemoryEntry(
+            role="assistant",
+            original_prompt_text="original prompt text",
+            converted_prompt_text="I'm fine, thank you!",
+            conversation_id="33333"
+            ),
+    ]
