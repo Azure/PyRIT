@@ -32,7 +32,9 @@ class MemoryEmbedding:
         """
         if chat_memory.converted_prompt_data_type == "text":
             embedding_data = EmbeddingData(
-                embedding=self.embedding_model.generate_text_embedding(text=chat_memory.converted_prompt_text).data[0].embedding,
+                embedding=self.embedding_model.generate_text_embedding(text=chat_memory.converted_prompt_text)
+                .data[0]
+                .embedding,
                 embedding_type_name=self.embedding_model.__class__.__name__,
                 id=chat_memory.id,
             )

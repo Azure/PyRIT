@@ -13,6 +13,7 @@ from pyrit.prompt_target import AzureOpenAIChatTarget
 
 from tests.mocks import memory
 
+
 @pytest.fixture
 def openai_mock_return() -> ChatCompletion:
     return ChatCompletion(
@@ -34,6 +35,7 @@ def openai_mock_return() -> ChatCompletion:
 @pytest.fixture
 def chat_completion_engine() -> AzureOpenAIChatTarget:
     return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
+
 
 @pytest.fixture
 def azure_openai_target(memory: DuckDBMemory):

@@ -67,6 +67,7 @@ class MockPromptTarget(PromptTarget):
     async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
         self.prompt_sent.append(normalized_prompt)
 
+
 @pytest.fixture
 def memory() -> MemoryInterface:  # type: ignore
     # Create an in-memory DuckDB engine
@@ -83,6 +84,7 @@ def memory() -> MemoryInterface:  # type: ignore
     yield duckdb_memory
     duckdb_memory.dispose_engine()
 
+
 @pytest.fixture
 def sample_conversations():
     return [
@@ -90,17 +92,18 @@ def sample_conversations():
             role="user",
             original_prompt_text="original prompt text",
             converted_prompt_text="Hello, how are you?",
-            conversation_id="12345"),
+            conversation_id="12345",
+        ),
         PromptMemoryEntry(
             role="assistant",
             original_prompt_text="original prompt text",
             converted_prompt_text="I'm fine, thank you!",
-            conversation_id="12345"
-            ),
+            conversation_id="12345",
+        ),
         PromptMemoryEntry(
             role="assistant",
             original_prompt_text="original prompt text",
             converted_prompt_text="I'm fine, thank you!",
-            conversation_id="33333"
-            ),
+            conversation_id="33333",
+        ),
     ]

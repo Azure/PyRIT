@@ -71,7 +71,10 @@ def check_conversations(
         assert conversations[2].converted_prompt_text == expected_red_teaming_responses[0]
     # second conversation (with prompt target)
     assert conversations[3 - index_offset].conversation_id == conversations[4 - index_offset].conversation_id
-    assert conversations[3 - index_offset].labels["normalizer_id"] == conversations[4 - index_offset].labels["normalizer_id"]
+    assert (
+        conversations[3 - index_offset].labels["normalizer_id"]
+        == conversations[4 - index_offset].labels["normalizer_id"]
+    )
     assert conversations[3 - index_offset].role == "user"
     assert conversations[3 - index_offset].converted_prompt_text == expected_red_teaming_responses[0]
     assert conversations[4 - index_offset].role == "assistant"
@@ -97,7 +100,10 @@ def check_conversations(
 
     # fourth conversation (with prompt target)
     assert conversations[7 - index_offset].conversation_id == conversations[8 - index_offset].conversation_id
-    assert conversations[7 - index_offset].labels["normalizer_id"] == conversations[8 - index_offset].labels["normalizer_id"]
+    assert (
+        conversations[7 - index_offset].labels["normalizer_id"]
+        == conversations[8 - index_offset].labels["normalizer_id"]
+    )
     assert conversations[7 - index_offset].role == "user"
     assert conversations[7 - index_offset].converted_prompt_text == expected_red_teaming_responses[1]
     assert conversations[8 - index_offset].role == "assistant"

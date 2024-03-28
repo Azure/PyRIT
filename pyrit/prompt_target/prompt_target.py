@@ -32,7 +32,7 @@ class PromptTarget(abc.ABC):
         """
 
     def to_dict(self):
-        public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
-        public_attributes['__type__'] = self.__class__.__name__
-        public_attributes['__module__'] = self.__class__.__module__
+        public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        public_attributes["__type__"] = self.__class__.__name__
+        public_attributes["__module__"] = self.__class__.__module__
         return json.dumps(public_attributes)

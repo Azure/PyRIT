@@ -14,7 +14,6 @@ from pyrit.memory.memory_models import PromptMemoryEntry
 from tests.mocks import memory
 
 
-
 def generate_random_string(length: int = 10) -> str:
     return "".join(random.choice(ascii_lowercase) for _ in range(length))
 

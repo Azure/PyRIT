@@ -21,12 +21,16 @@ def test_get_similar_chat_messages_by_content(mock_memory_interface):
     mock_data = [
         PromptMemoryEntry(original_prompt_text="h", converted_prompt_text="Hello, how are you?", role="user"),
         PromptMemoryEntry(original_prompt_text="h", converted_prompt_text="I'm fine, thank you!", role="assistant"),
-        PromptMemoryEntry(original_prompt_text="h", converted_prompt_text="Hello, how are you?", role="assistant"),  # Exact match
+        PromptMemoryEntry(
+            original_prompt_text="h", converted_prompt_text="Hello, how are you?", role="assistant"
+        ),  # Exact match
     ]
     mock_memory_interface.get_all_prompt_entries.return_value = mock_data
 
     analytics = ConversationAnalytics(memory_interface=mock_memory_interface)
-    similar_messages = analytics.get_prompt_entries_with_same_converted_content(chat_message_content="Hello, how are you?")
+    similar_messages = analytics.get_prompt_entries_with_same_converted_content(
+        chat_message_content="Hello, how are you?"
+    )
 
     # Expect one exact match
     assert len(similar_messages) == 2

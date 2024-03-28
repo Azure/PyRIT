@@ -13,7 +13,6 @@ from pyrit.prompt_target import AzureBlobStorageTarget
 from tests.mocks import memory
 
 
-
 @pytest.fixture
 def azure_blob_storage_target(memory: DuckDBMemory):
     return AzureBlobStorageTarget(

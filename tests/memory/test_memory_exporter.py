@@ -12,7 +12,6 @@ from sqlalchemy.inspection import inspect
 from tests.mocks import sample_conversations
 
 
-
 def model_to_dict(instance):
     """Converts a SQLAlchemy model instance into a dictionary."""
     return {c.key: getattr(instance, c.key) for c in inspect(instance).mapper.column_attrs}

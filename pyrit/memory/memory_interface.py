@@ -73,7 +73,6 @@ class MemoryInterface(abc.ABC):
             entries (list[Base]): The list of database model instances to be inserted.
         """
 
-
     @abc.abstractmethod
     def dispose_engine(self):
         """
@@ -92,7 +91,6 @@ class MemoryInterface(abc.ABC):
         """
         memory_entries = self.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
-
 
     def add_chat_message_to_memory(
         self,
@@ -115,14 +113,9 @@ class MemoryInterface(abc.ABC):
             labels (list[str]): A list of labels to be added to the memory entry.
         """
 
-
         self.add_chat_messages_to_memory(
-            conversations=[conversation],
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-            labels=labels
+            conversations=[conversation], conversation_id=conversation_id, normalizer_id=normalizer_id, labels=labels
         )
-
 
     def add_chat_messages_to_memory(
         self,
@@ -161,7 +154,6 @@ class MemoryInterface(abc.ABC):
             entries_to_add.append(entry)
 
         self.insert_prompt_entries(entries=entries_to_add)
-
 
     def export_all_tables(self, *, export_type: str = "json"):
         """

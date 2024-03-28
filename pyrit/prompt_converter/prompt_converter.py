@@ -4,6 +4,7 @@
 import abc
 import json
 
+
 class PromptConverter(abc.ABC):
     """
     A prompt converter is responsible for converting prompts into multiple representations.
@@ -28,12 +29,13 @@ class PromptConverter(abc.ABC):
         pass
 
     def to_dict(self):
-        public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
-        public_attributes['__type__'] = self.__class__.__name__
-        public_attributes['__module__'] = self.__class__.__module__
+        public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        public_attributes["__type__"] = self.__class__.__name__
+        public_attributes["__module__"] = self.__class__.__module__
         return public_attributes
 
-class PromptConverterList():
+
+class PromptConverterList:
     def __init__(self, converters: list[PromptConverter]) -> None:
         self.converters = converters
 

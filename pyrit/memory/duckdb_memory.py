@@ -38,7 +38,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         db_path: Union[Path, str] = None,
         embedding_model: EmbeddingSupport = None,
         disable_embedding: bool = False,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         super(DuckDBMemory, self).__init__()
         if not disable_embedding:
@@ -102,7 +102,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[ConversationData]: A list of ConversationData objects matching the specified conversation ID.
         """
         try:
-            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id)
+            return self.query_entries(
+                PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
+            )
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
@@ -118,7 +120,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[ConversationData]: A list of ConversationData objects matching the specified normalizer ID.
         """
         try:
-            return self.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.labels.op('->>')('normalizer_id') == normalizer_id)
+            return self.query_entries(
+                PromptMemoryEntry, conditions=PromptMemoryEntry.labels.op("->>")("normalizer_id") == normalizer_id
+            )
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with normalizer_id {normalizer_id}. {e}"
