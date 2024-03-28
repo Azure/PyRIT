@@ -8,6 +8,7 @@ from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
 from pyrit.prompt_target.openai_chat_target import AzureOpenAIChatTarget, OpenAIChatTarget
 from pyrit.prompt_target.gandalf_target import GandalfTarget
 from pyrit.prompt_target.text_target import TextTarget
+from pyrit.prompt_target.retrieval_enabled_prompt_target import RetrievalEnabledPromptTarget
 
 
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "PromptChatTarget",
     "PromptTarget",
     "TextTarget",
+    "RetrievalEnabledPromptTarget"
 ]

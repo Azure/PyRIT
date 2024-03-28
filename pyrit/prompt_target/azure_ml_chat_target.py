@@ -149,7 +149,7 @@ class AzureMLChatTarget(PromptChatTarget, ChatSupport):
         response = net_utility.make_request_and_raise_if_error(
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
-        return response.json()["output"]
+        return response.json()[0]['0']
 
     async def complete_chat_async(
         self,
