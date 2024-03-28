@@ -115,7 +115,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
     def send_prompt(self, *, prompt: Optional[str] = None, completion_state: CompletionState = None):
         """
-        Either sends a user-provided prompt or sends the default initial red teaming prompt to the prompt target.
+        Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
         Args:
             prompt: The prompt to send to the target.

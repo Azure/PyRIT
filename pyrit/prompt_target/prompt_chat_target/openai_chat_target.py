@@ -47,10 +47,7 @@ class OpenAIChatInterface(PromptChatTarget):
     def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
         
-        logger.info(
-            "Sending the following prompt to the prompt target (after applying prompt "
-            f'converter operations) "{normalized_prompt}"',
-        )
+        logger.info(f"Sending the following normalized prompt to the prompt target: {normalized_prompt}")
 
         resp = self._complete_chat(
             messages=messages,
@@ -77,10 +74,7 @@ class OpenAIChatInterface(PromptChatTarget):
     async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str, labels: list[str] | None = None) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
-        logger.info(
-            "Sending the following prompt to the prompt target (after applying prompt "
-            f'converter operations) "{normalized_prompt}"',
-        )
+        logger.info(f"Sending the following normalized prompt to the prompt target: {normalized_prompt}")
 
         resp = await self._complete_chat_async(
             messages=messages,
