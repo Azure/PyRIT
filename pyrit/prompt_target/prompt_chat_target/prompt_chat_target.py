@@ -5,7 +5,6 @@ import abc
 
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessage
 
 
 class PromptChatTarget(PromptTarget):
