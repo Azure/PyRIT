@@ -67,12 +67,12 @@ class ConversationAnalytics:
             the similar chat messages based on embedding similarity.
         """
 
-        all_memories = self.memory_interface.get_all_embeddings()
+        all_embdedding_memory = self.memory_interface.get_all_embeddings()
         similar_messages = []
 
         target_embedding = np.array(chat_message_embedding).reshape(1, -1)
 
-        for memory in all_memories:
+        for memory in all_embdedding_memory:
             if not hasattr(memory, "embedding") or memory.embedding is None:
                 continue
 

@@ -51,15 +51,14 @@ def test_get_similar_chat_messages_by_embedding(mock_memory_interface):
     similar_embedding = [0.1, 0.2, 0.31]  # Slightly different, but should be similar
     different_embedding = [0.9, 0.8, 0.7]
 
-    mock_data = [
+    mock_embeddings = [
         EmbeddingData(id=conversation_entries[0].id, embedding=similar_embedding, embedding_type_name="model1"),
         EmbeddingData(id=conversation_entries[1].id, embedding=different_embedding, embedding_type_name="model2"),
     ]
 
     # Mock the get_all_prompt_entries method to return the mock EmbeddingData entries
-    mock_memory_interface.get_all_prompt_entries.side_effect = lambda model: (
-        mock_data if model == EmbeddingData else conversation_entries
-    )
+    mock_memory_interface.get_all_embeddings.return_value = mock_embeddings
+    mock_memory_interface.get_all_prompt_entries.return_value = conversation_entries
 
     analytics = ConversationAnalytics(memory_interface=mock_memory_interface)
     similar_messages = analytics.get_similar_chat_messages_by_embedding(
