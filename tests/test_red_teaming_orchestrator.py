@@ -144,8 +144,8 @@ def test_send_prompt_twice(
         kwargs["scorer"] = Mock()
     red_teaming_orchestrator = OrchestratorType(**kwargs)
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "send_prompt") as mock_rt:
-        with patch.object(red_teaming_orchestrator._prompt_target, "send_prompt") as mock_target:
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
             expected_red_teaming_responses = ["First red teaming chat response"]
             mock_rt.return_value = expected_red_teaming_responses[0]
             expected_target_responses = ["First target response"]
@@ -211,8 +211,8 @@ def test_send_fixed_prompt_then_generated_prompt(
         kwargs["scorer"] = Mock()
     red_teaming_orchestrator = OrchestratorType(**kwargs)
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "send_prompt") as mock_rt:
-        with patch.object(red_teaming_orchestrator._prompt_target, "send_prompt") as mock_target:
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_responses = ["First target response"]
             mock_target.return_value = expected_target_responses[0]
@@ -278,8 +278,8 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
         kwargs["scorer"] = Mock()
     red_teaming_orchestrator = OrchestratorType(**kwargs)
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "send_prompt") as mock_rt:
-        with patch.object(red_teaming_orchestrator._prompt_target, "send_prompt") as mock_target:
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_responses = ["First target response"]
             mock_target.return_value = expected_target_responses[0]
@@ -330,8 +330,8 @@ def test_reach_goal_after_two_turns_end_token(
         verbose=True,
     )
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "send_prompt") as mock_rt:
-        with patch.object(red_teaming_orchestrator._prompt_target, "send_prompt") as mock_target:
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
             expected_red_teaming_responses = [
                 "First red teaming chat response",
                 "Second red teaming chat response with expected end token <|done|>",
