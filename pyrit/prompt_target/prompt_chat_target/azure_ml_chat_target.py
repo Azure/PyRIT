@@ -95,7 +95,7 @@ class AzureMLChatTarget(PromptChatTarget):
         )
 
         if not resp:
-            raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+            raise ValueError("The chat returned an empty prompt.")
 
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
@@ -127,7 +127,7 @@ class AzureMLChatTarget(PromptChatTarget):
         )
 
         if not resp:
-            raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+            raise ValueError("The chat returned an empty prompt.")
 
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
@@ -176,7 +176,7 @@ class AzureMLChatTarget(PromptChatTarget):
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
 
-        return response.json()[0]["0"]
+        return response.json()["output"]
 
     async def _complete_chat_async(
         self,
@@ -213,7 +213,7 @@ class AzureMLChatTarget(PromptChatTarget):
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
-        return response.json()[0]["0"]
+        return response.json()["output"]
 
     def _prepare_message(self, normalized_prompt: str, conversation_id: str, normalizer_id: str):
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
