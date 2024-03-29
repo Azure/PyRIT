@@ -20,7 +20,7 @@ class GandalfScorer(SupportTextClassification):
         self._chat_engine = chat_engine
 
         self._conversation_id = str(uuid.uuid4())
-        self._normalizer_id = None # Normalizer not used
+        self._normalizer_id = None  # Normalizer not used
 
     def _check_for_password_in_text(self, text: str) -> str:
         """
