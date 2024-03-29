@@ -56,7 +56,7 @@ def test_complete_chat(aml_online_chat: AzureMLChatTarget):
         mock_response = Mock()
         mock_response.json.return_value = {"output": "extracted response"}
         mock.return_value = mock_response
-        response = aml_online_chat.complete_chat(messages)
+        response = aml_online_chat._complete_chat(messages)
         assert response == "extracted response"
         mock.assert_called_once()
 
@@ -78,7 +78,7 @@ def test_complete_chat_with_nop_normalizer(
         mock_response = Mock()
         mock_response.json.return_value = {"output": "extracted response"}
         mock.return_value = mock_response
-        response = aml_online_chat.complete_chat(messages)
+        response = aml_online_chat._complete_chat(messages)
         assert response == "extracted response"
 
         args, kwargs = mock.call_args
@@ -101,7 +101,7 @@ def test_complete_chat_with_squashnormalizer(aml_online_chat: AzureMLChatTarget)
         mock_response = Mock()
         mock_response.json.return_value = {"output": "extracted response"}
         mock.return_value = mock_response
-        response = aml_online_chat.complete_chat(messages)
+        response = aml_online_chat._complete_chat(messages)
         assert response == "extracted response"
 
         args, kwargs = mock.call_args
@@ -122,4 +122,4 @@ def test_complete_chat_bad_json_response(aml_online_chat: AzureMLChatTarget):
         mock_response.json.return_value = {"bad response"}
         mock.return_value = mock_response
         with pytest.raises(TypeError):
-            aml_online_chat.complete_chat(messages)
+            aml_online_chat._complete_chat(messages)
