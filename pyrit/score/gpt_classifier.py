@@ -41,7 +41,7 @@ class SelfAskGptClassifier(SupportTextClassification):
         self._gpt_chat = gpt_4
 
         self._conversation_id = str(uuid.uuid4())
-        self._normalizer_id = "0"  # NOTE: Can this normalizer_id be blank? Not running through normalizer.
+        self._normalizer_id = None # Normalizer not used
 
     @staticmethod
     def _build_self_ask_system_prompt(categories: list[Category]) -> str:

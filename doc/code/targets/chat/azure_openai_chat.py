@@ -1,8 +1,8 @@
 # %% [markdown]
 #
-# # ## Introduction
+# # Introduction
 #
-# This Jupyter notebook gives an introduction on how to use `AzureOpenAIChat` to complete chats.
+# This Jupyter notebook gives an introduction on how to use `AzureOpenAIChatTarget` to complete chats.
 #
 # Before starting this, make sure you are [setup to use Azure OpenAI endpoints](../setup/setup_azure.md) and have a chat model, such as GPT-4, deployed. See [How To: Create and deploy an Azure OpenAI Service resource](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal).
 #
@@ -21,8 +21,4 @@ default_values.load_default_env()
 
 
 chat_engine = AzureOpenAIChatTarget()
-chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id="1")
-
-# TODO: Do we want to remove azure_openai_chat and aml_endpoints from doc/code in favor of a general prompt_chat_targets doc NB or the existing prompt_targets one?
-
-# %%
+chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id=None)

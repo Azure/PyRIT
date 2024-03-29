@@ -53,7 +53,7 @@ class OpenAIChatInterface(PromptChatTarget):
     ) -> str:
         messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
 
-        logger.info(f"Sending the following normalized prompt to the prompt target: {normalized_prompt}")
+        logger.info(f"Sending the following prompt to the prompt target: {normalized_prompt}")
 
         resp = self._complete_chat(
             messages=messages,
@@ -64,7 +64,7 @@ class OpenAIChatInterface(PromptChatTarget):
         )
 
         if not resp:
-            raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+            raise ValueError("The chat returned an empty response.")
 
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
@@ -96,7 +96,7 @@ class OpenAIChatInterface(PromptChatTarget):
         )
 
         if not resp:
-            raise ValueError("The chat returned an empty prompt. Run with verbose=True to debug.")
+            raise ValueError("The chat returned an empty prompt.")
 
         logger.info(f'Received the following response from the prompt target "{resp}"')
 

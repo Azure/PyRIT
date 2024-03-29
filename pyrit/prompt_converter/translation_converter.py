@@ -46,7 +46,7 @@ class TranslationConverter(PromptConverter):
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language_str)
 
         self._conversation_id = str(uuid.uuid4())
-        self._normalizer_id = "0"  # NOTE: Can this normalizer_id be blank? Not running through normalizer.
+        self._normalizer_id = None # Normalizer not used
 
         self.converter_target.set_system_prompt(
             prompt=self.system_prompt,

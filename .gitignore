@@ -159,3 +159,4 @@ cython_debug/
 
 # PyRIT secrets file
 .env
+.vscode/settings.json
