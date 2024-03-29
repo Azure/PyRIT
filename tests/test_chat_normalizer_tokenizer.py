@@ -29,7 +29,11 @@ def test_normalize_blenderbot(blenderbot_tokenizer_normalizer: ChatMessageNormal
         ChatMessage(role="assistant", content="I'm doing great. How can I help you today?"),
         ChatMessage(role="user", content="I'd like to show off how chat templating works!"),
     ]
-    expected = " Hello, how are you?  I'm doing great. How can I help you today?   I'd like to show off how chat templating works!</s>"
+    expected = (
+        " Hello, how are you?  I'm doing great. "
+        "How can I help you today?   "
+        "I'd like to show off how chat templating works!</s>"
+    )
 
     assert blenderbot_tokenizer_normalizer.normalize(messages) == expected
 
@@ -40,7 +44,10 @@ def test_normalize_mistral(mistral_tokenizer_normalizer: ChatMessageNormalizerTo
         ChatMessage(role="assistant", content="I'm doing great. How can I help you today?"),
         ChatMessage(role="user", content="I'd like to show off how chat templating works!"),
     ]
-    expected = "<s>[INST] Hello, how are you? [/INST]I'm doing great. How can I help you today?</s> [INST] I'd like to show off how chat templating works! [/INST]"
+    expected = (
+        "<s>[INST] Hello, how are you? [/INST]I'm doing great. How can I help you today?</s> "
+        "[INST] I'd like to show off how chat templating works! [/INST]"
+    )
 
     assert mistral_tokenizer_normalizer.normalize(messages) == expected
 
