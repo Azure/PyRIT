@@ -69,7 +69,7 @@ messages = [
 tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
 
 # create the normalizer and pass in the tokenizer
-normalizer = ChatMessageNormalizerTokenizerTemplate(tokenizer)
+tokenizer_normalizer = ChatMessageNormalizerTokenizerTemplate(tokenizer)
 
-tokenizer_template_messages = normalizer.normalize(messages)
+tokenizer_template_messages = tokenizer_normalizer.normalize(messages)
 print(tokenizer_template_messages)
