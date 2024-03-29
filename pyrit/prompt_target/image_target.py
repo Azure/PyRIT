@@ -8,12 +8,28 @@ import pathlib
 import logging
 
 from openai import BadRequestError
-
+from enum import Enum
 from pyrit.common.path import RESULTS_PATH
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.openai_chat_target import AzureOpenAIChatTarget
 
 logger = logging.getLogger(__name__)
+
+
+class ImageSizing(Enum):
+    SIZE256 = "256x256"
+    SIZE512 = "512x512"
+    SIZE1024 = "1024x1024"
+
+
+class ResponseFormat(Enum):
+    B64 = "b64_json"
+    URL = "url"
+
+
+class SupportedDalleVersions(Enum):
+    V2 = 2
+    V3 = 3
 
 
 class ImageTarget(PromptTarget):
@@ -25,10 +41,10 @@ class ImageTarget(PromptTarget):
         endpoint: str = None,
         api_key: str = None,
         api_version: str | None = "2024-02-01",
-        image_size: str | None = "1024x1024",
-        response_format: str | None = "b64_json",
+        image_size: ImageSizing | None = ImageSizing.SIZE1024,
+        response_format: ResponseFormat | None = ResponseFormat.B64,
         num_images: int | None = 1,
-        dalle_version: int | None = 3,
+        dalle_version: SupportedDalleVersions | None = SupportedDalleVersions.V2,
     ):
         """
         Class that initializes a DALLE image target
@@ -47,26 +63,17 @@ class ImageTarget(PromptTarget):
 
         """
 
-        VALID_SIZES = ["256x256", "512x512", "1024x1024"]
-        VALID_RESPONSES = ["b64_json", "url"]
-
         # make sure number of images is allowed by Dalle version
-        if dalle_version == 3:
+        if dalle_version == SupportedDalleVersions.V3:
             if num_images != 1:
                 raise ValueError("DALL-E-3 can only generate 1 image at a time.")
-        elif dalle_version == 2:
+        elif dalle_version == SupportedDalleVersions.V2:
             if num_images < 1 or num_images > 10:
                 raise ValueError("DALL-E-2 can generate only up to 10 images at a time.")
-        else:
-            raise ValueError("Unsupported DALL-E version. Only DALL-E 2 and 3 are supported.")
 
-        if image_size not in VALID_SIZES:
-            raise ValueError(f"Invalid image size '{image_size}'. Image size must be one of {VALID_SIZES}.")
-        self.image_size = image_size
+        self.image_size = image_size.value
 
-        if response_format not in VALID_RESPONSES:
-            raise ValueError(f"Invalid response_format '{response_format}'. Must be url or b64_json.")
-        self.response_format = response_format
+        self.response_format = response_format.value
 
         self.n = num_images
 

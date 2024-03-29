@@ -19,7 +19,7 @@
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-PROMPT_TO_SEND = "Draw me a cute baby red panda cuddling a cute pillow pet"
+PROMPT_TO_SEND = "Draw me a racoon pirate as a French artist in France"
 
 # %%
 import os
@@ -27,6 +27,7 @@ import uuid
 
 from pyrit.common import default_values
 from pyrit.prompt_target import ImageTarget
+from pyrit.prompt_target.image_target import ResponseFormat
 
 # When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
 test_conversation_id = str(uuid.uuid4())
@@ -43,7 +44,7 @@ img_prompt_target = ImageTarget(
     endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
     api_key=os.environ.get("AZURE_DALLE_API_KEY"),
     api_version="2024-02-01",
-    response_format="url",
+    response_format=ResponseFormat.URL,
 )
 
 # %%
@@ -82,3 +83,5 @@ from PIL import Image
 
 im = Image.open(image_location)
 im.show()
+
+# %%
