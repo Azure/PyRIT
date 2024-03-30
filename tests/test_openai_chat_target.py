@@ -86,7 +86,7 @@ async def test_azure_complete_chat_async_return(
 ):
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
-        ret = await azure_chat_engine.complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
+        ret = await azure_chat_engine._complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
         assert ret == "hi"
 
 
@@ -96,21 +96,21 @@ async def test_openai_complete_chat_async_return(
 ):
     with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = openai_mock_return
-        ret = await openai_chat_engine.complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
+        ret = await openai_chat_engine._complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
         assert ret == "hi"
 
 
 def test_azure_complete_chat_return(openai_mock_return: ChatCompletion, azure_chat_engine: AzureOpenAIChatTarget):
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
-        ret = azure_chat_engine.complete_chat(messages=[ChatMessage(role="user", content="hello")])
+        ret = azure_chat_engine._complete_chat(messages=[ChatMessage(role="user", content="hello")])
         assert ret == "hi"
 
 
 def test_openai_complete_chat_return(openai_mock_return: ChatCompletion, openai_chat_engine: OpenAIChatTarget):
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
-        ret = openai_chat_engine.complete_chat(messages=[ChatMessage(role="user", content="hello")])
+        ret = openai_chat_engine._complete_chat(messages=[ChatMessage(role="user", content="hello")])
         assert ret == "hi"
 
 

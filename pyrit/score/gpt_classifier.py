@@ -3,14 +3,16 @@
 
 import json
 import textwrap
+import uuid
 import yaml
 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
-from pyrit.interfaces import ChatMessage, ChatSupport, SupportTextClassification
+from pyrit.interfaces import SupportTextClassification
 from pyrit.models import Score
+from pyrit.prompt_target import PromptChatTarget
 
 
 @dataclass
@@ -33,10 +35,13 @@ def _load_categories_from_yaml(yaml_path: Path) -> list[Category]:
 
 
 class SelfAskGptClassifier(SupportTextClassification):
-    def __init__(self, content_classifier: Union[str, Path], gpt_4: ChatSupport) -> None:
+    def __init__(self, content_classifier: Union[str, Path], gpt_4: PromptChatTarget) -> None:
         # Load classifier
         self._categories = _load_categories_from_yaml(yaml_path=Path(content_classifier))
         self._gpt_chat = gpt_4
+
+        self._conversation_id = str(uuid.uuid4())
+        self._normalizer_id = None  # Normalizer not used
 
     @staticmethod
     def _build_self_ask_system_prompt(categories: list[Category]) -> str:
@@ -97,11 +102,19 @@ class SelfAskGptClassifier(SupportTextClassification):
     # @tenacity.retry(stop=tenacity.stop_after_attempt(3))
     def score_text(self, text: str) -> Score:
         system_prompt = SelfAskGptClassifier._build_self_ask_system_prompt(self._categories)
-        messages = [
-            ChatMessage(role="system", content=system_prompt),
-            ChatMessage(role="user", content=text),
-        ]
-        response = self._gpt_chat.complete_chat(messages=messages)
+
+        self._gpt_chat.set_system_prompt(
+            prompt=system_prompt,
+            conversation_id=self._conversation_id,
+            normalizer_id=self._normalizer_id,
+        )
+
+        response = self._gpt_chat.send_prompt(
+            normalized_prompt=text,
+            conversation_id=self._conversation_id,
+            normalizer_id=self._normalizer_id,
+        )
+
         try:
             gpt_response = json.loads(response)
         except json.JSONDecodeError as e:
