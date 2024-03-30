@@ -2,6 +2,8 @@
 # Licensed under the MIT license.
 
 import json
+import os
+from typing import Generator
 import pytest
 import uuid
 from unittest.mock import MagicMock
@@ -12,28 +14,18 @@ from sqlalchemy import String, DateTime, INTEGER, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.sqltypes import NullType
 
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.memory import DuckDBMemory
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.prompt_converter import PromptConverterList
 from pyrit.prompt_target.text_target import TextTarget
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
-def setup_duckdb_database():
-    # Create an in-memory DuckDB engine
-    duckdb_memory = DuckDBMemory(db_path=":memory:")
-
-    # Reset the database to ensure a clean state
-    duckdb_memory.reset_database()
-    inspector = inspect(duckdb_memory.engine)
-
-    # Verify that tables are created as expected
-    assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
-    assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
-
-    yield duckdb_memory
-    duckdb_memory.dispose_engine()
+def setup_duckdb_database() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
 
 
 @pytest.fixture
@@ -170,6 +162,34 @@ def test_insert_entry(setup_duckdb_database):
         assert inserted_entry.original_prompt_data_sha256 == sha265
 
 
+def test_insert_prompt_memories_inserts_embedding():
+    mock_embedding_model = MagicMock()
+    duckdb_memory = DuckDBMemory(db_path=":memory:", embedding_model=mock_embedding_model)
+
+    # Reset the database to ensure a clean state
+    duckdb_memory.reset_database()
+    inspector = inspect(duckdb_memory.engine)
+
+    # Verify that tables are created as expected
+    assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
+    assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
+
+    with duckdb_memory.get_session():
+        id = uuid.uuid4()
+        entry = PromptMemoryEntry(
+            id=id,
+            role="user",
+            original_prompt_text="Hello",
+            converted_prompt_text="Hello",
+        )
+
+        duckdb_memory.insert_prompt_entries(entries=[entry])
+
+        duckdb_memory.dispose_engine()
+        mock_embedding_model.generate_text_embedding.assert_called_once(), \
+            "Embedding data should be generated since we passed this model in"
+
+
 def test_insert_entry_violates_constraint(setup_duckdb_database):
     # Generate a fixed UUID
     fixed_uuid = uuid.uuid4()
@@ -247,6 +267,28 @@ def test_insert_embedding_entry(setup_duckdb_database):
         assert persisted_embedding_entry is not None
         assert persisted_embedding_entry.embedding == [1, 2, 3]
         assert persisted_embedding_entry.embedding_type_name == "test_type"
+
+
+def test_disable_embedding():
+    mock_embedding_model = MagicMock()
+    duckdb_memory = DuckDBMemory(db_path=":memory:", disable_embedding=True, embedding_model=mock_embedding_model)
+    duckdb_memory.dispose_engine()
+    # Even though we passed an embedding_model, embedding should be disabled.
+
+    assert (
+        duckdb_memory.memory_embedding is None
+    ), "disable_memory flag was passed, so memory embedding should be disabled."
+
+
+def test_default_embedding():
+    os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = "mock_key"
+    os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = "mock_key"
+    duckdb_memory = DuckDBMemory(db_path=":memory:")
+    duckdb_memory.dispose_engine()
+
+    assert (
+        duckdb_memory.memory_embedding is not None
+    ), "Memory embedding should be enabled when set with environment variables."
 
 
 def test_query_entries(setup_duckdb_database):

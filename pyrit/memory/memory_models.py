@@ -41,6 +41,7 @@ class PromptMemoryEntry(Base):  # type: ignore
             e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
         converters (list[PromptConverter]): The converters for the prompt.
         prompt_target (PromptTarget): The target for the prompt.
+        orchestrator (Orchestrator): The orchestrator for the prompt.
         original_prompt_data_type (PromptDataType): The data type of the original prompt (text, image)
         original_prompt_text (str): The text of the original prompt. If prompt is an image, it's a link.
         original_prompt_data_sha256 (str): The SHA256 hash of the original prompt data.
@@ -64,6 +65,7 @@ class PromptMemoryEntry(Base):  # type: ignore
     prompt_metadata = Column(JSON)
     converters: "Column[list[PromptConverter]]" = Column(JSON)  # type: ignore # noqa
     prompt_target: "Column[PromptTarget]" = Column(JSON)  # type: ignore # noqa
+    orchestrator: "Column[Orchestrator]" = Column(JSON)  # type: ignore # noqa
 
     original_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
     original_prompt_text = Column(String, nullable=False)
@@ -88,6 +90,7 @@ class PromptMemoryEntry(Base):  # type: ignore
         prompt_metadata: JSON = None,
         converters: "PromptConverterList" = None,  # type: ignore # noqa
         prompt_target: "PromptTarget" = None,  # type: ignore # noqa
+        orchestrator: "Orchestrator" = None,  # type: ignore # noqa
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
     ):
@@ -103,7 +106,8 @@ class PromptMemoryEntry(Base):  # type: ignore
         self.prompt_metadata = prompt_metadata  # type: ignore
 
         self.converters = converters.to_json() if converters else None
-        self.prompt_target = prompt_target.to_dict() if prompt_target else None
+        self.prompt_target = prompt_target.to_json() if prompt_target else None
+        self.orchestrator = orchestrator.to_json() if orchestrator else None
 
         self.original_prompt_text = original_prompt_text
         self.original_prompt_data_type = original_prompt_data_type
@@ -112,6 +116,9 @@ class PromptMemoryEntry(Base):  # type: ignore
         self.converted_prompt_data_type = converted_prompt_data_type
         self.converted_prompt_text = converted_prompt_text
         self.converted_prompt_data_sha256 = self._create_sha256(converted_prompt_text)
+
+    def is_sequence_set(self) -> bool:
+        return self.sequence != -1
 
     def _create_sha256(self, text: str) -> str:
         input_bytes = text.encode("utf-8")

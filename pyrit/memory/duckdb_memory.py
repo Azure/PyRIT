@@ -148,12 +148,15 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
 
         if self.memory_embedding:
             for chat_entry in entries:
-
                 embedding_entry = self.memory_embedding.generate_embedding_memory_data(chat_memory=chat_entry)
                 embedding_entries.append(embedding_entry)
 
+        # The ordering of this is weird because after memories are inserted, we lose the reference to them
+        # and also entries must be inserted before embeddings because of the foreing key constraint
         self.insert_entries(entries=entries)
-        self.insert_entries(entries=embedding_entries)
+
+        if embedding_entries:
+            self.insert_entries(entries=embedding_entries)
 
     def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
         """

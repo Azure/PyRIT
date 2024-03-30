@@ -2,10 +2,11 @@
 # Licensed under the MIT license.
 
 import abc
+import json
 import logging
 
-
 from typing import Optional
+from uuid import uuid4
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
@@ -67,3 +68,10 @@ class Orchestrator(abc.ABC):
         Dispose DuckDB database engine to release database connections and resources.
         """
         self._memory.dispose_engine()
+
+    def to_json(self):
+        s = {}
+        s["__type__"] = self.__class__.__name__
+        s["__module__"] = self.__class__.__module__
+        s["id"] = str(uuid4())
+        return json.dumps(s)
