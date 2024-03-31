@@ -72,6 +72,8 @@ def get_memory_interface() -> Generator[MemoryInterface, None, None]:
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 
+    duckdb_memory.disable_embedding()
+
     # Reset the database to ensure a clean state
     duckdb_memory.reset_database()
     inspector = inspect(duckdb_memory.engine)

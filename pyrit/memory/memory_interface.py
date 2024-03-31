@@ -4,6 +4,7 @@
 import abc
 from pathlib import Path
 
+from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
@@ -27,6 +28,12 @@ class MemoryInterface(abc.ABC):
         self.memory_embedding = embedding_model
         # Initialize the MemoryExporter instance
         self.exporter = MemoryExporter()
+
+    def enable_embedding(self, embedding_model=None):
+        self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
+
+    def disable_embedding(self):
+        self.memory_embedding = None
 
     @abc.abstractmethod
     def get_all_prompt_entries(self) -> list[PromptMemoryEntry]:

@@ -84,5 +84,5 @@ def test_default_memory_embedding_factory_without_embedding_model_and_environmen
     monkeypatch.delenv("AZURE_OPENAI_EMBEDDING_ENDPOINT", raising=False)
     monkeypatch.delenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", raising=False)
 
-    memory_embedding = default_memory_embedding_factory()
-    assert memory_embedding is None
+    with pytest.raises(ValueError):
+        default_memory_embedding_factory()

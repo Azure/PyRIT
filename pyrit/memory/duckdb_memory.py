@@ -13,9 +13,7 @@ from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
 from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base
-from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.interfaces import EmbeddingSupport
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
 
@@ -36,13 +34,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         self,
         *,
         db_path: Union[Path, str] = None,
-        embedding_model: EmbeddingSupport = None,
-        disable_embedding: bool = False,
         verbose: bool = False,
     ):
         super(DuckDBMemory, self).__init__()
-        if not disable_embedding:
-            self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
 
         if db_path == ":memory:":
             self.db_path: Union[Path, str] = ":memory:"

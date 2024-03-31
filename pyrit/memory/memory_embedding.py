@@ -54,4 +54,6 @@ def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -
         model = AzureTextEmbedding(api_key=api_key, endpoint=api_base, deployment=deployment)
         return MemoryEmbedding(embedding_model=model)
     else:
-        return None
+        raise ValueError(
+            "No embedding model was provided and no Azure OpenAI embedding model was found in the environment."
+        )
