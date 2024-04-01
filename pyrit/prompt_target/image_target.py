@@ -1,13 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import json
-import requests
+import logging
 import os
 import pathlib
-import logging
-
-from openai import BadRequestError
 from enum import Enum
+
+import requests
+from openai import BadRequestError
+
 from pyrit.common.path import RESULTS_PATH
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
@@ -102,7 +103,7 @@ class ImageTarget(PromptTarget):
         generated_image = requests.get(image_url).content  # download the image
         with open(image_path, "wb") as image_file:
             image_file.write(generated_image)
-        return image_path
+        return str(image_path)
 
     def send_prompt(
         self, normalized_prompt: str, conversation_id: str | None = None, normalizer_id: str | None = None
@@ -136,7 +137,7 @@ class ImageTarget(PromptTarget):
         else:
             return None
 
-    async def generate_images_async(self, prompt:str):
+    async def generate_images_async(self, prompt: str):
         try:
             response = await self.image_target._client.images.generate(
                 model=self.deployment_name,
@@ -159,6 +160,7 @@ class ImageTarget(PromptTarget):
             logger.error(json_response)
             return None
         return json_response
+
     def generate_images(self, prompt: str) -> dict:
         """
         Sends prompt to image target and returns response
