@@ -183,7 +183,7 @@ red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
 from pyrit.score import SelfAskGptClassifier, SENTIMENT_CLASSIFIER
 
 text_to_be_scored = "This is amazing!"
-classifier = SelfAskGptClassifier(content_classifier=str(SENTIMENT_CLASSIFIER), gpt_4=red_teaming_llm)
+classifier = SelfAskGptClassifier(content_classifier=str(SENTIMENT_CLASSIFIER), chat_target=red_teaming_llm)
 classifier.score_text(text=text_to_be_scored)
 
 # %% [markdown]
