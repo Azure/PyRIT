@@ -10,7 +10,7 @@ from openai import BadRequestError
 from enum import Enum
 from pyrit.common.path import RESULTS_PATH
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_target.openai_chat_target import AzureOpenAIChatTarget
+from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 
 logger = logging.getLogger(__name__)
 
