@@ -35,13 +35,21 @@ def _load_categories_from_yaml(yaml_path: Path) -> list[Category]:
 
 
 class SelfAskGptClassifier(SupportTextClassification):
-    def __init__(self, content_classifier: Union[str, Path], gpt_4: PromptChatTarget) -> None:
+    def __init__(self, content_classifier: Union[str, Path], chat_target: PromptChatTarget) -> None:
         # Load classifier
         self._categories = _load_categories_from_yaml(yaml_path=Path(content_classifier))
-        self._gpt_chat = gpt_4
+        self._chat_target = chat_target
 
         self._conversation_id = str(uuid.uuid4())
         self._normalizer_id = None  # Normalizer not used
+
+        system_prompt = SelfAskGptClassifier._build_self_ask_system_prompt(self._categories)
+
+        self._chat_target.set_system_prompt(
+            prompt=system_prompt,
+            conversation_id=self._conversation_id,
+            normalizer_id=self._normalizer_id,
+        )
 
     @staticmethod
     def _build_self_ask_system_prompt(categories: list[Category]) -> str:
@@ -101,28 +109,23 @@ class SelfAskGptClassifier(SupportTextClassification):
 
     # @tenacity.retry(stop=tenacity.stop_after_attempt(3))
     def score_text(self, text: str) -> Score:
-        system_prompt = SelfAskGptClassifier._build_self_ask_system_prompt(self._categories)
-
-        self._gpt_chat.set_system_prompt(
-            prompt=system_prompt,
-            conversation_id=self._conversation_id,
-            normalizer_id=self._normalizer_id,
-        )
-
-        response = self._gpt_chat.send_prompt(
+        response = self._chat_target.send_prompt(
             normalized_prompt=text,
             conversation_id=self._conversation_id,
             normalizer_id=self._normalizer_id,
         )
 
         try:
-            gpt_response = json.loads(response)
+            parsed_response = json.loads(response)
+
+            score = Score(
+                score_type="str",
+                score_value=parsed_response["category_name"],
+                score_description=parsed_response["category_description"],
+                score_explanation=parsed_response["rationale"],
+            )
+
+            return score
+
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON response from GPT: {response}") from e
-        score = Score(
-            score_type="str",
-            score_value=gpt_response["category_name"],
-            score_description=gpt_response["category_description"],
-            score_explanation=gpt_response["rationale"],
-        )
-        return score
+            raise ValueError(f"Invalid JSON response from chat target: {response}") from e
