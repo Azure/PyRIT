@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import json
-from typing import Any, Coroutine
 import requests
 import os
 import pathlib
@@ -83,7 +82,7 @@ class ImageTarget(PromptTarget):
         )
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
 
-    def download_image(self, image_url: str, output_filename: str):
+    def download_image(self, image_url: str, output_filename: str) -> str:
         """
         Downloads the image from a URL and stores the image locally
         Parameters:
@@ -105,7 +104,9 @@ class ImageTarget(PromptTarget):
             image_file.write(generated_image)
         return image_path
 
-    def send_prompt(self, normalized_prompt: str, conversation_id: str | None = None, normalizer_id: str | None = None):
+    def send_prompt(
+        self, normalized_prompt: str, conversation_id: str | None = None, normalizer_id: str | None = None
+    ) -> dict:
         """
         Sends prompt to image target and returns response
         Parameters:
@@ -123,11 +124,29 @@ class ImageTarget(PromptTarget):
         else:
             return None
 
-    # TODO:
-    def send_prompt_async(
-        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str
-    ) -> Coroutine[Any, Any, str]:
-        return None
+    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> dict:
+        try:
+            response = await self.image_target._client.images.generate(
+                model=self.deployment_name,
+                prompt=normalized_prompt,
+                n=self.n,
+                size=self.image_size,
+                response_format=self.response_format,
+            )
+        except BadRequestError as e:
+            print(e)
+            logger.error("Content Blocked\n" + str(e))
+            return None
+        except Exception as e:
+            logger.error("API Call Error\n" + str(e))
+            return None
+        try:
+            json_response = json.loads(response.model_dump_json())
+        except json.JSONDecodeError:
+            logger.error("Response could not be interpreted in the JSON format")
+            logger.error(json_response)
+            return None
+        return json_response
 
     def generate_images(self, prompt: str) -> dict:
         """
