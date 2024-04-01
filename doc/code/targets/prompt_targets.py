@@ -24,6 +24,7 @@ print(jailbreak_prompt)
 
 # %% [markdown]
 # The `AzureOpenAIChatTarget` inherits from the `PromptChatTarget` class, which expands upon the `PromptTarget` class by adding functionality to set a system prompt.
+# `PromptChatTargets` are also targets which will give a meaningful response from an assistant when given a user prompt, making them useful for multi-turn scenarios.
 #
 # _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md).
 # %%
@@ -36,7 +37,7 @@ from pyrit.common import default_values
 
 # When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
 test_conversation_id = str(uuid.uuid4())
-test_normalizer_id = "1"
+test_normalizer_id = None
 
 default_values.load_default_env()
 
@@ -67,7 +68,7 @@ await aoi_prompt_target.send_prompt_async(  # type: ignore
 )
 
 # %% [markdown]
-# The `AzureBlobStorageTarget` inherits from `PromptTarget`, meaning it has functionality to send prompts.
+# The `AzureBlobStorageTarget` inherits from `PromptTarget`, meaning it has functionality to send prompts. In contrast to `PromptChatTarget`s, `PromptTarget`s do not interact with chat assistants.
 # This prompt target in particular will take in a prompt and upload it as a text file to the provided Azure Storage Account Container.
 # This could be useful for Cross-Prompt Injection Attack scenarios, for example, where there is a jailbreak within a file.
 #
@@ -84,7 +85,7 @@ from pyrit.common import default_values
 
 # When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
 test_conversation_id = str(uuid.uuid4())
-test_normalizer_id = "1"
+test_normalizer_id = None
 
 default_values.load_default_env()
 

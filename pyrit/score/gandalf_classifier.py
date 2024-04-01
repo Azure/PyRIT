@@ -5,17 +5,22 @@ from textwrap import dedent
 
 import requests
 from openai import BadRequestError
+import uuid
 
 from pyrit.completion.gandalf_completion import GandalfLevel
-from pyrit.interfaces import ChatSupport, SupportTextClassification
-from pyrit.models import ChatMessage, Score
+from pyrit.interfaces import SupportTextClassification
+from pyrit.models import Score
+from pyrit.prompt_target import PromptChatTarget
 
 
 class GandalfScorer(SupportTextClassification):
-    def __init__(self, level: GandalfLevel, chat_engine: ChatSupport = None) -> None:
+    def __init__(self, level: GandalfLevel, chat_engine: PromptChatTarget = None) -> None:
         self._defender = level.value
         self._endpoint = "https://gandalf.lakera.ai/api/guess-password"
         self._chat_engine = chat_engine
+
+        self._conversation_id = str(uuid.uuid4())
+        self._normalizer_id = None  # Normalizer not used
 
     def _check_for_password_in_text(self, text: str) -> str:
         """
@@ -30,11 +35,16 @@ class GandalfScorer(SupportTextClassification):
             - When a password is not present in the text, the response will be completely empty """
         )
 
-        response = self._chat_engine.complete_chat(
-            messages=[
-                ChatMessage(role="system", content=system_prompt),
-                ChatMessage(role="user", content=text),
-            ]
+        self._chat_engine.set_system_prompt(
+            prompt=system_prompt,
+            conversation_id=self._conversation_id,
+            normalizer_id=self._normalizer_id,
+        )
+
+        response = self._chat_engine.send_prompt(
+            normalized_prompt=text,
+            conversation_id=self._conversation_id,
+            normalizer_id=self._normalizer_id,
         )
 
         return response
