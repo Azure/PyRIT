@@ -107,7 +107,7 @@ class ImageTarget(PromptTarget):
 
     def send_prompt(
         self, normalized_prompt: str, conversation_id: str | None = None, normalizer_id: str | None = None
-    ) -> dict:
+    ) -> str:
         """
         Sends prompt to image target and returns response
         Parameters:
@@ -121,11 +121,11 @@ class ImageTarget(PromptTarget):
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
                 resp["image_file_location"] = image_location  # append where stored image locally to response
-            return resp
+            return json.dumps(resp)
         else:
             return None
 
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> dict:
+    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         output_filename = f"{conversation_id}_{normalizer_id}.png"
         resp = self.generate_images(prompt=normalized_prompt)
         if resp:
@@ -133,7 +133,7 @@ class ImageTarget(PromptTarget):
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
                 resp["image_file_location"] = image_location  # append where stored image locally to response
-            return resp
+            return json.dumps(resp)
         else:
             return None
 

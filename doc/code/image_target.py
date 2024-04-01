@@ -24,6 +24,7 @@ PROMPT_TO_SEND = "Draw me a racoon pirate as a French artist in France"
 # %%
 import os
 import uuid
+import json
 
 from pyrit.common import default_values
 from pyrit.prompt_target import ImageTarget
@@ -65,7 +66,7 @@ image_resp
 # The `download_image` function will save the image locally and return back the location of the saved image. It is already called from within the `send_prompt` function and stored within the response. The value is shown below:
 
 # %%
-image_location = image_resp["image_file_location"]
+image_location = json.loads(image_resp)["image_file_location"]
 
 # %% [markdown]
 # The `download_image` function can be called on its own as well using an image url and output filename
