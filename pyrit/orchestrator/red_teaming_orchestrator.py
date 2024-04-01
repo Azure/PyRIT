@@ -33,7 +33,7 @@ class RedTeamingOrchestrator(Orchestrator):
         initial_red_teaming_prompt: str = "Begin Conversation",
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: list[str] = ["red-teaming-orchestrator"],
+        memory_labels: dict[str, str] = None,
         verbose: bool = False,
     ) -> None:
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
@@ -76,7 +76,7 @@ class RedTeamingOrchestrator(Orchestrator):
         return True
 
     def get_memory(self):
-        return self._memory.get_memories_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
+        return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
 
     @abc.abstractmethod
     def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role: str) -> bool:

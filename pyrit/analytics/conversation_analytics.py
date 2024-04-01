@@ -6,7 +6,6 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import ConversationMessageWithSimilarity, EmbeddingMessageWithSimilarity
-from pyrit.memory.memory_models import ConversationData, EmbeddingData
 
 
 class ConversationAnalytics:
@@ -24,11 +23,11 @@ class ConversationAnalytics:
         """
         self.memory_interface = memory_interface
 
-    def get_similar_chat_messages_by_content(
+    def get_prompt_entries_with_same_converted_content(
         self, *, chat_message_content: str
     ) -> list[ConversationMessageWithSimilarity]:
         """
-        Retrieves chat messages that are similar to the given content based on exact matches.
+        Retrieves chat messages that have the same converted content
 
         Args:
             chat_message_content (str): The content of the chat message to find similar messages for.
@@ -37,16 +36,16 @@ class ConversationAnalytics:
             list[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on content.
         """
-        all_memories = self.memory_interface.get_all_memory(ConversationData)
+        all_memories = self.memory_interface.get_all_prompt_entries()
         similar_messages = []
 
         for memory in all_memories:
-            if memory.content == chat_message_content:
+            if memory.converted_prompt_text == chat_message_content:
                 similar_messages.append(
                     ConversationMessageWithSimilarity(
                         score=1.0,
                         role=memory.role,
-                        content=memory.content,
+                        content=memory.converted_prompt_text,
                         metric="exact_match",  # Exact match
                     )
                 )
@@ -67,12 +66,13 @@ class ConversationAnalytics:
             List[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on embedding similarity.
         """
-        all_memories = self.memory_interface.get_all_memory(EmbeddingData)
+
+        all_embdedding_memory = self.memory_interface.get_all_embeddings()
         similar_messages = []
 
         target_embedding = np.array(chat_message_embedding).reshape(1, -1)
 
-        for memory in all_memories:
+        for memory in all_embdedding_memory:
             if not hasattr(memory, "embedding") or memory.embedding is None:
                 continue
 
@@ -82,7 +82,7 @@ class ConversationAnalytics:
             if similarity_score >= threshold:
                 similar_messages.append(
                     EmbeddingMessageWithSimilarity(
-                        score=similarity_score, uuid=memory.uuid, metric="cosine_similarity"  # type: ignore
+                        score=similarity_score, uuid=memory.id, metric="cosine_similarity"  # type: ignore
                     )
                 )
 
