@@ -125,10 +125,22 @@ class ImageTarget(PromptTarget):
             return None
 
     async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> dict:
+        output_filename = f"{conversation_id}_{normalizer_id}.png"
+        resp = self.generate_images(prompt=normalized_prompt)
+        if resp:
+            if self.response_format == "url":
+                image_url = resp["data"][0]["url"]  # extract image URL from response
+                image_location = self.download_image(image_url=image_url, output_filename=output_filename)
+                resp["image_file_location"] = image_location  # append where stored image locally to response
+            return resp
+        else:
+            return None
+
+    async def generate_images_async(self, prompt:str):
         try:
             response = await self.image_target._client.images.generate(
                 model=self.deployment_name,
-                prompt=normalized_prompt,
+                prompt=prompt,
                 n=self.n,
                 size=self.image_size,
                 response_format=self.response_format,
@@ -147,7 +159,6 @@ class ImageTarget(PromptTarget):
             logger.error(json_response)
             return None
         return json_response
-
     def generate_images(self, prompt: str) -> dict:
         """
         Sends prompt to image target and returns response

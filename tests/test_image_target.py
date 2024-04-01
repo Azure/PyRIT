@@ -26,6 +26,7 @@ def test_initialization_with_required_parameters(image_target: ImageTarget):
 def test_send_prompt(mock_image, image_target):
     mock_image.return_value = {"Mock Image: ": "mock value"}
     resp = image_target.send_prompt(normalized_prompt="test prompt", normalizer_id="1", conversation_id="2")
+    print("SYNC RESP: ", resp)
     assert resp
 
 
