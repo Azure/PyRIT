@@ -2,21 +2,18 @@
 # Licensed under the MIT license.
 
 import json
-
 import pytest
 
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.memory.memory_models import ConversationData
+from pyrit.memory.memory_models import PromptMemoryEntry
+
 from sqlalchemy.inspection import inspect
+from tests.mocks import get_sample_conversations
 
 
 @pytest.fixture
-def sample_conversations():
-    # Create some instances of ConversationStore with sample data
-    return [
-        ConversationData(role="User", content="Hello, how are you?", conversation_id="12345"),
-        ConversationData(role="Bot", content="I'm fine, thank you!", conversation_id="12345"),
-    ]
+def sample_conversations() -> list[PromptMemoryEntry]:
+    return get_sample_conversations()
 
 
 def model_to_dict(instance):
@@ -34,14 +31,16 @@ def test_export_to_json_creates_file(tmp_path, sample_conversations):
     with open(file_path, "r") as f:
         content = json.load(f)
         # Perform more detailed checks on content if necessary
-        assert len(content) == 2  # Simple check for the number of items
+        assert len(content) == 3  # Simple check for the number of items
         # Convert each ConversationStore instance to a dictionary
         expected_content = [model_to_dict(conv) for conv in sample_conversations]
 
         for expected, actual in zip(expected_content, content):
             assert expected["role"] == actual["role"]
-            assert expected["content"] == actual["content"]
+            assert expected["converted_prompt_text"] == actual["converted_prompt_text"]
             assert expected["conversation_id"] == actual["conversation_id"]
+            assert expected["original_prompt_data_type"] == actual["original_prompt_data_type"]
+            assert expected["original_prompt_text"] == actual["original_prompt_text"]
 
 
 def test_export_data_with_conversations(tmp_path, sample_conversations):
@@ -59,10 +58,10 @@ def test_export_data_with_conversations(tmp_path, sample_conversations):
     # Read the file and verify its contents
     with open(file_path, "r") as f:
         content = json.load(f)
-        assert len(content) == 2  # Check for the expected number of items
-        assert content[0]["role"] == "User"
-        assert content[0]["content"] == "Hello, how are you?"
+        assert len(content) == 3  # Check for the expected number of items
+        assert content[0]["role"] == "user"
+        assert content[0]["converted_prompt_text"] == "Hello, how are you?"
         assert content[0]["conversation_id"] == "12345"
-        assert content[1]["role"] == "Bot"
-        assert content[1]["content"] == "I'm fine, thank you!"
+        assert content[1]["role"] == "assistant"
+        assert content[1]["converted_prompt_text"] == "I'm fine, thank you!"
         assert content[1]["conversation_id"] == "12345"

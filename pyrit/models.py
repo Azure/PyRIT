@@ -15,10 +15,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 
 
-# Originally derived from this:
-# https://github.com/openai/openai-python/blob/7f9e85017a0959e3ba07834880d92c748f8f67ab/src/openai/types/chat/chat_completion_role.py#L4
-ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant", "tool", "function"]
-ChatMessageRole = Literal["system", "user", "assistant", "tool", "function"]
+ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]
+ChatMessageRole = Literal["system", "user", "assistant"]
 
 
 @dataclass
@@ -234,7 +232,7 @@ class PromptTemplate(YamlLoadable):
     parameters: list[str] = field(default_factory=list)
 
     def apply_custom_metaprompt_parameters(self, **kwargs) -> str:
-        """Builds a new prompts from the metapromt template.
+        """Builds a new prompts from the metaprompt template.
         Args:
             **kwargs: the key value for the metaprompt template inputs
 

@@ -1,23 +1,26 @@
 import json
 import logging
+import uuid
 import pathlib
 
-from pyrit.interfaces import ChatSupport
 from pyrit.prompt_converter import PromptConverter
-from pyrit.models import PromptTemplate, ChatMessage
+from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
+from pyrit.prompt_target import PromptChatTarget
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 logger = logging.getLogger(__name__)
 
 
 class TranslationConverter(PromptConverter):
-    def __init__(self, *, converter_target: ChatSupport, languages: list[str], prompt_template: PromptTemplate = None):
+    def __init__(
+        self, *, converter_target: PromptChatTarget, languages: list[str], prompt_template: PromptTemplate = None
+    ):
         """
         Initializes a TranslationConverter object.
 
         Args:
-            converter_target (ChatSupport): The target chat support for the conversion which will translate
+            converter_target (PromptChatTarget): The target chat support for the conversion which will translate
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
             prompt_template (PromptTemplate, optional): The prompt template for the conversion.
 
@@ -42,6 +45,15 @@ class TranslationConverter(PromptConverter):
 
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language_str)
 
+        self._conversation_id = str(uuid.uuid4())
+        self._normalizer_id = None  # Normalizer not used
+
+        self.converter_target.set_system_prompt(
+            prompt=self.system_prompt,
+            conversation_id=self._conversation_id,
+            normalizer_id=self._normalizer_id,
+        )
+
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
     def convert(self, prompts: list[str]) -> list[str]:
         """
@@ -54,12 +66,11 @@ class TranslationConverter(PromptConverter):
         converted_prompts: list[str] = []
 
         for prompt in prompts:
-            chat_entries = [
-                ChatMessage(role="system", content=self.system_prompt),
-                ChatMessage(role="user", content=prompt),
-            ]
-
-            response_msg = self.converter_target.complete_chat(messages=chat_entries)
+            response_msg = self.converter_target.send_prompt(
+                normalized_prompt=prompt,
+                conversation_id=self._conversation_id,
+                normalizer_id=self._normalizer_id,
+            )
 
             try:
                 llm_response: dict[str, str] = json.loads(response_msg)["output"]
@@ -68,7 +79,7 @@ class TranslationConverter(PromptConverter):
                     converted_prompts.append(variation)
 
             except json.JSONDecodeError as e:
-                logger.log(level=logging.WARNING, msg=f"Error in LLM response {response_msg}: {e}")
+                logger.warn(f"Error in LLM response {response_msg}: {e}")
                 raise RuntimeError(f"Error in LLM respons {response_msg}")
 
         return converted_prompts

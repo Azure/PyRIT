@@ -4,7 +4,7 @@
 import os
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 from pyrit.interfaces import EmbeddingSupport
-from pyrit.memory.memory_models import ConversationData, EmbeddingData
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 
 
 class MemoryEmbedding:
@@ -20,7 +20,7 @@ class MemoryEmbedding:
             raise ValueError("embedding_model must be set.")
         self.embedding_model = embedding_model
 
-    def generate_embedding_memory_data(self, *, chat_memory: ConversationData) -> EmbeddingData:
+    def generate_embedding_memory_data(self, *, chat_memory: PromptMemoryEntry) -> EmbeddingData:
         """
         Generates metadata for a chat memory entry.
 
@@ -30,12 +30,17 @@ class MemoryEmbedding:
         Returns:
             ConversationMemoryEntryMetadata: The generated metadata.
         """
-        embedding_data = EmbeddingData(
-            embedding=self.embedding_model.generate_text_embedding(text=chat_memory.content).data[0].embedding,
-            embedding_type_name=self.embedding_model.__class__.__name__,
-            uuid=chat_memory.uuid,
-        )
-        return embedding_data
+        if chat_memory.converted_prompt_data_type == "text":
+            embedding_data = EmbeddingData(
+                embedding=self.embedding_model.generate_text_embedding(text=chat_memory.converted_prompt_text)
+                .data[0]
+                .embedding,
+                embedding_type_name=self.embedding_model.__class__.__name__,
+                id=chat_memory.id,
+            )
+            return embedding_data
+
+        raise ValueError("Only text data is supported for embedding.")
 
 
 def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -> MemoryEmbedding | None:
@@ -49,4 +54,6 @@ def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -
         model = AzureTextEmbedding(api_key=api_key, endpoint=api_base, deployment=deployment)
         return MemoryEmbedding(embedding_model=model)
     else:
-        return None
+        raise ValueError(
+            "No embedding model was provided and no Azure OpenAI embedding model was found in the environment."
+        )

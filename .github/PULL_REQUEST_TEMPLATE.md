@@ -14,17 +14,13 @@
 <!--- If you are considering making a contribution please open an issue first. -->
 <!--- This can help in identifying if the contribution fits into the plans for PyRIT. -->
 <!--- Maintainers may be aware of obstacles that aren't obvious, or clarify requirements, and thereby save you time. -->
-<!--- Note that contributions require tests and documentation (if applicable). -->
-<!--- See the section below and check the boxes that apply. -->
 
-## Tests
-<!--- Select all that apply by putting an x between the brackets: [x] -->
-- [ ] no new tests required
-- [ ] new tests added
-- [ ] existing tests adjusted
 
-## Documentation
-<!--- Select all that apply by putting an x between the brackets: [x] -->
-- [ ] no documentation changes needed
-- [ ] documentation added or edited
-- [ ] example notebook added or updated
+## Tests and Documentation
+
+<!--- Contributions require tests and documentation (if applicable). -->
+<!--- Include a description of tests and documentation updated (if applicable) -->
+
+<!--- JupyText helps us see regressions in APIs or in our documentation by executing all code samples -->
+<!--- Include how you/if ran JupyText here -->
+<!--- This is described at: https://github.com/Azure/PyRIT/tree/main/doc  -->

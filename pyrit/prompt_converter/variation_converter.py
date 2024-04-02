@@ -1,11 +1,12 @@
 import json
 import logging
+import uuid
 import pathlib
 
-from pyrit.interfaces import ChatSupport
 from pyrit.prompt_converter import PromptConverter
-from pyrit.models import PromptTemplate, ChatMessage
+from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
+from pyrit.prompt_target import PromptChatTarget
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class VariationConverter(PromptConverter):
     def __init__(
-        self, *, converter_target: ChatSupport, prompt_template: PromptTemplate = None, number_variations: int = 10
+        self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None, number_variations: int = 10
     ):
         self.converter_target = converter_target
 
@@ -28,11 +29,20 @@ class VariationConverter(PromptConverter):
 
         self.number_variations = number_variations
         if number_variations < 0 or number_variations > 1000:
-            logger.log(logging.WARNING, "Number of variations should be between 0 and 1000. Defaulting to 10")
+            logger.warn("Number of variations should be between 0 and 1000. Defaulting to 10")
             self.number_variations = 10
 
         self.system_prompt = str(
             prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(self.number_variations))
+        )
+
+        self._conversation_id = str(uuid.uuid4())
+        self._normalizer_id = None  # Normalizer not used
+
+        self.converter_target.set_system_prompt(
+            prompt=self.system_prompt,
+            conversation_id=self._conversation_id,
+            normalizer_id=self._normalizer_id,
         )
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
@@ -46,12 +56,12 @@ class VariationConverter(PromptConverter):
         """
         all_prompts = []
         for prompt in prompts:
-            chat_entries = [
-                ChatMessage(role="system", content=self.system_prompt),
-                ChatMessage(role="user", content=prompt),
-            ]
+            response_msg = self.converter_target.send_prompt(
+                normalized_prompt=prompt,
+                conversation_id=self._conversation_id,
+                normalizer_id=self._normalizer_id,
+            )
 
-            response_msg = self.converter_target.complete_chat(messages=chat_entries)
             try:
                 prompt_variations = json.loads(response_msg)
                 for variation in prompt_variations:
