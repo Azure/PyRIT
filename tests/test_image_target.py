@@ -30,7 +30,7 @@ def test_send_prompt(mock_image, image_target):
     assert resp
 
 
-@patch("pyrit.prompt_target.image_target.ImageTarget.generate_images")
+@patch("pyrit.prompt_target.image_target.ImageTarget.generate_images_async")
 @pytest.mark.asyncio
 async def test_send_prompt_async(mock_image, image_target):
     mock_image.return_value = {"Mock Image: ": "mock value"}
