@@ -8,13 +8,10 @@ from pyrit.prompt_converter import PromptConverter
 
 
 class ROT13Converter(PromptConverter):
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
+    def convert(self, prompt: str) -> str:
         """
         Simple converter that just ROT13 encodes the prompts
         """
-        if not self.is_supported(input_type):
-            raise ValueError("Input type not supported")
-
         return codecs.encode(prompt, "rot13")
 
     def is_supported(self, input_type: PromptDataType) -> bool:

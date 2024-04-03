@@ -14,7 +14,9 @@ class PromptConverter(abc.ABC):
     """
 
     @abc.abstractmethod
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
+    def convert(self,
+                prompt: str,
+                input_type : PromptDataType = "text") -> str:
         """
         Converts the given prompts into a different representation
 
@@ -44,11 +46,3 @@ class PromptConverter(abc.ABC):
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         return public_attributes
-
-
-class PromptConverterList:
-    def __init__(self, converters: list[PromptConverter]) -> None:
-        self.converters = converters
-
-    def to_json(self):
-        return json.dumps([converter.to_dict() for converter in self.converters])
