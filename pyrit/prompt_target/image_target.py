@@ -33,7 +33,23 @@ class SupportedDalleVersions(Enum):
 
 
 class ImageTarget(PromptTarget):
-    # The ImageTarget takes prompt and generates images
+    """
+    The ImageTarget takes a prompt and generates images
+    This class initializes a DALL-E image target
+
+    Args:
+        deployment_name (str): The name of the deployment.
+        endpoint (str): The endpoint URL for the service.
+        api_key (str): The API key for accessing the service.
+        api_version (str, optional): The API version. Defaults to "2024-02-01".
+        image_size (str, optional): The size of the image to output, must be a value of VALID_SIZES.
+            Defaults to 1024x1024.
+        response_format (str, optional): Format of output (base64 or url). Defaults to b64_json.
+        num_images (int, optional): The num ber of output images to generate.
+            Defaults to 1. For DALLE-3, can only be 1, for DALLE-2 max is 10 images.
+        dalle_version (int, optional): Version of DALLE service. Defaults to 3.
+    """
+
     def __init__(
         self,
         *,
@@ -46,24 +62,8 @@ class ImageTarget(PromptTarget):
         num_images: int | None = 1,
         dalle_version: SupportedDalleVersions | None = SupportedDalleVersions.V2,
     ):
-        """
-        Class that initializes a DALLE image target
 
-        Args:
-            deployment_name (str): The name of the deployment.
-            endpoint (str): The endpoint URL for the service.
-            api_key (str): The API key for accessing the service.
-            api_version (str, optional): The API version. Defaults to "2024-02-01".
-            image_size (str, optional): The size of the image to output, must be a value of VALID_SIZES.
-                Defaults to 1024x1024.
-            response_format (str, optional): Format of output (base64 or url). Defaults to b64_json.
-            num_images (int, optional): The number of output images to generate.
-                Defaults to 1. For DALLE-3, can only be 1, for DALLE-2 max is 10 images.
-            dalle_version (int, optional): Version of DALLE service. Defaults to 3.
-
-        """
-
-        # make sure number of images is allowed by Dalle version
+        # make sure number of images is allowed by Dall-e version
         if dalle_version == SupportedDalleVersions.V3:
             if num_images != 1:
                 raise ValueError("DALL-E-3 can only generate 1 image at a time.")
@@ -72,9 +72,7 @@ class ImageTarget(PromptTarget):
                 raise ValueError("DALL-E-2 can generate only up to 10 images at a time.")
 
         self.image_size = image_size.value
-
         self.response_format = response_format.value
-
         self.n = num_images
 
         self.deployment_name = deployment_name
@@ -86,11 +84,12 @@ class ImageTarget(PromptTarget):
     def download_image(self, image_url: str, output_filename: str) -> str:
         """
         Downloads the image from a URL and stores the image locally
-        Parameters:
-            image_url: string with URL which image is stored at
-            output_filename: name of file to store image in
+        Args:
+            image_url (str): URL which image is stored at
+            output_filename (str): name of file to store image in
         Returns: file location
         """
+
         # This will likely be replaced once our memory is refactored!
         # If the directory doesn't exist, create it
         if not os.path.isdir(self.output_dir):
@@ -110,34 +109,63 @@ class ImageTarget(PromptTarget):
     ) -> str:
         """
         Sends prompt to image target and returns response
-        Parameters:
-            prompt: a string with the prompt to send
+        Args:
+            normalized_prompt (str): the prompt to send
+            conversation_id (str): the ID of the conversation for memory
+            normalizer_id (str): the ID provided by the prompt normalizer
         Returns: response from target model in a JSON format
         """
+
         output_filename = f"{conversation_id}_{normalizer_id}.png"
-        resp = self.generate_images(prompt=normalized_prompt)
-        if resp:
+        resp = self._generate_images(prompt=normalized_prompt)
+
+        if "error" not in resp.keys():
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
                 resp["image_file_location"] = image_location  # append where stored image locally to response
             return json.dumps(resp)
         else:
-            return None
+            if resp["exception type"] == "Blocked":
+                logger.error(f"Content Blocked\n{resp['error']}")
+                return ""
+            elif resp["exception type"] == "JSON Error":
+                logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
+                raise
+            else:
+                logger.error(f"Error in calling deployment {self.deployment_name}\n{resp['error']}")
+                raise
 
     async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
-        output_filename = f"{conversation_id}_{normalizer_id}.png"
-        resp = await self.generate_images_async(prompt=normalized_prompt)
-        if resp:
+        """
+        (Async) Sends prompt to image target and returns response
+        Args:
+            normalized_prompt (str): the prompt to send
+            conversation_id (str): the ID of the conversation for memory
+            normalizer_id (str): the ID provided by the prompt normalizer
+        Returns: response from target model in a JSON format
+        """
+
+        output_filename = f"{conversation_id}.png"
+        resp = await self._generate_images_async(prompt=normalized_prompt)
+        if "error" not in resp.keys():
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
                 resp["image_file_location"] = image_location  # append where stored image locally to response
             return json.dumps(resp)
         else:
-            return None
+            if resp["exception type"] == "Blocked":
+                logger.error(f"Content Blocked\n{resp['error']}")
+                return ""
+            elif resp["exception type"] == "JSON Error":
+                logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
+                raise
+            else:
+                logger.error(f"Error in calling deployment {self.deployment_name}\n{resp['error']}")
+                raise
 
-    async def generate_images_async(self, prompt: str) -> dict:
+    async def _generate_images_async(self, prompt: str) -> dict:
         try:
             response = self.image_target._client.images.generate(
                 model=self.deployment_name,
@@ -146,29 +174,16 @@ class ImageTarget(PromptTarget):
                 size=self.image_size,
                 response_format=self.response_format,
             )
-
-        except BadRequestError as e:
-            print(e)
-            logger.error("Content Blocked\n" + str(e))
-            return None
-        except Exception as e:
-            logger.error("API Call Error\n" + str(e))
-            return None
-        try:
             json_response = json.loads(response.model_dump_json())
-        except json.JSONDecodeError:
-            logger.error("Response could not be interpreted in the JSON format")
-            logger.error(json_response)
-            return None
-        return json_response
+            return json_response
+        except BadRequestError as e:
+            return {"error": e, "exception type": "Blocked"}
+        except json.JSONDecodeError as e:
+            return {"error": e, "exception type": "JSON Error"}
+        except Exception as e:
+            return {"error": e, "exception type": "exception"}
 
-    def generate_images(self, prompt: str) -> dict:
-        """
-        Sends prompt to image target and returns response
-        Parameters:
-            prompt: a string with the prompt to send
-        Returns: response from target model in a JSON format
-        """
+    def _generate_images(self, prompt: str) -> dict:
         try:
             response = self.image_target._client.images.generate(
                 model=self.deployment_name,
@@ -177,17 +192,13 @@ class ImageTarget(PromptTarget):
                 size=self.image_size,
                 response_format=self.response_format,
             )
-        except BadRequestError as e:
-            print(e)
-            logger.error("Content Blocked\n" + str(e))
-            return None
-        except Exception as e:
-            logger.error("API Call Error\n" + str(e))
-            return None
-        try:
             json_response = json.loads(response.model_dump_json())
-        except json.JSONDecodeError:
-            logger.error("Response could not be interpreted in the JSON format")
-            logger.error(json_response)
-            return None
-        return json_response
+            return json_response
+        except BadRequestError as e:
+            logger.error(f"Content Blocked\n{e}")
+            return {"error": e}
+        except json.JSONDecodeError as e:
+            logger.error(f"Response could not be interpreted in the JSON format\n{e}")
+        except Exception as e:
+            logger.error(f"Error in calling deployment {self.deployment_name}\n{e}")
+        return {}

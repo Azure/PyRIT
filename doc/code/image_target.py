@@ -19,9 +19,7 @@
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-PROMPT_TO_SEND = "Draw me a racoon pirate as a French artist in France"
 
-# %%
 import os
 import uuid
 import json
@@ -34,8 +32,10 @@ from pyrit.prompt_target.image_target import ResponseFormat
 test_conversation_id = str(uuid.uuid4())
 test_normalizer_id = "1"
 
+prompt_to_send = "Draw me a racoon pirate as a French artist in France"
+
 # %% [markdown]
-# ## Using DALLE model
+# ## Using DALL-E model
 
 # %%
 default_values.load_default_env()
@@ -50,7 +50,7 @@ img_prompt_target = ImageTarget(
 
 # %%
 image_resp = img_prompt_target.send_prompt(
-    normalized_prompt=PROMPT_TO_SEND,
+    normalized_prompt=prompt_to_send,
     conversation_id=test_conversation_id,
     normalizer_id=test_normalizer_id,
 )
