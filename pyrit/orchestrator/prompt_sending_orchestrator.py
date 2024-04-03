@@ -114,4 +114,4 @@ class PromptSendingOrchestrator(Orchestrator):
         Retrieves the memory associated with the prompt normalizer.
         """
         id = self._prompt_normalizer.id
-        return self._memory.get_memories_with_normalizer_id(normalizer_id=id)
+        return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=id)
