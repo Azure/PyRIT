@@ -11,7 +11,7 @@ class UnicodeConfusableConverter(PromptConverter):
         """Set up a converter. The 'deterministic' argument is for unittesting only."""
         self.deterministic = deterministic
 
-    def convert(self, prompts: list[str]) -> list[str]:
+    def convert(self, prompt: str) -> str:
         """
         Converts the given prompts into things that look similar, but are actually different,
         using Unicode confusables -- e.g., replacing a Latin 'a' with a Cyrillic 'а'.
@@ -25,10 +25,8 @@ class UnicodeConfusableConverter(PromptConverter):
         Returns:
             list[str]: The converted representations of the prompts.
         """
-        return ["".join(self._confusable(c) for c in prompt) for prompt in prompts]
+        return "".join(self._confusable(c) for c in prompt)
 
-    def is_one_to_one_converter(self) -> bool:
-        return True
 
     def _confusable(self, char: str) -> str:
         """Pick a confusable character for the given character."""

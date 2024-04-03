@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class VariationConverter(PromptConverter):
-    def __init__(
-        self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None, number_variations: int = 10
-    ):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
         self.converter_target = converter_target
 
         # set to default strategy if not provided
@@ -27,10 +25,7 @@ class VariationConverter(PromptConverter):
             )
         )
 
-        self.number_variations = number_variations
-        if number_variations < 0 or number_variations > 1000:
-            logger.warn("Number of variations should be between 0 and 1000. Defaulting to 10")
-            self.number_variations = 10
+        self.number_variations = 1
 
         self.system_prompt = str(
             prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(self.number_variations))
@@ -71,5 +66,3 @@ class VariationConverter(PromptConverter):
                 raise RuntimeError(f"Error in LLM response {response_msg}")
         return all_prompts
 
-    def is_one_to_one_converter(self) -> bool:
-        return self.number_variations == 1

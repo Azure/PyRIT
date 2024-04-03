@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from art import text2art
 
@@ -11,16 +12,20 @@ class AsciiArtConverter(PromptConverter):
     def __init__(self, font="rand"):
         self.font_value = font
 
-    def convert(self, prompts: list[str]) -> list[str]:
+    def convert(self, prompt: str, input_type: PromptDataType) -> str:
         """
         Converter that uses art to convert strings to ASCII art.
         This can sometimes bypass LLM filters
-        Args:
-            prompts (list[str]): The prompts to be converted.
-        Returns:
-            list[str]: The converted prompts.
-        """
-        return [text2art(prompt, font=self.font_value) for prompt in prompts]
 
-    def is_one_to_one_converter(self) -> bool:
-        return True
+        Args:
+            prompt (str): The prompt to be converted.
+        Returns:
+            str: The converted prompt.
+        """
+        if not self.is_supported(input_type):
+            raise ValueError("Input type not supported")
+
+        return text2art(prompt, font=self.font_value)
+
+    def is_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"

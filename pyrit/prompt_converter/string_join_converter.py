@@ -24,5 +24,6 @@ class StringJoinConverter(PromptConverter):
         """
         return [self.join_value.join(prompt) for prompt in prompts]
 
-    def is_one_to_one_converter(self) -> bool:
-        return True
+    def is_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
+
