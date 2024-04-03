@@ -64,8 +64,7 @@ class VariationConverter(PromptConverter):
 
             try:
                 prompt_variations = json.loads(response_msg)
-                for variation in prompt_variations:
-                    all_prompts.append(variation)
+                all_prompts.extend(prompt_variations[: min(self.number_variations, len(prompt_variations))])  # LLM doesnt always heed the instruction to just return num_iteration prompts
             except json.JSONDecodeError:
                 logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
                 raise RuntimeError(f"Error in LLM response {response_msg}")
