@@ -127,7 +127,7 @@ class ImageTarget(PromptTarget):
 
     async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
         output_filename = f"{conversation_id}_{normalizer_id}.png"
-        resp = self.generate_images(prompt=normalized_prompt)
+        resp = await self.generate_images_async(prompt=normalized_prompt)
         if resp:
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
@@ -138,6 +138,7 @@ class ImageTarget(PromptTarget):
             return None
 
     async def generate_images_async(self, prompt: str) -> dict:
+
         try:
             response = await self.image_target._client.images.generate(
                 model=self.deployment_name,
@@ -146,6 +147,7 @@ class ImageTarget(PromptTarget):
                 size=self.image_size,
                 response_format=self.response_format,
             )
+
         except BadRequestError as e:
             print(e)
             logger.error("Content Blocked\n" + str(e))
