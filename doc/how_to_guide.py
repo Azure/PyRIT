@@ -25,17 +25,17 @@
 # ## Write prompts yourself
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
-# the classes from the [pyrit.chat](https://github.com/Azure/PyRIT/tree/main/pyrit/chat) module (e.g.,
-# AzureOpenAIChat for Azure Open AI as below, HuggingFaceChat for Hugging Face, etc.) or by using other
+# the classes from the [PromptChatTarget](https://github.com/main/pyrit/prompt_target/prompt_chat_target) module (e.g.,
+# AzureOpenAIChatTarget for Azure Open AI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
 # packages (e.g., the [openai](https://github.com/openai/openai-python) Python package).
 
 # %%
 
 import os
+import uuid
 
 from pyrit.common import default_values
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models import ChatMessage
 
 default_values.load_default_env()
 
@@ -46,7 +46,7 @@ target_llm = AzureOpenAIChatTarget(
 )
 
 prompt = "test"
-target_llm.complete_chat(messages=[ChatMessage(content=prompt, role="user")])
+target_llm.send_prompt(normalized_prompt=prompt, conversation_id=str(uuid.uuid4()), normalizer_id=None)
 
 # %% [markdown]
 # To expand to a wider variety of harms, it may be beneficial to write prompt templates instead of the
@@ -165,8 +165,7 @@ red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
 # for example, `pyrit/datasets/attack_strategies/multi-turn-chat/red_team_chatbot_with_objective.yaml`).
 #
 # PyRIT also offers various integration choices for the red teaming orchestrators, including
-# [Azure ML managed online endpoints](../doc/code/aml_endpoints.ipynb),
-# [Hugging Face](../doc/code/huggingface_endpoints.ipynb),
+# [Azure ML managed online endpoints](../doc/code/targets/azure_ml_chat.ipynb),
 # and Azure OpenAI models (as shown above).
 #
 # ## Output scoring
@@ -184,7 +183,7 @@ red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
 from pyrit.score import SelfAskGptClassifier, SENTIMENT_CLASSIFIER
 
 text_to_be_scored = "This is amazing!"
-classifier = SelfAskGptClassifier(content_classifier=str(SENTIMENT_CLASSIFIER), gpt_4=red_teaming_llm)
+classifier = SelfAskGptClassifier(content_classifier=str(SENTIMENT_CLASSIFIER), chat_target=red_teaming_llm)
 classifier.score_text(text=text_to_be_scored)
 
 # %% [markdown]

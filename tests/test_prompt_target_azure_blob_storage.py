@@ -2,38 +2,28 @@
 # Licensed under the MIT license.
 
 import os
+from typing import Generator
 import pytest
 
-from sqlalchemy import inspect
 from unittest.mock import patch
 
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory import MemoryInterface
 from pyrit.prompt_target import AzureBlobStorageTarget
 
-
-@pytest.fixture
-def memory() -> MemoryInterface:  # type: ignore
-    # Create an in-memory DuckDB engine
-    duckdb_memory = DuckDBMemory(db_path=":memory:")
-
-    # Reset the database to ensure a clean state
-    duckdb_memory.reset_database()
-    inspector = inspect(duckdb_memory.engine)
-
-    # Verify that tables are created as expected
-    assert "ConversationStore" in inspector.get_table_names(), "ConversationStore table not created."
-    assert "EmbeddingStore" in inspector.get_table_names(), "EmbeddingStore table not created."
-
-    yield duckdb_memory
-    duckdb_memory.dispose_engine()
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
-def azure_blob_storage_target(memory: DuckDBMemory):
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def azure_blob_storage_target(memory_interface: MemoryInterface):
     return AzureBlobStorageTarget(
         container_url="https://test.blob.core.windows.net/test",
         sas_token="valid_sas_token",
-        memory=memory,
+        memory=memory_interface,
     )
 
 
@@ -87,10 +77,10 @@ def test_send_prompt(mock_upload, azure_blob_storage_target: AzureBlobStorageTar
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
     assert blob_url.__contains__(".txt")
 
-    chats = azure_blob_storage_target._memory.get_memories_with_conversation_id(conversation_id="1")
+    chats = azure_blob_storage_target._memory.get_prompt_entries_with_conversation_id(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "user"
-    assert chats[0].content == __name__
+    assert chats[0].converted_prompt_text == __name__
 
 
 @patch("azure.storage.blob.aio.ContainerClient.upload_blob")
@@ -103,7 +93,7 @@ async def test_send_prompt_async(mock_upload_async, azure_blob_storage_target: A
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
     assert blob_url.__contains__(".txt")
 
-    chats = azure_blob_storage_target._memory.get_memories_with_conversation_id(conversation_id="2")
+    chats = azure_blob_storage_target._memory.get_prompt_entries_with_conversation_id(conversation_id="2")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "user"
-    assert chats[0].content == __name__
+    assert chats[0].converted_prompt_text == __name__

@@ -2,7 +2,12 @@
 # Licensed under the MIT license.
 
 from contextlib import AbstractAsyncContextManager
+from typing import Generator
 
+from sqlalchemy import inspect
+
+from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.prompt_target import PromptTarget
 
 
@@ -61,3 +66,44 @@ class MockPromptTarget(PromptTarget):
 
     async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
         self.prompt_sent.append(normalized_prompt)
+
+
+def get_memory_interface() -> Generator[MemoryInterface, None, None]:
+    # Create an in-memory DuckDB engine
+    duckdb_memory = DuckDBMemory(db_path=":memory:")
+
+    duckdb_memory.disable_embedding()
+
+    # Reset the database to ensure a clean state
+    duckdb_memory.reset_database()
+    inspector = inspect(duckdb_memory.engine)
+
+    # Verify that tables are created as expected
+    assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
+    assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
+
+    yield duckdb_memory
+    duckdb_memory.dispose_engine()
+
+
+def get_sample_conversations():
+    return [
+        PromptMemoryEntry(
+            role="user",
+            original_prompt_text="original prompt text",
+            converted_prompt_text="Hello, how are you?",
+            conversation_id="12345",
+        ),
+        PromptMemoryEntry(
+            role="assistant",
+            original_prompt_text="original prompt text",
+            converted_prompt_text="I'm fine, thank you!",
+            conversation_id="12345",
+        ),
+        PromptMemoryEntry(
+            role="assistant",
+            original_prompt_text="original prompt text",
+            converted_prompt_text="I'm fine, thank you!",
+            conversation_id="33333",
+        ),
+    ]

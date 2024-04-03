@@ -81,6 +81,9 @@ dev = [
     "types-PyYAML>=6.0.12.9",
 ]
 
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
 [tool.mypy]
 plugins = []
 ignore_missing_imports = true

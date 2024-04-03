@@ -5,7 +5,7 @@ import yaml
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
-from pyrit.prompt_target.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.common.path import DATASETS_PATH
 from pathlib import Path
@@ -31,7 +31,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         chat_model_under_evaluation: PromptChatTarget,
         scorer: QuestionAnswerScorer,
         memory: MemoryInterface | None = None,
-        memory_labels: list[str] = ["question-answering-benchmark-orchestrator"],
+        memory_labels: dict[str, str] = None,
         evaluation_prompt: str | None = None,
         batch_size: int = 1,
         verbose: bool = False,
