@@ -138,9 +138,8 @@ class ImageTarget(PromptTarget):
             return None
 
     async def generate_images_async(self, prompt: str) -> dict:
-
         try:
-            response = await self.image_target._client.images.generate(
+            response = self.image_target._client.images.generate(
                 model=self.deployment_name,
                 prompt=prompt,
                 n=self.n,
