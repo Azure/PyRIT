@@ -150,7 +150,7 @@ class ImageTarget(PromptTarget):
 
         output_filename = f"{conversation_id}.png"
         resp = await self._generate_images_async(prompt=normalized_prompt)
-        if "error" not in resp.keys():
+        if "error" not in resp:
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
