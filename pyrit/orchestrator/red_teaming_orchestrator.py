@@ -71,10 +71,6 @@ class RedTeamingOrchestrator(Orchestrator):
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
 
-    @property
-    def requires_one_to_one_converters(self) -> bool:
-        return True
-
     def get_memory(self):
         return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
 
@@ -182,7 +178,7 @@ class RedTeamingOrchestrator(Orchestrator):
             conversation_id=self._prompt_target_conversation_id,
         )
 
-        response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)[0]
+        response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)
 
         if completion_state:
             target_messages.append(ChatMessage(role="user", content=prompt))

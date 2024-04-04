@@ -9,7 +9,7 @@ class StringJoinConverter(PromptConverter):
     def __init__(self, *, join_value="-"):
         self.join_value = join_value
 
-    def convert(self, prompt: str, input_type: PromptDataType) -> str:
+    def convert(self, *, prompt: str, input_type: PromptDataType) -> str:
         """
         Simple converter that uses str join for letters between. E.g. with a `-`
         it converts a prompt of `test` to `t-e-s-t`
