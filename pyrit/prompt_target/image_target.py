@@ -62,6 +62,8 @@ class ImageTarget(PromptTarget):
         num_images: int | None = 1,
         dalle_version: SupportedDalleVersions | None = SupportedDalleVersions.V2,
     ):
+        if num_images == None:
+            num_images = 1 # set 1 as default
 
         # make sure number of images is allowed by Dall-e version
         if dalle_version == SupportedDalleVersions.V3:
