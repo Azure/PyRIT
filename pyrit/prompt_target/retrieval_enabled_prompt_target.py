@@ -5,7 +5,7 @@ import re
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
-from pyrit.prompt_target.azure_ml_chat_target import AzureMLChatTarget
+from pyrit.prompt_target.prompt_chat_target.azure_ml_chat_target import AzureMLChatTarget
 
 from azure.core.exceptions import ClientAuthenticationError
 from azure.storage.blob import ContainerClient

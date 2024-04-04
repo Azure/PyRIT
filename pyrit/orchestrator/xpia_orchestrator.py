@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio, concurrent.futures
 import logging
 from typing import Optional
 from uuid import uuid4
@@ -95,11 +96,23 @@ class XPIATestOrchestrator(Orchestrator):
         response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)[0]
         logger.info(f'Received the following response from the medium target "{response}"')
 
-        processing_response = self._processing_target.send_prompt(
-            normalized_prompt=self._processing_prompt,
-            conversation_id=self._processing_conversation_id,
-            normalizer_id=str(uuid4()),
-        )
+        processing_args = {
+            "normalized_prompt": self._processing_prompt,
+            "conversation_id": self._processing_conversation_id,
+            "normalizer_id": str(uuid4()),
+        }
+        try:
+            processing_response = self._processing_target.send_prompt(
+                **processing_args
+            )
+        except NotImplementedError:
+            pool = concurrent.futures.ThreadPoolExecutor()
+            processing_response = pool.submit(
+                asyncio.run,
+                self._processing_target.send_prompt_async(
+                    **processing_args
+                )
+            ).result()
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
         score = self._scorer.score_text(processing_response)
