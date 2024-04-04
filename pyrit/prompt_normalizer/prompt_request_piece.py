@@ -3,21 +3,20 @@
 
 import abc
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
 
 
-class PromptRequestPiece(abc.ABC):
+class Prompt(abc.ABC):
     _memory: MemoryInterface
 
     def __init__(
         self,
         *,
+        prompt_target: PromptTarget,
         prompt_converters: list[PromptConverter],
         prompt_text: str,
-        prompt_data_type: PromptDataType = "text",
-        metadata: str = None,
+        conversation_id: str,
     ) -> None:
         """
         Initialize a PromptClass object.
@@ -53,7 +52,7 @@ class PromptRequestPiece(abc.ABC):
         self._prompt_text = prompt_text
         self.conversation_id = conversation_id
 
-    def send_prompt(self, *, normalizer_id: str) -> str:
+    def send_prompt(self, *, normalizer_id: str) -> list[str]:
         """
         Sends the prompt to the prompt target, by first converting the prompt.
         The prompt runs through every converter (the output of one converter is
@@ -62,13 +61,14 @@ class PromptRequestPiece(abc.ABC):
         converted_prompt_text = self._prompt_text
 
         for converter in self._prompt_converters:
-            converted_prompt_text = converter.convert(prompt=converted_prompt_text, input_type="text")
+            converted_prompt_text = converter.convert(converted_prompt_text)
 
         return self._prompt_target.send_prompt(
-            normalized_prompt=converted_prompt_text,
-            conversation_id=self.conversation_id,
-            normalizer_id=normalizer_id,
-        )
+                    normalized_prompt=converted_prompt_text,
+                    conversation_id=self.conversation_id,
+                    normalizer_id=normalizer_id,
+                )
+
 
     async def send_prompt_async(self, *, normalizer_id: str) -> None:
         """
@@ -76,11 +76,18 @@ class PromptRequestPiece(abc.ABC):
         The prompt runs through every converter (the output of one converter is
         the input of the next converter).
         """
-        converted_prompt_text = self._prompt_text
+        converted_prompts = self._get_converted_prompts()
+
+        for converted_prompt in converted_prompts:
+            await self._prompt_target.send_prompt_async(
+                normalized_prompt=converted_prompt,
+                conversation_id=self.conversation_id,
+                normalizer_id=normalizer_id,
+            )
+
+    def _get_converted_prompts(self):
+        converted_prompts = [self._prompt_text]
 
         for converter in self._prompt_converters:
-            converted_prompt_text = converter.convert(prompt=converted_prompt_text, input_type="text")
-
-        await self._prompt_target.send_prompt_async(
-            normalized_prompt=converted_prompt_text, conversation_id=self.conversation_id, normalizer_id=normalizer_id
-        )
+            converted_prompts = converter.convert(converted_prompts)
+        return converted_prompts
