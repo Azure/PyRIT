@@ -56,7 +56,7 @@ class TranslationConverter(PromptConverter):
         )
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
-    def convert(self, prompt: str, input_type: PromptDataType) -> str:
+    def convert(self, *, prompt: str, input_type: PromptDataType) -> str:
         """
         Generates variations of the input prompts using the converter target.
         Parameters:
