@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import Prompt, PromptNormalizer
+from pyrit.prompt_normalizer import PromptRequestPiece, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
@@ -79,7 +79,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         for prompt_text in prompts:
             if self._include_original_prompts:
-                original_prompt = Prompt(
+                original_prompt = PromptRequestPiece(
                     prompt_target=self._prompt_target,
                     prompt_converters=[NoOpConverter()],
                     prompt_text=prompt_text,
@@ -88,7 +88,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
                 normalized_prompts.append(original_prompt)
 
-            converted_prompt = Prompt(
+            converted_prompt = PromptRequestPiece(
                 prompt_target=self._prompt_target,
                 prompt_converters=self._prompt_converters,
                 prompt_text=prompt_text,

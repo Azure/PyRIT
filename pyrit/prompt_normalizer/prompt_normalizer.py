@@ -5,7 +5,9 @@ import abc
 import asyncio
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
-from pyrit.prompt_normalizer.prompt_class import Prompt
+from pyrit.memory.memory_models import PromptMemoryEntry
+from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPiece
+from pyrit.prompt_target import PromptTarget
 
 
 class PromptNormalizer(abc.ABC):
@@ -15,13 +17,20 @@ class PromptNormalizer(abc.ABC):
         self._memory = memory
         self.id = str(uuid4())
 
-    def send_prompt(self, prompt: Prompt) -> str:
+    def send_prompt(self, 
+                    request: list[PromptRequestPiece],
+                    target: PromptTarget,
+                    conversation_id: str = None,
+                    sequence: int = -1,
+                    labels = {},
+                    orchestrator: 'Orchestrator' = None,
+                    ) -> list[PromptMemoryEntry]:
         """
         Sends a prompt to the prompt targets.
         """
         return prompt.send_prompt(normalizer_id=self.id)
 
-    async def send_prompt_batch_async(self, prompts: list[Prompt], batch_size: int = 10) -> list[str]:
+    async def send_prompt_batch_async(self, prompts: list[PromptRequestPiece], batch_size: int = 10):
         """
         Sends a batch of prompts to a target
         """
@@ -37,3 +46,14 @@ class PromptNormalizer(abc.ABC):
     def _chunked_prompts(self, prompts, size):
         for i in range(0, len(prompts), size):
             yield prompts[i : i + size]
+
+    def _get_prompt_memorey_entry(
+                    self,
+                    request_piece: PromptRequestPiece,
+                    target: PromptTarget,
+                    conversation_id: str = None,
+                    sequence: int = -1,
+                    labels = {},
+                    orchestrator: 'Orchestrator' = None,
+                    ) -> PromptMemoryEntry:
+        
