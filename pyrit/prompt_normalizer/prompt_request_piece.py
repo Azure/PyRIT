@@ -61,15 +61,13 @@ class Prompt(abc.ABC):
         converted_prompt_text = self._prompt_text
 
         for converter in self._prompt_converters:
-            converted_prompt_text = converter.convert(prompt=converted_prompt_text,
-                                                      input_type="text")
+            converted_prompt_text = converter.convert(prompt=converted_prompt_text, input_type="text")
 
         return self._prompt_target.send_prompt(
-                    normalized_prompt=converted_prompt_text,
-                    conversation_id=self.conversation_id,
-                    normalizer_id=normalizer_id,
-                )
-
+            normalized_prompt=converted_prompt_text,
+            conversation_id=self.conversation_id,
+            normalizer_id=normalizer_id,
+        )
 
     async def send_prompt_async(self, *, normalizer_id: str) -> None:
         """
@@ -80,10 +78,8 @@ class Prompt(abc.ABC):
         converted_prompt_text = self._prompt_text
 
         for converter in self._prompt_converters:
-            converted_prompt_text = converter.convert(prompt=converted_prompt_text,
-                                                      input_type="text")
+            converted_prompt_text = converter.convert(prompt=converted_prompt_text, input_type="text")
 
         await self._prompt_target.send_prompt_async(
-                normalized_prompt=converted_prompt_text,
-                conversation_id=self.conversation_id,
-                normalizer_id=normalizer_id)
+            normalized_prompt=converted_prompt_text, conversation_id=self.conversation_id, normalizer_id=normalizer_id
+        )

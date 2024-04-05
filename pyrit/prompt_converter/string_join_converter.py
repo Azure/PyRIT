@@ -4,6 +4,7 @@
 from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
+
 class StringJoinConverter(PromptConverter):
 
     def __init__(self, *, join_value="-"):
@@ -29,4 +30,3 @@ class StringJoinConverter(PromptConverter):
 
     def is_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
-
