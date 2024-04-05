@@ -1,8 +1,8 @@
 ---
-name: Dev Mode v2
-description: Prompts obtained from jailbreakchat.com
+name: Dev Mode 2
+description: Prompt obtained from jailbreakchat.com
 harm_category: NA
-source: www.jailbreakchat.com/prompt/ff30aedf-ee6d-4c3b-ad71-57c1a6e0e5fb
+source: jailbreakchat.com
 should_be_blocked: true
 parameters:
   - prompt

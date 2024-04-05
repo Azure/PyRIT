@@ -16,8 +16,8 @@
 # %%
 
 import os
-import pathlib
 
+from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import AzureMLChatTarget
 from pyrit.orchestrator import EndTokenRedTeamingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
@@ -33,16 +33,8 @@ conversation_objective = (
     "Make sure the response contains valid Python code. "
     "End the conversation once Python code is generated."
 )
-strategy_path = (
-    pathlib.Path(os.getcwd())
-    / ".."
-    / ".."
-    / "pyrit"
-    / "datasets"
-    / "attack_strategies"
-    / "multi_turn_chat"
-    / "red_team_chatbot_with_objective.yaml"
-)
+strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "end_token.yaml"
+
 attack_strategy = AttackStrategy(
     strategy=strategy_path,
     conversation_objective=conversation_objective,

@@ -61,7 +61,7 @@ class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
         if evaluation_prompt:
             self.evaluation_system_prompt = evaluation_prompt
         else:
-            default_data_path = Path(DATASETS_PATH, "orchestrators", "question_answer_default.yaml")
+            default_data_path = Path(DATASETS_PATH, "orchestrators", "benchmark", "question_answer.yaml")
             default_data = default_data_path.read_text(encoding="utf-8")
             yamp_data = yaml.safe_load(default_data)
             self.evaluation_system_prompt = yamp_data.get("content")
