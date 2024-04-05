@@ -21,7 +21,7 @@ def mock_target() -> MockPromptTarget:
 def test_send_prompt_no_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
-    orchestrator.send_prompts(["Hello"])
+    orchestrator.send_text_prompts(["Hello"])
     assert mock_target.prompt_sent == ["Hello"]
 
 
@@ -36,7 +36,7 @@ async def test_send_prompts_async_no_converter(mock_target: MockPromptTarget):
 def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
-    orchestrator.send_prompts(["Hello", "my", "name"])
+    orchestrator.send_text_prompts(["Hello", "my", "name"])
     assert mock_target.prompt_sent == ["Hello", "my", "name"]
 
 
@@ -52,7 +52,7 @@ def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
     converter = Base64Converter()
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converters=[converter])
 
-    orchestrator.send_prompts(["Hello"])
+    orchestrator.send_text_prompts(["Hello"])
     assert mock_target.prompt_sent == ["SGVsbG8="]
 
 
@@ -65,7 +65,7 @@ def test_send_prompts_multiple_converters(mock_target: MockPromptTarget):
 
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converters=converters)
 
-    orchestrator.send_prompts(["Hello"])
+    orchestrator.send_text_prompts(["Hello"])
     assert mock_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
 
@@ -80,7 +80,7 @@ def test_send_prompts_multiple_converters_include_original(mock_target: MockProm
         prompt_target=mock_target, prompt_converters=converters, include_original_prompts=True
     )
 
-    orchestrator.send_prompts(["Hello"])
+    orchestrator.send_text_prompts(["Hello"])
     assert mock_target.prompt_sent == ["Hello", "S_G_V_s_b_G_8_="]
 
 

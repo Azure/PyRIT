@@ -7,8 +7,10 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
+from pyrit.memory.memory_models import PromptDataType
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
@@ -27,7 +29,6 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: MemoryInterface = None,
         batch_size: int = 10,
-        include_original_prompts: bool = False,
         verbose: bool = False,
     ) -> None:
         """
@@ -38,9 +39,6 @@ class PromptSendingOrchestrator(Orchestrator):
                                     converter2.
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
-            include_original_prompts (bool, optional): Whether to include original prompts to send to the target
-                                    before converting. This does not include intermediate steps from converters.
-                                    Defaults to False.
         """
         super().__init__(prompt_converters=prompt_converters, memory=memory, verbose=verbose)
 
@@ -48,20 +46,26 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
-        self._include_original_prompts = include_original_prompts
 
-        self.batch_size = batch_size
+        self._batch_size = batch_size
 
-    def send_prompts(self, prompts: list[str]):
+    def send_text_prompts(self, prompts: list[str]):
         """
-        Sends the prompt to the prompt target.
+        Sends the strings to the prompt target
         """
+
         responses = []
 
-        normalized_prompts = self._coalesce_prompts(prompts)
-
-        for prompt in normalized_prompts:
-            responses.append(self._prompt_normalizer.send_prompt(prompt=prompt))
+        for prompt in prompts:
+            request = self._create_prompt_request(prompt, "text")
+            response = self._prompt_normalizer.send_prompt(
+                request=request,
+                target=self._prompt_target,
+                labels=self._global_memory_labels,
+                orchestrator=self,
+                verbose=self._verbose)
+            
+            responses.append(response)
 
         return responses
 
@@ -70,40 +74,28 @@ class PromptSendingOrchestrator(Orchestrator):
         Sends the prompt to the prompt target.
         """
 
-        normalized_prompts = self._coalesce_prompts(prompts)
+        requests = []
+        for prompt in prompts:
+            requests.append(self._create_prompt_request(prompt, "text"))
 
-        await self._prompt_normalizer.send_prompt_batch_async(normalized_prompts, batch_size=self.batch_size)
+        await self._prompt_normalizer.send_prompt_batch_to_target_async(
+            requests=requests,
+            target=self._prompt_target,
+            labels=self._global_memory_labels,
+            orchestrator=self,
+            verbose=self._verbose,
+            batch_size=self._batch_size)
 
-    def _coalesce_prompts(self, prompts):
-        normalized_prompts = []
+    def _create_prompt_request(self, text: str, prompt_type: PromptDataType):
 
-        for prompt_text in prompts:
-            if self._include_original_prompts:
-                original_prompt = PromptRequestPiece(
-                    prompt_target=self._prompt_target,
-                    prompt_converters=[NoOpConverter()],
-                    prompt_text=prompt_text,
-                    conversation_id=str(uuid4()),
-                )
-
-                normalized_prompts.append(original_prompt)
-
-            converted_prompt = PromptRequestPiece(
-                prompt_target=self._prompt_target,
-                prompt_converters=self._prompt_converters,
-                prompt_text=prompt_text,
-                conversation_id=str(uuid4()),
+        request_piece = PromptRequestPiece(
+            prompt_converters=self._prompt_converters,
+            prompt_text=text,
+            prompt_data_type=prompt_type,
             )
-            normalized_prompts.append(converted_prompt)
-
-        logger.info(
-            f"Sending {len(normalized_prompts)} prompts to the prompt target.",
-        )
-
-        for normalized_prompt in normalized_prompts:
-            logger.info(f"Prompt: {normalized_prompt}")
-
-        return normalized_prompts
+        
+        request = PromptRequestPieces([request_piece])
+        return request
 
     def get_memory(self):
         """

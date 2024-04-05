@@ -130,6 +130,18 @@ class PromptMemoryEntry(Base):  # type: ignore
     def __str__(self):
         return f"{self.role}: {self.converted_prompt_text}"
 
+class PromptRequestResponse:
+    def __init__(self):
+        pass
+
+    def __init__(self, request_pieces: list[PromptMemoryEntry]):
+        self.request_pieces = request_pieces
+
+    def __str__(self):
+        ret = ""
+        for request_piece in self.request_pieces:
+            ret += str(request_piece) + "\n"
+        return ret
 
 
 class EmbeddingData(Base):  # type: ignore

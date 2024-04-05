@@ -5,8 +5,8 @@ import abc
 import asyncio
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptMemoryEntry
-from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPiece, PromptRequestResponse
+from pyrit.memory.memory_models import PromptMemoryEntry, PromptRequestResponse
+from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPiece, PromptRequestPieces
 from pyrit.prompt_target import PromptTarget
 
 
@@ -18,14 +18,14 @@ class PromptNormalizer(abc.ABC):
         self.id = str(uuid4())
 
     def send_prompt(self, 
-                    request: PromptRequestResponse,
+                    request: PromptRequestPieces,
                     target: PromptTarget,
                     conversation_id: str = None,
                     sequence: int = -1,
                     labels = {},
                     orchestrator: 'Orchestrator' = None,
                     verbose: bool = False
-                    ) -> PromptRequestResponse:
+                    ) -> PromptRequestPieces:
         """
         Sends a single request to a target
         """
@@ -41,14 +41,14 @@ class PromptNormalizer(abc.ABC):
         return target.send_prompt(request)
     
     async def send_prompt_async(self, 
-                        request: PromptRequestResponse,
+                        request: PromptRequestPieces,
                         target: PromptTarget,
                         conversation_id: str = None,
                         sequence: int = -1,
                         labels = {},
                         orchestrator: 'Orchestrator' = None,
                         verbose: bool = False
-                        ) -> list[PromptMemoryEntry]:
+                        ) -> PromptRequestPieces:
         """
         Sends a single request to a target
         """
@@ -64,31 +64,8 @@ class PromptNormalizer(abc.ABC):
         response = await target.send_prompt_async(request)
         return response
 
-
-    async def send_prompt_batch_async(self,
-                                      request: PromptRequestResponse,
-                                      target: PromptTarget,
-                                      conversation_id: str = None,
-                                      sequence: int = -1,
-                                      labels = {},
-                                      orchestrator: 'Orchestrator' = None,
-                                      verbose: bool = False,
-                                      batch_size: int = 10):
-        """
-        Sends a batch of prompts to a target
-        """
-        entries = self._get_prompt_memorey_entries(request=request,
-                                                   target=target,
-                                                   conversation_id=conversation_id,
-                                                   sequence=sequence,
-                                                   labels=labels,
-                                                   orchestrator=orchestrator,
-                                                   verbose=verbose)
-
-        return target.send_prompt(entries)
-
     async def send_prompt_batch_to_target_async(self,
-                                      requests: list[PromptRequestResponse],
+                                      requests: list[PromptRequestPieces],
                                       target: PromptTarget,
                                       labels = {},
                                       orchestrator: 'Orchestrator' = None,
@@ -119,13 +96,13 @@ class PromptNormalizer(abc.ABC):
 
     def _get_prompt_memorey_entries(
                     self,
-                    request: PromptRequestResponse,
+                    request: PromptRequestPieces,
                     target: PromptTarget,
                     conversation_id: str = None,
                     sequence: int = -1,
                     labels = {},
                     orchestrator: 'Orchestrator' = None,
-                    ) -> PromptMemoryEntry:
+                    ) -> PromptRequestResponse:
         
         entries = []
 
@@ -153,5 +130,5 @@ class PromptNormalizer(abc.ABC):
                 )
             )
 
-        return entries
+        return PromptRequestResponse(entries=entries)
 

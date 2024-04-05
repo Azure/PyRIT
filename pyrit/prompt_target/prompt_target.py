@@ -5,7 +5,8 @@ import abc
 import json
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestResponse
+from pyrit.memory.memory_models import PromptRequestResponse
+from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
 
 
 class PromptTarget(abc.ABC):

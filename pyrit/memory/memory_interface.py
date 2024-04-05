@@ -72,7 +72,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def insert_prompt_entries(self, *, entries: list[EmbeddingData]) -> None:
+    def insert_prompt_entries(self, *, entries: list[PromptMemoryEntry]) -> None:
         """
         Inserts a list of entries into the memory storage.
 

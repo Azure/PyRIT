@@ -7,7 +7,9 @@ import sys
 from typing import IO
 
 from pyrit.memory import MemoryInterface
+from pyrit.memory.memory_models import PromptRequestResponse
 from pyrit.models import ChatMessage
+from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
 from pyrit.prompt_target import PromptTarget
 
 
@@ -25,19 +27,29 @@ class TextTarget(PromptTarget):
         self.stream_name = text_stream.name
         self._text_stream = text_stream
 
-    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
-        msg = ChatMessage(role="user", content=normalized_prompt)
-        self._text_stream.write(f"{str(msg)}\n")
+    def send_prompt(
+        self,
+        *,
+        prompt_request: PromptRequestResponse,
+        verbose: bool = False
+    ) -> PromptRequestPieces:
+        
+        self._text_stream.write(f"{str(prompt_request)}\n")
+        self._memory.insert_prompt_entries(entries=prompt_request.request_pieces)
 
-        self._memory.add_chat_message_to_memory(
-            conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
-        )
+        return None
+    
 
-        return str(msg)
-
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(
+        self,
+        *,
+        prompt_request: PromptRequestResponse,
+        verbose: bool = False
+    ) -> PromptRequestPieces:
+        
         await asyncio.sleep(0)
 
         return self.send_prompt(
-            normalized_prompt=normalized_prompt, conversation_id=conversation_id, normalizer_id=normalizer_id
+            prompt_request=prompt_request,
+            verbose=verbose
         )
