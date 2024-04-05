@@ -13,6 +13,8 @@ from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
+from pyrit.models import ChatMessageRole
+
 
 Base = declarative_base()
 
@@ -80,7 +82,7 @@ class PromptMemoryEntry(Base):  # type: ignore
     def __init__(
         self,
         *,
-        role: str,
+        role: ChatMessageRole,
         original_prompt_text: str,
         converted_prompt_text: str,
         id: uuid.UUID = None,
@@ -127,6 +129,7 @@ class PromptMemoryEntry(Base):  # type: ignore
 
     def __str__(self):
         return f"{self.role}: {self.converted_prompt_text}"
+
 
 
 class EmbeddingData(Base):  # type: ignore

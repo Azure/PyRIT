@@ -5,7 +5,7 @@ import abc
 import json
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.memory.memory_models import PromptMemoryEntry
+from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestResponse
 
 
 class PromptTarget(abc.ABC):
@@ -24,8 +24,9 @@ class PromptTarget(abc.ABC):
     def send_prompt(
         self,
         *,
-        prompt_request_pieces: list[PromptMemoryEntry]
-    ) -> list[PromptMemoryEntry]:
+        prompt_request: PromptRequestResponse,
+        verbose: bool = False
+    ) -> PromptRequestResponse:
         """
         Sends a normalized prompt to the prompt target. and adds 
         """
@@ -34,8 +35,9 @@ class PromptTarget(abc.ABC):
     async def send_prompt_async(
         self,
         *,
-        prompt_request_pieces: list[PromptMemoryEntry]
-    ) -> list[PromptMemoryEntry]:
+        prompt_request: PromptRequestResponse,
+        verbose: bool = False
+    ) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.
         """
