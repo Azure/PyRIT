@@ -4,11 +4,10 @@
 import pathlib
 import pytest
 
-from typing import Generator, Union
+from typing import Dict, Generator, List, Union
 from unittest.mock import Mock, patch
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator
 from pyrit.orchestrator.end_token_red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
@@ -57,18 +56,7 @@ def _check_orchestrator_memory_if_no_original_prompt(memory, num_turns: int):
     expected_num_memories = (4 * num_turns) + 1
 
     assert len(conversations) == expected_num_memories
-
-    grouped_conversations = {}
-    for obj in conversations:
-        key = obj.conversation_id
-        if key in grouped_conversations:
-            grouped_conversations[key].append(obj)
-        else:
-            grouped_conversations[key] = [obj]
-
-    assert (
-        len(grouped_conversations.keys()) == 2
-    ), "There should be two conversation threads, one with target and one with rt target"
+    _check_two_conversation_ids(conversations)
 
 
 def _check_orchestrator_memory_if_original_prompt(memory, num_turns: int):
@@ -84,18 +72,21 @@ def _check_orchestrator_memory_if_original_prompt(memory, num_turns: int):
         expected_num_memories = (4 * num_turns) - 1
 
         assert len(conversations) == expected_num_memories
+        _check_two_conversation_ids(conversations)
 
-        grouped_conversations = {}
-        for obj in conversations:
-            key = obj.conversation_id
-            if key in grouped_conversations:
-                grouped_conversations[key].append(obj)
-            else:
-                grouped_conversations[key] = [obj]
 
-        assert (
-            len(grouped_conversations.keys()) == 2
-        ), "There should be two conversation threads, one with target and one with rt target"
+def _check_two_conversation_ids(conversations):
+    grouped_conversations: Dict[str, List[str]] = {}
+    for obj in conversations:
+        key = obj.conversation_id
+        if key in grouped_conversations:
+            grouped_conversations[key].append(obj)
+        else:
+            grouped_conversations[key] = [obj]
+
+    assert (
+        len(grouped_conversations.keys()) == 2
+    ), "There should be two conversation threads, one with target and one with rt target"
 
 
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
