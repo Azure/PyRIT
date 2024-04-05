@@ -19,7 +19,6 @@ from pyrit.common.path import DATASETS_PATH
 from tests.mocks import get_memory_interface
 
 
-
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
@@ -47,6 +46,7 @@ def simple_attack_strategy() -> AttackStrategy:
         conversation_objective="Do bad stuff",
     )
 
+
 def _check_orchestrator_memory_if_no_original_prompt(memory, num_turns: int):
 
     conversations = memory.get_all_prompt_entries()
@@ -63,8 +63,10 @@ def _check_orchestrator_memory_if_no_original_prompt(memory, num_turns: int):
         else:
             grouped_conversations[key] = [obj]
 
-    assert len(grouped_conversations.keys()) == 2, \
-        "There should be two conversation threads, one with target and one with rt target"
+    assert (
+        len(grouped_conversations.keys()) == 2
+    ), "There should be two conversation threads, one with target and one with rt target"
+
 
 def _check_orchestrator_memory_if_original_prompt(memory, num_turns: int):
 
@@ -88,8 +90,9 @@ def _check_orchestrator_memory_if_original_prompt(memory, num_turns: int):
             else:
                 grouped_conversations[key] = [obj]
 
-        assert len(grouped_conversations.keys()) == 2, \
-            "There should be two conversation threads, one with target and one with rt target"
+        assert (
+            len(grouped_conversations.keys()) == 2
+        ), "There should be two conversation threads, one with target and one with rt target"
 
 
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
@@ -126,7 +129,7 @@ def test_send_prompt_twice(
             assert target_response == expected_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
-            
+
             mock_rt.assert_called_once()
             mock_target.assert_called_once()
 
@@ -179,7 +182,7 @@ def test_send_fixed_prompt_then_generated_prompt(
 
             expected_generated_red_teaming_response = "red teaming chat response"
             expected_target_response = "second chat response"
-            
+
             mock_rt.return_value = expected_generated_red_teaming_response
             mock_target.return_value = expected_target_response
 
@@ -187,7 +190,6 @@ def test_send_fixed_prompt_then_generated_prompt(
             assert target_response == expected_target_response
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
-
 
 
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])

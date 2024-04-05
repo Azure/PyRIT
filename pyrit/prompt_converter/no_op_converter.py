@@ -4,6 +4,7 @@
 from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
+
 class NoOpConverter(PromptConverter):
     def convert(self, *, prompt: str, input_type: PromptDataType) -> str:
         """
