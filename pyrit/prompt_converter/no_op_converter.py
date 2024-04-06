@@ -1,15 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
 
 class NoOpConverter(PromptConverter):
-    def convert(self, prompts: list[str]) -> list[str]:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
         """
         By default, the base converter class does nothing to the prompt.
         """
-        return prompts
+        return prompt
 
-    def is_one_to_one_converter(self) -> bool:
+    def is_supported(self, input_type: PromptDataType) -> bool:
         return True

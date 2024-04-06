@@ -3,6 +3,7 @@
 
 import pytest
 
+from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_converter import PromptConverter
@@ -15,11 +16,11 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, prompts: list[str]) -> list[str]:
-        return prompts
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
+        return prompt
 
-    def is_one_to_one_converter(self) -> bool:
-        return True
+    def is_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
 
 
 def test_prompt_init_valid_arguments():

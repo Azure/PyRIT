@@ -3,15 +3,19 @@
 
 import codecs
 
+from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
 
 class ROT13Converter(PromptConverter):
-    def convert(self, prompts: list[str]) -> list[str]:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
         """
         Simple converter that just ROT13 encodes the prompts
         """
-        return [codecs.encode(prompt, "rot13") for prompt in prompts]
+        if not self.is_supported(input_type):
+            raise ValueError("Input type not supported")
 
-    def is_one_to_one_converter(self) -> bool:
-        return True
+        return codecs.encode(prompt, "rot13")
+
+    def is_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"

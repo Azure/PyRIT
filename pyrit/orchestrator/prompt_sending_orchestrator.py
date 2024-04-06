@@ -52,10 +52,6 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self.batch_size = batch_size
 
-    @property
-    def requires_one_to_one_converters(self) -> bool:
-        return False
-
     def send_prompts(self, prompts: list[str]):
         """
         Sends the prompt to the prompt target.

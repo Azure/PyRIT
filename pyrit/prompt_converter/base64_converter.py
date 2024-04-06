@@ -3,22 +3,21 @@
 
 import base64
 
+from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
 
 class Base64Converter(PromptConverter):
-    def convert(self, prompts: list[str]) -> list[str]:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
         """
         Simple converter that just base64 encodes the prompt
         """
-        ret_list = []
+        if not self.is_supported(input_type):
+            raise ValueError("Input type not supported")
 
-        for prompt in prompts:
-            string_bytes = prompt.encode("utf-8")
-            encoded_bytes = base64.b64encode(string_bytes)
-            ret_list.append(encoded_bytes.decode("utf-8"))
+        string_bytes = prompt.encode("utf-8")
+        encoded_bytes = base64.b64encode(string_bytes)
+        return encoded_bytes.decode("utf-8")
 
-        return ret_list
-
-    def is_one_to_one_converter(self) -> bool:
-        return True
+    def is_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
