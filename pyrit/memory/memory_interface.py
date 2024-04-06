@@ -5,7 +5,7 @@ import abc
 from pathlib import Path
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
+from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData, PromptRequestResponse
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
@@ -100,6 +100,35 @@ class MemoryInterface(abc.ABC):
         """
         memory_entries = self.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
+
+    def add_response_entries_to_memory(
+            self,
+            *,
+            request: PromptMemoryEntry,
+            response_text_pieces: list[str],
+            response_type: PromptDataType = "text",
+            metadata: str = None
+    ) -> PromptRequestResponse:
+        
+        entries = []
+
+        for resp_text in response_text_pieces:
+            entries.append(PromptMemoryEntry(
+                role="assistant",
+                original_prompt_text=resp_text,
+                converted_prompt_text=resp_text,
+                conversation_id=request.conversation_id,
+                sequence=request.sequence + 1,
+                labels=request.labels,
+                prompt_target=request.prompt_target,
+                orchestrator=request.orchestrator,
+                original_prompt_data_type=response_type,
+                converted_prompt_data_type=response_type,
+                metadata=metadata
+            ))
+
+        self.insert_prompt_entries(entries)
+        return PromptRequestResponse(entries)
 
     def add_chat_message_to_memory(
         self,

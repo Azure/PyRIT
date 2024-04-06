@@ -8,7 +8,6 @@ from typing import IO
 
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import PromptRequestResponse
-from pyrit.models import ChatMessage
 from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
 from pyrit.prompt_target import PromptTarget
 
@@ -31,8 +30,7 @@ class TextTarget(PromptTarget):
         self,
         *,
         prompt_request: PromptRequestResponse,
-        verbose: bool = False
-    ) -> PromptRequestPieces:
+    ) -> PromptRequestResponse:
         
         self._text_stream.write(f"{str(prompt_request)}\n")
         self._memory.insert_prompt_entries(entries=prompt_request.request_pieces)
@@ -45,7 +43,7 @@ class TextTarget(PromptTarget):
         *,
         prompt_request: PromptRequestResponse,
         verbose: bool = False
-    ) -> PromptRequestPieces:
+    ) -> PromptRequestResponse:
         
         await asyncio.sleep(0)
 

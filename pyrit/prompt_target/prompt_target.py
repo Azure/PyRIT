@@ -3,11 +3,10 @@
 
 import abc
 import json
+import logging
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.memory.memory_models import PromptRequestResponse
-from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
-
 
 class PromptTarget(abc.ABC):
     _memory: MemoryInterface
@@ -18,26 +17,25 @@ class PromptTarget(abc.ABC):
     """
     supported_converters: list
 
-    def __init__(self, memory: MemoryInterface) -> None:
+    def __init__(self, memory: MemoryInterface, verbose: bool = False) -> None:
         self._memory = memory if memory else DuckDBMemory()
+
 
     @abc.abstractmethod
     def send_prompt(
         self,
         *,
-        prompt_request: PromptRequestResponse,
-        verbose: bool = False
+        prompt_request: PromptRequestResponse
     ) -> PromptRequestResponse:
         """
-        Sends a normalized prompt to the prompt target. and adds 
+        Sends a normalized prompt to the prompt target and adds the request and response to memory
         """
 
     @abc.abstractmethod
     async def send_prompt_async(
         self,
         *,
-        prompt_request: PromptRequestResponse,
-        verbose: bool = False
+        prompt_request: PromptRequestResponse
     ) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.

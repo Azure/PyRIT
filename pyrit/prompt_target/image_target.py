@@ -5,11 +5,13 @@ import logging
 import os
 import pathlib
 from enum import Enum
+import uuid
 
 import requests
 from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
+from pyrit.memory.memory_models import PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 
@@ -107,8 +109,10 @@ class ImageTarget(PromptTarget):
         return str(image_path)
 
     def send_prompt(
-        self, normalized_prompt: str, conversation_id: str | None = None, normalizer_id: str | None = None
-    ) -> str:
+        self,
+        *,
+        prompt_request: PromptRequestResponse,
+    ) -> PromptRequestResponse:
         """
         Sends prompt to image target and returns response
         Args:
@@ -118,8 +122,11 @@ class ImageTarget(PromptTarget):
         Returns: response from target model in a JSON format
         """
 
-        output_filename = f"{conversation_id}_{normalizer_id}.png"
-        resp = self._generate_images(prompt=normalized_prompt)
+        output_filename = f"{uuid.uuid4()}.png"
+
+        self._memory.insert_prompt_entries(entries=prompt_request.request_pieces)
+
+        resp = self._generate_images(prompt=prompt_request.request_pieces[0].converted_prompt_text)
 
         if "error" not in resp.keys():
             if self.response_format == "url":
@@ -150,6 +157,9 @@ class ImageTarget(PromptTarget):
 
         output_filename = f"{conversation_id}.png"
         resp = await self._generate_images_async(prompt=normalized_prompt)
+
+        # TODO add response to memory
+
         if "error" not in resp:
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
@@ -169,7 +179,7 @@ class ImageTarget(PromptTarget):
 
     async def _generate_images_async(self, prompt: str) -> dict:
         try:
-            response = self.image_target._client.images.generate(
+            response = await self.image_target._async_client.images.generate(
                 model=self.deployment_name,
                 prompt=prompt,
                 n=self.n,
