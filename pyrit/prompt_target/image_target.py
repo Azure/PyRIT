@@ -121,31 +121,23 @@ class ImageTarget(PromptTarget):
             normalizer_id (str): the ID provided by the prompt normalizer
         Returns: response from target model in a JSON format
         """
+        # TODO Validate
+
+        request = prompt_request.request_pieces[0]
 
         output_filename = f"{uuid.uuid4()}.png"
 
-        self._memory.insert_prompt_entries(entries=prompt_request.request_pieces)
+        self._memory.insert_prompt_entries(entries=request)
 
-        resp = self._generate_images(prompt=prompt_request.request_pieces[0].converted_prompt_text)
+        resp = self._generate_images(prompt=request.converted_prompt_text)
 
-        if "error" not in resp.keys():
-            if self.response_format == "url":
-                image_url = resp["data"][0]["url"]  # extract image URL from response
-                image_location = self.download_image(image_url=image_url, output_filename=output_filename)
-                resp["image_file_location"] = image_location  # append where stored image locally to response
-            return json.dumps(resp)
-        else:
-            if resp["exception type"] == "Blocked":
-                logger.error(f"Content Blocked\n{resp['error']}")
-                return ""
-            elif resp["exception type"] == "JSON Error":
-                logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
-                raise
-            else:
-                logger.error(f"Error in calling deployment {self.deployment_name}\n{resp['error']}")
-                raise
+        return self._parse_response_and_add_to_memory(resp=resp, output_filename=output_filename, prompt_request=request)
 
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(        
+        self,
+        *,
+        prompt_request: PromptRequestResponse,
+    ) -> PromptRequestResponse:
         """
         (Async) Sends prompt to image target and returns response
         Args:
@@ -155,21 +147,50 @@ class ImageTarget(PromptTarget):
         Returns: response from target model in a JSON format
         """
 
-        output_filename = f"{conversation_id}.png"
-        resp = await self._generate_images_async(prompt=normalized_prompt)
+        # TODO Validate
+
+        request = prompt_request.request_pieces[0]
+
+        output_filename = f"{uuid.uuid4()}.png"
+
+        self._memory.insert_prompt_entries(entries=request)
+
+        resp = self._generate_images_async(prompt=request.converted_prompt_text)
+
 
         # TODO add response to memory
+        return self._parse_response_and_add_to_memory(resp=resp, output_filename=output_filename, prompt_request=request)
 
-        if "error" not in resp:
+
+    def _parse_response_and_add_to_memory(
+                                          self,
+                                          resp: dict,
+                                          output_filename:str,
+                                          prompt_request: PromptRequestResponse
+                                         ) -> PromptRequestResponse:
+        if "error" not in resp.keys():
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
-                resp["image_file_location"] = image_location  # append where stored image locally to response
-            return json.dumps(resp)
+
+                return self._memory.add_response_entries_to_memory(
+                    request=prompt_request,
+                    response_text_pieces=[image_location],
+                    response_type = "image",
+                    metadata=json.dumps(resp)
+                )
+
         else:
             if resp["exception type"] == "Blocked":
-                logger.error(f"Content Blocked\n{resp['error']}")
-                return ""
+
+                return self._memory.add_response_entries_to_memory(
+                    request=prompt_request,
+                    response_text_pieces=[],
+                    response_type = "image",
+                    metadata=json.dumps(resp),
+                    error="blocked"
+                )
+
             elif resp["exception type"] == "JSON Error":
                 logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
                 raise

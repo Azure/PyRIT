@@ -178,10 +178,8 @@ class AzureBlobStorageTarget(PromptTarget):
     async def send_prompt_async(
         self,
         *,
-        normalized_prompt: str,
-        conversation_id: str,
-        normalizer_id: str,
-    ) -> str:
+        prompt_request: PromptRequestResponse
+    ) -> PromptRequestResponse:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
@@ -195,16 +193,19 @@ class AzureBlobStorageTarget(PromptTarget):
             blob_url (str): The Blob URL of the created blob within the provided storage container.
         """
 
-        file_name = f"{conversation_id}.txt"
-        data = str.encode(normalized_prompt)
+        # TODO Validate
+
+        request = prompt_request.request_pieces[0]
+
+        file_name = f"{request.conversation_id}.txt"
+        data = str.encode(request.converted_prompt_text)
         blob_url = self._container_url + "/" + file_name
 
         await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        self._memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="user", content=normalized_prompt),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
+        response_entry = self._memory.add_response_entries_to_memory(
+            request=prompt_request,
+            response_text_pieces=[blob_url]
         )
 
-        return blob_url
+        return response_entry

@@ -21,6 +21,15 @@ Base = declarative_base()
 
 PromptDataType = Literal["text", "image_url"]
 
+"""
+The type of the error in the prompt response
+blocked: blocked by an external filter e.g. Azure Filters
+model: the model refused to answer or request e.g. "I'm sorry..."
+processing: there is an exception thrown unrelated to the query
+unknown: the type of error is unknown
+"""
+PromptResponseError = Literal["none", "blocked", "model", "processing", "unknown"]
+
 
 class PromptMemoryEntry(Base):  # type: ignore
     """
@@ -96,7 +105,7 @@ class PromptMemoryEntry(Base):  # type: ignore
         orchestrator: "Orchestrator" = None,  # type: ignore # noqa
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
-        is_error: bool = False
+        error_type: bool = False
     ):
 
         self.id = id if id else uuid4()  # type: ignore

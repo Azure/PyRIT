@@ -5,7 +5,7 @@ import abc
 from pathlib import Path
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData, PromptRequestResponse
+from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData, PromptRequestResponse, PromptResponseError
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
@@ -107,7 +107,8 @@ class MemoryInterface(abc.ABC):
             request: PromptMemoryEntry,
             response_text_pieces: list[str],
             response_type: PromptDataType = "text",
-            metadata: str = None
+            metadata: str = None,
+            error: PromptResponseError = "none"
     ) -> PromptRequestResponse:
         
         entries = []
