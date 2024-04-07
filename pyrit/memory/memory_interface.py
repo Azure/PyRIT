@@ -4,13 +4,13 @@
 import abc
 from pathlib import Path
 
-from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData, PromptRequestResponse, PromptResponseError
+
+from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
-from pyrit.orchestrator import Orchestrator
 
 
 class MemoryInterface(abc.ABC):
@@ -61,7 +61,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_prompt_entries_by_orchestrator(self, *, orchestrator: Orchestrator) -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(self, *, orchestrator: 'Orchestrator') -> list[PromptMemoryEntry]:
         """
         Retrieves a list of PromptMemoryEntries based on a specific orchestrator object.
 

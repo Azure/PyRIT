@@ -6,7 +6,7 @@ import asyncio
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry, PromptRequestResponse
-from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPiece, PromptRequestPieces
+from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
 from pyrit.prompt_target import PromptTarget
 
 
@@ -35,8 +35,7 @@ class PromptNormalizer(abc.ABC):
                                                    conversation_id=conversation_id,
                                                    sequence=sequence,
                                                    labels=labels,
-                                                   orchestrator=orchestrator,
-                                                   verbose=verbose)
+                                                   orchestrator=orchestrator)
 
         return target.send_prompt(request)
     
