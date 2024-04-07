@@ -10,6 +10,7 @@ from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
+from pyrit.orchestrator import Orchestrator
 
 
 class MemoryInterface(abc.ABC):
@@ -60,15 +61,15 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_prompt_entries_with_normalizer_id(self, *, normalizer_id: str) -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(self, *, orchestrator: Orchestrator) -> list[PromptMemoryEntry]:
         """
-        Retrieves a list of ConversationData objects that have the specified normalizer ID.
+        Retrieves a list of PromptMemoryEntries based on a specific orchestrator object.
 
         Args:
-            normalizer_id (str): The normalizer ID to match.
+            orchestrator (Orchestrator): The orchestrator object to match
 
         Returns:
-            list[ConversationData]: A list of chat memory entries with the specified normalizer ID.
+            list[PromptMemoryEntry]: A list of PromptMemoryEntry with the specified orchestrator.
         """
 
     @abc.abstractmethod
@@ -125,74 +126,13 @@ class MemoryInterface(abc.ABC):
                 orchestrator=request.orchestrator,
                 original_prompt_data_type=response_type,
                 converted_prompt_data_type=response_type,
-                metadata=metadata
+                metadata=metadata,
+                error_type=error
             ))
 
         self.insert_prompt_entries(entries)
         return PromptRequestResponse(entries)
 
-    def add_chat_message_to_memory(
-        self,
-        conversation: ChatMessage,
-        conversation_id: str,
-        normalizer_id: str = None,
-        labels: dict[str, str] = {},
-    ):
-        """
-        Deprecated. Will be refactored and removed soon. It currently works incorrectly.
-        but is included so functionality is maintained.
-
-        Adds a single chat conversation entry to the ConversationStore table.
-        If embddings are set, add corresponding embedding entry to the EmbeddingStore table.
-
-        Args:
-            conversation (ChatMessage): The chat message to be added.
-            conversation_id (str): The conversation ID.
-            normalizer_id (str): The normalizer ID,
-            labels (list[str]): A list of labels to be added to the memory entry.
-        """
-
-        self.add_chat_messages_to_memory(
-            conversations=[conversation], conversation_id=conversation_id, normalizer_id=normalizer_id, labels=labels
-        )
-
-    def add_chat_messages_to_memory(
-        self,
-        *,
-        conversations: list[ChatMessage],
-        conversation_id: str,
-        normalizer_id: str = None,
-        labels: dict[str, str] = {},
-    ):
-        """
-        Deprecated. Will be refactored and removed soon. It currently works incorrectly.
-        but is included so functionality is maintained.
-
-        Adds multiple chat conversation entries to the ConversationStore table.
-        If embddings are set, add corresponding embedding entries to the EmbeddingStore table.
-
-        Args:
-            conversations (ChatMessage): The chat message to be added.
-            conversation_id (str): The conversation ID.
-            normalizer_id (str): The normalizer ID
-            labels (list[str]): A list of labels to be added to the memory entry.
-        """
-        entries_to_add = []
-
-        for conversation in conversations:
-            entry = PromptMemoryEntry(
-                role=conversation.role,
-                conversation_id=conversation_id,
-                original_prompt_text=conversation.content,
-                converted_prompt_text=conversation.content,
-                labels=labels,
-            )
-
-            entry.labels["normalizer_id"] = normalizer_id
-
-            entries_to_add.append(entry)
-
-        self.insert_prompt_entries(entries=entries_to_add)
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
         """

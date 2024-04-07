@@ -26,6 +26,8 @@ class Orchestrator(abc.ABC):
         memory_labels: dict[str, str] = {},
         verbose: bool = False,
     ):
+        self.id = uuid4.uuid4()
+
         self._prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
         self._memory = memory or DuckDBMemory()
         self._verbose = verbose
@@ -56,5 +58,5 @@ class Orchestrator(abc.ABC):
         s = {}
         s["__type__"] = self.__class__.__name__
         s["__module__"] = self.__class__.__module__
-        s["id"] = str(uuid4())
+        s["id"] = str(self.id)
         return json.dumps(s)
