@@ -127,7 +127,7 @@ class MemoryInterface(abc.ABC):
                 original_prompt_data_type=response_type,
                 converted_prompt_data_type=response_type,
                 metadata=metadata,
-                error_type=error
+                response_error=error
             ))
 
         self.insert_prompt_entries(entries)

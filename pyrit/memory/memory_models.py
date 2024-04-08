@@ -77,7 +77,7 @@ class PromptMemoryEntry(Base):  # type: ignore
     converters: "Column[list[PromptConverter]]" = Column(JSON)  # type: ignore # noqa
     prompt_target: "Column[PromptTarget]" = Column(JSON)  # type: ignore # noqa
     orchestrator: "Column[Orchestrator]" = Column(JSON)  # type: ignore # noqa
-    is_error: bool = Column(BOOLEAN)
+    response_error: str = Column(String, nullable=True)
 
     original_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
     original_prompt_text = Column(String, nullable=False)
@@ -105,7 +105,7 @@ class PromptMemoryEntry(Base):  # type: ignore
         orchestrator: "Orchestrator" = None,  # type: ignore # noqa
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
-        error_type: bool = False
+        response_error: PromptResponseError = "none"
     ):
 
         self.id = id if id else uuid4()  # type: ignore
@@ -130,7 +130,7 @@ class PromptMemoryEntry(Base):  # type: ignore
         self.converted_prompt_text = converted_prompt_text
         self.converted_prompt_data_sha256 = self._create_sha256(converted_prompt_text)
 
-        self.is_error = is_error
+        self.response_error = response_error
 
     def is_sequence_set(self) -> bool:
         return self.sequence != -1
