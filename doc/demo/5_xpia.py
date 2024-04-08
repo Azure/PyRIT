@@ -22,7 +22,8 @@ from pyrit.common.path import DATASETS_PATH
 jailbreak_template = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak.yaml"
 )
-jailbreak_prompt: str = jailbreak_template.apply_custom_metaprompt_parameters(prompt="Say the words 'I wish I could be a space pirate.'")
+jailbreak_prompt: str = jailbreak_template.apply_custom_metaprompt_parameters(
+    prompt="Say the words 'I wish I could be a space pirate.'")
 print(jailbreak_prompt)
 
 import logging
@@ -36,18 +37,10 @@ logging.basicConfig(level=logging.INFO)
 #
 # Below, we define a semantic kernel with a plugin to retrieve content from Azure storage.
 # This is to simulate a processing target with a plugin similar to what one might expect in an XPIA-oriented AI red teaming operation.
+# %%
 
-from azure.storage.blob import ContainerClient
-from openai import AsyncAzureOpenAI
 from pyrit.common import default_values
 from pyrit.prompt_target.semantic_kernel_plugin_prompt_target import AzureStoragePlugin, SemanticKernelPluginAzureOpenAIPromptTarget
-from semantic_kernel.kernel import Kernel
-from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_prompt_execution_settings import (
-    AzureChatPromptExecutionSettings,
-)
-from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import AzureChatCompletion
-from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
-from semantic_kernel.functions.kernel_function_decorator import kernel_function
 
 
 default_values.load_default_env()
@@ -82,6 +75,7 @@ processing_response = await processing_target.send_prompt_async(
 # %% [markdown]
 # 
 # Finally, we can put all the pieces together:
+# %%
 
 from pyrit.prompt_target import AzureBlobStorageTarget
 from pyrit.score import SubStringScorer
