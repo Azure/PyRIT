@@ -27,6 +27,8 @@ class AzureAuth(Authenticator):
         # Make the token available to the user
         self.token = self._access_token.token
 
+
+
     def refresh_token(self) -> str:
         """Refresh the access token if it is expired.
 
@@ -55,3 +57,51 @@ class AzureAuth(Authenticator):
 
         """
         return self.token
+
+    def connect_openai_msi(self, client_id):
+        """Connect to to AOAI endpoint via managed identity credential attached to an Azure resource.  For proper setup and configuration of MSI https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview.
+
+        Args:
+            client id of the service
+
+        Returns:
+            authentication token
+        """
+        try:
+            credential = azure.identity.ManagedIdentityCredential(client_id=client_id)
+            token = credential.get_token("https://cognitiveservices.azure.com/.default")
+            return token.token
+        except Exception as e:
+            return e
+
+    def connect_msa_interactive_login(self, client_id):
+        """uses MSA account to connect to an AOAI endpoint via interactive login. A browser window will open and ask for login credentials.
+
+        Args:
+            client id
+
+        Returns:
+            authentication token
+        """
+        try:
+            app = msal.PublicClientApplication(client_id)
+            result = app.acquire_token_interactive(scopes=["https://cognitiveservices.azure.com/.default"])
+            print(result)
+            return result["access_token"]
+        except Exception as e:
+            return e
+
+    def connect_openai_interactive_login(self):
+        """connects to an OpenAI endpoint with an interactive login from Azure. A browser window will open and ask for login credentials.  The token will be scoped for Azure Cognitive services.
+
+        Returns:
+            authentication token
+        """
+        try:
+            token_provider = azure.identity.get_bearer_token_provider(
+                azure.identity.InteractiveBrowserCredential(),
+                "https://cognitiveservices.azure.com/.default"
+            )
+            return token_provider()
+        except Exception as e:
+            return e     
