@@ -27,8 +27,9 @@ class TxtFileConverter(FileConverter):
         Returns:
             str: The file name.
         """
-        if input_type != "text":
-            raise ValueError("TxtFileConverter only supports input type 'text'.")
+        if not self.is_supported(input_type):
+            raise ValueError("Input type not supported")
+
         if not self._file_name:
             self._file_name = uuid4()
         full_file_name = f"{self._file_name}.txt"
@@ -38,3 +39,7 @@ class TxtFileConverter(FileConverter):
             "data": prompt,
             "file_location": full_file_name
         })
+    
+    
+    def is_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
