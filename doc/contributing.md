@@ -88,7 +88,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    pip install -e '.[dev]'
    ```
    
-   See [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working)  for more details.
+   See [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
 
 1. Authenticate with Azure.
 
