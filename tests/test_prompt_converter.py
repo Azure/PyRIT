@@ -11,6 +11,7 @@ from pyrit.prompt_converter import (
     AsciiArtConverter,
     VariationConverter,
     TranslationConverter,
+    CapitalLettersConverter,
 )
 import pytest
 
@@ -94,3 +95,8 @@ def test_translator_converter_languages_validation_throws(languages):
 def test_unicode_confusable_converter() -> None:
     converter = UnicodeConfusableConverter(deterministic=True)
     assert converter.convert(prompt="lorem ipsum dolor sit amet", input_type="text") == "ïỎ𐒴ḕ𝗠 ïṗṡ𝘶𝗠 𝑫ỎïỎ𐒴 ṡï𝚝 ḁ𝗠ḕ𝚝"
+
+
+def test_capital_letter_converter() -> None:
+    converter = CapitalLettersConverter()
+    assert converter.convert(prompt="test", input_type="text") == "TEST"

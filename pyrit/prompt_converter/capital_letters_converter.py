@@ -5,7 +5,7 @@ from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
 
-class CapitalLetterConverter(PromptConverter):
+class CapitalLettersConverter(PromptConverter):
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
         """
         Simple converter that converts the prompt to capital letters.
