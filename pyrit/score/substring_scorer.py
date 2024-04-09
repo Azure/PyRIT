@@ -17,5 +17,6 @@ class SubStringScorer(SupportTextClassification):
             score_type="bool",
             score_value=expected_output_substring_present,
             score_description=f"The expected output substring is {optional_not_text}present in the text.",
-            score_explanation=f"The expected output substring {self._expected_output_substring} is {optional_not_text}present in the text:\n{text}",
+            score_explanation=f"The expected output substring {self._expected_output_substring} is "
+            f"{optional_not_text}present in the text:\n{text}",
         )

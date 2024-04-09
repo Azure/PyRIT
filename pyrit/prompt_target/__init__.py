@@ -22,4 +22,5 @@ __all__ = [
     "PromptChatTarget",
     "PromptTarget",
     "TextTarget",
+    "SemanticKernelPluginAzureOpenAIPromptTarget",
 ]

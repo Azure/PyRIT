@@ -59,12 +59,7 @@ def processing_target() -> PromptTarget:
 @pytest.fixture
 def success_scorer() -> SupportTextClassification:
     scorer = Mock()
-    scorer.score_text = Mock(
-        return_value=Score(
-            score_type="bool",
-            score_value=True
-        )
-    )
+    scorer.score_text = Mock(return_value=Score(score_type="bool", score_value=True))
     return scorer
 
 
@@ -99,4 +94,3 @@ def test_xpia_orchestrator_process_async(prompt_target, processing_target, succe
             assert success_scorer.score_text.called_once
             assert mock_send_to_processing_target.called_once
             assert mock_send_async_to_processing_target.assert_called_once
-

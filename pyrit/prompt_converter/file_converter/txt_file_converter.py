@@ -10,11 +10,12 @@ import json
 
 class TxtFileConverter(FileConverter):
     """Creates a txt file for a given input string.
-    
+
     Args:
     file_name: file name without file type suffix.
         For example, for "test_file.txt" only "test_file" is needed.
     """
+
     def __init__(self, file_name: Optional[str] = None):
         self._file_name = file_name
 
@@ -31,15 +32,11 @@ class TxtFileConverter(FileConverter):
             raise ValueError("Input type not supported")
 
         if not self._file_name:
-            self._file_name = uuid4()
+            self._file_name = str(uuid4())
         full_file_name = f"{self._file_name}.txt"
-        with open(full_file_name, 'w') as file:
+        with open(full_file_name, "w") as file:
             file.write(prompt)
-        return json.dumps({
-            "data": prompt,
-            "file_location": full_file_name
-        })
-    
-    
+        return json.dumps({"data": prompt, "file_location": full_file_name})
+
     def is_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

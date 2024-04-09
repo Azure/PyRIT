@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio, concurrent.futures
+import asyncio
+import concurrent.futures
 import logging
 from typing import Optional
 from uuid import uuid4
@@ -10,7 +11,6 @@ from pyrit.interfaces import SupportTextClassification
 from pyrit.memory import MemoryInterface
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_converter.file_converter.file_converter import FileConverter
 from pyrit.prompt_normalizer import PromptNormalizer, Prompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
@@ -40,12 +40,12 @@ class XPIATestOrchestrator(Orchestrator):
         scorer: SupportTextClassification,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: list[str] = ["xpia-test-orchestrator"],
+        memory_labels: dict[str, str] = None,
         verbose: bool = False,
         prompt_target_conversation_id: Optional[str] = None,
     ) -> None:
         """Creates an orchestrator to set up an XPIA attack on a processing target.
-        
+
         The prompt_target creates the attack prompt using the attack_content,
         applies converters (if any), and puts it into the attack location.
         The processing_target processes the processing_prompt which should include
@@ -99,21 +99,15 @@ class XPIATestOrchestrator(Orchestrator):
         }
         try:
             # Use the synchronous prompt sending method by default.
-            processing_response = self._processing_target.send_prompt(
-                **processing_args
-            )
+            processing_response = self._processing_target.send_prompt(**processing_args)
         except NotImplementedError:
             # Alternatively, use async if available.
             pool = concurrent.futures.ThreadPoolExecutor()
             processing_response = pool.submit(
-                asyncio.run,
-                self._processing_target.send_prompt_async(
-                    **processing_args
-                )
+                asyncio.run, self._processing_target.send_prompt_async(**processing_args)
             ).result()
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
         score = self._scorer.score_text(processing_response)
         logger.info(f"Score of the processing response: {score}")
         return score
-        

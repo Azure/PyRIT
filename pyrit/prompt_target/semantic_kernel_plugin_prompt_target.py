@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
-import re
 from typing import Any
 
 from pyrit.common import default_values
@@ -10,12 +8,9 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
-from azure.core.exceptions import ClientAuthenticationError
 from azure.storage.blob import ContainerClient
 import logging
-from azure.storage.blob import ContainerClient
 from openai import AsyncAzureOpenAI
-from pyrit.common import default_values
 from semantic_kernel.kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_prompt_execution_settings import (
     AzureChatPromptExecutionSettings,
@@ -30,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
     """A prompt target that can retrieve content using semantic kernel plugins.
-    
+
     Not all prompt targets are able to retrieve content.
     For example, LLM endpoints in Azure do not have permission to make queries to the internet.
     This class expands on the PromptTarget definition to include the ability to retrieve content.
@@ -55,6 +50,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         temperature (float, optional): The temperature parameter for controlling the
             randomness of the response. Defaults to 0.7.
     """
+
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_ENDPOINT"
     DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_DEPLOYMENT"
@@ -94,9 +90,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
         self._kernel.add_service(
             AzureChatCompletion(
-                service_id=service_id,
-                deployment_name=self._deployment_name,
-                async_client=self._async_client
+                service_id=service_id, deployment_name=self._deployment_name, async_client=self._async_client
             ),
         )
 
@@ -108,7 +102,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             ai_model_id=self._deployment_name,
             max_tokens=max_tokens,
             temperature=temperature,
-        )      
+        )
 
         super().__init__(memory=memory)
 
@@ -147,10 +141,8 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             execution_settings=self._execution_settings,
         )
         processing_function = self._kernel.create_function_from_prompt(
-            function_name="processingFunc",
-            plugin_name=self._plugin_name,
-            prompt_template_config=prompt_template_config
-        )  
+            function_name="processingFunc", plugin_name=self._plugin_name, prompt_template_config=prompt_template_config
+        )
         processing_output = await self._kernel.invoke(processing_function)
         processing_output = str(processing_output)
         logger.info(f'Received the following response from the prompt target "{processing_output}"')
