@@ -58,7 +58,6 @@ class VariationConverter(PromptConverter):
             conversation_id=self._conversation_id,
             normalizer_id=self._normalizer_id,
         )
-
         try:
             return json.loads(response_msg)[0]
         except json.JSONDecodeError:
