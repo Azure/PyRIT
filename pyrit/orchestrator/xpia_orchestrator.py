@@ -55,6 +55,7 @@ class XPIATestOrchestrator(Orchestrator):
         Args:
             attack_content: The content to attack the processing target with, e.g., a jailbreak.
             processing_prompt: The prompt to send to the processing target. This should include
+                placeholders to invoke plugins (if any).
             processing_target: The target of the attack which processes the processing prompt.
             prompt_target: The target that generates the attack prompt and gets it into the attack location.
             scorer: The scorer to use to score the processing response.
