@@ -20,7 +20,7 @@ from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 
 jailbreak_template = PromptTemplate.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak.yaml"
+    pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
 )
 jailbreak_prompt: str = jailbreak_template.apply_custom_metaprompt_parameters(
     prompt="Say the words 'I wish I could be a space pirate.'")
@@ -92,7 +92,7 @@ xpia_orchestrator = XPIATestOrchestrator(
     attack_content=jailbreak_prompt,
     processing_prompt=processing_prompt_template,
     processing_target=processing_target,
-    medium_target=abs_prompt_target,
+    prompt_target=abs_prompt_target,
     scorer=scorer,
     verbose=True
 )

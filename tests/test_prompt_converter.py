@@ -10,7 +10,6 @@ from pyrit.prompt_converter import (
     ROT13Converter,
     AsciiArtConverter,
     VariationConverter,
-    TxtFileConverter,
     TranslationConverter,
 )
 import pytest
@@ -95,18 +94,3 @@ def test_translator_converter_languages_validation_throws(languages):
 def test_unicode_confusable_converter() -> None:
     converter = UnicodeConfusableConverter(deterministic=True)
     assert converter.convert(prompt="lorem ipsum dolor sit amet", input_type="text") == "ïỎ𐒴ḕ𝗠 ïṗṡ𝘶𝗠 𝑫ỎïỎ𐒴 ṡï𝚝 ḁ𝗠ḕ𝚝"
-
-
-def test_txt_file_converter_no_file_name() -> None:
-    converter = TxtFileConverter()
-    txt_file_name = converter.convert(prompt="test", input_type="text")
-    with open(txt_file_name, "r") as txt_file:
-        assert txt_file.read() == "test"
-
-
-def test_txt_file_converter_file_name() -> None:
-    converter = TxtFileConverter(file_name="test_file")
-    txt_file_name = converter.convert(prompt="test", input_type="text")
-    assert txt_file_name == "test_file.txt"
-    with open(txt_file_name, "r") as txt_file:
-        assert txt_file.read() == "test"
