@@ -33,7 +33,7 @@ class XPIATestOrchestrator(Orchestrator):
     def __init__(
         self,
         *,
-        attack_content: str,  # TODO: generalize to multimodal
+        attack_content: str,
         processing_prompt: str,
         processing_target: PromptTarget,
         prompt_target: PromptTarget,
@@ -78,10 +78,6 @@ class XPIATestOrchestrator(Orchestrator):
         self._attack_content = str(attack_content)
         self._processing_prompt = processing_prompt
 
-    @property
-    def requires_one_to_one_converters(self) -> bool:
-        return True
-
     def process(self) -> Score:
         logger.info(
             "Sending the following prompt to the prompt target (after applying prompt "
@@ -102,10 +98,12 @@ class XPIATestOrchestrator(Orchestrator):
             "normalizer_id": str(uuid4()),
         }
         try:
+            # Use the synchronous prompt sending method by default.
             processing_response = self._processing_target.send_prompt(
                 **processing_args
             )
         except NotImplementedError:
+            # Alternatively, use async if available.
             pool = concurrent.futures.ThreadPoolExecutor()
             processing_response = pool.submit(
                 asyncio.run,
