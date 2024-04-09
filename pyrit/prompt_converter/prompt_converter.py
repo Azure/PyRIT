@@ -4,28 +4,39 @@
 import abc
 import json
 
+from pyrit.memory.memory_models import PromptDataType
+
 
 class PromptConverter(abc.ABC):
     """
-    A prompt converter is responsible for converting prompts into multiple representations.
+    A prompt converter is responsible for converting prompts into a different representation.
+
     """
 
     @abc.abstractmethod
-    def convert(self, prompts: list[str]) -> list[str]:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
         """
-        Converts the given prompts into multiple representations.
+        Converts the given prompts into a different representation
 
         Args:
-            prompts (list[str]): The prompts to be converted.
+            prompt: The prompt to be converted.
 
         Returns:
-            list[str]: The converted representations of the prompts.
+            str: The converted representation of the prompts.
         """
         pass
 
     @abc.abstractmethod
-    def is_one_to_one_converter(self) -> bool:
-        """Indicates if the conversion results in exactly one resulting prompt."""
+    def is_supported(self, input_type: PromptDataType) -> bool:
+        """
+        Checks if the input type is supported by the converter
+
+        Args:
+            input_type: The input type to check
+
+        Returns:
+            bool: True if the input type is supported, False otherwise
+        """
         pass
 
     def to_dict(self):

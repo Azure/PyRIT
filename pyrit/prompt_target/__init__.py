@@ -9,6 +9,7 @@ from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenA
 from pyrit.prompt_target.gandalf_target import GandalfTarget
 from pyrit.prompt_target.text_target import TextTarget
 from pyrit.prompt_target.semantic_kernel_plugin_prompt_target import SemanticKernelPluginAzureOpenAIPromptTarget
+from pyrit.prompt_target.image_target import ImageTarget
 
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "AzureMLChatTarget",
     "AzureOpenAIChatTarget",
     "GandalfTarget",
+    "ImageTarget",
     "OpenAIChatTarget",
     "PromptChatTarget",
     "PromptTarget",

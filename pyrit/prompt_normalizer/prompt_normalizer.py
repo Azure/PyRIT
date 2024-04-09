@@ -15,13 +15,13 @@ class PromptNormalizer(abc.ABC):
         self._memory = memory
         self.id = str(uuid4())
 
-    def send_prompt(self, prompt: Prompt) -> list[str]:
+    def send_prompt(self, prompt: Prompt) -> str:
         """
         Sends a prompt to the prompt targets.
         """
         return prompt.send_prompt(normalizer_id=self.id)
 
-    async def send_prompt_batch_async(self, prompts: list[Prompt], batch_size: int = 10):
+    async def send_prompt_batch_async(self, prompts: list[Prompt], batch_size: int = 10) -> list[str]:
         """
         Sends a batch of prompts to a target
         """
