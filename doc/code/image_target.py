@@ -1,17 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.1
-#   kernelspec:
-#     display_name: pyrit_kernel
-#     language: python
-#     name: pyrit_kernel
-# ---
-
 # %% [markdown]
 # ## Image Target Demo
 # This notebook demonstrates how to use the image target to create an image from a text-based prompt
@@ -87,3 +73,4 @@ im = Image.open(image_location)
 im.show()
 
 # %%
+img_prompt_target.dispose_db_engine()

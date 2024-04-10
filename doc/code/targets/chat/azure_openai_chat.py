@@ -2,7 +2,7 @@
 #
 # # Introduction
 #
-# This Jupyter notebook gives an introduction on how to use `AzureOpenAIChatTarget` to complete chats.
+# This Jupyter notebook gives an introduction on how to use `AzureOpenAIChat` to complete chats.
 #
 # Before starting this, make sure you are [setup to use Azure OpenAI endpoints](../../../setup/setup_azure.md) and have a chat model, such as GPT-4, deployed. See [How To: Create and deploy an Azure OpenAI Service resource](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal).
 #
@@ -20,5 +20,9 @@ from pyrit.common import default_values
 default_values.load_default_env()
 
 
-chat_engine = AzureOpenAIChatTarget()
-chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id=None)
+with AzureOpenAIChatTarget() as azure_openai_chat_target:
+    azure_openai_chat_target.send_prompt(
+        normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id=None
+    )
+
+# %%

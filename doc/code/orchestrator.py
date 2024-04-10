@@ -13,6 +13,7 @@
 # Orchestrators can tackle complicated scenarios, but this example is about as simple as it gets (while still being useful). Here, we'll send all prompts in a file, use a converter to base64-encode the prompts, and send them to a PromptTarget.
 #
 # Note to run this demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../setup/setup_azure.md)
+
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -44,9 +45,10 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
 
 # %% [markdown]
 # ## Benchmark Orchestrator
+
 # %%
 
-from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
+from pyrit.orchestrator.benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
@@ -104,7 +106,7 @@ benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
 
 benchmark_orchestrator.evaluate()
 
-# In[ ]:
+# %%
 correct_count = 0
 total_count = 0
 

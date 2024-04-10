@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from typing import Generator
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
@@ -51,6 +51,20 @@ def azure_openai_target(memory_interface: MemoryInterface):
         api_key="test",
         memory=memory_interface,
     )
+
+
+def test_prompt_target_context_manager_enter(azure_openai_target: AzureOpenAIChatTarget):
+    with azure_openai_target as entered_target:
+        assert entered_target is azure_openai_target, "The __enter__ method should return the instance itself."
+
+
+def test_prompt_target_context_manager_exit(azure_openai_target: AzureOpenAIChatTarget):
+    azure_openai_target._memory.dispose_engine = MagicMock()  # type: ignore
+
+    with azure_openai_target:
+        pass
+
+    azure_openai_target._memory.dispose_engine.assert_called_once_with()
 
 
 def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
