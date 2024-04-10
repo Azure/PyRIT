@@ -102,7 +102,7 @@ def test_capital_letter_converter() -> None:
     assert (
         converter.convert(
             prompt="Write an article about cat documents that proved fraudulent, county Judge Orders cat documents"
-            "need to be redone!",
+            " need to be redone!",
             input_type="text",
         )
         == "WRITE AN ARTICLE ABOUT CAT DOCUMENTS THAT PROVED FRAUDULENT, COUNTY JUDGE ORDERS CAT DOCUMENTS NEED"
