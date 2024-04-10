@@ -59,7 +59,7 @@ def test_prompt_target_context_manager_enter(azure_openai_target: AzureOpenAICha
 
 
 def test_prompt_target_context_manager_exit(azure_openai_target: AzureOpenAIChatTarget):
-    azure_openai_target._memory.dispose_engine = MagicMock()
+    azure_openai_target._memory.dispose_engine = MagicMock()  # type: ignore
 
     with azure_openai_target:
         pass
