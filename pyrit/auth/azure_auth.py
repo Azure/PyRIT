@@ -3,6 +3,7 @@
 
 import time
 import msal
+import logging
 
 from azure.core.credentials import AccessToken
 from azure.identity import AzureCliCredential
@@ -12,6 +13,9 @@ from azure.identity import get_bearer_token_provider
 
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
 from pyrit.interfaces import Authenticator
+
+
+logger = logging.getLogger(__name__)
 
 
 class AzureAuth(Authenticator):
@@ -60,7 +64,7 @@ class AzureAuth(Authenticator):
         """
         return self.token
 
-    def connect_openai_msi(self, client_id):
+    def get_access_token_from_azure_msi(self, client_id, *, scope="https://cognitiveservices.azure.com/.default"):
         """Connect to to AOAI endpoint via managed identity credential attached to an Azure resource.
         For proper setup and configuration of MSI
         https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview.
@@ -73,12 +77,13 @@ class AzureAuth(Authenticator):
         """
         try:
             credential = ManagedIdentityCredential(client_id=client_id)
-            token = credential.get_token("https://cognitiveservices.azure.com/.default")
+            token = credential.get_token(scope)
             return token.token
         except Exception as e:
-            return e
+            logger.error(f"Failed to obtain token for '{scope}' with client ID '{client_id}': {e}")
+            raise
 
-    def connect_msa_interactive_login(self, client_id):
+    def get_access_token_from_msa_public_client(self, client_id, scope="https://cognitiveservices.azure.com/.default"):
         """uses MSA account to connect to an AOAI endpoint via interactive login. A browser window
         will open and ask for login credentials.
 
@@ -90,13 +95,13 @@ class AzureAuth(Authenticator):
         """
         try:
             app = msal.PublicClientApplication(client_id)
-            result = app.acquire_token_interactive(scopes=["https://cognitiveservices.azure.com/.default"])
-            print(result)
+            result = app.acquire_token_interactive(scopes=[scope])
             return result["access_token"]
         except Exception as e:
-            return e
+            logger.error(f"Failed to obtain token for '{scope}' with client ID '{client_id}': {e}")
+            raise
 
-    def connect_openai_interactive_login(self):
+    def get_access_token_from_interactive_login(self, scope="https://cognitiveservices.azure.com/.default"):
         """connects to an OpenAI endpoint with an interactive login from Azure. A browser window will
         open and ask for login credentials.  The token will be scoped for Azure Cognitive services.
 
@@ -104,9 +109,8 @@ class AzureAuth(Authenticator):
             authentication token
         """
         try:
-            token_provider = get_bearer_token_provider(
-                InteractiveBrowserCredential(), "https://cognitiveservices.azure.com/.default"
-            )
+            token_provider = get_bearer_token_provider(InteractiveBrowserCredential(), scope)
             return token_provider()
         except Exception as e:
-            return e
+            logger.error(f"Failed to obtain token for '{scope}': {e}")
+            raise

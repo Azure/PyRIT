@@ -12,7 +12,7 @@ from pyrit.prompt_converter.translation_converter import TranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
-from pyrit.prompt_converter.capital_letters_converter import CapitalLettersConverter
+from pyrit.prompt_converter.random_capital_letters_converter import RandomCapitalLettersConverter
 
 
 __all__ = [
@@ -27,5 +27,5 @@ __all__ = [
     "UnicodeConfusableConverter",
     "UnicodeSubstitutionConverter",
     "VariationConverter",
-    "CapitalLettersConverter",
+    "RandomCapitalLettersConverter",
 ]
