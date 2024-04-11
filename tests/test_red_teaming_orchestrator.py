@@ -73,7 +73,7 @@ def _check_orchestrator_memory_if_original_prompt(memory, num_turns: int):
 
 
 def _check_two_conversation_ids(conversations):
-    grouped_conversations: Dict[str, List[str]] = {}
+    grouped_conversations: Dict[str, List[str]] = {}  # type: ignore
     for obj in conversations:
         key = obj.conversation_id
         if key in grouped_conversations:
