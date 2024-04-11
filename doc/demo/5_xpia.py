@@ -12,6 +12,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
 import os
 import pathlib
 
@@ -26,8 +27,6 @@ jailbreak_prompt: str = jailbreak_template.apply_custom_metaprompt_parameters(
 )
 print(jailbreak_prompt)
 
-import logging
-
 logging.basicConfig(level=logging.INFO)
 
 # %% [markdown]
@@ -41,7 +40,7 @@ logging.basicConfig(level=logging.INFO)
 # %%
 
 from pyrit.common import default_values
-from pyrit.prompt_target.semantic_kernel_plugin_prompt_target import (
+from xpia_helpers import (
     AzureStoragePlugin,
     SemanticKernelPluginAzureOpenAIPromptTarget,
 )
