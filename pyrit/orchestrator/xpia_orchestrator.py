@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 from typing import Optional
 from uuid import uuid4
@@ -11,6 +9,7 @@ from pyrit.interfaces import SupportTextClassification
 from pyrit.memory import MemoryInterface
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_converter.no_op_converter import NoOpConverter
 from pyrit.prompt_normalizer import PromptNormalizer, Prompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
@@ -93,22 +92,22 @@ class XPIATestOrchestrator(Orchestrator):
         response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)
         logger.info(f'Received the following response from the prompt target "{response}"')
 
-        processing_args = {
-            "normalized_prompt": self._processing_prompt,
-            "conversation_id": self._processing_conversation_id,
-            "normalizer_id": str(uuid4()),
-        }
-        try:
-            # Use the synchronous prompt sending method by default.
-            processing_response = self._processing_target.send_prompt(**processing_args)
-        except NotImplementedError:
-            # Alternatively, use async if available.
-            pool = concurrent.futures.ThreadPoolExecutor()
-            processing_response = pool.submit(
-                asyncio.run, self._processing_target.send_prompt_async(**processing_args)
-            ).result()
+        processing_prompt_obj = Prompt(
+            prompt_target=self._processing_target,
+            prompt_text=self._processing_prompt,
+            conversation_id=self._processing_conversation_id,
+            prompt_converters=[NoOpConverter()],
+        )
+        processing_response = self._prompt_normalizer.send_prompt(prompt=processing_prompt_obj)
+
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
         score = self._scorer.score_text(processing_response)
         logger.info(f"Score of the processing response: {score}")
         return score
+
+    def get_memory(self):
+        """
+        Retrieves the memory associated with the orchestrator.
+        """
+        return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)

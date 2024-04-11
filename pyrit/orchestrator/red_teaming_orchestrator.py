@@ -9,6 +9,7 @@ from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_converter.no_op_converter import NoOpConverter
 from pyrit.prompt_normalizer import Prompt, PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
@@ -68,11 +69,9 @@ class RedTeamingOrchestrator(Orchestrator):
         self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._red_teaming_chat = red_teaming_chat
+        self._red_teaming_chat._memory = self._memory
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
-
-    def get_memory(self):
-        return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
 
     @abc.abstractmethod
     def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role: str) -> bool:
@@ -155,11 +154,14 @@ class RedTeamingOrchestrator(Orchestrator):
                     normalizer_id=self._prompt_normalizer.id,
                 )
 
-            prompt = self._red_teaming_chat.send_prompt(
-                normalized_prompt=prompt_text,
+            red_teaming_prompt_obj = Prompt(
+                prompt_target=self._red_teaming_chat,
+                prompt_converters=[NoOpConverter()],
+                prompt_text=prompt_text,
                 conversation_id=self._red_teaming_chat_conversation_id,
-                normalizer_id=self._prompt_normalizer.id,
             )  # TODO: Add a label to indicate this is coming from the red team orchestrator
+
+            prompt = self._prompt_normalizer.send_prompt(prompt=red_teaming_prompt_obj)
 
         red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
             conversation_id=self._red_teaming_chat_conversation_id
@@ -186,3 +188,9 @@ class RedTeamingOrchestrator(Orchestrator):
             completion_state.is_complete = self.is_conversation_complete(target_messages, red_teaming_chat_role="user")
 
         return response
+
+    def get_memory(self):
+        """
+        Retrieves the memory associated with the red teaming orchestrator.
+        """
+        return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)

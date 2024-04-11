@@ -97,3 +97,13 @@ xpia_orchestrator = XPIATestOrchestrator(
 
 score = xpia_orchestrator.process()
 print(score)
+
+# clean up storage container
+from azure.storage.blob import ContainerClient
+
+storage_client = ContainerClient.from_container_url(
+    container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"),
+    credential=os.environ.get("AZURE_STORAGE_ACCOUNT_SAS_TOKEN"),
+)
+for blob in storage_client.list_blobs():
+    storage_client.get_blob_client(blob=blob.name).delete_blob()

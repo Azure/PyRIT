@@ -3,6 +3,7 @@
 
 import abc
 import asyncio
+import concurrent.futures
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.prompt_normalizer.prompt_class import Prompt
@@ -19,7 +20,13 @@ class PromptNormalizer(abc.ABC):
         """
         Sends a prompt to the prompt targets.
         """
-        return prompt.send_prompt(normalizer_id=self.id)
+        try:
+            # Use the synchronous prompt sending method by default.
+            return prompt.send_prompt(normalizer_id=self.id)
+        except NotImplementedError:
+            # Alternatively, use async if sync is unavailable.
+            pool = concurrent.futures.ThreadPoolExecutor()
+            return pool.submit(asyncio.run, prompt.send_prompt_async(normalizer_id=self.id)).result()
 
     async def send_prompt_batch_async(self, prompts: list[Prompt], batch_size: int = 10) -> list[str]:
         """

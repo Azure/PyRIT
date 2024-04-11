@@ -4,7 +4,6 @@
 from typing import Any
 
 from pyrit.common import default_values
-from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
@@ -39,8 +38,6 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
         api_key (str, optional): The API key for accessing the Azure OpenAI service.
             Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
-        memory (MemoryInterface, optional): An instance of the MemoryInterface class
-            for storing conversation history. Defaults to None.
         api_version (str, optional): The version of the Azure OpenAI API. Defaults to
             "2024-02-15-preview".
         plugin (Any, required): The semantic kernel plugin to retrieve the attack medium.
@@ -61,7 +58,6 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
-        memory: MemoryInterface = None,
         api_version: str = "2024-02-15-preview",
         plugin: Any,
         plugin_name: str,
@@ -104,7 +100,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             temperature=temperature,
         )
 
-        super().__init__(memory=memory)
+        super().__init__(memory=None)
 
     def send_prompt(
         self,
