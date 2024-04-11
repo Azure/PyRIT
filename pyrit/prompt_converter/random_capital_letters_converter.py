@@ -19,6 +19,9 @@ class RandomCapitalLettersConverter(PromptConverter):
         points in that range.
     """
 
+    def __init__(self, percentage: float = 100.0) -> None:
+        self.percentage = percentage
+
     def is_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
@@ -58,15 +61,14 @@ class RandomCapitalLettersConverter(PromptConverter):
         for pos in random_positions:
             if self.is_lowercase_letter(prompt[pos]):
                 output[pos] = prompt[pos].upper()
-                # output = output[:pos-1] + prompt[pos-1].upper() + output[pos:]
         return "".join(output)
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text", percentage: float = 100.0) -> str:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
         """
         Simple converter that converts the prompt to capital letters via a percentage .
         """
         if not self.is_supported(input_type):
             raise ValueError("Input type not supported")
 
-        output = self.string_to_upper_case_by_percentage(percentage, prompt)
+        output = self.string_to_upper_case_by_percentage(self.percentage, prompt)
         return output
