@@ -16,15 +16,6 @@ from pyrit.prompt_converter import PromptConverter
 
 logger = logging.getLogger(__name__)
 
-MESSAGE_COUNT_THRESHOLD_TO_INCLUDE_SYSTEM_MESSAGES = 3
-MESSAGE_COUNT_WITH_SYSTEM_MESSAGE = 3
-MESSAGE_COUNT_DEFAULT = 2
-
-
-class CompletionState:
-    def __init__(self, is_complete: bool):
-        self.is_complete = is_complete
-
 
 class XPIATestOrchestrator(Orchestrator):
     _memory: MemoryInterface
@@ -43,7 +34,7 @@ class XPIATestOrchestrator(Orchestrator):
         verbose: bool = False,
         prompt_target_conversation_id: Optional[str] = None,
     ) -> None:
-        """Creates an orchestrator to set up an XPIA attack on a processing target.
+        """Creates an orchestrator to set up a cross-domain prompt injection attack (XPIA) on a processing target.
 
         The prompt_target creates the attack prompt using the attack_content,
         applies converters (if any), and puts it into the attack location.

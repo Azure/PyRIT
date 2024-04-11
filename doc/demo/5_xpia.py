@@ -46,7 +46,6 @@ from pyrit.prompt_target.semantic_kernel_plugin_prompt_target import (
     SemanticKernelPluginAzureOpenAIPromptTarget,
 )
 
-
 default_values.load_default_env()
 
 azure_storage_plugin = AzureStoragePlugin(
