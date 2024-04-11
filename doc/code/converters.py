@@ -22,7 +22,7 @@ print(AsciiArtConverter().convert(prompt=prompt))
 print(RandomCapitalLettersConverter().convert(prompt=prompt))
 
 # With percentage of capital letters
-print(RandomCapitalLettersConverter().convert(prompt=prompt, percentage=25.0))
+print(RandomCapitalLettersConverter(percentage=25.0).convert(prompt=prompt))
 
 print(AsciiArtConverter().convert(prompt=prompt))
 

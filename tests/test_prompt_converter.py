@@ -108,3 +108,17 @@ def test_capital_letter_converter() -> None:
         == "WRITE AN ARTICLE ABOUT CAT DOCUMENTS THAT PROVED FRAUDULENT, COUNTY JUDGE ORDERS CAT DOCUMENTS NEED"
         " TO BE REDONE!"
     )
+
+
+def test_capital_letter_converter_with_twentyfive_percent() -> None:
+    percentage = 25.0
+    prompt = "welc"
+    converter = RandomCapitalLettersConverter(percentage=percentage)
+
+    actual_converted_text = converter.convert(
+        prompt=prompt,
+        input_type="text",
+    )
+    upper_count = sum(1 for char in actual_converted_text if char.isupper())
+    expected_percentage = (upper_count / len(prompt)) * 100.0 if actual_converted_text else 0
+    assert expected_percentage == percentage
