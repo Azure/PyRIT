@@ -7,6 +7,7 @@ import logging
 
 from typing import Optional
 from uuid import uuid4
+import uuid
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
@@ -26,7 +27,7 @@ class Orchestrator(abc.ABC):
         memory_labels: dict[str, str] = {},
         verbose: bool = False,
     ):
-        self.id = uuid4.uuid4()
+        self.id = uuid.uuid4()
 
         self._prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
         self._memory = memory or DuckDBMemory()

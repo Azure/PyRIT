@@ -16,6 +16,7 @@ from sqlalchemy.sql.sqltypes import NullType
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
+from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.prompt_converter import PromptConverterList
 from pyrit.prompt_target.text_target import TextTarget
@@ -410,10 +411,8 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
 
 def test_get_memories_with_normalizer_id(setup_duckdb_database):
     # Define a specific normalizer_id
-    specific_normalizer_id = "normalizer_test_id"
-
-    labels = {"normalizer_id": specific_normalizer_id}
-    other_labels = {"normalizer_id": "other_normalizer_id"}
+    orchestrator1 = Orchestrator()
+    orchestrator2 = Orchestrator()
 
     # Create a list of ConversationData entries, some with the specific normalizer_id
     entries = [
@@ -422,21 +421,21 @@ def test_get_memories_with_normalizer_id(setup_duckdb_database):
             role="user",
             original_prompt_text="Hello 1",
             converted_prompt_text="Hello 1",
-            labels=labels,
+            orchestrator=orchestrator1,
         ),
         PromptMemoryEntry(
             conversation_id="456",
             role="user",
             original_prompt_text="Hello 2",
             converted_prompt_text="Hello 2",
-            labels=other_labels,
+            orchestrator=orchestrator2,
         ),
         PromptMemoryEntry(
             conversation_id="789",
             role="user",
             original_prompt_text="Hello 3",
             converted_prompt_text="Hello 1",
-            labels=labels,
+            orchestrator=orchestrator1,
         ),
     ]
 
@@ -446,14 +445,14 @@ def test_get_memories_with_normalizer_id(setup_duckdb_database):
         session.commit()  # Ensure all entries are committed to the database
 
         # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-        retrieved_entries = setup_duckdb_database.get_prompt_entries_with_normalizer_id(
-            normalizer_id=specific_normalizer_id
+        retrieved_entries = setup_duckdb_database.get_prompt_entries_by_orchestrator(
+            orchestrator=orchestrator1
         )
 
         # Verify that the retrieved entries match the expected normalizer_id
         assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
         for retrieved_entry in retrieved_entries:
-            assert retrieved_entry.labels["normalizer_id"] == specific_normalizer_id
+            assert retrieved_entry.orchestrator == specific_normalizer_id
             assert "Hello" in retrieved_entry.original_prompt_text  # Basic check to ensure content is as expected
 
 

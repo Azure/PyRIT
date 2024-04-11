@@ -101,7 +101,6 @@ def get_sample_conversations() -> list[PromptMemoryEntry]:
             converted_prompt_text="Hello, how are you?",
             conversation_id="12345",
             orchestrator=orchestrator1,
-            PromptTarget=target
         ),
         PromptMemoryEntry(
             role="assistant",
@@ -109,7 +108,6 @@ def get_sample_conversations() -> list[PromptMemoryEntry]:
             converted_prompt_text="I'm fine, thank you!",
             conversation_id="12345",
             orchestrator=orchestrator1,
-            PromptTarget=target
         ),
         PromptMemoryEntry(
             role="assistant",
@@ -117,6 +115,5 @@ def get_sample_conversations() -> list[PromptMemoryEntry]:
             converted_prompt_text="I'm fine, thank you!",
             conversation_id="33333",
             orchestrator=orchestrator2,
-            PromptTarget=target
         ),
     ]
