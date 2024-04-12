@@ -17,7 +17,7 @@ from sqlalchemy.dialects.postgresql import UUID
 Base = declarative_base()
 
 
-PromptDataType = Literal["text", "image_url"]
+PromptDataType = Literal["text", "image_url", "image_file_name"]
 
 
 class PromptMemoryEntry(Base):  # type: ignore
