@@ -8,7 +8,7 @@ from typing import IO
 
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import PromptRequestResponse
-from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 
 

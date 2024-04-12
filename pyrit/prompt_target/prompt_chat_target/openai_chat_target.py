@@ -9,8 +9,8 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptMemoryEntry, PromptRequestResponse
-from pyrit.models import ChatMessage
+from pyrit.models.models import ChatMessage
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class OpenAIChatInterface(PromptChatTarget):
         *,
         prompt_request: PromptRequestResponse
     ) -> PromptRequestResponse:
-        
+
         # TODO validate
         prompt_request = prompt_request.request_pieces[0]
 

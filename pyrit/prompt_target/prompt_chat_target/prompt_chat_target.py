@@ -3,7 +3,8 @@
 
 import abc
 
-from pyrit.memory.memory_models import PromptMemoryEntry, PromptRequestResponse
+from pyrit.memory.memory_models import PromptMemoryEntry
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 
@@ -30,14 +31,16 @@ class PromptChatTarget(PromptTarget):
             raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
 
         system_entry = PromptMemoryEntry(
-            role="system",
-            conversation_id=conversation_id,
-            sequence=0,
-            original_prompt_text=system_prompt,
-            converted_prompt_text=system_prompt,
-            prompt_target=self,
-            orchestrator=orchestrator,
-            labels=labels,
+            entry=PromptRequestPiece(
+                role="system",
+                conversation_id=conversation_id,
+                sequence=0,
+                original_prompt_text=system_prompt,
+                converted_prompt_text=system_prompt,
+                prompt_target=self,
+                orchestrator=orchestrator,
+                labels=labels,
+            )
         )
 
         self._memory.insert_prompt_entries(entries=[system_entry])
@@ -54,18 +57,18 @@ class PromptChatTarget(PromptTarget):
         Sends a text prompt to the target without having to build the prompt request.
         """
 
-        entry = PromptMemoryEntry(
-            role="user",
-            conversation_id=conversation_id,
-            sequence=0,
-            original_prompt_text=prompt,
-            converted_prompt_text=prompt,
-            prompt_target=self,
-            orchestrator=orchestrator,
-            labels=labels,
-        )
-
-        request = PromptRequestResponse(request_pieces=[entry])
+        request = PromptRequestResponse(request_pieces=[
+            PromptRequestPiece(
+                    role="user",
+                    conversation_id=conversation_id,
+                    sequence=0,
+                    original_prompt_text=prompt,
+                    converted_prompt_text=prompt,
+                    prompt_target=self,
+                    orchestrator=orchestrator,
+                    labels=labels,
+                )
+        ])
 
         return self.send_prompt(prompt_request=request)
 
@@ -81,17 +84,17 @@ class PromptChatTarget(PromptTarget):
         Sends a text prompt to the target without having to build the prompt request.
         """
 
-        entry = PromptMemoryEntry(
-            role="user",
-            conversation_id=conversation_id,
-            sequence=0,
-            original_prompt_text=prompt,
-            converted_prompt_text=prompt,
-            prompt_target=self,
-            orchestrator=orchestrator,
-            labels=labels,
-        )
+        request = PromptRequestResponse(request_pieces=[
+            PromptRequestPiece(
+                    role="user",
+                    conversation_id=conversation_id,
+                    sequence=0,
+                    original_prompt_text=prompt,
+                    converted_prompt_text=prompt,
+                    prompt_target=self,
+                    orchestrator=orchestrator,
+                    labels=labels,
+                )
+        ])
 
-        request = PromptRequestResponse(request_pieces=[entry])
-
-        return await self.send_prompt_async(prompt_request=request)
+        return self.send_prompt_async(prompt_request=request)

@@ -6,7 +6,7 @@ import pytest
 
 from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import PromptRequestPiece, PromptRequestPieces, PromptNormalizer
+from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest, PromptNormalizer
 from pyrit.prompt_converter import PromptConverter
 
 from tests.mocks import MockPromptTarget
@@ -29,7 +29,7 @@ def test_send_prompt_multiple_converters():
     prompt_converters =  [Base64Converter(), StringJoinConverter(join_value="_")]
     prompt_text = "Hello"
 
-    prompt = PromptRequestPiece(
+    prompt = NormalizerRequestPiece(
         prompt_converters=prompt_converters,
         prompt_text=prompt_text,
         prompt_data_type="text",
@@ -38,7 +38,7 @@ def test_send_prompt_multiple_converters():
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    normalizer.send_prompt(request=PromptRequestPieces([prompt]),
+    normalizer.send_prompt(request=NormalizerRequest([prompt]),
                            target=prompt_target)
 
 

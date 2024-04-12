@@ -7,7 +7,7 @@ import abc
 from abc import abstractmethod
 from dataclasses import dataclass
 
-from pyrit.models import EmbeddingResponse, PromptResponse, Score
+from pyrit.models.models import EmbeddingResponse, PromptResponse, Score
 
 
 class SupportTextClassification(abc.ABC):

@@ -5,7 +5,7 @@ import pytest
 
 from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import PromptRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer
 from pyrit.prompt_converter import PromptConverter
 
 from tests.mocks import MockPromptTarget
@@ -28,7 +28,7 @@ def test_prompt_request_piece_init_valid_arguments():
     prompt_text = "Hello"
     metadata="meta"
 
-    prompt = PromptRequestPiece(
+    prompt = NormalizerRequestPiece(
         prompt_converters=prompt_converters,
         prompt_text=prompt_text,
         prompt_data_type="text",
@@ -44,7 +44,7 @@ def test_prompt_init_no_metadata():
     prompt_converters = [MockPromptConverter()]
     prompt_text = "Hello"
 
-    prompt = PromptRequestPiece(
+    prompt = NormalizerRequestPiece(
         prompt_converters=prompt_converters,
         prompt_text=prompt_text,
         prompt_data_type="text",
@@ -60,7 +60,7 @@ def test_prompt_request_piece_init_invalid_converter():
     metadata="meta"
 
     with pytest.raises(ValueError):
-        PromptRequestPiece(
+        NormalizerRequestPiece(
             prompt_converters=["InvalidPromptConverter"],
             prompt_text=prompt_text,
             prompt_data_type="text",
@@ -72,7 +72,7 @@ def test_prompt_init_empty_prompt_converters():
     metadata="meta"
 
     with pytest.raises(ValueError):
-        PromptRequestPiece(
+        NormalizerRequestPiece(
             prompt_converters=[],
             prompt_text=prompt_text,
             prompt_data_type="text",
@@ -85,7 +85,7 @@ def test_prompt_init_invalid_prompt_text():
     metadata="meta"
 
     with pytest.raises(ValueError):
-        PromptRequestPiece(
+        NormalizerRequestPiece(
             prompt_converters=[],
             prompt_text=123,
             prompt_data_type="text",

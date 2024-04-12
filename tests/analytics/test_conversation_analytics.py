@@ -8,14 +8,19 @@ from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.analytics.conversation_analytics import ConversationAnalytics
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 
+from tests.mocks import get_sample_conversation_entries
 
 @pytest.fixture
 def mock_memory_interface():
     memory_interface = MagicMock(spec=MemoryInterface)
     return memory_interface
 
+@pytest.fixture
+def sample_conversations_entries():
+    return get_sample_conversation_entries()
 
-def test_get_similar_chat_messages_by_content(mock_memory_interface):
+
+def test_get_similar_chat_messages_by_content(mock_memory_interface, sample_conversations):
     # Mock data returned by the memory interface
     mock_data = [
         PromptMemoryEntry(original_prompt_text="h", converted_prompt_text="Hello, how are you?", role="user"),

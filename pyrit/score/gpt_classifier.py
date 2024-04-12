@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Union
 
 from pyrit.interfaces import SupportTextClassification
-from pyrit.models import Score
+from pyrit.models.models import Score
 from pyrit.prompt_target import PromptChatTarget
 
 

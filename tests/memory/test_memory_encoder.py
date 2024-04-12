@@ -8,7 +8,7 @@ import pytest
 from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory import MemoryEmbedding
 from pyrit.memory.memory_models import PromptMemoryEntry
-from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
+from pyrit.models.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
 
 
 DEFAULT_EMBEDDING_DATA = EmbeddingData(embedding=[0.0], index=0, object="mock_object")

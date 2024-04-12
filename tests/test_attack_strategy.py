@@ -4,7 +4,7 @@
 import os
 import pathlib
 import pytest
-from pyrit.models import AttackStrategy
+from pyrit.models.models import AttackStrategy
 
 
 def test_attack_strategy_strings():

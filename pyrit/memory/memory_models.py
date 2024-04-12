@@ -13,23 +13,12 @@ from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
-from pyrit.models import ChatMessageRole
+from pyrit.models.models import ChatMessageRole
+from pyrit.models import PromptRequestPiece, PromptDataType
 
 
 Base = declarative_base()
 
-
-# TODO image_path
-PromptDataType = Literal["text", "image_path"]
-
-"""
-The type of the error in the prompt response
-blocked: blocked by an external filter e.g. Azure Filters
-model: the model refused to answer or request e.g. "I'm sorry..."
-processing: there is an exception thrown unrelated to the query
-unknown: the type of error is unknown
-"""
-PromptResponseError = Literal["none", "blocked", "model", "processing", "unknown"]
 
 
 class PromptMemoryEntry(Base):  # type: ignore
@@ -93,71 +82,36 @@ class PromptMemoryEntry(Base):  # type: ignore
     def __init__(
         self,
         *,
-        role: ChatMessageRole,
-        original_prompt_text: str,
-        converted_prompt_text: str,
-        id: uuid.UUID = None,
-        conversation_id: str = None,
-        sequence: int = -1,
-        labels: Dict[str, str] = None,
-        prompt_metadata: JSON = None,
-        converters: "list[PromptConverter]" = None,  # type: ignore # noqa
-        prompt_target: "PromptTarget" = None,  # type: ignore # noqa
-        orchestrator: "Orchestrator" = None,  # type: ignore # noqa
-        original_prompt_data_type: PromptDataType = "text",
-        converted_prompt_data_type: PromptDataType = "text",
-        response_error: PromptResponseError = "none"
+        entry: PromptRequestPiece
     ):
+        self._entry = entry
 
-        self.id = id if id else uuid4()  # type: ignore
+        self.id = entry.id
+        self.role = entry.role
+        self.conversation_id = entry.conversation_id
+        self.sequence = entry.sequence
+        self.timestamp = entry.timestamp
+        self.labels = entry.labels
+        self.prompt_metadata = entry.prompt_metadata
+        self.converters = entry.converters
+        self.prompt_target = entry.prompt_target
+        self.orchestrator = entry.orchestrator
 
-        self.role = role
-        self.conversation_id = conversation_id if conversation_id else str(uuid4())
-        self.sequence = sequence
+        self.original_prompt_text = entry.original_prompt_text
+        self.original_prompt_data_type = entry.original_prompt_data_type
+        self.original_prompt_data_sha256 = entry.original_prompt_text
 
-        self.timestamp = datetime.utcnow()
-        self.labels = labels
-        self.prompt_metadata = prompt_metadata  # type: ignore
+        self.converted_prompt_data_type = entry.converted_prompt_data_type
+        self.converted_prompt_text = entry.converted_prompt_text
+        self.converted_prompt_data_sha256 = entry.converted_prompt_text
 
-        if converters:
-            self.converters = [converter.to_dict() for converter in converters]
+        self.response_error = entry.response_error
 
-        self.prompt_target = prompt_target.to_dict() if prompt_target else None
-        self.orchestrator = orchestrator.to_dict() if orchestrator else None
-
-        self.original_prompt_text = original_prompt_text
-        self.original_prompt_data_type = original_prompt_data_type
-        self.original_prompt_data_sha256 = self._create_sha256(original_prompt_text)
-
-        self.converted_prompt_data_type = converted_prompt_data_type
-        self.converted_prompt_text = converted_prompt_text
-        self.converted_prompt_data_sha256 = self._create_sha256(converted_prompt_text)
-
-        self.response_error = response_error
-
-    def is_sequence_set(self) -> bool:
-        return self.sequence != -1
-
-    def _create_sha256(self, text: str) -> str:
-        input_bytes = text.encode("utf-8")
-        hash_object = hashlib.sha256(input_bytes)
-        return hash_object.hexdigest()
+    def get_prompt_reqest_piece(self) -> PromptRequestPiece:
+        return self._entry
 
     def __str__(self):
-        return f"{self.role}: {self.converted_prompt_text}"
-
-class PromptRequestResponse:
-    def __init__(self):
-        pass
-
-    def __init__(self, request_pieces: list[PromptMemoryEntry]):
-        self.request_pieces = request_pieces
-
-    def __str__(self):
-        ret = ""
-        for request_piece in self.request_pieces:
-            ret += str(request_piece) + "\n"
-        return ret
+        return str(self._entry)
 
 
 class EmbeddingData(Base):  # type: ignore

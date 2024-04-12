@@ -5,8 +5,8 @@ import abc
 import asyncio
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptMemoryEntry, PromptRequestResponse
-from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 
 
@@ -18,19 +18,19 @@ class PromptNormalizer(abc.ABC):
         self.id = str(uuid4())
 
     def send_prompt(self,
-                    request: PromptRequestPieces,
+                    request: NormalizerRequest,
                     target: PromptTarget,
                     conversation_id: str = None,
                     sequence: int = -1,
                     labels = {},
                     orchestrator: 'Orchestrator' = None,
                     verbose: bool = False
-                    ) -> PromptRequestPieces:
+                    ) -> NormalizerRequest:
         """
         Sends a single request to a target
         """
 
-        request = self._get_prompt_memorey_entries(request=request,
+        request = self._get_prompt_request_response(request=request,
                                                    target=target,
                                                    conversation_id=conversation_id,
                                                    sequence=sequence,
@@ -40,19 +40,19 @@ class PromptNormalizer(abc.ABC):
         return target.send_prompt(prompt_request=request)
 
     async def send_prompt_async(self,
-                        request: PromptRequestPieces,
+                        request: NormalizerRequest,
                         target: PromptTarget,
                         conversation_id: str = None,
                         sequence: int = -1,
                         labels = {},
                         orchestrator: 'Orchestrator' = None,
                         verbose: bool = False
-                        ) -> PromptRequestPieces:
+                        ) -> NormalizerRequest:
         """
         Sends a single request to a target
         """
 
-        request = self._get_prompt_memorey_entries(request=request,
+        request = self._get_prompt_request_response(request=request,
                                                    target=target,
                                                    conversation_id=conversation_id,
                                                    sequence=sequence,
@@ -63,7 +63,7 @@ class PromptNormalizer(abc.ABC):
         return response
 
     async def send_prompt_batch_to_target_async(self,
-                                      requests: list[PromptRequestPieces],
+                                      requests: list[NormalizerRequest],
                                       target: PromptTarget,
                                       labels = {},
                                       orchestrator: 'Orchestrator' = None,
@@ -92,9 +92,9 @@ class PromptNormalizer(abc.ABC):
         for i in range(0, len(prompts), size):
             yield prompts[i : i + size]
 
-    def _get_prompt_memorey_entries(
+    def _get_prompt_request_response(
                     self,
-                    request: PromptRequestPieces,
+                    request: NormalizerRequest,
                     target: PromptTarget,
                     conversation_id: str = None,
                     sequence: int = -1,
@@ -112,7 +112,7 @@ class PromptNormalizer(abc.ABC):
                                                         input_type=request_piece.prompt_data_type)
 
             entries.append(
-                PromptMemoryEntry(
+                PromptRequestPiece(
                     role="user",
                     original_prompt_text=request_piece.prompt_text,
                     converted_prompt_text=converted_prompt_text,

@@ -10,7 +10,7 @@ import logging
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import PromptRequestResponse
-from pyrit.models import ChatMessage
+from pyrit.models.models import ChatMessage
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)

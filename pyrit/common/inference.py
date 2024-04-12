@@ -3,7 +3,7 @@
 
 import time
 
-from pyrit.models import (
+from pyrit.models.models import (
     EmbeddingData,
     EmbeddingResponse,
     EmbeddingUsageInformation,

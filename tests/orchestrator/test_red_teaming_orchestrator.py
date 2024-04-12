@@ -12,7 +12,7 @@ from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator
 from pyrit.orchestrator.end_token_red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models import AttackStrategy, ChatMessage, Score
+from pyrit.models.models import AttackStrategy, ChatMessage, Score
 from pyrit.common.path import DATASETS_PATH
 
 from tests.mocks import get_memory_interface

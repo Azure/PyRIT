@@ -9,8 +9,8 @@ from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import PromptDataType
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import PromptRequestPiece, PromptNormalizer
-from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
+from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
 
@@ -88,13 +88,13 @@ class PromptSendingOrchestrator(Orchestrator):
 
     def _create_prompt_request(self, text: str, prompt_type: PromptDataType):
 
-        request_piece = PromptRequestPiece(
+        request_piece = NormalizerRequestPiece(
             prompt_converters=self._prompt_converters,
             prompt_text=text,
             prompt_data_type=prompt_type,
             )
 
-        request = PromptRequestPieces([request_piece])
+        request = NormalizerRequest([request_piece])
         return request
 
     def get_memory(self):

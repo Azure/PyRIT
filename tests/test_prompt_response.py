@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pyrit.models import PromptResponse
+from pyrit.models.models import PromptResponse
 
 
 @pytest.fixture

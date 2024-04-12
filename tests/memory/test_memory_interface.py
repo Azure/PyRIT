@@ -8,7 +8,7 @@ from string import ascii_lowercase
 
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry
-from pyrit.models import ChatMessage
+from pyrit.models.models import ChatMessage
 
 from tests.mocks import get_memory_interface, get_sample_conversations
 

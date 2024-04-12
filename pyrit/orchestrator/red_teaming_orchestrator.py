@@ -7,11 +7,10 @@ from typing import Optional, Union
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptMemoryEntry, PromptRequestResponse
-from pyrit.models import AttackStrategy, ChatMessage
+from pyrit.models.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import PromptRequestPiece, PromptNormalizer
-from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
+from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 
@@ -175,14 +174,14 @@ class RedTeamingOrchestrator(Orchestrator):
             completion_state.is_complete = True
             return
 
-        target_prompt_obj = PromptRequestPiece(
+        target_prompt_obj = NormalizerRequestPiece(
             prompt_converters=self._prompt_converters,
             prompt_text=prompt,
             prompt_data_type="text",
         )
 
         response = self._prompt_normalizer.send_prompt(
-            request=PromptRequestPieces(target_prompt_obj),
+            request=NormalizerRequest(target_prompt_obj),
             target=self._prompt_target,
             conversation_id=self._prompt_target_conversation_id,
             labels=self._global_memory_labels,

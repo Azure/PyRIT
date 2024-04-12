@@ -4,12 +4,13 @@
 import abc
 from pathlib import Path
 
-from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData, PromptRequestResponse, PromptResponseError
+from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.models import ChatMessage
+from pyrit.models.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
 
 
@@ -105,17 +106,18 @@ class MemoryInterface(abc.ABC):
     def add_response_entries_to_memory(
             self,
             *,
-            request: PromptMemoryEntry,
+            request: PromptRequestPiece,
             response_text_pieces: list[str],
             response_type: PromptDataType = "text",
             metadata: str = None,
             error: PromptResponseError = "none"
     ) -> PromptRequestResponse:
-        
-        entries = []
+
+        request_pieces = []
+        memory_entries = []
 
         for resp_text in response_text_pieces:
-            entries.append(PromptMemoryEntry(
+            entry = PromptRequestPiece(
                 role="assistant",
                 original_prompt_text=resp_text,
                 converted_prompt_text=resp_text,
@@ -128,10 +130,12 @@ class MemoryInterface(abc.ABC):
                 converted_prompt_data_type=response_type,
                 metadata=metadata,
                 response_error=error
-            ))
+            )
+            memory_entries.append(PromptMemoryEntry(entry=entry))
+            request_pieces.append(entry)
 
-        self.insert_prompt_entries(entries)
-        return PromptRequestResponse(entries)
+        self.insert_prompt_entries(memory_entries)
+        return PromptRequestResponse(request_pieces=request_pieces)
 
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):

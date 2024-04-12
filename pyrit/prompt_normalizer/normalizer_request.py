@@ -7,7 +7,7 @@ from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
 
-class PromptRequestPiece(abc.ABC):
+class NormalizerRequestPiece(abc.ABC):
     _memory: MemoryInterface
 
     def __init__(
@@ -36,6 +36,6 @@ class PromptRequestPiece(abc.ABC):
         self.metadata = metadata
 
 
-class PromptRequestPieces(): 
-    def __init__(self, request_pieces: list[PromptRequestPiece]):
+class NormalizerRequest():
+    def __init__(self, request_pieces: list[NormalizerRequestPiece]):
         self.request_pieces = request_pieces

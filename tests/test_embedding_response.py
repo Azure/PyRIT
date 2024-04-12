@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
+from pyrit.models.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
 
 
 @pytest.fixture

@@ -6,7 +6,7 @@ import enum
 import requests
 
 from pyrit.interfaces import CompletionSupport
-from pyrit.models import PromptResponse
+from pyrit.models.models import PromptResponse
 
 
 class GandalfLevel(enum.Enum):
