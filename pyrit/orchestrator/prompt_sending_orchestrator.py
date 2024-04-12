@@ -64,7 +64,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 labels=self._global_memory_labels,
                 orchestrator=self,
                 verbose=self._verbose)
-            
+
             responses.append(response)
 
         return responses
@@ -93,7 +93,7 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt_text=text,
             prompt_data_type=prompt_type,
             )
-        
+
         request = PromptRequestPieces([request_piece])
         return request
 

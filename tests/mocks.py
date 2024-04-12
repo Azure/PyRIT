@@ -7,9 +7,9 @@ from typing import Generator
 from sqlalchemy import inspect
 
 from pyrit.memory import DuckDBMemory, MemoryInterface
-from pyrit.memory.memory_models import PromptMemoryEntry
+from pyrit.memory.memory_models import PromptMemoryEntry, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
 
 class MockHttpPostAsync(AbstractAsyncContextManager):
@@ -51,7 +51,7 @@ class MockHttpPostSync:
             raise Exception(f"HTTP Error {self.status}")
 
 
-class MockPromptTarget(PromptTarget):
+class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
     def __init__(self, id=None, memory=None) -> None:
@@ -59,14 +59,26 @@ class MockPromptTarget(PromptTarget):
         self.prompt_sent = []
         self._memory = memory
 
-    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.system_prompt = prompt
+    def set_system_prompt(
+        self,
+        *,
+        prompt_request: PromptRequestResponse
+    ):
+        self.system_prompt = prompt_request
 
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.prompt_sent.append(normalized_prompt)
+    def send_prompt(
+        self,
+        *,
+        prompt_request: PromptRequestResponse
+    ) -> PromptRequestResponse:
+        self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
 
-    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.prompt_sent.append(normalized_prompt)
+    async def send_prompt_async(
+        self,
+        *,
+        prompt_request: PromptRequestResponse
+    ) -> PromptRequestResponse:
+        self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
 
 
 def get_memory_interface() -> Generator[MemoryInterface, None, None]:

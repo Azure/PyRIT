@@ -7,9 +7,11 @@ from typing import Optional, Union
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
+from pyrit.memory.memory_models import PromptMemoryEntry, PromptRequestResponse
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer.prompt_request_piece import PromptRequestPieces
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 
@@ -150,16 +152,18 @@ class RedTeamingOrchestrator(Orchestrator):
 
             if not red_teaming_chat_messages:
                 self._red_teaming_chat.set_system_prompt(
-                    prompt=self._attack_strategy,
+                    system_prompt=self._attack_strategy,
                     conversation_id=self._red_teaming_chat_conversation_id,
-                    normalizer_id=self._prompt_normalizer.id,
+                    orchestrator=self,
+                    labels=self._global_memory_labels,
                 )
 
-            prompt = self._red_teaming_chat.send_prompt(
-                normalized_prompt=prompt_text,
+            response = self._red_teaming_chat.send_chat_prompt(
+                prompt=prompt_text,
                 conversation_id=self._red_teaming_chat_conversation_id,
-                normalizer_id=self._prompt_normalizer.id,
-            )  # TODO: Add a label to indicate this is coming from the red team orchestrator
+                orchestrator=self,
+                labels=self._global_memory_labels,
+            )
 
         red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
             conversation_id=self._red_teaming_chat_conversation_id
@@ -172,13 +176,19 @@ class RedTeamingOrchestrator(Orchestrator):
             return
 
         target_prompt_obj = PromptRequestPiece(
-            prompt_target=self._prompt_target,
             prompt_converters=self._prompt_converters,
             prompt_text=prompt,
-            conversation_id=self._prompt_target_conversation_id,
+            prompt_data_type="text",
         )
 
-        response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)
+        response = self._prompt_normalizer.send_prompt(
+            request=PromptRequestPieces(target_prompt_obj),
+            target=self._prompt_target,
+            conversation_id=self._prompt_target_conversation_id,
+            labels=self._global_memory_labels,
+            orchestrator=self,
+            verbose=self._verbose,
+        )
 
         if completion_state:
             target_messages.append(ChatMessage(role="user", content=prompt))

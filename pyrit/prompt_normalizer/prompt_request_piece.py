@@ -13,7 +13,7 @@ class PromptRequestPiece(abc.ABC):
     def __init__(
         self,
         *,
-        prompt_converters: 'PromptConverterList',
+        prompt_converters: 'list[PromptConverter]',
         prompt_text: str,
         prompt_data_type: PromptDataType,
         metadata: str = None,
@@ -24,7 +24,7 @@ class PromptRequestPiece(abc.ABC):
             or len(prompt_converters) == 0
             or not all(isinstance(converter, PromptConverter) for converter in prompt_converters)
         ):
-            raise ValueError("prompt_converters must be a PromptConverterList and be non-empty")
+            raise ValueError("prompt_converters must be a PromptConverter List and be non-empty")
 
         if not isinstance(prompt_text, str):
             raise ValueError("prompt_text must be a str")
@@ -36,6 +36,6 @@ class PromptRequestPiece(abc.ABC):
         self.metadata = metadata
 
 
-class PromptRequestPieces():    
+class PromptRequestPieces(): 
     def __init__(self, request_pieces: list[PromptRequestPiece]):
         self.request_pieces = request_pieces

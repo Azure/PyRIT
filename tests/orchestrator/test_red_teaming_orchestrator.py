@@ -42,9 +42,9 @@ def prompt_target(memory_interface) -> AzureOpenAIChatTarget:
 def simple_attack_strategy() -> AttackStrategy:
     return AttackStrategy(
         strategy=pathlib.Path(DATASETS_PATH)
-        / "attack_strategies"
-        / "multi_turn_chat"
-        / "red_team_chatbot_with_objective.yaml",
+        / "orchestrators"
+        / "red_teaming"
+        / "end_token.yaml",
         conversation_objective="Do bad stuff",
     )
 

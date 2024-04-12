@@ -65,29 +65,12 @@ class AzureMLChatTarget(PromptChatTarget):
         self._top_p = top_p
         self._repetition_penalty = repetition_penalty
 
-    def set_system_prompt(        
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> None:
-        
-        # TODO validate
-
-        system_request = prompt_request.request_pieces[0]
-        messages = self._memory.get_prompt_entries_with_conversation_id(system_request.conversation_id)
-
-        if messages:
-            raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
-
-        self._memory.insert_prompt_entries([system_request])
-
-
     def send_prompt(
         self,
         *,
         prompt_request: PromptRequestResponse
     ) -> PromptRequestResponse:
-        
+
         prompt_request = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(

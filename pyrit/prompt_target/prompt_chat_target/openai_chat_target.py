@@ -33,28 +33,12 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
-    def set_system_prompt(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> None:
-        
-        # TODO validate
-
-        system_request = prompt_request.request_pieces[0]
-        messages = self._memory.get_prompt_entries_with_conversation_id(system_request.conversation_id)
-
-        if messages:
-            raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
-
-        self._memory.insert_prompt_entries([system_request])
-
     def send_prompt(
         self,
         *,
         prompt_request: PromptRequestResponse
     ) -> PromptRequestResponse:
-        
+
 
         # TODO Validate
 
@@ -64,9 +48,9 @@ class OpenAIChatInterface(PromptChatTarget):
             conversation_id=prompt_request.conversation_id)
 
         prompt_request.sequence = len(messages)
-        self._memory.insert_prompt_entries([prompt_request])
-
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
+
+        self._memory.insert_prompt_entries(entries=[prompt_request])
 
         resp_text = self._complete_chat(
             messages=messages,

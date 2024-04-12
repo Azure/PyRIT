@@ -18,7 +18,6 @@ from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
-from pyrit.prompt_converter.prompt_converter import PromptConverterList
 from pyrit.prompt_target.text_target import TextTarget
 from tests.mocks import get_memory_interface
 
@@ -363,7 +362,7 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
     # Define a specific conversation_id
     specific_conversation_id = "test_conversation_id"
 
-    converters = PromptConverterList([Base64Converter()])
+    converters = [Base64Converter()]
     target = TextTarget()
 
     # Start a session
@@ -398,18 +397,18 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
         assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 10  # Assuming the test runs quickly
 
-        converters = json.loads(retrieved_entry.converters)
+        converters = retrieved_entry.converters
         assert len(converters) == 1
         assert converters[0]["__type__"] == "Base64Converter"
 
-        prompt_target = json.loads(retrieved_entry.prompt_target)
+        prompt_target = retrieved_entry.prompt_target
         assert prompt_target["__type__"] == "TextTarget"
 
         labels = retrieved_entry.labels
         assert labels["normalizer_id"] == "id1"
 
 
-def test_get_memories_with_normalizer_id(setup_duckdb_database):
+def test_get_memories_with_orchestrator_id(setup_duckdb_database):
     # Define a specific normalizer_id
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
@@ -452,7 +451,7 @@ def test_get_memories_with_normalizer_id(setup_duckdb_database):
         # Verify that the retrieved entries match the expected normalizer_id
         assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
         for retrieved_entry in retrieved_entries:
-            assert retrieved_entry.orchestrator == specific_normalizer_id
+            assert retrieved_entry.orchestrator["id"] == str(orchestrator1.id)
             assert "Hello" in retrieved_entry.original_prompt_text  # Basic check to ensure content is as expected
 
 

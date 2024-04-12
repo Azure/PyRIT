@@ -17,7 +17,7 @@ class PromptNormalizer(abc.ABC):
         self._memory = memory
         self.id = str(uuid4())
 
-    def send_prompt(self, 
+    def send_prompt(self,
                     request: PromptRequestPieces,
                     target: PromptTarget,
                     conversation_id: str = None,
@@ -37,9 +37,9 @@ class PromptNormalizer(abc.ABC):
                                                    labels=labels,
                                                    orchestrator=orchestrator)
 
-        return target.send_prompt(request)
-    
-    async def send_prompt_async(self, 
+        return target.send_prompt(prompt_request=request)
+
+    async def send_prompt_async(self,
                         request: PromptRequestPieces,
                         target: PromptTarget,
                         conversation_id: str = None,
@@ -52,15 +52,14 @@ class PromptNormalizer(abc.ABC):
         Sends a single request to a target
         """
 
-        request = self._get_prompt_memorey_entries(request_piece=request,
+        request = self._get_prompt_memorey_entries(request=request,
                                                    target=target,
                                                    conversation_id=conversation_id,
                                                    sequence=sequence,
                                                    labels=labels,
-                                                   orchestrator=orchestrator,
-                                                   verbose=verbose)
+                                                   orchestrator=orchestrator)
 
-        response = await target.send_prompt_async(request)
+        response = await target.send_prompt_async(prompt_request=request)
         return response
 
     async def send_prompt_batch_to_target_async(self,
@@ -102,16 +101,16 @@ class PromptNormalizer(abc.ABC):
                     labels = {},
                     orchestrator: 'Orchestrator' = None,
                     ) -> PromptRequestResponse:
-        
+
         entries = []
 
         for request_piece in request.request_pieces:
 
-            converted_prompt_text = ""
+            converted_prompt_text = request_piece.prompt_text
             for converter in request_piece.prompt_converters:
                 converted_prompt_text = converter.convert(prompt=converted_prompt_text,
                                                         input_type=request_piece.prompt_data_type)
-                
+
             entries.append(
                 PromptMemoryEntry(
                     role="user",
@@ -129,5 +128,5 @@ class PromptNormalizer(abc.ABC):
                 )
             )
 
-        return PromptRequestResponse(entries=entries)
+        return PromptRequestResponse(request_pieces=entries)
 

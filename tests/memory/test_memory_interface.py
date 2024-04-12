@@ -42,7 +42,7 @@ def test_count_of_memories_matches_number_of_conversations_added_1(
 ):
     expected_count = 1
     message = sample_conversations[0]
-    memory_interface.insert_prompt_entries(message)
+    memory_interface.insert_prompt_entries(entries=[message])
     c = memory_interface.get_all_prompt_entries()
     assert len(c) == expected_count
 
@@ -52,5 +52,5 @@ def test_insert_prompt_entries_added(
         sample_conversations: list[PromptMemoryEntry]
 ):
     expected_count = 3
-    memory_interface.insert_prompt_entries(sample_conversations)
+    memory_interface.insert_prompt_entries(entries=sample_conversations)
     assert len(memory_interface.get_all_prompt_entries()) == expected_count

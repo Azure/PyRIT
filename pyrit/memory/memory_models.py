@@ -19,7 +19,8 @@ from pyrit.models import ChatMessageRole
 Base = declarative_base()
 
 
-PromptDataType = Literal["text", "image_url"]
+# TODO image_path
+PromptDataType = Literal["text", "image_path"]
 
 """
 The type of the error in the prompt response
@@ -100,7 +101,7 @@ class PromptMemoryEntry(Base):  # type: ignore
         sequence: int = -1,
         labels: Dict[str, str] = None,
         prompt_metadata: JSON = None,
-        converters: "PromptConverterList" = None,  # type: ignore # noqa
+        converters: "list[PromptConverter]" = None,  # type: ignore # noqa
         prompt_target: "PromptTarget" = None,  # type: ignore # noqa
         orchestrator: "Orchestrator" = None,  # type: ignore # noqa
         original_prompt_data_type: PromptDataType = "text",
@@ -118,9 +119,11 @@ class PromptMemoryEntry(Base):  # type: ignore
         self.labels = labels
         self.prompt_metadata = prompt_metadata  # type: ignore
 
-        self.converters = converters.to_json() if converters else None
-        self.prompt_target = prompt_target.to_json() if prompt_target else None
-        self.orchestrator = orchestrator.to_json() if orchestrator else None
+        if converters:
+            self.converters = [converter.to_dict() for converter in converters]
+
+        self.prompt_target = prompt_target.to_dict() if prompt_target else None
+        self.orchestrator = orchestrator.to_dict() if orchestrator else None
 
         self.original_prompt_text = original_prompt_text
         self.original_prompt_data_type = original_prompt_data_type

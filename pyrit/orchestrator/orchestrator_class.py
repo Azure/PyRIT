@@ -55,9 +55,9 @@ class Orchestrator(abc.ABC):
         """
         self._memory.dispose_engine()
 
-    def to_json(self):
+    def to_dict(self):
         s = {}
         s["__type__"] = self.__class__.__name__
         s["__module__"] = self.__class__.__module__
         s["id"] = str(self.id)
-        return json.dumps(s)
+        return s

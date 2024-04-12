@@ -69,22 +69,15 @@ def test_send_prompts_multiple_converters(mock_target: MockPromptTarget):
     assert mock_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
 
-def test_send_prompts_multiple_converters_include_original(mock_target: MockPromptTarget):
-    b64_converter = Base64Converter()
-    join_converter = StringJoinConverter(join_value="_")
-
-    # This should base64 encode the prompt and then join the characters with an underscore
-    converters = [b64_converter, join_converter]
-
-    orchestrator = PromptSendingOrchestrator(
-        prompt_target=mock_target, prompt_converters=converters, include_original_prompts=True
-    )
-
-    orchestrator.send_text_prompts(["Hello"])
-    assert mock_target.prompt_sent == ["Hello", "S_G_V_s_b_G_8_="]
-
-
 def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
     assert orchestrator._memory is mock_target._memory
+
+def test_send_prompt_to_dict(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+
+    d = orchestrator.to_dict()
+    assert d["id"]
+    assert d["__type__"] == "PromptSendingOrchestrator"
+    assert d["__module__"] == "pyrit.orchestrator.prompt_sending_orchestrator"
