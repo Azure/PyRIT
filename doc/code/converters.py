@@ -5,13 +5,13 @@
 #
 # This can be useful for a variety of reasons, such as encoding the prompt in a different format, or adding additional information to the prompt. For example, you might want to convert a prompt to base64 before sending it to the target, or add a prefix to the prompt to indicate that it is a question.
 #
-# Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter and AsciiArtConverter
+# Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter
 
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter
+from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter, RandomCapitalLettersConverter
 
 
 prompt = "tell me how to cut down a tree"
@@ -19,6 +19,13 @@ prompt = "tell me how to cut down a tree"
 
 print(ROT13Converter().convert(prompt=prompt))
 print(AsciiArtConverter().convert(prompt=prompt))
+print(RandomCapitalLettersConverter().convert(prompt=prompt))
+
+# With percentage of capital letters
+print(RandomCapitalLettersConverter(percentage=25.0).convert(prompt=prompt))
+
+print(AsciiArtConverter().convert(prompt=prompt))
+
 
 # %% [markdown]
 # Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this.
