@@ -26,29 +26,33 @@ class AddTextImageConverter(PromptConverter):
         if not self.is_supported(input_type):
             raise ValueError("Input type not supported")
 
+        # Open the image
         original_img = Image.open(self.input_file)
+
+        # Specify the font and text for the bottom text
+        font = ImageFont.load_default()
+
+        # Calculate the width of the text
+        text_width = font.getsize(prompt)[0]
 
         # Calculate the dimensions for the new image with space for text
         text_height = 100
         new_width = original_img.width
         new_height = original_img.height + text_height
 
-        # Create a new image for the modified version
+        # Create a new image with white background and old photo
         new_img = Image.new("RGB", (new_width, new_height), (255, 255, 255))
         new_img.paste(original_img, (0, 0))
         draw = ImageDraw.Draw(new_img)
 
-        # Specify the font, text size, and position at bottom center
-        font = ImageFont.load_default()
-        text_width, text_height = draw.textsize(prompt, font=font)
+        # Calculate text position at the bottom center
         text_x = (new_width - text_width) // 2
-        text_y = original_img.height + 10
+        text_y = original_img.height + 10  # 10 pixels below the original image
 
+        # Draw text and save
         draw.text((text_x, text_y), prompt, fill=(0, 0, 0), font=font)
-
-        # Save the new image
         new_img.save(self.output_file)
-        return self.output_file  # returns output file name for now
+        return str(self.output_file)  # returns output file name for now
 
     def is_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_file_name"
