@@ -4,15 +4,13 @@
 import logging
 
 from typing import Optional
-from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import PromptDataType
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter, NoOpConverter
+from pyrit.prompt_converter import PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +61,6 @@ class PromptSendingOrchestrator(Orchestrator):
                 target=self._prompt_target,
                 labels=self._global_memory_labels,
                 orchestrator=self,
-                verbose=self._verbose,
             )
 
             responses.append(response)
@@ -84,6 +81,5 @@ class PromptSendingOrchestrator(Orchestrator):
             target=self._prompt_target,
             labels=self._global_memory_labels,
             orchestrator=self,
-            verbose=self._verbose,
             batch_size=self._batch_size,
         )

@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import abc
-import json
 
 from pyrit.memory.memory_models import PromptDataType
 

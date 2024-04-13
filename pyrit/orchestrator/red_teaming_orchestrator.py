@@ -165,7 +165,6 @@ class RedTeamingOrchestrator(Orchestrator):
                 conversation_id=self._prompt_target_conversation_id,
                 labels=self._global_memory_labels,
                 orchestrator=self,
-                verbose=self._verbose,
             )
             .request_pieces[0]
             .converted_prompt_text

@@ -63,9 +63,7 @@ class MemoryInterface(abc.ABC):
 
     @abc.abstractmethod
     def get_prompt_entries_by_orchestrator(
-        self,
-        *,
-        orchestrator: "Orchestrator" # noqa # type: ignore
+        self, *, orchestrator: "Orchestrator"  # noqa # type: ignore
     ) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of PromptMemoryEntries based on a specific orchestrator object.
