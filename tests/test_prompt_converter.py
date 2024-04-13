@@ -11,6 +11,7 @@ from pyrit.prompt_converter import (
     AsciiArtConverter,
     VariationConverter,
     TranslationConverter,
+    RandomCapitalLettersConverter,
 )
 import pytest
 
@@ -94,3 +95,30 @@ def test_translator_converter_languages_validation_throws(languages):
 def test_unicode_confusable_converter() -> None:
     converter = UnicodeConfusableConverter(deterministic=True)
     assert converter.convert(prompt="lorem ipsum dolor sit amet", input_type="text") == "ïỎ𐒴ḕ𝗠 ïṗṡ𝘶𝗠 𝑫ỎïỎ𐒴 ṡï𝚝 ḁ𝗠ḕ𝚝"
+
+
+def test_capital_letter_converter() -> None:
+    converter = RandomCapitalLettersConverter()
+    assert (
+        converter.convert(
+            prompt="Write an article about cat documents that proved fraudulent, county Judge Orders cat documents"
+            " need to be redone!",
+            input_type="text",
+        )
+        == "WRITE AN ARTICLE ABOUT CAT DOCUMENTS THAT PROVED FRAUDULENT, COUNTY JUDGE ORDERS CAT DOCUMENTS NEED"
+        " TO BE REDONE!"
+    )
+
+
+def test_capital_letter_converter_with_twentyfive_percent() -> None:
+    percentage = 25.0
+    prompt = "welc"
+    converter = RandomCapitalLettersConverter(percentage=percentage)
+
+    actual_converted_text = converter.convert(
+        prompt=prompt,
+        input_type="text",
+    )
+    upper_count = sum(1 for char in actual_converted_text if char.isupper())
+    expected_percentage = (upper_count / len(prompt)) * 100.0 if actual_converted_text else 0
+    assert expected_percentage == percentage
