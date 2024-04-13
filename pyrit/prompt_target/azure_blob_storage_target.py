@@ -141,16 +141,14 @@ class AzureBlobStorageTarget(PromptTarget):
         data = str.encode(request.converted_prompt_text)
         blob_url = self._container_url + "/" + file_name
 
-        self._memory.insert_prompt_entries([request])
+        request.converted_prompt_text = blob_url
+        request.converted_prompt_data_type = "url"
+
+        self._memory.add_request_piece_to_memory(request_pieces=[request])
 
         self._upload_blob(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request,
-            response_text_pieces=[blob_url]
-        )
-
-        return response_entry
+        return PromptRequestResponse([request])
 
     async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:
         """
@@ -201,11 +199,11 @@ class AzureBlobStorageTarget(PromptTarget):
         data = str.encode(request.converted_prompt_text)
         blob_url = self._container_url + "/" + file_name
 
-        await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
+        request.converted_prompt_text = blob_url
+        request.converted_prompt_data_type = "url"
 
-        response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request,
-            response_text_pieces=[blob_url]
-        )
+        self._memory.add_request_piece_to_memory(request_pieces=[request])
 
-        return response_entry
+        self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
+
+        return PromptRequestResponse([request])

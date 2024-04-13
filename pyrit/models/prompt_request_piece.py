@@ -14,7 +14,7 @@ from pyrit.models.models import ChatMessageRole
 
 
 
-PromptDataType = Literal["text", "image_path"]
+PromptDataType = Literal["text", "image_path", "url"]
 
 """
 The type of the error in the prompt response
