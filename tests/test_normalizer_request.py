@@ -26,7 +26,7 @@ class MockPromptConverter(PromptConverter):
 def test_prompt_request_piece_init_valid_arguments():
     prompt_converters = [MockPromptConverter()]
     prompt_text = "Hello"
-    metadata="meta"
+    metadata = "meta"
 
     prompt = NormalizerRequestPiece(
         prompt_converters=prompt_converters,
@@ -39,6 +39,7 @@ def test_prompt_request_piece_init_valid_arguments():
     assert prompt.prompt_text == prompt_text
     assert prompt.prompt_data_type == "text"
     assert prompt.metadata == metadata
+
 
 def test_prompt_init_no_metadata():
     prompt_converters = [MockPromptConverter()]
@@ -55,9 +56,10 @@ def test_prompt_init_no_metadata():
     assert prompt.prompt_data_type == "text"
     assert not prompt.metadata
 
+
 def test_prompt_request_piece_init_invalid_converter():
     prompt_text = "Hello"
-    metadata="meta"
+    metadata = "meta"
 
     with pytest.raises(ValueError):
         NormalizerRequestPiece(
@@ -67,9 +69,10 @@ def test_prompt_request_piece_init_invalid_converter():
             metadata=metadata,
         )
 
+
 def test_prompt_init_empty_prompt_converters():
     prompt_text = "Hello"
-    metadata="meta"
+    metadata = "meta"
 
     with pytest.raises(ValueError):
         NormalizerRequestPiece(
@@ -80,9 +83,8 @@ def test_prompt_init_empty_prompt_converters():
         )
 
 
-
 def test_prompt_init_invalid_prompt_text():
-    metadata="meta"
+    metadata = "meta"
 
     with pytest.raises(ValueError):
         NormalizerRequestPiece(

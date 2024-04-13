@@ -158,14 +158,18 @@ class RedTeamingOrchestrator(Orchestrator):
             prompt_data_type="text",
         )
 
-        response_text = self._prompt_normalizer.send_prompt(
-            request=NormalizerRequest([target_prompt_obj]),
-            target=self._prompt_target,
-            conversation_id=self._prompt_target_conversation_id,
-            labels=self._global_memory_labels,
-            orchestrator=self,
-            verbose=self._verbose,
-        ).request_pieces[0].converted_prompt_text
+        response_text = (
+            self._prompt_normalizer.send_prompt(
+                request=NormalizerRequest([target_prompt_obj]),
+                target=self._prompt_target,
+                conversation_id=self._prompt_target_conversation_id,
+                labels=self._global_memory_labels,
+                orchestrator=self,
+                verbose=self._verbose,
+            )
+            .request_pieces[0]
+            .converted_prompt_text
+        )
 
         if completion_state:
             target_messages.append(ChatMessage(role="user", content=response_text))
@@ -195,11 +199,15 @@ class RedTeamingOrchestrator(Orchestrator):
                 labels=self._global_memory_labels,
             )
 
-        response_text = self._red_teaming_chat.send_chat_prompt(
-            prompt=prompt_text,
-            conversation_id=self._red_teaming_chat_conversation_id,
-            orchestrator=self,
-            labels=self._global_memory_labels,
-        ).request_pieces[0].converted_prompt_text
+        response_text = (
+            self._red_teaming_chat.send_chat_prompt(
+                prompt=prompt_text,
+                conversation_id=self._red_teaming_chat_conversation_id,
+                orchestrator=self,
+                labels=self._global_memory_labels,
+            )
+            .request_pieces[0]
+            .converted_prompt_text
+        )
 
         return response_text

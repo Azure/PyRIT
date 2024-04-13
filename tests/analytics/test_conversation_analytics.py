@@ -10,10 +10,12 @@ from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 
 from tests.mocks import get_sample_conversation_entries
 
+
 @pytest.fixture
 def mock_memory_interface():
     memory_interface = MagicMock(spec=MemoryInterface)
     return memory_interface
+
 
 @pytest.fixture
 def sample_conversations_entries():
@@ -44,7 +46,6 @@ def test_get_similar_chat_messages_by_embedding(mock_memory_interface, sample_co
     sample_conversations_entries[0].converted_prompt_text = "Similar message"
     sample_conversations_entries[1].converted_prompt_text = "Different message"
 
-
     # Mock EmbeddingData entries linked to the ConversationData entries
     target_embedding = [0.1, 0.2, 0.3]
     similar_embedding = [0.1, 0.2, 0.31]  # Slightly different, but should be similar
@@ -52,7 +53,9 @@ def test_get_similar_chat_messages_by_embedding(mock_memory_interface, sample_co
 
     mock_embeddings = [
         EmbeddingData(id=sample_conversations_entries[0].id, embedding=similar_embedding, embedding_type_name="model1"),
-        EmbeddingData(id=sample_conversations_entries[1].id, embedding=different_embedding, embedding_type_name="model2"),
+        EmbeddingData(
+            id=sample_conversations_entries[1].id, embedding=different_embedding, embedding_type_name="model2"
+        ),
     ]
 
     # Mock the get_all_prompt_entries method to return the mock EmbeddingData entries

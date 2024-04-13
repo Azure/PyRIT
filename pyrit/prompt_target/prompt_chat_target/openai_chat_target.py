@@ -33,19 +33,13 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
-    def send_prompt(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
-
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         # TODO Validate
 
         prompt_request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(
-            conversation_id=prompt_request.conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
 
         prompt_request.sequence = len(messages)
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
@@ -65,25 +59,18 @@ class OpenAIChatInterface(PromptChatTarget):
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-
         response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request,
-            response_text_pieces=[resp_text]
+            request=prompt_request, response_text_pieces=[resp_text]
         )
 
         return response_entry
 
-    async def send_prompt_async(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         # TODO validate
         prompt_request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(
-            conversation_id=prompt_request.conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
 
         prompt_request.sequence = len(messages)
         self._memory.insert_prompt_entries([prompt_request])
@@ -104,8 +91,7 @@ class OpenAIChatInterface(PromptChatTarget):
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
         response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request,
-            response_text_pieces=[resp_text]
+            request=prompt_request, response_text_pieces=[resp_text]
         )
 
         return response_entry
@@ -208,7 +194,6 @@ class OpenAIChatInterface(PromptChatTarget):
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
         return self.parse_chat_completion(response)
-
 
 
 class AzureOpenAIChatTarget(OpenAIChatInterface):

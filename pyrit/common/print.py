@@ -9,7 +9,6 @@ from pyrit.models import PromptRequestPiece
 from termcolor._types import Color
 
 
-
 def print_chat_messages_with_color(
     messages: list[ChatMessage | PromptRequestPiece],
     max_content_character_width: int = 80,

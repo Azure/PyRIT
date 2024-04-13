@@ -23,16 +23,11 @@ class GandalfTarget(GandalfCompletionEngine, PromptTarget):
         super().__init__(level=level)
         self._memory = memory if memory else DuckDBMemory()
 
-    def send_prompt(       
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
-        
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+
         prompt_request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(
-            conversation_id=prompt_request.conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
 
         prompt_request.sequence = len(messages)
         self._memory.insert_prompt_entries([prompt_request])
@@ -46,18 +41,11 @@ class GandalfTarget(GandalfCompletionEngine, PromptTarget):
 
         logger.info(f'Received the following response from the prompt target "{response.completion}"')
 
-
         response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request,
-            response_text_pieces=[response.completion]
+            request=prompt_request, response_text_pieces=[response.completion]
         )
 
         return response_entry
 
-
-    async def send_prompt_async(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         raise NotImplementedError()

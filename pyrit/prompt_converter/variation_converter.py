@@ -41,7 +41,7 @@ class VariationConverter(PromptConverter):
             system_prompt=self.system_prompt,
             conversation_id=self._conversation_id,
             orchestrator=None,
-            labels=self._labels
+            labels=self._labels,
         )
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
@@ -57,20 +57,21 @@ class VariationConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         request = PromptRequestResponse(
-        [
-            PromptRequestPiece(
-                role="user",
-                original_prompt_text=prompt,
-                converted_prompt_text=prompt,
-                conversation_id=self._conversation_id,
-                sequence=1,
-                labels=self._labels,
-                prompt_target=self.converter_target,
-                orchestrator=None,
-                original_prompt_data_type=input_type,
-                converted_prompt_data_type=input_type,
-            )
-        ])
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_prompt_text=prompt,
+                    converted_prompt_text=prompt,
+                    conversation_id=self._conversation_id,
+                    sequence=1,
+                    labels=self._labels,
+                    prompt_target=self.converter_target,
+                    orchestrator=None,
+                    original_prompt_data_type=input_type,
+                    converted_prompt_data_type=input_type,
+                )
+            ]
+        )
 
         response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
 

@@ -65,23 +65,15 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator: 'Orchestrator',
+        orchestrator: "Orchestrator",
         labels: dict,
     ) -> None:
         self.system_prompt = system_prompt
 
-    def send_prompt(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
 
-    async def send_prompt_async(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
 
 
@@ -133,6 +125,7 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
             orchestrator=orchestrator2,
         ),
     ]
+
 
 def get_sample_conversation_entries() -> list[PromptMemoryEntry]:
 

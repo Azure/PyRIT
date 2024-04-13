@@ -28,6 +28,7 @@ from tests.mocks import get_sample_conversation_entries
 def setup_duckdb_database() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
+
 @pytest.fixture
 def sample_conversation_entries() -> list[PromptMemoryEntry]:
     return get_sample_conversation_entries()
@@ -199,7 +200,11 @@ def test_insert_entry_violates_constraint(setup_duckdb_database):
     # Create two entries with the same UUID
     entry1 = PromptMemoryEntry(
         entry=PromptRequestPiece(
-            id=fixed_uuid, conversation_id="123", role="user", original_prompt_text="Hello", converted_prompt_text="Hello"
+            id=fixed_uuid,
+            conversation_id="123",
+            role="user",
+            original_prompt_text="Hello",
+            converted_prompt_text="Hello",
         )
     )
 
@@ -315,7 +320,6 @@ def test_query_entries(setup_duckdb_database, sample_conversation_entries):
         sample_conversation_entries[i].conversation_id = str(i)
         sample_conversation_entries[i].original_prompt_text = f"Message {i}"
         sample_conversation_entries[i].converted_prompt_text = f"Message {i}"
-
 
     setup_duckdb_database.insert_entries(entries=sample_conversation_entries)
 
@@ -458,9 +462,7 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
         session.commit()  # Ensure all entries are committed to the database
 
         # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-        retrieved_entries = setup_duckdb_database.get_prompt_entries_by_orchestrator(
-            orchestrator=orchestrator1
-        )
+        retrieved_entries = setup_duckdb_database.get_prompt_entries_by_orchestrator(orchestrator=orchestrator1)
 
         # Verify that the retrieved entries match the expected normalizer_id
         assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
@@ -478,7 +480,6 @@ def test_update_entries_by_conversation_id(setup_duckdb_database, sample_convers
 
     sample_conversation_entries[1].conversation_id = "other_id"
     original_content = sample_conversation_entries[1].original_prompt_text
-
 
     # Insert the ConversationData entries using the insert_entries method within a session
     with setup_duckdb_database.get_session() as session:

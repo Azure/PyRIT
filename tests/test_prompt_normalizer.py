@@ -26,7 +26,7 @@ class MockPromptConverter(PromptConverter):
 
 def test_send_prompt_multiple_converters():
     prompt_target = MockPromptTarget()
-    prompt_converters =  [Base64Converter(), StringJoinConverter(join_value="_")]
+    prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
     prompt_text = "Hello"
 
     prompt = NormalizerRequestPiece(
@@ -38,9 +38,7 @@ def test_send_prompt_multiple_converters():
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    normalizer.send_prompt(request=NormalizerRequest([prompt]),
-                           target=prompt_target)
-
+    normalizer.send_prompt(request=NormalizerRequest([prompt]), target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
@@ -59,9 +57,7 @@ async def test_send_prompt_async_multiple_converters():
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    await normalizer.send_prompt_async(request=NormalizerRequest([prompt]),
-                           target=prompt_target)
-
+    await normalizer.send_prompt_async(request=NormalizerRequest([prompt]), target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
@@ -80,9 +76,6 @@ async def test_prompt_normalizer_send_prompt_batch_async():
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    await normalizer.send_prompt_batch_to_target_async(
-        requests=[NormalizerRequest([prompt])],
-        target=prompt_target
-    )
+    await normalizer.send_prompt_batch_to_target_async(requests=[NormalizerRequest([prompt])], target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]

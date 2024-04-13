@@ -63,7 +63,8 @@ class PromptSendingOrchestrator(Orchestrator):
                 target=self._prompt_target,
                 labels=self._global_memory_labels,
                 orchestrator=self,
-                verbose=self._verbose)
+                verbose=self._verbose,
+            )
 
             responses.append(response)
 
@@ -84,4 +85,5 @@ class PromptSendingOrchestrator(Orchestrator):
             labels=self._global_memory_labels,
             orchestrator=self,
             verbose=self._verbose,
-            batch_size=self._batch_size)
+            batch_size=self._batch_size,
+        )

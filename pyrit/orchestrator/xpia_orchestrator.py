@@ -76,9 +76,7 @@ class XPIATestOrchestrator(Orchestrator):
         )
 
         target_request = self._create_normalizer_request(
-            converters=self._prompt_converters,
-            prompt_text=self._attack_content,
-            prompt_type="text"
+            converters=self._prompt_converters, prompt_text=self._attack_content, prompt_type="text"
         )
 
         response = self._prompt_normalizer.send_prompt(
@@ -91,11 +89,8 @@ class XPIATestOrchestrator(Orchestrator):
 
         logger.info(f'Received the following response from the prompt target "{response}"')
 
-
         processing_prompt_req = self._create_normalizer_request(
-            converters=[NoOpConverter()],
-            prompt_text=self._processing_prompt,
-            prompt_type="text"
+            converters=[NoOpConverter()], prompt_text=self._processing_prompt, prompt_type="text"
         )
 
         processing_response = self._prompt_normalizer.send_prompt(

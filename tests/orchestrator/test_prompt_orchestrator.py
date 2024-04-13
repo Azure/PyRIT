@@ -74,6 +74,7 @@ def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarg
 
     assert orchestrator._memory is mock_target._memory
 
+
 def test_send_prompt_to_dict(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 

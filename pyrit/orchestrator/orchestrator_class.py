@@ -2,11 +2,9 @@
 # Licensed under the MIT license.
 
 import abc
-import json
 import logging
 
 from typing import Optional
-from uuid import uuid4
 import uuid
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
@@ -57,13 +55,7 @@ class Orchestrator(abc.ABC):
         """
         self._memory.dispose_engine()
 
-
-    def _create_normalizer_request(
-            self,
-            prompt_text: str,
-            prompt_type: PromptDataType = "text",
-            converters = None
-        ):
+    def _create_normalizer_request(self, prompt_text: str, prompt_type: PromptDataType = "text", converters=None):
 
         if converters is None:
             converters = self._prompt_converters
@@ -72,7 +64,7 @@ class Orchestrator(abc.ABC):
             prompt_converters=converters,
             prompt_text=prompt_text,
             prompt_data_type=prompt_type,
-            )
+        )
 
         request = NormalizerRequest([request_piece])
         return request

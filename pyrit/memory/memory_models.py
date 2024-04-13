@@ -1,15 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import hashlib
 import uuid
 
-from datetime import datetime
-from typing import Dict, Literal
-from uuid import uuid4
+from typing import Dict
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, BOOLEAN
+from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -18,7 +15,6 @@ from pyrit.models import PromptRequestPiece, PromptDataType
 
 
 Base = declarative_base()
-
 
 
 class PromptMemoryEntry(Base):  # type: ignore
@@ -79,11 +75,7 @@ class PromptMemoryEntry(Base):  # type: ignore
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
-    def __init__(
-        self,
-        *,
-        entry: PromptRequestPiece
-    ):
+    def __init__(self, *, entry: PromptRequestPiece):
         self._entry = entry
 
         self.id = entry.id

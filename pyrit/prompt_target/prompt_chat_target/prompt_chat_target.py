@@ -19,7 +19,7 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator: 'Orchestrator',
+        orchestrator: "Orchestrator",
         labels: dict,
     ) -> None:
         """
@@ -50,15 +50,16 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator: 'Orchestrator',
+        orchestrator: "Orchestrator",
         labels: dict,
     ) -> PromptRequestResponse:
         """
         Sends a text prompt to the target without having to build the prompt request.
         """
 
-        request = PromptRequestResponse(request_pieces=[
-            PromptRequestPiece(
+        request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
                     role="user",
                     conversation_id=conversation_id,
                     sequence=0,
@@ -68,7 +69,8 @@ class PromptChatTarget(PromptTarget):
                     orchestrator=orchestrator,
                     labels=labels,
                 )
-        ])
+            ]
+        )
 
         return self.send_prompt(prompt_request=request)
 
@@ -77,15 +79,16 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator: 'Orchestrator',
+        orchestrator: "Orchestrator",
         labels: dict,
     ) -> PromptRequestResponse:
         """
         Sends a text prompt to the target without having to build the prompt request.
         """
 
-        request = PromptRequestResponse(request_pieces=[
-            PromptRequestPiece(
+        request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
                     role="user",
                     conversation_id=conversation_id,
                     sequence=0,
@@ -95,6 +98,7 @@ class PromptChatTarget(PromptTarget):
                     orchestrator=orchestrator,
                     labels=labels,
                 )
-        ])
+            ]
+        )
 
         return self.send_prompt_async(prompt_request=request)

@@ -8,6 +8,7 @@ import logging
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestResponse
 
+
 class PromptTarget(abc.ABC):
     _memory: MemoryInterface
 
@@ -20,23 +21,14 @@ class PromptTarget(abc.ABC):
     def __init__(self, memory: MemoryInterface, verbose: bool = False) -> None:
         self._memory = memory if memory else DuckDBMemory()
 
-
     @abc.abstractmethod
-    def send_prompt(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt to the prompt target and adds the request and response to memory
         """
 
     @abc.abstractmethod
-    async def send_prompt_async(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.
         """

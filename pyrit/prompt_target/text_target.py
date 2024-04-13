@@ -31,23 +31,16 @@ class TextTarget(PromptTarget):
         *,
         prompt_request: PromptRequestResponse,
     ) -> PromptRequestResponse:
-        
+
         self._text_stream.write(f"{str(prompt_request)}\n")
         self._memory.add_request_piece_to_memory(request_pieces=prompt_request.request_pieces)
 
         return None
-    
 
     async def send_prompt_async(
-        self,
-        *,
-        prompt_request: PromptRequestResponse,
-        verbose: bool = False
+        self, *, prompt_request: PromptRequestResponse, verbose: bool = False
     ) -> PromptRequestResponse:
-        
+
         await asyncio.sleep(0)
 
-        return self.send_prompt(
-            prompt_request=prompt_request,
-            verbose=verbose
-        )
+        return self.send_prompt(prompt_request=prompt_request, verbose=verbose)

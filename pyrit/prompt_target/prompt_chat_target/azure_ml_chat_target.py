@@ -65,16 +65,11 @@ class AzureMLChatTarget(PromptChatTarget):
         self._top_p = top_p
         self._repetition_penalty = repetition_penalty
 
-    def send_prompt(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         prompt_request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(
-            conversation_id=prompt_request.conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
 
         prompt_request.sequence = len(messages)
         self._memory.insert_prompt_entries([prompt_request])
@@ -93,24 +88,17 @@ class AzureMLChatTarget(PromptChatTarget):
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-
         response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request,
-            response_text_pieces=[resp_text]
+            request=prompt_request, response_text_pieces=[resp_text]
         )
 
         return response_entry
 
-    async def send_prompt_async(
-       self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
-        
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+
         prompt_request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(
-            conversation_id=prompt_request.conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
 
         prompt_request.sequence = len(messages)
         self._memory.insert_prompt_entries([prompt_request])
@@ -129,10 +117,8 @@ class AzureMLChatTarget(PromptChatTarget):
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-
         response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request,
-            response_text_pieces=[resp_text]
+            request=prompt_request, response_text_pieces=[resp_text]
         )
 
         return response_entry
@@ -212,7 +198,6 @@ class AzureMLChatTarget(PromptChatTarget):
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
         return response.json()["output"]
-
 
     def _construct_http_body(
         self,

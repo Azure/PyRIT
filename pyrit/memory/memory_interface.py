@@ -62,7 +62,11 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_prompt_entries_by_orchestrator(self, *, orchestrator: 'Orchestrator') -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(
+        self,
+        *,
+        orchestrator: "Orchestrator" # noqa # type: ignore
+    ) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of PromptMemoryEntries based on a specific orchestrator object.
 
@@ -103,7 +107,6 @@ class MemoryInterface(abc.ABC):
         memory_entries = self.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
 
-
     def add_request_piece_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
         Adds a request piece to the memory.
@@ -121,15 +124,14 @@ class MemoryInterface(abc.ABC):
 
         self.insert_prompt_entries(entries=memory_entries)
 
-
     def add_response_entries_to_memory(
-            self,
-            *,
-            request: PromptRequestPiece,
-            response_text_pieces: list[str],
-            response_type: PromptDataType = "text",
-            prompt_metadata: str = None,
-            error: PromptResponseError = "none"
+        self,
+        *,
+        request: PromptRequestPiece,
+        response_text_pieces: list[str],
+        response_type: PromptDataType = "text",
+        prompt_metadata: str = None,
+        error: PromptResponseError = "none",
     ) -> PromptRequestResponse:
 
         request_pieces = []
@@ -148,14 +150,13 @@ class MemoryInterface(abc.ABC):
                 original_prompt_data_type=response_type,
                 converted_prompt_data_type=response_type,
                 prompt_metadata=prompt_metadata,
-                response_error=error
+                response_error=error,
             )
             memory_entries.append(PromptMemoryEntry(entry=entry))
             request_pieces.append(entry)
 
         self.insert_prompt_entries(entries=memory_entries)
         return PromptRequestResponse(request_pieces=request_pieces)
-
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
         """

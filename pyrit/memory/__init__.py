@@ -9,9 +9,4 @@ from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 
 
-__all__ = ["DuckDBMemory"
-           "EmbeddingData",
-           "MemoryInterface",
-           "MemoryEmbedding",
-           "MemoryExporter",
-           "PromptMemoryEntry"]
+__all__ = ["DuckDBMemory", "EmbeddingData", "MemoryInterface", "MemoryEmbedding", "MemoryExporter", "PromptMemoryEntry"]

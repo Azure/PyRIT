@@ -13,7 +13,7 @@ class NormalizerRequestPiece(abc.ABC):
     def __init__(
         self,
         *,
-        prompt_converters: 'list[PromptConverter]',
+        prompt_converters: "list[PromptConverter]",
         prompt_text: str,
         prompt_data_type: PromptDataType,
         metadata: str = None,
@@ -29,13 +29,12 @@ class NormalizerRequestPiece(abc.ABC):
         if not isinstance(prompt_text, str):
             raise ValueError("prompt_text must be a str")
 
-
         self.prompt_converters = prompt_converters
         self.prompt_text = prompt_text
         self.prompt_data_type = prompt_data_type
         self.metadata = metadata
 
 
-class NormalizerRequest():
+class NormalizerRequest:
     def __init__(self, request_pieces: list[NormalizerRequestPiece]):
         self.request_pieces = request_pieces

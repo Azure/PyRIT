@@ -18,25 +18,28 @@ class PromptNormalizer(abc.ABC):
         self._memory = memory
         self.id = str(uuid4())
 
-    def send_prompt(self,
-                    request: NormalizerRequest,
-                    target: PromptTarget,
-                    conversation_id: str = None,
-                    sequence: int = -1,
-                    labels = {},
-                    orchestrator: 'Orchestrator' = None,
-                    verbose: bool = False
-                    ) -> PromptRequestResponse:
+    def send_prompt(
+        self,
+        request: NormalizerRequest,
+        target: PromptTarget,
+        conversation_id: str = None,
+        sequence: int = -1,
+        labels={},
+        orchestrator: "Orchestrator" = None,
+        verbose: bool = False,
+    ) -> PromptRequestResponse:
         """
         Sends a single request to a target
         """
 
-        request = self._get_prompt_request_response(request=request,
-                                                   target=target,
-                                                   conversation_id=conversation_id,
-                                                   sequence=sequence,
-                                                   labels=labels,
-                                                   orchestrator=orchestrator)
+        request = self._get_prompt_request_response(
+            request=request,
+            target=target,
+            conversation_id=conversation_id,
+            sequence=sequence,
+            labels=labels,
+            orchestrator=orchestrator,
+        )
         try:
             # Use the synchronous prompt sending method by default.
 
@@ -46,49 +49,52 @@ class PromptNormalizer(abc.ABC):
             pool = concurrent.futures.ThreadPoolExecutor()
             return pool.submit(asyncio.run, target.send_prompt_async(prompt_request=request)).result()
 
-    async def send_prompt_async(self,
-                        request: NormalizerRequest,
-                        target: PromptTarget,
-                        conversation_id: str = None,
-                        sequence: int = -1,
-                        labels = {},
-                        orchestrator: 'Orchestrator' = None,
-                        verbose: bool = False
-                        ) -> PromptRequestResponse:
+    async def send_prompt_async(
+        self,
+        request: NormalizerRequest,
+        target: PromptTarget,
+        conversation_id: str = None,
+        sequence: int = -1,
+        labels={},
+        orchestrator: "Orchestrator" = None,
+        verbose: bool = False,
+    ) -> PromptRequestResponse:
         """
         Sends a single request to a target
         """
 
-        request = self._get_prompt_request_response(request=request,
-                                                   target=target,
-                                                   conversation_id=conversation_id,
-                                                   sequence=sequence,
-                                                   labels=labels,
-                                                   orchestrator=orchestrator)
+        request = self._get_prompt_request_response(
+            request=request,
+            target=target,
+            conversation_id=conversation_id,
+            sequence=sequence,
+            labels=labels,
+            orchestrator=orchestrator,
+        )
 
         response = await target.send_prompt_async(prompt_request=request)
         return response
 
-    async def send_prompt_batch_to_target_async(self,
-                                      requests: list[NormalizerRequest],
-                                      target: PromptTarget,
-                                      labels = {},
-                                      orchestrator: 'Orchestrator' = None,
-                                      verbose: bool = False,
-                                      batch_size: int = 10) -> list[PromptRequestResponse]:
+    async def send_prompt_batch_to_target_async(
+        self,
+        requests: list[NormalizerRequest],
+        target: PromptTarget,
+        labels={},
+        orchestrator: "Orchestrator" = None,
+        verbose: bool = False,
+        batch_size: int = 10,
+    ) -> list[PromptRequestResponse]:
 
         results = []
 
         for prompts_batch in self._chunked_prompts(requests, batch_size):
             tasks = []
             for prompt in prompts_batch:
-                tasks.append(self.send_prompt_async(
-                    request=prompt,
-                    target=target,
-                    labels=labels,
-                    orchestrator=orchestrator,
-                    verbose=verbose
-                ))
+                tasks.append(
+                    self.send_prompt_async(
+                        request=prompt, target=target, labels=labels, orchestrator=orchestrator, verbose=verbose
+                    )
+                )
 
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
@@ -100,14 +106,14 @@ class PromptNormalizer(abc.ABC):
             yield prompts[i : i + size]
 
     def _get_prompt_request_response(
-                    self,
-                    request: NormalizerRequest,
-                    target: PromptTarget,
-                    conversation_id: str = None,
-                    sequence: int = -1,
-                    labels = {},
-                    orchestrator: 'Orchestrator' = None,
-                    ) -> PromptRequestResponse:
+        self,
+        request: NormalizerRequest,
+        target: PromptTarget,
+        conversation_id: str = None,
+        sequence: int = -1,
+        labels={},
+        orchestrator: "Orchestrator" = None,
+    ) -> PromptRequestResponse:
 
         entries = []
 
@@ -115,8 +121,9 @@ class PromptNormalizer(abc.ABC):
 
             converted_prompt_text = request_piece.prompt_text
             for converter in request_piece.prompt_converters:
-                converted_prompt_text = converter.convert(prompt=converted_prompt_text,
-                                                        input_type=request_piece.prompt_data_type)
+                converted_prompt_text = converter.convert(
+                    prompt=converted_prompt_text, input_type=request_piece.prompt_data_type
+                )
 
             entries.append(
                 PromptRequestPiece(
@@ -131,9 +138,8 @@ class PromptNormalizer(abc.ABC):
                     prompt_target=target,
                     orchestrator=orchestrator,
                     original_prompt_data_type=request_piece.prompt_data_type,
-                    converted_prompt_data_type=request_piece.prompt_data_type
+                    converted_prompt_data_type=request_piece.prompt_data_type,
                 )
             )
 
         return PromptRequestResponse(request_pieces=entries)
-

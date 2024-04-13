@@ -115,11 +115,7 @@ class AzureBlobStorageTarget(PromptTarget):
         except Exception as exc:
             self._upload_blob_exception_handling(exc=exc)
 
-    def send_prompt(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
@@ -173,11 +169,7 @@ class AzureBlobStorageTarget(PromptTarget):
         except Exception as exc:
             self._upload_blob_exception_handling(exc=exc)
 
-    async def send_prompt_async(
-        self,
-        *,
-        prompt_request: PromptRequestResponse
-    ) -> PromptRequestResponse:
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.

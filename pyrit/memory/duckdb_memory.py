@@ -110,7 +110,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def get_prompt_entries_by_orchestrator(self, *, orchestrator: 'Orchestrator') -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(
+            self,
+            *,
+            orchestrator: "Orchestrator" # type: ignore noqa
+        ) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of ConversationData objects that have the specified normalizer ID.
 

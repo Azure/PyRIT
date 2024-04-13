@@ -12,8 +12,6 @@ from uuid import uuid4
 from pyrit.models.models import ChatMessageRole
 
 
-
-
 PromptDataType = Literal["text", "image_path", "url"]
 
 """
@@ -71,7 +69,7 @@ class PromptRequestPiece(abc.ABC):
         orchestrator: "Orchestrator|Dict[str,str]" = None,  # type: ignore # noqa
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
-        response_error: PromptResponseError = "none"
+        response_error: PromptResponseError = "none",
     ):
 
         self.id = id if id else uuid4()  # type: ignore
@@ -105,7 +103,6 @@ class PromptRequestPiece(abc.ABC):
     def is_sequence_set(self) -> bool:
         return self.sequence != -1
 
-
     # The conversion from object to dictionary (stored in the db) is one way
     # so at times we have a dictionary, other times an object.
     def _get_default_object(self, obj):
@@ -123,4 +120,3 @@ class PromptRequestPiece(abc.ABC):
 
     def __str__(self):
         return f"{self.role}: {self.converted_prompt_text}"
-

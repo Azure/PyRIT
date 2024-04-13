@@ -163,14 +163,9 @@ class DallETarget(PromptTarget):
         resp = await self._generate_images_async(prompt=request.converted_prompt_text)
         return self._parse_response_and_add_to_memory(resp, output_filename, request)
 
-
-
     def _parse_response_and_add_to_memory(
-                                          self,
-                                          resp: dict,
-                                          output_filename:str,
-                                          prompt_request: PromptRequestResponse
-                                         ) -> PromptRequestResponse:
+        self, resp: dict, output_filename: str, prompt_request: PromptRequestResponse
+    ) -> PromptRequestResponse:
         if "error" not in resp.keys():
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
@@ -180,8 +175,8 @@ class DallETarget(PromptTarget):
             return self._memory.add_response_entries_to_memory(
                 request=prompt_request,
                 response_text_pieces=[output_filename],
-                response_type = "image",
-                prompt_metadata=json.dumps(resp)
+                response_type="image",
+                prompt_metadata=json.dumps(resp),
             )
 
         else:
@@ -190,9 +185,9 @@ class DallETarget(PromptTarget):
                 return self._memory.add_response_entries_to_memory(
                     request=prompt_request,
                     response_text_pieces=[],
-                    response_type = "image",
+                    response_type="image",
                     prompt_metadata=json.dumps(resp),
-                    error="blocked"
+                    error="blocked",
                 )
 
             elif resp["exception type"] == "JSON Error":

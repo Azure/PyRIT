@@ -3,6 +3,7 @@
 
 from pyrit.models import PromptRequestPiece
 
+
 class PromptRequestResponse:
     def __init__(self):
         pass
