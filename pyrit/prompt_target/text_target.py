@@ -33,7 +33,7 @@ class TextTarget(PromptTarget):
     ) -> PromptRequestResponse:
         
         self._text_stream.write(f"{str(prompt_request)}\n")
-        self._memory.insert_prompt_entries(entries=prompt_request.request_pieces)
+        self._memory.add_request_piece_to_memory(request_pieces=prompt_request.request_pieces)
 
         return None
     
