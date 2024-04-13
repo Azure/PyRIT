@@ -3,6 +3,7 @@
 
 import abc
 import asyncio
+import concurrent.futures
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
@@ -36,8 +37,14 @@ class PromptNormalizer(abc.ABC):
                                                    sequence=sequence,
                                                    labels=labels,
                                                    orchestrator=orchestrator)
+        try:
+            # Use the synchronous prompt sending method by default.
 
-        return target.send_prompt(prompt_request=request)
+            return target.send_prompt(prompt_request=request)
+        except NotImplementedError:
+            # Alternatively, use async if sync is unavailable.
+            pool = concurrent.futures.ThreadPoolExecutor()
+            return pool.submit(asyncio.run, target.send_prompt(prompt_request=request)).result()
 
     async def send_prompt_async(self,
                         request: NormalizerRequest,

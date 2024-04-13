@@ -69,11 +69,15 @@ class RedTeamingOrchestrator(Orchestrator):
         self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._red_teaming_chat = red_teaming_chat
+        self._red_teaming_chat._memory = self._memory
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
 
     def get_memory(self):
-        return self._memory.get_prompt_entries_by_orchestrator(orchestrator=self._prompt_normalizer.id)
+        """
+        Retrieves the memory associated with the red teaming orchestrator.
+        """
+        return self._memory.get_prompt_entries_by_orchestrator(self)
 
     @abc.abstractmethod
     def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role: str) -> bool:

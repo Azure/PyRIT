@@ -21,6 +21,7 @@
 # ## Create a AzureMLChatTarget
 #
 # After deploying a model and populating your env file, creating an endpoint is as simple as the following
+
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -33,9 +34,10 @@ from pyrit.prompt_target import AzureMLChatTarget
 
 default_values.load_default_env()
 
-chat_engine = AzureMLChatTarget()
-chat_engine.send_prompt(normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id=None)
-
+with AzureMLChatTarget() as azure_ml_chat_target:
+    azure_ml_chat_target.send_prompt(
+        normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id=None
+    )
 
 # %% [markdown]
 #

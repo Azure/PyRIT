@@ -41,6 +41,20 @@ class PromptTarget(abc.ABC):
         Sends a normalized prompt async to the prompt target.
         """
 
+    def __enter__(self):
+        """Enter the runtime context related to this object."""
+        return self  # You can return self or another object that should be used in the with-statement.
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the runtime context and perform any cleanup actions."""
+        self.dispose_db_engine()
+
+    def dispose_db_engine(self) -> None:
+        """
+        Dispose DuckDB database engine to release database connections and resources.
+        """
+        self._memory.dispose_engine()
+
     def to_dict(self):
         public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         public_attributes["__type__"] = self.__class__.__name__
