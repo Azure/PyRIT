@@ -11,7 +11,7 @@ import requests
 from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
-from pyrit.memory.memory_models import PromptRequestResponse
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 
@@ -177,7 +177,7 @@ class ImageTarget(PromptTarget):
                     request=prompt_request,
                     response_text_pieces=[image_location],
                     response_type = "image",
-                    metadata=json.dumps(resp)
+                    prompt_metadata=json.dumps(resp)
                 )
 
         else:
@@ -187,7 +187,7 @@ class ImageTarget(PromptTarget):
                     request=prompt_request,
                     response_text_pieces=[],
                     response_type = "image",
-                    metadata=json.dumps(resp),
+                    prompt_metadata=json.dumps(resp),
                     error="blocked"
                 )
 

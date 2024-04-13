@@ -4,6 +4,8 @@ import uuid
 import pathlib
 
 from pyrit.memory.memory_models import PromptDataType
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter
 from pyrit.models.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
@@ -33,12 +35,13 @@ class VariationConverter(PromptConverter):
         )
 
         self._conversation_id = str(uuid.uuid4())
-        self._normalizer_id = None  # Normalizer not used
+        self._labels = {"converter": "VariationConverter"}
 
         self.converter_target.set_system_prompt(
-            prompt=self.system_prompt,
+            system_prompt=self.system_prompt,
             conversation_id=self._conversation_id,
-            normalizer_id=self._normalizer_id,
+            orchestrator=None,
+            labels=self._labels
         )
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
@@ -53,11 +56,23 @@ class VariationConverter(PromptConverter):
         if not self.is_supported(input_type):
             raise ValueError("Input type not supported")
 
-        response_msg = self.converter_target.send_prompt(
-            normalized_prompt=prompt,
-            conversation_id=self._conversation_id,
-            normalizer_id=self._normalizer_id,
-        )
+        request = PromptRequestResponse(
+        [
+            PromptRequestPiece(
+                role="user",
+                original_prompt_text=prompt,
+                converted_prompt_text=prompt,
+                conversation_id=self._conversation_id,
+                sequence=1,
+                labels=self._labels,
+                prompt_target=self.converter_target,
+                orchestrator=None,
+                original_prompt_data_type=input_type,
+                converted_prompt_data_type=input_type,
+            )
+        ])
+
+        response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
 
         try:
             return json.loads(response_msg)[0]

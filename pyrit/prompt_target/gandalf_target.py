@@ -5,7 +5,7 @@ import logging
 
 from pyrit.completion import GandalfCompletionEngine, GandalfLevel
 from pyrit.memory import DuckDBMemory, MemoryInterface
-from pyrit.memory.memory_models import PromptRequestResponse
+from pyrit.models import PromptRequestResponse
 from pyrit.models.models import ChatMessage
 from pyrit.prompt_target import PromptTarget
 

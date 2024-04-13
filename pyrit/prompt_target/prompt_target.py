@@ -6,7 +6,7 @@ import json
 import logging
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.memory.memory_models import PromptRequestResponse
+from pyrit.models import PromptRequestResponse
 
 class PromptTarget(abc.ABC):
     _memory: MemoryInterface

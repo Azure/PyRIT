@@ -65,10 +65,10 @@ class PromptRequestPiece(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels: Dict[str, str] = None,
-        prompt_metadata: str = None,
-        converters: "list[PromptConverter]" = None,  # type: ignore # noqa
-        prompt_target: "PromptTarget" = None,  # type: ignore # noqa
-        orchestrator: "Orchestrator" = None,  # type: ignore # noqa
+        prompt_metadata: Dict = None,
+        converters: "list[PromptConverter]|list[Dict]" = None,  # type: ignore # noqa
+        prompt_target: "PromptTarget|Dict[str,str]" = None,  # type: ignore # noqa
+        orchestrator: "Orchestrator|Dict[str,str]" = None,  # type: ignore # noqa
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none"
@@ -86,9 +86,11 @@ class PromptRequestPiece(abc.ABC):
 
         if converters:
             self.converters = [converter.to_dict() for converter in converters]
+        else:
+            self.converters = None
 
-        self.prompt_target = prompt_target.to_dict() if prompt_target else None
-        self.orchestrator = orchestrator.to_dict() if orchestrator else None
+        self.prompt_target = self._get_default_object(prompt_target)
+        self.orchestrator = self._get_default_object(orchestrator)
 
         self.original_prompt_text = original_prompt_text
         self.original_prompt_data_type = original_prompt_data_type
@@ -102,6 +104,17 @@ class PromptRequestPiece(abc.ABC):
 
     def is_sequence_set(self) -> bool:
         return self.sequence != -1
+
+
+    # The conversion from object to dictionary (stored in the db) is one way
+    # so at times we have a dictionary, other times an object.
+    def _get_default_object(self, obj):
+        if not obj:
+            return None
+        if isinstance(obj, dict):
+            return obj
+
+        return obj.to_dict()
 
     def _create_sha256(self, text: str) -> str:
         input_bytes = text.encode("utf-8")

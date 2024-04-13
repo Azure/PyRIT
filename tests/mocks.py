@@ -63,9 +63,12 @@ class MockPromptTarget(PromptChatTarget):
     def set_system_prompt(
         self,
         *,
-        prompt_request: PromptRequestResponse
-    ):
-        self.system_prompt = prompt_request
+        system_prompt: str,
+        conversation_id: str,
+        orchestrator: 'Orchestrator',
+        labels: dict,
+    ) -> None:
+        self.system_prompt = system_prompt
 
     def send_prompt(
         self,
@@ -131,7 +134,7 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
         ),
     ]
 
-def get_sample_conversation_entries() -> list[PromptRequestPiece]:
+def get_sample_conversation_entries() -> list[PromptMemoryEntry]:
 
     conversations = get_sample_conversations()
     return [PromptMemoryEntry(entry=conversation) for conversation in conversations]

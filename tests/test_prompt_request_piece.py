@@ -6,14 +6,14 @@ import time
 
 from datetime import datetime
 from unittest.mock import MagicMock
-from pyrit.memory import PromptMemoryEntry
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 from tests.mocks import MockPromptTarget
 
 
 def test_id_set():
-    entry = PromptMemoryEntry(
+    entry = PromptRequestPiece(
         role="user",
         original_prompt_text="Hello",
         converted_prompt_text="Hello",
@@ -24,7 +24,7 @@ def test_id_set():
 def test_datetime_set():
     now = datetime.utcnow()
     time.sleep(0.1)
-    entry = PromptMemoryEntry(
+    entry = PromptRequestPiece(
         role="user",
         original_prompt_text="Hello",
         converted_prompt_text="Hello",
@@ -33,7 +33,7 @@ def test_datetime_set():
 
 
 def test_is_sequence_set_false():
-    entry = PromptMemoryEntry(
+    entry = PromptRequestPiece(
         role="user",
         original_prompt_text="Hello",
         converted_prompt_text="Hello",
@@ -42,13 +42,13 @@ def test_is_sequence_set_false():
 
 
 def test_is_sequence_set_true():
-    entry = PromptMemoryEntry(role="user", original_prompt_text="Hello", converted_prompt_text="Hello", sequence=1)
+    entry = PromptRequestPiece(role="user", original_prompt_text="Hello", converted_prompt_text="Hello", sequence=1)
     assert entry.is_sequence_set()
 
 
 def test_converters_serialize():
     converters = [Base64Converter()]
-    entry = PromptMemoryEntry(
+    entry = PromptRequestPiece(
         role="user", original_prompt_text="Hello", converted_prompt_text="Hello", converters=converters
     )
 
@@ -62,7 +62,7 @@ def test_converters_serialize():
 
 def test_prompt_targets_serialize():
     target = MockPromptTarget()
-    entry = PromptMemoryEntry(
+    entry = PromptRequestPiece(
         role="user", original_prompt_text="Hello", converted_prompt_text="Hello", prompt_target=target
     )
 
@@ -73,7 +73,7 @@ def test_prompt_targets_serialize():
 def test_orchestrators_serialize():
     orchestrator = PromptSendingOrchestrator(prompt_target=MagicMock(), memory=MagicMock())
 
-    entry = PromptMemoryEntry(
+    entry = PromptRequestPiece(
         role="user", original_prompt_text="Hello", converted_prompt_text="Hello", orchestrator=orchestrator
     )
 
@@ -83,7 +83,7 @@ def test_orchestrators_serialize():
 
 
 def test_hashes_generated():
-    entry = PromptMemoryEntry(
+    entry = PromptRequestPiece(
         role="user",
         original_prompt_text="Hello1",
         converted_prompt_text="Hello2",

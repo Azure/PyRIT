@@ -50,7 +50,7 @@ class OpenAIChatInterface(PromptChatTarget):
         prompt_request.sequence = len(messages)
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
 
-        self._memory.insert_prompt_entries(entries=[prompt_request])
+        self._memory.add_request_piece_to_memory(request_pieces=[prompt_request])
 
         resp_text = self._complete_chat(
             messages=messages,

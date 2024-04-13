@@ -25,7 +25,7 @@ class PromptNormalizer(abc.ABC):
                     labels = {},
                     orchestrator: 'Orchestrator' = None,
                     verbose: bool = False
-                    ) -> NormalizerRequest:
+                    ) -> PromptRequestResponse:
         """
         Sends a single request to a target
         """
@@ -47,7 +47,7 @@ class PromptNormalizer(abc.ABC):
                         labels = {},
                         orchestrator: 'Orchestrator' = None,
                         verbose: bool = False
-                        ) -> NormalizerRequest:
+                        ) -> PromptRequestResponse:
         """
         Sends a single request to a target
         """
@@ -68,7 +68,7 @@ class PromptNormalizer(abc.ABC):
                                       labels = {},
                                       orchestrator: 'Orchestrator' = None,
                                       verbose: bool = False,
-                                      batch_size: int = 10):
+                                      batch_size: int = 10) -> list[PromptRequestResponse]:
 
         results = []
 

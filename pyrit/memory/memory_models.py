@@ -99,11 +99,11 @@ class PromptMemoryEntry(Base):  # type: ignore
 
         self.original_prompt_text = entry.original_prompt_text
         self.original_prompt_data_type = entry.original_prompt_data_type
-        self.original_prompt_data_sha256 = entry.original_prompt_text
+        self.original_prompt_data_sha256 = entry.original_prompt_data_sha256
 
         self.converted_prompt_data_type = entry.converted_prompt_data_type
         self.converted_prompt_text = entry.converted_prompt_text
-        self.converted_prompt_data_sha256 = entry.converted_prompt_text
+        self.converted_prompt_data_sha256 = entry.converted_prompt_data_sha256
 
         self.response_error = entry.response_error
 

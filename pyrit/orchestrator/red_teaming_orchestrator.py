@@ -145,11 +145,11 @@ class RedTeamingOrchestrator(Orchestrator):
                 logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
                 prompt_text = self._initial_red_teaming_prompt
 
-            red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
+            red_teaming_response_message = self._memory.get_chat_messages_with_conversation_id(
                 conversation_id=self._red_teaming_chat_conversation_id
             )
 
-            if not red_teaming_chat_messages:
+            if not red_teaming_response_message:
                 self._red_teaming_chat.set_system_prompt(
                     system_prompt=self._attack_strategy,
                     conversation_id=self._red_teaming_chat_conversation_id,
@@ -157,41 +157,41 @@ class RedTeamingOrchestrator(Orchestrator):
                     labels=self._global_memory_labels,
                 )
 
-            response = self._red_teaming_chat.send_chat_prompt(
+            response_text = self._red_teaming_chat.send_chat_prompt(
                 prompt=prompt_text,
                 conversation_id=self._red_teaming_chat_conversation_id,
                 orchestrator=self,
                 labels=self._global_memory_labels,
             )
 
-        red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
+        red_teaming_response_message = self._memory.get_chat_messages_with_conversation_id(
             conversation_id=self._red_teaming_chat_conversation_id
         )
 
         if completion_state and self.is_conversation_complete(
-            red_teaming_chat_messages, red_teaming_chat_role="assistant"
+            red_teaming_response_message, red_teaming_chat_role="assistant"
         ):
             completion_state.is_complete = True
             return
 
         target_prompt_obj = NormalizerRequestPiece(
             prompt_converters=self._prompt_converters,
-            prompt_text=prompt,
+            prompt_text=red_teaming_response_message[0].content,
             prompt_data_type="text",
         )
 
-        response = self._prompt_normalizer.send_prompt(
-            request=NormalizerRequest(target_prompt_obj),
+        response_text = self._prompt_normalizer.send_prompt(
+            request=NormalizerRequest([target_prompt_obj]),
             target=self._prompt_target,
             conversation_id=self._prompt_target_conversation_id,
             labels=self._global_memory_labels,
             orchestrator=self,
             verbose=self._verbose,
-        )
+        ).request_pieces[0].converted_prompt_text
 
         if completion_state:
-            target_messages.append(ChatMessage(role="user", content=prompt))
-            target_messages.append(ChatMessage(role="assistant", content=response))
+            target_messages.append(ChatMessage(role="user", content=response_text))
+            target_messages.append(ChatMessage(role="assistant", content=response_text))
             completion_state.is_complete = self.is_conversation_complete(target_messages, red_teaming_chat_role="user")
 
-        return response
+        return response_text
