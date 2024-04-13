@@ -11,6 +11,7 @@ import requests
 from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
@@ -34,9 +35,9 @@ class SupportedDalleVersions(Enum):
     V3 = 3
 
 
-class ImageTarget(PromptTarget):
+class DallETarget(PromptTarget):
     """
-    The ImageTarget takes a prompt and generates images
+    The Dalle3Target takes a prompt and generates images
     This class initializes a DALL-E image target
 
     Args:
@@ -63,7 +64,11 @@ class ImageTarget(PromptTarget):
         response_format: ResponseFormat | None = ResponseFormat.B64,
         num_images: int | None = 1,
         dalle_version: SupportedDalleVersions | None = SupportedDalleVersions.V2,
+        memory: MemoryInterface | None = None,
     ):
+
+        super().__init__(memory=memory)
+
         if num_images is None:
             num_images = 1  # set 1 as default
 
@@ -127,13 +132,13 @@ class ImageTarget(PromptTarget):
 
         output_filename = f"{uuid.uuid4()}.png"
 
-        self._memory.insert_prompt_entries(entries=request)
+        self._memory.add_request_piece_to_memory(request_pieces=[request])
 
         resp = self._generate_images(prompt=request.converted_prompt_text)
 
-        return self._parse_response_and_add_to_memory(resp=resp, output_filename=output_filename, prompt_request=request)
+        return self._parse_response_and_add_to_memory(resp, output_filename, request)
 
-    async def send_prompt_async(        
+    async def send_prompt_async(
         self,
         *,
         prompt_request: PromptRequestResponse,
@@ -153,13 +158,11 @@ class ImageTarget(PromptTarget):
 
         output_filename = f"{uuid.uuid4()}.png"
 
-        self._memory.insert_prompt_entries(entries=request)
+        self._memory.add_request_piece_to_memory(request_pieces=[request])
 
-        resp = self._generate_images_async(prompt=request.converted_prompt_text)
+        resp = await self._generate_images_async(prompt=request.converted_prompt_text)
+        return self._parse_response_and_add_to_memory(resp, output_filename, request)
 
-
-        # TODO add response to memory
-        return self._parse_response_and_add_to_memory(resp=resp, output_filename=output_filename, prompt_request=request)
 
 
     def _parse_response_and_add_to_memory(
@@ -172,13 +175,14 @@ class ImageTarget(PromptTarget):
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
+                resp["image_file_location"] = image_location
 
-                return self._memory.add_response_entries_to_memory(
-                    request=prompt_request,
-                    response_text_pieces=[image_location],
-                    response_type = "image",
-                    prompt_metadata=json.dumps(resp)
-                )
+            return self._memory.add_response_entries_to_memory(
+                request=prompt_request,
+                response_text_pieces=[output_filename],
+                response_type = "image",
+                prompt_metadata=json.dumps(resp)
+            )
 
         else:
             if resp["exception type"] == "Blocked":

@@ -25,8 +25,8 @@ import uuid
 import json
 
 from pyrit.common import default_values
-from pyrit.prompt_target import ImageTarget
-from pyrit.prompt_target.image_target import ResponseFormat
+from pyrit.prompt_target import DallETarget
+from pyrit.prompt_target.dall_e_target import ResponseFormat
 
 # When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
 test_conversation_id = str(uuid.uuid4())
@@ -40,7 +40,7 @@ prompt_to_send = "Draw me a racoon pirate as a French artist in France"
 # %%
 default_values.load_default_env()
 
-img_prompt_target = ImageTarget(
+img_prompt_target = DallETarget(
     deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
     api_key=os.environ.get("AZURE_DALLE_API_KEY"),
