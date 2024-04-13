@@ -111,7 +111,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             return []
 
     def get_prompt_entries_by_orchestrator(
-        self, *, orchestrator: "Orchestrator"  # type: ignore noqa
+        self, *, orchestrator: "Orchestrator"  # type: ignore # noqa: F821
     ) -> list[PromptMemoryEntry]:
         """
         Retrieves a list of ConversationData objects that have the specified normalizer ID.

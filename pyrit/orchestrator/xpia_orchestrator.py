@@ -80,10 +80,7 @@ class XPIATestOrchestrator(Orchestrator):
         )
 
         response = self._prompt_normalizer.send_prompt(
-            request=target_request,
-            target=self._prompt_target,
-            labels=self._global_memory_labels,
-            orchestrator=self
+            request=target_request, target=self._prompt_target, labels=self._global_memory_labels, orchestrator=self
         )
 
         logger.info(f'Received the following response from the prompt target "{response}"')
@@ -96,7 +93,7 @@ class XPIATestOrchestrator(Orchestrator):
             request=processing_prompt_req,
             target=self._processing_target,
             labels=self._global_memory_labels,
-            orchestrator=self
+            orchestrator=self,
         )
 
         logger.info(f'Received the following response from the processing target "{processing_response}"')

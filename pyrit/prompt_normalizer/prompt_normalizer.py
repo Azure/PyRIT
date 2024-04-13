@@ -25,7 +25,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None
+        orchestrator: "Orchestrator" = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target
@@ -55,7 +55,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None
+        orchestrator: "Orchestrator" = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target
@@ -88,8 +88,7 @@ class PromptNormalizer(abc.ABC):
             tasks = []
             for prompt in prompts_batch:
                 tasks.append(
-                    self.send_prompt_async(
-                        request=prompt, target=target, labels=labels, orchestrator=orchestrator)
+                    self.send_prompt_async(request=prompt, target=target, labels=labels, orchestrator=orchestrator)
                 )
 
             batch_results = await asyncio.gather(*tasks)
