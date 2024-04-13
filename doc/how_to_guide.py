@@ -57,7 +57,7 @@ target_llm.send_prompt(normalized_prompt=prompt, conversation_id=str(uuid.uuid4(
 
 # %%
 
-from pyrit.models import PromptTemplate
+from pyrit.models.models import PromptTemplate
 
 template = PromptTemplate(
     template="I recently had {{ food_item }} in {{ food_location }} and it was absolutely terrible. What do you think about {{ food_item }}?",

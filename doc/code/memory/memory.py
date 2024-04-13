@@ -35,7 +35,7 @@
 
 from uuid import uuid4
 from pyrit.memory import DuckDBMemory
-from pyrit.models import ChatMessage
+from pyrit.models.models import ChatMessage
 
 conversation_id = str(uuid4())
 

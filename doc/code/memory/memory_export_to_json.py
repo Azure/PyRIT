@@ -12,7 +12,7 @@
 
 from pyrit.memory import DuckDBMemory
 from uuid import uuid4
-from pyrit.models import ChatMessage
+from pyrit.models.models import ChatMessage
 
 duckdb_memory = DuckDBMemory()
 duckdb_memory.export_all_tables()

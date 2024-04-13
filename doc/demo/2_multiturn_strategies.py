@@ -23,7 +23,7 @@ from pyrit.orchestrator import EndTokenRedTeamingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.chat_message_normalizer import GenericSystemSquash
 from pyrit.common import default_values
-from pyrit.models import AttackStrategy
+from pyrit.models.models import AttackStrategy
 
 
 default_values.load_default_env()

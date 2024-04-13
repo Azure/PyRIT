@@ -14,7 +14,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import ChatMessage
+from pyrit.models.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 
 messages = [

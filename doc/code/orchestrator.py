@@ -47,7 +47,7 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
 # %%
 
 from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
-from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
+from pyrit.models.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 qa_ds = QuestionAnsweringDataset(

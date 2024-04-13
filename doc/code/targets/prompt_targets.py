@@ -13,7 +13,7 @@
 
 import pathlib
 
-from pyrit.models import PromptTemplate
+from pyrit.models.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 
 jailbreak_template = PromptTemplate.from_yaml_file(

@@ -37,7 +37,7 @@ import pathlib
 
 
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models import PromptDataset
+from pyrit.models.models import PromptDataset
 from pyrit.common.path import DATASETS_PATH
 
 
@@ -72,7 +72,7 @@ import pathlib
 
 
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models import PromptDataset
+from pyrit.models.models import PromptDataset
 from pyrit.common.path import DATASETS_PATH
 
 
