@@ -11,39 +11,12 @@ from unittest.mock import Mock, patch
 
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.models import Score
-from tests.mocks import get_memory_interface
+from tests.mocks import get_memory_interface, MockPromptTarget
 
 
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
-
-
-class MockPromptTarget(PromptTarget):
-    def __init__(
-        self,
-        *,
-        memory: MemoryInterface = None,
-    ) -> None:
-        super().__init__(memory=memory)
-
-    def send_prompt(
-        self,
-        *,
-        normalized_prompt: str,
-        conversation_id: str,
-        normalizer_id: str,
-    ) -> str:
-        pass
-
-    async def send_prompt_async(
-        self,
-        *,
-        normalized_prompt: str,
-        conversation_id: str,
-        normalizer_id: str,
-    ) -> str:
-        pass
 
 
 @pytest.fixture

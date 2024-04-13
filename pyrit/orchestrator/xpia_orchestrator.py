@@ -10,7 +10,7 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter.no_op_converter import NoOpConverter
-from pyrit.prompt_normalizer import PromptNormalizer, Prompt
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
 
@@ -74,31 +74,40 @@ class XPIATestOrchestrator(Orchestrator):
             "Sending the following prompt to the prompt target (after applying prompt "
             f'converter operations) "{self._attack_content}"',
         )
-        target_prompt_obj = Prompt(
-            prompt_target=self._prompt_target,
-            prompt_converters=self._prompt_converters,
+
+        target_request = self._create_normalizer_request(
+            converters=self._prompt_converters,
             prompt_text=self._attack_content,
-            conversation_id=self._prompt_target_conversation_id,
+            prompt_type="text"
         )
-        response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)
+
+        response = self._prompt_normalizer.send_prompt(
+            request=target_request,
+            target=self._prompt_target,
+            labels=self._global_memory_labels,
+            orchestrator=self,
+            verbose=self._verbose,
+        )
+
         logger.info(f'Received the following response from the prompt target "{response}"')
 
-        processing_prompt_obj = Prompt(
-            prompt_target=self._processing_target,
+
+        processing_prompt_req = self._create_normalizer_request(
+            converters=[NoOpConverter()],
             prompt_text=self._processing_prompt,
-            conversation_id=self._processing_conversation_id,
-            prompt_converters=[NoOpConverter()],
+            prompt_type="text"
         )
-        processing_response = self._prompt_normalizer.send_prompt(prompt=processing_prompt_obj)
+
+        processing_response = self._prompt_normalizer.send_prompt(
+            request=processing_prompt_req,
+            target=self._processing_target,
+            labels=self._global_memory_labels,
+            orchestrator=self,
+            verbose=self._verbose,
+        )
 
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
         score = self._scorer.score_text(processing_response)
         logger.info(f"Score of the processing response: {score}")
         return score
-
-    def get_memory(self):
-        """
-        Retrieves the memory associated with the orchestrator.
-        """
-        return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)

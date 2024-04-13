@@ -10,7 +10,9 @@ from uuid import uuid4
 import uuid
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.prompt_converter import PromptConverter, NoOpConverter
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,32 @@ class Orchestrator(abc.ABC):
         Dispose DuckDB database engine to release database connections and resources.
         """
         self._memory.dispose_engine()
+
+
+    def _create_normalizer_request(
+            self,
+            prompt_text: str,
+            prompt_type: PromptDataType = "text",
+            converters = None
+        ):
+
+        if converters is None:
+            converters = self._prompt_converters
+
+        request_piece = NormalizerRequestPiece(
+            prompt_converters=converters,
+            prompt_text=prompt_text,
+            prompt_data_type=prompt_type,
+            )
+
+        request = NormalizerRequest([request_piece])
+        return request
+
+    def get_memory(self):
+        """
+        Retrieves the memory associated with this orchestrator.
+        """
+        return self._memory.get_prompt_entries_by_orchestrator(self)
 
     def to_dict(self):
         s = {}

@@ -57,7 +57,7 @@ class PromptSendingOrchestrator(Orchestrator):
         responses = []
 
         for prompt in prompts:
-            request = self._create_prompt_request(prompt, "text")
+            request = self._create_normalizer_request(prompt, "text")
             response = self._prompt_normalizer.send_prompt(
                 request=request,
                 target=self._prompt_target,
@@ -76,7 +76,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         requests = []
         for prompt in prompts:
-            requests.append(self._create_prompt_request(prompt, "text"))
+            requests.append(self._create_normalizer_request(prompt, "text"))
 
         await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=requests,
@@ -85,21 +85,3 @@ class PromptSendingOrchestrator(Orchestrator):
             orchestrator=self,
             verbose=self._verbose,
             batch_size=self._batch_size)
-
-    def _create_prompt_request(self, text: str, prompt_type: PromptDataType):
-
-        request_piece = NormalizerRequestPiece(
-            prompt_converters=self._prompt_converters,
-            prompt_text=text,
-            prompt_data_type=prompt_type,
-            )
-
-        request = NormalizerRequest([request_piece])
-        return request
-
-    def get_memory(self):
-        """
-        Retrieves the memory associated with the prompt normalizer.
-        """
-        id = self._prompt_normalizer.id
-        return self._memory.get_prompt_entries_by_orchestrator(orchestrator=id)

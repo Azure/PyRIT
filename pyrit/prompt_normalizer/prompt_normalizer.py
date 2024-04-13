@@ -44,7 +44,7 @@ class PromptNormalizer(abc.ABC):
         except NotImplementedError:
             # Alternatively, use async if sync is unavailable.
             pool = concurrent.futures.ThreadPoolExecutor()
-            return pool.submit(asyncio.run, target.send_prompt(prompt_request=request)).result()
+            return pool.submit(asyncio.run, target.send_prompt_async(prompt_request=request)).result()
 
     async def send_prompt_async(self,
                         request: NormalizerRequest,
