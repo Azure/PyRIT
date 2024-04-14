@@ -9,6 +9,7 @@ from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenA
 from pyrit.prompt_target.gandalf_target import GandalfTarget
 from pyrit.prompt_target.text_target import TextTarget
 from pyrit.prompt_target.image_target import ImageTarget
+from pyrit.prompt_target.prompt_chat_target.ollama_chat_target import OllamaChatTarget
 
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "PromptChatTarget",
     "PromptTarget",
     "TextTarget",
+    "OllamaChatTarget",
 ]
