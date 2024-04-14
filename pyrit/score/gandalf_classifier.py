@@ -10,6 +10,8 @@ import uuid
 from pyrit.completion.gandalf_completion import GandalfLevel
 from pyrit.interfaces import SupportTextClassification
 from pyrit.models.models import Score
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
 
@@ -21,6 +23,7 @@ class GandalfScorer(SupportTextClassification):
 
         self._conversation_id = str(uuid.uuid4())
         self._normalizer_id = None  # Normalizer not used
+        self._labels = {"scorer": "gandalf_scorer"}
 
     def _check_for_password_in_text(self, text: str) -> str:
         """
@@ -36,18 +39,27 @@ class GandalfScorer(SupportTextClassification):
         )
 
         self._chat_engine.set_system_prompt(
-            prompt=system_prompt,
+            system_prompt=system_prompt,
             conversation_id=self._conversation_id,
-            normalizer_id=self._normalizer_id,
+            orchestrator=None,
+            labels=self._labels,
         )
 
-        response = self._chat_engine.send_prompt(
-            normalized_prompt=text,
-            conversation_id=self._conversation_id,
-            normalizer_id=self._normalizer_id,
+        request = PromptRequestResponse(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_prompt_text=text,
+                    conversation_id=self._conversation_id,
+                    labels=self._labels,
+                    prompt_target=self._chat_engine,
+                )
+            ]
         )
 
-        return response
+        response_text = self._chat_engine.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
+
+        return response_text
 
     def score_text(self, text: str) -> Score:
         """Scores the text based on the password found in the text.

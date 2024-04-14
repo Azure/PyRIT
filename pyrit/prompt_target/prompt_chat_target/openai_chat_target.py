@@ -38,15 +38,15 @@ class OpenAIChatInterface(PromptChatTarget):
 
         # TODO Validate
 
-        prompt_request: PromptRequestPiece = prompt_request.request_pieces[0]
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
-        messages.append(prompt_request.to_chat_message())
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages.append(request.to_chat_message())
 
-        prompt_request.sequence = len(messages)
-        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
+        request.sequence = len(messages)
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        self._memory.add_request_piece_to_memory(request_pieces=[prompt_request])
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         resp_text = self._complete_chat(
             messages=messages,
@@ -61,23 +61,21 @@ class OpenAIChatInterface(PromptChatTarget):
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-        response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request, response_text_pieces=[resp_text]
-        )
+        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
 
         return response_entry
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        # TODO validate
-        prompt_request = prompt_request.request_pieces[0]
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages.append(request.to_chat_message())
 
-        prompt_request.sequence = len(messages)
-        self._memory.insert_prompt_entries([prompt_request])
+        request.sequence = len(messages)
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         resp_text = await self._complete_chat_async(
             messages=messages,
@@ -88,13 +86,11 @@ class OpenAIChatInterface(PromptChatTarget):
         )
 
         if not resp_text:
-            raise ValueError("The chat returned an empty prompt.")
+            raise ValueError("The chat returned an empty response.")
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-        response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request, response_text_pieces=[resp_text]
-        )
+        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
 
         return response_entry
 

@@ -105,7 +105,7 @@ class MemoryInterface(abc.ABC):
         memory_entries = self.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
 
-    def add_request_piece_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
         Adds a request piece to the memory.
 

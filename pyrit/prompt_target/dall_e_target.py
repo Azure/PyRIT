@@ -13,6 +13,7 @@ from openai import BadRequestError
 from pyrit.common.path import RESULTS_PATH
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 
@@ -132,7 +133,7 @@ class DallETarget(PromptTarget):
 
         output_filename = f"{uuid.uuid4()}.png"
 
-        self._memory.add_request_piece_to_memory(request_pieces=[request])
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         resp = self._generate_images(prompt=request.converted_prompt_text)
 
@@ -158,13 +159,13 @@ class DallETarget(PromptTarget):
 
         output_filename = f"{uuid.uuid4()}.png"
 
-        self._memory.add_request_piece_to_memory(request_pieces=[request])
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         resp = await self._generate_images_async(prompt=request.converted_prompt_text)
         return self._parse_response_and_add_to_memory(resp, output_filename, request)
 
     def _parse_response_and_add_to_memory(
-        self, resp: dict, output_filename: str, prompt_request: PromptRequestResponse
+        self, resp: dict, output_filename: str, prompt_request: PromptRequestPiece
     ) -> PromptRequestResponse:
         if "error" not in resp.keys():
             if self.response_format == "url":
@@ -175,7 +176,7 @@ class DallETarget(PromptTarget):
             return self._memory.add_response_entries_to_memory(
                 request=prompt_request,
                 response_text_pieces=[output_filename],
-                response_type="image",
+                response_type="image_path",
                 prompt_metadata=json.dumps(resp),
             )
 
@@ -185,7 +186,7 @@ class DallETarget(PromptTarget):
                 return self._memory.add_response_entries_to_memory(
                     request=prompt_request,
                     response_text_pieces=[],
-                    response_type="image",
+                    response_type="image_path",
                     prompt_metadata=json.dumps(resp),
                     error="blocked",
                 )

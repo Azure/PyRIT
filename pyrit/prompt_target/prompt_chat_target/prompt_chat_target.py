@@ -17,7 +17,7 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator: "Orchestrator|dict[str:str]",  # noqa: F821
+        orchestrator: "Orchestrator|dict[str,str]",  # type: ignore # noqa: F821
         labels: dict,
     ) -> None:
         """
@@ -48,7 +48,7 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator: "Orchestrator|dict[str:str]",  # noqa: F821
+        orchestrator: "Orchestrator|dict[str,str]",  # type: ignore # noqa: F821
         labels: dict,
     ) -> PromptRequestResponse:
         """
@@ -77,7 +77,7 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator: "Orchestrator|dict[str:str]",  # noqa: F821
+        orchestrator: "Orchestrator|dict[str,str]",  # type: ignore # noqa: F821
         labels: dict,
     ) -> PromptRequestResponse:
         """
@@ -99,4 +99,4 @@ class PromptChatTarget(PromptTarget):
             ]
         )
 
-        return self.send_prompt_async(prompt_request=request)
+        return await self.send_prompt_async(prompt_request=request)

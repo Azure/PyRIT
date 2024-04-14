@@ -65,7 +65,7 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator: "Orchestrator",
+        orchestrator: Orchestrator,
         labels: dict,
     ) -> None:
         self.system_prompt = system_prompt

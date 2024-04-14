@@ -24,16 +24,16 @@ class GandalfTarget(GandalfCompletionEngine, PromptTarget):
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        prompt_request = prompt_request.request_pieces[0]
+        request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
-        prompt_request.sequence = len(messages)
-        self._memory.insert_prompt_entries([prompt_request])
+        request.sequence = len(messages)
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
-        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        response = super().complete_text(text=prompt_request.converted_prompt_text)
+        response = super().complete_text(text=request.converted_prompt_text)
 
         if not response.completion:
             raise ValueError("The chat returned an empty response.")
@@ -41,7 +41,7 @@ class GandalfTarget(GandalfCompletionEngine, PromptTarget):
         logger.info(f'Received the following response from the prompt target "{response.completion}"')
 
         response_entry = self._memory.add_response_entries_to_memory(
-            request=prompt_request, response_text_pieces=[response.completion]
+            request=request, response_text_pieces=[response.completion]
         )
 
         return response_entry

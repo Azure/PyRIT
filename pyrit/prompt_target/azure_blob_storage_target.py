@@ -139,7 +139,7 @@ class AzureBlobStorageTarget(PromptTarget):
         request.converted_prompt_text = blob_url
         request.converted_prompt_data_type = "url"
 
-        self._memory.add_request_piece_to_memory(request_pieces=[request])
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         self._upload_blob(file_name=file_name, data=data, content_type=self._blob_content_type)
 
@@ -193,8 +193,8 @@ class AzureBlobStorageTarget(PromptTarget):
         request.converted_prompt_text = blob_url
         request.converted_prompt_data_type = "url"
 
-        self._memory.add_request_piece_to_memory(request_pieces=[request])
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
-        self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
+        await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
         return PromptRequestResponse([request])
