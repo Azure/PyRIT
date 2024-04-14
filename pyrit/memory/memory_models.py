@@ -63,7 +63,7 @@ class PromptMemoryEntry(Base):  # type: ignore
     converters: "Column[list[PromptConverter]]" = Column(JSON)  # type: ignore # noqa
     prompt_target: "Column[PromptTarget]" = Column(JSON)  # type: ignore # noqa
     orchestrator: "Column[Orchestrator]" = Column(JSON)  # type: ignore # noqa
-    response_error = Column(String, nullable=True)
+    response_error = Column(String, nullable=True) # type: ignore
 
     original_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
     original_prompt_text = Column(String, nullable=False)

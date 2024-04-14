@@ -58,7 +58,7 @@ class PromptRequestPiece(abc.ABC):
         *,
         role: ChatMessageRole,
         original_prompt_text: str,
-        converted_prompt_text: str,
+        converted_prompt_text: str = None,
         id: uuid.UUID = None,
         conversation_id: str = None,
         sequence: int = -1,
@@ -75,6 +75,10 @@ class PromptRequestPiece(abc.ABC):
         self.id = id if id else uuid4()
 
         self.role = role
+
+        if converted_prompt_text is None:
+            converted_prompt_text = original_prompt_text
+
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
 
@@ -106,10 +110,7 @@ class PromptRequestPiece(abc.ABC):
         return self.sequence != -1
 
     def to_chat_message(self) -> ChatMessage:
-        return ChatMessage(
-            role=self.role,
-            content=self.converted_prompt_text
-        )
+        return ChatMessage(role=self.role, content=self.converted_prompt_text)
 
     # The conversion from object to dictionary (stored in the db) is one way
     # so at times we have a dictionary, other times an object.

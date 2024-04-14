@@ -118,3 +118,5 @@ for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator._scorer
     correct_count += 1 if answer.is_correct else 0
 
 print(f"Correct count: {correct_count}/{len(benchmark_orchestrator._scorer.evaluation_results)}")
+
+# %%

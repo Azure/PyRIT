@@ -5,10 +5,11 @@ import yaml
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.orchestrator.orchestrator_class import Orchestrator
+from pyrit.prompt_converter.no_op_converter import NoOpConverter
+from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.common.path import DATASETS_PATH
 from pathlib import Path
 
@@ -32,10 +33,11 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         *,
         chat_model_under_evaluation: PromptChatTarget,
         scorer: QuestionAnswerScorer,
+        prompt_converters: list[PromptConverter] = [NoOpConverter()],
         memory: MemoryInterface | None = None,
         memory_labels: dict[str, str] = None,
         evaluation_prompt: str | None = None,
-        verbose: bool = False
+        verbose: bool = False,
     ) -> None:
         """
         Initializes a BenchmarkOrchestrator object.
@@ -43,6 +45,8 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         Args:
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
+            prompt_converters (list[PromptConverter], optional): The prompt converters to be used.
+                Defaults to [NoOpConverter()].
             memory (MemoryInterface | None, optional): The memory interface to be used. Defaults to None.
             memory_labels (list[str], optional): The labels to be associated with the memory.
                 Defaults to ["question-answering-benchmark-orchestrator"].
@@ -50,7 +54,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             verbose (bool, optional): Whether to print verbose output. Defaults to False.
         """
         super().__init__(
-            prompt_converters=None,
+            prompt_converters=prompt_converters,
             memory=memory,
             verbose=verbose,
             memory_labels=memory_labels,
@@ -69,7 +73,6 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             yamp_data = yaml.safe_load(default_data)
             self.evaluation_system_prompt = yamp_data.get("content")
 
-
     def evaluate(self) -> None:
         """Evaluates the question answering dataset and prints the results."""
         self._chat_model_under_evaluation.set_system_prompt(
@@ -80,7 +83,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         )
 
         for idx, (question_entry, question_prompt) in enumerate(self._scorer.get_next_question_prompt_pair()):
-            
+
             request = self._create_normalizer_request(question_prompt, "text")
 
             response = self._normalizer.send_prompt(
