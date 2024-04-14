@@ -3,12 +3,10 @@
 
 import os
 
-from contextlib import AbstractAsyncContextManager
 from unittest.mock import AsyncMock, patch
 
 import pytest
 import httpx
-from pyrit.common import default_values, net_utility
 from pyrit.prompt_target import OllamaChatTarget
 from pyrit.models import ChatMessage
 
