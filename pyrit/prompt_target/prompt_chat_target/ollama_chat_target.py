@@ -10,6 +10,7 @@ from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 
+
 class OllamaChatTarget(PromptChatTarget):
 
     ENDPOINT_URI_ENVIRONMENT_VARIABLE = "OLLAMA_ENDPOINT"
@@ -22,7 +23,6 @@ class OllamaChatTarget(PromptChatTarget):
         model_name: str = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         memory: MemoryInterface = None,
-
     ) -> None:
         PromptChatTarget.__init__(self, memory=memory)
 
@@ -39,7 +39,7 @@ class OllamaChatTarget(PromptChatTarget):
 
         if messages:
             raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
-        
+
         self._memory.add_chat_message_to_memory(
             conversation=ChatMessage(role="system", content=prompt),
             conversation_id=conversation_id,
@@ -63,7 +63,7 @@ class OllamaChatTarget(PromptChatTarget):
 
         if not resp:
             raise ValueError("The chat returned an empty response.")
-        
+
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
         messages.append(ChatMessage(role="assistant", content=resp))
@@ -74,7 +74,7 @@ class OllamaChatTarget(PromptChatTarget):
         )
 
         return resp
-    
+
     async def send_prompt_async(
         self,
         *,
@@ -92,7 +92,7 @@ class OllamaChatTarget(PromptChatTarget):
 
         if not resp:
             raise ValueError("The chat returned an empty response.")
-        
+
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
         self._memory.add_chat_message_to_memory(
@@ -102,7 +102,7 @@ class OllamaChatTarget(PromptChatTarget):
         )
 
         return resp
-    
+
     def _complete_chat(
         self,
         messages: list[ChatMessage],
@@ -115,7 +115,7 @@ class OllamaChatTarget(PromptChatTarget):
         )
 
         return response.json()["message"]["content"]
-        
+
     async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
@@ -128,14 +128,14 @@ class OllamaChatTarget(PromptChatTarget):
         )
 
         return response.json()["message"]["content"]
-    
+
     def _prepare_message(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> list[ChatMessage]:
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
         msg = ChatMessage(role="user", content=normalized_prompt)
         messages.append(msg)
         self._memory.add_chat_message_to_memory(msg, conversation_id, normalizer_id)
         return messages
-    
+
     def _construct_http_body(
         self,
         messages: list[ChatMessage],
