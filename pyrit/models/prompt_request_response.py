@@ -5,9 +5,6 @@ from pyrit.models import PromptRequestPiece
 
 
 class PromptRequestResponse:
-    def __init__(self):
-        pass
-
     def __init__(self, request_pieces: list[PromptRequestPiece]):
         self.request_pieces = request_pieces
 

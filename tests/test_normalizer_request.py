@@ -4,11 +4,8 @@
 import pytest
 
 from pyrit.memory.memory_models import PromptDataType
-from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer import NormalizerRequestPiece
 from pyrit.prompt_converter import PromptConverter
-
-from tests.mocks import MockPromptTarget
 
 
 class MockPromptConverter(PromptConverter):

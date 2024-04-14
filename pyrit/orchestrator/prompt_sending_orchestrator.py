@@ -6,7 +6,6 @@ import logging
 from typing import Optional
 
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptDataType
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget

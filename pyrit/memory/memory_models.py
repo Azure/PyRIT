@@ -53,17 +53,17 @@ class PromptMemoryEntry(Base):  # type: ignore
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    id: uuid.UUID = Column(UUID(as_uuid=True), nullable=False, primary_key=True)  # type: ignore # noqa
     role: "Column[ChatMessageRole]" = Column(String, nullable=False)  # type: ignore # noqa
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     labels: Column[Dict[str, str]] = Column(JSON)  # type: ignore
-    prompt_metadata = Column(JSON)
+    prompt_metadata = Column(String, nullable=True)
     converters: "Column[list[PromptConverter]]" = Column(JSON)  # type: ignore # noqa
     prompt_target: "Column[PromptTarget]" = Column(JSON)  # type: ignore # noqa
     orchestrator: "Column[Orchestrator]" = Column(JSON)  # type: ignore # noqa
-    response_error: str = Column(String, nullable=True)
+    response_error = Column(String, nullable=True)
 
     original_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
     original_prompt_text = Column(String, nullable=False)
@@ -76,8 +76,6 @@ class PromptMemoryEntry(Base):  # type: ignore
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
     def __init__(self, *, entry: PromptRequestPiece):
-        self._entry = entry
-
         self.id = entry.id
         self.role = entry.role
         self.conversation_id = entry.conversation_id
@@ -100,10 +98,25 @@ class PromptMemoryEntry(Base):  # type: ignore
         self.response_error = entry.response_error
 
     def get_prompt_reqest_piece(self) -> PromptRequestPiece:
-        return self._entry
+        return PromptRequestPiece(
+            role=self.role,
+            original_prompt_text=self.original_prompt_text,
+            converted_prompt_text=self.converted_prompt_text,
+            id=self.id,
+            conversation_id=self.conversation_id,
+            sequence=self.sequence,
+            labels=self.labels,
+            prompt_metadata=self.prompt_metadata,
+            converters=self.converters,
+            prompt_target=self.prompt_target,
+            orchestrator=self.orchestrator,
+            original_prompt_data_type=self.original_prompt_data_type,
+            converted_prompt_data_type=self.converted_prompt_data_type,
+            response_error=self.response_error,
+        )
 
     def __str__(self):
-        return str(self._entry)
+        return f"{self.role}: {self.converted_prompt_text}"
 
 
 class EmbeddingData(Base):  # type: ignore

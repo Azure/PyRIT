@@ -100,8 +100,6 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
 
-    target = MockPromptTarget()
-
     return [
         PromptRequestPiece(
             role="user",

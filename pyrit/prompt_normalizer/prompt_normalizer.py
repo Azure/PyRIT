@@ -4,7 +4,9 @@
 import abc
 import asyncio
 import concurrent.futures
+
 from uuid import uuid4
+
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
@@ -14,7 +16,7 @@ from pyrit.prompt_target import PromptTarget
 class PromptNormalizer(abc.ABC):
     _memory: MemoryInterface
 
-    def __init__(self, *, memory: MemoryInterface, verbose=False) -> None:
+    def __init__(self, *, memory: MemoryInterface) -> None:
         self._memory = memory
         self.id = str(uuid4())
 
@@ -25,7 +27,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None,
+        orchestrator: "Orchestrator" = None,  # noqa: F821
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target
@@ -55,7 +57,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None,
+        orchestrator: "Orchestrator" = None,  # noqa: F821
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target
@@ -78,7 +80,7 @@ class PromptNormalizer(abc.ABC):
         requests: list[NormalizerRequest],
         target: PromptTarget,
         labels={},
-        orchestrator: "Orchestrator" = None,
+        orchestrator: "Orchestrator" = None,  # noqa: F821
         batch_size: int = 10,
     ) -> list[PromptRequestResponse]:
 
@@ -107,7 +109,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None,
+        orchestrator: "Orchestrator" = None,  # noqa: F821
     ) -> PromptRequestResponse:
 
         entries = []

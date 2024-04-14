@@ -2,8 +2,6 @@
 # Licensed under the MIT license.
 
 import abc
-import json
-import logging
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestResponse

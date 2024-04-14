@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, Literal
 from uuid import uuid4
 
-from pyrit.models.models import ChatMessageRole
+from pyrit.models.models import ChatMessage, ChatMessageRole
 
 
 PromptDataType = Literal["text", "image_path", "url"]
@@ -63,7 +63,7 @@ class PromptRequestPiece(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels: Dict[str, str] = None,
-        prompt_metadata: Dict = None,
+        prompt_metadata: str = None,
         converters: "list[PromptConverter]|list[Dict]" = None,  # type: ignore # noqa
         prompt_target: "PromptTarget|Dict[str,str]" = None,  # type: ignore # noqa
         orchestrator: "Orchestrator|Dict[str,str]" = None,  # type: ignore # noqa
@@ -72,7 +72,7 @@ class PromptRequestPiece(abc.ABC):
         response_error: PromptResponseError = "none",
     ):
 
-        self.id = id if id else uuid4()  # type: ignore
+        self.id = id if id else uuid4()
 
         self.role = role
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
@@ -80,12 +80,14 @@ class PromptRequestPiece(abc.ABC):
 
         self.timestamp = datetime.utcnow()
         self.labels = labels
-        self.prompt_metadata = prompt_metadata  # type: ignore
+        self.prompt_metadata = prompt_metadata
 
-        if converters:
-            self.converters = [converter.to_dict() for converter in converters]
-        else:
+        if not converters or len(converters) == 0:
             self.converters = None
+        elif isinstance(converters[0], dict):
+            self.converters = converters
+        else:
+            self.converters = [converter.to_dict() for converter in converters]  # type: ignore
 
         self.prompt_target = self._get_default_object(prompt_target)
         self.orchestrator = self._get_default_object(orchestrator)
@@ -102,6 +104,12 @@ class PromptRequestPiece(abc.ABC):
 
     def is_sequence_set(self) -> bool:
         return self.sequence != -1
+
+    def to_chat_message(self) -> ChatMessage:
+        return ChatMessage(
+            role=self.role,
+            content=self.converted_prompt_text
+        )
 
     # The conversion from object to dictionary (stored in the db) is one way
     # so at times we have a dictionary, other times an object.

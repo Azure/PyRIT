@@ -10,7 +10,8 @@ from openai.types.chat import ChatCompletion
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models.models import ChatMessage
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestResponse
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -37,9 +38,10 @@ class OpenAIChatInterface(PromptChatTarget):
 
         # TODO Validate
 
-        prompt_request = prompt_request.request_pieces[0]
+        prompt_request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=prompt_request.conversation_id)
+        messages.append(prompt_request.to_chat_message())
 
         prompt_request.sequence = len(messages)
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")

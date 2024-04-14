@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.analytics.conversation_analytics import ConversationAnalytics
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
+from pyrit.memory.memory_models import EmbeddingData
 
 from tests.mocks import get_sample_conversation_entries
 

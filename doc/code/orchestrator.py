@@ -110,11 +110,11 @@ benchmark_orchestrator.evaluate()
 correct_count = 0
 total_count = 0
 
-for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator.scorer.evaluation_results.items()):
+for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator._scorer.evaluation_results.items()):
     print(f"Question {idx+1}: {qa_question_entry.question}")
     print(f"Answer: {answer}")
     print(f"")
 
     correct_count += 1 if answer.is_correct else 0
 
-print(f"Correct count: {correct_count}/{len(benchmark_orchestrator.scorer.evaluation_results)}")
+print(f"Correct count: {correct_count}/{len(benchmark_orchestrator._scorer.evaluation_results)}")
