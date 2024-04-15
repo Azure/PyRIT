@@ -14,9 +14,7 @@ from pyrit.common import default_values
 from pyrit.prompt_target import DallETarget
 from pyrit.prompt_target.dall_e_target import ResponseFormat
 
-# When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
 test_conversation_id = str(uuid.uuid4())
-test_normalizer_id = "1"
 
 prompt_to_send = "Draw me a racoon pirate as a French artist in France"
 
@@ -35,6 +33,8 @@ img_prompt_target = DallETarget(
 )
 
 # %%
+
+
 image_resp = img_prompt_target.send_prompt(
     normalized_prompt=prompt_to_send,
     conversation_id=test_conversation_id,

@@ -12,17 +12,21 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
 
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common import default_values
 
 default_values.load_default_env()
 
+request = PromptRequestPiece(
+            role="user",
+            original_prompt_text="Hello world!",
+        ).to_prompt_request_response()
+
 
 with AzureOpenAIChatTarget() as azure_openai_chat_target:
-    azure_openai_chat_target.send_prompt(
-        normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id=None
-    )
+    print (azure_openai_chat_target.send_prompt(prompt_request=request))
 
 # %%

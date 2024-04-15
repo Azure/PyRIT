@@ -26,18 +26,21 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
-
 from pyrit.common import default_values
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import AzureMLChatTarget
 
 
 default_values.load_default_env()
 
+request = PromptRequestPiece(
+            role="user",
+            original_prompt_text="Hello world!",
+        ).to_prompt_request_response()
+
 with AzureMLChatTarget() as azure_ml_chat_target:
-    azure_ml_chat_target.send_prompt(
-        normalized_prompt="Hello world!", conversation_id=str(uuid.uuid4()), normalizer_id=None
-    )
+    print(azure_ml_chat_target.send_prompt(prompt_request=request))
+
 
 # %% [markdown]
 #
