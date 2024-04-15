@@ -113,7 +113,7 @@ class MemoryInterface(abc.ABC):
             request (PromptRequestPiece): The request piece to add to the memory.
 
         Returns:
-            PromptRequestResponse: The response object.
+            None
         """
         memory_entries = []
 
@@ -131,6 +131,19 @@ class MemoryInterface(abc.ABC):
         prompt_metadata: str = None,
         error: PromptResponseError = "none",
     ) -> PromptRequestResponse:
+        """
+        Adds response entries to the memory.
+
+        Args:
+            request (PromptRequestPiece): The original prompt request.
+            response_text_pieces (list[str]): List of response text pieces.
+            response_type (PromptDataType, optional): The data type of the response. Defaults to "text".
+            prompt_metadata (str, optional): Additional metadata for the prompt. Defaults to None.
+            error (PromptResponseError, optional): The error type of the response. Defaults to "none".
+
+        Returns:
+            PromptRequestResponse: The response containing the updated request pieces.
+        """
 
         request_pieces = []
         memory_entries = []

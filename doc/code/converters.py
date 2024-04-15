@@ -11,8 +11,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pyrit.common import default_values
 from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter, RandomCapitalLettersConverter
 
+
+default_values.load_default_env()
 
 prompt = "tell me how to cut down a tree"
 
