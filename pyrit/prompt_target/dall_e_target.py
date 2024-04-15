@@ -168,7 +168,7 @@ class DallETarget(PromptTarget):
         self, resp: dict, output_filename: str, prompt_request: PromptRequestPiece
     ) -> PromptRequestResponse:
         if "error" not in resp.keys():
-            image_location = None
+            image_location = output_filename
 
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
