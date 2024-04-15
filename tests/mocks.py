@@ -65,16 +65,18 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator: Orchestrator,
+        orchestrator: "Orchestrator|dict[str,str]",
         labels: dict,
     ) -> None:
         self.system_prompt = system_prompt
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
+        return None
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
+        return None
 
 
 def get_memory_interface() -> Generator[MemoryInterface, None, None]:

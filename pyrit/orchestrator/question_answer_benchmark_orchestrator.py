@@ -87,7 +87,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             request = self._create_normalizer_request(question_prompt, "text")
 
             response = self._normalizer.send_prompt(
-                request=request,
+                normalizer_request=request,
                 target=self._chat_model_under_evaluation,
                 conversation_id=self._conversation_id,
                 labels=self._global_memory_labels,

@@ -112,10 +112,10 @@ class PromptRequestPiece(abc.ABC):
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=self.role, content=self.converted_prompt_text)
 
-    def to_prompt_request_response(self) -> "PromptRequestResponse":  # type: ignore
+    def to_prompt_request_response(self) -> "PromptRequestResponse":  # type: ignore # noqa F821
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
-        return PromptRequestResponse([self]) # noqa F821
+        return PromptRequestResponse([self])  # noqa F821
 
     # The conversion from object to dictionary (stored in the db) is one way
     # so at times we have a dictionary, other times an object.

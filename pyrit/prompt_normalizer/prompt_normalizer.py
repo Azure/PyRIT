@@ -22,19 +22,19 @@ class PromptNormalizer(abc.ABC):
 
     def send_prompt(
         self,
-        request: NormalizerRequest,
+        normalizer_request: NormalizerRequest,
         target: PromptTarget,
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None,  # noqa: F821
+        orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target
         """
 
-        request = self._get_prompt_request_response(
-            request=request,
+        request_response = self._get_prompt_request_response(
+            request=normalizer_request,
             target=target,
             conversation_id=conversation_id,
             sequence=sequence,
@@ -44,27 +44,27 @@ class PromptNormalizer(abc.ABC):
         try:
             # Use the synchronous prompt sending method by default.
 
-            return target.send_prompt(prompt_request=request)
+            return target.send_prompt(prompt_request=request_response)
         except NotImplementedError:
             # Alternatively, use async if sync is unavailable.
             pool = concurrent.futures.ThreadPoolExecutor()
-            return pool.submit(asyncio.run, target.send_prompt_async(prompt_request=request)).result()
+            return pool.submit(asyncio.run, target.send_prompt_async(prompt_request=request_response)).result()
 
     async def send_prompt_async(
         self,
-        request: NormalizerRequest,
+        normalizer_request: NormalizerRequest,
         target: PromptTarget,
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None,  # noqa: F821
+        orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target
         """
 
         request = self._get_prompt_request_response(
-            request=request,
+            request=normalizer_request,
             target=target,
             conversation_id=conversation_id,
             sequence=sequence,
@@ -80,7 +80,7 @@ class PromptNormalizer(abc.ABC):
         requests: list[NormalizerRequest],
         target: PromptTarget,
         labels={},
-        orchestrator: "Orchestrator" = None,  # noqa: F821
+        orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
         batch_size: int = 10,
     ) -> list[PromptRequestResponse]:
 
@@ -90,7 +90,9 @@ class PromptNormalizer(abc.ABC):
             tasks = []
             for prompt in prompts_batch:
                 tasks.append(
-                    self.send_prompt_async(request=prompt, target=target, labels=labels, orchestrator=orchestrator)
+                    self.send_prompt_async(
+                        normalizer_request=prompt, target=target, labels=labels, orchestrator=orchestrator
+                    )
                 )
 
             batch_results = await asyncio.gather(*tasks)
@@ -109,7 +111,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None,  # noqa: F821
+        orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
     ) -> PromptRequestResponse:
 
         entries = []

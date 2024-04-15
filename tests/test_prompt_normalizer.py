@@ -38,7 +38,7 @@ def test_send_prompt_multiple_converters():
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    normalizer.send_prompt(request=NormalizerRequest([prompt]), target=prompt_target)
+    normalizer.send_prompt(prompt_request=NormalizerRequest([prompt]), target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
@@ -57,7 +57,7 @@ async def test_send_prompt_async_multiple_converters():
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    await normalizer.send_prompt_async(request=NormalizerRequest([prompt]), target=prompt_target)
+    await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 

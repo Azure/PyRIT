@@ -56,7 +56,7 @@ class PromptSendingOrchestrator(Orchestrator):
         for prompt in prompts:
             request = self._create_normalizer_request(prompt, "text")
             response = self._prompt_normalizer.send_prompt(
-                request=request,
+                normalizer_request=request,
                 target=self._prompt_target,
                 labels=self._global_memory_labels,
                 orchestrator=self,

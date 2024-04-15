@@ -160,7 +160,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
         response_text = (
             self._prompt_normalizer.send_prompt(
-                request=NormalizerRequest([target_prompt_obj]),
+                normalizer_request=NormalizerRequest([target_prompt_obj]),
                 target=self._prompt_target,
                 conversation_id=self._prompt_target_conversation_id,
                 labels=self._global_memory_labels,
