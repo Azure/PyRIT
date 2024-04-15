@@ -115,7 +115,7 @@ class PromptRequestPiece(abc.ABC):
     def to_prompt_request_response(self) -> "PromptRequestResponse":  # type: ignore
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
-        return PromptRequestResponse([self])
+        return PromptRequestResponse([self]) # noqa F821
 
     # The conversion from object to dictionary (stored in the db) is one way
     # so at times we have a dictionary, other times an object.
