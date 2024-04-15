@@ -4,7 +4,7 @@
 from typing import Any
 
 from pyrit.common import default_values
-from pyrit.models import ChatMessage
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
 from azure.storage.blob import ContainerClient
@@ -102,36 +102,38 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
         super().__init__(memory=None)
 
-    def send_prompt(
-        self,
-        *,
-        normalized_prompt: str,
-        conversation_id: str,
-        normalizer_id: str,
-    ) -> str:
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+
         raise NotImplementedError("SemanticKernelPluginPromptTarget only supports send_prompt_async")
 
-    def set_system_prompt(self, *, prompt: str, conversation_id: str, normalizer_id: str) -> None:
+    def set_system_prompt(
+        self,
+        *,
+        system_prompt: str,
+        conversation_id: str,
+        orchestrator: "Orchestrator|dict[str,str]",  # type: ignore # noqa: F821
+        labels: dict,
+    ) -> None:
         raise NotImplementedError("System prompt currently not supported.")
 
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
-        """Processes the prompt template by invoking the plugin to retrieve content.
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        """
+        Processes the prompt template by invoking the plugin to retrieve content.
 
         Args:
-            normalized_prompt (str): The prompt template to be processed.
-                This needs to contain a reference to '{{<plugin_name>.<kernel_function_name>}}'
-                where the plugin_name should match the plugin_name provided in the constructor,
-                and kernel_function_name is the annotated name in the decorator of the plugin's
-                kernel function.
-            conversation_id (str): The ID of the conversation.
-            normalizer_id (str): The ID of the normalizer.
+            prompt_request (PromptRequestResponse): The prompt request containing the template to process.
 
         Returns:
-            str: The processed output from the prompt.
+            PromptRequestResponse: The processed prompt response.
+
         """
-        logger.info(f"Processing: {normalized_prompt}")
+        self._memory.add_request_pieces_to_memory(request_pieces=prompt_request.request_pieces)
+
+        request = prompt_request.request_pieces[0]
+
+        logger.info(f"Processing: {prompt_request}")
         prompt_template_config = PromptTemplateConfig(
-            template=normalized_prompt,
+            template=request.converted_prompt_text,
             name=self._plugin_name,
             template_format="semantic-kernel",
             execution_settings=self._execution_settings,
@@ -142,12 +144,11 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         processing_output = await self._kernel.invoke(processing_function)
         processing_output = str(processing_output)
         logger.info(f'Received the following response from the prompt target "{processing_output}"')
-        self._memory.add_chat_message_to_memory(
-            ChatMessage(role="assistant", content=processing_output),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
+
+        response = self._memory.add_response_entries_to_memory(
+            request=request, response_text_pieces=[processing_output]
         )
-        return processing_output
+        return response
 
 
 class AzureStoragePlugin:

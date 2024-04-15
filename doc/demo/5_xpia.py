@@ -105,3 +105,5 @@ storage_client = ContainerClient.from_container_url(
 )
 for blob in storage_client.list_blobs():
     storage_client.get_blob_client(blob=blob.name).delete_blob()
+
+# %%

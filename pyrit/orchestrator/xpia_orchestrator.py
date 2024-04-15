@@ -98,6 +98,6 @@ class XPIATestOrchestrator(Orchestrator):
 
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
-        score = self._scorer.score_text(processing_response)
+        score = self._scorer.score_text(processing_response.request_pieces[0].converted_prompt_text)
         logger.info(f"Score of the processing response: {score}")
         return score
