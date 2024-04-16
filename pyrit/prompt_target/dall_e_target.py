@@ -127,7 +127,6 @@ class DALLETarget(PromptTarget):
             normalizer_id (str): the ID provided by the prompt normalizer
         Returns: response from target model in a JSON format
         """
-        # TODO Validate
 
         request = prompt_request.request_pieces[0]
 
@@ -152,8 +151,6 @@ class DALLETarget(PromptTarget):
             normalizer_id (str): the ID provided by the prompt normalizer
         Returns: response from target model in a JSON format
         """
-
-        # TODO Validate
 
         request = prompt_request.request_pieces[0]
 

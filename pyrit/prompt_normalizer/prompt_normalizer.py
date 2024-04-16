@@ -66,7 +66,7 @@ class PromptNormalizer(abc.ABC):
         target: PromptTarget,
         conversation_id: str = None,
         sequence: int = -1,
-        labels={},
+        labels=None,
         orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
     ) -> PromptRequestResponse:
         """
@@ -77,7 +77,7 @@ class PromptNormalizer(abc.ABC):
             target (PromptTarget): The target to send the request to.
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
             sequence (int, optional): The sequence number. Defaults to -1.
-            labels (dict, optional): Additional labels for the request. Defaults to {}.
+            labels (dict, optional): Additional labels for the request. Defaults to None.
             orchestrator (Orchestrator, optional): The orchestrator. Defaults to None.
 
         Returns:
@@ -99,7 +99,7 @@ class PromptNormalizer(abc.ABC):
         self,
         requests: list[NormalizerRequest],
         target: PromptTarget,
-        labels={},
+        labels=None,
         orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
         batch_size: int = 10,
     ) -> list[PromptRequestResponse]:
@@ -110,8 +110,7 @@ class PromptNormalizer(abc.ABC):
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects representing the prompts to
                 be sent.
             target (PromptTarget): The target to which the prompts should be sent.
-            labels (dict, optional): Additional labels to be included with the prompts. Defaults to an empty
-                dictionary.
+            labels (dict, optional): Additional labels to be included with the prompts. Defaults to None
             orchestrator (Orchestrator, optional): The orchestrator to use for sending the prompts. Defaults
                 to None.
             batch_size (int, optional): The size of each batch of prompts. Defaults to 10.
@@ -147,7 +146,7 @@ class PromptNormalizer(abc.ABC):
         target: PromptTarget,
         conversation_id: str = None,
         sequence: int = -1,
-        labels={},
+        labels=None,
         orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
     ) -> PromptRequestResponse:
         """
@@ -160,7 +159,7 @@ class PromptNormalizer(abc.ABC):
             target (PromptTarget): The prompt target object.
             conversation_id (str, optional): The conversation ID. Defaults to None.
             sequence (int, optional): The sequence number. Defaults to -1.
-            labels (dict, optional): The labels dictionary. Defaults to {}.
+            labels (dict, optional): The labels dictionary. Defaults to None.
             orchestrator (Orchestrator, optional): The orchestrator object. Defaults to None.
 
         Returns:

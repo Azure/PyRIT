@@ -142,12 +142,12 @@ class RedTeamingOrchestrator(Orchestrator):
             )
             prompt = self._get_prompt_from_red_teaming_target(target_messages)
 
-        red_teaming_response_message = self._memory.get_chat_messages_with_conversation_id(
+        red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
             conversation_id=self._red_teaming_chat_conversation_id
         )
 
         if completion_state and self.is_conversation_complete(
-            red_teaming_response_message, red_teaming_chat_role="assistant"
+            red_teaming_chat_messages, red_teaming_chat_role="assistant"
         ):
             completion_state.is_complete = True
             return

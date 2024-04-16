@@ -36,8 +36,6 @@ class OpenAIChatInterface(PromptChatTarget):
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        # TODO Validate
-
         request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
