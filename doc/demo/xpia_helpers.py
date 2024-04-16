@@ -111,7 +111,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator: "Orchestrator|dict[str,str]",  # type: ignore # noqa: F821
+        orchestrator_identifier: dict[str, str],
         labels: dict,
     ) -> None:
         raise NotImplementedError("System prompt currently not supported.")

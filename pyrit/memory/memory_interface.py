@@ -4,8 +4,8 @@
 import abc
 from pathlib import Path
 
-from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError, PromptDataType
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
@@ -156,8 +156,8 @@ class MemoryInterface(abc.ABC):
                 conversation_id=request.conversation_id,
                 sequence=request.sequence + 1,
                 labels=request.labels,
-                prompt_target=request.prompt_target,
-                orchestrator=request.orchestrator,
+                prompt_target_identifier=request.prompt_target_identifier,
+                orchestrator_identifier=request.orchestrator_identifier,
                 original_prompt_data_type=response_type,
                 converted_prompt_data_type=response_type,
                 prompt_metadata=prompt_metadata,

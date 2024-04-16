@@ -3,7 +3,7 @@
 
 import pytest
 
-from pyrit.memory.memory_models import PromptDataType
+from pyrit.models import PromptDataType
 from pyrit.prompt_normalizer import NormalizerRequestPiece
 from pyrit.prompt_converter import PromptConverter
 
@@ -61,19 +61,6 @@ def test_prompt_request_piece_init_invalid_converter():
     with pytest.raises(ValueError):
         NormalizerRequestPiece(
             prompt_converters=["InvalidPromptConverter"],
-            prompt_text=prompt_text,
-            prompt_data_type="text",
-            metadata=metadata,
-        )
-
-
-def test_prompt_init_empty_prompt_converters():
-    prompt_text = "Hello"
-    metadata = "meta"
-
-    with pytest.raises(ValueError):
-        NormalizerRequestPiece(
-            prompt_converters=[],
             prompt_text=prompt_text,
             prompt_data_type="text",
             metadata=metadata,

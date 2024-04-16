@@ -8,14 +8,15 @@ from typing import Optional
 import uuid
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.models.identifiers import Identifier
 from pyrit.models.prompt_request_piece import PromptDataType
-from pyrit.prompt_converter import PromptConverter, NoOpConverter
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 
 logger = logging.getLogger(__name__)
 
 
-class Orchestrator(abc.ABC):
+class Orchestrator(abc.ABC, Identifier):
 
     _memory: MemoryInterface
 
@@ -29,14 +30,11 @@ class Orchestrator(abc.ABC):
     ):
         self.id = uuid.uuid4()
 
-        self._prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
+        self._prompt_converters = prompt_converters if prompt_converters else []
         self._memory = memory or DuckDBMemory()
         self._verbose = verbose
 
-        if memory_labels:
-            self._global_memory_labels = memory_labels
-
-        self._global_memory_labels = {"orchestrator": str(self.__class__.__name__)}
+        self._global_memory_labels = memory_labels if memory_labels else {}
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -78,7 +76,7 @@ class Orchestrator(abc.ABC):
         """
         return self._memory.get_prompt_entries_by_orchestrator(orchestrator=self)
 
-    def to_dict(self):
+    def to_identifier(self):
         orchestrator_dict = {}
         orchestrator_dict["__type__"] = self.__class__.__name__
         orchestrator_dict["__module__"] = self.__class__.__module__

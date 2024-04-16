@@ -124,7 +124,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         try:
             return self.query_entries(
-                PromptMemoryEntry, conditions=PromptMemoryEntry.orchestrator.op("->>")("id") == orchestrator.id
+                PromptMemoryEntry,
+                conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator.id,
             )
         except Exception as e:
             logger.exception(
@@ -218,6 +219,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
+                raise
 
     def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
         """
