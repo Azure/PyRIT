@@ -45,6 +45,9 @@ class PromptTarget(abc.ABC):
         """
         self._memory.dispose_engine()
 
+    def __str__(self):
+        return f"{self.to_dict()}"
+
     def to_dict(self):
         public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         public_attributes["__type__"] = self.__class__.__name__
