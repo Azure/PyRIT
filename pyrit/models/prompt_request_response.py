@@ -21,4 +21,4 @@ class PromptRequestResponse:
         ret = ""
         for request_piece in self.request_pieces:
             ret += str(request_piece) + "\n"
-        return ret
+        return "\n".join([str(request_piece) for request_piece in self.request_pieces])
