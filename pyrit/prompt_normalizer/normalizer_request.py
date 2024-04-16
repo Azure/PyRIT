@@ -40,7 +40,7 @@ class NormalizerRequestPiece(abc.ABC):
             or len(prompt_converters) == 0
             or not all(isinstance(converter, PromptConverter) for converter in prompt_converters)
         ):
-            raise ValueError("prompt_converters must be a PromptConverter List and be non-empty")
+            raise ValueError("prompt_converters must be a PromptConverter List and not be empty")
 
         if not isinstance(prompt_text, str):
             raise ValueError("prompt_text must be a str")
