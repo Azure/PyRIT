@@ -36,3 +36,13 @@ def test_refresh_expiration():
         token = test_instance.refresh_token()
         assert token
         assert mock_get_token.call_count == 2
+
+
+def test_get_access_token_from_azure_msi():
+    with patch("azure.identity.AzureCliCredential.get_token") as mock_get_token:
+        mock_get_token.return_value = Mock(token=mock_token, expires_on=curr_epoch_time)
+        test_instance = AzureAuth(token_scope="https://mocked_endpoint.azure.com")
+        with patch("azure.identity.ManagedIdentityCredential.get_token") as mock_credential:
+            mock_credential.return_value = Mock(token=mock_token, expires_on=curr_epoch_time)
+            test_msi_token = test_instance.get_access_token_from_azure_msi("234")
+            assert test_msi_token == mock_token

@@ -12,6 +12,7 @@ from pyrit.prompt_converter import (
     VariationConverter,
     TranslationConverter,
     RandomCapitalLettersConverter,
+    TextToAudio,
 )
 import pytest
 
@@ -122,3 +123,8 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
     upper_count = sum(1 for char in actual_converted_text if char.isupper())
     expected_percentage = (upper_count / len(prompt)) * 100.0 if actual_converted_text else 0
     assert expected_percentage == percentage
+
+
+def test_text_to_audio() -> None:
+    converter = TextToAudio()
+    assert converter
