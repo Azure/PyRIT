@@ -1,13 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import logging
-import pathlib
+
+# import pathlib
 
 # !pip install azure-cognitiveservices-speech
 import azure.cognitiveservices.speech as speechsdk
 
-from pyrit.common.path import RESULTS_PATH
-from pyrit.prompt_target import PromptTarget
+# from pyrit.common.path import RESULTS_PATH
+# from pyrit.prompt_target import PromptTarget
 from pyrit.common import default_values
 from pyrit.memory.memory_models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class TextToAudio(PromptConverter):
     """
-    The TextToAudio takes a prompt and generates a 
+    The TextToAudio takes a prompt and generates a
     wave file.
 
     Args:
@@ -25,9 +26,10 @@ class TextToAudio(PromptConverter):
         speech_key (str): The API key for accessing the service.
         synthesis_language (str): The API key for accessing the service.
         synthesis_voice_name (str): Synthesis voice name, see URL
-        https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support 
+        https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
         filename (str): File name to be generated.
     """
+
     SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "SPEECH_REGION"
     SPEECH_KEY_TOKEN_ENVIRONMENT_VARIABLE: str = "SPEECH_KEY_TOKEN"
 
@@ -46,14 +48,14 @@ class TextToAudio(PromptConverter):
 
         if speech_region is None:
             self.speech_region: str = default_values.get_required_value(
-            env_var_name=self.SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=speech_region
+                env_var_name=self.SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=speech_region
             )
         else:
             self.speech_region = speech_region
 
         if speech_key is None:
             self.speech_key: str = default_values.get_required_value(
-            env_var_name=self.SPEECH_KEY_TOKEN_ENVIRONMENT_VARIABLE, passed_value=speech_key
+                env_var_name=self.SPEECH_KEY_TOKEN_ENVIRONMENT_VARIABLE, passed_value=speech_key
             )
         else:
             self.speech_key = speech_key
@@ -68,13 +70,13 @@ class TextToAudio(PromptConverter):
         else:
             self.synthesis_voice_name = synthesis_voice_name
 
-        #self.output_dir = pathlib.Path(RESULTS_PATH) / "audio"
+        # self.output_dir = pathlib.Path(RESULTS_PATH) / "audio"
         if filename is None:
-            #self.filename = self.output_dir / "test.wav"
+            # self.filename = self.output_dir / "test.wav"
             self.filename = "test.wav"
         else:
             if self.has_wav_extension(filename):
-                #self.filename = self.output_dir / filename
+                # self.filename = self.output_dir / filename
                 self.filename = filename
             else:
                 logger.error("File name for wav file does not contain .wav")
@@ -104,7 +106,7 @@ class TextToAudio(PromptConverter):
         if prompt is None:
             logger.error("Prompt was empty")
             raise
-        
+
         try:
             speech_config = speechsdk.SpeechConfig(subscription=self.speech_key, region=self.speech_region)
             speech_config.speech_synthesis_language = self.synthesis_language
