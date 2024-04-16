@@ -26,22 +26,22 @@ class PromptChatTarget(PromptTarget):
         messages = self._memory.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
 
         if messages:
-            raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
+            raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")        
 
-        system_entry = PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                role="system",
-                conversation_id=conversation_id,
-                sequence=0,
-                original_prompt_text=system_prompt,
-                converted_prompt_text=system_prompt,
-                prompt_target=self,
-                orchestrator=orchestrator,
-                labels=labels,
-            )
+        self._memory.add_request_pieces_to_memory(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="system",
+                    conversation_id=conversation_id,
+                    sequence=0,
+                    original_prompt_text=system_prompt,
+                    converted_prompt_text=system_prompt,
+                    prompt_target=self,
+                    orchestrator=orchestrator,
+                    labels=labels,
+                )
+            ]
         )
-
-        self._memory.insert_prompt_entries(entries=[system_entry])
 
     def send_chat_prompt(
         self,
