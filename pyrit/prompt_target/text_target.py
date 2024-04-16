@@ -7,7 +7,7 @@ import sys
 from typing import IO
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessage
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 
 
@@ -25,19 +25,15 @@ class TextTarget(PromptTarget):
         self.stream_name = text_stream.name
         self._text_stream = text_stream
 
-    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
-        msg = ChatMessage(role="user", content=normalized_prompt)
-        self._text_stream.write(f"{str(msg)}\n")
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        self._memory.add_chat_message_to_memory(
-            conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
-        )
+        self._text_stream.write(f"{str(prompt_request)}\n")
+        self._memory.add_request_pieces_to_memory(request_pieces=prompt_request.request_pieces)
 
-        return str(msg)
+        return None
 
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+
         await asyncio.sleep(0)
 
-        return self.send_prompt(
-            normalized_prompt=normalized_prompt, conversation_id=conversation_id, normalizer_id=normalizer_id
-        )
+        return self.send_prompt(prompt_request=prompt_request)

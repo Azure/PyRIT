@@ -31,7 +31,7 @@ prompt_variation_converter = VariationConverter(converter_target=converter_targe
 target = TextTarget()
 
 with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[prompt_variation_converter]) as orchestrator:
-    orchestrator.send_prompts(prompts)
+    orchestrator.send_text_prompts(prompts)
 
 # %% [markdown]
 # ### Stacking Converters
@@ -45,7 +45,7 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[prompt_v
 with PromptSendingOrchestrator(
     prompt_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
 ) as orchestrator:
-    orchestrator.send_prompts(prompts)
+    orchestrator.send_text_prompts(prompts)
 
 # %% [markdown]
 # ### Translation Converter

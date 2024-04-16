@@ -12,6 +12,8 @@ from typing import Union
 
 from pyrit.interfaces import SupportTextClassification
 from pyrit.models import Score
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
 
@@ -45,10 +47,13 @@ class SelfAskGptClassifier(SupportTextClassification):
 
         system_prompt = SelfAskGptClassifier._build_self_ask_system_prompt(self._categories)
 
+        self.labels = {"scorer": "self_ask_gpt_classifier"}
+
         self._chat_target.set_system_prompt(
-            prompt=system_prompt,
+            system_prompt=system_prompt,
             conversation_id=self._conversation_id,
-            normalizer_id=self._normalizer_id,
+            orchestrator=None,
+            labels=self.labels,
         )
 
     @staticmethod
@@ -109,14 +114,23 @@ class SelfAskGptClassifier(SupportTextClassification):
 
     # @tenacity.retry(stop=tenacity.stop_after_attempt(3))
     def score_text(self, text: str) -> Score:
-        response = self._chat_target.send_prompt(
-            normalized_prompt=text,
-            conversation_id=self._conversation_id,
-            normalizer_id=self._normalizer_id,
+
+        request = PromptRequestResponse(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_prompt_text=text,
+                    conversation_id=self._conversation_id,
+                    labels=self.labels,
+                    prompt_target=self._chat_target,
+                )
+            ]
         )
 
+        response_text = self._chat_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
+
         try:
-            parsed_response = json.loads(response)
+            parsed_response = json.loads(response_text)
 
             score = Score(
                 score_type="str",
@@ -128,4 +142,4 @@ class SelfAskGptClassifier(SupportTextClassification):
             return score
 
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON response from chat target: {response}") from e
+            raise ValueError(f"Invalid JSON response from chat target: {response_text}") from e
