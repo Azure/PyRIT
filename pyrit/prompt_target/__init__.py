@@ -8,7 +8,7 @@ from pyrit.prompt_target.prompt_chat_target.azure_ml_chat_target import AzureMLC
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget, OpenAIChatTarget
 from pyrit.prompt_target.gandalf_target import GandalfTarget
 from pyrit.prompt_target.text_target import TextTarget
-from pyrit.prompt_target.image_target import ImageTarget
+from pyrit.prompt_target.dall_e_target import DALLETarget
 from pyrit.prompt_target.prompt_chat_target.ollama_chat_target import OllamaChatTarget
 
 
@@ -17,7 +17,7 @@ __all__ = [
     "AzureMLChatTarget",
     "AzureOpenAIChatTarget",
     "GandalfTarget",
-    "ImageTarget",
+    "DALLETarget",
     "OpenAIChatTarget",
     "PromptChatTarget",
     "PromptTarget",

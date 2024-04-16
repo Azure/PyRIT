@@ -4,8 +4,10 @@
 import abc
 from pathlib import Path
 
+from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError
+
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
@@ -60,19 +62,21 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_prompt_entries_with_normalizer_id(self, *, normalizer_id: str) -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(
+        self, *, orchestrator: "Orchestrator"  # type: ignore # noqa
+    ) -> list[PromptMemoryEntry]:
         """
-        Retrieves a list of ConversationData objects that have the specified normalizer ID.
+        Retrieves a list of PromptMemoryEntries based on a specific orchestrator object.
 
         Args:
-            normalizer_id (str): The normalizer ID to match.
+            orchestrator (Orchestrator): The orchestrator object to match
 
         Returns:
-            list[ConversationData]: A list of chat memory entries with the specified normalizer ID.
+            list[PromptMemoryEntry]: A list of PromptMemoryEntry with the specified orchestrator.
         """
 
     @abc.abstractmethod
-    def insert_prompt_entries(self, *, entries: list[EmbeddingData]) -> None:
+    def insert_prompt_entries(self, *, entries: list[PromptMemoryEntry]) -> None:
         """
         Inserts a list of entries into the memory storage.
 
@@ -101,68 +105,69 @@ class MemoryInterface(abc.ABC):
         memory_entries = self.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
 
-    def add_chat_message_to_memory(
-        self,
-        conversation: ChatMessage,
-        conversation_id: str,
-        normalizer_id: str = None,
-        labels: dict[str, str] = {},
-    ):
+    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
-        Deprecated. Will be refactored and removed soon. It currently works incorrectly.
-        but is included so functionality is maintained.
-
-        Adds a single chat conversation entry to the ConversationStore table.
-        If embddings are set, add corresponding embedding entry to the EmbeddingStore table.
+        Adds a request piece to the memory.
 
         Args:
-            conversation (ChatMessage): The chat message to be added.
-            conversation_id (str): The conversation ID.
-            normalizer_id (str): The normalizer ID,
-            labels (list[str]): A list of labels to be added to the memory entry.
+            request (PromptRequestPiece): The request piece to add to the memory.
+
+        Returns:
+            None
         """
+        memory_entries = []
 
-        self.add_chat_messages_to_memory(
-            conversations=[conversation], conversation_id=conversation_id, normalizer_id=normalizer_id, labels=labels
-        )
+        for piece in request_pieces:
+            memory_entries.append(PromptMemoryEntry(entry=piece))
 
-    def add_chat_messages_to_memory(
+        self.insert_prompt_entries(entries=memory_entries)
+
+    def add_response_entries_to_memory(
         self,
         *,
-        conversations: list[ChatMessage],
-        conversation_id: str,
-        normalizer_id: str = None,
-        labels: dict[str, str] = {},
-    ):
+        request: PromptRequestPiece,
+        response_text_pieces: list[str],
+        response_type: PromptDataType = "text",
+        prompt_metadata: str = None,
+        error: PromptResponseError = "none",
+    ) -> PromptRequestResponse:
         """
-        Deprecated. Will be refactored and removed soon. It currently works incorrectly.
-        but is included so functionality is maintained.
-
-        Adds multiple chat conversation entries to the ConversationStore table.
-        If embddings are set, add corresponding embedding entries to the EmbeddingStore table.
+        Adds response entries to the memory.
 
         Args:
-            conversations (ChatMessage): The chat message to be added.
-            conversation_id (str): The conversation ID.
-            normalizer_id (str): The normalizer ID
-            labels (list[str]): A list of labels to be added to the memory entry.
+            request (PromptRequestPiece): The original prompt request.
+            response_text_pieces (list[str]): List of response text pieces.
+            response_type (PromptDataType, optional): The data type of the response. Defaults to "text".
+            prompt_metadata (str, optional): Additional metadata for the prompt. Defaults to None.
+            error (PromptResponseError, optional): The error type of the response. Defaults to "none".
+
+        Returns:
+            PromptRequestResponse: The response containing the updated request pieces.
         """
-        entries_to_add = []
 
-        for conversation in conversations:
-            entry = PromptMemoryEntry(
-                role=conversation.role,
-                conversation_id=conversation_id,
-                original_prompt_text=conversation.content,
-                converted_prompt_text=conversation.content,
-                labels=labels,
+        request_pieces = []
+        memory_entries = []
+
+        for resp_text in response_text_pieces:
+            entry = PromptRequestPiece(
+                role="assistant",
+                original_prompt_text=resp_text,
+                converted_prompt_text=resp_text,
+                conversation_id=request.conversation_id,
+                sequence=request.sequence + 1,
+                labels=request.labels,
+                prompt_target=request.prompt_target,
+                orchestrator=request.orchestrator,
+                original_prompt_data_type=response_type,
+                converted_prompt_data_type=response_type,
+                prompt_metadata=prompt_metadata,
+                response_error=error,
             )
+            memory_entries.append(PromptMemoryEntry(entry=entry))
+            request_pieces.append(entry)
 
-            entry.labels["normalizer_id"] = normalizer_id
-
-            entries_to_add.append(entry)
-
-        self.insert_prompt_entries(entries=entries_to_add)
+        self.insert_prompt_entries(entries=memory_entries)
+        return PromptRequestResponse(request_pieces=request_pieces)
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
         """

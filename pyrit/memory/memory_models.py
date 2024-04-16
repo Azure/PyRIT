@@ -1,23 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import hashlib
 import uuid
 
-from datetime import datetime
-from typing import Dict, Literal
-from uuid import uuid4
+from typing import Dict
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
+from pyrit.models import ChatMessageRole
+from pyrit.models import PromptRequestPiece, PromptDataType, PromptResponseError
+
 
 Base = declarative_base()
-
-
-PromptDataType = Literal["text", "image_url"]
 
 
 class PromptMemoryEntry(Base):  # type: ignore
@@ -56,16 +53,17 @@ class PromptMemoryEntry(Base):  # type: ignore
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    id: uuid.UUID = Column(UUID(as_uuid=True), nullable=False, primary_key=True)  # type: ignore # noqa
     role: "Column[ChatMessageRole]" = Column(String, nullable=False)  # type: ignore # noqa
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     labels: Column[Dict[str, str]] = Column(JSON)  # type: ignore
-    prompt_metadata = Column(JSON)
+    prompt_metadata = Column(String, nullable=True)
     converters: "Column[list[PromptConverter]]" = Column(JSON)  # type: ignore # noqa
     prompt_target: "Column[PromptTarget]" = Column(JSON)  # type: ignore # noqa
     orchestrator: "Column[Orchestrator]" = Column(JSON)  # type: ignore # noqa
+    response_error: PromptResponseError = Column(String, nullable=True)  # type: ignore
 
     original_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
     original_prompt_text = Column(String, nullable=False)
@@ -77,53 +75,45 @@ class PromptMemoryEntry(Base):  # type: ignore
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
-    def __init__(
-        self,
-        *,
-        role: str,
-        original_prompt_text: str,
-        converted_prompt_text: str,
-        id: uuid.UUID = None,
-        conversation_id: str = None,
-        sequence: int = -1,
-        labels: Dict[str, str] = None,
-        prompt_metadata: JSON = None,
-        converters: "PromptConverterList" = None,  # type: ignore # noqa
-        prompt_target: "PromptTarget" = None,  # type: ignore # noqa
-        orchestrator: "Orchestrator" = None,  # type: ignore # noqa
-        original_prompt_data_type: PromptDataType = "text",
-        converted_prompt_data_type: PromptDataType = "text",
-    ):
+    def __init__(self, *, entry: PromptRequestPiece):
+        self.id = entry.id
+        self.role = entry.role
+        self.conversation_id = entry.conversation_id
+        self.sequence = entry.sequence
+        self.timestamp = entry.timestamp
+        self.labels = entry.labels
+        self.prompt_metadata = entry.prompt_metadata
+        self.converters = entry.converters
+        self.prompt_target = entry.prompt_target
+        self.orchestrator = entry.orchestrator
 
-        self.id = id if id else uuid4()  # type: ignore
+        self.original_prompt_text = entry.original_prompt_text
+        self.original_prompt_data_type = entry.original_prompt_data_type
+        self.original_prompt_data_sha256 = entry.original_prompt_data_sha256
 
-        self.role = role
-        self.conversation_id = conversation_id if conversation_id else str(uuid4())
-        self.sequence = sequence
+        self.converted_prompt_data_type = entry.converted_prompt_data_type
+        self.converted_prompt_text = entry.converted_prompt_text
+        self.converted_prompt_data_sha256 = entry.converted_prompt_data_sha256
 
-        self.timestamp = datetime.utcnow()
-        self.labels = labels
-        self.prompt_metadata = prompt_metadata  # type: ignore
+        self.response_error = entry.response_error
 
-        self.converters = converters.to_json() if converters else None
-        self.prompt_target = prompt_target.to_json() if prompt_target else None
-        self.orchestrator = orchestrator.to_json() if orchestrator else None
-
-        self.original_prompt_text = original_prompt_text
-        self.original_prompt_data_type = original_prompt_data_type
-        self.original_prompt_data_sha256 = self._create_sha256(original_prompt_text)
-
-        self.converted_prompt_data_type = converted_prompt_data_type
-        self.converted_prompt_text = converted_prompt_text
-        self.converted_prompt_data_sha256 = self._create_sha256(converted_prompt_text)
-
-    def is_sequence_set(self) -> bool:
-        return self.sequence != -1
-
-    def _create_sha256(self, text: str) -> str:
-        input_bytes = text.encode("utf-8")
-        hash_object = hashlib.sha256(input_bytes)
-        return hash_object.hexdigest()
+    def get_prompt_reqest_piece(self) -> PromptRequestPiece:
+        return PromptRequestPiece(
+            role=self.role,
+            original_prompt_text=self.original_prompt_text,
+            converted_prompt_text=self.converted_prompt_text,
+            id=self.id,
+            conversation_id=self.conversation_id,
+            sequence=self.sequence,
+            labels=self.labels,
+            prompt_metadata=self.prompt_metadata,
+            converters=self.converters,
+            prompt_target=self.prompt_target,
+            orchestrator=self.orchestrator,
+            original_prompt_data_type=self.original_prompt_data_type,
+            converted_prompt_data_type=self.converted_prompt_data_type,
+            response_error=self.response_error,
+        )
 
     def __str__(self):
         return f"{self.role}: {self.converted_prompt_text}"

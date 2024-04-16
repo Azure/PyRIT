@@ -1,11 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Any, Coroutine
+import logging
+
 from pyrit.completion import GandalfCompletionEngine, GandalfLevel
 from pyrit.memory import DuckDBMemory, MemoryInterface
-from pyrit.models import ChatMessage
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
+
+
+logger = logging.getLogger(__name__)
 
 
 class GandalfTarget(GandalfCompletionEngine, PromptTarget):
@@ -18,26 +22,29 @@ class GandalfTarget(GandalfCompletionEngine, PromptTarget):
         super().__init__(level=level)
         self._memory = memory if memory else DuckDBMemory()
 
-    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
-        msg = ChatMessage(role="user", content=normalized_prompt)
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        self._memory.add_chat_message_to_memory(
-            conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
+        request = prompt_request.request_pieces[0]
+
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+
+        request.sequence = len(messages)
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        response = super().complete_text(text=request.converted_prompt_text)
+
+        if not response.completion:
+            raise ValueError("The chat returned an empty response.")
+
+        logger.info(f'Received the following response from the prompt target "{response.completion}"')
+
+        response_entry = self._memory.add_response_entries_to_memory(
+            request=request, response_text_pieces=[response.completion]
         )
 
-        response = super().complete_text(text=normalized_prompt)
+        return response_entry
 
-        self._memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="assistant", content=response.completion),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-        )
-
-        return response.completion
-
-    def send_prompt_async(
-        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str
-    ) -> Coroutine[Any, Any, str]:
-        return super().send_prompt_async(
-            normalized_prompt=normalized_prompt, conversation_id=conversation_id, normalizer_id=normalizer_id
-        )
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        raise NotImplementedError()

@@ -10,6 +10,8 @@ from openai.types.chat import ChatCompletion
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
+from pyrit.models import PromptRequestResponse
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -32,30 +34,19 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
-    def set_system_prompt(self, *, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        messages = self._memory.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        if messages:
-            raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
 
-        self._memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="system", content=prompt),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-        )
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages.append(request.to_chat_message())
 
-    def send_prompt(
-        self,
-        *,
-        normalized_prompt: str,
-        conversation_id: str,
-        normalizer_id: str,
-    ) -> str:
-        messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
+        request.sequence = len(messages)
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        logger.info(f"Sending the following prompt to the prompt target: {normalized_prompt}")
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
-        resp = self._complete_chat(
+        resp_text = self._complete_chat(
             messages=messages,
             top_p=self._top_p,
             temperature=self._temperature,
@@ -63,31 +54,28 @@ class OpenAIChatInterface(PromptChatTarget):
             presence_penalty=self._presence_penalty,
         )
 
-        if not resp:
+        if not resp_text:
             raise ValueError("The chat returned an empty response.")
 
-        logger.info(f'Received the following response from the prompt target "{resp}"')
+        logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-        self._memory.add_chat_message_to_memory(
-            ChatMessage(role="assistant", content=resp),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-        )
+        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
 
-        return resp
+        return response_entry
 
-    async def send_prompt_async(
-        self,
-        *,
-        normalized_prompt: str,
-        conversation_id: str,
-        normalizer_id: str,
-    ) -> str:
-        messages = self._prepare_message(normalized_prompt, conversation_id, normalizer_id)
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        logger.info(f"Sending the following normalized prompt to the prompt target: {normalized_prompt}")
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
 
-        resp = await self._complete_chat_async(
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages.append(request.to_chat_message())
+
+        request.sequence = len(messages)
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+
+        resp_text = await self._complete_chat_async(
             messages=messages,
             top_p=self._top_p,
             temperature=self._temperature,
@@ -95,18 +83,14 @@ class OpenAIChatInterface(PromptChatTarget):
             presence_penalty=self._presence_penalty,
         )
 
-        if not resp:
-            raise ValueError("The chat returned an empty prompt.")
+        if not resp_text:
+            raise ValueError("The chat returned an empty response.")
 
-        logger.info(f'Received the following response from the prompt target "{resp}"')
+        logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-        self._memory.add_chat_message_to_memory(
-            ChatMessage(role="assistant", content=resp),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-        )
+        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
 
-        return resp
+        return response_entry
 
     def parse_chat_completion(self, response):
         """
@@ -206,13 +190,6 @@ class OpenAIChatInterface(PromptChatTarget):
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
         return self.parse_chat_completion(response)
-
-    def _prepare_message(self, normalized_prompt: str, conversation_id: str, normalizer_id: str):
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
-        msg = ChatMessage(role="user", content=normalized_prompt)
-        messages.append(msg)
-        self._memory.add_chat_message_to_memory(msg, conversation_id, normalizer_id)
-        return messages
 
 
 class AzureOpenAIChatTarget(OpenAIChatInterface):
