@@ -4,7 +4,7 @@
 import pytest
 
 
-from pyrit.models.models import ChatMessage
+from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import GenericSystemSquash, ChatMessageNop
 
 

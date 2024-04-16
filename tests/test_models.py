@@ -1,4 +1,4 @@
-from pyrit.models.models import ChatMessage, ChatMessagesDataset
+from pyrit.models import ChatMessage, ChatMessagesDataset
 
 
 def test_chat_messages_dataset_values_properly_set() -> None:

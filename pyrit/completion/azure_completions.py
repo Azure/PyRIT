@@ -5,7 +5,7 @@ from openai import AzureOpenAI
 
 from pyrit.common import default_values
 from pyrit.interfaces import CompletionSupport
-from pyrit.models.models import PromptResponse
+from pyrit.models import PromptResponse
 
 
 class AzureCompletion(CompletionSupport):

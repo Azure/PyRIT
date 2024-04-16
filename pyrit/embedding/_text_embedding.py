@@ -8,7 +8,7 @@ import tenacity
 from openai import AzureOpenAI, OpenAI
 
 from pyrit.interfaces import EmbeddingSupport
-from pyrit.models.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
+from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
 
 
 class _TextEmbedding(EmbeddingSupport, abc.ABC):

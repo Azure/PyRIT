@@ -14,7 +14,7 @@
 
 import pathlib
 
-from pyrit.models.models import PromptTemplate
+from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 

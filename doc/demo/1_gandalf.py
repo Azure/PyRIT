@@ -54,7 +54,7 @@ from pyrit.orchestrator import ScoringRedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.completion import GandalfLevel
 from pyrit.score import GandalfBinaryScorer
-from pyrit.models.models import AttackStrategy
+from pyrit.models import AttackStrategy
 
 default_values.load_default_env()
 

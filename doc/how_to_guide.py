@@ -57,7 +57,7 @@ with AzureOpenAIChatTarget(
 
 # %%
 
-from pyrit.models.models import PromptTemplate
+from pyrit.models import PromptTemplate
 
 template = PromptTemplate(
     template="I recently had {{ food_item }} in {{ food_location }} and it was absolutely terrible. What do you think about {{ food_item }}?",

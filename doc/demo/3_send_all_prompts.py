@@ -37,7 +37,7 @@ import pathlib
 
 
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models.models import PromptDataset
+from pyrit.models import PromptDataset
 from pyrit.common.path import DATASETS_PATH
 
 
@@ -70,11 +70,9 @@ with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
 
 import pathlib
 
-
-from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models.models import PromptDataset
 from pyrit.common.path import DATASETS_PATH
-
+from pyrit.models import PromptDataset
+from pyrit.prompt_target import AzureOpenAIChatTarget
 
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator

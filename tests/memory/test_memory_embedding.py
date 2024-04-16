@@ -6,7 +6,7 @@ import pytest
 
 from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory import MemoryEmbedding
-from pyrit.models.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
+from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_models import PromptMemoryEntry
 from tests.mocks import get_sample_conversation_entries

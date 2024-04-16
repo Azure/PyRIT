@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, Literal
 from uuid import uuid4
 
-from pyrit.models.models import ChatMessage, ChatMessageRole
+from pyrit.models import ChatMessage, ChatMessageRole
 
 
 PromptDataType = Literal["text", "image_path", "url"]

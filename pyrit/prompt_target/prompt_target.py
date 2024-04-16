@@ -2,9 +2,12 @@
 # Licensed under the MIT license.
 
 import abc
+import logging
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestResponse
+
+logger = logging.getLogger(__name__)
 
 
 class PromptTarget(abc.ABC):
@@ -18,6 +21,10 @@ class PromptTarget(abc.ABC):
 
     def __init__(self, memory: MemoryInterface, verbose: bool = False) -> None:
         self._memory = memory if memory else DuckDBMemory()
+        self._verbose = verbose
+
+        if self._verbose:
+            logging.basicConfig(level=logging.INFO)
 
     @abc.abstractmethod
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:

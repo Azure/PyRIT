@@ -55,7 +55,9 @@ class Orchestrator(abc.ABC):
         """
         self._memory.dispose_engine()
 
-    def _create_normalizer_request(self, prompt_text: str, prompt_type: PromptDataType = "text", converters=None):
+    def _create_normalizer_request(
+        self, prompt_text: str, prompt_type: PromptDataType = "text", converters=None, metadata=None
+    ):
 
         if converters is None:
             converters = self._prompt_converters
@@ -64,6 +66,7 @@ class Orchestrator(abc.ABC):
             prompt_converters=converters,
             prompt_text=prompt_text,
             prompt_data_type=prompt_type,
+            metadata=metadata,
         )
 
         request = NormalizerRequest([request_piece])
@@ -76,8 +79,8 @@ class Orchestrator(abc.ABC):
         return self._memory.get_prompt_entries_by_orchestrator(orchestrator=self)
 
     def to_dict(self):
-        s = {}
-        s["__type__"] = self.__class__.__name__
-        s["__module__"] = self.__class__.__module__
-        s["id"] = str(self.id)
-        return s
+        orchestrator_dict = {}
+        orchestrator_dict["__type__"] = self.__class__.__name__
+        orchestrator_dict["__module__"] = self.__class__.__module__
+        orchestrator_dict["id"] = str(self.id)
+        return orchestrator_dict

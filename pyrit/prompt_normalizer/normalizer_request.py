@@ -18,6 +18,22 @@ class NormalizerRequestPiece(abc.ABC):
         prompt_data_type: PromptDataType,
         metadata: str = None,
     ) -> None:
+        """
+        Represents a piece of a normalizer request.
+
+        It represents the minimum unit of data that must be converted before sending to a target.
+        A piece of text, with a type, that is run through a series of converters and may contain metadata.
+
+        Args:
+            prompt_converters (list[PromptConverter]): A list of PromptConverter objects.
+            prompt_text (str): The prompt text.
+            prompt_data_type (PromptDataType): The data type of the prompt.
+            metadata (str, optional): Additional metadata. Defaults to None.
+
+        Raises:
+            ValueError: If prompt_converters is not a non-empty list of PromptConverter objects.
+            ValueError: If prompt_text is not a string.
+        """
 
         if (
             not isinstance(prompt_converters, list)

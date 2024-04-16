@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.embedding._text_embedding import _TextEmbedding
-from pyrit.models.models import EmbeddingResponse
+from pyrit.models import EmbeddingResponse
 
 
 class ClipEmbedding(_TextEmbedding):

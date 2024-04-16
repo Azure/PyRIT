@@ -7,7 +7,7 @@ from pyrit.memory.memory_models import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter
-from pyrit.models.models import PromptTemplate
+from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import PromptChatTarget
 from tenacity import retry, stop_after_attempt, wait_fixed

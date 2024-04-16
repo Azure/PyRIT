@@ -40,7 +40,7 @@ import pathlib
 
 from pyrit.prompt_converter import VariationConverter
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models.models import PromptTemplate
+from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 
 print(os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"))

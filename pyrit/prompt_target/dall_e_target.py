@@ -36,7 +36,7 @@ class SupportedDalleVersions(Enum):
     V3 = 3
 
 
-class DallETarget(PromptTarget):
+class DALLETarget(PromptTarget):
     """
     The Dalle3Target takes a prompt and generates images
     This class initializes a DALL-E image target

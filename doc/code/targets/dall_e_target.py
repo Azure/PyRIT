@@ -11,7 +11,7 @@ import uuid
 
 from pyrit.common import default_values
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.prompt_target import DallETarget
+from pyrit.prompt_target import DALLETarget
 from pyrit.prompt_target.dall_e_target import ResponseFormat
 
 test_conversation_id = str(uuid.uuid4())
@@ -20,7 +20,7 @@ prompt_to_send = "Draw me a racoon pirate as a French artist in France"
 
 default_values.load_default_env()
 
-img_prompt_target = DallETarget(
+img_prompt_target = DALLETarget(
     deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
     api_key=os.environ.get("AZURE_DALLE_API_KEY"),

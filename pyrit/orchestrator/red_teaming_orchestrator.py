@@ -7,7 +7,7 @@ from typing import Optional, Union
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
-from pyrit.models.models import AttackStrategy, ChatMessage
+from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest

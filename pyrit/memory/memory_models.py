@@ -10,7 +10,7 @@ from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
-from pyrit.models.models import ChatMessageRole
+from pyrit.models import ChatMessageRole
 from pyrit.models import PromptRequestPiece, PromptDataType, PromptResponseError
 
 

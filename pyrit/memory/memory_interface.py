@@ -10,7 +10,7 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptRespon
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.models.models import ChatMessage
+from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
 
 

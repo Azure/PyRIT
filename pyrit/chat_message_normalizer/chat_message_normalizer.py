@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
-from pyrit.models.models import ChatMessage
+from pyrit.models import ChatMessage
 from typing import TypeVar, Generic
 
 T = TypeVar("T", str, list[ChatMessage])

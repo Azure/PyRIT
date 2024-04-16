@@ -5,7 +5,7 @@ from typing import Optional, Union
 from pyrit.interfaces import SupportTextClassification
 
 from pyrit.memory import MemoryInterface
-from pyrit.models.models import AttackStrategy, ChatMessage
+from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator.red_teaming_orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
