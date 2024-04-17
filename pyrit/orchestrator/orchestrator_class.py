@@ -5,11 +5,9 @@ import abc
 import logging
 
 from typing import Optional
-import uuid
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models.identifiers import Identifier
-from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.models import PromptDataType, Identifier
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 
@@ -28,8 +26,6 @@ class Orchestrator(abc.ABC, Identifier):
         memory_labels: dict[str, str] = {},
         verbose: bool = False,
     ):
-        self.id = uuid.uuid4()
-
         self._prompt_converters = prompt_converters if prompt_converters else []
         self._memory = memory or DuckDBMemory()
         self._verbose = verbose
@@ -74,11 +70,11 @@ class Orchestrator(abc.ABC, Identifier):
         """
         Retrieves the memory associated with this orchestrator.
         """
-        return self._memory.get_prompt_entries_by_orchestrator(orchestrator=self)
+        return self._memory.get_prompt_entries_by_orchestrator(orchestrator_id=self)
 
-    def to_identifier(self):
+    def get_identifier(self):
         orchestrator_dict = {}
         orchestrator_dict["__type__"] = self.__class__.__name__
         orchestrator_dict["__module__"] = self.__class__.__module__
-        orchestrator_dict["id"] = str(self.id)
+        orchestrator_dict["id"] = str(id(self))
         return orchestrator_dict

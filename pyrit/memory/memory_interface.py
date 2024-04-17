@@ -61,18 +61,16 @@ class MemoryInterface(abc.ABC):
             list[ConversationData]: A list of chat memory entries with the specified conversation ID.
         """
 
-    @abc.abstractmethod
-    def get_prompt_entries_by_orchestrator(
-        self, *, orchestrator: "Orchestrator"  # type: ignore # noqa
-    ) -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptMemoryEntry]:
         """
-        Retrieves a list of PromptMemoryEntries based on a specific orchestrator object.
+        Retrieves a list of PromptMemoryEntry objects that have the specified orchestrator ID.
 
         Args:
-            orchestrator (Orchestrator): The orchestrator object to match
+            orchestrator_id (str): The id of the orchestrator.
+                Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptMemoryEntry]: A list of PromptMemoryEntry with the specified orchestrator.
+            list[PromptMemoryEntry]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
     @abc.abstractmethod

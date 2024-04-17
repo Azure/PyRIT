@@ -76,7 +76,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         self._chat_model_under_evaluation.set_system_prompt(
             system_prompt=self.evaluation_system_prompt,
             conversation_id=self._conversation_id,
-            orchestrator_identifier=self.to_identifier(),
+            orchestrator_identifier=self.get_identifier(),
             labels=self._global_memory_labels,
         )
 
@@ -89,7 +89,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
                 target=self._chat_model_under_evaluation,
                 conversation_id=self._conversation_id,
                 labels=self._global_memory_labels,
-                orchestrator_identifier=self.to_identifier(),
+                orchestrator_identifier=self.get_identifier(),
             )
 
             answer = response.request_pieces[0].converted_prompt_text

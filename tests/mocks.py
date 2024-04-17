@@ -108,21 +108,21 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
             original_prompt_text="original prompt text",
             converted_prompt_text="Hello, how are you?",
             conversation_id="12345",
-            orchestrator_identifier=orchestrator1.to_identifier(),
+            orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_prompt_text="original prompt text",
             converted_prompt_text="I'm fine, thank you!",
             conversation_id="12345",
-            orchestrator_identifier=orchestrator1.to_identifier(),
+            orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_prompt_text="original prompt text",
             converted_prompt_text="I'm fine, thank you!",
             conversation_id="33333",
-            orchestrator_identifier=orchestrator2.to_identifier(),
+            orchestrator_identifier=orchestrator2.get_identifier(),
         ),
     ]
 

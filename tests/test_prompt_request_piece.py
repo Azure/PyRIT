@@ -46,7 +46,7 @@ def test_is_sequence_set_true():
 
 
 def test_converters_serialize():
-    converter_identifiers = [Base64Converter().to_identifier()]
+    converter_identifiers = [Base64Converter().get_identifier()]
     entry = PromptRequestPiece(
         role="user",
         original_prompt_text="Hello",
@@ -68,7 +68,7 @@ def test_prompt_targets_serialize():
         role="user",
         original_prompt_text="Hello",
         converted_prompt_text="Hello",
-        prompt_target_identifier=target.to_identifier(),
+        prompt_target_identifier=target.get_identifier(),
     )
 
     assert entry.prompt_target_identifier["__type__"] == "MockPromptTarget"
@@ -82,7 +82,7 @@ def test_orchestrators_serialize():
         role="user",
         original_prompt_text="Hello",
         converted_prompt_text="Hello",
-        orchestrator_identifier=orchestrator.to_identifier(),
+        orchestrator_identifier=orchestrator.get_identifier(),
     )
 
     assert entry.orchestrator_identifier["id"] is not None

@@ -53,7 +53,7 @@ class PromptTarget(abc.ABC, Identifier):
         """
         self._memory.dispose_engine()
 
-    def to_identifier(self):
+    def get_identifier(self):
         public_attributes = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__

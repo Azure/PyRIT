@@ -12,8 +12,7 @@ from typing import Union
 
 from pyrit.interfaces import SupportTextClassification
 from pyrit.models import Score
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
 
@@ -122,7 +121,7 @@ class SelfAskGptClassifier(SupportTextClassification):
                     original_prompt_text=text,
                     conversation_id=self._conversation_id,
                     labels=self.labels,
-                    prompt_target_identifier=self._chat_target.to_identifier(),
+                    prompt_target_identifier=self._chat_target.get_identifier(),
                 )
             ]
         )

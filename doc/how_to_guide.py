@@ -34,7 +34,7 @@
 import os
 
 from pyrit.common import default_values
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
 
 default_values.load_default_env()

@@ -35,7 +35,7 @@ class PromptChatTarget(PromptTarget):
                 sequence=0,
                 original_prompt_text=system_prompt,
                 converted_prompt_text=system_prompt,
-                prompt_target_identifier=self.to_identifier(),
+                prompt_target_identifier=self.get_identifier(),
                 orchestrator_identifier=orchestrator_identifier,
                 labels=labels,
             )
@@ -62,7 +62,7 @@ class PromptChatTarget(PromptTarget):
                     conversation_id=conversation_id,
                     original_prompt_text=prompt,
                     converted_prompt_text=prompt,
-                    prompt_target_identifier=self.to_identifier(),
+                    prompt_target_identifier=self.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
                     labels=labels,
                 )
@@ -90,7 +90,7 @@ class PromptChatTarget(PromptTarget):
                     conversation_id=conversation_id,
                     original_prompt_text=prompt,
                     converted_prompt_text=prompt,
-                    prompt_target_identifier=self.to_identifier(),
+                    prompt_target_identifier=self.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
                     labels=labels,
                 )

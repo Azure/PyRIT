@@ -4,8 +4,7 @@ import uuid
 import pathlib
 
 from pyrit.models import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
@@ -65,7 +64,7 @@ class VariationConverter(PromptConverter):
                     conversation_id=conversation_id,
                     sequence=1,
                     labels=self._labels,
-                    prompt_target_identifier=self.converter_target.to_identifier(),
+                    prompt_target_identifier=self.converter_target.get_identifier(),
                     original_prompt_data_type=input_type,
                     converted_prompt_data_type=input_type,
                 )

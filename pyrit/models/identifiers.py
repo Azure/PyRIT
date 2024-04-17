@@ -7,8 +7,8 @@ from abc import abstractmethod
 class Identifier:
 
     @abstractmethod
-    def to_identifier(self) -> dict[str, str]:
+    def get_identifier(self) -> dict[str, str]:
         pass
 
     def __str__(self) -> str:
-        return f"{self.to_identifier}"
+        return f"{self.get_identifier}"

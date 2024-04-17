@@ -78,7 +78,7 @@ def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarg
 def test_send_prompt_to_identifier(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
-    d = orchestrator.to_identifier()
+    d = orchestrator.get_identifier()
     assert d["id"]
     assert d["__type__"] == "PromptSendingOrchestrator"
     assert d["__module__"] == "pyrit.orchestrator.prompt_sending_orchestrator"

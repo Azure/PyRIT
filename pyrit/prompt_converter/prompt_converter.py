@@ -39,7 +39,7 @@ class PromptConverter(abc.ABC, Identifier):
         """
         pass
 
-    def to_identifier(self):
+    def get_identifier(self):
         public_attributes = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
