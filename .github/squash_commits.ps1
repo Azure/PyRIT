@@ -26,4 +26,4 @@ if ($commitCount -gt 1) {
 }
 
 # Push changes to the remote repository
-git push rlundeen2 $fork $featureBranch --force
+git push $fork $featureBranch --force
