@@ -1,21 +1,29 @@
 # %% [markdown]
-# The `pyrit.memory` module provides functionality to keep track of the conversation history. In a nutshell, this can be used as follows
+# The memory module is the primary way pyrit keeps track of requests and responses to targets. The schema is found in `memory_models.py` and can be programatically viewed as follows
+#
 
-# %% [markdown]
-# The PyRIT DuckDB database comprises of tables defined in the `pyrit.memory.memory_models` module.
-#
-#
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from uuid import uuid4
 from pyrit.memory import DuckDBMemory
+
+memory = DuckDBMemory()
+
+memory.print_schema()
+
+# %% [markdown]
+#
+# The `pyrit.memory` module provides functionality to keep track of the conversation history. In a nutshell, this can be used as follows:
+
+# %%
+
+
+from uuid import uuid4
 from pyrit.models import PromptRequestPiece
 
 conversation_id = str(uuid4())
 
-memory = DuckDBMemory()
 message_list = [
     PromptRequestPiece(
         role="user", original_prompt_text="Hi, chat bot! This is my initial prompt.", conversation_id=conversation_id

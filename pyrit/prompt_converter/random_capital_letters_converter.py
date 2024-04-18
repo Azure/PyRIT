@@ -4,7 +4,7 @@
 import random
 import logging
 
-from pyrit.memory.memory_models import PromptDataType
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
 

@@ -5,7 +5,6 @@ import yaml
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.prompt_converter.no_op_converter import NoOpConverter
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
@@ -33,7 +32,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         *,
         chat_model_under_evaluation: PromptChatTarget,
         scorer: QuestionAnswerScorer,
-        prompt_converters: list[PromptConverter] = [NoOpConverter()],
+        prompt_converters: list[PromptConverter] = [],
         memory: MemoryInterface | None = None,
         memory_labels: dict[str, str] = None,
         evaluation_prompt: str | None = None,
@@ -46,7 +45,6 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
             prompt_converters (list[PromptConverter], optional): The prompt converters to be used.
-                Defaults to [NoOpConverter()].
             memory (MemoryInterface | None, optional): The memory interface to be used. Defaults to None.
             memory_labels (list[str], optional): The labels to be associated with the memory.
                 Defaults to ["question-answering-benchmark-orchestrator"].
@@ -78,7 +76,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         self._chat_model_under_evaluation.set_system_prompt(
             system_prompt=self.evaluation_system_prompt,
             conversation_id=self._conversation_id,
-            orchestrator=self,
+            orchestrator_identifier=self.get_identifier(),
             labels=self._global_memory_labels,
         )
 
@@ -91,7 +89,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
                 target=self._chat_model_under_evaluation,
                 conversation_id=self._conversation_id,
                 labels=self._global_memory_labels,
-                orchestrator=self,
+                orchestrator_identifier=self.get_identifier(),
             )
 
             answer = response.request_pieces[0].converted_prompt_text

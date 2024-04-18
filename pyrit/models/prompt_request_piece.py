@@ -6,7 +6,7 @@ import hashlib
 import uuid
 
 from datetime import datetime
-from typing import Dict, Literal
+from typing import Dict, Literal, List
 from uuid import uuid4
 
 from pyrit.models import ChatMessage, ChatMessageRole
@@ -64,9 +64,9 @@ class PromptRequestPiece(abc.ABC):
         sequence: int = -1,
         labels: Dict[str, str] = None,
         prompt_metadata: str = None,
-        converters: "list[PromptConverter]|list[Dict]" = None,  # type: ignore # noqa
-        prompt_target: "PromptTarget|Dict[str,str]" = None,  # type: ignore # noqa
-        orchestrator: "Orchestrator|Dict[str,str]" = None,  # type: ignore # noqa
+        converter_identifiers: List[Dict[str, str]] = None,
+        prompt_target_identifier: Dict[str, str] = None,
+        orchestrator_identifier: Dict[str, str] = None,
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",
@@ -86,15 +86,10 @@ class PromptRequestPiece(abc.ABC):
         self.labels = labels
         self.prompt_metadata = prompt_metadata
 
-        if not converters or len(converters) == 0:
-            self.converters = None
-        elif isinstance(converters[0], dict):
-            self.converters = converters
-        else:
-            self.converters = [converter.to_dict() for converter in converters]  # type: ignore
+        self.converter_identifiers = converter_identifiers
 
-        self.prompt_target = self._get_default_object(prompt_target)
-        self.orchestrator = self._get_default_object(orchestrator)
+        self.prompt_target_identifier = prompt_target_identifier
+        self.orchestrator_identifier = orchestrator_identifier
 
         self.original_prompt_text = original_prompt_text
         self.original_prompt_data_type = original_prompt_data_type
@@ -117,20 +112,10 @@ class PromptRequestPiece(abc.ABC):
 
         return PromptRequestResponse([self])  # noqa F821
 
-    # The conversion from object to dictionary (stored in the db) is one way
-    # so at times we have a dictionary, other times an object.
-    def _get_default_object(self, obj):
-        if not obj:
-            return None
-        if isinstance(obj, dict):
-            return obj
-
-        return obj.to_dict()
-
     def _create_sha256(self, text: str) -> str:
         input_bytes = text.encode("utf-8")
         hash_object = hashlib.sha256(input_bytes)
         return hash_object.hexdigest()
 
     def __str__(self):
-        return f"{self.role}: {self.converted_prompt_text}"
+        return f"{self.prompt_target_identifier}: {self.role}: {self.converted_prompt_text}"

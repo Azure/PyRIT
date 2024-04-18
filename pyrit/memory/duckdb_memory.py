@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Union, Optional
 import logging
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -110,25 +110,25 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def get_prompt_entries_by_orchestrator(
-        self, *, orchestrator: "Orchestrator"  # type: ignore # noqa: F821
-    ) -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptMemoryEntry]:
         """
-        Retrieves a list of ConversationData objects that have the specified normalizer ID.
+        Retrieves a list of PromptMemoryEntry objects that have the specified orchestrator ID.
 
         Args:
-            normalizer_id (str): The normalizer ID to filter the table.
+            orchestrator_id (str): The id of the orchestrator.
+                Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[ConversationData]: A list of ConversationData objects matching the specified normalizer ID.
+            list[PromptMemoryEntry]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
         try:
             return self.query_entries(
-                PromptMemoryEntry, conditions=PromptMemoryEntry.orchestrator.op("->>")("id") == orchestrator.id
+                PromptMemoryEntry,
+                conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == str(orchestrator_id),
             )
         except Exception as e:
             logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator.id}. {e}"
+                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
             )
             return []
 
@@ -218,6 +218,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
+                raise
 
     def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
         """
@@ -278,6 +279,16 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             file_extension = f".{export_type}"
             file_path = RESULTS_PATH / f"{table_name}{file_extension}"
             self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
+    def print_schema(self):
+        metadata = MetaData()
+        metadata.reflect(bind=self.engine)
+
+        for table_name in metadata.tables:
+            table = metadata.tables[table_name]
+            print(f"Schema for {table_name}:")
+            for column in table.columns:
+                print(f"  Column {column.name} ({column.type})")
 
     def dispose_engine(self):
         """

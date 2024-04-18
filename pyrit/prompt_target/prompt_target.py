@@ -6,11 +6,12 @@ import logging
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestResponse
+from pyrit.models.identifiers import Identifier
 
 logger = logging.getLogger(__name__)
 
 
-class PromptTarget(abc.ABC):
+class PromptTarget(abc.ABC, Identifier):
     _memory: MemoryInterface
 
     """
@@ -52,11 +53,8 @@ class PromptTarget(abc.ABC):
         """
         self._memory.dispose_engine()
 
-    def __str__(self):
-        return f"{self.to_dict()}"
-
-    def to_dict(self):
-        public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+    def get_identifier(self):
+        public_attributes = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         return public_attributes

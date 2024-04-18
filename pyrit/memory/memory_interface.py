@@ -4,8 +4,8 @@
 import abc
 from pathlib import Path
 
-from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError, PromptDataType
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
@@ -61,18 +61,16 @@ class MemoryInterface(abc.ABC):
             list[ConversationData]: A list of chat memory entries with the specified conversation ID.
         """
 
-    @abc.abstractmethod
-    def get_prompt_entries_by_orchestrator(
-        self, *, orchestrator: "Orchestrator"  # type: ignore # noqa
-    ) -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptMemoryEntry]:
         """
-        Retrieves a list of PromptMemoryEntries based on a specific orchestrator object.
+        Retrieves a list of PromptMemoryEntry objects that have the specified orchestrator ID.
 
         Args:
-            orchestrator (Orchestrator): The orchestrator object to match
+            orchestrator_id (str): The id of the orchestrator.
+                Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptMemoryEntry]: A list of PromptMemoryEntry with the specified orchestrator.
+            list[PromptMemoryEntry]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
     @abc.abstractmethod
@@ -156,8 +154,8 @@ class MemoryInterface(abc.ABC):
                 conversation_id=request.conversation_id,
                 sequence=request.sequence + 1,
                 labels=request.labels,
-                prompt_target=request.prompt_target,
-                orchestrator=request.orchestrator,
+                prompt_target_identifier=request.prompt_target_identifier,
+                orchestrator_identifier=request.orchestrator_identifier,
                 original_prompt_data_type=response_type,
                 converted_prompt_data_type=response_type,
                 prompt_metadata=prompt_metadata,

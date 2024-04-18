@@ -15,7 +15,7 @@ from sqlalchemy.sql.sqltypes import NullType
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -59,8 +59,8 @@ def test_conversation_data_schema(setup_duckdb_database):
         "timestamp",
         "labels",
         "prompt_metadata",
-        "converters",
-        "prompt_target",
+        "converter_identifiers",
+        "prompt_target_identifier",
         "original_prompt_data_type",
         "original_prompt_text",
         "original_prompt_data_sha256",
@@ -98,8 +98,8 @@ def test_conversation_data_column_types(setup_duckdb_database):
         "timestamp": DateTime,
         "labels": String,
         "prompt_metadata": String,
-        "converters": String,
-        "prompt_target": String,
+        "converter_identifiers": String,
+        "prompt_target_identifier": String,
         "original_prompt_data_type": String,
         "original_prompt_text": String,
         "original_prompt_data_sha256": String,
@@ -371,7 +371,7 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
     # Define a specific conversation_id
     specific_conversation_id = "test_conversation_id"
 
-    converters = [Base64Converter()]
+    converter_identifiers = [Base64Converter().get_identifier()]
     target = TextTarget()
 
     # Start a session
@@ -385,8 +385,8 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
                 original_prompt_text="Test content",
                 converted_prompt_text="Test content",
                 labels={"normalizer_id": "id1"},
-                converters=converters,
-                prompt_target=target,
+                converter_identifiers=converter_identifiers,
+                prompt_target_identifier=target.get_identifier(),
             )
         )
 
@@ -408,11 +408,11 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
         assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 10  # Assuming the test runs quickly
 
-        converters = retrieved_entry.converters
-        assert len(converters) == 1
-        assert converters[0]["__type__"] == "Base64Converter"
+        converter_identifiers = retrieved_entry.converter_identifiers
+        assert len(converter_identifiers) == 1
+        assert converter_identifiers[0]["__type__"] == "Base64Converter"
 
-        prompt_target = retrieved_entry.prompt_target
+        prompt_target = retrieved_entry.prompt_target_identifier
         assert prompt_target["__type__"] == "TextTarget"
 
         labels = retrieved_entry.labels
@@ -432,7 +432,7 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
                 role="user",
                 original_prompt_text="Hello 1",
                 converted_prompt_text="Hello 1",
-                orchestrator=orchestrator1,
+                orchestrator_identifier=orchestrator1.get_identifier(),
             )
         ),
         PromptMemoryEntry(
@@ -441,7 +441,7 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
                 role="user",
                 original_prompt_text="Hello 2",
                 converted_prompt_text="Hello 2",
-                orchestrator=orchestrator2,
+                orchestrator_identifier=orchestrator2.get_identifier(),
             )
         ),
         PromptMemoryEntry(
@@ -450,7 +450,7 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
                 role="user",
                 original_prompt_text="Hello 3",
                 converted_prompt_text="Hello 1",
-                orchestrator=orchestrator1,
+                orchestrator_identifier=orchestrator1.get_identifier(),
             )
         ),
     ]
@@ -460,13 +460,15 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
         setup_duckdb_database.insert_entries(entries=entries)
         session.commit()  # Ensure all entries are committed to the database
 
+        orchestrator1_id = orchestrator1.get_identifier()["id"]
+
         # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-        retrieved_entries = setup_duckdb_database.get_prompt_entries_by_orchestrator(orchestrator=orchestrator1)
+        retrieved_entries = setup_duckdb_database.get_prompt_entries_by_orchestrator(orchestrator_id=orchestrator1_id)
 
         # Verify that the retrieved entries match the expected normalizer_id
         assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
         for retrieved_entry in retrieved_entries:
-            assert retrieved_entry.orchestrator["id"] == str(orchestrator1.id)
+            assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
             assert "Hello" in retrieved_entry.original_prompt_text  # Basic check to ensure content is as expected
 
 

@@ -10,8 +10,7 @@ from openai.types.chat import ChatCompletion
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
-from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)

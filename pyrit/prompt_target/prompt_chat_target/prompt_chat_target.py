@@ -17,7 +17,7 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator: "Orchestrator|dict[str,str]",  # type: ignore # noqa: F821
+        orchestrator_identifier: dict[str, str],
         labels: dict,
     ) -> None:
         """
@@ -35,8 +35,8 @@ class PromptChatTarget(PromptTarget):
                 sequence=0,
                 original_prompt_text=system_prompt,
                 converted_prompt_text=system_prompt,
-                prompt_target=self,
-                orchestrator=orchestrator,
+                prompt_target_identifier=self.get_identifier(),
+                orchestrator_identifier=orchestrator_identifier,
                 labels=labels,
             )
         )
@@ -48,7 +48,7 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator: "Orchestrator|dict[str,str]",  # type: ignore # noqa: F821
+        orchestrator_identifier: dict[str, str],
         labels: dict,
     ) -> PromptRequestResponse:
         """
@@ -60,11 +60,10 @@ class PromptChatTarget(PromptTarget):
                 PromptRequestPiece(
                     role="user",
                     conversation_id=conversation_id,
-                    sequence=0,
                     original_prompt_text=prompt,
                     converted_prompt_text=prompt,
-                    prompt_target=self,
-                    orchestrator=orchestrator,
+                    prompt_target_identifier=self.get_identifier(),
+                    orchestrator_identifier=orchestrator_identifier,
                     labels=labels,
                 )
             ]
@@ -77,7 +76,7 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator: "Orchestrator|dict[str,str]",  # type: ignore # noqa: F821
+        orchestrator_identifier: dict[str, str],
         labels: dict,
     ) -> PromptRequestResponse:
         """
@@ -89,11 +88,10 @@ class PromptChatTarget(PromptTarget):
                 PromptRequestPiece(
                     role="user",
                     conversation_id=conversation_id,
-                    sequence=0,
                     original_prompt_text=prompt,
                     converted_prompt_text=prompt,
-                    prompt_target=self,
-                    orchestrator=orchestrator,
+                    prompt_target_identifier=self.get_identifier(),
+                    orchestrator_identifier=orchestrator_identifier,
                     labels=labels,
                 )
             ]

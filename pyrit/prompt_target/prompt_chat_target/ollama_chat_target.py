@@ -6,8 +6,7 @@ from pyrit.chat_message_normalizer import ChatMessageNormalizer, ChatMessageNop
 from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
