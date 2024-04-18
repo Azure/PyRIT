@@ -65,3 +65,12 @@ def test_image_path_read_data():
     assert normalizer.read_data() == data
     read_normalizer = data_serializer_factory(data_type="image_path", prompt_text=normalizer.prompt_text)
     assert read_normalizer.read_data() == data
+
+def test_image_path_read_data_base64():
+    data = b"AAAA"
+
+    normalizer = data_serializer_factory(data_type="image_path")
+    normalizer.save_data(data)
+    base_64_data = normalizer.read_data_base64()
+    assert base_64_data
+    assert base_64_data == "QUFBQQ=="

@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
+import base64
 import os
 import time
 
@@ -65,6 +66,13 @@ class DataTypeSerializer(abc.ABC):
 
         with open(self.prompt_text, "rb") as file:
             return file.read()
+
+    def read_data_base64(self) -> str:
+        """
+        Reads the data from the disk.
+        """
+        byte_array = self.read_data()
+        return base64.b64encode(byte_array).decode("utf-8")
 
     def _get_data_filename(self) -> Path:
         """
