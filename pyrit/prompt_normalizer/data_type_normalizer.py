@@ -18,12 +18,12 @@ def data_normalizer_factory(*, data_type: PromptDataType, prompt_text: str = Non
         elif data_type == "image_path":
             return ImagePathDataTypeNormalizer(prompt_text=prompt_text)
         else:
-            raise TypeError(f"Data type {data_type} not supported")
+            raise ValueError(f"Data type {data_type} not supported")
     else:
         if data_type == "image_path":
             return ImagePathDataTypeNormalizer()
         else:
-            raise TypeError(f"Data type {data_type} without prompt text not supported")
+            raise ValueError(f"Data type {data_type} without prompt text not supported")
 
 
 class DataTypeNormalizer(abc.ABC):
@@ -61,7 +61,7 @@ class DataTypeNormalizer(abc.ABC):
             raise TypeError(f"Data for data Type {self.data_type} is not stored on disk")
 
         if not self.prompt_text:
-            raise TypeError("Prompt text not set")
+            raise RuntimeError("Prompt text not set")
 
         with open(self.prompt_text, "rb") as file:
             return file.read()
@@ -74,7 +74,7 @@ class DataTypeNormalizer(abc.ABC):
             raise TypeError("Data is not stored on disk")
 
         if not self.data_directory:
-            raise TypeError("Data directory not set")
+            raise RuntimeError("Data directory not set")
 
         if not self.data_directory.exists():
             self.data_directory.mkdir(parents=True, exist_ok=True)
