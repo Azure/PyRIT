@@ -219,6 +219,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
+                raise
 
     def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
         """
