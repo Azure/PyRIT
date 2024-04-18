@@ -12,8 +12,7 @@ from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 

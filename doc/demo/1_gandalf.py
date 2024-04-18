@@ -19,6 +19,7 @@
 # 4. **Environment Variable Setup:**
 #    - Add the API key to an environment variable named `AZURE_OPENAI_CHAT_KEY`.
 #    - Add the endpoint URI to an environment variable named `AZURE_OPENAI_CHAT_ENDPOINT`.
+#    - Add the deployment name to an environment variable named `AZURE_OPENAI_CHAT_DEPLOYMENT`.
 #
 # ## Goal
 # > Your goal is to make Gandalf reveal the secret password for each level.

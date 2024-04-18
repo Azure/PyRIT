@@ -1,23 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
+# mypy: ignore-errors
 
-from typing import Dict
+import uuid
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
-from pyrit.models import ChatMessageRole
-from pyrit.models import PromptRequestPiece, PromptDataType, PromptResponseError
+from pyrit.models import PromptRequestPiece
 
 
 Base = declarative_base()
 
 
-class PromptMemoryEntry(Base):  # type: ignore
+class PromptMemoryEntry(Base):
     """
     Represents the prompt data.
 
@@ -53,23 +52,23 @@ class PromptMemoryEntry(Base):  # type: ignore
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id: uuid.UUID = Column(UUID(as_uuid=True), nullable=False, primary_key=True)  # type: ignore # noqa
-    role: "Column[ChatMessageRole]" = Column(String, nullable=False)  # type: ignore # noqa
+    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    role = Column(String, nullable=False)
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
-    labels: Column[Dict[str, str]] = Column(JSON)  # type: ignore
+    labels = Column(JSON)
     prompt_metadata = Column(String, nullable=True)
-    converters: "Column[list[PromptConverter]]" = Column(JSON)  # type: ignore # noqa
-    prompt_target: "Column[PromptTarget]" = Column(JSON)  # type: ignore # noqa
-    orchestrator: "Column[Orchestrator]" = Column(JSON)  # type: ignore # noqa
-    response_error: PromptResponseError = Column(String, nullable=True)  # type: ignore
+    converter_identifiers = Column(JSON)
+    prompt_target_identifier = Column(JSON)
+    orchestrator_identifier = Column(JSON)
+    response_error = Column(String, nullable=True)
 
-    original_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
+    original_prompt_data_type = Column(String, nullable=False)
     original_prompt_text = Column(String, nullable=False)
     original_prompt_data_sha256 = Column(String)
 
-    converted_prompt_data_type: PromptDataType = Column(String, nullable=False)  # type: ignore
+    converted_prompt_data_type = Column(String, nullable=False)
     converted_prompt_text = Column(String)
     converted_prompt_data_sha256 = Column(String)
 
@@ -83,9 +82,9 @@ class PromptMemoryEntry(Base):  # type: ignore
         self.timestamp = entry.timestamp
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
-        self.converters = entry.converters
-        self.prompt_target = entry.prompt_target
-        self.orchestrator = entry.orchestrator
+        self.converter_identifiers = entry.converter_identifiers
+        self.prompt_target_identifier = entry.prompt_target_identifier
+        self.orchestrator_identifier = entry.orchestrator_identifier
 
         self.original_prompt_text = entry.original_prompt_text
         self.original_prompt_data_type = entry.original_prompt_data_type
@@ -107,16 +106,16 @@ class PromptMemoryEntry(Base):  # type: ignore
             sequence=self.sequence,
             labels=self.labels,
             prompt_metadata=self.prompt_metadata,
-            converters=self.converters,
-            prompt_target=self.prompt_target,
-            orchestrator=self.orchestrator,
+            converter_identifiers=self.converter_identifiers,
+            prompt_target_identifier=self.prompt_target_identifier,
+            orchestrator_identifier=self.orchestrator_identifier,
             original_prompt_data_type=self.original_prompt_data_type,
             converted_prompt_data_type=self.converted_prompt_data_type,
             response_error=self.response_error,
         )
 
     def __str__(self):
-        return f"{self.role}: {self.converted_prompt_text}"
+        return f"{self.prompt_target_identifier}: {self.role}: {self.converted_prompt_text}"
 
 
 class EmbeddingData(Base):  # type: ignore

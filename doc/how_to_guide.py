@@ -32,9 +32,9 @@
 # %%
 
 import os
-import uuid
 
 from pyrit.common import default_values
+from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 

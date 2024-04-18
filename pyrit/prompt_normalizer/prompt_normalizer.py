@@ -27,7 +27,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels={},
-        orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
+        orchestrator_identifier: dict[str, str] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -38,7 +38,7 @@ class PromptNormalizer(abc.ABC):
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
             sequence (int, optional): The sequence number of the request. Defaults to -1.
             labels (dict, optional): Additional labels for the request. Defaults to {}.
-            orchestrator (Orchestrator, optional): The orchestrator to use. Defaults to None.
+            orchestrator_identifier (Orchestrator, optional): The orchestrator to use. Defaults to None.
 
         Returns:
             PromptRequestResponse: The response received from the target.
@@ -50,7 +50,7 @@ class PromptNormalizer(abc.ABC):
             conversation_id=conversation_id,
             sequence=sequence,
             labels=labels,
-            orchestrator=orchestrator,
+            orchestrator_identifier=orchestrator_identifier,
         )
         try:
             # Use the synchronous prompt sending method by default.
@@ -67,7 +67,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels=None,
-        orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
+        orchestrator_identifier: dict[str, str] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -89,7 +89,7 @@ class PromptNormalizer(abc.ABC):
             conversation_id=conversation_id,
             sequence=sequence,
             labels=labels,
-            orchestrator=orchestrator,
+            orchestrator_identifier=orchestrator_identifier,
         )
 
         response = await target.send_prompt_async(prompt_request=request)
@@ -100,7 +100,7 @@ class PromptNormalizer(abc.ABC):
         requests: list[NormalizerRequest],
         target: PromptTarget,
         labels=None,
-        orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
+        orchestrator_identifier: dict[str, str] = None,
         batch_size: int = 10,
     ) -> list[PromptRequestResponse]:
         """
@@ -127,7 +127,10 @@ class PromptNormalizer(abc.ABC):
             for prompt in prompts_batch:
                 tasks.append(
                     self.send_prompt_async(
-                        normalizer_request=prompt, target=target, labels=labels, orchestrator=orchestrator
+                        normalizer_request=prompt,
+                        target=target,
+                        labels=labels,
+                        orchestrator_identifier=orchestrator_identifier,
                     )
                 )
 
@@ -147,7 +150,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id: str = None,
         sequence: int = -1,
         labels=None,
-        orchestrator: "Orchestrator" = None,  # type: ignore # noqa: F821
+        orchestrator_identifier: dict[str, str] = None,
     ) -> PromptRequestResponse:
         """
         Builds a prompt request response based on the given parameters.
@@ -160,7 +163,7 @@ class PromptNormalizer(abc.ABC):
             conversation_id (str, optional): The conversation ID. Defaults to None.
             sequence (int, optional): The sequence number. Defaults to -1.
             labels (dict, optional): The labels dictionary. Defaults to None.
-            orchestrator (Orchestrator, optional): The orchestrator object. Defaults to None.
+            orchestrator_identifier (Orchestrator, optional): The orchestrator object. Defaults to None.
 
         Returns:
             PromptRequestResponse: The prompt request response object.
@@ -176,6 +179,8 @@ class PromptNormalizer(abc.ABC):
                     prompt=converted_prompt_text, input_type=request_piece.prompt_data_type
                 )
 
+            converter_identifiers = [converter.get_identifier() for converter in request_piece.prompt_converters]
+
             entries.append(
                 PromptRequestPiece(
                     role="user",
@@ -185,9 +190,9 @@ class PromptNormalizer(abc.ABC):
                     sequence=sequence,
                     labels=labels,
                     prompt_metadata=request_piece.metadata,
-                    converters=request_piece.prompt_converters,
-                    prompt_target=target,
-                    orchestrator=orchestrator,
+                    converter_identifiers=converter_identifiers,
+                    prompt_target_identifier=target.get_identifier(),
+                    orchestrator_identifier=orchestrator_identifier,
                     original_prompt_data_type=request_piece.prompt_data_type,
                     converted_prompt_data_type=request_piece.prompt_data_type,
                 )

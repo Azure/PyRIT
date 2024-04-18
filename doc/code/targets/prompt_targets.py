@@ -16,7 +16,7 @@ import pathlib
 
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 
 jailbreak_template = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
@@ -31,7 +31,7 @@ print(jailbreak_prompt)
 # _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../../setup/setup_azure.md).
 
 # %%
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common import default_values
 

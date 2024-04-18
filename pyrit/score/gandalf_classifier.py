@@ -10,8 +10,7 @@ import uuid
 from pyrit.completion.gandalf_completion import GandalfLevel
 from pyrit.interfaces import SupportTextClassification
 from pyrit.models import Score
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
 
@@ -41,7 +40,7 @@ class GandalfScorer(SupportTextClassification):
         self._chat_engine.set_system_prompt(
             system_prompt=system_prompt,
             conversation_id=self._conversation_id,
-            orchestrator=None,
+            orchestrator_identifier=None,
             labels=self._labels,
         )
 
@@ -52,7 +51,7 @@ class GandalfScorer(SupportTextClassification):
                     original_prompt_text=text,
                     conversation_id=self._conversation_id,
                     labels=self._labels,
-                    prompt_target=self._chat_engine,
+                    prompt_target_identifier=self._chat_engine.get_identifier(),
                 )
             ]
         )
