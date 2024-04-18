@@ -11,22 +11,22 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.models import PromptDataType
 
 
-def data_normalizer_factory(*, data_type: PromptDataType, prompt_text: str = None):
+def data_serializer_factory(*, data_type: PromptDataType, prompt_text: str = None):
     if prompt_text:
         if data_type == "text":
-            return TextDataTypeNormalizer(prompt_text=prompt_text)
+            return TextDataTypeSerializer(prompt_text=prompt_text)
         elif data_type == "image_path":
-            return ImagePathDataTypeNormalizer(prompt_text=prompt_text)
+            return ImagePathDataTypeSerializer(prompt_text=prompt_text)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
         if data_type == "image_path":
-            return ImagePathDataTypeNormalizer()
+            return ImagePathDataTypeSerializer()
         else:
             raise ValueError(f"Data type {data_type} without prompt text not supported")
 
 
-class DataTypeNormalizer(abc.ABC):
+class DataTypeSerializer(abc.ABC):
     """
     Abstract base class for data type normalizers.
 
@@ -83,7 +83,7 @@ class DataTypeNormalizer(abc.ABC):
         return Path(self.data_directory, f"{ticks}{self.file_extension}")
 
 
-class TextDataTypeNormalizer(DataTypeNormalizer):
+class TextDataTypeSerializer(DataTypeSerializer):
     def __init__(self, *, prompt_text: str):
         self.data_type = "text"
         self.prompt_text = prompt_text
@@ -92,7 +92,7 @@ class TextDataTypeNormalizer(DataTypeNormalizer):
         return False
 
 
-class ImagePathDataTypeNormalizer(DataTypeNormalizer):
+class ImagePathDataTypeSerializer(DataTypeSerializer):
     def __init__(self, *, prompt_text: str = None, extension: str = ".png"):
         self.data_type = "image_path"
         self.data_directory = Path(RESULTS_PATH) / "dbdata" / "images"
