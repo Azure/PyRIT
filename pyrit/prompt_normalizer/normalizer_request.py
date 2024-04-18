@@ -13,7 +13,7 @@ class NormalizerRequestPiece(abc.ABC):
     def __init__(
         self,
         *,
-        prompt_converters: "list[PromptConverter]",
+        prompt_converters: list[PromptConverter],
         prompt_text: str,
         prompt_data_type: PromptDataType,
         metadata: str = None,
