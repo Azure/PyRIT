@@ -159,3 +159,7 @@ cython_debug/
 
 # PyRIT secrets file
 .env
+
+# Cache for generating docs
+doc/generate_docs/cache/*
+!doc/generate_docs/cache/.gitkeep
