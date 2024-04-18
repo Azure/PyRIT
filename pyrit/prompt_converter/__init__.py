@@ -13,6 +13,7 @@ from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusabl
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
 from pyrit.prompt_converter.random_capital_letters_converter import RandomCapitalLettersConverter
+from pyrit.prompt_converter.text_to_audio_converter import TextToAudioConverter
 
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "VariationConverter",
     "RandomCapitalLettersConverter",
+    "TextToAudioConverter",
 ]

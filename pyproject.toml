@@ -61,6 +61,7 @@ dependencies = [
     "torch==2.1.2",
     "transformers>=4.36.0",
     "types-requests>=2.31.0.2",
+    "azure-cognitiveservices-speech>=1.36.0",
 ]
 
 [project.optional-dependencies]
@@ -80,6 +81,7 @@ dev = [
     "respx>=0.20.2",
     "types-PyYAML>=6.0.12.9",
     "types-PyYAML>=6.0.12.9",
+    "azure-cognitiveservices-speech>=1.36.0",
 ]
 
 [tool.pytest.ini_options]
