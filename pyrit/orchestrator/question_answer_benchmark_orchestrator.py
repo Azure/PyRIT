@@ -5,8 +5,8 @@ import yaml
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.prompt_converter.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import DATASETS_PATH
