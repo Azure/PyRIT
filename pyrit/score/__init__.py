@@ -12,7 +12,7 @@ from pyrit.score.gpt_classifier import (
 from pyrit.score.markdown_injection import MarkdownInjectionClassifier
 from pyrit.score.text import TextConversationTokenFinder
 from pyrit.score.substring_scorer import SubStringScorer
-
+from pyrit.score.crescendo_judge import CrescendoJudge
 __all__ = [
     "score_text",
     "evaluate",
@@ -26,4 +26,5 @@ __all__ = [
     "MarkdownInjectionClassifier",
     "TextConversationTokenFinder",
     "SubStringScorer",
+    "CrescendoJudge"
 ]
