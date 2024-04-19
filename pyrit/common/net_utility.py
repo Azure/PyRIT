@@ -20,6 +20,7 @@ def get_httpx_client(use_async: bool = False, debug: bool = False):
 
 PostType = Literal["json", "data"]
 
+
 @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
 def make_request_and_raise_if_error(
     endpoint_uri: str,
@@ -47,7 +48,6 @@ def make_request_and_raise_if_error(
     return response
 
 
-
 @retry(stop=stop_after_attempt(2), wait=wait_fixed(1), reraise=True)
 async def make_request_and_raise_if_error_async(
     endpoint_uri: str,
@@ -64,9 +64,13 @@ async def make_request_and_raise_if_error_async(
     async with get_httpx_client(debug=debug, use_async=True) as async_client:
         if request_body:
             if post_type == "json":
-                response = await async_client.request(method=method, url=endpoint_uri, json=request_body, headers=headers)
+                response = await async_client.request(
+                    method=method, url=endpoint_uri, json=request_body, headers=headers
+                )
             else:
-                response = await async_client.request(method=method, url=endpoint_uri, data=request_body, headers=headers)
+                response = await async_client.request(
+                    method=method, url=endpoint_uri, data=request_body, headers=headers
+                )
         else:
             response = await async_client.request(method=method, url=endpoint_uri, headers=headers)
 

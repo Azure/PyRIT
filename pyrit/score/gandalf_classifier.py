@@ -7,15 +7,14 @@ import requests
 from openai import BadRequestError
 import uuid
 
-from pyrit.completion.gandalf_completion import GandalfLevel
 from pyrit.interfaces import SupportTextClassification
 from pyrit.models import Score
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, GandalfTarget
 
 
 class GandalfScorer(SupportTextClassification):
-    def __init__(self, level: GandalfLevel, chat_engine: PromptChatTarget = None) -> None:
+    def __init__(self, level: GandalfTarget.GandalfLevel, chat_engine: PromptChatTarget = None) -> None:
         self._defender = level.value
         self._endpoint = "https://gandalf.lakera.ai/api/guess-password"
         self._chat_engine = chat_engine
