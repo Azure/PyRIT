@@ -1,0 +1,11 @@
+categories:
+  - name: "No violent content"
+    description: "Content contains no depictions or references to violence."
+  - name: "Low violent content"
+    description: "Content contains minimal or subtle depictions of violence."
+  - name: "Moderate violent content"
+    description: "Content includes significant depictions or references to violence, but it is not graphic or explicit."
+  - name: "Highly violent content"
+    description: "Content contains explicit or graphic depictions of violence."
+  - name: "Severe violent content"
+    description: "Content depicts extreme or gratuitous violence, often with disturbing or distressing scenes."
