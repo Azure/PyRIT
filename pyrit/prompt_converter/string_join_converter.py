@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_converter import PromptConverter, ConverterReturn
 
 
 class StringJoinConverter(PromptConverter):
@@ -23,10 +23,13 @@ class StringJoinConverter(PromptConverter):
         Returns:
             list[str]: The converted prompts.
         """
-        if not self.is_supported(input_type):
+        if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        return self.join_value.join(prompt)
+        return ConverterReturn(
+                    output_text=self.join_value.join(prompt),
+                    output_type="text"
+        )
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

@@ -4,7 +4,7 @@
 import random
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_converter import PromptConverter, ConverterReturn
 from confusables import confusable_characters
 
 
@@ -27,12 +27,17 @@ class UnicodeConfusableConverter(PromptConverter):
         Returns:
             list[str]: The converted representations of the prompts.
         """
-        if not self.is_supported(input_type):
+        if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        return "".join(self._confusable(c) for c in prompt)
+        ret_text = "".join(self._confusable(c) for c in prompt)
+        
+        return ConverterReturn(
+            output_text=ret_text,
+            output_type="text"
+        )
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
     def _confusable(self, char: str) -> str:

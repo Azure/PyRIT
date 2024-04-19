@@ -5,7 +5,7 @@ import pathlib
 
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_converter import PromptConverter, ConverterReturn
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import PromptChatTarget
@@ -65,7 +65,7 @@ class TranslationConverter(PromptConverter):
             labels=self._labels,
         )
 
-        if not self.is_supported(input_type):
+        if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
         request = PromptRequestResponse(
@@ -88,11 +88,14 @@ class TranslationConverter(PromptConverter):
 
         try:
             llm_response: dict[str, str] = json.loads(response_msg)["output"]
-            return llm_response[self.language]
+            return ConverterReturn(
+                    output_text=llm_response[self.language],
+                    output_type="text"
+            )
 
         except json.JSONDecodeError as e:
             logger.warn(f"Error in LLM response {response_msg}: {e}")
             raise RuntimeError(f"Error in LLM respons {response_msg}")
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

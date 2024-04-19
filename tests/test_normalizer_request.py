@@ -16,7 +16,7 @@ class MockPromptConverter(PromptConverter):
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
         return prompt
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
 
