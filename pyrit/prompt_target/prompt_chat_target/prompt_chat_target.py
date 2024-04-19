@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
@@ -26,7 +25,7 @@ class PromptChatTarget(PromptTarget):
         messages = self._memory.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
 
         if messages:
-            raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")        
+            raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
 
         self._memory.add_request_pieces_to_memory(
             request_pieces=[

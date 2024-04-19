@@ -38,8 +38,7 @@ def test_conversation_memory_empty_by_default(memory_interface: MemoryInterface)
 
 @pytest.mark.parametrize("num_conversations", [1, 2, 3])
 def test_add_request_pieces_to_memory(
-        memory_interface: MemoryInterface,
-        sample_conversations: list[PromptRequestPiece],
-        num_conversations: int):
+    memory_interface: MemoryInterface, sample_conversations: list[PromptRequestPiece], num_conversations: int
+):
     memory_interface.add_request_pieces_to_memory(request_pieces=sample_conversations[:num_conversations])
     assert len(memory_interface.get_all_prompt_entries()) == num_conversations

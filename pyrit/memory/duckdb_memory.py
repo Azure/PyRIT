@@ -132,7 +132,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
             )
             return []
-    
+
     def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.

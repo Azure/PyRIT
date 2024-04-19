@@ -32,9 +32,7 @@ class MemoryEmbedding:
         """
         if prompt_request_piece.converted_prompt_data_type == "text":
             embedding_data = EmbeddingData(
-                embedding=self.embedding_model.generate_text_embedding(
-                    text=prompt_request_piece.converted_prompt_text
-                )
+                embedding=self.embedding_model.generate_text_embedding(text=prompt_request_piece.converted_prompt_text)
                 .data[0]
                 .embedding,
                 embedding_type_name=self.embedding_model.__class__.__name__,

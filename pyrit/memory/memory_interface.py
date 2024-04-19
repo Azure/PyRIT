@@ -140,9 +140,10 @@ class MemoryInterface(abc.ABC):
                 converted_prompt_data_type=response_type,
                 prompt_metadata=prompt_metadata,
                 response_error=error,
-            ) for resp_text in response_text_pieces
+            )
+            for resp_text in response_text_pieces
         ]
-        
+
         self.add_request_pieces_to_memory(request_pieces=request_pieces)
         return PromptRequestResponse(request_pieces=request_pieces)
 
