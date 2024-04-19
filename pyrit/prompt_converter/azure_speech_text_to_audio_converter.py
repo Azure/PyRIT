@@ -14,7 +14,7 @@ from pyrit.common.path import RESULTS_PATH
 logger = logging.getLogger(__name__)
 
 
-class TextToAudioConverter(PromptConverter):
+class AzureSpeechTextToAudioConverter(PromptConverter):
     """
     The TextToAudio takes a prompt and generates a
     wave file.

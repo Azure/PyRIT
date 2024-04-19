@@ -12,7 +12,7 @@ from pyrit.prompt_converter import (
     VariationConverter,
     TranslationConverter,
     RandomCapitalLettersConverter,
-    TextToAudioConverter,
+    AzureSpeechTextToAudioConverter,
 )
 import pytest
 import os
@@ -128,10 +128,10 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
     assert expected_percentage == percentage
 
 
-def test_text_to_audio_converter() -> None:
+def test_azure_speech_text_to_audio_converter() -> None:
     prompt = "How do you make a unit test using items in a grocery store?"
-    TextToAudioConverter(filename="unit_test.mp3", output_format="mp3").convert(prompt=prompt)
-    TextToAudioConverter(filename="unit_test.wav", output_format="wav").convert(prompt=prompt)
+    AzureSpeechTextToAudioConverter(filename="unit_test.mp3", output_format="mp3").convert(prompt=prompt)
+    AzureSpeechTextToAudioConverter(filename="unit_test.wav", output_format="wav").convert(prompt=prompt)
 
     is_wav_file_there = False
     is_mp3_file_there = False
