@@ -19,6 +19,7 @@ import os
 import pathlib
 
 from tests.mocks import MockPromptTarget
+from pyrit.common.path import RESULTS_PATH
 
 
 def test_prompt_converter() -> None:
@@ -125,27 +126,27 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
     upper_count = sum(1 for char in actual_converted_text if char.isupper())
     expected_percentage = (upper_count / len(prompt)) * 100.0 if actual_converted_text else 0
     assert expected_percentage == percentage
-    
+
+
 def test_text_to_audio_converter() -> None:
     prompt = "How do you make a unit test using items in a grocery store?"
     TextToAudioConverter(filename="unit_test.mp3", output_format="mp3").convert(prompt=prompt)
     TextToAudioConverter(filename="unit_test.wav", output_format="wav").convert(prompt=prompt)
-    
+
     is_wav_file_there = False
     is_mp3_file_there = False
     "unit_test.mp3"
     "unit_test.wav"
-    
+
     wav_file_path = pathlib.Path(RESULTS_PATH) / "audio" / "unit_test.wav"
     mp3_file_path = pathlib.Path(RESULTS_PATH) / "audio" / "unit_test.mp3"
-    
+
     if os.path.exists(wav_file_path):
         is_wav_file_there = True
         os.remove(wav_file_path)
-    
+
     if os.path.exists(mp3_file_path):
         is_mp3_file_there = True
-    
+
     if is_wav_file_there and is_mp3_file_there:
         assert is_wav_file_there == is_mp3_file_there
-        

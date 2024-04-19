@@ -71,7 +71,7 @@ class TextToAudioConverter(PromptConverter):
     def send_prompt_to_audio_file(self, prompt: str, output_format: str):
         """
         Takes a prompt and it creates either an MP3 or WAV file.
-        Saves the file to the results/audio folder 
+        Saves the file to the results/audio folder
 
         Raises:
             ValueError: Any issues in validation or execution.
