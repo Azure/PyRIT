@@ -20,12 +20,13 @@ class TextToAudioConverter(PromptConverter):
     wave file.
 
     Args:
-        speech_region (str): The name of the Azure region.
-        speech_key (str): The API key for accessing the service.
-        synthesis_language (str): The API key for accessing the service.
+        azure_speech_region (str): The name of the Azure region.
+        azure_speech_key (str): The API key for accessing the service.
+        synthesis_language (str): Synthesis voice language
         synthesis_voice_name (str): Synthesis voice name, see URL
         https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
-        filename (str): File name to be generated.
+        filename (str): File name to be generated.  Please include either .wav or .mp3
+        output_format (str): Either wav or mp3. Must match the file prefix.
     """
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -68,6 +69,13 @@ class TextToAudioConverter(PromptConverter):
         return input_type == "text"
 
     def send_prompt_to_audio_file(self, prompt: str, output_format: str):
+        """
+        Takes a prompt and it creates either an MP3 or WAV file.
+        Saves the file to the results/audio folder 
+
+        Raises:
+            ValueError: Any issues in validation or execution.
+        """
         if prompt == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
         try:
