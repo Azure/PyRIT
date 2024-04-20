@@ -31,7 +31,7 @@ class UnicodeConfusableConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         ret_text = "".join(self._confusable(c) for c in prompt)
-        
+
         return ConverterReturn(
             output_text=ret_text,
             output_type="text"
