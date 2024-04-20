@@ -16,6 +16,7 @@ from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
+from pyrit.models import PromptRequestPiece
 
 logger = logging.getLogger(__name__)
 
@@ -132,9 +133,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def insert_prompt_entries(self, *, entries: list[PromptMemoryEntry]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
-        Inserts a list of prompt entries into the memory storage.
+        Inserts a list of prompt request pieces into the memory storage.
         If necessary, generates embedding data for applicable entries
 
         Args:
@@ -143,16 +144,16 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         embedding_entries = []
 
         if self.memory_embedding:
-            for chat_entry in entries:
-                embedding_entry = self.memory_embedding.generate_embedding_memory_data(chat_memory=chat_entry)
+            for piece in request_pieces:
+                embedding_entry = self.memory_embedding.generate_embedding_memory_data(prompt_request_piece=piece)
                 embedding_entries.append(embedding_entry)
 
-        # The ordering of this is weird because after memories are inserted, we lose the reference to them
-        # and also entries must be inserted before embeddings because of the foreing key constraint
-        self.insert_entries(entries=entries)
+        # The ordering of this is weird because after memory entries are inserted, we lose the reference to them
+        # and also entries must be inserted before embeddings because of the foreign key constraint
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
         if embedding_entries:
-            self.insert_entries(entries=embedding_entries)
+            self._insert_entries(entries=embedding_entries)
 
     def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
         """
@@ -194,7 +195,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -209,7 +210,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
 
-    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:

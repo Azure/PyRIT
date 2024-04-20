@@ -74,17 +74,6 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def insert_prompt_entries(self, *, entries: list[PromptMemoryEntry]) -> None:
-        """
-        Inserts a list of entries into the memory storage.
-
-        If necessary, generates embedding data for applicable entries
-
-        Args:
-            entries (list[Base]): The list of database model instances to be inserted.
-        """
-
-    @abc.abstractmethod
     def dispose_engine(self):
         """
         Dispose the engine and clean up resources.
@@ -113,12 +102,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             None
         """
-        memory_entries = []
-
-        for piece in request_pieces:
-            memory_entries.append(PromptMemoryEntry(entry=piece))
-
-        self.insert_prompt_entries(entries=memory_entries)
+        pass
 
     def add_response_entries_to_memory(
         self,
@@ -142,12 +126,8 @@ class MemoryInterface(abc.ABC):
         Returns:
             PromptRequestResponse: The response containing the updated request pieces.
         """
-
-        request_pieces = []
-        memory_entries = []
-
-        for resp_text in response_text_pieces:
-            entry = PromptRequestPiece(
+        request_pieces = [
+            PromptRequestPiece(
                 role="assistant",
                 original_prompt_text=resp_text,
                 converted_prompt_text=resp_text,
@@ -161,10 +141,10 @@ class MemoryInterface(abc.ABC):
                 prompt_metadata=prompt_metadata,
                 response_error=error,
             )
-            memory_entries.append(PromptMemoryEntry(entry=entry))
-            request_pieces.append(entry)
+            for resp_text in response_text_pieces
+        ]
 
-        self.insert_prompt_entries(entries=memory_entries)
+        self.add_request_pieces_to_memory(request_pieces=request_pieces)
         return PromptRequestResponse(request_pieces=request_pieces)
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
