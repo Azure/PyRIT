@@ -10,8 +10,8 @@ from pyrit.models.identifiers import Identifier
 
 @dataclass
 class ConverterReturn:
-    output_type: PromptDataType
     output_text: str
+    output_type: PromptDataType
 
     def __str__(self):
         return f"{self.output_type}: {self.output_text}"
@@ -48,7 +48,6 @@ class PromptConverter(abc.ABC, Identifier):
             bool: True if the input type is supported, False otherwise
         """
         pass
-
 
     def get_identifier(self):
         public_attributes = {}

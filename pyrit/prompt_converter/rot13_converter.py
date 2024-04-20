@@ -15,10 +15,7 @@ class ROT13Converter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        return ConverterReturn(
-                    output_text=codecs.encode(prompt, "rot13"),
-                    output_type="text"
-        )
+        return ConverterReturn(output_text=codecs.encode(prompt, "rot13"), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

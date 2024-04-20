@@ -75,10 +75,7 @@ class VariationConverter(PromptConverter):
 
         try:
             ret_text = json.loads(response_msg)[0]
-            return ConverterReturn(
-                output_text=ret_text,
-                output_type="text"
-            )
+            return ConverterReturn(output_text=ret_text, output_type="text")
         except json.JSONDecodeError:
             logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
             raise RuntimeError(f"Error in LLM response {response_msg}")

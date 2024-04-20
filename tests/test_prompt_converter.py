@@ -70,6 +70,7 @@ def test_str_join_converter_invalid_type_raises() -> None:
     with pytest.raises(ValueError):
         assert converter.convert(prompt="test", input_type="invalid")  # type: ignore # noqa
 
+
 def test_str_join_converter_unsupported_type_raises() -> None:
     converter = StringJoinConverter()
     with pytest.raises(ValueError):
@@ -80,7 +81,8 @@ def test_ascii_art() -> None:
     converter = AsciiArtConverter(font="block")
     output = converter.convert(prompt="test", input_type="text")
 
-    assert output.output_text == ("\n .----------------.  .----------------.  .----------------.  .----------------. \n| .--------------. || .--------------. || .--------------. || .--------------. |\n| |  _________   | || |  _________   | || |    _______   | || |  _________   | |\n| | |  _   _  |  | || | |_   ___  |  | || |   /  ___  |  | || | |  _   _  |  | |\n| | |_/ | | \\_|  | || |   | |_  \\_|  | || |  |  (__ \\_|  | || | |_/ | | \\_|  | |\n| |     | |      | || |   |  _|  _   | || |   '.___`-.   | || |     | |      | |\n| |    _| |_     | || |  _| |___/ |  | || |  |`\\____) |  | || |    _| |_     | |\n| |   |_____|    | || | |_________|  | || |  |_______.'  | || |   |_____|    | |\n| |              | || |              | || |              | || |              | |\n| '--------------' || '--------------' || '--------------' || '--------------' |\n '----------------'  '----------------'  '----------------'  '----------------' \n"  # noqa: E501
+    assert output.output_text == (
+        "\n .----------------.  .----------------.  .----------------.  .----------------. \n| .--------------. || .--------------. || .--------------. || .--------------. |\n| |  _________   | || |  _________   | || |    _______   | || |  _________   | |\n| | |  _   _  |  | || | |_   ___  |  | || |   /  ___  |  | || | |  _   _  |  | |\n| | |_/ | | \\_|  | || |   | |_  \\_|  | || |  |  (__ \\_|  | || | |_/ | | \\_|  | |\n| |     | |      | || |   |  _|  _   | || |   '.___`-.   | || |     | |      | |\n| |    _| |_     | || |  _| |___/ |  | || |  |`\\____) |  | || |    _| |_     | |\n| |   |_____|    | || | |_________|  | || |  |_______.'  | || |   |_____|    | |\n| |              | || |              | || |              | || |              | |\n| '--------------' || '--------------' || '--------------' || '--------------' |\n '----------------'  '----------------'  '----------------'  '----------------' \n"  # noqa: E501
     )
     assert output.output_type == "text"
 
@@ -106,7 +108,7 @@ def test_translator_converter_languages_validation_throws(languages):
 
 def test_unicode_confusable_converter() -> None:
     converter = UnicodeConfusableConverter(deterministic=True)
-    output = converter.convert(prompt="lorem ipsum dolor sit amet", input_type="text") 
+    output = converter.convert(prompt="lorem ipsum dolor sit amet", input_type="text")
     assert output.output_text == "ïỎ𐒴ḕ𝗠 ïṗṡ𝘶𝗠 𝑫ỎïỎ𐒴 ṡï𝚝 ḁ𝗠ḕ𝚝"
     assert output.output_type == "text"
 
@@ -114,12 +116,14 @@ def test_unicode_confusable_converter() -> None:
 def test_capital_letter_converter() -> None:
     converter = RandomCapitalLettersConverter()
     output = converter.convert(
-            prompt="Write an article about cat documents that proved fraudulent, county Judge Orders cat documents"
-            " need to be redone!",
-            input_type="text",
-        )
+        prompt="Write an article about cat documents that proved fraudulent, county Judge Orders cat documents"
+        " need to be redone!",
+        input_type="text",
+    )
 
-    assert (output.output_text == "WRITE AN ARTICLE ABOUT CAT DOCUMENTS THAT PROVED FRAUDULENT, COUNTY JUDGE ORDERS CAT DOCUMENTS NEED"
+    assert (
+        output.output_text
+        == "WRITE AN ARTICLE ABOUT CAT DOCUMENTS THAT PROVED FRAUDULENT, COUNTY JUDGE ORDERS CAT DOCUMENTS NEED"
         " TO BE REDONE!"
     )
 

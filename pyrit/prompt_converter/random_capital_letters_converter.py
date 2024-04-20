@@ -72,7 +72,4 @@ class RandomCapitalLettersConverter(PromptConverter):
 
         output = self.string_to_upper_case_by_percentage(self.percentage, prompt)
 
-        return ConverterReturn(
-                    output_text=output,
-                    output_type="text"
-        )
+        return ConverterReturn(output_text=output, output_type="text")

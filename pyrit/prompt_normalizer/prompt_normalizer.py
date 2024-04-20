@@ -177,10 +177,7 @@ class PromptNormalizer(abc.ABC):
             converted_prompt_type = request_piece.prompt_data_type
 
             for converter in request_piece.prompt_converters:
-                converter_output = converter.convert(
-                    prompt=converted_prompt_text,
-                    input_type=converted_prompt_type
-                )
+                converter_output = converter.convert(prompt=converted_prompt_text, input_type=converted_prompt_type)
                 converted_prompt_text = converter_output.output_text
                 converted_prompt_type = converter_output.output_type
 

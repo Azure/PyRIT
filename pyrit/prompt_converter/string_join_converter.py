@@ -26,10 +26,7 @@ class StringJoinConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        return ConverterReturn(
-                    output_text=self.join_value.join(prompt),
-                    output_type="text"
-        )
+        return ConverterReturn(output_text=self.join_value.join(prompt), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

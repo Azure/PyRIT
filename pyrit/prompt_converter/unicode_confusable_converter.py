@@ -32,10 +32,7 @@ class UnicodeConfusableConverter(PromptConverter):
 
         ret_text = "".join(self._confusable(c) for c in prompt)
 
-        return ConverterReturn(
-            output_text=ret_text,
-            output_type="text"
-        )
+        return ConverterReturn(output_text=ret_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
