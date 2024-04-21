@@ -9,7 +9,6 @@ param (
 $scriptDir = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
 $docDir = Split-Path -Parent -Path $scriptDir
 
-
 # Define the cache file path using the given ID
 $cacheFile = "$docDir\generate_docs\cache\$runId"
 if (-not (Test-Path $cacheFile)) {
@@ -23,7 +22,7 @@ if (Test-Path $cacheFile) {
 }
 
 # Find all .py files excluding the deployment directory
-$files = Get-ChildItem -Path $docDir -Recurse -Include *.py -File |
+$files = Get-ChildItem -Path $docDir -Recurse -Include *.py -Exclude *_helpers.py -File |
          Where-Object { -not $_.FullName.ToLower().Contains("\deployment\") } |
          Where-Object { -not $_.FullName.ToLower().Contains("\generate_docs\") }
 
