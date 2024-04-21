@@ -13,6 +13,7 @@ from pyrit.interfaces import SupportTextClassification
 from pyrit.models import Score
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.common.path import PYRIT_PATH
 
 
 @dataclass
@@ -22,23 +23,23 @@ class Category:
 
 
 # System prompt templates
-CLASSIFICATION_SYSTEM_PROMPT = Path(__file__).parent / "scoring_instructions" / "classification_system_prompt.yaml"
-LIKERT_SYSTEM_PROMPT = Path(__file__).parent / "scoring_instructions" / "likert_system_prompt.yaml"
+CLASSIFICATION_SYSTEM_PROMPT = Path(PYRIT_PATH, "score", "scoring_instructions", "classification_system_prompt.yaml").resolve()
+LIKERT_SYSTEM_PROMPT = Path(PYRIT_PATH, "score", "scoring_instructions", "likert_system_prompt.yaml").resolve()
 
 # Classifier / Likert scale categories
-BIOCHEM_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "biochem.yaml"
-CURRENT_EVENTS_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "current_events.yaml"
-CYBER_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "cyber.yaml"
-FAIRNESS_BIAS_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "fairness_bias.yaml"
-HATE_SPEECH_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "hate_speech.yaml"
-PERSUASION_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "persuasion.yaml"
-PHISH_EMAILS_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "phish_emails.yaml"
-POLITICAL_MISINFO_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "political_misinfo.yaml"
-PROMPT_INJECTION_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "prompt_injection_detector.yaml"
-QUESTION_ANSWERING_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "question_answering.yaml"
-SENTIMENT_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "sentiment.yaml"
-SEXUAL_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "sexual.yaml"
-VIOLENCE_CLASSIFIER = Path(__file__).parent / "content_classifiers" / "violence.yaml"
+BIOCHEM_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "biochem.yaml").resolve()
+CURRENT_EVENTS_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "current_events.yaml").resolve()
+CYBER_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "cyber.yaml").resolve()
+FAIRNESS_BIAS_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "fairness_bias.yaml").resolve()
+HATE_SPEECH_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "hate_speech.yaml").resolve()
+PERSUASION_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "persuasion.yaml").resolve()
+PHISH_EMAILS_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "phish_emails.yaml").resolve()
+POLITICAL_MISINFO_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "political_misinfo.yaml").resolve()
+PROMPT_INJECTION_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "prompt_injection_detector.yaml").resolve()
+QUESTION_ANSWERING_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "question_answering.yaml").resolve()
+SENTIMENT_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "sentiment.yaml").resolve()
+SEXUAL_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "sexual.yaml").resolve()
+VIOLENCE_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "violence.yaml").resolve()
 
 
 class SelfAskScore(SupportTextClassification):
