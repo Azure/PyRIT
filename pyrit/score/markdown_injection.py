@@ -4,7 +4,7 @@
 import re
 
 from pyrit.interfaces import SupportTextClassification
-from pyrit.models import Score
+from pyrit.score import Score
 
 
 class MarkdownInjectionClassifier(SupportTextClassification):

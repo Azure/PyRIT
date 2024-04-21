@@ -10,7 +10,7 @@ import pytest
 from unittest.mock import Mock, patch
 
 from pyrit.prompt_target.prompt_target import PromptTarget
-from pyrit.models import Score
+from pyrit.score import Score
 from tests.mocks import get_memory_interface, MockPromptTarget
 
 

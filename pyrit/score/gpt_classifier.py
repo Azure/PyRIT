@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Union
 
 from pyrit.interfaces import SupportTextClassification
-from pyrit.models import Score
+from pyrit.score import Score
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import PYRIT_PATH
