@@ -26,6 +26,7 @@ from pyrit.score.gpt_classifier import (
 from pyrit.score.markdown_injection import MarkdownInjectionClassifier
 from pyrit.score.text import TextConversationTokenFinder
 from pyrit.score.substring_scorer import SubStringScorer
+from pyrit.score.score import Score
 
 __all__ = [
     "score_text",
@@ -54,4 +55,5 @@ __all__ = [
     "MarkdownInjectionClassifier",
     "TextConversationTokenFinder",
     "SubStringScorer",
+    "Score"
 ]
