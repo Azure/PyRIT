@@ -3,6 +3,7 @@
 
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
+import uuid
 
 import pytest
 
@@ -90,6 +91,7 @@ async def test_tts_send_prompt_file_save_async(
     )
 
     request_piece = sample_conversations[0]
+    request_piece.conversation_id = str(uuid.uuid4())
     request = PromptRequestResponse(request_pieces=[request_piece])
     with patch(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
@@ -116,6 +118,7 @@ async def test_tts_send_prompt_adds_memory_async(sample_conversations: list[Prom
     tts_target = AzureTTSTarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
 
     request_piece = sample_conversations[0]
+    request_piece.conversation_id = str(uuid.uuid4())
     request = PromptRequestResponse(request_pieces=[request_piece])
     with patch(
         "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
