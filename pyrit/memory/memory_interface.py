@@ -10,6 +10,7 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptRespon
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
+from pyrit.memory.memory_chat_message_builder import MemoryChatMessageBuilder
 from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
 
@@ -30,6 +31,7 @@ class MemoryInterface(abc.ABC):
         self.memory_embedding = embedding_model
         # Initialize the MemoryExporter instance
         self.exporter = MemoryExporter()
+        self._chat_message_builder = MemoryChatMessageBuilder()
 
     def enable_embedding(self, embedding_model=None):
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
@@ -101,7 +103,7 @@ class MemoryInterface(abc.ABC):
             list[ChatMessage]: The list of chat messages.
         """
         memory_entries = self.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
-        return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
+        return self._chat_message_builder.build_chat_messages(memory_entries)
 
     def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """

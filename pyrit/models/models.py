@@ -282,7 +282,7 @@ class ToolCall(BaseModel):
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: ChatMessageRole
-    content: str
+    content: str | list
     name: Optional[str] = None
     tool_calls: Optional[list[ToolCall]] = None
     tool_call_id: Optional[str] = None
