@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 from art import text2art
 
 
@@ -12,7 +12,7 @@ class AsciiArtConverter(PromptConverter):
     def __init__(self, font="rand"):
         self.font_value = font
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converter that uses art to convert strings to ASCII art.
         This can sometimes bypass LLM filters
@@ -22,10 +22,10 @@ class AsciiArtConverter(PromptConverter):
         Returns:
             str: The converted prompt.
         """
-        if not self.is_supported(input_type):
+        if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        return text2art(prompt, font=self.font_value)
+        return ConverterResult(output_text=text2art(prompt, font=self.font_value), output_type="text")
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
