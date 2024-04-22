@@ -14,9 +14,11 @@ from pyrit.prompt_target import TextTarget
 from tests.mocks import get_memory_interface
 from tests.mocks import get_sample_conversations
 
+
 @pytest.fixture
 def sample_entries() -> list[PromptRequestPiece]:
     return get_sample_conversations()
+
 
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:

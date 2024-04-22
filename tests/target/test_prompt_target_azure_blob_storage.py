@@ -8,7 +8,6 @@ import pytest
 from unittest.mock import patch
 
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import AzureBlobStorageTarget
@@ -20,6 +19,7 @@ from tests.mocks import get_sample_conversations
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
+
 
 @pytest.fixture
 def sample_entries() -> list[PromptRequestPiece]:
@@ -79,7 +79,9 @@ def test_initialization_with_no_container_url_raises():
 
 
 @patch("azure.storage.blob.ContainerClient.upload_blob")
-def test_send_prompt(mock_upload, azure_blob_storage_target: AzureBlobStorageTarget, sample_entries: list[PromptRequestPiece]):
+def test_send_prompt(
+    mock_upload, azure_blob_storage_target: AzureBlobStorageTarget, sample_entries: list[PromptRequestPiece]
+):
     mock_upload.return_value = None
     request_piece = sample_entries[0]
     conversation_id = request_piece.conversation_id
@@ -103,9 +105,9 @@ def test_send_prompt(mock_upload, azure_blob_storage_target: AzureBlobStorageTar
 
 @patch("azure.storage.blob.aio.ContainerClient.upload_blob")
 @pytest.mark.asyncio
-async def test_send_prompt_async(mock_upload_async,
-                                 azure_blob_storage_target: AzureBlobStorageTarget,
-                                 sample_entries: list[PromptRequestPiece]):
+async def test_send_prompt_async(
+    mock_upload_async, azure_blob_storage_target: AzureBlobStorageTarget, sample_entries: list[PromptRequestPiece]
+):
     mock_upload_async.return_value = None
     request_piece = sample_entries[0]
     conversation_id = request_piece.conversation_id

@@ -18,10 +18,10 @@ from tests.mocks import get_memory_interface
 from tests.mocks import get_sample_conversations
 
 
-
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
+
 
 @pytest.fixture
 def sample_entries() -> list[PromptRequestPiece]:
@@ -67,7 +67,7 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
         system_prompt="system prompt",
         conversation_id="1",
         orchestrator_identifier=Orchestrator().get_identifier(),
-        labels={}
+        labels={},
     )
 
     chats = azure_openai_target._memory.get_prompt_entries_with_conversation_id(conversation_id="1")
@@ -77,10 +77,10 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
 
 
 def test_send_prompt_user_no_system(
-        azure_openai_target: AzureOpenAIChatTarget,
-        openai_mock_return: ChatCompletion,
-        sample_entries: list[PromptRequestPiece]
-    ):
+    azure_openai_target: AzureOpenAIChatTarget,
+    openai_mock_return: ChatCompletion,
+    sample_entries: list[PromptRequestPiece],
+):
 
     with patch("openai.resources.chat.Completions.create") as mock:
         mock.return_value = openai_mock_return
@@ -88,21 +88,21 @@ def test_send_prompt_user_no_system(
         request = sample_entries[0]
         request.converted_prompt_text = "hi, I am a victim chatbot, how can I help?"
 
-        azure_openai_target.send_prompt(
-            prompt_request=PromptRequestResponse(request_pieces=[request])
-        )
+        azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
-        chats = azure_openai_target._memory.get_prompt_entries_with_conversation_id(conversation_id=request.conversation_id)
+        chats = azure_openai_target._memory.get_prompt_entries_with_conversation_id(
+            conversation_id=request.conversation_id
+        )
         assert len(chats) == 2, f"Expected 2 chats, got {len(chats)}"
         assert chats[0].role == "user"
         assert chats[1].role == "assistant"
 
 
 def test_send_prompt_with_system(
-        azure_openai_target: AzureOpenAIChatTarget,
-        openai_mock_return: ChatCompletion,
-        sample_entries: list[PromptRequestPiece]
-    ):
+    azure_openai_target: AzureOpenAIChatTarget,
+    openai_mock_return: ChatCompletion,
+    sample_entries: list[PromptRequestPiece],
+):
 
     with patch("openai.resources.chat.Completions.create") as mock:
         mock.return_value = openai_mock_return
@@ -111,16 +111,14 @@ def test_send_prompt_with_system(
             system_prompt="system prompt",
             conversation_id="1",
             orchestrator_identifier=Orchestrator().get_identifier(),
-            labels={}
+            labels={},
         )
 
         request = sample_entries[0]
         request.converted_prompt_text = "hi, I am a victim chatbot, how can I help?"
         request.conversation_id = "1"
 
-        azure_openai_target.send_prompt(
-            prompt_request=PromptRequestResponse(request_pieces=[request])
-        )
+        azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
         chats = azure_openai_target._memory.get_prompt_entries_with_conversation_id(conversation_id="1")
         assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
@@ -129,10 +127,10 @@ def test_send_prompt_with_system(
 
 
 def test_send_prompt_with_system_calls_chat_complete(
-        azure_openai_target: AzureOpenAIChatTarget,
-        openai_mock_return: ChatCompletion,
-        sample_entries: list[PromptRequestPiece]
-    ):
+    azure_openai_target: AzureOpenAIChatTarget,
+    openai_mock_return: ChatCompletion,
+    sample_entries: list[PromptRequestPiece],
+):
 
     with patch("openai.resources.chat.Completions.create") as mock:
         mock.return_value = openai_mock_return
@@ -141,15 +139,13 @@ def test_send_prompt_with_system_calls_chat_complete(
             system_prompt="system prompt",
             conversation_id="1",
             orchestrator_identifier=Orchestrator().get_identifier(),
-            labels={}
+            labels={},
         )
 
         request = sample_entries[0]
         request.converted_prompt_text = "hi, I am a victim chatbot, how can I help?"
         request.conversation_id = "1"
 
-        azure_openai_target.send_prompt(
-            prompt_request=PromptRequestResponse(request_pieces=[request])
-        )
+        azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
         mock.assert_called_once()

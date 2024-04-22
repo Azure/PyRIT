@@ -12,6 +12,7 @@ from pyrit.prompt_target.dall_e_target import SupportedDalleVersions
 
 from tests.mocks import get_sample_conversations
 
+
 @pytest.fixture
 def image_target() -> DALLETarget:
     return DALLETarget(
@@ -19,6 +20,7 @@ def image_target() -> DALLETarget:
         endpoint="test",
         api_key="test",
     )
+
 
 @pytest.fixture
 def sample_conversations() -> list[PromptRequestPiece]:
