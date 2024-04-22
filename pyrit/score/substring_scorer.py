@@ -1,8 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.interfaces import SupportTextClassification
-from pyrit.score import Score
+from pyrit.score import Score, SupportTextClassification
 
 
 class SubStringScorer(SupportTextClassification):

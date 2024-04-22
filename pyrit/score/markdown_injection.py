@@ -3,8 +3,7 @@
 
 import re
 
-from pyrit.interfaces import SupportTextClassification
-from pyrit.score import Score
+from pyrit.score import Score, SupportTextClassification
 
 
 class MarkdownInjectionClassifier(SupportTextClassification):

@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 from uuid import uuid4
-from pyrit.interfaces import SupportTextClassification
+from pyrit.score import SupportTextClassification
 
 from pyrit.memory import MemoryInterface
 from pyrit.score import Score
