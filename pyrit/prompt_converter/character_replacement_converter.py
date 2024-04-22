@@ -8,7 +8,8 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 class CharacterReplacementConverter(PromptConverter):
     """Converts a string by replacing chosen character with a new character of choice
     Args:
-        character (optional str): the character to replace whitespaces with. _ by default
+        char_to_replace (optional str): the character to replace (whitespaces by default)
+        new_char (optional str): the new character to replace with (_ by default)
     """
 
     def __init__(self, char_to_replace: str = " ", new_char: str = "_") -> None:
