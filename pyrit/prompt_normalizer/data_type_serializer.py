@@ -92,7 +92,7 @@ class DataTypeSerializer(abc.ABC):
             self.data_directory.mkdir(parents=True, exist_ok=True)
 
         ticks = int(time.time() * 1_000_000)
-        return Path(self.data_directory, f"{ticks}{self.file_extension}")
+        return Path(self.data_directory, f"{ticks}.{self.file_extension}")
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
@@ -105,10 +105,10 @@ class TextDataTypeSerializer(DataTypeSerializer):
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str = None, extension: str = ".png"):
+    def __init__(self, *, prompt_text: str = None, extension: str = None):
         self.data_type = "image_path"
         self.data_directory = Path(RESULTS_PATH) / "dbdata" / "images"
-        self.file_extension = extension
+        self.file_extension = extension if extension else "png"
 
         if prompt_text:
             self.prompt_text = prompt_text
@@ -119,11 +119,12 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
     def data_on_disk(self) -> bool:
         return True
 
+
 class AudioPathDataTypeSerializer(DataTypeSerializer):
     def __init__(self, *, prompt_text: str = None, extension: str = None):
         self.data_type = "audio_path"
         self.data_directory = Path(RESULTS_PATH) / "dbdata" / "audio"
-        self.file_extension = extension if extension else ".mp3"
+        self.file_extension = extension if extension else "mp3"
 
         if prompt_text:
             self.prompt_text = prompt_text

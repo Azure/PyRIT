@@ -19,6 +19,7 @@ TTSModel = Literal["tts-1", "tts-1-hd"]
 TTSVoice = Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
 TTSResponseFormat = Literal["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "wav", "webm"]
 
+
 class AzureTTSTarget(PromptTarget):
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_TTS_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_TTS_ENDPOINT"
@@ -61,7 +62,6 @@ class AzureTTSTarget(PromptTarget):
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
-
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         raise NotImplementedError()
 
@@ -69,9 +69,6 @@ class AzureTTSTarget(PromptTarget):
         self.validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-
-        request.sequence = len(messages)
         self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
@@ -86,7 +83,7 @@ class AzureTTSTarget(PromptTarget):
         }
 
         headers = {
-            "api-key" : self._api_key,
+            "api-key": self._api_key,
         }
 
         response = await net_utility.make_request_and_raise_if_error_async(
@@ -96,7 +93,7 @@ class AzureTTSTarget(PromptTarget):
             request_body=body,
         )
 
-        logger.info('Received valid response from the prompt target')
+        logger.info("Received valid response from the prompt target")
 
         audio_response = data_serializer_factory(data_type="audio_path", extension=self._response_format)
 
@@ -116,3 +113,9 @@ class AzureTTSTarget(PromptTarget):
 
         if prompt_request.request_pieces[0].converted_prompt_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
+
+        request = prompt_request.request_pieces[0]
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+
+        if messages:
+            raise ValueError("This target only supports a single turn conversation.")
