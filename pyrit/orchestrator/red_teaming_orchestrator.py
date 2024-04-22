@@ -9,7 +9,8 @@ from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import Prompt, PromptNormalizer
+from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 
@@ -68,11 +69,15 @@ class RedTeamingOrchestrator(Orchestrator):
         self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._red_teaming_chat = red_teaming_chat
+        self._red_teaming_chat._memory = self._memory
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
 
     def get_memory(self):
-        return self._memory.get_prompt_entries_with_normalizer_id(normalizer_id=self._prompt_normalizer.id)
+        """
+        Retrieves the memory associated with the red teaming orchestrator.
+        """
+        return self._memory.get_prompt_entries_by_orchestrator(self)
 
     @abc.abstractmethod
     def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role: str) -> bool:
@@ -129,37 +134,13 @@ class RedTeamingOrchestrator(Orchestrator):
             if target_messages:
                 raise ValueError("The prompt argument can only be provided on the first iteration.")
         else:
-            # If no prompt is provided, then contact the red teaming target to generate one.
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
             # A special case is the very first message, which means there are no prior messages.
             logger.info(
                 "No prompt for prompt target provided. "
                 "Generating a prompt for the prompt target using the red teaming LLM."
             )
-
-            assistant_responses = [m for m in target_messages if m.role == "assistant"]
-            if len(assistant_responses) > 0:
-                prompt_text = assistant_responses[-1].content
-            else:  # If no assistant responses, then it's the first message
-                logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
-                prompt_text = self._initial_red_teaming_prompt
-
-            red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
-                conversation_id=self._red_teaming_chat_conversation_id
-            )
-
-            if not red_teaming_chat_messages:
-                self._red_teaming_chat.set_system_prompt(
-                    prompt=self._attack_strategy,
-                    conversation_id=self._red_teaming_chat_conversation_id,
-                    normalizer_id=self._prompt_normalizer.id,
-                )
-
-            prompt = self._red_teaming_chat.send_prompt(
-                normalized_prompt=prompt_text,
-                conversation_id=self._red_teaming_chat_conversation_id,
-                normalizer_id=self._prompt_normalizer.id,
-            )  # TODO: Add a label to indicate this is coming from the red team orchestrator
+            prompt = self._get_prompt_from_red_teaming_target(target_messages)
 
         red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
             conversation_id=self._red_teaming_chat_conversation_id
@@ -171,18 +152,61 @@ class RedTeamingOrchestrator(Orchestrator):
             completion_state.is_complete = True
             return
 
-        target_prompt_obj = Prompt(
-            prompt_target=self._prompt_target,
+        target_prompt_obj = NormalizerRequestPiece(
             prompt_converters=self._prompt_converters,
             prompt_text=prompt,
-            conversation_id=self._prompt_target_conversation_id,
+            prompt_data_type="text",
         )
 
-        response = self._prompt_normalizer.send_prompt(prompt=target_prompt_obj)
+        response_text = (
+            self._prompt_normalizer.send_prompt(
+                normalizer_request=NormalizerRequest([target_prompt_obj]),
+                target=self._prompt_target,
+                conversation_id=self._prompt_target_conversation_id,
+                labels=self._global_memory_labels,
+                orchestrator_identifier=self.get_identifier(),
+            )
+            .request_pieces[0]
+            .converted_prompt_text
+        )
 
         if completion_state:
-            target_messages.append(ChatMessage(role="user", content=prompt))
-            target_messages.append(ChatMessage(role="assistant", content=response))
+            target_messages.append(ChatMessage(role="user", content=response_text))
+            target_messages.append(ChatMessage(role="assistant", content=response_text))
             completion_state.is_complete = self.is_conversation_complete(target_messages, red_teaming_chat_role="user")
 
-        return response
+        return response_text
+
+    def _get_prompt_from_red_teaming_target(self, target_messages: list[ChatMessage]):
+
+        assistant_responses = [m for m in target_messages if m.role == "assistant"]
+        if len(assistant_responses) > 0:
+            prompt_text = assistant_responses[-1].content
+        else:  # If no assistant responses, then it's the first message
+            logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
+            prompt_text = self._initial_red_teaming_prompt
+
+        red_teaming_response_message = self._memory.get_chat_messages_with_conversation_id(
+            conversation_id=self._red_teaming_chat_conversation_id
+        )
+
+        if not red_teaming_response_message:
+            self._red_teaming_chat.set_system_prompt(
+                system_prompt=self._attack_strategy,
+                conversation_id=self._red_teaming_chat_conversation_id,
+                orchestrator_identifier=self.get_identifier(),
+                labels=self._global_memory_labels,
+            )
+
+        response_text = (
+            self._red_teaming_chat.send_chat_prompt(
+                prompt=prompt_text,
+                conversation_id=self._red_teaming_chat_conversation_id,
+                orchestrator_identifier=self.get_identifier(),
+                labels=self._global_memory_labels,
+            )
+            .request_pieces[0]
+            .converted_prompt_text
+        )
+
+        return response_text

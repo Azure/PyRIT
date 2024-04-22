@@ -7,14 +7,19 @@ import random
 from string import ascii_lowercase
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessage
+from pyrit.memory.memory_models import PromptRequestPiece
 
-from tests.mocks import get_memory_interface
+from tests.mocks import get_memory_interface, get_sample_conversations
 
 
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
+
+
+@pytest.fixture
+def sample_conversations() -> list[PromptRequestPiece]:
+    return get_sample_conversations()
 
 
 def generate_random_string(length: int = 10) -> str:
@@ -31,35 +36,9 @@ def test_conversation_memory_empty_by_default(memory_interface: MemoryInterface)
     assert len(c) == expected_count
 
 
-def test_count_of_memories_matches_number_of_conversations_added_1(
-    memory_interface: MemoryInterface,
+@pytest.mark.parametrize("num_conversations", [1, 2, 3])
+def test_add_request_pieces_to_memory(
+    memory_interface: MemoryInterface, sample_conversations: list[PromptRequestPiece], num_conversations: int
 ):
-    expected_count = 1
-    message = ChatMessage(role="user", content="Hello")
-    memory_interface.add_chat_message_to_memory(conversation=message, conversation_id="1", labels={})
-    c = memory_interface.get_all_prompt_entries()
-    assert len(c) == expected_count
-
-
-def test_add_chat_message_to_memory_added(memory_interface: MemoryInterface):
-    expected_count = 3
-    memory_interface.add_chat_message_to_memory(
-        conversation=ChatMessage(role="user", content="Hello 1"), conversation_id="1"
-    )
-    memory_interface.add_chat_message_to_memory(
-        conversation=ChatMessage(role="user", content="Hello 2"), conversation_id="1"
-    )
-    memory_interface.add_chat_message_to_memory(
-        conversation=ChatMessage(role="user", content="Hello 3"), conversation_id="1"
-    )
-    assert len(memory_interface.get_all_prompt_entries()) == expected_count
-
-
-def test_add_chat_messages_to_memory_added(memory_interface: MemoryInterface):
-    messages = [
-        ChatMessage(role="user", content="Hello 1"),
-        ChatMessage(role="user", content="Hello 2"),
-    ]
-
-    memory_interface.add_chat_messages_to_memory(conversations=messages, conversation_id="1")
-    assert len(memory_interface.get_all_prompt_entries()) == len(messages)
+    memory_interface.add_request_pieces_to_memory(request_pieces=sample_conversations[:num_conversations])
+    assert len(memory_interface.get_all_prompt_entries()) == num_conversations

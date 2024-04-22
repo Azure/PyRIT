@@ -9,7 +9,7 @@ import logging
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessage
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
@@ -114,13 +114,7 @@ class AzureBlobStorageTarget(PromptTarget):
         except Exception as exc:
             self._upload_blob_exception_handling(exc=exc)
 
-    def send_prompt(
-        self,
-        *,
-        normalized_prompt: str,
-        conversation_id: str,
-        normalizer_id: str,
-    ) -> str:
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
@@ -133,19 +127,21 @@ class AzureBlobStorageTarget(PromptTarget):
         Returns:
             blob_url (str): The Blob URL of the created blob within the provided storage container.
         """
-        file_name = f"{conversation_id}.txt"
-        data = str.encode(normalized_prompt)
+
+        request = prompt_request.request_pieces[0]
+
+        file_name = f"{request.conversation_id}.txt"
+        data = str.encode(request.converted_prompt_text)
         blob_url = self._container_url + "/" + file_name
+
+        request.converted_prompt_text = blob_url
+        request.converted_prompt_data_type = "url"
+
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         self._upload_blob(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        self._memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="user", content=normalized_prompt),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-        )
-
-        return blob_url
+        return PromptRequestResponse([request])
 
     async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:
         """
@@ -170,13 +166,7 @@ class AzureBlobStorageTarget(PromptTarget):
         except Exception as exc:
             self._upload_blob_exception_handling(exc=exc)
 
-    async def send_prompt_async(
-        self,
-        *,
-        normalized_prompt: str,
-        conversation_id: str,
-        normalizer_id: str,
-    ) -> str:
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
         to the provided storage container.
@@ -190,16 +180,17 @@ class AzureBlobStorageTarget(PromptTarget):
             blob_url (str): The Blob URL of the created blob within the provided storage container.
         """
 
-        file_name = f"{conversation_id}.txt"
-        data = str.encode(normalized_prompt)
+        request = prompt_request.request_pieces[0]
+
+        file_name = f"{request.conversation_id}.txt"
+        data = str.encode(request.converted_prompt_text)
         blob_url = self._container_url + "/" + file_name
+
+        request.converted_prompt_text = blob_url
+        request.converted_prompt_data_type = "url"
+
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        self._memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="user", content=normalized_prompt),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-        )
-
-        return blob_url
+        return PromptRequestResponse([request])

@@ -5,11 +5,14 @@ import logging
 import os
 import pathlib
 from enum import Enum
+import uuid
 
 import requests
 from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
+from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 
@@ -32,9 +35,9 @@ class SupportedDalleVersions(Enum):
     V3 = 3
 
 
-class ImageTarget(PromptTarget):
+class DALLETarget(PromptTarget):
     """
-    The ImageTarget takes a prompt and generates images
+    The Dalle3Target takes a prompt and generates images
     This class initializes a DALL-E image target
 
     Args:
@@ -61,7 +64,11 @@ class ImageTarget(PromptTarget):
         response_format: ResponseFormat | None = ResponseFormat.B64,
         num_images: int | None = 1,
         dalle_version: SupportedDalleVersions | None = SupportedDalleVersions.V2,
+        memory: MemoryInterface | None = None,
     ):
+
+        super().__init__(memory=memory)
+
         if num_images is None:
             num_images = 1  # set 1 as default
 
@@ -107,8 +114,10 @@ class ImageTarget(PromptTarget):
         return str(image_path)
 
     def send_prompt(
-        self, normalized_prompt: str, conversation_id: str | None = None, normalizer_id: str | None = None
-    ) -> str:
+        self,
+        *,
+        prompt_request: PromptRequestResponse,
+    ) -> PromptRequestResponse:
         """
         Sends prompt to image target and returns response
         Args:
@@ -118,27 +127,21 @@ class ImageTarget(PromptTarget):
         Returns: response from target model in a JSON format
         """
 
-        output_filename = f"{conversation_id}_{normalizer_id}.png"
-        resp = self._generate_images(prompt=normalized_prompt)
+        request = prompt_request.request_pieces[0]
 
-        if "error" not in resp.keys():
-            if self.response_format == "url":
-                image_url = resp["data"][0]["url"]  # extract image URL from response
-                image_location = self.download_image(image_url=image_url, output_filename=output_filename)
-                resp["image_file_location"] = image_location  # append where stored image locally to response
-            return json.dumps(resp)
-        else:
-            if resp["exception type"] == "Blocked":
-                logger.error(f"Content Blocked\n{resp['error']}")
-                return ""
-            elif resp["exception type"] == "JSON Error":
-                logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
-                raise
-            else:
-                logger.error(f"Error in calling deployment {self.deployment_name}\n{resp['error']}")
-                raise
+        output_filename = f"{uuid.uuid4()}.png"
 
-    async def send_prompt_async(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+
+        resp = self._generate_images(prompt=request.converted_prompt_text)
+
+        return self._parse_response_and_add_to_memory(resp, output_filename, request)
+
+    async def send_prompt_async(
+        self,
+        *,
+        prompt_request: PromptRequestResponse,
+    ) -> PromptRequestResponse:
         """
         (Async) Sends prompt to image target and returns response
         Args:
@@ -148,18 +151,46 @@ class ImageTarget(PromptTarget):
         Returns: response from target model in a JSON format
         """
 
-        output_filename = f"{conversation_id}.png"
-        resp = await self._generate_images_async(prompt=normalized_prompt)
-        if "error" not in resp:
+        request = prompt_request.request_pieces[0]
+
+        output_filename = f"{uuid.uuid4()}.png"
+
+        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+
+        resp = await self._generate_images_async(prompt=request.converted_prompt_text)
+        return self._parse_response_and_add_to_memory(resp, output_filename, request)
+
+    def _parse_response_and_add_to_memory(
+        self, resp: dict, output_filename: str, prompt_request: PromptRequestPiece
+    ) -> PromptRequestResponse:
+        if "error" not in resp.keys():
+            image_location = output_filename
+
             if self.response_format == "url":
                 image_url = resp["data"][0]["url"]  # extract image URL from response
                 image_location = self.download_image(image_url=image_url, output_filename=output_filename)
-                resp["image_file_location"] = image_location  # append where stored image locally to response
-            return json.dumps(resp)
+                resp["image_file_location"] = image_location
+
+            # TODO save image if not URL
+
+            return self._memory.add_response_entries_to_memory(
+                request=prompt_request,
+                response_text_pieces=[image_location],
+                response_type="image_path",
+                prompt_metadata=json.dumps(resp),
+            )
+
         else:
             if resp["exception type"] == "Blocked":
-                logger.error(f"Content Blocked\n{resp['error']}")
-                return ""
+
+                return self._memory.add_response_entries_to_memory(
+                    request=prompt_request,
+                    response_text_pieces=[],
+                    response_type="image_path",
+                    prompt_metadata=json.dumps(resp),
+                    error="blocked",
+                )
+
             elif resp["exception type"] == "JSON Error":
                 logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
                 raise
@@ -169,7 +200,7 @@ class ImageTarget(PromptTarget):
 
     async def _generate_images_async(self, prompt: str) -> dict:
         try:
-            response = self.image_target._client.images.generate(
+            response = await self.image_target._async_client.images.generate(
                 model=self.deployment_name,
                 prompt=prompt,
                 n=self.n,

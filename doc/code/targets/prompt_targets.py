@@ -16,6 +16,7 @@ import pathlib
 
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import PromptRequestPiece
 
 jailbreak_template = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
@@ -30,46 +31,20 @@ print(jailbreak_prompt)
 # _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../../setup/setup_azure.md).
 
 # %%
-import os
-import uuid
-
+from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common import default_values
 
-
-# When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
-test_conversation_id = str(uuid.uuid4())
-test_normalizer_id = None
-
 default_values.load_default_env()
 
-with AzureOpenAIChatTarget(
-    deployment_name="defense-gpt35",
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-) as aoai_chat_target:
+request = PromptRequestPiece(
+    role="user",
+    original_prompt_text=jailbreak_prompt,
+).to_prompt_request_response()
 
-    aoai_chat_target.set_system_prompt(
-        prompt="You are to act as the Attacker AI, convincing the defender AI to perform the objective.",
-        conversation_id=test_conversation_id,
-        normalizer_id=test_normalizer_id,
-    )
 
-    response = aoai_chat_target.send_prompt(
-        normalized_prompt=jailbreak_prompt,
-        conversation_id=test_conversation_id,
-        normalizer_id=test_normalizer_id,
-    )
-
-    print("Response is given as:", response)
-    # Alternatively, send prompt asynchronously
-    # To send multiple prompts, use the orchestrator functionality to send prompts in a batch
-    response = await aoai_chat_target.send_prompt_async(  # type: ignore
-        normalized_prompt=jailbreak_prompt,
-        conversation_id=test_conversation_id,
-        normalizer_id=test_normalizer_id,
-    )
-    print("Response is given as:", response)
+with AzureOpenAIChatTarget() as azure_openai_chat_target:
+    print(azure_openai_chat_target.send_prompt(prompt_request=request))
 
 # %% [markdown]
 # The `AzureBlobStorageTarget` inherits from `PromptTarget`, meaning it has functionality to send prompts. In contrast to `PromptChatTarget`s, `PromptTarget`s do not interact with chat assistants.
@@ -92,22 +67,14 @@ from pyrit.common import default_values
 test_conversation_id = str(uuid.uuid4())
 test_normalizer_id = None
 
-default_values.load_default_env()
+request = PromptRequestPiece(
+    role="user",
+    original_prompt_text=jailbreak_prompt,
+).to_prompt_request_response()
 
 with AzureBlobStorageTarget(
     container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"),
     sas_token=os.environ.get("AZURE_STORAGE_ACCOUNT_SAS_TOKEN"),
 ) as abs_prompt_target:
 
-    abs_prompt_target.send_prompt(
-        normalized_prompt=jailbreak_prompt,
-        conversation_id=str(uuid.uuid4()),
-        normalizer_id=test_normalizer_id,
-    )
-
-    # Alternatively, send prompts asynchronously
-    await abs_prompt_target.send_prompt_async(  # type: ignore
-        normalized_prompt=jailbreak_prompt,
-        conversation_id=test_conversation_id,  # if using the same conversation ID, note that files in blob store are set to be overwritten
-        normalizer_id=test_normalizer_id,
-    )
+    print(abs_prompt_target.send_prompt(prompt_request=request))
