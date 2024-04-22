@@ -21,5 +21,5 @@ request = PromptRequestPiece(
 with AzureTTSTarget() as azure_openai_chat_target:
     resp = await azure_openai_chat_target.send_prompt_async(prompt_request=request)  # type: ignore
 
-    # The response is saved to disk (but also included as part of memory)
+    # The response is an mp3 saved to disk (but also included as part of memory)
     print(resp)
