@@ -11,7 +11,7 @@ from pyrit.prompt_converter import (
     VariationConverter,
     TranslationConverter,
     RandomCapitalLettersConverter,
-    WhitespaceConverter,
+    CharacterReplacementConverter,
     LeetspeakConverter,
 )
 import pytest
@@ -115,15 +115,15 @@ def test_unicode_confusable_converter() -> None:
     assert output.output_type == "text"
 
 
-def test_whitespace_converter_default_char() -> None:
-    converter = WhitespaceConverter()
+def test_character_replacement_converter_default_chars() -> None:
+    converter = CharacterReplacementConverter()
     output = converter.convert(prompt="Hello There World", input_type="text")
     assert output.output_text == "Hello_There_World"
     assert output.output_type == "text"
 
 
-def test_whitespace_converter() -> None:
-    converter = WhitespaceConverter(character="-")
+def test_character_replacement_converter() -> None:
+    converter = CharacterReplacementConverter(char_to_replace=" ", new_char="-")
     output = converter.convert(prompt="Hello World", input_type="text")
     assert output.output_text == "Hello-World"
     assert output.output_type == "text"
