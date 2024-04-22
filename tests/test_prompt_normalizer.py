@@ -4,7 +4,7 @@
 from unittest.mock import MagicMock
 import pytest
 
-from pyrit.memory.memory_models import PromptDataType
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest, PromptNormalizer
 from pyrit.prompt_converter import PromptConverter

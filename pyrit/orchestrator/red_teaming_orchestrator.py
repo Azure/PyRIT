@@ -164,7 +164,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 target=self._prompt_target,
                 conversation_id=self._prompt_target_conversation_id,
                 labels=self._global_memory_labels,
-                orchestrator=self,
+                orchestrator_identifier=self.get_identifier(),
             )
             .request_pieces[0]
             .converted_prompt_text
@@ -194,7 +194,7 @@ class RedTeamingOrchestrator(Orchestrator):
             self._red_teaming_chat.set_system_prompt(
                 system_prompt=self._attack_strategy,
                 conversation_id=self._red_teaming_chat_conversation_id,
-                orchestrator=self,
+                orchestrator_identifier=self.get_identifier(),
                 labels=self._global_memory_labels,
             )
 
@@ -202,7 +202,7 @@ class RedTeamingOrchestrator(Orchestrator):
             self._red_teaming_chat.send_chat_prompt(
                 prompt=prompt_text,
                 conversation_id=self._red_teaming_chat_conversation_id,
-                orchestrator=self,
+                orchestrator_identifier=self.get_identifier(),
                 labels=self._global_memory_labels,
             )
             .request_pieces[0]

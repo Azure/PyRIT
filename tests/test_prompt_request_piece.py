@@ -46,14 +46,17 @@ def test_is_sequence_set_true():
 
 
 def test_converters_serialize():
-    converters = [Base64Converter()]
+    converter_identifiers = [Base64Converter().get_identifier()]
     entry = PromptRequestPiece(
-        role="user", original_prompt_text="Hello", converted_prompt_text="Hello", converters=converters
+        role="user",
+        original_prompt_text="Hello",
+        converted_prompt_text="Hello",
+        converter_identifiers=converter_identifiers,
     )
 
-    assert len(entry.converters) == 1
+    assert len(entry.converter_identifiers) == 1
 
-    converter = entry.converters[0]
+    converter = entry.converter_identifiers[0]
 
     assert converter["__type__"] == "Base64Converter"
     assert converter["__module__"] == "pyrit.prompt_converter.base64_converter"
@@ -62,23 +65,29 @@ def test_converters_serialize():
 def test_prompt_targets_serialize():
     target = MockPromptTarget()
     entry = PromptRequestPiece(
-        role="user", original_prompt_text="Hello", converted_prompt_text="Hello", prompt_target=target
+        role="user",
+        original_prompt_text="Hello",
+        converted_prompt_text="Hello",
+        prompt_target_identifier=target.get_identifier(),
     )
 
-    assert entry.prompt_target["__type__"] == "MockPromptTarget"
-    assert entry.prompt_target["__module__"] == "tests.mocks"
+    assert entry.prompt_target_identifier["__type__"] == "MockPromptTarget"
+    assert entry.prompt_target_identifier["__module__"] == "tests.mocks"
 
 
 def test_orchestrators_serialize():
     orchestrator = PromptSendingOrchestrator(prompt_target=MagicMock(), memory=MagicMock())
 
     entry = PromptRequestPiece(
-        role="user", original_prompt_text="Hello", converted_prompt_text="Hello", orchestrator=orchestrator
+        role="user",
+        original_prompt_text="Hello",
+        converted_prompt_text="Hello",
+        orchestrator_identifier=orchestrator.get_identifier(),
     )
 
-    assert entry.orchestrator["id"] is not None
-    assert entry.orchestrator["__type__"] == "PromptSendingOrchestrator"
-    assert entry.orchestrator["__module__"] == "pyrit.orchestrator.prompt_sending_orchestrator"
+    assert entry.orchestrator_identifier["id"] is not None
+    assert entry.orchestrator_identifier["__type__"] == "PromptSendingOrchestrator"
+    assert entry.orchestrator_identifier["__module__"] == "pyrit.orchestrator.prompt_sending_orchestrator"
 
 
 def test_hashes_generated():

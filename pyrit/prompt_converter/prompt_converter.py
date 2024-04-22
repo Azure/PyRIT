@@ -3,10 +3,11 @@
 
 import abc
 
-from pyrit.memory.memory_models import PromptDataType
+from pyrit.models import PromptDataType
+from pyrit.models.identifiers import Identifier
 
 
-class PromptConverter(abc.ABC):
+class PromptConverter(abc.ABC, Identifier):
     """
     A prompt converter is responsible for converting prompts into a different representation.
 
@@ -38,7 +39,7 @@ class PromptConverter(abc.ABC):
         """
         pass
 
-    def to_dict(self):
+    def get_identifier(self):
         public_attributes = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__

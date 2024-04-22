@@ -59,7 +59,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 normalizer_request=request,
                 target=self._prompt_target,
                 labels=self._global_memory_labels,
-                orchestrator=self,
+                orchestrator_identifier=self.get_identifier(),
             )
 
             responses.append(response)
@@ -79,6 +79,6 @@ class PromptSendingOrchestrator(Orchestrator):
             requests=requests,
             target=self._prompt_target,
             labels=self._global_memory_labels,
-            orchestrator=self,
+            orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )

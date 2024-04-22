@@ -3,7 +3,6 @@
 
 from pyrit.prompt_converter import (
     Base64Converter,
-    NoOpConverter,
     UnicodeSubstitutionConverter,
     UnicodeConfusableConverter,
     StringJoinConverter,
@@ -17,11 +16,6 @@ from pyrit.prompt_converter import (
 import pytest
 
 from tests.mocks import MockPromptTarget
-
-
-def test_prompt_converter() -> None:
-    converter = NoOpConverter()
-    assert converter.convert(prompt="test", input_type="text") == "test"
 
 
 def test_base64_prompt_converter() -> None:

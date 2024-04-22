@@ -15,7 +15,7 @@ from sqlalchemy.sql.sqltypes import NullType
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -59,8 +59,8 @@ def test_conversation_data_schema(setup_duckdb_database):
         "timestamp",
         "labels",
         "prompt_metadata",
-        "converters",
-        "prompt_target",
+        "converter_identifiers",
+        "prompt_target_identifier",
         "original_prompt_data_type",
         "original_prompt_text",
         "original_prompt_data_sha256",
@@ -98,8 +98,8 @@ def test_conversation_data_column_types(setup_duckdb_database):
         "timestamp": DateTime,
         "labels": String,
         "prompt_metadata": String,
-        "converters": String,
-        "prompt_target": String,
+        "converter_identifiers": String,
+        "prompt_target_identifier": String,
         "original_prompt_data_type": String,
         "original_prompt_text": String,
         "original_prompt_data_sha256": String,
@@ -156,8 +156,8 @@ def test_insert_entry(setup_duckdb_database):
             converted_prompt_text="Hello",
         )
     )
-    # Use the insert_entry method to insert the entry into the database
-    setup_duckdb_database.insert_entry(entry)
+    # Use the _insert_entry method to insert the entry into the database
+    setup_duckdb_database._insert_entry(entry)
 
     # Now, get a new session to query the database and verify the entry was inserted
     with setup_duckdb_database.get_session() as session:
@@ -176,16 +176,14 @@ def test_insert_prompt_memories_inserts_embedding(setup_duckdb_database):
 
     with setup_duckdb_database.get_session():
         id = uuid.uuid4()
-        entry = PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                id=id,
-                role="user",
-                original_prompt_text="Hello",
-                converted_prompt_text="Hello",
-            )
+        piece = PromptRequestPiece(
+            id=id,
+            role="user",
+            original_prompt_text="Hello",
+            converted_prompt_text="Hello",
         )
 
-        setup_duckdb_database.insert_prompt_entries(entries=[entry])
+        setup_duckdb_database.add_request_pieces_to_memory(request_pieces=[piece])
 
         setup_duckdb_database.dispose_engine()
 
@@ -244,8 +242,8 @@ def test_insert_entries(setup_duckdb_database):
 
     # Now, get a new session to query the database and verify the entries were inserted
     with setup_duckdb_database.get_session() as session:
-        # Use the insert_entries method to insert multiple entries into the database
-        setup_duckdb_database.insert_entries(entries=entries)
+        # Use the _insert_entries method to insert multiple entries into the database
+        setup_duckdb_database._insert_entries(entries=entries)
         inserted_entries = session.query(PromptMemoryEntry).all()
         assert len(inserted_entries) == 5
         for i, entry in enumerate(inserted_entries):
@@ -263,8 +261,8 @@ def test_insert_embedding_entry(setup_duckdb_database):
         )
     )
 
-    # Insert the ConversationData entry using the insert_entry method
-    setup_duckdb_database.insert_entry(conversation_entry)
+    # Insert the ConversationData entry using the _insert_entry method
+    setup_duckdb_database._insert_entry(conversation_entry)
 
     # Re-query the ConversationData entry within a new session to ensure it's attached
     with setup_duckdb_database.get_session() as session:
@@ -274,7 +272,7 @@ def test_insert_embedding_entry(setup_duckdb_database):
 
     # Now that we have the uuid, we can create and insert the EmbeddingData entry
     embedding_entry = EmbeddingData(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
-    setup_duckdb_database.insert_entry(embedding_entry)
+    setup_duckdb_database._insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
     with setup_duckdb_database.get_session() as session:
@@ -320,7 +318,7 @@ def test_query_entries(setup_duckdb_database, sample_conversation_entries):
         sample_conversation_entries[i].original_prompt_text = f"Message {i}"
         sample_conversation_entries[i].converted_prompt_text = f"Message {i}"
 
-    setup_duckdb_database.insert_entries(entries=sample_conversation_entries)
+    setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
     queried_entries = setup_duckdb_database.query_entries(PromptMemoryEntry)
@@ -342,7 +340,7 @@ def test_update_entries(setup_duckdb_database):
         )
     )
 
-    setup_duckdb_database.insert_entry(entry)
+    setup_duckdb_database._insert_entry(entry)
 
     # Fetch the entry to update and update its content
     entries_to_update = setup_duckdb_database.query_entries(
@@ -360,7 +358,7 @@ def test_update_entries(setup_duckdb_database):
 
 def test_get_all_memory(setup_duckdb_database, sample_conversation_entries):
 
-    setup_duckdb_database.insert_entries(entries=sample_conversation_entries)
+    setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
     all_entries = setup_duckdb_database.get_all_prompt_entries()
@@ -371,7 +369,7 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
     # Define a specific conversation_id
     specific_conversation_id = "test_conversation_id"
 
-    converters = [Base64Converter()]
+    converter_identifiers = [Base64Converter().get_identifier()]
     target = TextTarget()
 
     # Start a session
@@ -385,8 +383,8 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
                 original_prompt_text="Test content",
                 converted_prompt_text="Test content",
                 labels={"normalizer_id": "id1"},
-                converters=converters,
-                prompt_target=target,
+                converter_identifiers=converter_identifiers,
+                prompt_target_identifier=target.get_identifier(),
             )
         )
 
@@ -408,11 +406,11 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
         assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 10  # Assuming the test runs quickly
 
-        converters = retrieved_entry.converters
-        assert len(converters) == 1
-        assert converters[0]["__type__"] == "Base64Converter"
+        converter_identifiers = retrieved_entry.converter_identifiers
+        assert len(converter_identifiers) == 1
+        assert converter_identifiers[0]["__type__"] == "Base64Converter"
 
-        prompt_target = retrieved_entry.prompt_target
+        prompt_target = retrieved_entry.prompt_target_identifier
         assert prompt_target["__type__"] == "TextTarget"
 
         labels = retrieved_entry.labels
@@ -432,7 +430,7 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
                 role="user",
                 original_prompt_text="Hello 1",
                 converted_prompt_text="Hello 1",
-                orchestrator=orchestrator1,
+                orchestrator_identifier=orchestrator1.get_identifier(),
             )
         ),
         PromptMemoryEntry(
@@ -441,7 +439,7 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
                 role="user",
                 original_prompt_text="Hello 2",
                 converted_prompt_text="Hello 2",
-                orchestrator=orchestrator2,
+                orchestrator_identifier=orchestrator2.get_identifier(),
             )
         ),
         PromptMemoryEntry(
@@ -450,23 +448,25 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
                 role="user",
                 original_prompt_text="Hello 3",
                 converted_prompt_text="Hello 1",
-                orchestrator=orchestrator1,
+                orchestrator_identifier=orchestrator1.get_identifier(),
             )
         ),
     ]
 
-    # Insert the ConversationData entries using the insert_entries method within a session
+    # Insert the ConversationData entries using the _insert_entries method within a session
     with setup_duckdb_database.get_session() as session:
-        setup_duckdb_database.insert_entries(entries=entries)
+        setup_duckdb_database._insert_entries(entries=entries)
         session.commit()  # Ensure all entries are committed to the database
 
+        orchestrator1_id = orchestrator1.get_identifier()["id"]
+
         # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-        retrieved_entries = setup_duckdb_database.get_prompt_entries_by_orchestrator(orchestrator=orchestrator1)
+        retrieved_entries = setup_duckdb_database.get_prompt_entries_by_orchestrator(orchestrator_id=orchestrator1_id)
 
         # Verify that the retrieved entries match the expected normalizer_id
         assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
         for retrieved_entry in retrieved_entries:
-            assert retrieved_entry.orchestrator["id"] == str(orchestrator1.id)
+            assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
             assert "Hello" in retrieved_entry.original_prompt_text  # Basic check to ensure content is as expected
 
 
@@ -480,9 +480,9 @@ def test_update_entries_by_conversation_id(setup_duckdb_database, sample_convers
     sample_conversation_entries[1].conversation_id = "other_id"
     original_content = sample_conversation_entries[1].original_prompt_text
 
-    # Insert the ConversationData entries using the insert_entries method within a session
+    # Insert the ConversationData entries using the _insert_entries method within a session
     with setup_duckdb_database.get_session() as session:
-        setup_duckdb_database.insert_entries(entries=sample_conversation_entries)
+        setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id

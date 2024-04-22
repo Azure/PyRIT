@@ -9,7 +9,6 @@ from pyrit.interfaces import SupportTextClassification
 from pyrit.memory import MemoryInterface
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_converter.no_op_converter import NoOpConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
@@ -83,20 +82,20 @@ class XPIATestOrchestrator(Orchestrator):
             normalizer_request=target_request,
             target=self._prompt_target,
             labels=self._global_memory_labels,
-            orchestrator=self,
+            orchestrator_identifier=self.get_identifier(),
         )
 
         logger.info(f'Received the following response from the prompt target "{response}"')
 
         processing_prompt_req = self._create_normalizer_request(
-            converters=[NoOpConverter()], prompt_text=self._processing_prompt, prompt_type="text"
+            converters=[], prompt_text=self._processing_prompt, prompt_type="text"
         )
 
         processing_response = self._prompt_normalizer.send_prompt(
             normalizer_request=processing_prompt_req,
             target=self._processing_target,
             labels=self._global_memory_labels,
-            orchestrator=self,
+            orchestrator_identifier=self.get_identifier(),
         )
 
         logger.info(f'Received the following response from the processing target "{processing_response}"')

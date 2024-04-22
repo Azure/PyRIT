@@ -10,7 +10,7 @@ import os
 import uuid
 
 from pyrit.common import default_values
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import DALLETarget
 from pyrit.prompt_target.dall_e_target import ResponseFormat
 
