@@ -51,15 +51,15 @@ class MemoryChatMessageBuilder:
         
         # Dictionary to store the original_prompt_data_type for each sequence
         user_data_types = {}
-        for prompt_req_resp_obj in memory_entries:
-            if prompt_req_resp_obj.role == "user":
-                key = prompt_req_resp_obj.sequence
-                if key in user_data_types:
-                    if user_data_types[key] != prompt_req_resp_obj.original_prompt_data_type:
+        for me in memory_entries:
+            if me.role == "user":
+                sequence = me.sequence
+                if sequence in user_data_types:
+                    if user_data_types[sequence] != me.original_prompt_data_type:
                         self._has_multimodal_input = True
                         return True
                 else:
-                    user_data_types[key] = prompt_req_resp_obj.original_prompt_data_type
+                    user_data_types[sequence] = me.original_prompt_data_type
         self._has_multimodal_input = False
         return False
 
@@ -75,12 +75,12 @@ class MemoryChatMessageBuilder:
         """
         # Grouping objects by sequence
         grouped_objects = {}
-        for key, group in groupby(sorted(memory_entries, key=lambda x: x.sequence), key=lambda x: x.sequence):
-            grouped_objects[key] = list(group)
+        for sequence, group in groupby(sorted(memory_entries, key=lambda x: x.sequence), key=lambda x: x.sequence):
+            grouped_objects[sequence] = list(group)
 
-        # Combining objects in the same sequence and storing in a list
+        # Combining objects in the same sequence and storing in a list as per Azure OpenAI GPT-V input structure
         chat_messages = []
-        for key, group in sorted(grouped_objects.items()):
+        for _, group in sorted(grouped_objects.items()):
             content = []
             role = None
             for prompt_memory_entry in group:
