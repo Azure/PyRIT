@@ -9,7 +9,7 @@ from pyrit.models.identifiers import Identifier
 
 
 @dataclass
-class ConverterReturn:
+class ConverterResult:
     output_text: str
     output_type: PromptDataType
 
@@ -24,7 +24,7 @@ class PromptConverter(abc.ABC, Identifier):
     """
 
     @abc.abstractmethod
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterReturn:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompts into a different representation
 

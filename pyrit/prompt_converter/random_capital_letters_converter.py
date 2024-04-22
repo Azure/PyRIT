@@ -5,7 +5,7 @@ import random
 import logging
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterReturn
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class RandomCapitalLettersConverter(PromptConverter):
                 output[pos] = prompt[pos].upper()
         return "".join(output)
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterReturn:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that converts the prompt to capital letters via a percentage .
         """
@@ -72,4 +72,4 @@ class RandomCapitalLettersConverter(PromptConverter):
 
         output = self.string_to_upper_case_by_percentage(self.percentage, prompt)
 
-        return ConverterReturn(output_text=output, output_type="text")
+        return ConverterResult(output_text=output, output_type="text")

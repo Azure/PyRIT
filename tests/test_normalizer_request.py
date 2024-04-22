@@ -5,7 +5,7 @@ import pytest
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_normalizer import NormalizerRequestPiece
-from pyrit.prompt_converter import PromptConverter, ConverterReturn
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 class MockPromptConverter(PromptConverter):
@@ -13,8 +13,8 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterReturn:
-        return ConverterReturn(output_text=prompt, output_type="text")
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        return ConverterResult(output_text=prompt, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

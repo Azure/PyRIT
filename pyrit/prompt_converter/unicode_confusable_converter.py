@@ -4,7 +4,7 @@
 import random
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterReturn
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 from confusables import confusable_characters
 
 
@@ -13,7 +13,7 @@ class UnicodeConfusableConverter(PromptConverter):
         """Set up a converter. The 'deterministic' argument is for unittesting only."""
         self.deterministic = deterministic
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterReturn:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompts into things that look similar, but are actually different,
         using Unicode confusables -- e.g., replacing a Latin 'a' with a Cyrillic 'а'.
@@ -30,9 +30,9 @@ class UnicodeConfusableConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        ret_text = "".join(self._confusable(c) for c in prompt)
+        return_text = "".join(self._confusable(c) for c in prompt)
 
-        return ConverterReturn(output_text=ret_text, output_type="text")
+        return ConverterResult(output_text=return_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

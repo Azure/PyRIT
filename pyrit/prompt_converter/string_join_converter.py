@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterReturn
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 class StringJoinConverter(PromptConverter):
@@ -10,7 +10,7 @@ class StringJoinConverter(PromptConverter):
     def __init__(self, *, join_value="-"):
         self.join_value = join_value
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterReturn:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that uses str join for letters between. E.g. with a `-`
         it converts a prompt of `test` to `t-e-s-t`
@@ -26,7 +26,7 @@ class StringJoinConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        return ConverterReturn(output_text=self.join_value.join(prompt), output_type="text")
+        return ConverterResult(output_text=self.join_value.join(prompt), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

@@ -7,7 +7,7 @@ import pytest
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest, PromptNormalizer
-from pyrit.prompt_converter import PromptConverter, ConverterReturn
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 from pyrit.prompt_target.prompt_target import PromptTarget
 from tests.mocks import MockPromptTarget
@@ -18,8 +18,8 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterReturn:
-        return ConverterReturn(output_text=prompt, output_type="text")
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        return ConverterResult(output_text=prompt, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
@@ -69,7 +69,7 @@ async def test_send_prompt_async_image_converter():
 
     mock_image_converter = MagicMock(PromptConverter)
 
-    mock_image_converter.convert.return_value = ConverterReturn(
+    mock_image_converter.convert.return_value = ConverterResult(
         output_type="path_to_image",
         output_text="image_path",
     )

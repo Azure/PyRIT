@@ -5,7 +5,7 @@ import pathlib
 
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_converter import PromptConverter, ConverterReturn
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import PromptChatTarget
@@ -35,7 +35,7 @@ class VariationConverter(PromptConverter):
         self._labels = {"converter": "VariationConverter"}
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterReturn:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Generates variations of the input prompts using the converter target.
         Parameters:
@@ -75,7 +75,7 @@ class VariationConverter(PromptConverter):
 
         try:
             ret_text = json.loads(response_msg)[0]
-            return ConverterReturn(output_text=ret_text, output_type="text")
+            return ConverterResult(output_text=ret_text, output_type="text")
         except json.JSONDecodeError:
             logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
             raise RuntimeError(f"Error in LLM response {response_msg}")
