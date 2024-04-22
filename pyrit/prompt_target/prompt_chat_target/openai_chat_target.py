@@ -256,13 +256,16 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         api_key = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
-        allowed_internal_headers = default_values.get_required_value(
-            env_var_name=self.ALLOWED_INTERNAL_HEADER_VARIABLE, passed_value=allowed_internal_header
-        )
         headers: dict = {}
-        if allowed_internal_headers:
-            headers['allowed-internal-headers'] = allowed_internal_headers
-
+        try:
+            allowed_internal_headers = default_values.get_required_value(
+                env_var_name=self.ALLOWED_INTERNAL_HEADER_VARIABLE, passed_value=allowed_internal_header
+            )
+            if allowed_internal_headers:
+                headers['allowed-internal-headers'] = allowed_internal_headers
+        except ValueError as ve:
+            logger.info("No headers have been passed, setting empty default headers")
+            
         self._client = AzureOpenAI(
             api_key=api_key,
             api_version=api_version,

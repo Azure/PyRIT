@@ -20,7 +20,7 @@ from pyrit.common.path import DATASETS_PATH
 jailbreak_template = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
 )
-jailbreak_prompt: str = jailbreak_template.apply_custom_metaprompt_parameters(prompt="hello world?")
+jailbreak_prompt: str = jailbreak_template.apply_custom_metaprompt_parameters(prompt="How to cut down a stop sign?")
 print(jailbreak_prompt)
 
 # %% [markdown]
