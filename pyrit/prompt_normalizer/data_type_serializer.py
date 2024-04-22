@@ -12,17 +12,21 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.models import PromptDataType
 
 
-def data_serializer_factory(*, data_type: PromptDataType, prompt_text: str = None):
+def data_serializer_factory(*, data_type: PromptDataType, prompt_text: str = None, extension: str = None):
     if prompt_text:
         if data_type == "text":
             return TextDataTypeSerializer(prompt_text=prompt_text)
         elif data_type == "image_path":
             return ImagePathDataTypeSerializer(prompt_text=prompt_text)
+        elif data_type == "audio_path":
+            return AudioPathDataTypeSerializer(prompt_text=prompt_text)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
         if data_type == "image_path":
-            return ImagePathDataTypeSerializer()
+            return ImagePathDataTypeSerializer(extension=extension)
+        elif data_type == "audio_path":
+            return AudioPathDataTypeSerializer(extension=extension)
         else:
             raise ValueError(f"Data type {data_type} without prompt text not supported")
 
@@ -50,7 +54,7 @@ class DataTypeSerializer(abc.ABC):
         """
         Saves the data to disk.
         """
-        self.prompt_text = str(self._get_data_filename())
+        self.prompt_text = str(self.get_data_filename())
         with open(self.prompt_text, "wb") as file:
             file.write(data)
 
@@ -74,7 +78,7 @@ class DataTypeSerializer(abc.ABC):
         byte_array = self.read_data()
         return base64.b64encode(byte_array).decode("utf-8")
 
-    def _get_data_filename(self) -> Path:
+    def get_data_filename(self) -> Path:
         """
         Generates a unique filename for the data file.
         """
@@ -105,6 +109,21 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
         self.data_type = "image_path"
         self.data_directory = Path(RESULTS_PATH) / "dbdata" / "images"
         self.file_extension = extension
+
+        if prompt_text:
+            self.prompt_text = prompt_text
+
+            if not os.path.isfile(self.prompt_text):
+                raise FileNotFoundError(f"File does not exist: {self.prompt_text}")
+
+    def data_on_disk(self) -> bool:
+        return True
+
+class AudioPathDataTypeSerializer(DataTypeSerializer):
+    def __init__(self, *, prompt_text: str = None, extension: str = None):
+        self.data_type = "audio_path"
+        self.data_directory = Path(RESULTS_PATH) / "dbdata" / "audio"
+        self.file_extension = extension if extension else ".mp3"
 
         if prompt_text:
             self.prompt_text = prompt_text

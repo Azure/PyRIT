@@ -52,7 +52,7 @@ async def make_request_and_raise_if_error_async(
     headers = headers or {}
     request_body = request_body or {}
 
-    with get_httpx_client(debug=debug, use_async=True) as async_client:
+    async with get_httpx_client(debug=debug, use_async=True) as async_client:
         if request_body:
             headers["Content-Type"] = "application/json"
             response = await async_client.request(method=method, url=endpoint_uri, json=request_body, headers=headers)
