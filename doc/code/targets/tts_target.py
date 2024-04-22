@@ -23,5 +23,5 @@ request = PromptRequestPiece(
 
 
 with AzureTTSTarget() as azure_openai_chat_target:
-    resp = await azure_openai_chat_target.send_prompt_async(prompt_request=request)
+    resp = await azure_openai_chat_target.send_prompt_async(prompt_request=request)  # type: ignore
     print(resp)

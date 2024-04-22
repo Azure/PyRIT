@@ -87,7 +87,8 @@ class AzureTTSTarget(PromptTarget):
         }
 
         response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/audio/speech?api-version={self._api_version}",
+            endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/"
+            "audio/speech?api-version={self._api_version}",
             method="POST",
             headers=headers,
             request_body=body,
