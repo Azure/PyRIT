@@ -90,8 +90,8 @@ class MemoryChatMessageBuilder:
                     entry = {"type": prompt_memory_entry.original_prompt_data_type, 
                             "text": prompt_memory_entry.original_prompt_text}
                     content.append(entry)
-                elif prompt_memory_entry.original_prompt_data_type == "image_url":
-                    entry = {"type": prompt_memory_entry.original_prompt_data_type,
+                elif prompt_memory_entry.original_prompt_data_type == "image_path":
+                    entry = {"type": "image_url",
                          "image_url": prompt_memory_entry.original_prompt_text}
                     content.append(entry)
                 else:

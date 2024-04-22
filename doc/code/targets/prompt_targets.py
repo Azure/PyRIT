@@ -69,7 +69,7 @@ request_pieces = [PromptRequestPiece(
     role="user",
     conversation_id=test_conversation_id,
     original_prompt_text="https://t4.ftcdn.net/jpg/00/71/31/85/360_F_71318503_9g1UATIOZzwELZg2DZb7w4oaVyenhQkh.jpg",
-    original_prompt_data_type="image_url",
+    original_prompt_data_type="image_path",
     prompt_target_identifier=None
 )]
 
