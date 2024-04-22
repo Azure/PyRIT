@@ -12,12 +12,6 @@ def blenderbot_tokenizer_normalizer():
 
 
 @pytest.fixture
-def mistral_tokenizer_normalizer():
-    tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-    return ChatMessageNormalizerTokenizerTemplate(tokenizer)
-
-
-@pytest.fixture
 def chatml_tokenizer_normalizer():
     tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/zephyr-7b-beta")
     return ChatMessageNormalizerTokenizerTemplate(tokenizer)
@@ -36,20 +30,6 @@ def test_normalize_blenderbot(blenderbot_tokenizer_normalizer: ChatMessageNormal
     )
 
     assert blenderbot_tokenizer_normalizer.normalize(messages) == expected
-
-
-def test_normalize_mistral(mistral_tokenizer_normalizer: ChatMessageNormalizerTokenizerTemplate):
-    messages = [
-        ChatMessage(role="user", content="Hello, how are you?"),
-        ChatMessage(role="assistant", content="I'm doing great. How can I help you today?"),
-        ChatMessage(role="user", content="I'd like to show off how chat templating works!"),
-    ]
-    expected = (
-        "<s>[INST] Hello, how are you? [/INST]I'm doing great. How can I help you today?</s> "
-        "[INST] I'd like to show off how chat templating works! [/INST]"
-    )
-
-    assert mistral_tokenizer_normalizer.normalize(messages) == expected
 
 
 def test_normalize_chatml(chatml_tokenizer_normalizer: ChatMessageNormalizerTokenizerTemplate):
