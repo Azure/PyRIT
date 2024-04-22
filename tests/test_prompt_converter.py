@@ -12,7 +12,7 @@ from pyrit.prompt_converter import (
     TranslationConverter,
     RandomCapitalLettersConverter,
     WhitespaceConverter,
-    LeatspeakConverter,
+    LeetspeakConverter,
 )
 import pytest
 
@@ -115,15 +115,22 @@ def test_unicode_confusable_converter() -> None:
     assert output.output_type == "text"
 
 
-def test_whitespace_converter() -> None:
+def test_whitespace_converter_default_char() -> None:
     converter = WhitespaceConverter()
+    output = converter.convert(prompt="Hello There World", input_type="text")
+    assert output.output_text == "Hello_There_World"
+    assert output.output_type == "text"
+
+
+def test_whitespace_converter() -> None:
+    converter = WhitespaceConverter(character="-")
     output = converter.convert(prompt="Hello World", input_type="text")
-    assert output.output_text == "Hello_World"
+    assert output.output_text == "Hello-World"
     assert output.output_type == "text"
 
 
 def test_leetcode_converter() -> None:
-    converter = LeatspeakConverter()
+    converter = LeetspeakConverter()
     output = converter.convert(prompt="mood", input_type="text")
     assert output.output_text == "m00d"
     assert output.output_type == "text"

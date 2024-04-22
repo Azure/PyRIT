@@ -6,15 +6,11 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 import random
 
 
-class LeatspeakConverter(PromptConverter):
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Simple converter to generate leatspeak version of a prompt
-        """
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
+class LeetspeakConverter(PromptConverter):
+    """Converts a string to a leetspeak version"""
 
-        leet_substitutions = {
+    def __init__(self) -> None:
+        self.leet_substitutions = {
             "a": ["4", "@", "/\\", "@", "^", "/-\\"],
             "b": ["8", "6", "13", "|3", "/3", "!3"],
             "c": ["(", "[", "<", "{"],
@@ -28,15 +24,22 @@ class LeatspeakConverter(PromptConverter):
             "z": ["2"],
         }
 
-        converted_prompt = ""
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Simple converter to generate leatspeak version of a prompt.
+        Since there are multiple character variations, this is non-deterministic
+        """
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
 
+        converted_prompt = []
         for char in prompt.lower():
-            if char in leet_substitutions:
-                converted_prompt += random.choice(leet_substitutions[char])
+            if char in self.leet_substitutions:
+                converted_prompt.append(random.choice(self.leet_substitutions[char]))
             else:
-                converted_prompt += char
+                converted_prompt.append(char)
 
-        return ConverterResult(output_text=converted_prompt, output_type="text")
+        return ConverterResult(output_text="".join(converted_prompt), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
