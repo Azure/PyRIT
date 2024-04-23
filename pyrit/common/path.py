@@ -12,6 +12,7 @@ LOG_PATH = pathlib.Path(PYRIT_PATH, "..", "results", "logs.txt").resolve()
 LOG_PATH.touch(exist_ok=True)
 
 DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
+CONTENT_CLASSIFIERS_PATH = pathlib.Path(DATASETS_PATH, "score", "content_classifiers").resolve()
 
 # Points to the root of the project
 HOME_PATH = pathlib.Path(PYRIT_PATH, "..").resolve()
