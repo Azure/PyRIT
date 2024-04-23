@@ -93,7 +93,7 @@ xpia_orchestrator = XPIATestOrchestrator(
     verbose=True,
 )
 
-score = xpia_orchestrator.process()
+score = xpia_orchestrator.execute()
 print(score)
 
 # clean up storage container
