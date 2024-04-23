@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Any, Callable, Optional, Union
+from typing import Callable, Optional, Union
 from uuid import uuid4
 from pyrit.interfaces import SupportTextClassification
 
@@ -24,7 +24,7 @@ class XPIAOrchestrator(Orchestrator):
         *,
         attack_content: str,
         prompt_target: PromptTarget,
-        processing_callback: Callable[[Any], str],
+        processing_callback: Callable[[], str],
         scorer: Optional[SupportTextClassification] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
@@ -99,7 +99,7 @@ class XPIAOrchestrator(Orchestrator):
 
         if not self._scorer:
             logger.info("No scorer provided, skipping scoring")
-            return
+            return None
         score = self._scorer.score_text(processing_response)
         logger.info(f"Score of the processing response: {score}")
         return score
