@@ -5,7 +5,7 @@ from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConve
 
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
-from pyrit.prompt_converter.character_replacement_converter import CharacterReplacementConverter
+from pyrit.prompt_converter.search_replace_converter import SearchReplaceConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.random_capital_letters_converter import RandomCapitalLettersConverter
 from pyrit.prompt_converter.rot13_converter import ROT13Converter
@@ -19,12 +19,12 @@ from pyrit.prompt_converter.variation_converter import VariationConverter
 __all__ = [
     "AsciiArtConverter",
     "Base64Converter",
-    "CharacterReplacementConverter",
     "ConverterResult",
     "LeetspeakConverter",
     "PromptConverter",
     "RandomCapitalLettersConverter",
     "ROT13Converter",
+    "SearchReplaceConverter",
     "StringJoinConverter",
     "TranslationConverter",
     "UnicodeConfusableConverter",
