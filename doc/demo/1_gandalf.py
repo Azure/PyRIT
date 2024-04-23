@@ -50,7 +50,7 @@ import os
 import textwrap
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.prompt_target import GandalfTarget, AzureOpenAIChatTarget
+from pyrit.prompt_target import GandalfTarget, GandalfLevel, AzureOpenAIChatTarget
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.score import GandalfBinaryScorer
@@ -58,7 +58,7 @@ from pyrit.models import AttackStrategy
 
 default_values.load_default_env()
 
-gandalf_level = GandalfTarget.GandalfLevel.LEVEL_1
+gandalf_level = GandalfLevel.LEVEL_1
 aoai_chat = AzureOpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),

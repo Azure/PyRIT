@@ -15,19 +15,20 @@ from pyrit.prompt_target import PromptTarget
 logger = logging.getLogger(__name__)
 
 
-class GandalfTarget(PromptTarget):
+class GandalfLevel(enum.Enum):
+    LEVEL_1 = "baseline"
+    LEVEL_2 = "do-not-tell"
+    LEVEL_3 = "do-not-tell-and-block"
+    LEVEL_4 = "gpt-is-password-encoded"
+    LEVEL_5 = "word-blacklist"
+    LEVEL_6 = "gpt-blacklist"
+    LEVEL_7 = "gandalf"
+    LEVEL_8 = "gandalf-the-white"
+    LEVEL_9 = "adventure-1"
+    LEVEL_10 = "adventure-2"
 
-    class GandalfLevel(enum.Enum):
-        LEVEL_1 = "baseline"
-        LEVEL_2 = "do-not-tell"
-        LEVEL_3 = "do-not-tell-and-block"
-        LEVEL_4 = "gpt-is-password-encoded"
-        LEVEL_5 = "word-blacklist"
-        LEVEL_6 = "gpt-blacklist"
-        LEVEL_7 = "gandalf"
-        LEVEL_8 = "gandalf-the-white"
-        LEVEL_9 = "adventure-1"
-        LEVEL_10 = "adventure-2"
+
+class GandalfTarget(PromptTarget):
 
     def __init__(
         self,
@@ -64,7 +65,7 @@ class GandalfTarget(PromptTarget):
         return response_entry
 
     async def _complete_text_async(self, text: str) -> str:
-        payload = {
+        payload: dict[str, object] = {
             "defender": self._defender,
             "prompt": text,
         }
