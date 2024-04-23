@@ -4,7 +4,11 @@
 from typing import Generator
 from pyrit.interfaces import SupportTextClassification
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.orchestrator.xpia_orchestrator import XPIATestOrchestrator, XPIAOrchestrator, XPIAManualProcessingOrchestrator
+from pyrit.orchestrator.xpia_orchestrator import (
+    XPIATestOrchestrator,
+    XPIAOrchestrator,
+    XPIAManualProcessingOrchestrator,
+)
 import pytest
 
 from unittest.mock import Mock, patch
@@ -73,7 +77,7 @@ def test_xpia_orchestrator_execute(prompt_target, success_scorer):
 
 def test_xpia_manual_processing_orchestrator_execute(prompt_target, success_scorer, monkeypatch):
     # Mocking user input to be "test"
-    monkeypatch.setattr('builtins.input', lambda _: "test")
+    monkeypatch.setattr("builtins.input", lambda _: "test")
     xpia_orchestrator = XPIAManualProcessingOrchestrator(
         attack_content="test",
         prompt_target=prompt_target,

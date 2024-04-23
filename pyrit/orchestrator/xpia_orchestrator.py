@@ -70,7 +70,7 @@ class XPIAOrchestrator(Orchestrator):
 
     def execute(self) -> Union[Score, None]:
         """Executes the entire XPIA operation.
-        
+
         This method sends the attack content to the prompt target, processes the response
         using the processing callback, and scores the processing response using the scorer.
         If no scorer was provided, the method will skip scoring.
@@ -157,7 +157,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         self._processing_target = processing_target
         self._processing_conversation_id = str(uuid4())
         self._processing_prompt = processing_prompt
-    
+
     def _process(self) -> str:
         processing_prompt_req = self._create_normalizer_request(
             converters=[], prompt_text=self._processing_prompt, prompt_type="text"
@@ -171,7 +171,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         )
 
         return processing_response.request_pieces[0].converted_prompt_text
-    
+
 
 class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
     def __init__(
@@ -216,6 +216,6 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
             verbose=verbose,
             prompt_target_conversation_id=prompt_target_conversation_id,
         )
-    
+
     def _input(self):
         return input("Please trigger the processing target's execution and paste the output here: ")
