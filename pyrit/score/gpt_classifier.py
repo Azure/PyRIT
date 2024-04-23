@@ -56,10 +56,6 @@ class SelfAskScore(SupportTextClassification):
         content_classifier (pathlib.Path | str): The path to the classifier categories file.
         chat_target (PromptChatTarget): The chat target to interact with.
 
-    Attributes:
-        _chat_target (PromptChatTarget): The chat target used for scoring.
-        _system_prompt (Prompt): The system prompt generated from the prompt template and categories.
-
     """
 
     def __init__(
