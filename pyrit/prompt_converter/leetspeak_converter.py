@@ -27,14 +27,14 @@ class LeetspeakConverter(PromptConverter):
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter to generate leatspeak version of a prompt.
-        Since there are multiple character variations, this is non-deterministic
+        Since there are multiple character variations, this is non-deterministic.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
         converted_prompt = []
-        for char in prompt.lower():
-            if char in self.leet_substitutions:
+        for char in prompt:
+            if char.lower() in self.leet_substitutions:
                 converted_prompt.append(random.choice(self.leet_substitutions[char]))
             else:
                 converted_prompt.append(char)
