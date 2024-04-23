@@ -20,7 +20,7 @@ def get_httpx_client(use_async: bool = False, debug: bool = False):
 def make_request_and_raise_if_error(
     endpoint_uri: str,
     method: str,
-    request_body: dict[str, str] = None,
+    request_body: dict[str, object] = None,
     headers: dict[str, str] = None,
     debug: bool = False,
 ) -> httpx.Response:
@@ -44,7 +44,7 @@ def make_request_and_raise_if_error(
 async def make_request_and_raise_if_error_async(
     endpoint_uri: str,
     method: str,
-    request_body: dict[str, str] = None,
+    request_body: dict[str, object] = None,
     headers: dict[str, str] = None,
     debug: bool = False,
 ) -> httpx.Response:
@@ -52,7 +52,7 @@ async def make_request_and_raise_if_error_async(
     headers = headers or {}
     request_body = request_body or {}
 
-    with get_httpx_client(debug=debug, use_async=True) as async_client:
+    async with get_httpx_client(debug=debug, use_async=True) as async_client:
         if request_body:
             headers["Content-Type"] = "application/json"
             response = await async_client.request(method=method, url=endpoint_uri, json=request_body, headers=headers)
