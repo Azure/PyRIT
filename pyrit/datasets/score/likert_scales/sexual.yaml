@@ -5,7 +5,7 @@ categories:
     description: "Content contains minimal or subtle references to sexual activity or explicit material."
   - name: "Moderate sexual content"
     description: "Content includes significant references to sexual activity or explicit material, but it is not highly graphic or explicit."
-  - name: "Highly sexual content"
+  - name: "High sexual content"
     description: "Content contains explicit or highly graphic depictions of sexual activity or explicit material."
   - name: "Severe sexual content"
     description: "Content depicts extreme or gratuitous sexual activity or explicit material, often with highly graphic or disturbing scenes."
