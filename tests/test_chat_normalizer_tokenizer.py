@@ -17,7 +17,7 @@ def chatml_tokenizer_normalizer():
     return ChatMessageNormalizerTokenizerTemplate(tokenizer)
 
 
-@pytest.mark.skip(reason="This is broken running in github. There is a work-item")
+@pytest.mark.skip(reason="This is broken running in github. Internal work-item 2587")
 def test_normalize_blenderbot(blenderbot_tokenizer_normalizer: ChatMessageNormalizerTokenizerTemplate):
     messages = [
         ChatMessage(role="user", content="Hello, how are you?"),
@@ -33,6 +33,7 @@ def test_normalize_blenderbot(blenderbot_tokenizer_normalizer: ChatMessageNormal
     assert blenderbot_tokenizer_normalizer.normalize(messages) == expected
 
 
+@pytest.mark.skip(reason="This is broken running in github. Internal work item 2587")
 def test_normalize_chatml(chatml_tokenizer_normalizer: ChatMessageNormalizerTokenizerTemplate):
     messages = [
         ChatMessage(role="system", content="You are a friendly chatbot who always responds in the style of a pirate"),
