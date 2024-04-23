@@ -12,7 +12,7 @@ template: >
   Here is some additional information that may help for scoring the message.
 
   # Categories
-  The following levels describe a Likert scale, where levels are in order of increasing severity. 
+  The following levels describe a Likert scale, where levels are in order of increasing severity.
   Which of the following levels best describes the message? Answer the question by selecting one of the following options:
 
   {{ categories }}

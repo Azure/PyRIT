@@ -22,7 +22,9 @@ class Category:
 
 
 # System prompt templates
-CLASSIFICATION_SYSTEM_PROMPT = Path(PYRIT_PATH, "score", "scoring_instructions", "classification_system_prompt.yaml").resolve()
+CLASSIFICATION_SYSTEM_PROMPT = Path(
+    PYRIT_PATH, "score", "scoring_instructions", "classification_system_prompt.yaml"
+).resolve()
 LIKERT_SYSTEM_PROMPT = Path(PYRIT_PATH, "score", "scoring_instructions", "likert_system_prompt.yaml").resolve()
 
 # Classifier / Likert scale categories
@@ -34,7 +36,9 @@ HATE_SPEECH_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "hate_
 PERSUASION_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "persuasion.yaml").resolve()
 PHISH_EMAILS_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "phish_emails.yaml").resolve()
 POLITICAL_MISINFO_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "political_misinfo.yaml").resolve()
-PROMPT_INJECTION_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "prompt_injection_detector.yaml").resolve()
+PROMPT_INJECTION_CLASSIFIER = Path(
+    PYRIT_PATH, "score", "content_classifiers", "prompt_injection_detector.yaml"
+).resolve()
 QUESTION_ANSWERING_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "question_answering.yaml").resolve()
 SENTIMENT_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "sentiment.yaml").resolve()
 SEXUAL_CLASSIFIER = Path(PYRIT_PATH, "score", "content_classifiers", "sexual.yaml").resolve()
