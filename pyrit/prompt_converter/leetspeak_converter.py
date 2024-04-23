@@ -35,7 +35,7 @@ class LeetspeakConverter(PromptConverter):
         converted_prompt = []
         for char in prompt:
             if char.lower() in self.leet_substitutions:
-                converted_prompt.append(random.choice(self.leet_substitutions.get(char.lower())))
+                converted_prompt.append(random.choice(self.leet_substitutions.get(char.lower(), char)))
             else:
                 converted_prompt.append(char)
 
