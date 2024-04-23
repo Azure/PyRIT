@@ -156,8 +156,8 @@ def test_insert_entry(setup_duckdb_database):
             converted_prompt_text="Hello",
         )
     )
-    # Use the insert_entry method to insert the entry into the database
-    setup_duckdb_database.insert_entry(entry)
+    # Use the _insert_entry method to insert the entry into the database
+    setup_duckdb_database._insert_entry(entry)
 
     # Now, get a new session to query the database and verify the entry was inserted
     with setup_duckdb_database.get_session() as session:
@@ -176,16 +176,14 @@ def test_insert_prompt_memories_inserts_embedding(setup_duckdb_database):
 
     with setup_duckdb_database.get_session():
         id = uuid.uuid4()
-        entry = PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                id=id,
-                role="user",
-                original_prompt_text="Hello",
-                converted_prompt_text="Hello",
-            )
+        piece = PromptRequestPiece(
+            id=id,
+            role="user",
+            original_prompt_text="Hello",
+            converted_prompt_text="Hello",
         )
 
-        setup_duckdb_database.insert_prompt_entries(entries=[entry])
+        setup_duckdb_database.add_request_pieces_to_memory(request_pieces=[piece])
 
         setup_duckdb_database.dispose_engine()
 
@@ -244,8 +242,8 @@ def test_insert_entries(setup_duckdb_database):
 
     # Now, get a new session to query the database and verify the entries were inserted
     with setup_duckdb_database.get_session() as session:
-        # Use the insert_entries method to insert multiple entries into the database
-        setup_duckdb_database.insert_entries(entries=entries)
+        # Use the _insert_entries method to insert multiple entries into the database
+        setup_duckdb_database._insert_entries(entries=entries)
         inserted_entries = session.query(PromptMemoryEntry).all()
         assert len(inserted_entries) == 5
         for i, entry in enumerate(inserted_entries):
@@ -263,8 +261,8 @@ def test_insert_embedding_entry(setup_duckdb_database):
         )
     )
 
-    # Insert the ConversationData entry using the insert_entry method
-    setup_duckdb_database.insert_entry(conversation_entry)
+    # Insert the ConversationData entry using the _insert_entry method
+    setup_duckdb_database._insert_entry(conversation_entry)
 
     # Re-query the ConversationData entry within a new session to ensure it's attached
     with setup_duckdb_database.get_session() as session:
@@ -274,7 +272,7 @@ def test_insert_embedding_entry(setup_duckdb_database):
 
     # Now that we have the uuid, we can create and insert the EmbeddingData entry
     embedding_entry = EmbeddingData(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
-    setup_duckdb_database.insert_entry(embedding_entry)
+    setup_duckdb_database._insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
     with setup_duckdb_database.get_session() as session:
@@ -320,7 +318,7 @@ def test_query_entries(setup_duckdb_database, sample_conversation_entries):
         sample_conversation_entries[i].original_prompt_text = f"Message {i}"
         sample_conversation_entries[i].converted_prompt_text = f"Message {i}"
 
-    setup_duckdb_database.insert_entries(entries=sample_conversation_entries)
+    setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
     queried_entries = setup_duckdb_database.query_entries(PromptMemoryEntry)
@@ -342,7 +340,7 @@ def test_update_entries(setup_duckdb_database):
         )
     )
 
-    setup_duckdb_database.insert_entry(entry)
+    setup_duckdb_database._insert_entry(entry)
 
     # Fetch the entry to update and update its content
     entries_to_update = setup_duckdb_database.query_entries(
@@ -360,7 +358,7 @@ def test_update_entries(setup_duckdb_database):
 
 def test_get_all_memory(setup_duckdb_database, sample_conversation_entries):
 
-    setup_duckdb_database.insert_entries(entries=sample_conversation_entries)
+    setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
     all_entries = setup_duckdb_database.get_all_prompt_entries()
@@ -455,9 +453,9 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
         ),
     ]
 
-    # Insert the ConversationData entries using the insert_entries method within a session
+    # Insert the ConversationData entries using the _insert_entries method within a session
     with setup_duckdb_database.get_session() as session:
-        setup_duckdb_database.insert_entries(entries=entries)
+        setup_duckdb_database._insert_entries(entries=entries)
         session.commit()  # Ensure all entries are committed to the database
 
         orchestrator1_id = orchestrator1.get_identifier()["id"]
@@ -482,9 +480,9 @@ def test_update_entries_by_conversation_id(setup_duckdb_database, sample_convers
     sample_conversation_entries[1].conversation_id = "other_id"
     original_content = sample_conversation_entries[1].original_prompt_text
 
-    # Insert the ConversationData entries using the insert_entries method within a session
+    # Insert the ConversationData entries using the _insert_entries method within a session
     with setup_duckdb_database.get_session() as session:
-        setup_duckdb_database.insert_entries(entries=sample_conversation_entries)
+        setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id

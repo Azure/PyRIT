@@ -12,7 +12,7 @@ from uuid import uuid4
 from pyrit.models import ChatMessage, ChatMessageRole
 
 
-PromptDataType = Literal["text", "image_path", "url"]
+PromptDataType = Literal["text", "image_path", "audio_path", "url"]
 
 """
 The type of the error in the prompt response

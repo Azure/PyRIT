@@ -24,7 +24,7 @@ PostType = Literal["json", "data"]
 def make_request_and_raise_if_error(
     endpoint_uri: str,
     method: str,
-    request_body: dict[str, str] = None,
+    request_body: dict[str, object] = None,
     headers: dict[str, str] = None,
     post_type: PostType = "json",
     debug: bool = False,
@@ -51,7 +51,7 @@ def make_request_and_raise_if_error(
 async def make_request_and_raise_if_error_async(
     endpoint_uri: str,
     method: str,
-    request_body: dict[str, str] = None,
+    request_body: dict[str, object] = None,
     headers: dict[str, str] = None,
     post_type: PostType = "json",
     debug: bool = False,
