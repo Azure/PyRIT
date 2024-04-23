@@ -4,8 +4,8 @@
 import abc
 from pathlib import Path
 
-from pyrit.memory.memory_models import PromptDataType, PromptMemoryEntry, EmbeddingData
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError, PromptDataType
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
@@ -61,29 +61,16 @@ class MemoryInterface(abc.ABC):
             list[ConversationData]: A list of chat memory entries with the specified conversation ID.
         """
 
-    @abc.abstractmethod
-    def get_prompt_entries_by_orchestrator(
-        self, *, orchestrator: "Orchestrator"  # type: ignore # noqa
-    ) -> list[PromptMemoryEntry]:
+    def get_prompt_entries_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptMemoryEntry]:
         """
-        Retrieves a list of PromptMemoryEntries based on a specific orchestrator object.
+        Retrieves a list of PromptMemoryEntry objects that have the specified orchestrator ID.
 
         Args:
-            orchestrator (Orchestrator): The orchestrator object to match
+            orchestrator_id (str): The id of the orchestrator.
+                Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptMemoryEntry]: A list of PromptMemoryEntry with the specified orchestrator.
-        """
-
-    @abc.abstractmethod
-    def insert_prompt_entries(self, *, entries: list[PromptMemoryEntry]) -> None:
-        """
-        Inserts a list of entries into the memory storage.
-
-        If necessary, generates embedding data for applicable entries
-
-        Args:
-            entries (list[Base]): The list of database model instances to be inserted.
+            list[PromptMemoryEntry]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
     @abc.abstractmethod
@@ -115,12 +102,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             None
         """
-        memory_entries = []
-
-        for piece in request_pieces:
-            memory_entries.append(PromptMemoryEntry(entry=piece))
-
-        self.insert_prompt_entries(entries=memory_entries)
+        pass
 
     def add_response_entries_to_memory(
         self,
@@ -144,29 +126,25 @@ class MemoryInterface(abc.ABC):
         Returns:
             PromptRequestResponse: The response containing the updated request pieces.
         """
-
-        request_pieces = []
-        memory_entries = []
-
-        for resp_text in response_text_pieces:
-            entry = PromptRequestPiece(
+        request_pieces = [
+            PromptRequestPiece(
                 role="assistant",
                 original_prompt_text=resp_text,
                 converted_prompt_text=resp_text,
                 conversation_id=request.conversation_id,
                 sequence=request.sequence + 1,
                 labels=request.labels,
-                prompt_target=request.prompt_target,
-                orchestrator=request.orchestrator,
+                prompt_target_identifier=request.prompt_target_identifier,
+                orchestrator_identifier=request.orchestrator_identifier,
                 original_prompt_data_type=response_type,
                 converted_prompt_data_type=response_type,
                 prompt_metadata=prompt_metadata,
                 response_error=error,
             )
-            memory_entries.append(PromptMemoryEntry(entry=entry))
-            request_pieces.append(entry)
+            for resp_text in response_text_pieces
+        ]
 
-        self.insert_prompt_entries(entries=memory_entries)
+        self.add_request_pieces_to_memory(request_pieces=request_pieces)
         return PromptRequestResponse(request_pieces=request_pieces)
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):

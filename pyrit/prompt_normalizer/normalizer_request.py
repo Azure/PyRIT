@@ -3,7 +3,7 @@
 
 import abc
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptDataType
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 
 
@@ -13,7 +13,7 @@ class NormalizerRequestPiece(abc.ABC):
     def __init__(
         self,
         *,
-        prompt_converters: "list[PromptConverter]",
+        prompt_converters: list[PromptConverter],
         prompt_text: str,
         prompt_data_type: PromptDataType,
         metadata: str = None,
@@ -35,12 +35,10 @@ class NormalizerRequestPiece(abc.ABC):
             ValueError: If prompt_text is not a string.
         """
 
-        if (
-            not isinstance(prompt_converters, list)
-            or len(prompt_converters) == 0
-            or not all(isinstance(converter, PromptConverter) for converter in prompt_converters)
+        if not isinstance(prompt_converters, list) or not all(
+            isinstance(converter, PromptConverter) for converter in prompt_converters
         ):
-            raise ValueError("prompt_converters must be a PromptConverter List and not be empty")
+            raise ValueError("prompt_converters must be a PromptConverter List")
 
         if not isinstance(prompt_text, str):
             raise ValueError("prompt_text must be a str")

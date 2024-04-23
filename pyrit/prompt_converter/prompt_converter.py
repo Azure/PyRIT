@@ -2,18 +2,29 @@
 # Licensed under the MIT license.
 
 import abc
+from dataclasses import dataclass
 
-from pyrit.memory.memory_models import PromptDataType
+from pyrit.models import PromptDataType
+from pyrit.models.identifiers import Identifier
 
 
-class PromptConverter(abc.ABC):
+@dataclass
+class ConverterResult:
+    output_text: str
+    output_type: PromptDataType
+
+    def __str__(self):
+        return f"{self.output_type}: {self.output_text}"
+
+
+class PromptConverter(abc.ABC, Identifier):
     """
     A prompt converter is responsible for converting prompts into a different representation.
 
     """
 
     @abc.abstractmethod
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompts into a different representation
 
@@ -26,7 +37,7 @@ class PromptConverter(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         """
         Checks if the input type is supported by the converter
 
@@ -38,7 +49,7 @@ class PromptConverter(abc.ABC):
         """
         pass
 
-    def to_dict(self):
+    def get_identifier(self):
         public_attributes = {}
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__

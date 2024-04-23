@@ -3,9 +3,9 @@
 
 import pytest
 
-from pyrit.memory.memory_models import PromptDataType
+from pyrit.models import PromptDataType
 from pyrit.prompt_normalizer import NormalizerRequestPiece
-from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 class MockPromptConverter(PromptConverter):
@@ -13,10 +13,10 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
-        return prompt
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        return ConverterResult(output_text=prompt, output_type="text")
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
 
@@ -61,19 +61,6 @@ def test_prompt_request_piece_init_invalid_converter():
     with pytest.raises(ValueError):
         NormalizerRequestPiece(
             prompt_converters=["InvalidPromptConverter"],
-            prompt_text=prompt_text,
-            prompt_data_type="text",
-            metadata=metadata,
-        )
-
-
-def test_prompt_init_empty_prompt_converters():
-    prompt_text = "Hello"
-    metadata = "meta"
-
-    with pytest.raises(ValueError):
-        NormalizerRequestPiece(
-            prompt_converters=[],
             prompt_text=prompt_text,
             prompt_data_type="text",
             metadata=metadata,

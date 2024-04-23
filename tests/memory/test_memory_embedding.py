@@ -59,7 +59,9 @@ def test_memory_encoding_chat_message(
 ):
     chat_memory = sample_conversation_entries[0]
 
-    metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(chat_memory=chat_memory)
+    metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(
+        prompt_request_piece=chat_memory
+    )
     assert metadata.id == chat_memory.id
     assert metadata.embedding == DEFAULT_EMBEDDING_DATA.embedding
     assert metadata.embedding_type_name == "MockEmbeddingGenerator"
