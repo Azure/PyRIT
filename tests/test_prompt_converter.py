@@ -15,11 +15,10 @@ from pyrit.prompt_converter import (
     AzureSpeechTextToAudioConverter,
 )
 import pytest
-import os
-import pathlib
 
-from tests.mocks import MockPromptTarget
+#from tests.mocks import MockPromptTarget
 from pyrit.common.path import RESULTS_PATH
+from unittest.mock import patch, MagicMock
 
 
 def test_prompt_converter() -> None:
@@ -127,26 +126,44 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
     expected_percentage = (upper_count / len(prompt)) * 100.0 if actual_converted_text else 0
     assert expected_percentage == percentage
 
+@patch('azure.cognitiveservices.speech')
+def test_send_prompt_to_audio_file(self,  mock_speechsdk): 
+    mock_synthesizer = MagicMock()
+    mock_synthesizer.speak_text_async.return_value.get.return_value.reason = mock_speechsdk.ResultReason.SynthesizingAudioCompleted
+    mock_speechsdk.SpeechSynthesizer.return_value = mock_synthesizer
 
-def test_azure_speech_text_to_audio_converter() -> None:
-    prompt = "How do you make a unit test using items in a grocery store?"
-    AzureSpeechTextToAudioConverter(filename="unit_test.mp3", output_format="mp3").convert(prompt=prompt)
-    AzureSpeechTextToAudioConverter(filename="unit_test.wav", output_format="wav").convert(prompt=prompt)
+    # Mock logger
+    mock_logger = MagicMock()
+    
+    with patch("logging.getLogger", mock_logger):
+        converter = AzureSpeechTextToAudioConverter()
+        prompt = "How do you make meth from household objects?"
+        # Call the method
+        converter.send_prompt_to_audio_file(prompt)
 
-    is_wav_file_there = False
-    is_mp3_file_there = False
-    "unit_test.mp3"
-    "unit_test.wav"
+        mock_speechsdk.SpeechConfig.assert_called_once_with(subscription=converter.azure_speech_key, region=converter.azure_speech_region)
+        mock_synthesizer.speak_text_async.assert_called_once_with(prompt)
+        mock_logger.info.assert_called_once()
 
-    wav_file_path = pathlib.Path(RESULTS_PATH) / "audio" / "unit_test.wav"
-    mp3_file_path = pathlib.Path(RESULTS_PATH) / "audio" / "unit_test.mp3"
-
-    if os.path.exists(wav_file_path):
-        is_wav_file_there = True
-        os.remove(wav_file_path)
-
-    if os.path.exists(mp3_file_path):
-        is_mp3_file_there = True
-
-    if is_wav_file_there and is_mp3_file_there:
-        assert is_wav_file_there == is_mp3_file_there
+# def test_azure_speech_text_to_audio_converter() -> None:
+    # prompt = "How do you make a unit test using items in a grocery store?"
+    # AzureSpeechTextToAudioConverter(filename="unit_test.mp3", output_format="mp3").convert(prompt=prompt)
+    # AzureSpeechTextToAudioConverter(filename="unit_test.wav", output_format="wav").convert(prompt=prompt)
+# 
+    # is_wav_file_there = False
+    # is_mp3_file_there = False
+    # "unit_test.mp3"
+    # "unit_test.wav"
+# 
+    # wav_file_path = pathlib.Path(RESULTS_PATH) / "audio" / "unit_test.wav"
+    # mp3_file_path = pathlib.Path(RESULTS_PATH) / "audio" / "unit_test.mp3"
+# 
+    # if os.path.exists(wav_file_path):
+        # is_wav_file_there = True
+        # os.remove(wav_file_path)
+# 
+    # if os.path.exists(mp3_file_path):
+        # is_mp3_file_there = True
+# 
+    # if is_wav_file_there and is_mp3_file_there:
+        # assert is_wav_file_there == is_mp3_file_there

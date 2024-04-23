@@ -131,3 +131,9 @@ def get_sample_conversation_entries() -> list[PromptMemoryEntry]:
 
     conversations = get_sample_conversations()
     return [PromptMemoryEntry(entry=conversation) for conversation in conversations]
+
+
+class MockAzureSpeechEndpoint:
+    #Mock Azure Speech Studio Endpoint
+    def __init__()
+    
