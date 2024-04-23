@@ -3,6 +3,7 @@
 
 from abc import abstractmethod
 import logging
+import json
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
@@ -196,7 +197,7 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_ENDPOINT"
     DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_DEPLOYMENT"
-    ALLOWED_INTERNAL_HEADER_VARIABLE: str = "AZURE_OPENAI_CHAT_ALLOWED_INTERNAL_HEADER"
+    ADDITIONAL_REQUEST_HEADERS: str = "AZURE_OPENAI_CHAT_ADDITIONAL_REQUEST_HEADERS"
 
     def __init__(
         self,
@@ -204,7 +205,7 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
-        allowed_internal_header: str = None,
+        headers: dict = None,
         memory: MemoryInterface = None,
         api_version: str = "2023-08-01-preview",
         max_tokens: int = 1024,
@@ -227,7 +228,7 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
                 "2023-08-01-preview".
-            allowed_internal_header (str): Allowed internal headers of the endpoint. 
+            headers (dict, optional): Headers of the endpoint. 
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
@@ -256,27 +257,30 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         api_key = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
-        headers: dict = {}
+        final_headers: dict = {}
         try:
-            allowed_internal_headers = default_values.get_required_value(
-                env_var_name=self.ALLOWED_INTERNAL_HEADER_VARIABLE, passed_value=allowed_internal_header
+            request_headers = default_values.get_required_value(
+                env_var_name=self.ADDITIONAL_REQUEST_HEADERS, passed_value=headers
             )
-            if allowed_internal_headers:
-                headers['allowed-internal-headers'] = allowed_internal_headers
-        except ValueError as ve:
+            if isinstance(request_headers, str):
+                try:
+                    final_headers = json.loads(request_headers)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Error decoding JSON: {e}")
+        except ValueError:
             logger.info("No headers have been passed, setting empty default headers")
             
         self._client = AzureOpenAI(
             api_key=api_key,
             api_version=api_version,
             azure_endpoint=endpoint,
-            default_headers=headers
+            default_headers=final_headers
         )
         self._async_client = AsyncAzureOpenAI(
             api_key=api_key,
             api_version=api_version,
             azure_endpoint=endpoint,
-            default_headers=headers
+            default_headers=final_headers
         )
 
 
