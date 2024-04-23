@@ -6,7 +6,7 @@ import os
 import uuid
 
 import azure.cognitiveservices.speech as speechsdk
-from pyrit.memory.memory_models import PromptDataType
+from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.common import default_values
 from pyrit.common.path import RESULTS_PATH
@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 
 class AzureSpeechTextToAudioConverter(PromptConverter):
     """
-    The TextToAudio takes a prompt and generates a
-    wave file.
-
+    The AzureSpeechTextToAudio takes a prompt and generates a wave file.
+    https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
     Args:
         azure_speech_region (str): The name of the Azure region.
         azure_speech_key (str): The API key for accessing the service.
         synthesis_language (str): Synthesis voice language
         synthesis_voice_name (str): Synthesis voice name, see URL
+        For more details see the following link for synthesis language and synthesis voice:
         https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
         filename (str): File name to be generated.  Please include either .wav or .mp3
         output_format (str): Either wav or mp3. Must match the file prefix.
@@ -71,13 +71,18 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     def send_prompt_to_audio_file(self, prompt: str, output_format: str):
         """
         Takes a prompt and it creates either an MP3 or WAV file.
-        Saves the file to the results/audio folder
+        Saves the file to the results/audio folder.
 
         Raises:
             ValueError: Any issues in validation or execution.
         """
         if prompt == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
+        if not self.filename:
+            self.filename = f"{uuid.uuid4()}.wav"
+        if not os.path.isdir(self.output_dir):
+            os.mkdir(self.output_dir)
+        file_name = os.path.join(self.output_dir, self.filename)
         try:
             speech_config = speechsdk.SpeechConfig(subscription=self.azure_speech_key, region=self.azure_speech_region)
             speech_config.speech_synthesis_language = self.synthesis_language
@@ -86,11 +91,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                 speech_config.set_speech_synthesis_output_format(
                     speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
                 )
-            if not self.filename:
-                self.filename = f"{uuid.uuid4()}.wav"
-            if not os.path.isdir(self.output_dir):
-                os.mkdir(self.output_dir)
-            file_name = os.path.join(self.output_dir, self.filename)
             file_config = speechsdk.audio.AudioOutputConfig(filename=file_name)
             speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=file_config)
             result = speech_synthesizer.speak_text_async(prompt).get()
