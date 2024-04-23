@@ -174,10 +174,12 @@ class PromptNormalizer(abc.ABC):
         for request_piece in request.request_pieces:
 
             converted_prompt_text = request_piece.prompt_text
+            converted_prompt_type = request_piece.prompt_data_type
+
             for converter in request_piece.prompt_converters:
-                converted_prompt_text = converter.convert(
-                    prompt=converted_prompt_text, input_type=request_piece.prompt_data_type
-                )
+                converter_output = converter.convert(prompt=converted_prompt_text, input_type=converted_prompt_type)
+                converted_prompt_text = converter_output.output_text
+                converted_prompt_type = converter_output.output_type
 
             converter_identifiers = [converter.get_identifier() for converter in request_piece.prompt_converters]
 
@@ -194,7 +196,7 @@ class PromptNormalizer(abc.ABC):
                     prompt_target_identifier=target.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
                     original_prompt_data_type=request_piece.prompt_data_type,
-                    converted_prompt_data_type=request_piece.prompt_data_type,
+                    converted_prompt_data_type=converted_prompt_type,
                 )
             )
 
