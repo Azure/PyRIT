@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import DALLETarget
 from pyrit.prompt_target.dall_e_target import SupportedDalleVersions
 
@@ -54,5 +54,5 @@ def test_send_prompt(mock_image, image_target, sample_conversations: list[Prompt
 @pytest.mark.asyncio
 async def test_send_prompt_async(mock_image, image_target, sample_conversations: list[PromptRequestPiece]):
     mock_image.return_value = {"Mock Image: ": "mock value"}
-    resp = await image_target.send_prompt_async(prompt_request=PromptRequestResponse(sample_conversations))
+    resp = await image_target.send_prompt_async(prompt_request=PromptRequestResponse([sample_conversations[0]]))
     assert resp

@@ -79,12 +79,12 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def get_all_prompt_entries(self) -> list[PromptMemoryEntry]:
+    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self.query_entries(PromptMemoryEntry)
-        return result
+        result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
+        return [entry.get_prompt_reqest_piece() for entry in result]
 
     def get_all_embeddings(self) -> list[EmbeddingData]:
         """
@@ -93,15 +93,15 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         result = self.query_entries(EmbeddingData)
         return result
 
-    def get_prompt_entries_with_conversation_id(self, *, conversation_id: str) -> list[PromptMemoryEntry]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
         """
-        Retrieves a list of ConversationData objects that have the specified conversation ID.
+        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
         Args:
-            conversation_id (str): The conversation ID to filter the table.
+            conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[ConversationData]: A list of ConversationData objects matching the specified conversation ID.
+            list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
         """
         try:
             return self.query_entries(
@@ -111,16 +111,16 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def get_prompt_entries_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptMemoryEntry]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
         """
-        Retrieves a list of PromptMemoryEntry objects that have the specified orchestrator ID.
+        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
         Args:
             orchestrator_id (str): The id of the orchestrator.
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptMemoryEntry]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
+            list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
         """
         try:
             return self.query_entries(
@@ -133,27 +133,18 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def _add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
-        If necessary, generates embedding data for applicable entries
 
-        Args:
-            entries (list[Base]): The list of database model instances to be inserted.
         """
-        embedding_entries = []
-
-        if self.memory_embedding:
-            for piece in request_pieces:
-                embedding_entry = self.memory_embedding.generate_embedding_memory_data(prompt_request_piece=piece)
-                embedding_entries.append(embedding_entry)
-
-        # The ordering of this is weird because after memory entries are inserted, we lose the reference to them
-        # and also entries must be inserted before embeddings because of the foreign key constraint
         self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
-        if embedding_entries:
-            self._insert_entries(entries=embedding_entries)
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+        """
+        Inserts embedding data into memory storage
+        """
+        self._insert_entries(entries=embedding_data)
 
     def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
         """
