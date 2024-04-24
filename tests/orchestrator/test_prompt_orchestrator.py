@@ -5,6 +5,7 @@ import tempfile
 import pytest
 
 from pyrit.memory import DuckDBMemory
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 
@@ -82,3 +83,19 @@ def test_send_prompt_to_identifier(mock_target: MockPromptTarget):
     assert d["id"]
     assert d["__type__"] == "PromptSendingOrchestrator"
     assert d["__module__"] == "pyrit.orchestrator.prompt_sending_orchestrator"
+
+
+def test_orchestrator_get_memory(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+
+    request = PromptRequestPiece(
+        role="user",
+        original_prompt_text="test",
+        orchestrator_identifier=orchestrator.get_identifier(),
+    ).to_prompt_request_response()
+
+    orchestrator._memory.add_request_response_to_memory(request=request)
+
+    entries = orchestrator.get_memory()
+    assert entries
+    assert len(entries) == 1

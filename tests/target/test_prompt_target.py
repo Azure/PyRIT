@@ -9,8 +9,7 @@ from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
 
@@ -70,7 +69,7 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
         labels={},
     )
 
-    chats = azure_openai_target._memory.get_prompt_entries_with_conversation_id(conversation_id="1")
+    chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "system"
     assert chats[0].converted_prompt_text == "system prompt"
@@ -90,7 +89,7 @@ def test_send_prompt_user_no_system(
 
         azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
-        chats = azure_openai_target._memory.get_prompt_entries_with_conversation_id(
+        chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(
             conversation_id=request.conversation_id
         )
         assert len(chats) == 2, f"Expected 2 chats, got {len(chats)}"
@@ -120,7 +119,7 @@ def test_send_prompt_with_system(
 
         azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
-        chats = azure_openai_target._memory.get_prompt_entries_with_conversation_id(conversation_id="1")
+        chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(conversation_id="1")
         assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
         assert chats[0].role == "system"
         assert chats[1].role == "user"

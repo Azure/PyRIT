@@ -8,7 +8,7 @@ import pytest
 
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import TextTarget
 
 from tests.mocks import get_memory_interface
@@ -33,7 +33,7 @@ def test_send_prompt_user_no_system(memory_interface: MemoryInterface, sample_en
 
     no_op.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
-    chats = no_op._memory.get_prompt_entries_with_conversation_id(conversation_id=request.conversation_id)
+    chats = no_op._memory._get_prompt_pieces_with_conversation_id(conversation_id=request.conversation_id)
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "user"
 

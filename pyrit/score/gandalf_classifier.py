@@ -10,7 +10,7 @@ import uuid
 from pyrit.completion.gandalf_completion import GandalfLevel
 from pyrit.score import Score, SupportTextClassification
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, GandalfLevel
 
 
 class GandalfScorer(SupportTextClassification):
