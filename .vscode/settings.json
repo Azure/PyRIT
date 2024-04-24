@@ -5,6 +5,3 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true
 }
-{
-    "codeQL.githubDatabase.download": "never"
-}

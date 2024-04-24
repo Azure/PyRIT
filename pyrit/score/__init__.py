@@ -14,6 +14,8 @@ from pyrit.score.substring_scorer import SubStringScorer
 from pyrit.score.text import TextConversationTokenFinder
 from pyrit.score.azure_content_filter import AzureContentFilter
 from pyrit.score.crescendo_scorer import CrescendoScorer
+from pyrit.score.substring_scorer import SubStringScorer
+
 
 __all__ = [
     "Score",

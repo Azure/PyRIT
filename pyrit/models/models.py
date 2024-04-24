@@ -278,6 +278,22 @@ class ScorerStrategy:
         return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
 
 
+class ToolCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    type: str
+    function: str
+
+
+class ChatMessage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: ChatMessageRole
+    content: str
+    name: Optional[str] = None
+    tool_calls: Optional[list[ToolCall]] = None
+    tool_call_id: Optional[str] = None
+
+
 class EmbeddingUsageInformation(BaseModel):
     model_config = ConfigDict(extra="forbid")
     prompt_tokens: int
