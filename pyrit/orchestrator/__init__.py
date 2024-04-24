@@ -11,6 +11,7 @@ from pyrit.orchestrator.xpia_orchestrator import (
     XPIAOrchestrator,
     XPIAManualProcessingOrchestrator,
 )
+from pyrit.orchestrator.crescendo_orchestrator import CrescendoOrchestrator
 
 __all__ = [
     "Orchestrator",
@@ -21,4 +22,5 @@ __all__ = [
     "XPIATestOrchestrator",
     "XPIAOrchestrator",
     "XPIAManualProcessingOrchestrator",
+    "CrescendoOrchestrator",
 ]
