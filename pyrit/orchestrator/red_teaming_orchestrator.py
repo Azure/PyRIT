@@ -77,7 +77,7 @@ class RedTeamingOrchestrator(Orchestrator):
         """
         Retrieves the memory associated with the red teaming orchestrator.
         """
-        return self._memory.get_prompt_entries_by_orchestrator(self)
+        return self._memory._get_prompt_pieces_by_orchestrator(self)
 
     @abc.abstractmethod
     def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role: str) -> bool:

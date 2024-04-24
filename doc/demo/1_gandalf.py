@@ -50,10 +50,9 @@ import os
 import textwrap
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.prompt_target import GandalfTarget, AzureOpenAIChatTarget
+from pyrit.prompt_target import GandalfTarget, GandalfLevel, AzureOpenAIChatTarget
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator
 from pyrit.common import default_values
-from pyrit.completion import GandalfLevel
 from pyrit.score import GandalfBinaryScorer
 from pyrit.models import AttackStrategy
 

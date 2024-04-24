@@ -101,9 +101,6 @@ class PromptRequestPiece(abc.ABC):
 
         self.response_error = response_error
 
-    def is_sequence_set(self) -> bool:
-        return self.sequence != -1
-
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=self.role, content=self.converted_prompt_text)
 

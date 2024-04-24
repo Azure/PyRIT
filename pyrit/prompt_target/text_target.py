@@ -28,7 +28,7 @@ class TextTarget(PromptTarget):
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._text_stream.write(f"{str(prompt_request)}\n")
-        self._memory.add_request_pieces_to_memory(request_pieces=prompt_request.request_pieces)
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         return None
 

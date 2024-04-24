@@ -108,6 +108,7 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
             original_prompt_text="original prompt text",
             converted_prompt_text="Hello, how are you?",
             conversation_id="12345",
+            sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
@@ -115,6 +116,7 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
             original_prompt_text="original prompt text",
             converted_prompt_text="I'm fine, thank you!",
             conversation_id="12345",
+            sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(

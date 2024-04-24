@@ -1,14 +1,23 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pytest
 import time
 
 from datetime import datetime
 from unittest.mock import MagicMock
 from pyrit.models import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse, group_conversation_request_pieces_by_sequence
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 from tests.mocks import MockPromptTarget
+
+from tests.mocks import get_sample_conversations
+
+
+@pytest.fixture
+def sample_conversations() -> list[PromptRequestPiece]:
+    return get_sample_conversations()
 
 
 def test_id_set():
@@ -29,20 +38,6 @@ def test_datetime_set():
         converted_prompt_text="Hello",
     )
     assert entry.timestamp > now
-
-
-def test_is_sequence_set_false():
-    entry = PromptRequestPiece(
-        role="user",
-        original_prompt_text="Hello",
-        converted_prompt_text="Hello",
-    )
-    assert entry.is_sequence_set() is False
-
-
-def test_is_sequence_set_true():
-    entry = PromptRequestPiece(role="user", original_prompt_text="Hello", converted_prompt_text="Hello", sequence=1)
-    assert entry.is_sequence_set()
 
 
 def test_converters_serialize():
@@ -99,3 +94,67 @@ def test_hashes_generated():
 
     assert entry.original_prompt_data_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
     assert entry.converted_prompt_data_sha256 == "be98c2510e417405647facb89399582fc499c3de4452b3014857f92e6baad9a9"
+
+
+def test_prompt_response_validate(sample_conversations: list[PromptRequestPiece]):
+    for c in sample_conversations:
+        c.conversation_id = sample_conversations[0].conversation_id
+
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    request_response.validate()
+
+
+def test_prompt_response_empty_throws():
+    request_response = PromptRequestResponse(request_pieces=[])
+    with pytest.raises(ValueError, match="Empty request pieces."):
+        request_response.validate()
+
+
+def test_prompt_response_validate_conversation_id_throws(sample_conversations: list[PromptRequestPiece]):
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="Conversation ID mismatch."):
+        request_response.validate()
+
+
+def test_prompt_response_converted_empty_throws(sample_conversations: list[PromptRequestPiece]):
+    for c in sample_conversations:
+        c.conversation_id = sample_conversations[0].conversation_id
+
+    sample_conversations[0].converted_prompt_text = None
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="Converted prompt text is None."):
+        request_response.validate()
+
+
+def test_group_conversation_request_pieces_throws(sample_conversations: list[PromptRequestPiece]):
+    with pytest.raises(ValueError, match="Conversation ID must match."):
+        group_conversation_request_pieces_by_sequence(sample_conversations)
+
+
+def test_group_conversation_request_pieces(sample_conversations: list[PromptRequestPiece]):
+    convo_group = [
+        entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
+    ]
+    groups = group_conversation_request_pieces_by_sequence(convo_group)
+    assert groups
+    assert len(groups) == 1
+    assert groups[0].request_pieces[0].sequence == 0
+
+
+def test_group_conversation_request_pieces_multiple_groups(sample_conversations: list[PromptRequestPiece]):
+    convo_group = [
+        entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
+    ]
+    convo_group.append(
+        PromptRequestPiece(
+            role="user",
+            original_prompt_text="Hello",
+            conversation_id=convo_group[0].conversation_id,
+            sequence=1,
+        )
+    )
+    groups = group_conversation_request_pieces_by_sequence(convo_group)
+    assert groups
+    assert len(groups) == 2
+    assert groups[0].request_pieces[0].sequence == 0
+    assert groups[1].request_pieces[0].sequence == 1
