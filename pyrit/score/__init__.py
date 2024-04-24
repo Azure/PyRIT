@@ -16,6 +16,8 @@ from pyrit.score.gpt_classifier import (
 from pyrit.score.markdown_injection import MarkdownInjectionClassifier
 from pyrit.score.substring_scorer import SubStringScorer
 from pyrit.score.text import TextConversationTokenFinder
+from pyrit.score.azure_content_filter import AzureContentFilter
+from pyrit.score.crescendo_scorer import CrescendoScorer
 
 __all__ = [
     "Score",
@@ -34,4 +36,6 @@ __all__ = [
     "MarkdownInjectionClassifier",
     "SubStringScorer",
     "TextConversationTokenFinder",
+    "AzureContentFilter",
+    "CrescendoScorer",
 ]
