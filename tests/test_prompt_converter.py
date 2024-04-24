@@ -12,6 +12,8 @@ from pyrit.prompt_converter import (
     TranslationConverter,
     RandomCapitalLettersConverter,
     AzureSpeechTextToAudioConverter,
+    SearchReplaceConverter,
+    LeetspeakConverter,
 )
 import pytest
 
@@ -113,6 +115,20 @@ def test_unicode_confusable_converter() -> None:
     converter = UnicodeConfusableConverter(deterministic=True)
     output = converter.convert(prompt="lorem ipsum dolor sit amet", input_type="text")
     assert output.output_text == "ïỎ𐒴ḕ𝗠 ïṗṡ𝘶𝗠 𝑫ỎïỎ𐒴 ṡï𝚝 ḁ𝗠ḕ𝚝"
+    assert output.output_type == "text"
+
+
+def test_character_replacement_converter() -> None:
+    converter = SearchReplaceConverter(old_value=" ", new_value="_")
+    output = converter.convert(prompt="Hello World !", input_type="text")
+    assert output.output_text == "Hello_World_!"
+    assert output.output_type == "text"
+
+
+def test_leetcode_converter() -> None:
+    converter = LeetspeakConverter()
+    output = converter.convert(prompt="mood", input_type="text")
+    assert output.output_text == "m00d"
     assert output.output_type == "text"
 
 

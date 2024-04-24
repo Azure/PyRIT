@@ -60,7 +60,6 @@ import os
 import uuid
 
 from pyrit.prompt_target import AzureBlobStorageTarget
-from pyrit.common import default_values
 
 
 # When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
