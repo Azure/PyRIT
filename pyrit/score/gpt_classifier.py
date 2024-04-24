@@ -6,6 +6,7 @@ import uuid
 import yaml
 
 from dataclasses import dataclass
+import enum
 from pathlib import Path
 from typing import Union
 
@@ -21,24 +22,28 @@ class Category:
     description: str
 
 
-# System prompt templates
-CLASSIFICATION_SYSTEM_PROMPT = Path(SCORING_INSTRUCTIONS_PATH, "classification_system_prompt.yaml").resolve()
-LIKERT_SYSTEM_PROMPT = Path(SCORING_INSTRUCTIONS_PATH, "likert_system_prompt.yaml").resolve()
+class ScoringInstructions(enum.Enum):
+    CLASSIFICATION_SYSTEM_PROMPT = Path(SCORING_INSTRUCTIONS_PATH, "classification_system_prompt.yaml").resolve()
+    LIKERT_SYSTEM_PROMPT = Path(SCORING_INSTRUCTIONS_PATH, "likert_system_prompt.yaml").resolve()
 
-# Classifier / Likert scale categories
-CURRENT_EVENTS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "current_events.yaml").resolve()
-CYBER_SCALE = Path(LIKERT_SCALES_PATH, "cyber.yaml").resolve()
-FAIRNESS_BIAS_SCALE = Path(LIKERT_SCALES_PATH, "fairness_bias.yaml").resolve()
-HATE_SPEECH_SCALE = Path(LIKERT_SCALES_PATH, "hate_speech.yaml").resolve()
-PERSUASION_SCALE = Path(LIKERT_SCALES_PATH, "persuasion.yaml").resolve()
-PHISH_EMAILS_SCALE = Path(LIKERT_SCALES_PATH, "phish_emails.yaml").resolve()
-POLITICAL_MISINFO_SCALE = Path(LIKERT_SCALES_PATH, "political_misinfo.yaml").resolve()
-PROMPT_INJECTION_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "prompt_injection_detector.yaml").resolve()
-QUESTION_ANSWERING_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "question_answering.yaml").resolve()
-SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
-SEXUAL_SCALE = Path(LIKERT_SCALES_PATH, "sexual.yaml").resolve()
-VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
 
+class ContentClassifiers(enum.Enum):
+    CURRENT_EVENTS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "current_events.yaml").resolve()
+    PROMPT_INJECTION_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "prompt_injection_detector.yaml").resolve()
+    QUESTION_ANSWERING_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "question_answering.yaml").resolve()
+    SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
+
+
+class LikertScales(enum.Enum):
+    CYBER_SCALE = Path(LIKERT_SCALES_PATH, "cyber.yaml").resolve()
+    FAIRNESS_BIAS_SCALE = Path(LIKERT_SCALES_PATH, "fairness_bias.yaml").resolve()
+    HATE_SPEECH_SCALE = Path(LIKERT_SCALES_PATH, "hate_speech.yaml").resolve()
+    PERSUASION_SCALE = Path(LIKERT_SCALES_PATH, "persuasion.yaml").resolve()
+    PHISH_EMAILS_SCALE = Path(LIKERT_SCALES_PATH, "phish_emails.yaml").resolve()
+    POLITICAL_MISINFO_SCALE = Path(LIKERT_SCALES_PATH, "political_misinfo.yaml").resolve()
+    SEXUAL_SCALE = Path(LIKERT_SCALES_PATH, "sexual.yaml").resolve()
+    VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
+    
 
 class SelfAskScore(SupportTextClassification):
     """A class that represents a self-ask score for text classification and scoring.
@@ -47,6 +52,7 @@ class SelfAskScore(SupportTextClassification):
     a prompt template path, and classifier categories path as input.
 
     Args:
+        TODO: update Args data types!
         prompt_template_path (pathlib.Path | str): The path to the prompt template file.
         content_classifier (pathlib.Path | str): The path to the classifier categories file.
         chat_target (PromptChatTarget): The chat target to interact with.
@@ -55,17 +61,17 @@ class SelfAskScore(SupportTextClassification):
 
     def __init__(
         self,
-        prompt_template_path: Union[str, Path],
-        content_classifier: Union[str, Path],
+        prompt_template_path: ScoringInstructions,
+        content_classifier: Union[ContentClassifiers, LikertScales],
         chat_target: PromptChatTarget,
-    ) -> None:
+    ) -> None:       
         # Create the system prompt with the categories
         categories_as_string = ""
-        category_file_contents = yaml.safe_load(Path(content_classifier).read_text(encoding="utf-8"))
+        category_file_contents = yaml.safe_load(Path(content_classifier.value).read_text(encoding="utf-8"))
         for k, v in category_file_contents.items():
             category = Category(name=k, description=v)
             categories_as_string += f"'{category.name}': {category.description}\n"
-        prompt_template = PromptTemplate.from_yaml_file(Path(prompt_template_path))
+        prompt_template = PromptTemplate.from_yaml_file(Path(prompt_template_path.value))
         self._system_prompt = prompt_template.apply_custom_metaprompt_parameters(categories=categories_as_string)
 
         self._chat_target: PromptChatTarget = chat_target
@@ -129,12 +135,12 @@ class SelfAskScore(SupportTextClassification):
 class SelfAskGptClassifier(SelfAskScore):
     def __init__(
         self,
-        content_classifier: Union[str, Path],
+        content_classifier: ContentClassifiers,
         chat_target: PromptChatTarget,
     ) -> None:
 
         super().__init__(
-            prompt_template_path=CLASSIFICATION_SYSTEM_PROMPT,
+            prompt_template_path=ScoringInstructions.CLASSIFICATION_SYSTEM_PROMPT,
             content_classifier=content_classifier,
             chat_target=chat_target,
         )
@@ -143,12 +149,12 @@ class SelfAskGptClassifier(SelfAskScore):
 class SelfAskGptLikertScale(SelfAskScore):
     def __init__(
         self,
-        content_classifier: Union[str, Path],
+        content_classifier: LikertScales,
         chat_target: PromptChatTarget,
     ) -> None:
 
         super().__init__(
-            prompt_template_path=LIKERT_SYSTEM_PROMPT,
+            prompt_template_path=ScoringInstructions.LIKERT_SYSTEM_PROMPT,
             content_classifier=content_classifier,
             chat_target=chat_target,
         )
