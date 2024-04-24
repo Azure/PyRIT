@@ -34,7 +34,7 @@ def test_memory(memory: MemoryInterface):
 
 def test_conversation_memory_empty_by_default(memory: MemoryInterface):
     expected_count = 0
-    c = memory.get_all_prompt_entries()
+    c = memory.get_all_prompt_pieces()
     assert len(c) == expected_count
 
 
@@ -48,7 +48,7 @@ def test_add_request_pieces_to_memory(
     request_response = PromptRequestResponse(request_pieces=sample_conversations[:num_conversations])
 
     memory.add_request_response_to_memory(request=request_response)
-    assert len(memory.get_all_prompt_entries()) == num_conversations
+    assert len(memory.get_all_prompt_pieces()) == num_conversations
 
 
 def test_add_request_pieces_to_memory_calls_validate(memory: MemoryInterface):

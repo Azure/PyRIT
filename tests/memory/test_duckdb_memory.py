@@ -339,7 +339,7 @@ def test_get_all_memory(setup_duckdb_database, sample_conversation_entries):
     setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
-    all_entries = setup_duckdb_database.get_all_prompt_entries()
+    all_entries = setup_duckdb_database.get_all_prompt_pieces()
     assert len(all_entries) == 3
 
 

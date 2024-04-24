@@ -79,7 +79,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def get_all_prompt_entries(self) -> list[PromptRequestPiece]:
+    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
@@ -101,7 +101,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
+            list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
         """
         try:
             return self.query_entries(
@@ -113,14 +113,14 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
 
     def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
         """
-        Retrieves a list of PromptMemoryEntry objects that have the specified orchestrator ID.
+        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
         Args:
             orchestrator_id (str): The id of the orchestrator.
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptMemoryEntry]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
+            list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
         """
         try:
             return self.query_entries(

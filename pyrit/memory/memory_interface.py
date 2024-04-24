@@ -39,7 +39,7 @@ class MemoryInterface(abc.ABC):
         self.memory_embedding = None
 
     @abc.abstractmethod
-    def get_all_prompt_entries(self) -> list[PromptRequestPiece]:
+    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
         """
         Loads all ConversationData from the memory storage handler.
         """
@@ -59,7 +59,7 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
+            list[PromptRequestPiece]: A list of chat memory entries with the specified conversation ID.
         """
 
     @abc.abstractmethod
@@ -72,7 +72,7 @@ class MemoryInterface(abc.ABC):
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptMemoryEntry]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
+            list[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
     @abc.abstractmethod

@@ -22,7 +22,7 @@ class PromptChatTarget(PromptTarget):
         """
         Sets the system prompt for the prompt target. May be overridden by subclasses.
         """
-        messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        messages = self._memory.get_conversation(conversation_id=conversation_id)
 
         if messages:
             raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
