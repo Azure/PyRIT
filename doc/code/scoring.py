@@ -32,4 +32,33 @@ with AzureOpenAIChatTarget() as azure_openai_chat_target:
     scored_response = prompt_injection_classifier.score_text(text=text_without_dan_injection_response)
     print("Scored response is given as:", scored_response)
 
+# %% [markdown]
+#
+# Score text using Azure Content Safety API
+#
+# In order to use this API, you need to configure a few environment variables:
+# AZURE_CONTENT_SAFETY_API_ENDPOINT: The endpoint for the Azure Content Safety API
+# AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API
+#
+
+
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+import os
+from azure.ai.contentsafety.models import TextCategory
+from pyrit.score import AzureContentFilter
+from pyrit.common import default_values
+
+default_values.load_default_env()
+
+
+# Set up the Azure Content Filter
+azure_content_filter = AzureContentFilter(
+    azure_content_safety_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
+    azure_content_safety_endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
+    harm_category=TextCategory.HATE,
+)
+
+score = azure_content_filter.score_text("I hate you.")
+print(score)  # should be value 2 base on the documentation
