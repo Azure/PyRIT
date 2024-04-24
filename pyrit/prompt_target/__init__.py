@@ -11,7 +11,7 @@ from pyrit.prompt_target.text_target import TextTarget
 from pyrit.prompt_target.tts_target import AzureTTSTarget
 from pyrit.prompt_target.dall_e_target import DALLETarget
 from pyrit.prompt_target.prompt_chat_target.ollama_chat_target import OllamaChatTarget
-
+from pyrit.prompt_target.crescendo_target import CrescendoLLM
 
 __all__ = [
     "AzureBlobStorageTarget",
@@ -26,4 +26,5 @@ __all__ = [
     "PromptTarget",
     "TextTarget",
     "OllamaChatTarget",
+    "CrescendoLLM"
 ]
