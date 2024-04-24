@@ -14,6 +14,7 @@ from pyrit.prompt_converter import (
     AzureSpeechTextToAudioConverter,
 )
 import pytest
+import os
 
 from tests.mocks import MockPromptTarget
 from unittest.mock import patch, MagicMock
@@ -154,6 +155,8 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
     "pyrit.common.default_values.get_required_value",
     side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
 )
+@patch.dict(os.environ, {"AZURE_SPEECH_REGION": "dummy_value"}, clear=True)
+@patch.dict(os.environ, {"AZURE_SPEECH_KEY_TOKEN": "dummy_value"}, clear=True)
 def test_send_prompt_to_audio_file(
     mock_get_required_value, mock_mkdir, mock_isdir, MockSpeechConfig, MockSpeechSynthesizer
 ):
