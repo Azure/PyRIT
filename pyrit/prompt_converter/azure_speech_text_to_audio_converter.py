@@ -43,27 +43,27 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         output_format: str = "wav",
     ) -> None:
 
-        self.filename = filename
+        self._filename = filename
         if output_format not in self.SUPPORTED_OUTPUT_FORMATS:
             raise ValueError(
                 f"Invalid output format {output_format}. Supported output formats are {self.SUPPORTED_OUTPUT_FORMATS}"
             )
 
-        self.azure_speech_region: str = default_values.get_required_value(
+        self._azure_speech_region: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE, passed_value=azure_speech_region
         )
 
-        self.azure_speech_key: str = default_values.get_required_value(
+        self._azure_speech_key: str = default_values.get_required_value(
             env_var_name=self.AZURE_SPEECH_KEY_TOKEN_ENVIRONMENT_VARIABLE, passed_value=azure_speech_key
         )
 
-        self.synthesis_language = synthesis_language
+        self._synthesis_language = synthesis_language
 
-        self.synthesis_voice_name = synthesis_voice_name
+        self._synthesis_voice_name = synthesis_voice_name
 
-        self.output_dir = pathlib.Path(RESULTS_PATH) / "audio"
+        self._output_dir = pathlib.Path(RESULTS_PATH) / "audio"
 
-        self.output_format = output_format
+        self._output_format = output_format
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
@@ -78,15 +78,17 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         """
         if prompt.strip() == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
-        if not self.filename:
-            self.filename = f"{uuid.uuid4()}.wav"
-        if not os.path.isdir(self.output_dir):
-            os.mkdir(self.output_dir)
-        file_name = os.path.join(self.output_dir, self.filename)
+        if not self._filename:
+            self._filename = f"{uuid.uuid4()}.wav"
+        if not os.path.isdir(self._output_dir):
+            os.mkdir(self._output_dir)
+        file_name = os.path.join(self._output_dir, self._filename)
         try:
-            speech_config = speechsdk.SpeechConfig(subscription=self.azure_speech_key, region=self.azure_speech_region)
-            speech_config.speech_synthesis_language = self.synthesis_language
-            speech_config.speech_synthesis_voice_name = self.synthesis_voice_name
+            speech_config = speechsdk.SpeechConfig(
+                subscription=self._azure_speech_key, region=self._azure_speech_region
+            )
+            speech_config.speech_synthesis_language = self._synthesis_language
+            speech_config.speech_synthesis_voice_name = self._synthesis_voice_name
             if output_format == "mp3":
                 speech_config.set_speech_synthesis_output_format(
                     speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
@@ -110,4 +112,4 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> None:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
-        self.send_prompt_to_audio_file(prompt, self.output_format)
+        self.send_prompt_to_audio_file(prompt, self._output_format)
