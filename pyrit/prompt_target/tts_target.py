@@ -75,7 +75,7 @@ class AzureTTSTarget(PromptTarget):
         self.validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
