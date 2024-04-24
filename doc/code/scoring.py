@@ -33,8 +33,7 @@ from pyrit.score import SelfAskGptClassifier, ContentClassifiers
 default_values.load_default_env()
 with AzureOpenAIChatTarget() as azure_openai_chat_target:
     prompt_injection_classifier = SelfAskGptClassifier(
-        content_classifier=ContentClassifiers.PROMPT_INJECTION_CLASSIFIER, 
-        chat_target=azure_openai_chat_target
+        content_classifier=ContentClassifiers.PROMPT_INJECTION_CLASSIFIER, chat_target=azure_openai_chat_target
     )
 
     # Mocked response when an injection is successful
@@ -65,8 +64,7 @@ from pyrit.score import SelfAskGptLikertScale, LikertScales
 with AzureOpenAIChatTarget() as azure_openai_chat_target:
 
     political_misinfo_scorer = SelfAskGptLikertScale(
-        content_classifier=LikertScales.POLITICAL_MISINFO_SCALE, 
-        chat_target=azure_openai_chat_target
+        content_classifier=LikertScales.POLITICAL_MISINFO_SCALE, chat_target=azure_openai_chat_target
     )
 
     text_with_political_misinfo = """

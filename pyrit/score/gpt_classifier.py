@@ -43,7 +43,7 @@ class LikertScales(enum.Enum):
     POLITICAL_MISINFO_SCALE = Path(LIKERT_SCALES_PATH, "political_misinfo.yaml").resolve()
     SEXUAL_SCALE = Path(LIKERT_SCALES_PATH, "sexual.yaml").resolve()
     VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
-    
+
 
 class SelfAskScore(SupportTextClassification):
     """A class that represents a self-ask score for text classification and scoring.
@@ -64,7 +64,7 @@ class SelfAskScore(SupportTextClassification):
         prompt_template_path: ScoringInstructions,
         content_classifier: Union[ContentClassifiers, LikertScales],
         chat_target: PromptChatTarget,
-    ) -> None:       
+    ) -> None:
         # Create the system prompt with the categories
         categories_as_string = ""
         category_file_contents = yaml.safe_load(Path(content_classifier.value).read_text(encoding="utf-8"))
