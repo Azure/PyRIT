@@ -163,3 +163,11 @@ def test_send_prompt_to_audio_file(MockSpeechConfig, MockSpeechSynthesizer):
             mock_logger
             MockSpeechConfig.assert_called_once_with(subscription="fake_key", region="dummy_name")
             mock_synthesizer.speak_text_async.assert_called_once_with(prompt)
+
+
+def test_send_prompt_to_audio_file_raises_value_error() -> None:
+    converter = AzureSpeechTextToAudioConverter(filename="test.mp3", output_format="mp3")
+    # testing empty space string
+    prompt = "     "
+    with pytest.raises(ValueError):
+        assert converter.convert(prompt=prompt, input_type="text")  # type: ignore

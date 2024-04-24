@@ -65,7 +65,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
         self.output_format = output_format
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
     def send_prompt_to_audio_file(self, prompt: str, output_format: str):
@@ -76,7 +76,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         Raises:
             ValueError: Any issues in validation or execution.
         """
-        if prompt == "":
+        if prompt.strip() == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
         if not self.filename:
             self.filename = f"{uuid.uuid4()}.wav"
@@ -108,6 +108,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             raise
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> None:
-        if not self.is_supported(input_type):
+        if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
         self.send_prompt_to_audio_file(prompt, self.output_format)
