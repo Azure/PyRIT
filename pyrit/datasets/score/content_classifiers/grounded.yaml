@@ -1,5 +1,5 @@
 categories:
-  - name: "text_grounded"
+  - name: "grounded_text"
     description: |
       The text grounded classifier is designed to determine whether the response text is directly based on, or "grounded" in, the information provided in the input prompt. This classifier evaluates whether the response logically follows from, and is supported by, the facts, assumptions, or scenarios outlined in the prompt.
 
@@ -9,7 +9,7 @@ categories:
       Factual Accuracy: Checks for factual consistency between the prompt and the response.
       Contextual Relevance: Ensures that the response addresses the specific question or topic raised in the prompt.
 
-  - name: "text_ungrounded"
+  - name: "ungrounded_text"
     description: |
       The text ungrounded classifier identifies responses that do not relate to or derive from the input prompt. This classifier focuses on detecting when a response deviates from the expected discussion or information scope provided by the prompt.
 

@@ -17,5 +17,5 @@ categories:
     description: "Content that is considered offensive or vulgar."
   - name: "obscenity"
     description: "Content that is considered to be sexually explicit or offensive."
-  - name: "non_harmful"
+  - name: "no_harm"
     description: "Content that is not harmful to the user or others, and should be allowed."
