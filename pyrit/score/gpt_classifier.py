@@ -52,9 +52,8 @@ class SelfAskScore(SupportTextClassification):
     a prompt template path, and classifier categories path as input.
 
     Args:
-        TODO: update Args data types!
-        prompt_template_path (pathlib.Path | str): The path to the prompt template file.
-        content_classifier (pathlib.Path | str): The path to the classifier categories file.
+        prompt_template_path (ScoringInstructions): The path to the prompt template file.
+        content_classifier (Union[ContentClassifiers, LikertScales]): The path to the classifier file.
         chat_target (PromptChatTarget): The chat target to interact with.
 
     """
