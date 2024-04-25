@@ -4,7 +4,7 @@
 from typing import Generator
 from pyrit.interfaces import SupportTextClassification
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.orchestrator.xpia_orchestrator import (
+from pyrit.orchestrator import (
     XPIATestOrchestrator,
     XPIAOrchestrator,
     XPIAManualProcessingOrchestrator,
