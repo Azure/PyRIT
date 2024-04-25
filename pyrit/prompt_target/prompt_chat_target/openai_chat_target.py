@@ -3,7 +3,6 @@
 
 from abc import abstractmethod
 import logging
-import json
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
@@ -35,17 +34,15 @@ class OpenAIChatInterface(PromptChatTarget):
         pass
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        
-        request_pieces = prompt_request.request_pieces
-        self._memory.add_request_pieces_to_memory(request_pieces=request_pieces)
-        
-        first_request_conversation_id = request_pieces[0].conversation_id
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=first_request_conversation_id)
-        for prompt_request_piece in request_pieces:
-            prompt_request_piece.sequence = len(messages)
-            
-        logger.info(f"Sending the following prompt to the prompt target: {request_pieces}")
 
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
+
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages.append(request.to_chat_message())
+
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         resp_text = self._complete_chat(
             messages=messages,
@@ -60,21 +57,20 @@ class OpenAIChatInterface(PromptChatTarget):
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-        response_entry = self._memory.add_response_entries_to_memory(request=request_pieces[0], response_text_pieces=[resp_text])
+        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
 
         return response_entry
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        request_pieces = prompt_request.request_pieces
-        self._memory.add_request_pieces_to_memory(request_pieces=request_pieces)
-        
-        first_request_conversation_id = request_pieces[0].conversation_id
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=first_request_conversation_id)
-        for prompt_request_piece in request_pieces:
-            prompt_request_piece.sequence = len(messages)
-            
-        logger.info(f"Sending the following prompt to the prompt target: {request_pieces}")
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
+
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages.append(request.to_chat_message())
+
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         resp_text = await self._complete_chat_async(
             messages=messages,
@@ -89,7 +85,7 @@ class OpenAIChatInterface(PromptChatTarget):
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-        response_entry = self._memory.add_response_entries_to_memory(request=request_pieces[0], response_text_pieces=[resp_text])
+        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
 
         return response_entry
 
@@ -197,7 +193,6 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_ENDPOINT"
     DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_DEPLOYMENT"
-    ADDITIONAL_REQUEST_HEADERS: str = "AZURE_OPENAI_CHAT_ADDITIONAL_REQUEST_HEADERS"
 
     def __init__(
         self,
@@ -205,7 +200,6 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
-        headers: dict = None,
         memory: MemoryInterface = None,
         api_version: str = "2023-08-01-preview",
         max_tokens: int = 1024,
@@ -228,7 +222,6 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
                 "2023-08-01-preview".
-            headers (dict, optional): Headers of the endpoint. 
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
@@ -257,30 +250,16 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         api_key = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
-        final_headers: dict = {}
-        try:
-            request_headers = default_values.get_required_value(
-                env_var_name=self.ADDITIONAL_REQUEST_HEADERS, passed_value=headers
-            )
-            if isinstance(request_headers, str):
-                try:
-                    final_headers = json.loads(request_headers)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error decoding JSON: {e}")
-        except ValueError:
-            logger.info("No headers have been passed, setting empty default headers")
-            
+
         self._client = AzureOpenAI(
             api_key=api_key,
             api_version=api_version,
             azure_endpoint=endpoint,
-            default_headers=final_headers
         )
         self._async_client = AsyncAzureOpenAI(
             api_key=api_key,
             api_version=api_version,
             azure_endpoint=endpoint,
-            default_headers=final_headers
         )
 
 

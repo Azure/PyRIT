@@ -20,7 +20,7 @@ memory.print_schema()
 
 
 from uuid import uuid4
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
 conversation_id = str(uuid4())
 
@@ -38,7 +38,7 @@ message_list = [
     ),
 ]
 
-memory.add_request_pieces_to_memory(request_pieces=message_list)
+memory.add_request_response_to_memory(request=PromptRequestResponse(message_list))
 
 
 entries = memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)
@@ -54,10 +54,10 @@ update_fileds = {"converted_prompt_text": "this is updated field"}
 memory.update_entries_by_conversation_id(conversation_id=conversation_id, update_fields=update_fileds)
 
 
-prompt_entries = memory.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
+prompt_entries = memory.get_conversation(conversation_id=conversation_id)
 
-for entry in prompt_entries:
-    print(entry)
+for prompt_entry in prompt_entries:
+    print(prompt_entry)
 
 # %%
 # Cleanup memory resources
