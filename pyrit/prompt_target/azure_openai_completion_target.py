@@ -124,7 +124,9 @@ class AzureOpenAICompletionTarget(PromptTarget):
             object=text_response.object,
         )
         response_entry = self._memory.add_response_entries_to_memory(
-            request=request, response_text_pieces=[prompt_response.completion]
+            request=request,
+            response_text_pieces=[prompt_response.completion],
+            prompt_metadata=prompt_response.to_json(),
         )
 
         return response_entry
