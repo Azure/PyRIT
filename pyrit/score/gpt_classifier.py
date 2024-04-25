@@ -45,7 +45,7 @@ class LikertScales(enum.Enum):
     VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
 
 
-class SelfAskScore(SupportTextClassification):
+class SelfAskScorer(SupportTextClassification):
     """A class that represents a self-ask score for text classification and scoring.
 
     This class is responsible for scoring text using a self-ask approach. It takes a chat target,
@@ -76,13 +76,11 @@ class SelfAskScore(SupportTextClassification):
         self._chat_target: PromptChatTarget = chat_target
         self._conversation_id = str(uuid.uuid4())
         self._normalizer_id = None  # Normalizer not used
-        self.labels = {"scorer": "self_ask_scorer"}
 
         self._chat_target.set_system_prompt(
             system_prompt=self._system_prompt,
             conversation_id=self._conversation_id,
             orchestrator_identifier=None,
-            labels=self.labels,
         )
 
     # @tenacity.retry(wait=tenacity.wait_fixed(1), stop=tenacity.stop_after_attempt(8))
@@ -106,7 +104,6 @@ class SelfAskScore(SupportTextClassification):
                     role="user",
                     original_prompt_text=text,
                     conversation_id=self._conversation_id,
-                    labels=self.labels,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
             ]
@@ -131,7 +128,7 @@ class SelfAskScore(SupportTextClassification):
             raise ValueError(f"Invalid JSON response from chat target: {response_text}") from e
 
 
-class SelfAskGptClassifier(SelfAskScore):
+class SelfAskGptClassifier(SelfAskScorer):
     def __init__(
         self,
         content_classifier: ContentClassifiers,
@@ -145,7 +142,7 @@ class SelfAskGptClassifier(SelfAskScore):
         )
 
 
-class SelfAskGptLikertScale(SelfAskScore):
+class SelfAskGptLikertScale(SelfAskScorer):
     def __init__(
         self,
         content_classifier: LikertScales,

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Optional
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
@@ -16,8 +17,8 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
         Sets the system prompt for the prompt target. May be overridden by subclasses.
@@ -44,8 +45,8 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Sends a text prompt to the target without having to build the prompt request.
@@ -72,8 +73,8 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Sends a text prompt to the target without having to build the prompt request.
