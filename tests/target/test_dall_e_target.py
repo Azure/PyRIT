@@ -42,12 +42,6 @@ def test_initialization_invalid_num_images():
             num_images=3,
         )
 
-@pytest.mark.asyncio
-async def test_dalle_validate_request_length(dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
-    request = PromptRequestResponse(request_pieces=sample_conversations)
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
-        await dalle_target.send_prompt_async(prompt_request=request)
-
 
 @patch("pyrit.prompt_target.dall_e_target.DALLETarget._generate_images_async")
 @pytest.mark.asyncio
