@@ -16,6 +16,7 @@ from pyrit.prompt_converter import (
     LeetspeakConverter,
 )
 import pytest
+import os
 
 from tests.mocks import MockPromptTarget
 from unittest.mock import patch, MagicMock
@@ -180,6 +181,8 @@ def test_send_prompt_to_audio_file(
         speechsdk.ResultReason.SynthesizingAudioCompleted
     )
     MockSpeechSynthesizer.return_value = mock_synthesizer
+    os.environ[AzureSpeechTextToAudioConverter.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE] = "dummy_value"
+    os.environ[AzureSpeechTextToAudioConverter.AZURE_SPEECH_KEY_TOKEN_ENVIRONMENT_VARIABLE] = "dummy_value"
 
     with patch("logging.getLogger") as _:
         converter = AzureSpeechTextToAudioConverter(
