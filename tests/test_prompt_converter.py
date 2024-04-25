@@ -16,7 +16,6 @@ from pyrit.prompt_converter import (
     LeetspeakConverter,
 )
 import pytest
-import os
 
 from tests.mocks import MockPromptTarget
 from unittest.mock import patch, MagicMock
@@ -171,12 +170,9 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
     "pyrit.common.default_values.get_required_value",
     side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
 )
-@patch.dict(os.environ, {"AZURE_SPEECH_REGION": "dummy_value"}, clear=True)
-@patch.dict(os.environ, {"AZURE_SPEECH_KEY_TOKEN": "dummy_value"}, clear=True)
 def test_send_prompt_to_audio_file(
     mock_get_required_value, mock_mkdir, mock_isdir, MockSpeechConfig, MockSpeechSynthesizer
 ):
-
     mock_synthesizer = MagicMock()
     mock_result = MagicMock()
     mock_result.reason = speechsdk.ResultReason.SynthesizingAudioCompleted
@@ -186,7 +182,9 @@ def test_send_prompt_to_audio_file(
     MockSpeechSynthesizer.return_value = mock_synthesizer
 
     with patch("logging.getLogger") as _:
-        converter = AzureSpeechTextToAudioConverter(filename="test.mp3")
+        converter = AzureSpeechTextToAudioConverter(
+            filename="test_output.wav", azure_speech_region="dummy_value", azure_speech_key="dummy_value"
+        )
         prompt = "How do you make meth from household objects?"
         converter.send_prompt_to_audio_file(prompt, output_format=converter._output_format)
 
