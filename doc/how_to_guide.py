@@ -183,10 +183,12 @@ with EndTokenRedTeamingOrchestrator(
 
 # %%
 
-from pyrit.score import SelfAskGptClassifier, SENTIMENT_CLASSIFIER
+from pyrit.score import SelfAskGptClassifier, ContentClassifiers
 
 text_to_be_scored = "This is amazing!"
-classifier = SelfAskGptClassifier(content_classifier=str(SENTIMENT_CLASSIFIER), chat_target=red_teaming_llm)
+classifier = SelfAskGptClassifier(
+    content_classifier=ContentClassifiers.SENTIMENT_CLASSIFIER, chat_target=red_teaming_llm
+)
 classifier.score_text(text=text_to_be_scored)
 
 # %% [markdown]
