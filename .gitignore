@@ -163,5 +163,5 @@ cython_debug/
 doc/generate_docs/cache/*
 !doc/generate_docs/cache/.gitkeep
 
-# Visual Studio Code Settings
+# ignore all VSCode settings
 .vscode/*

@@ -50,7 +50,7 @@ with PromptSendingOrchestrator(
 # %% [markdown]
 # ### Translation Converter
 #
-# Lots of converters are written natively (like `Base64Converter`). Others use LLMs which is slower but allows for transformations that would be much more complicated to write as code. `TranslationConverter` works much like `VariationConverter`, but will translate prompts to given languages, like French, Italian, or leetspeak.
+# Lots of converters are written natively (like `Base64Converter`). Others use LLMs which is slower but allows for transformations that would be much more complicated to write as code. `TranslationConverter` works much like `VariationConverter`, but will translate prompts to given languages, like French or Italian.
 #
 # You can write your own powerful converters by following these examples.  Below shows `TranslationConverter` translating our prompt into the given language. Note language doesn't have to be an actual language, but can be whatever the user provides. Because these are slow (there is one call to the LLM per prompt) it's helpful to run in a batch.
 

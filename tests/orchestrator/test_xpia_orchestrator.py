@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 from typing import Generator
-from pyrit.interfaces import SupportTextClassification
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.orchestrator.xpia_orchestrator import XPIATestOrchestrator
 import pytest
@@ -10,7 +9,7 @@ import pytest
 from unittest.mock import Mock, patch
 
 from pyrit.prompt_target.prompt_target import PromptTarget
-from pyrit.models import Score
+from pyrit.score import Score, SupportTextClassification
 from tests.mocks import get_memory_interface, MockPromptTarget
 
 

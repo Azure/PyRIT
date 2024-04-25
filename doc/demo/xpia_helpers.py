@@ -4,7 +4,7 @@
 from typing import Any
 
 from pyrit.common import default_values
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
 from azure.storage.blob import ContainerClient
@@ -127,7 +127,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             PromptRequestResponse: The processed prompt response.
 
         """
-        self._memory.add_request_pieces_to_memory(request_pieces=prompt_request.request_pieces)
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         request = prompt_request.request_pieces[0]
 

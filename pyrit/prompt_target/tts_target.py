@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
+import concurrent.futures
 import logging
 from typing import Literal
 
@@ -63,13 +65,17 @@ class AzureTTSTarget(PromptTarget):
         )
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        raise NotImplementedError()
+        """
+        Deprecated. Use send_prompt_async instead.
+        """
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
