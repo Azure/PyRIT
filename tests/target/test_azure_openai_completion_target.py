@@ -71,11 +71,11 @@ async def test_azure_complete_async_return(
 ):
     with patch("openai.resources.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = openai_mock_return
-        prompt_request_response: PromptRequestResponse = await azure_completion_target.send_prompt_async(
+        response: PromptRequestResponse = await azure_completion_target.send_prompt_async(
             prompt_request=prompt_request_response
         )
-        assert len(prompt_request_response.request_pieces) == 1
-        assert prompt_request_response.request_pieces[0].converted_prompt_text == "hi"
+        assert len(response.request_pieces) == 1
+        assert response.request_pieces[0].converted_prompt_text == "hi"
 
 
 def test_azure_invalid_key_raises():
