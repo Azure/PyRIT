@@ -4,6 +4,8 @@
 import dotenv
 import os
 
+from typing import Union
+
 from pyrit.common import path
 
 
@@ -21,7 +23,7 @@ def load_default_env() -> None:
     dotenv.load_dotenv(file_path, override=True)
 
 
-def get_required_value(*, env_var_name: str, passed_value: str) -> str:
+def get_required_value(*, env_var_name: str, passed_value: Union[str, dict]) -> str:
     """
     Gets a required value from an environment variable or a passed value,
     prefering the passed value
