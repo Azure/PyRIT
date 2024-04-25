@@ -61,7 +61,7 @@ class DALLETarget(PromptTarget):
         api_version: str = "2024-02-01",
         image_size: ImageSizing = ImageSizing.SIZE1024,
         num_images: int = 1,
-        dalle_version: SupportedDalleVersions = SupportedDalleVersions.V3,
+        dalle_version: SupportedDalleVersions = SupportedDalleVersions.V2,
         memory: MemoryInterface | None = None,
         headers: dict = None,
         quality: str = "standard",
