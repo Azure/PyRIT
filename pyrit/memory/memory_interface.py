@@ -10,7 +10,6 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptRespon
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.memory.memory_chat_message_builder import MemoryChatMessageBuilder
 from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models.prompt_request_response import group_conversation_request_pieces_by_sequence
@@ -32,7 +31,6 @@ class MemoryInterface(abc.ABC):
         self.memory_embedding = embedding_model
         # Initialize the MemoryExporter instance
         self.exporter = MemoryExporter()
-        self._chat_message_builder = MemoryChatMessageBuilder()
 
     def enable_embedding(self, embedding_model=None):
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
