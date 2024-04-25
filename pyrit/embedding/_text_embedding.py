@@ -52,6 +52,3 @@ class _TextEmbedding(EmbeddingSupport, abc.ABC):
             ),
         )
         return embedding_response
-
-    async def generate_text_embedding_async(self, text: str, **kwargs) -> EmbeddingResponse:
-        return await super().generate_text_embedding_async(text=text, **kwargs)

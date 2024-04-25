@@ -13,7 +13,7 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessage
+from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_normalizer.data_type_serializer import data_serializer_factory
 from pyrit.prompt_target import PromptChatTarget
@@ -39,7 +39,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
-        headers: dict = None,
+        headers: str = None,
         memory: MemoryInterface = None,
         api_version: str = "2023-08-01-preview",
         max_tokens: int = 1024,
@@ -62,7 +62,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
                 "2023-08-01-preview".
-            headers (dict, optional): Headers of the endpoint.
+            headers (str, optional): Headers of the endpoint.
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
@@ -143,7 +143,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    def build_chat_messages(self, prompt_req_res_entries: list[PromptRequestResponse]) -> list[ChatMessage]:
+    def build_chat_messages(self, prompt_req_res_entries: list[PromptRequestResponse]) -> list[ChatMessageListContent]:
         """
         Builds chat messages based on prompt request response entries.
 
@@ -151,9 +151,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             prompt_req_res_entries (list[PromptRequestResponse]): A list of PromptRequestResponse objects.
 
         Returns:
-            list[ChatMessage]: The list of constructed chat messages.
+            list[ChatMessageListContent]: The list of constructed chat messages.
         """
-        chat_messages: list[ChatMessage] = []
+        chat_messages: list[ChatMessageListContent] = []
         for prompt_req_resp_entry in prompt_req_res_entries:
             prompt_request_pieces = prompt_req_resp_entry.request_pieces
 
@@ -182,7 +182,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             if not role:
                 raise ValueError("No role could be determined from the prompt request pieces.")
 
-            chat_message = ChatMessage(role=role, content=content)
+            chat_message = ChatMessageListContent(role=role, content=content)
             chat_messages.append(chat_message)
         return chat_messages
 
@@ -253,7 +253,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
     async def _complete_chat_async(
         self,
-        messages: list[ChatMessage],
+        messages: list[ChatMessageListContent],
         max_tokens: int = 1024,
         temperature: float = 1.0,
         top_p: int = 1,
@@ -266,7 +266,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Sends a chat message to the OpenAI chat model and retrieves the generated response.
 
         Args:
-            messages (list[ChatMessage]): The chat message objects containing the role and content.
+            messages (list[ChatMessageListContent]): The chat message objects containing the role and content.
             max_tokens (int, optional): The maximum number of tokens to generate.
                 Defaults to 1024.
             temperature (float, optional): Controls randomness in the response generation.

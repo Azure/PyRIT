@@ -21,30 +21,28 @@ test_conversation_id = str(uuid.uuid4())
 image_path = pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"
 
 request_pieces = [
-PromptRequestPiece(
-    role="user",
-    conversation_id=test_conversation_id,
-    original_prompt_text="Describe this picture:",
-    original_prompt_data_type="text",
-    converted_prompt_data_type="text"
-), 
-PromptRequestPiece(
-    role="user",
-    conversation_id=test_conversation_id,
-    original_prompt_text=str(image_path),
-    original_prompt_data_type="image_path",
-    converted_prompt_data_type="image_path"
-)]
+    PromptRequestPiece(
+        role="user",
+        conversation_id=test_conversation_id,
+        original_prompt_text="Describe this picture:",
+        original_prompt_data_type="text",
+        converted_prompt_data_type="text",
+    ),
+    PromptRequestPiece(
+        role="user",
+        conversation_id=test_conversation_id,
+        original_prompt_text=str(image_path),
+        original_prompt_data_type="image_path",
+        converted_prompt_data_type="image_path",
+    ),
+]
 
 # %%
 prompt_request_response = PromptRequestResponse(request_pieces=request_pieces)
 
 # %%
 with AzureOpenAIGPTVChatTarget() as azure_openai_chat_target:
-    resp = await azure_openai_chat_target.send_prompt_async(prompt_request=prompt_request_response) # type: ignore
+    resp = await azure_openai_chat_target.send_prompt_async(prompt_request=prompt_request_response)  # type: ignore
     print(resp)
 
 # %%
-
-
-

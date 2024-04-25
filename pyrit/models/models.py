@@ -274,7 +274,16 @@ class ToolCall(BaseModel):
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: ChatMessageRole
-    content: Union[str, list[dict]]
+    content: str
+    name: Optional[str] = None
+    tool_calls: Optional[list[ToolCall]] = None
+    tool_call_id: Optional[str] = None
+
+
+class ChatMessageListContent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: ChatMessageRole
+    content: list[dict[str, str]]
     name: Optional[str] = None
     tool_calls: Optional[list[ToolCall]] = None
     tool_call_id: Optional[str] = None

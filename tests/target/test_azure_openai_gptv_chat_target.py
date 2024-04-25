@@ -14,7 +14,7 @@ from openai.types.chat.chat_completion import Choice
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import AzureOpenAIGPTVChatTarget
-from pyrit.models.models import ChatMessage
+from pyrit.models.models import ChatMessageListContent
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ async def test_complete_chat_async_return(
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
         ret = await azure_gptv_chat_engine._complete_chat_async(
-            messages=[ChatMessage(role="user", content=[{"text": "hello"}])]
+            messages=[ChatMessageListContent(role="user", content=[{"text": "hello"}])]
         )
         assert ret == "hi"
 
