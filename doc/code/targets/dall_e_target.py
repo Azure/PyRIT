@@ -34,7 +34,7 @@ img_prompt_target = DALLETarget(
     deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
     api_key=os.environ.get("AZURE_DALLE_API_KEY"),
-    api_version="2024-02-01"
+    api_version="2024-02-01",
 )
 
 # %%

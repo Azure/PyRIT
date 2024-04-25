@@ -63,7 +63,7 @@ class DataTypeSerializer(abc.ABC):
         Saves the base64 encoded image to disk.
         """
 
-        #self.prompt_text = str(Path(RESULTS_PATH) / "dbdata" / "images" / output_filename)
+        # self.prompt_text = str(Path(RESULTS_PATH) / "dbdata" / "images" / output_filename)
         self.prompt_text = str(self.get_data_filename())
         with open(self.prompt_text, "wb") as file:
             image_bytes = base64.b64decode(data)
