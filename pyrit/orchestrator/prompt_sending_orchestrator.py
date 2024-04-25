@@ -50,11 +50,8 @@ class PromptSendingOrchestrator(Orchestrator):
         self._batch_size = batch_size
 
     async def send_prompts_async(
-            self,
-            *,
-            prompt_list: list[str],
-            prompt_type: PromptDataType = "text"
-        ) -> list[PromptRequestResponse]:
+        self, *, prompt_list: list[str], prompt_type: PromptDataType = "text"
+    ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
         """
@@ -72,7 +69,7 @@ class PromptSendingOrchestrator(Orchestrator):
         for request in requests:
             request.validate()
 
-        await self._prompt_normalizer.send_prompt_batch_to_target_async(
+        return await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=requests,
             target=self._prompt_target,
             labels=self._global_memory_labels,
@@ -81,17 +78,15 @@ class PromptSendingOrchestrator(Orchestrator):
         )
 
     async def send_normalizer_requests_async(
-            self,
-            *,
-            prompt_request_list: list[NormalizerRequest]
-        ):
+        self, *, prompt_request_list: list[NormalizerRequest]
+    ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
         """
         for request in prompt_request_list:
             request.validate()
 
-        await self._prompt_normalizer.send_prompt_batch_to_target_async(
+        return await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._prompt_target,
             labels=self._global_memory_labels,
