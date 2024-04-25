@@ -35,7 +35,7 @@ class MockChatGenerator(EmbeddingSupport):
         pass
 
     def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
-        return super().generate_text_embedding(text, **kwargs)
+        return super().generate_text_embedding(text, **kwargs)  # ignore: safe-super
 
 
 @pytest.fixture
