@@ -4,10 +4,10 @@
 import logging
 from typing import Optional
 from uuid import uuid4
-from pyrit.interfaces import SupportTextClassification
+from pyrit.score import SupportTextClassification
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import Score
+from pyrit.score import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
