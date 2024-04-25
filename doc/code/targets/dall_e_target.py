@@ -27,8 +27,7 @@ from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import DALLETarget
 
-prompt_to_send = "Draw me a racoon pirate as a French artist in France"
-
+prompt_to_send = "Draw me a racoon pirate as a French artist in France with the most famous national food"
 default_values.load_default_env()
 
 img_prompt_target = DALLETarget(
@@ -44,9 +43,14 @@ request = PromptRequestPiece(
     original_prompt_text=prompt_to_send,
 ).to_prompt_request_response()
 
-image_resp = img_prompt_target.send_prompt(prompt_request=request).request_pieces[0]
 
-print(f"image location: {image_resp.converted_prompt_text}")
+# image_resp = await img_prompt_target.send_prompt_async(prompt_request=request).request_pieces[0]  # type: ignore
+# image_resp = img_prompt_target.send_prompt(prompt_request=request)
+image_resp = await img_prompt_target.send_prompt_async(prompt_request=request)  # type: ignore
+if image_resp:
+    print(f"image location: {image_resp.request_pieces[0].converted_prompt_text}")
+else:
+    print("image blocked! ")
 # print(f"metadata: {image_resp.prompt_metadata}")
 
 # %% [markdown]
@@ -57,7 +61,7 @@ from PIL import Image
 from pyrit.common.path import RESULTS_PATH
 from pathlib import Path
 
-image_location = image_resp.converted_prompt_text
+image_location = image_resp.request_pieces[0].converted_prompt_text
 
 im = Image.open(Path(RESULTS_PATH) / "dbdata" / "images" / image_location)
 im.show()

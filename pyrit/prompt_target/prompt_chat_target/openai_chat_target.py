@@ -3,6 +3,7 @@
 
 from abc import abstractmethod
 import logging
+import json
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
@@ -282,6 +283,7 @@ class OpenAIChatTarget(OpenAIChatInterface):
         top_p: int = 1,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
+        headers: dict = None,
     ) -> None:
         """
         Class that initializes an openai chat target
@@ -323,10 +325,13 @@ class OpenAIChatTarget(OpenAIChatInterface):
         api_key = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
-        self._client = OpenAI(
-            api_key=api_key,
-            base_url=endpoint,
-        )
+        if headers:
+            self._client = OpenAI(api_key=api_key, base_url=endpoint, default_headers=json.loads(str(headers)))
+        else:
+            self._client = OpenAI(
+                api_key=api_key,
+                base_url=endpoint,
+            )
         self._async_client = AsyncOpenAI(
             api_key=api_key,
             base_url=endpoint,

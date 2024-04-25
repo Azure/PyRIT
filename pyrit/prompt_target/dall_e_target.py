@@ -5,6 +5,8 @@ import logging
 import pathlib
 from enum import Enum
 import uuid
+import concurrent.futures
+import asyncio
 
 from openai import BadRequestError
 
@@ -45,6 +47,8 @@ class DALLETarget(PromptTarget):
         num_images (int, optional): The num ber of output images to generate.
             Defaults to 1. For DALLE-3, can only be 1, for DALLE-2 max is 10 images.
         dalle_version (int, optional): Version of DALLE service. Defaults to 3.
+        memory:
+        headers (dict, optional): Headers of the endpoint.
     """
 
     def __init__(
@@ -58,6 +62,7 @@ class DALLETarget(PromptTarget):
         num_images: int | None = 1,
         dalle_version: SupportedDalleVersions | None = SupportedDalleVersions.V2,
         memory: MemoryInterface | None = None,
+        headers: dict = None,
     ):
 
         super().__init__(memory=memory)
@@ -82,27 +87,18 @@ class DALLETarget(PromptTarget):
         )
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
 
+        self.headers = headers
+
     def send_prompt(
         self,
         *,
         prompt_request: PromptRequestResponse,
     ) -> PromptRequestResponse:
         """
-        Sends prompt to image target and returns response
-        Args:
-            prompt_request (PromptRequestResponse): the prompt to send formatted as an object
-        Returns: response from target model formatted as an object
+        Deprecated. Use send_prompt_async instead.
         """
-
-        request = prompt_request.request_pieces[0]
-
-        output_filename = f"{uuid.uuid4()}.png"
-
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
-
-        resp = self._generate_images(prompt=request.converted_prompt_text)
-
-        return self._parse_response_and_add_to_memory(resp, output_filename, request)
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
 
     async def send_prompt_async(
         self,
@@ -116,6 +112,7 @@ class DALLETarget(PromptTarget):
         Returns: response from target model formatted as an object
         """
 
+        self.validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         output_filename = f"{uuid.uuid4()}.png"
@@ -141,13 +138,20 @@ class DALLETarget(PromptTarget):
             )
 
         else:
+            parsed_resp = {}
             if resp["exception type"] == "Blocked":
+
+                # Parsing Error Response to form json object
+                parsed_resp["exception type"] = "Blocked"
+                parsed_resp["data"] = ""
+                error_message = str(resp["error"]).split("{")
+                parsed_error = "{".join(error_message[1:])
 
                 return self._memory.add_response_entries_to_memory(
                     request=prompt_request,
                     response_text_pieces=[],
                     response_type="image_path",
-                    prompt_metadata=json.dumps(resp),
+                    prompt_metadata=json.dumps("{" + parsed_error),
                     error="blocked",
                 )
 
@@ -172,22 +176,15 @@ class DALLETarget(PromptTarget):
         except Exception as e:
             return {"error": e, "exception type": "exception"}
 
-    def _generate_images(self, prompt: str) -> dict:
-        try:
-            response = self.image_target._client.images.generate(
-                model=self.deployment_name,
-                prompt=prompt,
-                n=self.n,
-                size=self.image_size,
-                response_format="b64_json",
-            )
-            json_response = json.loads(response.model_dump_json())
-            return json_response
-        except BadRequestError as e:
-            logger.error(f"Content Blocked\n{e}")
-            return {"error": e}
-        except json.JSONDecodeError as e:
-            logger.error(f"Response could not be interpreted in the JSON format\n{e}")
-        except Exception as e:
-            logger.error(f"Error in calling deployment {self.deployment_name}\n{e}")
-        return {}
+    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        if prompt_request.request_pieces[0].converted_prompt_data_type != "text":
+            raise ValueError("This target only supports text prompt input.")
+
+        request = prompt_request.request_pieces[0]
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+
+        if len(messages) > 0:
+            raise ValueError("This target only supports a single turn conversation.")
