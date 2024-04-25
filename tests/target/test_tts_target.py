@@ -7,8 +7,7 @@ import uuid
 
 import pytest
 
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import AzureTTSTarget
 
 from pyrit.prompt_target.tts_target import TTSResponseFormat
@@ -72,8 +71,8 @@ async def test_tts_validate_prompt_type(tts_target: AzureTTSTarget, sample_conve
 async def test_tts_validate_previous_conversations(
     tts_target: AzureTTSTarget, sample_conversations: list[PromptRequestPiece]
 ):
-    tts_target._memory.add_request_pieces_to_memory(request_pieces=sample_conversations)
     request_piece = sample_conversations[0]
+    tts_target._memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=[request_piece]))
     request = PromptRequestResponse(request_pieces=[request_piece])
 
     with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
@@ -129,5 +128,5 @@ async def test_tts_send_prompt_adds_memory_async(sample_conversations: list[Prom
 
         await tts_target.send_prompt_async(prompt_request=request)
 
-        assert mock_memory.add_request_pieces_to_memory.called, "Request and Response need to be added to memory"
+        assert mock_memory.add_request_response_to_memory.called, "Request and Response need to be added to memory"
         assert mock_memory.add_response_entries_to_memory.called, "Request and Response need to be added to memory"

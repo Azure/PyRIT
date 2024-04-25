@@ -22,24 +22,21 @@ class PromptChatTarget(PromptTarget):
         """
         Sets the system prompt for the prompt target. May be overridden by subclasses.
         """
-        messages = self._memory.get_prompt_entries_with_conversation_id(conversation_id=conversation_id)
+        messages = self._memory.get_conversation(conversation_id=conversation_id)
 
         if messages:
             raise RuntimeError("Conversation already exists, system prompt needs to be set at the beginning")
 
-        self._memory.add_request_pieces_to_memory(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="system",
-                    conversation_id=conversation_id,
-                    sequence=0,
-                    original_prompt_text=system_prompt,
-                    converted_prompt_text=system_prompt,
-                    prompt_target_identifier=self.get_identifier(),
-                    orchestrator_identifier=orchestrator_identifier,
-                    labels=labels,
-                )
-            ]
+        self._memory.add_request_response_to_memory(
+            request=PromptRequestPiece(
+                role="system",
+                conversation_id=conversation_id,
+                original_prompt_text=system_prompt,
+                converted_prompt_text=system_prompt,
+                prompt_target_identifier=self.get_identifier(),
+                orchestrator_identifier=orchestrator_identifier,
+                labels=labels,
+            ).to_prompt_request_response()
         )
 
     def send_chat_prompt(

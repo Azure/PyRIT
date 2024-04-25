@@ -26,7 +26,7 @@
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
 # the classes from the [PromptChatTarget](https://github.com/main/pyrit/prompt_target/prompt_chat_target) module (e.g.,
-# AzureOpenAIChatTarget for Azure Open AI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
+# AzureOpenAIChatTarget for Azure OpenAI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
 # packages (e.g., the [openai](https://github.com/openai/openai-python) Python package). When using `PromptChatTarget` and `PromptTarget` classes, always employ them within a "with" context manager to ensure automatic and safe release of database connections after use as shown below.
 
 # %%
@@ -131,7 +131,7 @@ When the conversation objective is reached, type <|done|> to end the conversatio
 """
 )
 
-# red_teaming_llm could be any LLM endpoint. Here it is Azure Open AI for illustrative purposes.
+# red_teaming_llm could be any LLM endpoint. Here it is Azure OpenAI for illustrative purposes.
 red_teaming_llm = AzureOpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
@@ -183,10 +183,12 @@ with EndTokenRedTeamingOrchestrator(
 
 # %%
 
-from pyrit.score import SelfAskGptClassifier, SENTIMENT_CLASSIFIER
+from pyrit.score import SelfAskGptClassifier, ContentClassifiers
 
 text_to_be_scored = "This is amazing!"
-classifier = SelfAskGptClassifier(content_classifier=str(SENTIMENT_CLASSIFIER), chat_target=red_teaming_llm)
+classifier = SelfAskGptClassifier(
+    content_classifier=ContentClassifiers.SENTIMENT_CLASSIFIER, chat_target=red_teaming_llm
+)
 classifier.score_text(text=text_to_be_scored)
 
 # %% [markdown]

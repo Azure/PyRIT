@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from typing import Optional, Union
-from pyrit.interfaces import SupportTextClassification
+from pyrit.score import SupportTextClassification
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage

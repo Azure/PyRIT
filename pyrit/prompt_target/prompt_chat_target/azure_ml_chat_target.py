@@ -70,11 +70,9 @@ class AzureMLChatTarget(PromptChatTarget):
         request = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-
-        request.sequence = len(messages)
         messages.append(request.to_chat_message())
 
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -100,9 +98,8 @@ class AzureMLChatTarget(PromptChatTarget):
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
-        request.sequence = len(messages)
         messages.append(request.to_chat_message())
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
