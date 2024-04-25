@@ -7,6 +7,7 @@ from typing import Optional
 
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
@@ -48,7 +49,12 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._batch_size = batch_size
 
-    async def send_prompts_async(self, *, prompt_list: list[str], prompt_type: PromptDataType = "text"):
+    async def send_prompts_async(
+            self,
+            *,
+            prompt_list: list[str],
+            prompt_type: PromptDataType = "text"
+        ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
         """
@@ -74,7 +80,11 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-    async def send_normalizer_requests_async(self, *, prompt_request_list: list[NormalizerRequest]):
+    async def send_normalizer_requests_async(
+            self,
+            *,
+            prompt_request_list: list[NormalizerRequest]
+        ):
         """
         Sends the prompts to the prompt target.
         """
