@@ -3,6 +3,10 @@
 # This notebook demonstrates how to use the Azure OpenAI GPT-V target to accept multimodal input (text+image) and generate text output.
 
 # %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import AzureOpenAIGPTVChatTarget
 from pyrit.common import default_values
