@@ -7,14 +7,7 @@ import abc
 from abc import abstractmethod
 from dataclasses import dataclass
 
-from pyrit.models import EmbeddingResponse, PromptResponse, Score
-
-
-class SupportTextClassification(abc.ABC):
-    @abstractmethod
-    def score_text(self, text: str) -> Score:
-        """Score the text and return a Score object."""
-        raise NotImplementedError("score_text method not implemented")
+from pyrit.models import EmbeddingResponse, PromptResponse
 
 
 class Authenticator(abc.ABC):

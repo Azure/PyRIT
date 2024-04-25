@@ -19,14 +19,6 @@ ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]
 ChatMessageRole = Literal["system", "user", "assistant"]
 
 
-@dataclass
-class Score:
-    score_type: Literal["int", "float", "str", "bool"]
-    score_value: int | float | str | bool
-    score_description: str = ""
-    score_explanation: str = ""
-
-
 class PromptResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     # The text response for the prompt
