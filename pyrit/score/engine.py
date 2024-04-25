@@ -6,8 +6,9 @@ import logging
 
 from tqdm import tqdm
 
-from pyrit.interfaces import CompletionSupport, SupportTextClassification
-from pyrit.models import ChatMessage, PromptDataset, PromptResponse, Score
+from pyrit.interfaces import CompletionSupport
+from pyrit.models import ChatMessage, PromptDataset, PromptResponse
+from pyrit.score import Score, SupportTextClassification
 
 log = logging.getLogger(__name__)
 

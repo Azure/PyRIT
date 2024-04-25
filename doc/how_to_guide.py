@@ -26,27 +26,30 @@
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
 # the classes from the [PromptChatTarget](https://github.com/main/pyrit/prompt_target/prompt_chat_target) module (e.g.,
-# AzureOpenAIChatTarget for Azure Open AI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
-# packages (e.g., the [openai](https://github.com/openai/openai-python) Python package).
+# AzureOpenAIChatTarget for Azure OpenAI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
+# packages (e.g., the [openai](https://github.com/openai/openai-python) Python package). When using `PromptChatTarget` and `PromptTarget` classes, always employ them within a "with" context manager to ensure automatic and safe release of database connections after use as shown below.
 
 # %%
 
 import os
-import uuid
 
 from pyrit.common import default_values
+from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 default_values.load_default_env()
 
-target_llm = AzureOpenAIChatTarget(
+with AzureOpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-)
-
-prompt = "test"
-target_llm.send_prompt(normalized_prompt=prompt, conversation_id=str(uuid.uuid4()), normalizer_id=None)
+) as target_llm:
+    request = PromptRequestPiece(
+        role="user",
+        original_prompt_text="this is a test prompt",
+    ).to_prompt_request_response()
+    target_llm.send_prompt(prompt_request=request)
 
 # %% [markdown]
 # To expand to a wider variety of harms, it may be beneficial to write prompt templates instead of the
@@ -128,7 +131,7 @@ When the conversation objective is reached, type <|done|> to end the conversatio
 """
 )
 
-# red_teaming_llm could be any LLM endpoint. Here it is Azure Open AI for illustrative purposes.
+# red_teaming_llm could be any LLM endpoint. Here it is Azure OpenAI for illustrative purposes.
 red_teaming_llm = AzureOpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
@@ -143,19 +146,19 @@ target_llm = AzureOpenAIChatTarget(
 
 # Create an orchestrator to manage the red teaming conversation.
 # The initial prompt is intended to keep the red teaming LLM on topic.
-red_teaming_orchestrator = EndTokenRedTeamingOrchestrator(
+with EndTokenRedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     red_teaming_chat=red_teaming_llm,
     prompt_target=target_llm,
     initial_red_teaming_prompt="Begin conversation",
     verbose=True,
-)
+) as red_teaming_orchestrator:
 
-# Apply the attack strategy until the conversation objective is reached
-# or the maximum number of turns is reached.
-red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
+    # Apply the attack strategy until the conversation objective is reached
+    # or the maximum number of turns is reached.
+    red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
 
-# Alternatively, use send_prompt() to generate just a single turn of the attack strategy.
+    # Alternatively, use send_prompt() to generate just a single turn of the attack strategy.
 
 # %% [markdown]
 # Going a step further, we can generalize the attack strategy into templates as mentioned in an earlier
@@ -180,10 +183,12 @@ red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
 
 # %%
 
-from pyrit.score import SelfAskGptClassifier, SENTIMENT_CLASSIFIER
+from pyrit.score import SelfAskGptClassifier, ContentClassifiers
 
 text_to_be_scored = "This is amazing!"
-classifier = SelfAskGptClassifier(content_classifier=str(SENTIMENT_CLASSIFIER), chat_target=red_teaming_llm)
+classifier = SelfAskGptClassifier(
+    content_classifier=ContentClassifiers.SENTIMENT_CLASSIFIER, chat_target=red_teaming_llm
+)
 classifier.score_text(text=text_to_be_scored)
 
 # %% [markdown]

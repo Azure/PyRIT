@@ -7,14 +7,7 @@ import abc
 from abc import abstractmethod
 from dataclasses import dataclass
 
-from pyrit.models import EmbeddingResponse, PromptResponse, Score
-
-
-class SupportTextClassification(abc.ABC):
-    @abstractmethod
-    def score_text(self, text: str) -> Score:
-        """Score the text and return a Score object."""
-        raise NotImplementedError("score_text method not implemented")
+from pyrit.models import EmbeddingResponse, PromptResponse
 
 
 class Authenticator(abc.ABC):
@@ -85,19 +78,6 @@ class EmbeddingSupport(abc.ABC):
             The embedding response
         """
         raise NotImplementedError("generate_text_embedding method not implemented")
-
-    @abstractmethod
-    async def generate_text_embedding_async(self, text: str, **kwargs) -> EmbeddingResponse:
-        """Generate text embedding
-
-        Args:
-            text: The text to generate the embedding for
-            **kwargs: Additional arguments to pass to the function.
-
-        Returns:
-            The embedding response
-        """
-        raise NotImplementedError("generate_text_embedding_async method not implemented")
 
 
 class CompletionSupport(abc.ABC):

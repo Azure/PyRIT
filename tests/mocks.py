@@ -8,7 +8,9 @@ from sqlalchemy import inspect
 
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry
-from pyrit.prompt_target import PromptTarget
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
 
 class MockHttpPostAsync(AbstractAsyncContextManager):
@@ -50,7 +52,7 @@ class MockHttpPostSync:
             raise Exception(f"HTTP Error {self.status}")
 
 
-class MockPromptTarget(PromptTarget):
+class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
     def __init__(self, id=None, memory=None) -> None:
@@ -58,14 +60,23 @@ class MockPromptTarget(PromptTarget):
         self.prompt_sent = []
         self._memory = memory
 
-    def set_system_prompt(self, prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.system_prompt = prompt
+    def set_system_prompt(
+        self,
+        *,
+        system_prompt: str,
+        conversation_id: str,
+        orchestrator_identifier: dict[str, str],
+        labels: dict,
+    ) -> None:
+        self.system_prompt = system_prompt
 
-    def send_prompt(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.prompt_sent.append(normalized_prompt)
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
+        return None
 
-    async def send_prompt_async(self, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> None:
-        self.prompt_sent.append(normalized_prompt)
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
+        return None
 
 
 def get_memory_interface() -> Generator[MemoryInterface, None, None]:
@@ -86,24 +97,39 @@ def get_memory_interface() -> Generator[MemoryInterface, None, None]:
     duckdb_memory.dispose_engine()
 
 
-def get_sample_conversations():
+def get_sample_conversations() -> list[PromptRequestPiece]:
+
+    orchestrator1 = Orchestrator()
+    orchestrator2 = Orchestrator()
+
     return [
-        PromptMemoryEntry(
+        PromptRequestPiece(
             role="user",
             original_prompt_text="original prompt text",
             converted_prompt_text="Hello, how are you?",
             conversation_id="12345",
+            sequence=0,
+            orchestrator_identifier=orchestrator1.get_identifier(),
         ),
-        PromptMemoryEntry(
+        PromptRequestPiece(
             role="assistant",
             original_prompt_text="original prompt text",
             converted_prompt_text="I'm fine, thank you!",
             conversation_id="12345",
+            sequence=0,
+            orchestrator_identifier=orchestrator1.get_identifier(),
         ),
-        PromptMemoryEntry(
+        PromptRequestPiece(
             role="assistant",
             original_prompt_text="original prompt text",
             converted_prompt_text="I'm fine, thank you!",
             conversation_id="33333",
+            orchestrator_identifier=orchestrator2.get_identifier(),
         ),
     ]
+
+
+def get_sample_conversation_entries() -> list[PromptMemoryEntry]:
+
+    conversations = get_sample_conversations()
+    return [PromptMemoryEntry(entry=conversation) for conversation in conversations]

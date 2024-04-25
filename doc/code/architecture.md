@@ -41,7 +41,7 @@ This is often an LLM, but it doesn't have to be. For Cross-Domain Prompt Injecti
 
 One orchestrator can have many Prompt Targets (and in fact, converters and Scoring Engine can also use Prompt Targets to convert/score the prompt).
 
-Ways to contribute: Check out our [target docs](./prompt_targets.ipynb) and [code](../../pyrit/prompt_target/). Are there models you want to use at any stage or for different attacks?
+Ways to contribute: Check out our [target docs](./targets/prompt_targets.ipynb) and [code](../../pyrit/prompt_target/). Are there models you want to use at any stage or for different attacks?
 
 
 ## Scoring Engine
@@ -52,9 +52,9 @@ Ways to contribute: Check out our [scoring docs](./scoring.ipynb) and [code](../
 
 ## Memory
 
-One important thing to remember about this architecture is its swappable nature. Propmts and targets and converters and orchestrators and scorers should all be swappable. But sometimes one of these components needs additional information. If the target is an LLM, we need a way to look up previous messages sent to that session so we can properly construct the new message. If the target is a blob store, we need to know the URL to use for a future attack.
+One important thing to remember about this architecture is its swappable nature. Prompts and targets and converters and orchestrators and scorers should all be swappable. But sometimes one of these components needs additional information. If the target is an LLM, we need a way to look up previous messages sent to that session so we can properly construct the new message. If the target is a blob store, we need to know the URL to use for a future attack.
 
-This information is often communicated through [memory](./memory.ipynb) which is the glue that communicates data. With memory, we can look up previous messages or custom metadata about specific components.
+This information is often communicated through [memory](./memory/memory.ipynb) which is the glue that communicates data. With memory, we can look up previous messages or custom metadata about specific components.
 
 Memory modifications and contributions should usually be designed with the maintainers.
 

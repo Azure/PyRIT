@@ -1,6 +1,6 @@
 ### Setup
 
-When dealing with Azure OpenAI, you need to have an Azure account and a subscription. Populate the `.env` file in your repo with the correct Azure Open AI Keys, deployment names, and endpoints.
+When dealing with Azure OpenAI, you need to have an Azure account and a subscription. Populate the `.env` file in your repo with the correct Azure OpenAI Keys, deployment names, and endpoints.
 
 You can find these in `Azure Portal > Azure AI Services > Azure OpenAI > Your OpenAI Resource > Resource Management > Keys and Endpoint`
 

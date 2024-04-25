@@ -34,13 +34,15 @@ deployment_name = os.environ.get("AZURE_OPENAI_COMPLETION_DEPLOYMENT")
 
 # %%
 from pprint import pprint
-from pyrit.completion.azure_completions import AzureCompletion
+from pyrit.prompt_target import AzureOpenAICompletionTarget
+from pyrit.models import PromptRequestPiece
 
 
-prompt = "hello world!"
+request = PromptRequestPiece(
+    role="user",
+    original_prompt_text="Hello! Who are you?",
+).to_prompt_request_response()
 
-engine = AzureCompletion(api_key=api_key, endpoint=api_base, deployment=deployment_name)
-
-text_response = engine.complete_text(text=prompt)
-
-pprint(text_response, width=280, compact=True)
+with AzureOpenAICompletionTarget(api_key=api_key, endpoint=api_base, deployment_name=deployment_name) as target:
+    response = await target.send_prompt_async(prompt_request=request)  # type: ignore
+    pprint(response.request_pieces[0].converted_prompt_text, width=280, compact=True)

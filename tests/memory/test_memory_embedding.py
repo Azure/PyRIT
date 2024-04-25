@@ -8,7 +8,8 @@ from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory import MemoryEmbedding
 from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.memory.memory_models import PromptMemoryEntry
+from pyrit.memory import PromptMemoryEntry
+from tests.mocks import get_sample_conversation_entries
 
 
 DEFAULT_EMBEDDING_DATA = EmbeddingData(embedding=[0.0], index=0, object="mock_object")
@@ -29,12 +30,9 @@ class MockEmbeddingGenerator(EmbeddingSupport):
         raise NotImplementedError()
 
 
-class MockChatGenerator(EmbeddingSupport):
-    def __init__(self):
-        pass
-
-    def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
-        return super().generate_text_embedding(text, **kwargs)
+@pytest.fixture
+def sample_conversation_entries() -> list[PromptMemoryEntry]:
+    return get_sample_conversation_entries()
 
 
 def test_memory_encoder():
@@ -49,15 +47,13 @@ def memory_encoder_w_mock_embedding_generator():
 
 def test_memory_encoding_chat_message(
     memory_encoder_w_mock_embedding_generator: MemoryEmbedding,
+    sample_conversation_entries: list[PromptMemoryEntry],
 ):
-    chat_memory = PromptMemoryEntry(
-        original_prompt_text="hello world!",
-        converted_prompt_text="hello world!",
-        role="user",
-        converted_prompt_data_type="text",
-        conversation_id="my_session",
+    chat_memory = sample_conversation_entries[0]
+
+    metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(
+        prompt_request_piece=chat_memory
     )
-    metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(chat_memory=chat_memory)
     assert metadata.id == chat_memory.id
     assert metadata.embedding == DEFAULT_EMBEDDING_DATA.embedding
     assert metadata.embedding_type_name == "MockEmbeddingGenerator"

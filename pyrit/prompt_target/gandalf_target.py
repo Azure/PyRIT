@@ -1,43 +1,78 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Any, Coroutine
-from pyrit.completion import GandalfCompletionEngine, GandalfLevel
+import asyncio
+import concurrent.futures
+import enum
+import logging
+
+from pyrit.common import net_utility
 from pyrit.memory import DuckDBMemory, MemoryInterface
-from pyrit.models import ChatMessage
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 
 
-class GandalfTarget(GandalfCompletionEngine, PromptTarget):
+logger = logging.getLogger(__name__)
+
+
+class GandalfLevel(enum.Enum):
+    LEVEL_1 = "baseline"
+    LEVEL_2 = "do-not-tell"
+    LEVEL_3 = "do-not-tell-and-block"
+    LEVEL_4 = "gpt-is-password-encoded"
+    LEVEL_5 = "word-blacklist"
+    LEVEL_6 = "gpt-blacklist"
+    LEVEL_7 = "gandalf"
+    LEVEL_8 = "gandalf-the-white"
+    LEVEL_9 = "adventure-1"
+    LEVEL_10 = "adventure-2"
+
+
+class GandalfTarget(PromptTarget):
+
     def __init__(
         self,
         *,
         level: GandalfLevel,
         memory: MemoryInterface = None,
     ) -> None:
-        super().__init__(level=level)
         self._memory = memory if memory else DuckDBMemory()
 
-    def send_prompt(self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str) -> str:
-        msg = ChatMessage(role="user", content=normalized_prompt)
+        self._endpoint = "https://gandalf.lakera.ai/api/send-message"
+        self._defender = level.value
 
-        self._memory.add_chat_message_to_memory(
-            conversation=msg, conversation_id=conversation_id, normalizer_id=normalizer_id
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        """
+        Deprecated. Use send_prompt_async instead.
+        """
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
+
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        request = prompt_request.request_pieces[0]
+
+        self._memory.add_request_response_to_memory(request=prompt_request)
+
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        response = await self._complete_text_async(request.converted_prompt_text)
+
+        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[response])
+
+        return response_entry
+
+    async def _complete_text_async(self, text: str) -> str:
+        payload: dict[str, object] = {
+            "defender": self._defender,
+            "prompt": text,
+        }
+
+        resp = await net_utility.make_request_and_raise_if_error_async(
+            endpoint_uri=self._endpoint, method="POST", request_body=payload, post_type="data"
         )
 
-        response = super().complete_text(text=normalized_prompt)
+        if not resp.text:
+            raise ValueError("The chat returned an empty response.")
 
-        self._memory.add_chat_message_to_memory(
-            conversation=ChatMessage(role="assistant", content=response.completion),
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-        )
-
-        return response.completion
-
-    def send_prompt_async(
-        self, *, normalized_prompt: str, conversation_id: str, normalizer_id: str
-    ) -> Coroutine[Any, Any, str]:
-        return super().send_prompt_async(
-            normalized_prompt=normalized_prompt, conversation_id=conversation_id, normalizer_id=normalizer_id
-        )
+        logger.info(f'Received the following response from the prompt target "{resp.text}"')
+        return resp.text
