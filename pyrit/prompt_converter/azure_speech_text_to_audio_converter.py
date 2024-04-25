@@ -105,7 +105,10 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                 logger.info("Speech synthesis canceled: {}".format(cancellation_details.reason))
                 if cancellation_details.reason == speechsdk.CancellationReason.Error:
                     logger.error("Error details: {}".format(cancellation_details.error_details))
-                raise
+                raise RuntimeError(
+                    "Speech synthesis canceled: {}".format(cancellation_details.reason)
+                    + "Error details: {}".format(cancellation_details.error_details)
+                )
         except Exception as e:
             logger.error("Failed to convert prompt to audio: %s", str(e))
             raise
