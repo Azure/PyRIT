@@ -27,14 +27,14 @@ from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import DALLETarget
 
-prompt_to_send = "Draw me a racoon pirate as a French artist in France with the most famous national food"
+prompt_to_send = "Draw me a racoon in a pirate outfit who is a French artist in France at a winery"
 default_values.load_default_env()
 
 img_prompt_target = DALLETarget(
     deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
     api_key=os.environ.get("AZURE_DALLE_API_KEY"),
-    api_version="2024-02-01",
+    api_version="2024-02-01"
 )
 
 # %%
@@ -43,12 +43,10 @@ request = PromptRequestPiece(
     original_prompt_text=prompt_to_send,
 ).to_prompt_request_response()
 
-
-# image_resp = await img_prompt_target.send_prompt_async(prompt_request=request).request_pieces[0]  # type: ignore
-# image_resp = img_prompt_target.send_prompt(prompt_request=request)
 image_resp = await img_prompt_target.send_prompt_async(prompt_request=request)  # type: ignore
 if image_resp:
     print(f"image location: {image_resp.request_pieces[0].converted_prompt_text}")
+    print(image_resp)
 else:
     print("image blocked! ")
 # print(f"metadata: {image_resp.prompt_metadata}")
