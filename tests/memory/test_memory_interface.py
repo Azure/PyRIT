@@ -155,3 +155,30 @@ def test_insert_prompt_memories_not_inserts_embedding(
         memory.add_request_response_to_memory(request=request)
 
         assert mock_embedding.assert_not_called
+
+
+def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
+    conversation_id = sample_conversations[0].orchestrator_identifier["id"]
+
+    # This new conversation piece should be grouped with other messages in the conversation
+    sample_conversations.append(
+        PromptRequestPiece(
+            role="user",
+            original_prompt_text="original prompt text",
+            conversation_id=conversation_id,
+        )
+    )
+
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
+
+        mock_get.return_value = sample_conversations
+        orchestrator_id = int(sample_conversations[0].orchestrator_identifier["id"])
+
+        response = memory.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
+
+        current_value = response[0].conversation_id
+        for obj in response[1:]:
+            new_value = obj.conversation_id
+            if new_value != current_value:
+                if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
+                    assert False, "Conversation IDs are not grouped together"

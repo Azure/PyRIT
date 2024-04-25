@@ -110,7 +110,9 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
-        return self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+
+        prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+        return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
