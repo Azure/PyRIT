@@ -11,12 +11,14 @@ from pyrit.prompt_target.text_target import TextTarget
 from pyrit.prompt_target.tts_target import AzureTTSTarget
 from pyrit.prompt_target.dall_e_target import DALLETarget
 from pyrit.prompt_target.prompt_chat_target.ollama_chat_target import OllamaChatTarget
+from pyrit.prompt_target.azure_openai_completion_target import AzureOpenAICompletionTarget
 
 
 __all__ = [
     "AzureBlobStorageTarget",
     "AzureMLChatTarget",
     "AzureOpenAIChatTarget",
+    "AzureOpenAICompletionTarget",
     "AzureTTSTarget",
     "GandalfTarget",
     "GandalfLevel",

@@ -79,19 +79,6 @@ class EmbeddingSupport(abc.ABC):
         """
         raise NotImplementedError("generate_text_embedding method not implemented")
 
-    @abstractmethod
-    async def generate_text_embedding_async(self, text: str, **kwargs) -> EmbeddingResponse:
-        """Generate text embedding
-
-        Args:
-            text: The text to generate the embedding for
-            **kwargs: Additional arguments to pass to the function.
-
-        Returns:
-            The embedding response
-        """
-        raise NotImplementedError("generate_text_embedding_async method not implemented")
-
 
 class CompletionSupport(abc.ABC):
     @abstractmethod

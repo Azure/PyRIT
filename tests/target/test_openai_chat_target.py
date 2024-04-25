@@ -2,16 +2,17 @@
 # Licensed under the MIT license.
 
 import os
+import pytest
 
-from contextlib import AbstractAsyncContextManager
 from unittest.mock import AsyncMock, patch
 
-import pytest
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.prompt_target.prompt_chat_target.openai_chat_target import OpenAIChatInterface
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
 from pyrit.prompt_target import AzureOpenAIChatTarget, OpenAIChatTarget
-from pyrit.models.models import ChatMessage
 
 
 @pytest.fixture
@@ -33,7 +34,7 @@ def openai_mock_return() -> ChatCompletion:
 
 
 @pytest.fixture
-def azure_chat_engine() -> AzureOpenAIChatTarget:
+def azure_chat_target() -> AzureOpenAIChatTarget:
     return AzureOpenAIChatTarget(
         deployment_name="gpt-4",
         endpoint="https://mock.azure.com/",
@@ -43,7 +44,7 @@ def azure_chat_engine() -> AzureOpenAIChatTarget:
 
 
 @pytest.fixture
-def openai_chat_engine() -> OpenAIChatTarget:
+def openai_chat_target() -> OpenAIChatTarget:
     return OpenAIChatTarget(
         deployment_name="gpt-4",
         endpoint="https://mock.azure.com/",
@@ -51,67 +52,79 @@ def openai_chat_engine() -> OpenAIChatTarget:
     )
 
 
-class MockChatCompletionsAsync(AbstractAsyncContextManager):
-    async def __call__(self, *args, **kwargs):
-        self.mock_chat_completion = ChatCompletion(
-            id="12345678-1a2b-3c4e5f-a123-12345678abcd",
-            object="chat.completion",
-            choices=[
-                Choice(
-                    index=0,
-                    message=ChatCompletionMessage(role="assistant", content="hi"),
-                    finish_reason="stop",
-                    logprobs=None,
-                )
-            ],
-            created=1629389505,
-            model="gpt-4",
-        )
-        return self.mock_chat_completion
-
-    async def __aexit__(self, exc_type, exc, tb):
-        pass
-
-    async def __aenter__(self):
-        pass
+@pytest.fixture
+def prompt_request_response() -> PromptRequestResponse:
+    return PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="user",
+                conversation_id="1234",
+                original_prompt_text="hello",
+                converted_prompt_text="hello",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            )
+        ]
+    )
 
 
-@patch(
-    "openai.resources.chat.AsyncCompletions.create",
-    new_callable=lambda: MockChatCompletionsAsync(),
-)
-@pytest.mark.asyncio
-async def test_azure_complete_chat_async_return(
-    openai_mock_return: ChatCompletion, azure_chat_engine: AzureOpenAIChatTarget
+def execute_openai_send_prompt(
+    target: OpenAIChatInterface,
+    prompt_request_response: PromptRequestResponse,
+    mock_return: ChatCompletion,
 ):
     with patch("openai.resources.chat.Completions.create") as mock_create:
-        mock_create.return_value = openai_mock_return
-        ret = await azure_chat_engine._complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
-        assert ret == "hi"
+        mock_create.return_value = mock_return
+        response: PromptRequestResponse = target.send_prompt(prompt_request=prompt_request_response)
+        assert len(response.request_pieces) == 1
+        assert response.request_pieces[0].converted_prompt_text == "hi"
+
+
+async def execute_openai_send_prompt_async(
+    target: OpenAIChatInterface,
+    prompt_request_response: PromptRequestResponse,
+    mock_return: ChatCompletion,
+):
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = mock_return
+        response: PromptRequestResponse = await target.send_prompt_async(prompt_request=prompt_request_response)
+        assert len(response.request_pieces) == 1
+        assert response.request_pieces[0].converted_prompt_text == "hi"
+
+
+@pytest.mark.asyncio
+async def test_azure_complete_chat_async_return(
+    openai_mock_return: ChatCompletion,
+    azure_chat_target: AzureOpenAIChatTarget,
+    prompt_request_response: PromptRequestResponse,
+):
+    await execute_openai_send_prompt_async(azure_chat_target, prompt_request_response, openai_mock_return)
 
 
 @pytest.mark.asyncio
 async def test_openai_complete_chat_async_return(
-    openai_mock_return: ChatCompletion, openai_chat_engine: OpenAIChatTarget
+    openai_mock_return: ChatCompletion,
+    openai_chat_target: OpenAIChatTarget,
+    prompt_request_response: PromptRequestResponse,
 ):
-    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
-        mock_create.return_value = openai_mock_return
-        ret = await openai_chat_engine._complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
-        assert ret == "hi"
+    await execute_openai_send_prompt_async(openai_chat_target, prompt_request_response, openai_mock_return)
 
 
-def test_azure_complete_chat_return(openai_mock_return: ChatCompletion, azure_chat_engine: AzureOpenAIChatTarget):
-    with patch("openai.resources.chat.Completions.create") as mock_create:
-        mock_create.return_value = openai_mock_return
-        ret = azure_chat_engine._complete_chat(messages=[ChatMessage(role="user", content="hello")])
-        assert ret == "hi"
+def test_azure_complete_chat_return(
+    openai_mock_return: ChatCompletion,
+    azure_chat_target: AzureOpenAIChatTarget,
+    prompt_request_response: PromptRequestResponse,
+):
+    execute_openai_send_prompt(azure_chat_target, prompt_request_response, openai_mock_return)
 
 
-def test_openai_complete_chat_return(openai_mock_return: ChatCompletion, openai_chat_engine: OpenAIChatTarget):
-    with patch("openai.resources.chat.Completions.create") as mock_create:
-        mock_create.return_value = openai_mock_return
-        ret = openai_chat_engine._complete_chat(messages=[ChatMessage(role="user", content="hello")])
-        assert ret == "hi"
+def test_openai_complete_chat_return(
+    openai_mock_return: ChatCompletion,
+    openai_chat_target: OpenAIChatTarget,
+    prompt_request_response: PromptRequestResponse,
+):
+    execute_openai_send_prompt(openai_chat_target, prompt_request_response, openai_mock_return)
 
 
 def test_azure_invalid_key_raises():
