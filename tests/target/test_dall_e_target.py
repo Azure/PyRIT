@@ -43,13 +43,6 @@ def test_initialization_invalid_num_images():
         )
 
 
-@patch("pyrit.prompt_target.dall_e_target.DALLETarget._generate_images")
-def test_send_prompt(mock_image, image_target, sample_conversations: list[PromptRequestPiece]):
-    mock_image.return_value = {"Mock Image: ": "mock value"}
-    resp = image_target.send_prompt(prompt_request=PromptRequestResponse([sample_conversations[0]]))
-    assert resp
-
-
 @patch("pyrit.prompt_target.dall_e_target.DALLETarget._generate_images_async")
 @pytest.mark.asyncio
 async def test_send_prompt_async(mock_image, image_target, sample_conversations: list[PromptRequestPiece]):
