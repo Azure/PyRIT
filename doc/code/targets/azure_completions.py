@@ -43,14 +43,8 @@ request = PromptRequestPiece(
     original_prompt_text="Hello! Who are you?",
 ).to_prompt_request_response()
 
-target = AzureOpenAICompletionTarget(
-    api_key=api_key,
-    endpoint=api_base,
-    deployment_name=deployment_name
-)
+target = AzureOpenAICompletionTarget(api_key=api_key, endpoint=api_base, deployment_name=deployment_name)
 
-response = await target.send_prompt_async(
-    prompt_request=request
-)
+response = await target.send_prompt_async(prompt_request=request)
 
 pprint(response.request_pieces[0].converted_prompt_text, width=280, compact=True)

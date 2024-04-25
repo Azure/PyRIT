@@ -97,7 +97,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.
-        """    
+        """
         request = prompt_request.request_pieces[0]
 
         self._memory.add_request_response_to_memory(request=prompt_request)
@@ -124,7 +124,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
             object=text_response.object,
         )
         response_entry = self._memory.add_response_entries_to_memory(
-            request=request,
-            response_text_pieces=[prompt_response.completion])
+            request=request, response_text_pieces=[prompt_response.completion]
+        )
 
         return response_entry
