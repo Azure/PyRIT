@@ -46,6 +46,6 @@ def test_initialization_invalid_num_images():
 @patch("pyrit.prompt_target.dall_e_target.DALLETarget._generate_images_async")
 @pytest.mark.asyncio
 async def test_send_prompt_async(mock_image, image_target, sample_conversations: list[PromptRequestPiece]):
-    mock_image.return_value = {"Mock Image: ": "mock value"}
+    mock_image.return_value = { "data": [{"b64_json": "mock_json"}]}
     resp = await image_target.send_prompt_async(prompt_request=PromptRequestResponse([sample_conversations[0]]))
     assert resp
