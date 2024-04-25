@@ -155,7 +155,7 @@ class MemoryInterface(abc.ABC):
 
         sequence = 0
 
-        if prev_conversations and len(prev_conversations) > 0:
+        if len(prev_conversations) > 0:
             sequence = max(prev_conversations, key=lambda item: item.sequence).sequence + 1
 
         for piece in request_pieces:
