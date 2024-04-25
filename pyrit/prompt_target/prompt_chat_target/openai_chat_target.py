@@ -41,10 +41,9 @@ class OpenAIChatInterface(PromptChatTarget):
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
         messages.append(request.to_chat_message())
 
-        request.sequence = len(messages)
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         resp_text = self._complete_chat(
             messages=messages,
@@ -70,10 +69,9 @@ class OpenAIChatInterface(PromptChatTarget):
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
         messages.append(request.to_chat_message())
 
-        request.sequence = len(messages)
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         resp_text = await self._complete_chat_async(
             messages=messages,
@@ -92,7 +90,7 @@ class OpenAIChatInterface(PromptChatTarget):
 
         return response_entry
 
-    def parse_chat_completion(self, response):
+    def _parse_chat_completion(self, response):
         """
         Parses chat message to get response
 
@@ -153,7 +151,7 @@ class OpenAIChatInterface(PromptChatTarget):
             stream=False,
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
-        return self.parse_chat_completion(response)
+        return self._parse_chat_completion(response)
 
     def _complete_chat(
         self,
@@ -189,7 +187,7 @@ class OpenAIChatInterface(PromptChatTarget):
             stream=False,
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
-        return self.parse_chat_completion(response)
+        return self._parse_chat_completion(response)
 
 
 class AzureOpenAIChatTarget(OpenAIChatInterface):
@@ -212,15 +210,17 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         presence_penalty: float = 0.5,
     ) -> None:
         """
-        Class that initializes an Azure Open AI chat target
+        Class that initializes an Azure OpenAI chat target.
+
+        Note that this is different from the Azure OpenAI completion target.
 
         Args:
             deployment_name (str, optional): The name of the deployment. Defaults to the
-                DEPLOYMENT_ENVIRONMENT_VARIABLE environment variable .
+                AZURE_OPENAI_CHAT_DEPLOYMENT environment variable .
             endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
-                Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
+                Defaults to the AZURE_OPENAI_CHAT_ENDPOINT environment variable.
             api_key (str, optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
+                Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to

@@ -30,14 +30,6 @@ class MockEmbeddingGenerator(EmbeddingSupport):
         raise NotImplementedError()
 
 
-class MockChatGenerator(EmbeddingSupport):
-    def __init__(self):
-        pass
-
-    def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
-        return super().generate_text_embedding(text, **kwargs)
-
-
 @pytest.fixture
 def sample_conversation_entries() -> list[PromptMemoryEntry]:
     return get_sample_conversation_entries()

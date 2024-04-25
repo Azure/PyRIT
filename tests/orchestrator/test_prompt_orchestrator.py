@@ -88,13 +88,13 @@ def test_send_prompt_to_identifier(mock_target: MockPromptTarget):
 def test_orchestrator_get_memory(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
 
-    request_piece = PromptRequestPiece(
+    request = PromptRequestPiece(
         role="user",
         original_prompt_text="test",
         orchestrator_identifier=orchestrator.get_identifier(),
-    )
+    ).to_prompt_request_response()
 
-    orchestrator._memory.add_request_pieces_to_memory(request_pieces=[request_piece])
+    orchestrator._memory.add_request_response_to_memory(request=request)
 
     entries = orchestrator.get_memory()
     assert entries

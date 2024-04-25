@@ -117,7 +117,7 @@ class DALLETarget(PromptTarget):
 
         output_filename = f"{uuid.uuid4()}.png"
 
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
+        self._memory.add_request_response_to_memory(request=prompt_request)
 
         resp = await self._generate_images_async(prompt=request.converted_prompt_text)
         return self._parse_response_and_add_to_memory(resp, output_filename, request)

@@ -7,8 +7,7 @@ import requests
 from openai import BadRequestError
 import uuid
 
-from pyrit.interfaces import SupportTextClassification
-from pyrit.models import Score
+from pyrit.score import Score, SupportTextClassification
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget, GandalfLevel
 
