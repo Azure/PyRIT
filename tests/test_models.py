@@ -1,4 +1,4 @@
-from pyrit.models import ChatMessage, ChatMessagesDataset
+from pyrit.models import ChatMessage, ChatMessagesDataset, ChatMessageListContent
 
 
 def test_chat_messages_dataset_values_properly_set() -> None:
@@ -48,3 +48,21 @@ def test_dataset_object_creation_from_dict() -> None:
     assert len(my_dataset.list_of_chat_messages) == 2
     assert len(my_dataset.list_of_chat_messages[0]) == 3
     assert len(my_dataset.list_of_chat_messages[1]) == 3
+
+
+def test_chat_message_creation():
+    message = ChatMessage(role="user", content="Hello, world!")
+    assert message.role == "user"
+    assert message.content == "Hello, world!"
+    assert message.name is None
+    assert message.tool_calls is None
+    assert message.tool_call_id is None
+
+
+def test_chat_message_list_content_creation():
+    message_list_content = ChatMessageListContent(role="user", content=[{"key": "value"}])
+    assert message_list_content.role == "user"
+    assert message_list_content.content == [{"key": "value"}]
+    assert message_list_content.name is None
+    assert message_list_content.tool_calls is None
+    assert message_list_content.tool_call_id is None

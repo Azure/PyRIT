@@ -12,7 +12,8 @@ from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator, EndTokenRedTeamingOrchestrator
 from pyrit.orchestrator.end_token_red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.models import AttackStrategy, ChatMessage, Score
+from pyrit.models import AttackStrategy, ChatMessage
+from pyrit.score import Score
 from pyrit.common.path import DATASETS_PATH
 
 from tests.mocks import get_memory_interface
@@ -48,7 +49,7 @@ def simple_attack_strategy() -> AttackStrategy:
 
 def _check_orchestrator_memory_if_no_original_prompt(memory, num_turns: int):
 
-    conversations = memory.get_all_prompt_entries()
+    conversations = memory.get_all_prompt_pieces()
     # one turn has system prompt, req/resp to target, req/resp to red team target
     expected_num_memories = (4 * num_turns) + 1
 
@@ -58,7 +59,7 @@ def _check_orchestrator_memory_if_no_original_prompt(memory, num_turns: int):
 
 def _check_orchestrator_memory_if_original_prompt(memory, num_turns: int):
 
-    conversations = memory.get_all_prompt_entries()
+    conversations = memory.get_all_prompt_pieces()
 
     if num_turns == 1:
         assert len(conversations) == 2, "prompt was supplied, there should be 1 req/response"

@@ -110,3 +110,34 @@ async def test_prompt_normalizer_send_prompt_batch_async():
     await normalizer.send_prompt_batch_to_target_async(requests=[NormalizerRequest([prompt])], target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
+
+
+def test_build_prompt_request_response():
+
+    labels = {"label1": "value1", "label2": "value2"}
+    orchestrator_identifier = {"orchestrator_id": "123"}
+
+    prompt_target = MockPromptTarget()
+    prompt_converters = [Base64Converter()]
+    prompt_text = "Hello"
+    normalizer_req_piece_1 = NormalizerRequestPiece(
+        prompt_converters=prompt_converters,
+        prompt_text=prompt_text,
+        prompt_data_type="text",
+    )
+    normalizer_req_piece_2 = NormalizerRequestPiece(
+        prompt_converters=prompt_converters,
+        prompt_text=prompt_text,
+        prompt_data_type="text",
+    )
+    normalizer = PromptNormalizer(memory=MagicMock())
+
+    response = normalizer._build_prompt_request_response(
+        request=NormalizerRequest([normalizer_req_piece_1, normalizer_req_piece_2]),
+        target=prompt_target,
+        labels=labels,
+        orchestrator_identifier=orchestrator_identifier,
+    )
+
+    # Check all prompt pieces in the response have the same conversation ID
+    assert len(set(prompt_piece.conversation_id for prompt_piece in response.request_pieces)) == 1

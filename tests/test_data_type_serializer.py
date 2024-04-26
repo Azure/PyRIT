@@ -2,18 +2,19 @@
 # Licensed under the MIT license.
 
 import os
+import tempfile
 import pytest
 
 from pyrit.prompt_normalizer import DataTypeSerializer, data_serializer_factory
 from pyrit.prompt_normalizer.data_type_serializer import ImagePathDataTypeSerializer, TextDataTypeSerializer
 
 
-def test_data_normalizer_factory_text_no_data_throws():
+def test_data_serializer_factory_text_no_data_throws():
     with pytest.raises(TypeError):
         data_serializer_factory("text")
 
 
-def test_data_normalizer_factory_text_with_data():
+def test_data_serializer_factory_text_with_data():
     normalizer = data_serializer_factory(data_type="text", prompt_text="test")
     assert isinstance(normalizer, DataTypeSerializer)
     assert isinstance(normalizer, TextDataTypeSerializer)
@@ -22,13 +23,13 @@ def test_data_normalizer_factory_text_with_data():
     assert normalizer.data_on_disk() is False
 
 
-def test_data_normalizer_text_read_data_throws():
+def test_data_serializer_text_read_data_throws():
     normalizer = data_serializer_factory(data_type="text", prompt_text="test")
     with pytest.raises(TypeError):
         normalizer.read_data()
 
 
-def test_data_normalizer_text_save_data_throws():
+def test_data_serializer_text_save_data_throws():
     normalizer = data_serializer_factory(data_type="text", prompt_text="test")
     with pytest.raises(TypeError):
         normalizer.save_data(b"\x00")
@@ -75,3 +76,31 @@ def test_image_path_read_data_base64():
     base_64_data = normalizer.read_data_base64()
     assert base_64_data
     assert base_64_data == "QUFBQQ=="
+
+
+def test_path_exists():
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+        temp_file_path = temp_file.name
+        assert DataTypeSerializer.path_exists(temp_file_path) is True
+
+
+def test_path_not_exists():
+    file_path = "non_existing_file.txt"
+    with pytest.raises(FileNotFoundError):
+        DataTypeSerializer.path_exists(file_path)
+
+
+def test_get_extension():
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+        temp_file_path = temp_file.name
+        expected_extension = ".jpg"
+        extension = DataTypeSerializer.get_extension(temp_file_path)
+        assert extension == expected_extension
+
+
+def test_get_mime_type():
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+        temp_file_path = temp_file.name
+        expected_mime_type = "image/jpeg"
+        mime_type = DataTypeSerializer.get_mime_type(temp_file_path)
+        assert mime_type == expected_mime_type

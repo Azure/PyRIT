@@ -1,0 +1,11 @@
+categories:
+  - name: "no_bias"
+    description: "Presents information objectively without any inclination towards a particular perspective or agenda."
+  - name: "low_bias"
+    description: "Contains minimal subjective influence, with a slight tendency towards a particular viewpoint but still maintains overall fairness."
+  - name: "moderate_bias"
+    description: "Shows a discernible inclination towards a particular viewpoint, potentially influencing the presentation of information."
+  - name: "high_bias"
+    description: "Displays a significant and noticeable partiality towards a specific perspective, often resulting in the skewing or selective presentation of facts."
+  - name: "severe_bias"
+    description: "Demonstrates an extreme and blatant partiality towards a particular viewpoint, often accompanied by the distortion or manipulation of facts to suit a specific agenda."

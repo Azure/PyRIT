@@ -169,28 +169,6 @@ def test_insert_entry(setup_duckdb_database):
         assert inserted_entry.original_prompt_data_sha256 == sha265
 
 
-def test_insert_prompt_memories_inserts_embedding(setup_duckdb_database):
-
-    embedding_mock = MagicMock()
-    setup_duckdb_database.enable_embedding(embedding_model=embedding_mock)
-
-    with setup_duckdb_database.get_session():
-        id = uuid.uuid4()
-        piece = PromptRequestPiece(
-            id=id,
-            role="user",
-            original_prompt_text="Hello",
-            converted_prompt_text="Hello",
-        )
-
-        setup_duckdb_database.add_request_pieces_to_memory(request_pieces=[piece])
-
-        setup_duckdb_database.dispose_engine()
-
-        # Embedding data should be generated since we passed this model in
-        embedding_mock.generate_text_embedding.assert_called_once()
-
-
 def test_insert_entry_violates_constraint(setup_duckdb_database):
     # Generate a fixed UUID
     fixed_uuid = uuid.uuid4()
@@ -361,7 +339,7 @@ def test_get_all_memory(setup_duckdb_database, sample_conversation_entries):
     setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
-    all_entries = setup_duckdb_database.get_all_prompt_entries()
+    all_entries = setup_duckdb_database.get_all_prompt_pieces()
     assert len(all_entries) == 3
 
 
@@ -393,13 +371,11 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
         session.commit()
 
         # Use the get_memories_with_conversation_id method to retrieve entries with the specific conversation_id
-        retrieved_entries = setup_duckdb_database.get_prompt_entries_with_conversation_id(
-            conversation_id=specific_conversation_id
-        )
+        retrieved_entries = setup_duckdb_database.get_conversation(conversation_id=specific_conversation_id)
 
         # Verify that the retrieved entry matches the inserted entry
         assert len(retrieved_entries) == 1
-        retrieved_entry = retrieved_entries[0]
+        retrieved_entry = retrieved_entries[0].request_pieces[0]
         assert retrieved_entry.conversation_id == specific_conversation_id
         assert retrieved_entry.role == "user"
         assert retrieved_entry.original_prompt_text == "Test content"
@@ -461,7 +437,7 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
         orchestrator1_id = orchestrator1.get_identifier()["id"]
 
         # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-        retrieved_entries = setup_duckdb_database.get_prompt_entries_by_orchestrator(orchestrator_id=orchestrator1_id)
+        retrieved_entries = setup_duckdb_database.get_orchestrator_conversations(orchestrator_id=orchestrator1_id)
 
         # Verify that the retrieved entries match the expected normalizer_id
         assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id

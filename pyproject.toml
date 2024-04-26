@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.1.3.dev0"
+version = "0.2.0.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -17,8 +17,10 @@ readme = "README.md"
 license = { text = "MIT" }
 keywords = [
     "llm",
+    "ai-safety",
     "ai-security",
     "ai-red-team",
+    "ai-red-teaming",
     "ai-robustness",
     "ai-robustness-testing",
     "ai-risk-assessment",
@@ -27,13 +29,15 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
-requires-python = ">=3.10, <3.11"
+requires-python = ">=3.10, <3.12"
 dependencies = [
     "aiofiles>=23.2.1",
     "aiohttp>=3.9.3",
     "aiosignal>=1.3.1",
     "art==6.1.0",
+    "azure-cognitiveservices-speech>=1.36.0",
     "azure-core>=1.26.1",
     "azure-identity>=1.12.0",
     "azure-ai-ml==1.13.0",
@@ -41,38 +45,35 @@ dependencies = [
     "confusables==1.2.0",
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
-    "jsonpickle>=3.0.2",
+    "jsonpickle>=3.0.4",
     "jupyter>=1.0.0",
-    "ipykernel>=6.22.0",
+    "ipykernel>=6.29.4",
     "logzero>=1.7.0",
-    "numpy>=1.26.2",
+    "numpy>=1.26.4",
     "onnxruntime>=1.14.1",
-    "onnx>=1.14.0",
-    "openai>=1.5.0",
-    "pillow>=10.3.0",
-    "pydantic>2",
-    "python-dotenv>=1.0.0",
-    "scikit-learn>=1.3.2",
+    "onnx>=1.16.0",
+    "openai>=1.23.2",
+    "pydantic>=2.7.1",
+    "python-dotenv>=1.0.1",
+    "scikit-learn>=1.4.2",
     "semantic-kernel==0.9.4b1",
     "SQLAlchemy==2.0.28",
     "sqlalchemy-stubs==0.4",
-    "termcolor>=2.3.0",
-    "tenacity>=8.2.2",
-    "tokenizers>=0.15.0",
+    "termcolor>=2.4.0",
+    "tenacity>=8.2.3",
+    "tokenizers>=0.19.1",
     "torch==2.1.2",
-    "transformers>=4.36.0",
-    "types-requests>=2.31.0.2",
+    "transformers>=4.40.0",
+    "types-requests>=2.31.0.20240406",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "black>=23.3.0",
-    "flake8>=6.0.0",
-    "flake8-copyright>=0.2.0",
-    "ipykernel>=6.22.0",
-    "jupyter>=1.0.0",
-    "jupytext>=1.16.0",
-    "mypy>=1.8.0",
+    "black>=24.4.0",
+    "flake8>=7.0.0",
+    "flake8-copyright>=0.2.4",
+    "jupytext>=1.16.1",
+    "mypy>=1.9.0",
     "pillow>=10.3.0",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",
@@ -81,6 +82,7 @@ dev = [
     "respx>=0.20.2",
     "types-PyYAML>=6.0.12.9",
     "types-PyYAML>=6.0.12.9",
+    "azure-cognitiveservices-speech>=1.36.0",
 ]
 
 [tool.pytest.ini_options]

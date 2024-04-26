@@ -12,7 +12,7 @@ from uuid import uuid4
 from pyrit.models import ChatMessage, ChatMessageRole
 
 
-PromptDataType = Literal["text", "image_path", "url"]
+PromptDataType = Literal["text", "image_path", "audio_path", "url"]
 
 """
 The type of the error in the prompt response
@@ -100,9 +100,6 @@ class PromptRequestPiece(abc.ABC):
         self.converted_prompt_data_sha256 = self._create_sha256(converted_prompt_text)
 
         self.response_error = response_error
-
-    def is_sequence_set(self) -> bool:
-        return self.sequence != -1
 
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=self.role, content=self.converted_prompt_text)

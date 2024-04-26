@@ -16,7 +16,6 @@ import pathlib
 
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece
 
 jailbreak_template = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
@@ -60,7 +59,6 @@ import os
 import uuid
 
 from pyrit.prompt_target import AzureBlobStorageTarget
-from pyrit.common import default_values
 
 
 # When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you

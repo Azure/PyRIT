@@ -6,8 +6,11 @@ import logging
 from typing import Optional
 
 from pyrit.memory import MemoryInterface
+from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
 
@@ -46,37 +49,45 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._batch_size = batch_size
 
-    def send_text_prompts(self, prompts: list[str]):
+    async def send_prompts_async(
+        self, *, prompt_list: list[str], prompt_type: PromptDataType = "text"
+    ) -> list[PromptRequestResponse]:
         """
-        Sends the strings to the prompt target
+        Sends the prompts to the prompt target.
         """
 
-        responses = []
-
-        for prompt in prompts:
-            request = self._create_normalizer_request(prompt, "text")
-            response = self._prompt_normalizer.send_prompt(
-                normalizer_request=request,
-                target=self._prompt_target,
-                labels=self._global_memory_labels,
-                orchestrator_identifier=self.get_identifier(),
+        requests: list[NormalizerRequest] = []
+        for prompt in prompt_list:
+            requests.append(
+                self._create_normalizer_request(
+                    prompt_text=prompt,
+                    prompt_type=prompt_type,
+                    converters=self._prompt_converters,
+                )
             )
 
-            responses.append(response)
+        for request in requests:
+            request.validate()
 
-        return responses
-
-    async def send_prompts_batch_async(self, prompts: list[str]):
-        """
-        Sends the prompt to the prompt target.
-        """
-
-        requests = []
-        for prompt in prompts:
-            requests.append(self._create_normalizer_request(prompt, "text"))
-
-        await self._prompt_normalizer.send_prompt_batch_to_target_async(
+        return await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=requests,
+            target=self._prompt_target,
+            labels=self._global_memory_labels,
+            orchestrator_identifier=self.get_identifier(),
+            batch_size=self._batch_size,
+        )
+
+    async def send_normalizer_requests_async(
+        self, *, prompt_request_list: list[NormalizerRequest]
+    ) -> list[PromptRequestResponse]:
+        """
+        Sends the prompts to the prompt target.
+        """
+        for request in prompt_request_list:
+            request.validate()
+
+        return await self._prompt_normalizer.send_prompt_batch_to_target_async(
+            requests=prompt_request_list,
             target=self._prompt_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),

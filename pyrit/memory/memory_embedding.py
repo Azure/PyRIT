@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import os
-from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
+from pyrit.embedding import AzureTextEmbedding
 from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory.memory_models import EmbeddingData, PromptRequestPiece
 
