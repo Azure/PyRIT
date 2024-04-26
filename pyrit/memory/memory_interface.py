@@ -140,7 +140,7 @@ class MemoryInterface(abc.ABC):
         print(prompt_pieces[0].__dict__)
         for piece in prompt_pieces:
             piece.id = uuid4()
-            piece.orchestrator_identifier = new_orchestrator_id
+            piece.orchestrator_identifier["id"] = new_orchestrator_id
             if not piece.conversation_id in conversation_id_map:
                 raise ValueError(
                     f"Conversation ID {piece.conversation_id} not found in conversation_id_map."

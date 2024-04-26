@@ -69,7 +69,7 @@ def test_duplicate_memory(
             converted_prompt_text="Hello, how are you?",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier()["id"],
+            orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
@@ -77,14 +77,14 @@ def test_duplicate_memory(
             converted_prompt_text="I'm fine, thank you!",
             conversation_id=conversation_id_1,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier()["id"],
+            orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
             original_prompt_text="original prompt text",
             converted_prompt_text="I'm fine, thank you!",
             conversation_id=conversation_id_3,
-            orchestrator_identifier=orchestrator2.get_identifier()["id"],
+            orchestrator_identifier=orchestrator2.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
@@ -92,7 +92,7 @@ def test_duplicate_memory(
             converted_prompt_text="Hello, how are you?",
             conversation_id=conversation_id_2,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier()["id"],
+            orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
@@ -100,7 +100,7 @@ def test_duplicate_memory(
             converted_prompt_text="I'm fine, thank you!",
             conversation_id=conversation_id_2,
             sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier()["id"],
+            orchestrator_identifier=orchestrator1.get_identifier(),
         ),
     ]
     memory._add_request_pieces_to_memory(request_pieces=pieces)
@@ -117,9 +117,9 @@ def test_duplicate_memory(
     )
     all_pieces = memory.get_all_prompt_pieces()
     assert len(all_pieces) == 9
-    assert len([p for p in all_pieces if p.orchestrator_identifier == orchestrator1.get_identifier()["id"]]) == 4
-    assert len([p for p in all_pieces if p.orchestrator_identifier == orchestrator2.get_identifier()["id"]]) == 1
-    assert len([p for p in all_pieces if p.orchestrator_identifier == orchestrator3.get_identifier()["id"]]) == 4
+    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator1.get_identifier()["id"]]) == 4
+    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator2.get_identifier()["id"]]) == 1
+    assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator3.get_identifier()["id"]]) == 4
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_2]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
