@@ -9,7 +9,7 @@ from typing import Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptDataType, Identifier
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
 
 logger = logging.getLogger(__name__)
 

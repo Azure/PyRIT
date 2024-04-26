@@ -4,8 +4,7 @@
 import abc
 from dataclasses import dataclass
 
-from pyrit.models import PromptDataType
-from pyrit.models.identifiers import Identifier
+from pyrit.models import PromptDataType, Identifier
 
 
 @dataclass

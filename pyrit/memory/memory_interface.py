@@ -12,7 +12,7 @@ from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
-from pyrit.models.prompt_request_response import group_conversation_request_pieces_by_sequence
+from pyrit.models import group_conversation_request_pieces_by_sequence
 
 
 class MemoryInterface(abc.ABC):
