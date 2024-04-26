@@ -6,6 +6,7 @@ import pathlib
 from enum import Enum
 import concurrent.futures
 import asyncio
+from typing import Optional
 
 from openai import BadRequestError
 
@@ -43,10 +44,10 @@ class DALLETarget(PromptTarget):
         api_version (str, optional): The API version. Defaults to "2024-02-01".
         image_size (str, optional): The size of the image to output, must be a value of VALID_SIZES.
             Defaults to 1024x1024.
-        num_images (int, optional): The num ber of output images to generate.
+        num_images (int, optional): The number of output images to generate.
             Defaults to 1. For DALLE-3, can only be 1, for DALLE-2 max is 10 images.
         dalle_version (int, optional): Version of DALLE service. Defaults to 3.
-        memory:
+        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
         headers (dict, optional): Headers of the endpoint.
         quality (str, optional): picture quality. Defaults to standard
         style (str, optional): image style. Defaults to natural
@@ -63,14 +64,14 @@ class DALLETarget(PromptTarget):
         num_images: int = 1,
         dalle_version: SupportedDalleVersions = SupportedDalleVersions.V2,
         memory: MemoryInterface | None = None,
-        headers: dict = None,
+        headers: Optional[dict[str, str]] = None,
         quality: str = "standard",
         style: str = "natural",
     ):
 
         super().__init__(memory=memory)
 
-        # make sure number of images is allowed by Dall-e version
+        # make sure number of images and headers are allowed by Dall-e version
         if dalle_version == SupportedDalleVersions.V3:
             self.dalle_version = "dall-e-3"
             if num_images != 1:

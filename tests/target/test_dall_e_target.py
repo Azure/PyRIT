@@ -27,11 +27,8 @@ def sample_conversations() -> list[PromptRequestPiece]:
     return get_sample_conversations()
 
 
-def test_dalle_initializes(dalle_target: DALLETarget):
-    assert dalle_target
-
-
 def test_initialization_with_required_parameters(dalle_target: DALLETarget):
+    assert dalle_target
     assert dalle_target.deployment_name == "test"
     assert dalle_target.image_target is not None
 

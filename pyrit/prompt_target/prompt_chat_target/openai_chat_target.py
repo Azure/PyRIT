@@ -4,6 +4,7 @@
 from abc import abstractmethod
 import logging
 import json
+from typing import Optional
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
@@ -283,7 +284,7 @@ class OpenAIChatTarget(OpenAIChatInterface):
         top_p: int = 1,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
-        headers: dict = None,
+        headers: Optional[dict[str, str]] = None,
     ) -> None:
         """
         Class that initializes an openai chat target
