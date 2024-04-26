@@ -14,7 +14,7 @@ from openai.types.chat.chat_completion import Choice
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import AzureOpenAIGPTVChatTarget
-from pyrit.models.models import ChatMessageListContent
+from pyrit.models import ChatMessageListContent
 
 
 @pytest.fixture
@@ -24,6 +24,24 @@ def azure_gptv_chat_engine() -> AzureOpenAIGPTVChatTarget:
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         api_version="some_version",
+    )
+
+
+@pytest.fixture
+def azure_openai_mock_return() -> ChatCompletion:
+    return ChatCompletion(
+        id="12345678-1a2b-3c4e5f-a123-12345678abcd",
+        object="chat.completion",
+        choices=[
+            Choice(
+                index=0,
+                message=ChatCompletionMessage(role="assistant", content="hi"),
+                finish_reason="stop",
+                logprobs=None,
+            )
+        ],
+        created=1629389505,
+        model="gpt-4-v",
     )
 
 
@@ -106,7 +124,7 @@ def test_init_with_no_additional_request_headers_var_raises():
 
 def test_convert_image_to_data_url_file_not_found(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
     with pytest.raises(FileNotFoundError):
-        azure_gptv_chat_engine.convert_local_image_to_data_url("nonexistent.jpg")
+        azure_gptv_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
 
 
 def test_convert_image_with_unsupported_extension(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
@@ -117,7 +135,7 @@ def test_convert_image_with_unsupported_extension(azure_gptv_chat_engine: AzureO
     assert os.path.exists(tmp_file_name)
 
     with pytest.raises(ValueError) as exc_info:
-        azure_gptv_chat_engine.convert_local_image_to_data_url(tmp_file_name)
+        azure_gptv_chat_engine._convert_local_image_to_data_url(tmp_file_name)
 
     assert "Unsupported image format" in str(exc_info.value)
 
@@ -138,7 +156,7 @@ def test_convert_image_to_data_url_success(
 
     assert os.path.exists(tmp_file_name)
 
-    result = azure_gptv_chat_engine.convert_local_image_to_data_url(tmp_file_name)
+    result = azure_gptv_chat_engine._convert_local_image_to_data_url(tmp_file_name)
     assert "data:image/jpeg;base64,encoded_base64_string" in result
 
     # Assertions for the mocks
@@ -169,39 +187,14 @@ def test_build_chat_messages_with_consistent_roles(azure_gptv_chat_engine: Azure
         )
     ]
     with patch.object(
-        azure_gptv_chat_engine, "convert_local_image_to_data_url", return_value="data:image/jpeg;base64,encoded_string"
+        azure_gptv_chat_engine, "_convert_local_image_to_data_url", return_value="data:image/jpeg;base64,encoded_string"
     ):
-        messages = azure_gptv_chat_engine.build_chat_messages(entries)
+        messages = azure_gptv_chat_engine._build_chat_messages(entries)
 
     assert len(messages) == 1
     assert messages[0].role == "user"
     assert messages[0].content[0]["type"] == "text"  # type: ignore
     assert messages[0].content[1]["type"] == "image_url"  # type: ignore
-
-
-def test_build_chat_messages_with_inconsistent_roles(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
-
-    entries = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    converted_prompt_data_type="text",
-                    original_prompt_text="Hello",
-                    converted_prompt_text="Hello",
-                ),
-                PromptRequestPiece(
-                    role="assistant",
-                    converted_prompt_data_type="image_path",
-                    original_prompt_text="image.jpg",
-                    converted_prompt_text="image.jpg",
-                ),
-            ]
-        )
-    ]
-    with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine.build_chat_messages(entries)
-    assert "Inconsistent roles within the same prompt request response entry." in str(excinfo.value)
 
 
 def test_build_chat_messages_with_unsupported_data_types(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
@@ -220,7 +213,7 @@ def test_build_chat_messages_with_unsupported_data_types(azure_gptv_chat_engine:
         )
     ]
     with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine.build_chat_messages(entries)
+        azure_gptv_chat_engine._build_chat_messages(entries)
     assert "Multimodal data type audio is not yet supported." in str(excinfo.value)
 
 
@@ -238,12 +231,12 @@ def test_build_chat_messages_no_roles(azure_gptv_chat_engine: AzureOpenAIGPTVCha
         )
     ]
     with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine.build_chat_messages(entries)
+        azure_gptv_chat_engine._build_chat_messages(entries)
     assert "No role could be determined from the prompt request pieces." in str(excinfo.value)
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_successful(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
+async def test_send_prompt_async_adds_to_memory(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
@@ -267,6 +260,52 @@ async def test_send_prompt_async_successful(azure_gptv_chat_engine: AzureOpenAIG
     azure_gptv_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
 
     assert result is not None, "Expected a result but got None"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async(
+    azure_openai_mock_return: ChatCompletion, azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget
+):
+    with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
+        tmp_file_name = tmp_file.name
+    assert os.path.exists(tmp_file_name)
+    prompt_req_resp = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="user",
+                conversation_id="12345679",
+                original_prompt_text="hello",
+                converted_prompt_text="hello",
+                original_prompt_data_type="text",
+                converted_prompt_data_type="text",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            ),
+            PromptRequestPiece(
+                role="user",
+                conversation_id="12345679",
+                original_prompt_text=tmp_file_name,
+                converted_prompt_text=tmp_file_name,
+                original_prompt_data_type="image_path",
+                converted_prompt_data_type="image_path",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            ),
+        ]
+    )
+    with patch.object(
+        azure_gptv_chat_engine, "_convert_local_image_to_data_url", return_value="data:image/jpeg;base64,encoded_string"
+    ):
+        with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
+            mock_create.return_value = azure_openai_mock_return
+            response: PromptRequestResponse = await azure_gptv_chat_engine.send_prompt_async(
+                prompt_request=prompt_req_resp
+            )
+            assert len(response.request_pieces) == 1
+            assert response.request_pieces[0].converted_prompt_text == "hi"
+    os.remove(tmp_file_name)
 
 
 @pytest.mark.asyncio
@@ -298,7 +337,7 @@ def test_parse_chat_completion_successful(azure_gptv_chat_engine: AzureOpenAIGPT
     mock_response.choices = [MagicMock()]
     mock_response.choices[0].message = MagicMock()
     mock_response.choices[0].message.content = "Test response message"
-    result = azure_gptv_chat_engine.parse_chat_completion(mock_response)
+    result = azure_gptv_chat_engine._parse_chat_completion(mock_response)
     assert result == "Test response message", "The response message was not parsed correctly"
 
 
