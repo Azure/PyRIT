@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+import tempfile
 import pytest
 
 from pyrit.prompt_normalizer import DataTypeSerializer, data_serializer_factory
@@ -75,3 +76,31 @@ def test_image_path_read_data_base64():
     base_64_data = normalizer.read_data_base64()
     assert base_64_data
     assert base_64_data == "QUFBQQ=="
+
+
+def test_path_exists():
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+        temp_file_path = temp_file.name
+        assert DataTypeSerializer.path_exists(temp_file_path) is True
+
+
+def test_path_not_exists():
+    file_path = "non_existing_file.txt"
+    with pytest.raises(FileNotFoundError):
+        DataTypeSerializer.path_exists(file_path)
+
+
+def test_get_extension():
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+        temp_file_path = temp_file.name
+        expected_extension = ".jpg"
+        extension = DataTypeSerializer.get_extension(temp_file_path)
+        assert extension == expected_extension
+
+
+def test_get_mime_type():
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+        temp_file_path = temp_file.name
+        expected_mime_type = "image/jpeg"
+        mime_type = DataTypeSerializer.get_mime_type(temp_file_path)
+        assert mime_type == expected_mime_type

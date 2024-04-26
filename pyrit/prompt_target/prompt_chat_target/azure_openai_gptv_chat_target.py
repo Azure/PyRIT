@@ -5,14 +5,13 @@ import asyncio
 import concurrent.futures
 import logging
 import json
-import os
-from mimetypes import guess_type
 
 from openai import AsyncAzureOpenAI, AzureOpenAI
 from openai.types.chat import ChatCompletion
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
+from pyrit.prompt_normalizer import DataTypeSerializer
 from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_normalizer.data_type_serializer import data_serializer_factory
@@ -111,7 +110,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
         )
 
-    def convert_local_image_to_data_url(self, image_path: str) -> str:
+    def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
 
         Args:
@@ -124,17 +123,14 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Returns:
             str: A string containing the MIME type and the base64-encoded data of the image, formatted as a data URL.
         """
-        if not os.path.exists(image_path):
-            raise FileNotFoundError(f"No file found at the specified path: {image_path}")
-
-        _, ext = os.path.splitext(image_path)
+        ext = DataTypeSerializer.get_extension(image_path)
         if ext.lower() not in AZURE_OPENAI_GPTV_SUPPORTED_IMAGE_FORMATS:
             raise ValueError(
                 f"Unsupported image format: {ext}. Supported formats are: {AZURE_OPENAI_GPTV_SUPPORTED_IMAGE_FORMATS}"
             )
 
-        mime_type, _ = guess_type(image_path)
-        if mime_type is None:
+        mime_type = DataTypeSerializer.get_mime_type(image_path)
+        if not mime_type:
             mime_type = "application/octet-stream"
 
         image_serializer = data_serializer_factory(prompt_text=image_path, data_type="image_path", extension=ext)
@@ -143,7 +139,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    def build_chat_messages(self, prompt_req_res_entries: list[PromptRequestResponse]) -> list[ChatMessageListContent]:
+    def _build_chat_messages(self, prompt_req_res_entries: list[PromptRequestResponse]) -> list[ChatMessageListContent]:
         """
         Builds chat messages based on prompt request response entries.
 
@@ -160,16 +156,12 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             content = []
             role = None
             for prompt_request_piece in prompt_request_pieces:
-                if not role:
-                    role = prompt_request_piece.role
-                elif role != prompt_request_piece.role:
-                    raise ValueError("Inconsistent roles within the same prompt request response entry.")
-
+                role = prompt_request_piece.role
                 if prompt_request_piece.converted_prompt_data_type == "text":
                     entry = {"type": "text", "text": prompt_request_piece.converted_prompt_text}
                     content.append(entry)
                 elif prompt_request_piece.converted_prompt_data_type == "image_path":
-                    data_base64_encoded_url = self.convert_local_image_to_data_url(
+                    data_base64_encoded_url = self._convert_local_image_to_data_url(
                         prompt_request_piece.converted_prompt_text
                     )
                     entry = {"type": "image_url", "image_url": data_base64_encoded_url}
@@ -214,7 +206,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
         self._memory.add_request_response_to_memory(request=prompt_request)
 
-        messages = self.build_chat_messages(prompt_req_res_entries)
+        messages = self._build_chat_messages(prompt_req_res_entries)
         resp_text = await self._complete_chat_async(
             messages=messages,
             top_p=self._top_p,
@@ -232,7 +224,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
         return response_entry
 
-    def parse_chat_completion(self, response):
+    def _parse_chat_completion(self, response):
         """
         Parses chat message to get response
 
@@ -293,7 +285,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             stream=False,
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
-        return self.parse_chat_completion(response)
+        return self._parse_chat_completion(response)
 
     def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
@@ -305,6 +297,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             ValueError: If more than two request pieces are provided.
             ValueError: If any of the request pieces have a data type other than 'text' or 'image_path'.
         """
+        # As of April 26, 2024, the Azure OpenAI GPT-V model only accepts text and image as input.
         if len(prompt_request.request_pieces) > 2:
             raise ValueError("This target only supports a two prompt request pieces text and image_path.")
 

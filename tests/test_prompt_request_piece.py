@@ -99,6 +99,7 @@ def test_hashes_generated():
 def test_prompt_response_validate(sample_conversations: list[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
+        c.role = sample_conversations[0].role
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     request_response.validate()
@@ -123,6 +124,15 @@ def test_prompt_response_converted_empty_throws(sample_conversations: list[Promp
     sample_conversations[0].converted_prompt_text = None
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="Converted prompt text is None."):
+        request_response.validate()
+
+
+def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: list[PromptRequestPiece]):
+    for c in sample_conversations:
+        c.conversation_id = sample_conversations[0].conversation_id
+
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="Inconsistent roles within the same prompt request response entry."):
         request_response.validate()
 
 
