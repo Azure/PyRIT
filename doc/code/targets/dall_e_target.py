@@ -27,7 +27,7 @@ from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import DALLETarget
 
-prompt_to_send = "Draw me a racoon in a pirate outfit who is a French artist in France at a winery"
+prompt_to_send = "Draw me kids playing with water balloons"
 default_values.load_default_env()
 
 img_prompt_target = DALLETarget(
@@ -49,6 +49,7 @@ if image_resp:
     print(image_resp)
 else:
     print("image blocked! ")
+    img_prompt_target.dispose_db_engine()
 # print(f"metadata: {image_resp.prompt_metadata}")
 
 # %% [markdown]

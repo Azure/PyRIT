@@ -132,7 +132,6 @@ class DALLETarget(PromptTarget):
         self, resp: dict, prompt_request: PromptRequestPiece
     ) -> PromptRequestResponse:
         if "error" not in resp.keys():
-            # TODO: fix this to get rid of output filename
 
             data = data_serializer_factory(data_type="image_path")
             b64_data = resp["data"][0]["b64_json"]
@@ -145,20 +144,12 @@ class DALLETarget(PromptTarget):
             )
 
         else:
-            parsed_resp = {}
             if resp["exception type"] == "Blocked":
-
-                # Parsing Error Response to form json object
-                parsed_resp["exception type"] = "Blocked"
-                parsed_resp["data"] = ""
-                error_message = str(resp["error"]).split("{")
-                parsed_error = "{".join(error_message[1:])
-
                 return self._memory.add_response_entries_to_memory(
                     request=prompt_request,
-                    response_text_pieces=[],
+                    response_text_pieces=["content blocked"],
                     response_type="image_path",
-                    prompt_metadata=json.dumps("{" + parsed_error),
+                    prompt_metadata=resp,
                     error="blocked",
                 )
 
@@ -190,13 +181,29 @@ class DALLETarget(PromptTarget):
                     response_format="b64_json",
                 )
             json_response = json.loads(response.model_dump_json())
-            return json_response
-        except BadRequestError as e:
-            return {"error": e, "exception type": "Blocked"}
+            # create prompt request piece object w the json response
+
+            # parsing
+
+            # add to memory
+
+            
+
+            #return json_response
+        
+        
+        except BadRequestError as e: 
+            json_response = {"exception type": "Blocked", "data": ""}
+            # Parsing Error Response to form json object
+            error_message = str(e).split("{")
+            parsed_error = "{".join(error_message[1:])
+            json_response["error"] = "{" + parsed_error
+            
         except json.JSONDecodeError as e:
             return {"error": e, "exception type": "JSON Error"}
         except Exception as e:
             return {"error": e, "exception type": "exception"}
+        return json_response
 
     def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
