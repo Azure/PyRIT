@@ -28,15 +28,21 @@ class ScoringInstructions(enum.Enum):
 
 
 class ContentClassifiers(enum.Enum):
+    BIAS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "bias.yaml").resolve()
     CURRENT_EVENTS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "current_events.yaml").resolve()
+    GROUNDEDNESS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "grounded.yaml").resolve()
+    HARMFUL_CONTENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "harmful_content.yaml").resolve()
     PROMPT_INJECTION_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "prompt_injection_detector.yaml").resolve()
     QUESTION_ANSWERING_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "question_answering.yaml").resolve()
+    REFUSAL_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "refusal.yaml").resolve()
     SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
+    SEXUAL_CONTENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sexual_content.yaml").resolve()
 
 
 class LikertScales(enum.Enum):
     CYBER_SCALE = Path(LIKERT_SCALES_PATH, "cyber.yaml").resolve()
     FAIRNESS_BIAS_SCALE = Path(LIKERT_SCALES_PATH, "fairness_bias.yaml").resolve()
+    HARM_SCALE = Path(LIKERT_SCALES_PATH, "harm.yaml").resolve()
     HATE_SPEECH_SCALE = Path(LIKERT_SCALES_PATH, "hate_speech.yaml").resolve()
     PERSUASION_SCALE = Path(LIKERT_SCALES_PATH, "persuasion.yaml").resolve()
     PHISH_EMAILS_SCALE = Path(LIKERT_SCALES_PATH, "phish_emails.yaml").resolve()
