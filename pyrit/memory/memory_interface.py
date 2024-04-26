@@ -135,9 +135,6 @@ class MemoryInterface(abc.ABC):
             new_orchestrator_id (int): The new orchestrator ID to assign to the duplicated conversations.
         """
         prompt_pieces = self.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
-        print('before')
-        print(prompt_pieces)
-        print(prompt_pieces[0].__dict__)
         for piece in prompt_pieces:
             piece.id = uuid4()
             piece.orchestrator_identifier["id"] = new_orchestrator_id
@@ -149,10 +146,7 @@ class MemoryInterface(abc.ABC):
                 )
             piece.conversation_id = conversation_id_map[piece.conversation_id]
 
-        print('after')
-        print(prompt_pieces[0].__dict__)
         self._add_request_pieces_to_memory(request_pieces=prompt_pieces)
-
 
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """

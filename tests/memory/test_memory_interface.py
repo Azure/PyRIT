@@ -52,9 +52,7 @@ def test_add_request_pieces_to_memory(
     assert len(memory.get_all_prompt_pieces()) == num_conversations
 
 
-def test_duplicate_memory(
-    memory: MemoryInterface
-):
+def test_duplicate_memory(memory: MemoryInterface):
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
     conversation_id_1 = "11111"
@@ -105,15 +103,11 @@ def test_duplicate_memory(
     ]
     memory._add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 5
-    print(memory.get_all_prompt_pieces()[0].__dict__)
     orchestrator3 = Orchestrator()
     memory.duplicate_orchestrator_conversations(
         orchestrator_id=orchestrator1.get_identifier()["id"],
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
-        conversation_id_map={
-            conversation_id_1: conversation_id_4,
-            conversation_id_2: conversation_id_5
-        }
+        conversation_id_map={conversation_id_1: conversation_id_4, conversation_id_2: conversation_id_5},
     )
     all_pieces = memory.get_all_prompt_pieces()
     assert len(all_pieces) == 9
@@ -125,6 +119,32 @@ def test_duplicate_memory(
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_4]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_5]) == 2
+
+
+def test_duplicate_memory_missing_map_entries(memory: MemoryInterface):
+    orchestrator1 = Orchestrator()
+    orchestrator2 = Orchestrator()
+    conversation_id_1 = "11111"
+    conversation_id_2 = "22222"
+    pieces = [
+        PromptRequestPiece(
+            role="user",
+            original_prompt_text="original prompt text",
+            converted_prompt_text="Hello, how are you?",
+            conversation_id=conversation_id_1,
+            sequence=0,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+    ]
+    memory._add_request_pieces_to_memory(request_pieces=pieces)
+    assert len(memory.get_all_prompt_pieces()) == 1
+    orchestrator3 = Orchestrator()
+    with pytest.raises(ValueError):
+        memory.duplicate_orchestrator_conversations(
+            orchestrator_id=orchestrator1.get_identifier()["id"],
+            new_orchestrator_id=orchestrator3.get_identifier()["id"],
+            conversation_id_map={},
+        )
 
 
 def test_add_request_pieces_to_memory_calls_validate(memory: MemoryInterface):
