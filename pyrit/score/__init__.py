@@ -1,29 +1,37 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pyrit.score.score_class import Score
+from pyrit.score.support_text_classification import SupportTextClassification
 from pyrit.score.engine import evaluate, evaluate_async, score_text
-from pyrit.score.gandalf_classifier import GandalfScorer
+from pyrit.score.gandalf_classifier import GandalfScorer, GandalfBinaryScorer
 from pyrit.score.gpt_classifier import (
-    PROMPT_INJECTION_CLASSIFIER,
-    QUESTION_ANSWERING_CLASSIFIER,
-    SENTIMENT_CLASSIFIER,
+    ContentClassifiers,
+    LikertScales,
+    ScoringInstructions,
+    SelfAskScore,
     SelfAskGptClassifier,
+    SelfAskGptLikertScale,
 )
 from pyrit.score.markdown_injection import MarkdownInjectionClassifier
-from pyrit.score.scorer import ScoringEngine, classify_content
+from pyrit.score.substring_scorer import SubStringScorer
 from pyrit.score.text import TextConversationTokenFinder
 
 __all__ = [
-    "score_text",
+    "Score",
+    "SupportTextClassification",
     "evaluate",
     "evaluate_async",
+    "score_text",
     "GandalfScorer",
+    "GandalfBinaryScorer",
+    "ContentClassifiers",
+    "LikertScales",
+    "ScoringInstructions",
+    "SelfAskScore",
     "SelfAskGptClassifier",
-    "PROMPT_INJECTION_CLASSIFIER",
-    "QUESTION_ANSWERING_CLASSIFIER",
-    "SENTIMENT_CLASSIFIER",
+    "SelfAskGptLikertScale",
     "MarkdownInjectionClassifier",
-    "ScoringEngine",
-    "classify_content",
+    "SubStringScorer",
     "TextConversationTokenFinder",
 ]

@@ -14,11 +14,15 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Ways to contribute
 
-Contributions come in many forms such as *writing code* or *adding examples*. It can be just as useful to use the package and *file issues* for bugs or potential improvements as well as missing or inadequate documentation, though. Most open source developers start out with small contributions like this as it is a great way to learn about the project and the associated processes.
+Contributions come in many forms such as *writing code* or *adding examples*.
 
-Please note that we always recommend opening an issue before submitting a pull request. Opening the issue can help in clarifying the approach to addressing the problem. In some cases, this saves the author from spending time on a pull request that cannot be accepted.
+It can be just as useful to use the package and [file issues](https://github.com/Azure/PyRIT/issues) for bugs or potential improvements as well as missing or inadequate documentation. Most open source developers start out with small contributions like this as it is a great way to learn about the project and the associated processes. We often recommend opening an issue before submitting a pull request. Opening the issue can help in clarifying the approach to addressing the problem. In some cases, this saves the author from spending time on a pull request that cannot be accepted.
+
+For new features, it's important to understand our basic [architecture](./code/architecture.md). This can help you get on the right track to contributing.
 
 Importantly, all pull requests are expected to pass the various test/build pipelines. A pull request can only be merged by a maintainer (an AI Red Team member) who will check that tests were added (or updated) and relevant documentation was updated as necessary. We do not provide any guarantees on response times, although team members will do their best to respond within a business day.
+
+In some cases, pull requests don't move forward. This might happen because the author is no longer available to contribute, and/or because the proposed change is no longer relevant. If the change is still relevant maintainers will check in with the author on the pull request. If there is no response within 14 days (two weeks) maintainers may assign someone else to continue the work (assuming the CLA has been accepted). In rare cases, maintainers might not be able to wait with reassigning the work. For example, if a particular change is on the critical path for other planned changes. Ideally, such changes are handled by an AI Red Team member so that this problem doesn't occur in the first place.
 
 ## Prerequisites
 
@@ -26,7 +30,7 @@ This is a list of the prerequisites needed to run this library.
 
 1. **Conda** Install [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) to create Python environments. (Note: Both Miniconda and Anaconda Distribution work for PyRIT. Read [this guide](https://docs.anaconda.com/free/distro-or-miniconda/) for more on which download to choose.)
 
-2. **Git**. Git is required to clone the repo locally. It is available to download [here](https://git-scm.com/downloads).
+1. **Git**. Git is required to clone the repo locally. It is available to download [here](https://git-scm.com/downloads).
     ```bash
     git clone https://github.com/Azure/PyRIT
     ```
@@ -45,7 +49,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
    cd $GIT_PROJECT_HOME/pyrit
    ```
 
-2. Initialize environment.
+1. Initialize environment.
 
     ```bash
     conda create -n pyrit-dev python=3.10
@@ -78,7 +82,15 @@ This is a guide for how to install PyRIT into a `conda` environment.
 
    The suffix `[dev]` installs development-specific requirements such as `pytest` and `pre-commit`.
 
-5. Authenticate with Azure.
+   On some shells quotes are required as follows:
+
+   ```bash
+   pip install -e '.[dev]'
+   ```
+
+   See [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
+
+1. Authenticate with Azure.
 
     ```bash
     az login
@@ -89,7 +101,7 @@ This is a guide for how to install PyRIT into a `conda` environment.
 Before creating your first pull request, set up your fork to contribute to PyRIT by following these steps:
 
 1. [Fork](https://github.com/Azure/PyRIT/fork) the repo from the main branch. By default, forks are named the same as their upstream repository. This will create a new repo called `GITHUB_USERNAME/PyRIT` (where `GITHUB_USERNAME` is a variable for your GitHub username).
-2. Add this new repo locally wherever you cloned PyRIT
+1. Add this new repo locally wherever you cloned PyRIT
 ```
 # to see existing remotes
 git remote -v
@@ -189,6 +201,14 @@ PyRIT test files can be run using `pytest`.
      python -m pytest tests\test_aml_online_endpoint_chat.py::test_get_headers_with_empty_api_key
      ```
 
+### Documentation format
+
+We use the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+For [docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings),
+there are rules for modules, classes, and functions.
+While we can't expect all documentation to be perfect from day 1, we'll improve any docstring
+that we touch in a pull request to be compliant with this style guide.
+
 ## Releasing PyRIT to PyPI
 
 This section is for maintainers only.
@@ -266,6 +286,21 @@ If successful, it will print
 > View at:
   https://pypi.org/project/pyrit/x.y.z/
 
-Finally, make sure to create a PR for the `main` branch where the only change
+After the release is on PyPI, make sure to create a PR for the `main` branch where the only change
 is the version increase in `__init__.py` (while keeping suffix `.dev0`).
 This should be something like `x.y.z+1.dev0`.
+
+Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select the "tag"
+for which you want to create the release notes. It should match the version that you just released
+to PyPI. Hit "Generate release notes". This will pre-populate the text field with all changes.
+Make sure that it starts where the last release left off.
+Sometimes this tool adds too many changes, or leaves a few out, so it's best to check.
+Add a header "## Full list of changes" below "## What's changed?".
+In addition to the full notes, we also want a shorter section with just the relevant
+changes that users should be aware of. The shorter section will be under "## What's changed"
+while the full list of changes will be right below.
+Maintenance changes, build pipeline updates, and documentation fixes are not really important for users.
+However, important bug fixes, new features, and breaking changes are good candidates to include.
+If you are unsure about whether to include certain changes please consult with your fellow
+maintainers.
+When you're done, hit "Publish release" and mark it as the latest release.

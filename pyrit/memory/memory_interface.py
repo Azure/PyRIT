@@ -2,22 +2,23 @@
 # Licensed under the MIT license.
 
 import abc
-from hashlib import sha256
+from pathlib import Path
 
-from uuid import uuid4
+from pyrit.memory.memory_models import EmbeddingData
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError, PromptDataType
+
+from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
-
-from pyrit.memory.memory_models import (
-    ConversationMemoryEntry,
-    ConversationMessageWithSimilarity,
-)
+from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
+from pyrit.common.path import RESULTS_PATH
+from pyrit.models import group_conversation_request_pieces_by_sequence
 
 
 class MemoryInterface(abc.ABC):
     """
     Represents a conversation memory that stores chat messages. This class must be overwritten with a
-    specific implementation to store the memory objects (e.g. database, files, etc.)
+    specific implementation to store the memory objects (e.g. relational database, NoSQL database, etc.)
 
     Args:
         embedding_model (EmbeddingSupport): If set, this includes embeddings in the memory entries
@@ -26,144 +27,198 @@ class MemoryInterface(abc.ABC):
 
     memory_embedding: MemoryEmbedding = None
 
+    def __init__(self, embedding_model=None):
+        self.memory_embedding = embedding_model
+        # Initialize the MemoryExporter instance
+        self.exporter = MemoryExporter()
+
+    def enable_embedding(self, embedding_model=None):
+        self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
+
+    def disable_embedding(self):
+        self.memory_embedding = None
+
     @abc.abstractmethod
-    def get_all_memory(self) -> list[ConversationMemoryEntry]:
+    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
         """
-        Loads all ConversationMemoryEntry from the memory storage handler.
+        Loads all ConversationData from the memory storage handler.
         """
 
     @abc.abstractmethod
-    def save_conversation_memory_entries(self, entries: list[ConversationMemoryEntry]) -> None:
+    def get_all_embeddings(self) -> list[EmbeddingData]:
         """
-        Saves the ConversationMemoryEntry to the memory storage handler.
+        Loads all EmbeddingData from the memory storage handler.
         """
 
     @abc.abstractmethod
-    def get_memories_with_conversation_id(self, *, conversation_id: str) -> list[ConversationMemoryEntry]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
         """
-        Retrieves a list of ConversationMemoryEntry objects that have the specified conversation ID.
+        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
         Args:
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[ConversationMemoryEntry]: A list of chat memory entries with the specified conversation ID.
+            list[PromptRequestPiece]: A list of chat memory entries with the specified conversation ID.
         """
 
     @abc.abstractmethod
-    def get_memories_with_normalizer_id(self, *, normalizer_id: str) -> list[ConversationMemoryEntry]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
         """
-        Retrieves a list of ConversationMemoryEntry objects that have the specified normalizer ID.
+        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
         Args:
-            normalizer_id (str): The normalizer ID to match.
+            orchestrator_id (str): The id of the orchestrator.
+                Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[ConversationMemoryEntry]: A list of chat memory entries with the specified normalizer ID.
+            list[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
     @abc.abstractmethod
-    def get_memory_by_exact_match(self, *, memory_entry_content: str) -> list[ConversationMessageWithSimilarity | None]:
+    def _add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
-        Retrieves chat memory entries that exactly match the given content.
-
-        Args:
-            memory_entry_content (str): The content to match.
-
-        Returns:
-            list[ConversationMemoryEntry | None]: A list of chat memory entries that match the content, or None if no
-            match is found.
+        Inserts a list of prompt request pieces into the memory storage.
         """
 
     @abc.abstractmethod
-    def get_memory_by_embedding_similarity(
-        self, *, memory_entry_emb: list[float], threshold: float = 0.8
-    ) -> list[ConversationMessageWithSimilarity | None]:
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
         """
-        Retrieves chat memory entries that have an embedding similarity with the given content.
+        Inserts embedding data into memory storage
+        """
+
+    def get_conversation(self, *, conversation_id: str) -> list[PromptRequestResponse]:
+        """
+        Retrieves a list of PromptRequestResponse objects that have the specified conversation ID.
 
         Args:
-            memory_entry_emb (list[float]): The content to match.
-            threshold (float): The threshold to use for the similarity. Defaults to 0.8.
+            conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[ConversationMessageWithSimilarity | None]: A list of chat memory entries with similarity information,
-            or None if no match is found.
+            list[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
         """
+        request_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
-    def get_chat_messages(self) -> list[ChatMessage]:
+    def get_orchestrator_conversations(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
         """
-        Retrieves all chat messages from the memory.
+        Retrieves a list of PromptRequestResponse objects that have the specified orchestrator ID.
+
+        Args:
+            orchestrator_id (int): The orchestrator ID to match.
 
         Returns:
-            list[ChatMessage]: The list of chat messages.
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
 
-        memories = self.get_all_memory()
+        prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+        return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
-        sorted_memory_entries = sorted(
-            memories,
-            key=lambda x: x.timestamp_in_ns,
-            reverse=True,
+    def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
+        """
+        Inserts a list of prompt request pieces into the memory storage.
+
+        Automatically updates the sequence to be the next number in the conversation.
+        If necessary, generates embedding data for applicable entries
+
+        Args:
+            request (PromptRequestPiece): The request piece to add to the memory.
+
+        Returns:
+            None
+        """
+        request.validate()
+
+        embedding_entries = []
+        request_pieces = request.request_pieces
+
+        self._update_sequence(request_pieces=request_pieces)
+
+        self._add_request_pieces_to_memory(request_pieces=request_pieces)
+
+        if self.memory_embedding:
+            for piece in request_pieces:
+                embedding_entry = self.memory_embedding.generate_embedding_memory_data(prompt_request_piece=piece)
+                embedding_entries.append(embedding_entry)
+
+            self._add_embeddings_to_memory(embedding_data=embedding_entries)
+
+    def _update_sequence(self, *, request_pieces: list[PromptRequestPiece]):
+        """
+        Updates the sequence number of the request pieces in the conversation.
+
+        Args:
+            request_pieces (list[PromptRequestPiece]): The list of request pieces to update.
+        """
+
+        prev_conversations = self._get_prompt_pieces_with_conversation_id(
+            conversation_id=request_pieces[0].conversation_id
         )
-        return [ChatMessage(role=me.role, content=me.content) for me in sorted_memory_entries]
 
-    def add_chat_message_to_memory(
+        sequence = 0
+
+        if len(prev_conversations) > 0:
+            sequence = max(prev_conversations, key=lambda item: item.sequence).sequence + 1
+
+        for piece in request_pieces:
+            piece.sequence = sequence
+
+    def add_response_entries_to_memory(
         self,
         *,
-        conversation: ChatMessage,
-        conversation_id: str,
-        normalizer_id: str = None,
-        labels: list[str] = None,
-    ):
+        request: PromptRequestPiece,
+        response_text_pieces: list[str],
+        response_type: PromptDataType = "text",
+        prompt_metadata: str = None,
+        error: PromptResponseError = "none",
+    ) -> PromptRequestResponse:
         """
-        Appends a conversation to the memory.
+        Adds response entries to the memory.
+
+        This is a convenience function that ultimately calls add_request_response_to_memory
+        but sets values appropriately.
 
         Args:
-            conversation (ChatMessage): The chat message to be added.
-            conversation_id (str): The conversation ID.
-            normalizer_id (str): The normalizer ID,
-            labels (list[str]): A list of labels to be added to the memory entry.
+            request (PromptRequestPiece): The original prompt request.
+            response_text_pieces (list[str]): List of response text pieces.
+            response_type (PromptDataType, optional): The data type of the response. Defaults to "text".
+            prompt_metadata (str, optional): Additional metadata for the prompt. Defaults to None.
+            error (PromptResponseError, optional): The error type of the response. Defaults to "none".
+
+        Returns:
+            PromptRequestResponse: The response containing the updated request pieces.
         """
-        chats = self._create_chat_message_memory_entry(
-            conversation=conversation, conversation_id=conversation_id, normalizer_id=normalizer_id, labels=labels
-        )
-
-        self.save_conversation_memory_entries([chats])
-
-    def add_chat_messages_to_memory(
-        self,
-        *,
-        conversations: list[ChatMessage],
-        conversation_id: str,
-        normalizer_id: str = None,
-        labels: list[str] = None,
-    ):
-        """
-        Appends a list of conversations to the memory.
-
-        Args:
-            conversations (ChatMessage): The chat message to be added.
-            conversation_id (str): The conversation ID.
-            normalizer_id (str): The normalizer ID
-            labels (list[str]): A list of labels to be added to the memory entry.
-        """
-        chat_list = []
-
-        for conversation in conversations:
-            chat_list.append(
-                self._create_chat_message_memory_entry(
-                    conversation=conversation,
-                    conversation_id=conversation_id,
-                    normalizer_id=normalizer_id,
-                    labels=labels,
+        constructed_request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="assistant",
+                    original_prompt_text=resp_text,
+                    converted_prompt_text=resp_text,
+                    conversation_id=request.conversation_id,
+                    labels=request.labels,
+                    prompt_target_identifier=request.prompt_target_identifier,
+                    orchestrator_identifier=request.orchestrator_identifier,
+                    original_prompt_data_type=response_type,
+                    converted_prompt_data_type=response_type,
+                    prompt_metadata=prompt_metadata,
+                    response_error=error,
                 )
-            )
-        self.save_conversation_memory_entries(chat_list)
+                for resp_text in response_text_pieces
+            ]
+        )
+
+        self.add_request_response_to_memory(request=constructed_request)
+        return constructed_request
+
+    @abc.abstractmethod
+    def dispose_engine(self):
+        """
+        Dispose the engine and clean up resources.
+        """
 
     def get_chat_messages_with_conversation_id(self, *, conversation_id: str) -> list[ChatMessage]:
         """
-        Returns the memory for a given session ID.
+        Returns the memory for a given conversation_id.
 
         Args:
             conversation_id (str): The conversation ID.
@@ -171,52 +226,24 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[ChatMessage]: The list of chat messages.
         """
-        memory_entries = self.get_memories_with_conversation_id(conversation_id=conversation_id)
-        return [ChatMessage(role=me.role, content=me.content) for me in memory_entries]
+        memory_entries = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
 
-    def _create_chat_message_memory_entry(
-        self,
-        *,
-        conversation: ChatMessage,
-        conversation_id: str,
-        normalizer_id: str = None,
-        labels: list[str] = None,
-    ) -> ConversationMemoryEntry:
-        uuid = uuid4()
-
-        new_chat_memory = ConversationMemoryEntry(
-            role=conversation.role,
-            content=conversation.content,
-            conversation_id=conversation_id,
-            normalizer_id=normalizer_id,
-            uuid=uuid,
-            labels=labels if labels else [],
-            sha256=sha256(conversation.content.encode()).hexdigest(),
-        )
-        if self.memory_embedding:
-            new_chat_memory.embedding_memory_data = self.memory_embedding.generate_embedding_memory_data(
-                chat_memory=new_chat_memory
-            )
-
-        return new_chat_memory
-
-    def get_similar_chat_messages(self, *, chat_message_content: str) -> list[ConversationMessageWithSimilarity]:
+    def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
         """
-        Retrieves a list of chat messages that are similar to the given chat message content.
+        Exports conversation data with the given conversation ID to a specified file.
 
         Args:
-            chat_message_content (str): The content of the chat message to find similar messages for.
-
-        Returns:
-            list[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
-            the similar chat messages.
+            conversation_id (str): The ID of the conversation to export.
+            file_path (str): The path to the file where the data will be exported.
+            If not provided, a default path using RESULTS_PATH will be constructed.
+            export_type (str): The format of the export. Defaults to "json".
         """
-        matches: list[ConversationMessageWithSimilarity] = []
-        exact_matches = self.get_memory_by_exact_match(memory_entry_content=chat_message_content)
-        matches.extend(exact_matches)
-        if self.memory_embedding:
-            text_emb_response = self.memory_embedding.embedding_model.generate_text_embedding(text=chat_message_content)
-            text_emd = text_emb_response.data[0].embedding
-            similar_matches = self.get_memory_by_embedding_similarity(memory_entry_emb=text_emd)
-            matches.extend(similar_matches)
-        return matches
+        data = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+
+        # If file_path is not provided, construct a default using the exporter's results_path
+        if not file_path:
+            file_name = f"{conversation_id}.{export_type}"
+            file_path = RESULTS_PATH / file_name
+
+        self.exporter.export_data(data, file_path=file_path, export_type=export_type)

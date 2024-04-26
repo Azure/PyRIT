@@ -1,21 +1,25 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.prompt_converter import PromptConverter
+from pyrit.models import PromptDataType
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 class UnicodeSubstitutionConverter(PromptConverter):
     def __init__(self, *, start_value=0xE0000):
         self.startValue = start_value
 
-    def convert(self, prompts: list[str]) -> list[str]:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that just encodes the prompt using any unicode starting point.
         Default is to use invisible flag emoji characters.
         """
-        ret_list = []
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
 
-        for prompt in prompts:
-            ret_list.append("".join(chr(self.startValue + ord(ch)) for ch in prompt))
+        ret_text = "".join(chr(self.startValue + ord(ch)) for ch in prompt)
 
-        return ret_list
+        return ConverterResult(output_text=ret_text, output_type="text")
+
+    def input_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"

@@ -1,15 +1,23 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from uuid import uuid4
+import logging
 
-from pyrit.memory import MemoryInterface, file_memory
-from pyrit.prompt_normalizer import Prompt, PromptNormalizer
+from typing import Optional
+
+from pyrit.memory import MemoryInterface
+from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter, NoOpConverter
+from pyrit.prompt_converter import PromptConverter
+
+logger = logging.getLogger(__name__)
 
 
-class PromptSendingOrchestrator:
+class PromptSendingOrchestrator(Orchestrator):
     """
     This orchestrator takes a set of prompts, converts them using the list of PromptConverters,
     and sends them to a target.
@@ -18,61 +26,70 @@ class PromptSendingOrchestrator:
     def __init__(
         self,
         prompt_target: PromptTarget,
-        prompt_converters: list[PromptConverter] = None,
+        prompt_converters: Optional[list[PromptConverter]] = None,
         memory: MemoryInterface = None,
-        include_original_prompts: bool = False,
+        batch_size: int = 10,
+        verbose: bool = False,
     ) -> None:
         """
-        Initialize the PromptSendingOrchestrator.
-
         Args:
             prompt_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                                     the order they are provided. E.g. the output of converter1 is the input of
                                     converter2.
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
-            include_original_prompts (bool, optional): Whether to include original prompts to send to the target
-                                    before converting. This does not include intermediate steps from converters.
-                                    Defaults to False.
+            batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
         """
-        self.prompts = list[str]
-        self.prompt_target = prompt_target
+        super().__init__(prompt_converters=prompt_converters, memory=memory, verbose=verbose)
 
-        self.prompt_converters = prompt_converters if prompt_converters else [NoOpConverter()]
-        self.memory = memory if memory else file_memory.FileMemory()
-        self.prompt_normalizer = PromptNormalizer(memory=self.memory)
+        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
 
-        self.prompt_target.memory = self.memory
-        self.include_original_prompts = include_original_prompts
+        self._prompt_target = prompt_target
+        self._prompt_target._memory = self._memory
 
-    def send_prompts(self, prompts: list[str]):
+        self._batch_size = batch_size
+
+    async def send_prompts_async(
+        self, *, prompt_list: list[str], prompt_type: PromptDataType = "text"
+    ) -> list[PromptRequestResponse]:
         """
-        Sends the prompt to the prompt target.
+        Sends the prompts to the prompt target.
         """
 
-        for prompt_text in prompts:
-            if self.include_original_prompts:
-                original_prompt = Prompt(
-                    prompt_target=self.prompt_target,
-                    prompt_converters=[NoOpConverter()],
-                    prompt_text=prompt_text,
-                    conversation_id=str(uuid4()),
+        requests: list[NormalizerRequest] = []
+        for prompt in prompt_list:
+            requests.append(
+                self._create_normalizer_request(
+                    prompt_text=prompt,
+                    prompt_type=prompt_type,
+                    converters=self._prompt_converters,
                 )
-
-                self.prompt_normalizer.send_prompt(prompt=original_prompt)
-
-            converted_prompt = Prompt(
-                prompt_target=self.prompt_target,
-                prompt_converters=self.prompt_converters,
-                prompt_text=prompt_text,
-                conversation_id=str(uuid4()),
             )
 
-            self.prompt_normalizer.send_prompt(prompt=converted_prompt)
+        for request in requests:
+            request.validate()
 
-    def get_memory(self):
+        return await self._prompt_normalizer.send_prompt_batch_to_target_async(
+            requests=requests,
+            target=self._prompt_target,
+            labels=self._global_memory_labels,
+            orchestrator_identifier=self.get_identifier(),
+            batch_size=self._batch_size,
+        )
+
+    async def send_normalizer_requests_async(
+        self, *, prompt_request_list: list[NormalizerRequest]
+    ) -> list[PromptRequestResponse]:
         """
-        Retrieves the memory associated with the prompt normalizer.
+        Sends the prompts to the prompt target.
         """
-        id = self.prompt_normalizer.id
-        return self.memory.get_memories_with_normalizer_id(normalizer_id=id)
+        for request in prompt_request_list:
+            request.validate()
+
+        return await self._prompt_normalizer.send_prompt_batch_to_target_async(
+            requests=prompt_request_list,
+            target=self._prompt_target,
+            labels=self._global_memory_labels,
+            orchestrator_identifier=self.get_identifier(),
+            batch_size=self._batch_size,
+        )

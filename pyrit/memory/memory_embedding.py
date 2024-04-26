@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 import os
-from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
+from pyrit.embedding import AzureTextEmbedding
 from pyrit.interfaces import EmbeddingSupport
-from pyrit.memory.memory_models import ConversationMemoryEntry, EmbeddingMemoryData
+from pyrit.memory.memory_models import EmbeddingData, PromptRequestPiece
 
 
 class MemoryEmbedding:
@@ -20,22 +20,27 @@ class MemoryEmbedding:
             raise ValueError("embedding_model must be set.")
         self.embedding_model = embedding_model
 
-    def generate_embedding_memory_data(self, *, chat_memory: ConversationMemoryEntry) -> EmbeddingMemoryData:
+    def generate_embedding_memory_data(self, *, prompt_request_piece: PromptRequestPiece) -> EmbeddingData:
         """
         Generates metadata for a chat memory entry.
 
         Args:
-            chat_memory (ConversationMemoryEntry): The chat memory entry.
+            chat_memory (ConversationData): The chat memory entry.
 
         Returns:
             ConversationMemoryEntryMetadata: The generated metadata.
         """
-        embedding_data = EmbeddingMemoryData(
-            embedding=self.embedding_model.generate_text_embedding(text=chat_memory.content).data[0].embedding,
-            embedding_type_name=self.embedding_model.__class__.__name__,
-            uuid=chat_memory.uuid,
-        )
-        return embedding_data
+        if prompt_request_piece.converted_prompt_data_type == "text":
+            embedding_data = EmbeddingData(
+                embedding=self.embedding_model.generate_text_embedding(text=prompt_request_piece.converted_prompt_text)
+                .data[0]
+                .embedding,
+                embedding_type_name=self.embedding_model.__class__.__name__,
+                id=prompt_request_piece.id,
+            )
+            return embedding_data
+
+        raise ValueError("Only text data is supported for embedding.")
 
 
 def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -> MemoryEmbedding | None:
@@ -49,4 +54,6 @@ def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -
         model = AzureTextEmbedding(api_key=api_key, endpoint=api_base, deployment=deployment)
         return MemoryEmbedding(embedding_model=model)
     else:
-        return None
+        raise ValueError(
+            "No embedding model was provided and no Azure OpenAI embedding model was found in the environment."
+        )
