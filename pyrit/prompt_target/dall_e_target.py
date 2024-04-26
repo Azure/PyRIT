@@ -125,42 +125,29 @@ class DALLETarget(PromptTarget):
 
         self._memory.add_request_response_to_memory(request=prompt_request)
 
-        resp = await self._generate_images_async(prompt=request.converted_prompt_text)
-        return self._parse_response_and_add_to_memory(resp, request)
+        return await self._generate_images_async(prompt=request.converted_prompt_text, request=request)
 
-    def _parse_response_and_add_to_memory(
-        self, resp: dict, prompt_request: PromptRequestPiece
+    def _add_response_to_memory(
+        self, resp: dict, prompt_text: str, prompt_request: PromptRequestPiece, error: str = "none"
     ) -> PromptRequestResponse:
-        if "error" not in resp.keys():
 
-            data = data_serializer_factory(data_type="image_path")
-            b64_data = resp["data"][0]["b64_json"]
-            data.save_b64_image(data=b64_data)
+        if "error" not in resp.keys() or resp["exception type"] == "Blocked":
             return self._memory.add_response_entries_to_memory(
                 request=prompt_request,
-                response_text_pieces=[data.prompt_text],
+                response_text_pieces=[prompt_text],
                 response_type="image_path",
                 prompt_metadata=json.dumps(resp),
+                error=error,  # type: ignore
             )
 
+        elif resp["exception type"] == "JSON Error":
+            logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
+            raise
         else:
-            if resp["exception type"] == "Blocked":
-                return self._memory.add_response_entries_to_memory(
-                    request=prompt_request,
-                    response_text_pieces=["content blocked"],
-                    response_type="image_path",
-                    prompt_metadata=resp,
-                    error="blocked",
-                )
+            logger.error(f"Error in calling deployment {self.deployment_name}\n{resp['error']}")
+            raise
 
-            elif resp["exception type"] == "JSON Error":
-                logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
-                raise
-            else:
-                logger.error(f"Error in calling deployment {self.deployment_name}\n{resp['error']}")
-                raise
-
-    async def _generate_images_async(self, prompt: str) -> dict:
+    async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
         try:
             if self.dalle_version == "dall-e-3":
                 response = await self.image_target._async_client.images.generate(
@@ -181,29 +168,31 @@ class DALLETarget(PromptTarget):
                     response_format="b64_json",
                 )
             json_response = json.loads(response.model_dump_json())
-            # create prompt request piece object w the json response
 
-            # parsing
+            data = data_serializer_factory(data_type="image_path")
+            b64_data = json_response["data"][0]["b64_json"]
+            data.save_b64_image(data=b64_data)
+            prompt_text = data.prompt_text
+            error = "none"
 
-            # add to memory
-
-            
-
-            #return json_response
-        
-        
-        except BadRequestError as e: 
+        except BadRequestError as e:
             json_response = {"exception type": "Blocked", "data": ""}
+
             # Parsing Error Response to form json object
             error_message = str(e).split("{")
             parsed_error = "{".join(error_message[1:])
             json_response["error"] = "{" + parsed_error
-            
+            prompt_text = "content blocked"
+            error = "blocked"
+
         except json.JSONDecodeError as e:
             return {"error": e, "exception type": "JSON Error"}
         except Exception as e:
             return {"error": e, "exception type": "exception"}
-        return json_response
+        # return json_response
+        return self._add_response_to_memory(
+            resp=json_response, prompt_text=prompt_text, prompt_request=request, error=error
+        )
 
     def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:

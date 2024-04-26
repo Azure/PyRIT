@@ -27,7 +27,7 @@ from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import DALLETarget
 
-prompt_to_send = "Draw me kids playing with water balloons"
+prompt_to_send = "Draw me a raccoon pirate as a French baker in France"
 default_values.load_default_env()
 
 img_prompt_target = DALLETarget(

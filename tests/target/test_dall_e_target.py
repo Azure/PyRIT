@@ -1,11 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
-import uuid
 import pytest
-import os
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
@@ -28,8 +26,10 @@ def dalle_target() -> DALLETarget:
 def sample_conversations() -> list[PromptRequestPiece]:
     return get_sample_conversations()
 
+
 def test_dalle_initializes(dalle_target: DALLETarget):
     assert dalle_target
+
 
 def test_initialization_with_required_parameters(dalle_target: DALLETarget):
     assert dalle_target.deployment_name == "test"
@@ -52,14 +52,15 @@ def test_initialization_invalid_num_images():
 async def test_send_prompt_async(mock_image, dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
     mock_image.return_value = {"data": [{"b64_json": "mock_json"}]}
     resp = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([sample_conversations[0]]))
-    assert sample_convo
     assert resp
+
 
 @pytest.mark.asyncio
 async def test_dalle_validate_request_length(dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await dalle_target.send_prompt_async(prompt_request=request)
+
 
 @pytest.mark.asyncio
 async def test_dalle_validate_prompt_type(dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
@@ -68,6 +69,7 @@ async def test_dalle_validate_prompt_type(dalle_target: DALLETarget, sample_conv
     request = PromptRequestResponse(request_pieces=[request_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await dalle_target.send_prompt_async(prompt_request=request)
+
 
 @pytest.mark.asyncio
 async def test_dalle_validate_previous_conversations(
