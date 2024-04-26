@@ -125,7 +125,6 @@ def test_duplicate_memory_missing_map_entries(memory: MemoryInterface):
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
     conversation_id_1 = "11111"
-    conversation_id_2 = "22222"
     pieces = [
         PromptRequestPiece(
             role="user",
@@ -138,11 +137,10 @@ def test_duplicate_memory_missing_map_entries(memory: MemoryInterface):
     ]
     memory._add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 1
-    orchestrator3 = Orchestrator()
     with pytest.raises(ValueError):
         memory.duplicate_orchestrator_conversations(
-            orchestrator_id=orchestrator1.get_identifier()["id"],
-            new_orchestrator_id=orchestrator3.get_identifier()["id"],
+            orchestrator_id=str(orchestrator1.get_identifier()["id"]),
+            new_orchestrator_id=str(orchestrator2.get_identifier()["id"]),
             conversation_id_map={},
         )
 

@@ -4,6 +4,7 @@
 import abc
 from pathlib import Path
 
+from typing import Union
 from uuid import uuid4
 
 from pyrit.memory.memory_models import EmbeddingData
@@ -119,8 +120,8 @@ class MemoryInterface(abc.ABC):
     def duplicate_orchestrator_conversations(
         self,
         *,
-        orchestrator_id: int,
-        new_orchestrator_id: int,
+        orchestrator_id: Union[int, str],
+        new_orchestrator_id: Union[int, str],
         conversation_id_map: dict[str, str] = None,
     ) -> None:
         """
@@ -131,14 +132,14 @@ class MemoryInterface(abc.ABC):
         the memory. Instead, one needs to duplicate the conversations and continue with the new orchestrator ID.
 
         Args:
-            orchestrator_id (int): The orchestrator ID with existing conversations.
-            new_orchestrator_id (int): The new orchestrator ID to assign to the duplicated conversations.
+            orchestrator_id (int | str): The orchestrator ID with existing conversations.
+            new_orchestrator_id (int | str): The new orchestrator ID to assign to the duplicated conversations.
         """
-        prompt_pieces = self.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
+        prompt_pieces = self.get_orchestrator_conversations(orchestrator_id=int(orchestrator_id))
         for piece in prompt_pieces:
             piece.id = uuid4()
-            piece.orchestrator_identifier["id"] = new_orchestrator_id
-            if not piece.conversation_id in conversation_id_map:
+            piece.orchestrator_identifier["id"] = str(new_orchestrator_id)
+            if piece.conversation_id not in conversation_id_map:
                 raise ValueError(
                     f"Conversation ID {piece.conversation_id} not found in conversation_id_map."
                     "The conversation_id_map must contain all conversation IDs used in the context of "
