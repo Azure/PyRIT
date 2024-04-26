@@ -4,6 +4,7 @@
 import pytest
 
 from pyrit.models import PromptDataType
+from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_normalizer import NormalizerRequestPiece
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
@@ -73,7 +74,17 @@ def test_prompt_init_invalid_prompt_text():
     with pytest.raises(ValueError):
         NormalizerRequestPiece(
             prompt_converters=[],
-            prompt_text=123,
+            prompt_text=None,
             prompt_data_type="text",
             metadata=metadata,
+        )
+
+
+@pytest.mark.asyncio
+async def test_normalizer_request_piece_throws_no_file():
+    with pytest.raises(FileNotFoundError):
+        NormalizerRequestPiece(
+            prompt_converters=[Base64Converter()],
+            prompt_data_type="image_path",
+            prompt_text="non_existent_file.png",
         )

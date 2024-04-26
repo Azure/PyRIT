@@ -9,8 +9,7 @@ from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 

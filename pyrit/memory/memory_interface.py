@@ -12,7 +12,7 @@ from pyrit.memory.memory_embedding import MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
-from pyrit.models.prompt_request_response import group_conversation_request_pieces_by_sequence
+from pyrit.models import group_conversation_request_pieces_by_sequence
 
 
 class MemoryInterface(abc.ABC):
@@ -110,7 +110,9 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
-        return self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+
+        prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+        return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
