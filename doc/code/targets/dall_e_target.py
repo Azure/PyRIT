@@ -28,14 +28,8 @@ from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import DALLETarget
 
 prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
+prompt_to_send = "Give me a picture of kids playing with water guns"
 default_values.load_default_env()
-
-img_prompt_target = DALLETarget(
-    deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
-    api_key=os.environ.get("AZURE_DALLE_API_KEY"),
-    api_version="2024-02-01",
-)
 
 # %%
 request = PromptRequestPiece(
@@ -43,13 +37,20 @@ request = PromptRequestPiece(
     original_prompt_text=prompt_to_send,
 ).to_prompt_request_response()
 
-image_resp = await img_prompt_target.send_prompt_async(prompt_request=request)  # type: ignore
-if image_resp:
-    print(f"image location: {image_resp.request_pieces[0].converted_prompt_text}")
-    print(image_resp)
-else:
-    print("image blocked! ")
-    img_prompt_target.dispose_db_engine()
+image_location = ""
+with DALLETarget(
+    deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
+    endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
+    api_key=os.environ.get("AZURE_DALLE_API_KEY"),
+    api_version="2024-02-01",
+) as img_prompt_target:
+    image_resp = await img_prompt_target.send_prompt_async(prompt_request=request)  # type: ignore
+    if image_resp:
+        print(image_resp)
+        image_location = image_resp.request_pieces[0].converted_prompt_text
+        print(image_location)
+    else:
+        print("image blocked! ")
 # print(f"metadata: {image_resp.prompt_metadata}")
 
 # %% [markdown]
@@ -60,11 +61,10 @@ from PIL import Image
 from pyrit.common.path import RESULTS_PATH
 from pathlib import Path
 
-image_location = image_resp.request_pieces[0].converted_prompt_text
-
-im = Image.open(Path(RESULTS_PATH) / "dbdata" / "images" / image_location)
-im.show()
-
-img_prompt_target.dispose_db_engine()
+if image_location:
+    im = Image.open(Path(RESULTS_PATH) / "dbdata" / "images" / image_location)
+    im.show()
+else:
+    print("No Image was generated")
 
 # %%

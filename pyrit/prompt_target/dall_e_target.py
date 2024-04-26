@@ -119,17 +119,17 @@ class DALLETarget(PromptTarget):
                         model=self.deployment_name,
                         prompt=prompt,
                         n=self.n,
-                        size=self.image_size,  # type: ignore
+                        size=self.image_size,
                         response_format="b64_json",
-                        quality=self.quality,  # type: ignore
-                        style=self.style,  # type: ignore
+                        quality=self.quality,
+                        style=self.style,
                     )
                 else:
                     response = await self.image_target._async_client.images.generate(
                         model=self.deployment_name,
                         prompt=prompt,
                         n=self.n,
-                        size=self.image_size,  # type: ignore
+                        size=self.image_size,
                         response_format="b64_json",
                     )
             else:
@@ -137,7 +137,7 @@ class DALLETarget(PromptTarget):
                     model=self.deployment_name,
                     prompt=prompt,
                     n=self.n,
-                    size=self.image_size,  # type: ignore
+                    size=self.image_size,
                     response_format="b64_json",
                 )
             json_response = json.loads(response.model_dump_json())
