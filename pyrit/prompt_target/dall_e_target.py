@@ -131,21 +131,21 @@ class DALLETarget(PromptTarget):
         self, resp: dict, prompt_text: str, prompt_request: PromptRequestPiece, error: str = "none"
     ) -> PromptRequestResponse:
 
-        if "error" not in resp.keys() or resp["exception type"] == "Blocked":
-            return self._memory.add_response_entries_to_memory(
-                request=prompt_request,
-                response_text_pieces=[prompt_text],
-                response_type="image_path",
-                prompt_metadata=json.dumps(resp),
-                error=error,  # type: ignore
-            )
+        if "error" in resp.keys():
+            if resp["exception type"] == "JSON Error":
+                logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
+                raise
+            elif resp["exception type"] != "Blocked":
+                logger.error(f"Error in calling deployment {self.deployment_name}\n{resp['error']}")  # unknown
+                raise
 
-        elif resp["exception type"] == "JSON Error":
-            logger.error(f"Response could not be interpreted in the JSON format\n{resp['error']}")
-            raise
-        else:
-            logger.error(f"Error in calling deployment {self.deployment_name}\n{resp['error']}")
-            raise
+        return self._memory.add_response_entries_to_memory(
+            request=prompt_request,
+            response_text_pieces=[prompt_text],
+            response_type="image_path",
+            prompt_metadata=json.dumps(resp),
+            error=error,  # type: ignore
+        )
 
     async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
         try:
@@ -177,19 +177,20 @@ class DALLETarget(PromptTarget):
 
         except BadRequestError as e:
             json_response = {"exception type": "Blocked", "data": ""}
-
-            # Parsing Error Response to form json object
-            error_message = str(e).split("{")
-            parsed_error = "{".join(error_message[1:])
-            json_response["error"] = "{" + parsed_error
+            json_response["error"] = e.body
             prompt_text = "content blocked"
             error = "blocked"
 
         except json.JSONDecodeError as e:
-            return {"error": e, "exception type": "JSON Error"}
+            json_response = {"error": e, "exception type": "JSON Error"}
+            prompt_text = "JSON Error"
+            error = "processing"
+
         except Exception as e:
-            return {"error": e, "exception type": "exception"}
-        # return json_response
+            json_response = {"error": e, "exception type": "exception"}
+            prompt_text = "target error"
+            error = "unknown"
+
         return self._add_response_to_memory(
             resp=json_response, prompt_text=prompt_text, prompt_request=request, error=error
         )
