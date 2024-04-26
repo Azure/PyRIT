@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from contextlib import AbstractAsyncContextManager
-from typing import Generator
+from typing import Generator, Optional
 
 from sqlalchemy import inspect
 
@@ -65,8 +65,8 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict[str, str],
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt
 
