@@ -3,10 +3,9 @@
 import json
 import logging
 import pathlib
-from enum import Enum
 import concurrent.futures
 import asyncio
-from typing import Optional
+from typing import Literal, Optional
 
 from openai import BadRequestError
 
@@ -19,17 +18,6 @@ from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenA
 from pyrit.prompt_normalizer import data_serializer_factory
 
 logger = logging.getLogger(__name__)
-
-
-class ImageSizing(Enum):
-    SIZE256 = "256x256"
-    SIZE512 = "512x512"
-    SIZE1024 = "1024x1024"
-
-
-class SupportedDalleVersions(Enum):
-    V2 = "dall-e-2"
-    V3 = "dall-e-3"
 
 
 class DALLETarget(PromptTarget):
@@ -60,34 +48,29 @@ class DALLETarget(PromptTarget):
         endpoint: str = None,
         api_key: str = None,
         api_version: str = "2024-02-01",
-        image_size: ImageSizing = ImageSizing.SIZE1024,
+        image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024",
         num_images: int = 1,
-        dalle_version: SupportedDalleVersions = SupportedDalleVersions.V2,
+        dalle_version: Literal["dall-e-2", "dall-e-3"] = "dall-e-2",
         memory: MemoryInterface | None = None,
         headers: Optional[dict[str, str]] = None,
-        quality: str = "standard",
-        style: str = "natural",
+        quality: Literal["standard", "hd"] = "standard",
+        style: Literal["natural", "vivid"] = "natural",
     ):
 
         super().__init__(memory=memory)
 
         # make sure number of images and headers are allowed by Dall-e version
-        if dalle_version == SupportedDalleVersions.V3:
-            self.dalle_version = "dall-e-3"
+        self.dalle_version = dalle_version
+        if dalle_version == "dall-e-3":
             if num_images != 1:
                 raise ValueError("DALL-E-3 can only generate 1 image at a time.")
-            if quality == "hd" or quality == "standard":
-                self.quality = quality
-            else:
-                self.quality = "standard"
-            if style == "natural" or style == "vivid":
-                self.style = style
-        elif dalle_version == SupportedDalleVersions.V2:
-            self.dalle_version = "dall-e-2"
+            self.quality = quality
+            self.style = style
+        elif dalle_version == "dall-e-2":
             if num_images < 1 or num_images > 10:
                 raise ValueError("DALL-E-2 can generate only up to 10 images at a time.")
 
-        self.image_size = image_size.value
+        self.image_size = image_size
         self.n = num_images
 
         self.deployment_name = deployment_name
@@ -151,15 +134,24 @@ class DALLETarget(PromptTarget):
     async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
         try:
             if self.dalle_version == "dall-e-3":
-                response = await self.image_target._async_client.images.generate(
-                    model=self.deployment_name,
-                    prompt=prompt,
-                    n=self.n,
-                    size=self.image_size,  # type: ignore
-                    response_format="b64_json",
-                    quality=self.quality,  # type: ignore
-                    style=self.style,  # type: ignore
-                )
+                if self.quality and self.style:
+                    response = await self.image_target._async_client.images.generate(
+                        model=self.deployment_name,
+                        prompt=prompt,
+                        n=self.n,
+                        size=self.image_size,  # type: ignore
+                        response_format="b64_json",
+                        quality=self.quality,  # type: ignore
+                        style=self.style,  # type: ignore
+                    )
+                else:
+                    response = await self.image_target._async_client.images.generate(
+                        model=self.deployment_name,
+                        prompt=prompt,
+                        n=self.n,
+                        size=self.image_size,  # type: ignore
+                        response_format="b64_json",
+                    )
             else:
                 response = await self.image_target._async_client.images.generate(
                     model=self.deployment_name,

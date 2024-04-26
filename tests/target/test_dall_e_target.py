@@ -8,7 +8,6 @@ import pytest
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import DALLETarget
-from pyrit.prompt_target.dall_e_target import SupportedDalleVersions
 
 from tests.mocks import get_sample_conversations
 
@@ -39,7 +38,7 @@ def test_initialization_invalid_num_images():
             deployment_name="test",
             endpoint="test",
             api_key="test",
-            dalle_version=SupportedDalleVersions.V3,
+            dalle_version="dall-e-3",
             num_images=3,
         )
 
