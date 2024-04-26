@@ -7,6 +7,7 @@ import os
 import time
 
 from pathlib import Path
+from mimetypes import guess_type
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models import PromptDataType
@@ -104,6 +105,35 @@ class DataTypeSerializer(abc.ABC):
 
         ticks = int(time.time() * 1_000_000)
         return Path(self.data_directory, f"{ticks}.{self.file_extension}")
+
+    @staticmethod
+    def path_exists(file_path: str) -> bool:
+        """
+        Check if the file exists at the specified path.
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"No file found at the specified path: {file_path}")
+        return True
+
+    @staticmethod
+    def get_extension(file_path: str) -> str | None:
+        """
+        Get the file extension from the file path.
+        """
+        if DataTypeSerializer.path_exists(file_path):
+            _, ext = os.path.splitext(file_path)
+            return ext
+        return None
+
+    @staticmethod
+    def get_mime_type(file_path: str) -> str | None:
+        """
+        Get the MIME type of the file path.
+        """
+        if DataTypeSerializer.path_exists(file_path):
+            mime_type, _ = guess_type(file_path)
+            return mime_type
+        return None
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
