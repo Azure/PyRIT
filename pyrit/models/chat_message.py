@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 ChatMessageRole = Literal["system", "user", "assistant"]
 
+
 class ToolCall(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str
