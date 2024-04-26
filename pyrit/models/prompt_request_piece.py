@@ -24,6 +24,9 @@ unknown: the type of error is unknown
 PromptResponseError = Literal["none", "blocked", "model", "processing", "unknown"]
 
 
+Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
+
+
 class PromptRequestPiece(abc.ABC):
     """
     Represents a prompt request piece.
@@ -67,9 +70,11 @@ class PromptRequestPiece(abc.ABC):
         converter_identifiers: List[Dict[str, str]] = None,
         prompt_target_identifier: Dict[str, str] = None,
         orchestrator_identifier: Dict[str, str] = None,
+        scorer_identifier: Dict[str, str] = None,
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",
+        originator: Originator = "undefined",
     ):
 
         self.id = id if id else uuid4()
@@ -90,6 +95,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.prompt_target_identifier = prompt_target_identifier
         self.orchestrator_identifier = orchestrator_identifier
+        self.scorer_identifier = scorer_identifier
 
         self.original_prompt_text = original_prompt_text
         self.original_prompt_data_type = original_prompt_data_type
@@ -100,6 +106,7 @@ class PromptRequestPiece(abc.ABC):
         self.converted_prompt_data_sha256 = self._create_sha256(converted_prompt_text)
 
         self.response_error = response_error
+        self.originator = originator
 
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=self.role, content=self.converted_prompt_text)

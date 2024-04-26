@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import Mock, patch
 
 from pyrit.prompt_target.prompt_target import PromptTarget
-from pyrit.score import Score, SupportTextClassification
+from pyrit.score import Score, Scorer
 from tests.mocks import get_memory_interface, MockPromptTarget
 
 
@@ -29,7 +29,7 @@ def processing_target() -> PromptTarget:
 
 
 @pytest.fixture
-def success_scorer() -> SupportTextClassification:
+def success_scorer() -> Scorer:
     scorer = Mock()
     scorer.score_text = Mock(return_value=Score(score_type="bool", score_value=True))
     return scorer

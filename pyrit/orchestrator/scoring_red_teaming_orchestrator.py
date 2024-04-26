@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from typing import Optional, Union
-from pyrit.score import SupportTextClassification
+from pyrit.score import Scorer
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
@@ -19,7 +19,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
         prompt_target: PromptTarget,
         red_teaming_chat: PromptChatTarget,
         initial_red_teaming_prompt: str = "Begin Conversation",
-        scorer: SupportTextClassification,
+        scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,

@@ -3,10 +3,10 @@
 
 import re
 
-from pyrit.score import Score, SupportTextClassification
+from pyrit.score import Score, Scorer
 
 
-class MarkdownInjectionClassifier(SupportTextClassification):
+class MarkdownInjectionClassifier(Scorer):
     def __int__(self):
         pass
 

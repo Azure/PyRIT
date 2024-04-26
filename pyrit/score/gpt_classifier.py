@@ -10,7 +10,7 @@ import enum
 from pathlib import Path
 from typing import Union
 
-from pyrit.score import Score, SupportTextClassification
+from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH, LIKERT_SCALES_PATH, SCORING_INSTRUCTIONS_PATH
@@ -45,7 +45,7 @@ class LikertScales(enum.Enum):
     VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
 
 
-class SelfAskScore(SupportTextClassification):
+class SelfAskScore(Scorer):
     """A class that represents a self-ask score for text classification and scoring.
 
     This class is responsible for scoring text using a self-ask approach. It takes a chat target,
@@ -85,7 +85,6 @@ class SelfAskScore(SupportTextClassification):
             labels=self.labels,
         )
 
-    # @tenacity.retry(wait=tenacity.wait_fixed(1), stop=tenacity.stop_after_attempt(8))
     def score_text(self, text: str) -> Score:
         """
         Scores the given text using the chat target.

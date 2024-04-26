@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 from pyrit.score.score_class import Score
-from pyrit.score.support_text_classification import SupportTextClassification
+from pyrit.score.support_text_classification import Scorer
 from pyrit.score.engine import evaluate, evaluate_async, score_text
-from pyrit.score.gandalf_classifier import GandalfScorer, GandalfBinaryScorer
+from pyrit.score.gandalf_scorer import GandalfScorer, GandalfBinaryScorer
 from pyrit.score.gpt_classifier import (
     ContentClassifiers,
     LikertScales,
@@ -19,7 +19,7 @@ from pyrit.score.text import TextConversationTokenFinder
 
 __all__ = [
     "Score",
-    "SupportTextClassification",
+    "Scorer",
     "evaluate",
     "evaluate_async",
     "score_text",

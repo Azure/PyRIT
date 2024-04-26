@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.score import Score, SupportTextClassification
+from pyrit.score import Score, Scorer
 
 
-class TextConversationTokenFinder(SupportTextClassification):
+class TextConversationTokenFinder(Scorer):
     def __init__(self, token: str):
         self._token = token
 

@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.score import Score, SupportTextClassification
+from pyrit.score import Score, Scorer
 
 
-class SubStringScorer(SupportTextClassification):
+class SubStringScorer(Scorer):
     def __init__(self, *, expected_output_substring: str) -> None:
         super().__init__()
         self._expected_output_substring = expected_output_substring

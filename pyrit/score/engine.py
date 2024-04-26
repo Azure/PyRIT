@@ -8,14 +8,14 @@ from tqdm import tqdm
 
 from pyrit.interfaces import CompletionSupport
 from pyrit.models import ChatMessage, PromptDataset, PromptResponse
-from pyrit.score import Score, SupportTextClassification
+from pyrit.score import Score, Scorer
 
 log = logging.getLogger(__name__)
 
 
 def score_text(
     messages: list[ChatMessage],
-    classifier: SupportTextClassification,
+    classifier: Scorer,
     verbose: bool = True,
 ) -> list[Score]:
     """Score a list of messages using a classifier

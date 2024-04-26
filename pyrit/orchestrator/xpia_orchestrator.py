@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 from uuid import uuid4
-from pyrit.score import SupportTextClassification
+from pyrit.score import Scorer
 
 from pyrit.memory import MemoryInterface
 from pyrit.score import Score
@@ -26,7 +26,7 @@ class XPIATestOrchestrator(Orchestrator):
         processing_prompt: str,
         processing_target: PromptTarget,
         prompt_target: PromptTarget,
-        scorer: SupportTextClassification,
+        scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,
