@@ -12,7 +12,7 @@ class ToolCall(BaseModel):
     id: str
     type: str
     function: str
-    
+
 
 class ChatMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
