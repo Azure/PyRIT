@@ -104,3 +104,12 @@ def test_get_mime_type():
         expected_mime_type = "image/jpeg"
         mime_type = DataTypeSerializer.get_mime_type(temp_file_path)
         assert mime_type == expected_mime_type
+
+def test_save_b64_image():
+    normalizer = data_serializer_factory(data_type="image_path")
+    normalizer.save_b64_image("\x00")
+    assert normalizer.prompt_text
+    assert normalizer.prompt_text.endswith(".png")
+    assert os.path.isabs(normalizer.prompt_text)
+    assert os.path.exists(normalizer.prompt_text)
+    assert os.path.isfile(normalizer.prompt_text)
