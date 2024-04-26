@@ -4,6 +4,8 @@
 import abc
 from pathlib import Path
 
+from uuid import uuid4
+
 from pyrit.memory.memory_models import EmbeddingData
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError, PromptDataType
 
@@ -113,6 +115,44 @@ class MemoryInterface(abc.ABC):
 
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
+
+    def duplicate_orchestrator_conversations(
+        self,
+        *,
+        orchestrator_id: int,
+        new_orchestrator_id: int,
+        conversation_id_map: dict[str, str] = None,
+    ) -> None:
+        """
+        Duplicates all conversations from one orchestrator to another.
+
+        This can be useful when an attack strategy requires branching out from a particular point in the conversation.
+        One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
+        the memory. Instead, one needs to duplicate the conversations and continue with the new orchestrator ID.
+
+        Args:
+            orchestrator_id (int): The orchestrator ID with existing conversations.
+            new_orchestrator_id (int): The new orchestrator ID to assign to the duplicated conversations.
+        """
+        prompt_pieces = self.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
+        print('before')
+        print(prompt_pieces)
+        print(prompt_pieces[0].__dict__)
+        for piece in prompt_pieces:
+            piece.id = uuid4()
+            piece.orchestrator_identifier = new_orchestrator_id
+            if not piece.conversation_id in conversation_id_map:
+                raise ValueError(
+                    f"Conversation ID {piece.conversation_id} not found in conversation_id_map."
+                    "The conversation_id_map must contain all conversation IDs used in the context of "
+                    "the orchestrator."
+                )
+            piece.conversation_id = conversation_id_map[piece.conversation_id]
+
+        print('after')
+        print(prompt_pieces[0].__dict__)
+        self._add_request_pieces_to_memory(request_pieces=prompt_pieces)
+
 
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
