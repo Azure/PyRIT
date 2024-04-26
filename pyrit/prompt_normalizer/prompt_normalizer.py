@@ -171,6 +171,8 @@ class PromptNormalizer(abc.ABC):
 
         entries = []
 
+        # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
+        conversation_id = conversation_id if conversation_id else str(uuid4())
         for request_piece in request.request_pieces:
 
             converted_prompt_text = request_piece.prompt_text
