@@ -105,6 +105,7 @@ def test_get_mime_type():
         mime_type = DataTypeSerializer.get_mime_type(temp_file_path)
         assert mime_type == expected_mime_type
 
+
 def test_save_b64_image():
     normalizer = data_serializer_factory(data_type="image_path")
     normalizer.save_b64_image("\x00")

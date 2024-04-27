@@ -43,7 +43,7 @@ with DALLETarget(
     api_key=os.environ.get("AZURE_DALLE_API_KEY"),
     api_version="2024-02-01",
 ) as img_prompt_target:
-    image_resp = await img_prompt_target.send_prompt_async(prompt_request=request) #type: ignore
+    image_resp = await img_prompt_target.send_prompt_async(prompt_request=request)  # type: ignore
     if image_resp:
         print(image_resp)
         image_location = image_resp.request_pieces[0].converted_prompt_text
