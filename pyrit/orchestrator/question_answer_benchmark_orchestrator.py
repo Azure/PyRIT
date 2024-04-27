@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import textwrap
+from typing import Optional
 import yaml
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
@@ -33,9 +34,9 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         chat_model_under_evaluation: PromptChatTarget,
         scorer: QuestionAnswerScorer,
         prompt_converters: list[PromptConverter] = [],
-        memory: MemoryInterface | None = None,
-        memory_labels: dict[str, str] = None,
-        evaluation_prompt: str | None = None,
+        memory: Optional[MemoryInterface] = None,
+        memory_labels: Optional[dict[str, str]] = None,
+        evaluation_prompt: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
         """
@@ -45,10 +46,10 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
             prompt_converters (list[PromptConverter], optional): The prompt converters to be used.
-            memory (MemoryInterface | None, optional): The memory interface to be used. Defaults to None.
-            memory_labels (list[str], optional): The labels to be associated with the memory.
+            memory (MemoryInterface, optional): The memory interface to be used. Defaults to None.
+            memory_labels (dict[str, str], optional): The labels to be associated with the memory.
                 Defaults to ["question-answering-benchmark-orchestrator"].
-            evaluation_prompt (str | None, optional): The evaluation prompt to be used. Defaults to None.
+            evaluation_prompt (str, optional): The evaluation prompt to be used. Defaults to None.
             verbose (bool, optional): Whether to print verbose output. Defaults to False.
         """
         super().__init__(
