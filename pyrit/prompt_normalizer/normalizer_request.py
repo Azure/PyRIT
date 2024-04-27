@@ -71,4 +71,4 @@ class NormalizerRequest:
             raise ValueError("request_pieces must be a list of NormalizerRequestPiece objects")
 
         for piece in self.request_pieces:
-            piece.validate
+            piece.validate()

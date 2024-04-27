@@ -31,7 +31,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
     AZURE_SPEECH_KEY_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_KEY_TOKEN"
-    SUPPORTED_OUTPUT_FORMATS = ["wav", "mp3"]
+    SUPPORTED_OUTPUT_FORMATS: list = ["wav", "mp3"]
 
     def __init__(
         self,
