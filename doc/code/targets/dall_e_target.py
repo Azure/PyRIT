@@ -28,7 +28,6 @@ from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import DALLETarget
 
 prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
-prompt_to_send = "Give me a picture of kids playing with water guns"
 default_values.load_default_env()
 
 # %%
@@ -44,7 +43,7 @@ with DALLETarget(
     api_key=os.environ.get("AZURE_DALLE_API_KEY"),
     api_version="2024-02-01",
 ) as img_prompt_target:
-    image_resp = await img_prompt_target.send_prompt_async(prompt_request=request)  # type: ignore
+    image_resp = await img_prompt_target.send_prompt_async(prompt_request=request) #type: ignore
     if image_resp:
         print(image_resp)
         image_location = image_resp.request_pieces[0].converted_prompt_text
@@ -61,7 +60,7 @@ from PIL import Image
 from pyrit.common.path import RESULTS_PATH
 from pathlib import Path
 
-if image_location:
+if image_location != "content blocked":
     im = Image.open(Path(RESULTS_PATH) / "dbdata" / "images" / image_location)
     im.show()
 else:

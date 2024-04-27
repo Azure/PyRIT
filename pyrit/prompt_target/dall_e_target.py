@@ -12,7 +12,7 @@ from openai import BadRequestError
 from pyrit.common.path import RESULTS_PATH
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import PromptRequestPiece, PromptResponseError
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 from pyrit.prompt_normalizer import data_serializer_factory
@@ -146,7 +146,7 @@ class DALLETarget(PromptTarget):
             b64_data = json_response["data"][0]["b64_json"]
             data.save_b64_image(data=b64_data)
             prompt_text = data.prompt_text
-            error = "none"
+            error: PromptResponseError = "none"
 
         except BadRequestError as e:
             json_response = {"exception type": "Blocked", "data": ""}
@@ -169,7 +169,7 @@ class DALLETarget(PromptTarget):
             response_text_pieces=[prompt_text],
             response_type="image_path",
             prompt_metadata=json.dumps(json_response),
-            error=error,  # type: ignore
+            error=error,
         )
 
     def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
