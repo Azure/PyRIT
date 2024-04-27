@@ -20,7 +20,6 @@ class GandalfScorer(SupportTextClassification):
 
         self._conversation_id = str(uuid.uuid4())
         self._normalizer_id = None  # Normalizer not used
-        self._labels = {"scorer": "gandalf_scorer"}
 
     def _check_for_password_in_text(self, text: str) -> str:
         """
@@ -41,7 +40,6 @@ class GandalfScorer(SupportTextClassification):
             system_prompt=system_prompt,
             conversation_id=self._conversation_id,
             orchestrator_identifier=None,
-            labels=self._labels,
         )
 
         request = PromptRequestResponse(
@@ -50,7 +48,6 @@ class GandalfScorer(SupportTextClassification):
                     role="user",
                     original_prompt_text=text,
                     conversation_id=self._conversation_id,
-                    labels=self._labels,
                     prompt_target_identifier=self._chat_engine.get_identifier(),
                 )
             ]

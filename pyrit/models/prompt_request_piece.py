@@ -6,7 +6,7 @@ import hashlib
 import uuid
 
 from datetime import datetime
-from typing import Dict, Literal, List
+from typing import Dict, Literal, List, Optional
 from uuid import uuid4
 
 from pyrit.models import ChatMessage, ChatMessageRole
@@ -41,7 +41,7 @@ class PromptRequestPiece(abc.ABC):
             e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
         converters (list[PromptConverter]): The converters for the prompt.
         prompt_target (PromptTarget): The target for the prompt.
-        orchestrator (Orchestrator): The orchestrator for the prompt.
+        orchestrator_identifier (Dict[str, str]): The orchestrator identifier for the prompt.
         original_prompt_data_type (PromptDataType): The data type of the original prompt (text, image)
         original_prompt_text (str): The text of the original prompt. If prompt is an image, it's a link.
         original_prompt_data_sha256 (str): The SHA256 hash of the original prompt data.
@@ -58,15 +58,15 @@ class PromptRequestPiece(abc.ABC):
         *,
         role: ChatMessageRole,
         original_prompt_text: str,
-        converted_prompt_text: str = None,
-        id: uuid.UUID = None,
-        conversation_id: str = None,
+        converted_prompt_text: Optional[str] = None,
+        id: Optional[uuid.UUID] = None,
+        conversation_id: Optional[str] = None,
         sequence: int = -1,
-        labels: Dict[str, str] = None,
-        prompt_metadata: str = None,
-        converter_identifiers: List[Dict[str, str]] = None,
-        prompt_target_identifier: Dict[str, str] = None,
-        orchestrator_identifier: Dict[str, str] = None,
+        labels: Optional[Dict[str, str]] = None,
+        prompt_metadata: Optional[str] = None,
+        converter_identifiers: Optional[List[Dict[str, str]]] = None,
+        prompt_target_identifier: Optional[Dict[str, str]] = None,
+        orchestrator_identifier: Optional[Dict[str, str]] = None,
         original_prompt_data_type: PromptDataType = "text",
         converted_prompt_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",

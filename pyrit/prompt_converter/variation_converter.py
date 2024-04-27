@@ -32,7 +32,6 @@ class VariationConverter(PromptConverter):
         self.system_prompt = str(
             prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(self.number_variations))
         )
-        self._labels = {"converter": "VariationConverter"}
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
@@ -52,7 +51,6 @@ class VariationConverter(PromptConverter):
             system_prompt=self.system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
-            labels=self._labels,
         )
 
         request = PromptRequestResponse(
@@ -63,10 +61,10 @@ class VariationConverter(PromptConverter):
                     converted_prompt_text=prompt,
                     conversation_id=conversation_id,
                     sequence=1,
-                    labels=self._labels,
                     prompt_target_identifier=self.converter_target.get_identifier(),
                     original_prompt_data_type=input_type,
                     converted_prompt_data_type=input_type,
+                    converter_identifiers=[self.get_identifier()],
                 )
             ]
         )
