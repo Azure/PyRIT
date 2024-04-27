@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.memory.memory_models import PromptDataType
-from pyrit.prompt_converter import PromptConverter
+from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -13,7 +13,7 @@ class AddTextImageConverter(PromptConverter):
         self.input_file = input_file
         self.output_file = output_file
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "image_file_name") -> str:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
         Converter that uses art to convert strings to ASCII art.
         This can sometimes bypass LLM filters
@@ -23,7 +23,7 @@ class AddTextImageConverter(PromptConverter):
         Returns:
             str: The converted prompt.
         """
-        if not self.is_supported(input_type):
+        if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
         # Open the image
@@ -33,7 +33,7 @@ class AddTextImageConverter(PromptConverter):
         font = ImageFont.load_default()
 
         # Calculate the width of the text
-        text_width = font.getsize(prompt)[0]
+        text_width = font.getlength(prompt)
 
         # Calculate the dimensions for the new image with space for text
         text_height = 100
@@ -52,7 +52,8 @@ class AddTextImageConverter(PromptConverter):
         # Draw text and save
         draw.text((text_x, text_y), prompt, fill=(0, 0, 0), font=font)
         new_img.save(self.output_file)
-        return str(self.output_file)  # returns output file name for now
+        # return str(self.output_file)  # returns output file name for now
+        return ConverterResult(output_text=str(self.output_file), output_type="image_path")
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "image_file_name"
+    def input_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "image_path"
