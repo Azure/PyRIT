@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
+import tempfile
 from unittest.mock import MagicMock
 import pytest
 
@@ -69,28 +71,35 @@ async def test_send_prompt_async_image_converter():
 
     mock_image_converter = MagicMock(PromptConverter)
 
-    mock_image_converter.convert.return_value = ConverterResult(
-        output_type="path_to_image",
-        output_text="image_path",
-    )
+    filename: str = ""
 
-    prompt_converters = [mock_image_converter]
-    prompt_text = "Hello"
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+        f.write(b"Hello")
 
-    prompt = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
-        prompt_data_type="text",
-    )
+        mock_image_converter.convert.return_value = ConverterResult(
+            output_type="image_path",
+            output_text=filename,
+        )
 
-    normalizer = PromptNormalizer(memory=MagicMock())
+        prompt_converters = [mock_image_converter]
+        prompt_text = "Hello"
 
-    await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
+        prompt = NormalizerRequestPiece(
+            prompt_converters=prompt_converters,
+            prompt_text=prompt_text,
+            prompt_data_type="text",
+        )
 
-    # verify the prompt target received the correct arguments from the normalizer
-    sent_request = prompt_target.send_prompt_async.call_args.kwargs["prompt_request"].request_pieces[0]
-    assert sent_request.converted_prompt_text == "image_path"
-    assert sent_request.converted_prompt_data_type == "path_to_image"
+        normalizer = PromptNormalizer(memory=MagicMock())
+
+        await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
+
+        # verify the prompt target received the correct arguments from the normalizer
+        sent_request = prompt_target.send_prompt_async.call_args.kwargs["prompt_request"].request_pieces[0]
+        assert sent_request.converted_value == filename
+        assert sent_request.converted_value_data_type == "image_path"
+    os.remove(filename)
 
 
 @pytest.mark.asyncio

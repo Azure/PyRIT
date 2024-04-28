@@ -55,7 +55,7 @@ class GandalfTarget(PromptTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        response = await self._complete_text_async(request.converted_prompt_text)
+        response = await self._complete_text_async(request.converted_value)
 
         response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[response])
 

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Any
+from typing import Any, Optional
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestResponse
@@ -111,8 +111,8 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         raise NotImplementedError("System prompt currently not supported.")
 
@@ -133,7 +133,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
         logger.info(f"Processing: {prompt_request}")
         prompt_template_config = PromptTemplateConfig(
-            template=request.converted_prompt_text,
+            template=request.converted_value,
             name=self._plugin_name,
             template_format="semantic-kernel",
             execution_settings=self._execution_settings,

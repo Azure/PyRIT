@@ -81,7 +81,7 @@ class AzureTTSTarget(PromptTarget):
 
         body = {
             "model": self._model,
-            "input": request.converted_prompt_text,
+            "input": request.converted_value,
             "voice": self._voice,
             "file": self._response_format,
             "language": self._language,
@@ -119,7 +119,7 @@ class AzureTTSTarget(PromptTarget):
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 
-        if prompt_request.request_pieces[0].converted_prompt_data_type != "text":
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
 
         request = prompt_request.request_pieces[0]

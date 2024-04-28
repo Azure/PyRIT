@@ -26,14 +26,14 @@ conversation_id = str(uuid4())
 
 message_list = [
     PromptRequestPiece(
-        role="user", original_prompt_text="Hi, chat bot! This is my initial prompt.", conversation_id=conversation_id
+        role="user", original_value="Hi, chat bot! This is my initial prompt.", conversation_id=conversation_id
     ),
     PromptRequestPiece(
-        role="assistant", original_prompt_text="Nice to meet you! This is my response.", conversation_id=conversation_id
+        role="assistant", original_value="Nice to meet you! This is my response.", conversation_id=conversation_id
     ),
     PromptRequestPiece(
         role="user",
-        original_prompt_text="Wonderful! This is my second prompt to the chat bot!",
+        original_value="Wonderful! This is my second prompt to the chat bot!",
         conversation_id=conversation_id,
     ),
 ]

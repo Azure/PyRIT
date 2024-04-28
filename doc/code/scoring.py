@@ -7,10 +7,10 @@
 # - `SelfAskGptClassifier`: classifies a response into one of several categories (e.g., detecting whether a text string contains a prompt injection)
 # - `SelfAskGptLikertScale`: classifies a response into one of several levels on a Likert scale (e.g., scoring the severity of misinformation within a text string)
 #
-# Both of these scorers inherit from the `SelfAskScore` class, which you can also use to create a custom scorer as follows:
+# Both of these scorers inherit from the `SelfAskScorer` class, which you can also use to create a custom scorer as follows:
 #
 # ```
-# CustomScorer = SelfAskScore(
+# CustomScorer = SelfAskScorer(
 #     prompt_template_path=custom_prompt_template,
 #     content_classifier=custom_classifier,
 #     chat_target=chat_target

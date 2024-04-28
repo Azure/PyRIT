@@ -157,18 +157,18 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             role = None
             for prompt_request_piece in prompt_request_pieces:
                 role = prompt_request_piece.role
-                if prompt_request_piece.converted_prompt_data_type == "text":
-                    entry = {"type": "text", "text": prompt_request_piece.converted_prompt_text}
+                if prompt_request_piece.converted_value_data_type == "text":
+                    entry = {"type": "text", "text": prompt_request_piece.converted_value}
                     content.append(entry)
-                elif prompt_request_piece.converted_prompt_data_type == "image_path":
+                elif prompt_request_piece.converted_value_data_type == "image_path":
                     data_base64_encoded_url = self._convert_local_image_to_data_url(
-                        prompt_request_piece.converted_prompt_text
+                        prompt_request_piece.converted_value
                     )
                     entry = {"type": "image_url", "image_url": data_base64_encoded_url}
                     content.append(entry)
                 else:
                     raise ValueError(
-                        f"Multimodal data type {prompt_request_piece.original_prompt_data_type} is not yet supported."
+                        f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
                     )
 
             if not role:
@@ -301,9 +301,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         if len(prompt_request.request_pieces) > 2:
             raise ValueError("This target only supports a two prompt request pieces text and image_path.")
 
-        converted_prompt_data_types = [
-            request_piece.converted_prompt_data_type for request_piece in prompt_request.request_pieces
-        ]
+        converted_prompt_data_types = [request_piece.converted_value for request_piece in prompt_request.request_pieces]
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError("This target only supports text and image_path.")

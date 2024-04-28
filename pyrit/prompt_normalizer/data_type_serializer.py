@@ -59,6 +59,15 @@ class DataTypeSerializer(abc.ABC):
         with open(self.prompt_text, "wb") as file:
             file.write(data)
 
+    def save_b64_image(self, data: str) -> None:
+        """
+        Saves the base64 encoded image to disk.
+        """
+        self.prompt_text = str(self.get_data_filename())
+        with open(self.prompt_text, "wb") as file:
+            image_bytes = base64.b64decode(data)
+            file.write(image_bytes)
+
     def read_data(self) -> bytes:
         """
         Reads the data from the disk.

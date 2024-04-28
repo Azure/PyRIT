@@ -106,7 +106,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
 
         text_response: Completion = await self._async_client.completions.create(
             model=self._model,
-            prompt=request.converted_prompt_text,
+            prompt=request.converted_value,
             top_p=self._top_p,
             temperature=self._temperature,
             frequency_penalty=self._frequency_penalty,
@@ -115,7 +115,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
         )
         prompt_response = PromptResponse(
             completion=text_response.choices[0].text,
-            prompt=request.converted_prompt_text,
+            prompt=request.converted_value,
             id=text_response.id,
             completion_tokens=text_response.usage.completion_tokens,
             prompt_tokens=text_response.usage.prompt_tokens,

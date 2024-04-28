@@ -2,11 +2,11 @@
 # Licensed under the MIT license.
 
 import os
+import pytest
 
 from contextlib import AbstractAsyncContextManager
 from unittest.mock import AsyncMock, MagicMock, patch
 from tempfile import NamedTemporaryFile
-import pytest
 
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
@@ -15,6 +15,8 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import AzureOpenAIGPTVChatTarget
 from pyrit.models import ChatMessageListContent
+
+from tests.mocks import get_image_request_piece
 
 
 @pytest.fixture
@@ -168,21 +170,16 @@ def test_convert_image_to_data_url_success(
 
 def test_build_chat_messages_with_consistent_roles(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
 
+    image_request = get_image_request_piece()
     entries = [
         PromptRequestResponse(
             request_pieces=[
                 PromptRequestPiece(
                     role="user",
-                    converted_prompt_data_type="text",
-                    original_prompt_text="Hello",
-                    converted_prompt_text="Hello",
+                    converted_value_data_type="text",
+                    original_value="Hello",
                 ),
-                PromptRequestPiece(
-                    role="user",
-                    converted_prompt_data_type="image_path",
-                    original_prompt_text="image.jpg",
-                    converted_prompt_text="image.jpg",
-                ),
+                image_request,
             ]
         )
     ]
@@ -196,25 +193,17 @@ def test_build_chat_messages_with_consistent_roles(azure_gptv_chat_engine: Azure
     assert messages[0].content[0]["type"] == "text"  # type: ignore
     assert messages[0].content[1]["type"] == "image_url"  # type: ignore
 
+    os.remove(image_request.original_value)
+
 
 def test_build_chat_messages_with_unsupported_data_types(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
+    # Like an image_path, the audio_path requires a file, but doesn't validate any contents
+    entry = get_image_request_piece()
+    entry.converted_value_data_type = "audio_path"
 
-    entries = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    original_prompt_data_type="audio",  # type: ignore
-                    converted_prompt_data_type="audio",  # type: ignore
-                    original_prompt_text="audio.mp3",
-                    converted_prompt_text="audio.mp3",
-                )
-            ]
-        )
-    ]
     with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine._build_chat_messages(entries)
-    assert "Multimodal data type audio is not yet supported." in str(excinfo.value)
+        azure_gptv_chat_engine._build_chat_messages([PromptRequestResponse(request_pieces=[entry])])
+    assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
 
 
 def test_build_chat_messages_no_roles(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
@@ -223,9 +212,9 @@ def test_build_chat_messages_no_roles(azure_gptv_chat_engine: AzureOpenAIGPTVCha
             request_pieces=[
                 PromptRequestPiece(
                     role="",  # type: ignore
-                    converted_prompt_data_type="text",
-                    original_prompt_text="Hello",
-                    converted_prompt_text="Hello",
+                    converted_value_data_type="text",
+                    original_value="Hello",
+                    converted_value="Hello",
                 )
             ]
         )
@@ -250,7 +239,7 @@ async def test_send_prompt_async_adds_to_memory(azure_gptv_chat_engine: AzureOpe
     setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
 
     prompt_request = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_prompt_text="Hello")]
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
     )
 
     result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
@@ -274,10 +263,10 @@ async def test_send_prompt_async(
             PromptRequestPiece(
                 role="user",
                 conversation_id="12345679",
-                original_prompt_text="hello",
-                converted_prompt_text="hello",
-                original_prompt_data_type="text",
-                converted_prompt_data_type="text",
+                original_value="hello",
+                converted_value="hello",
+                original_value_data_type="text",
+                converted_value_data_type="text",
                 prompt_target_identifier={"target": "target-identifier"},
                 orchestrator_identifier={"test": "test"},
                 labels={"test": "test"},
@@ -285,10 +274,10 @@ async def test_send_prompt_async(
             PromptRequestPiece(
                 role="user",
                 conversation_id="12345679",
-                original_prompt_text=tmp_file_name,
-                converted_prompt_text=tmp_file_name,
-                original_prompt_data_type="image_path",
-                converted_prompt_data_type="image_path",
+                original_value=tmp_file_name,
+                converted_value=tmp_file_name,
+                original_value_data_type="image_path",
+                converted_value_data_type="image_path",
                 prompt_target_identifier={"target": "target-identifier"},
                 orchestrator_identifier={"test": "test"},
                 labels={"test": "test"},
@@ -304,7 +293,7 @@ async def test_send_prompt_async(
                 prompt_request=prompt_req_resp
             )
             assert len(response.request_pieces) == 1
-            assert response.request_pieces[0].converted_prompt_text == "hi"
+            assert response.request_pieces[0].converted_value == "hi"
     os.remove(tmp_file_name)
 
 
@@ -320,7 +309,7 @@ async def test_send_prompt_async_empty_response(azure_gptv_chat_engine: AzureOpe
     setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
 
     prompt_request = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", original_prompt_text="Hello", conversation_id="123")]
+        request_pieces=[PromptRequestPiece(role="user", original_value="Hello", conversation_id="123")]
     )
 
     with pytest.raises(ValueError) as excinfo:
@@ -345,9 +334,9 @@ def test_validate_request_too_many_request_pieces(azure_gptv_chat_engine: AzureO
 
     prompt_request = PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(role="user", original_prompt_text="Hello", converted_prompt_data_type="text"),
-            PromptRequestPiece(role="user", original_prompt_text="Hello", converted_prompt_data_type="text"),
-            PromptRequestPiece(role="user", original_prompt_text="Hello", converted_prompt_data_type="text"),
+            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
+            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
+            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
         ]
     )
     with pytest.raises(ValueError) as excinfo:
@@ -357,19 +346,19 @@ def test_validate_request_too_many_request_pieces(azure_gptv_chat_engine: AzureO
 
 
 def test_validate_request_unsupported_data_types(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
+
+    image_piece = get_image_request_piece()
+    image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
     prompt_request = PromptRequestResponse(
         request_pieces=[
-            PromptRequestPiece(role="user", original_prompt_text="Hello", converted_prompt_data_type="text"),
-            PromptRequestPiece(role="user", original_prompt_text="Hello", converted_prompt_data_type="image_path"),
-            PromptRequestPiece(
-                role="user", original_prompt_text="Hello", converted_prompt_data_type="video_path"  # type: ignore
-            ),
+            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
+            image_piece,
         ]
     )
 
     with pytest.raises(ValueError) as excinfo:
         azure_gptv_chat_engine.validate_request(prompt_request=prompt_request)
 
-    assert "two prompt request pieces text and image_path." in str(
+    assert "This target only supports text and image_path." in str(
         excinfo.value
     ), "Error not raised for unsupported data types"
