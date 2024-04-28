@@ -7,6 +7,7 @@ import uuid
 
 from datetime import datetime
 from typing import Dict, Literal, List, Optional
+from typing import Dict, Literal, List, Optional
 from uuid import uuid4
 
 from pyrit.models import ChatMessage, ChatMessageRole
