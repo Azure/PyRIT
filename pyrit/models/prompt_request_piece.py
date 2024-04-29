@@ -2,26 +2,13 @@
 # Licensed under the MIT license.
 
 import abc
-import hashlib
 import uuid
 
 from datetime import datetime
-from typing import Dict, Literal, List, Optional
+from typing import Dict, List, Optional
 from uuid import uuid4
 
-from pyrit.models import ChatMessage, ChatMessageRole
-
-
-PromptDataType = Literal["text", "image_path", "audio_path", "url"]
-
-"""
-The type of the error in the prompt response
-blocked: blocked by an external filter e.g. Azure Filters
-model: the model refused to answer or request e.g. "I'm sorry..."
-processing: there is an exception thrown unrelated to the query
-unknown: the type of error is unknown
-"""
-PromptResponseError = Literal["none", "blocked", "model", "processing", "unknown"]
+from pyrit.models import ChatMessage, data_serializer_factory, ChatMessageRole, PromptDataType, PromptResponseError
 
 
 class PromptRequestPiece(abc.ABC):
@@ -93,11 +80,15 @@ class PromptRequestPiece(abc.ABC):
 
         self.original_value = original_value
         self.original_value_data_type = original_value_data_type
-        self.original_value_sha256 = self._create_sha256(original_value, original_value_data_type)
+
+        original_serializer = data_serializer_factory(data_type=original_value_data_type, value=original_value)
+        self.original_value_sha256 = original_serializer.get_sha256()
 
         self.converted_value = converted_value
         self.converted_value_data_type = converted_value_data_type
-        self.converted_value_sha256 = self._create_sha256(converted_value, converted_value_data_type)
+
+        converted_serializer = data_serializer_factory(data_type=converted_value_data_type, value=converted_value)
+        self.converted_value_sha256 = converted_serializer.get_sha256()
 
         self.response_error = response_error
 
@@ -108,22 +99,6 @@ class PromptRequestPiece(abc.ABC):
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
         return PromptRequestResponse([self])  # noqa F821
-
-    def _create_sha256(self, value: str, data_type: PromptDataType) -> str:
-        input_bytes: bytes
-
-        # It would be nice to use data_type_serializers, but there is a circular import
-        # and there isn't much extra code
-        if data_type == "audio_path" or data_type == "image_path":
-            with open(value, "rb") as file:
-                input_bytes = file.read()
-        elif data_type == "url" or data_type == "text":
-            input_bytes = value.encode("utf-8")
-        else:
-            raise ValueError(f"Unable to hash {data_type}.")
-
-        hash_object = hashlib.sha256(input_bytes)
-        return hash_object.hexdigest()
 
     def __str__(self):
         return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"

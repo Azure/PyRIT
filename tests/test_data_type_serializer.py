@@ -5,8 +5,12 @@ import os
 import tempfile
 import pytest
 
-from pyrit.prompt_normalizer import DataTypeSerializer, data_serializer_factory
-from pyrit.prompt_normalizer.data_type_serializer import ImagePathDataTypeSerializer, TextDataTypeSerializer
+from pyrit.models import (
+    ImagePathDataTypeSerializer,
+    TextDataTypeSerializer,
+    DataTypeSerializer,
+    data_serializer_factory,
+)
 
 
 def test_data_serializer_factory_text_no_data_throws():
@@ -15,29 +19,29 @@ def test_data_serializer_factory_text_no_data_throws():
 
 
 def test_data_serializer_factory_text_with_data():
-    normalizer = data_serializer_factory(data_type="text", prompt_text="test")
+    normalizer = data_serializer_factory(data_type="text", value="test")
     assert isinstance(normalizer, DataTypeSerializer)
     assert isinstance(normalizer, TextDataTypeSerializer)
     assert normalizer.data_type == "text"
-    assert normalizer.prompt_text == "test"
+    assert normalizer.value == "test"
     assert normalizer.data_on_disk() is False
 
 
 def test_data_serializer_text_read_data_throws():
-    normalizer = data_serializer_factory(data_type="text", prompt_text="test")
+    normalizer = data_serializer_factory(data_type="text", value="test")
     with pytest.raises(TypeError):
         normalizer.read_data()
 
 
 def test_data_serializer_text_save_data_throws():
-    normalizer = data_serializer_factory(data_type="text", prompt_text="test")
+    normalizer = data_serializer_factory(data_type="text", value="test")
     with pytest.raises(TypeError):
         normalizer.save_data(b"\x00")
 
 
 def test_image_path_normalizer_factory_prompt_text_raises():
     with pytest.raises(FileNotFoundError):
-        data_serializer_factory(data_type="image_path", prompt_text="no_real_path.txt")
+        data_serializer_factory(data_type="image_path", value="no_real_path.txt")
 
 
 def test_image_path_normalizer_factory():
@@ -51,11 +55,11 @@ def test_image_path_normalizer_factory():
 def test_image_path_save_data():
     normalizer = data_serializer_factory(data_type="image_path")
     normalizer.save_data(b"\x00")
-    assert normalizer.prompt_text
-    assert normalizer.prompt_text.endswith(".png")
-    assert os.path.isabs(normalizer.prompt_text)
-    assert os.path.exists(normalizer.prompt_text)
-    assert os.path.isfile(normalizer.prompt_text)
+    assert normalizer.value
+    assert normalizer.value.endswith(".png")
+    assert os.path.isabs(normalizer.value)
+    assert os.path.exists(normalizer.value)
+    assert os.path.isfile(normalizer.value)
 
 
 def test_image_path_read_data():
@@ -64,7 +68,7 @@ def test_image_path_read_data():
     normalizer = data_serializer_factory(data_type="image_path")
     normalizer.save_data(data)
     assert normalizer.read_data() == data
-    read_normalizer = data_serializer_factory(data_type="image_path", prompt_text=normalizer.prompt_text)
+    read_normalizer = data_serializer_factory(data_type="image_path", value=normalizer.value)
     assert read_normalizer.read_data() == data
 
 
@@ -109,8 +113,8 @@ def test_get_mime_type():
 def test_save_b64_image():
     normalizer = data_serializer_factory(data_type="image_path")
     normalizer.save_b64_image("\x00")
-    assert normalizer.prompt_text
-    assert normalizer.prompt_text.endswith(".png")
-    assert os.path.isabs(normalizer.prompt_text)
-    assert os.path.exists(normalizer.prompt_text)
-    assert os.path.isfile(normalizer.prompt_text)
+    assert normalizer.value
+    assert normalizer.value.endswith(".png")
+    assert os.path.isabs(normalizer.value)
+    assert os.path.exists(normalizer.value)
+    assert os.path.isfile(normalizer.value)

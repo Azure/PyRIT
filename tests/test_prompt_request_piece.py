@@ -121,8 +121,7 @@ def test_hashes_generated_files():
 
 
 def test_hashes_generated_files_unknown_type():
-    # This simulates a new type being added. We need to update PromptRequestPiece to know how to generate hashes
-    with pytest.raises(ValueError, match="Unable to hash new_unknown_type."):
+    with pytest.raises(ValueError, match="Data type new_unknown_type not supported"):
         PromptRequestPiece(
             role="user",
             original_value="Hello1",

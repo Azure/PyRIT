@@ -11,11 +11,10 @@ from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestResponse, data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptRequestPiece, PromptResponseError
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
-from pyrit.prompt_normalizer import data_serializer_factory
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +144,7 @@ class DALLETarget(PromptTarget):
             data = data_serializer_factory(data_type="image_path")
             b64_data = json_response["data"][0]["b64_json"]
             data.save_b64_image(data=b64_data)
-            prompt_text = data.prompt_text
+            prompt_text = data.value
             error: PromptResponseError = "none"
 
         except BadRequestError as e:

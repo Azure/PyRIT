@@ -11,10 +11,9 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
-from pyrit.prompt_normalizer import DataTypeSerializer
 from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_normalizer.data_type_serializer import data_serializer_factory
+from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -133,7 +132,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(prompt_text=image_path, data_type="image_path", extension=ext)
+        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
         base64_encoded_data = image_serializer.read_data_base64()
         # Construct the data URL, as per Azure OpenAI GPTV local image format
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image

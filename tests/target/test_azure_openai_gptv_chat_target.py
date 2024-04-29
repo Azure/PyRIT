@@ -146,7 +146,7 @@ def test_convert_image_with_unsupported_extension(azure_gptv_chat_engine: AzureO
 
 @patch("os.path.exists", return_value=True)
 @patch("mimetypes.guess_type", return_value=("image/jpg", None))
-@patch("pyrit.prompt_normalizer.data_type_serializer.ImagePathDataTypeSerializer")
+@patch("pyrit.models.data_type_serializer.ImagePathDataTypeSerializer")
 def test_convert_image_to_data_url_success(
     mock_serializer_class, mock_guess_type, mock_exists, azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget
 ):
