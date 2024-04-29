@@ -28,17 +28,17 @@ For example, at Microsoft we are using this tool to iterate on different
 versions of a product (and its metaprompt) so that we can more effectively
 protect against prompt injection attacks.
 
-![PyRIT architecture](https://github.com/Azure/PyRIT/blob/main/assets/pyrit_architecture.png)
+![PyRIT architecture](https://raw.githubusercontent.com/Azure/PyRIT/releases/v0.2.0/assets/pyrit_architecture.png)
 
 ## Where can I learn more?
 
 Microsoft Learn has a
 [dedicated page on AI Red Teaming](https://learn.microsoft.com/en-us/security/ai-red-team).
 
-Check out our [docs](https://github.com/Azure/PyRIT/blob/main/doc/README.md) for more information
-on how to [install PyRIT](https://github.com/Azure/PyRIT/blob/main/doc/setup/install_pyrit.md),
-our [How to Guide](https://github.com/Azure/PyRIT/blob/main/doc/how_to_guide.ipynb),
-and more, as well as our [demos](https://github.com/Azure/PyRIT/tree/main/doc/demo) folder.
+Check out our [docs](https://raw.githubusercontent.com/Azure/PyRIT/releases/v0.2.0/doc/README.md) for more information
+on how to [install PyRIT](https://raw.githubusercontent.com/Azure/PyRIT/releases/v0.2.0/doc/setup/install_pyrit.md),
+our [How to Guide](https://raw.githubusercontent.com/Azure/PyRIT/releases/v0.2.0/doc/how_to_guide.ipynb),
+and more, as well as our [demos](https://raw.githubusercontent.com/Azure/PyRIT/releases/v0.2.0/doc/demo) folder.
 
 ## Trademarks
 
