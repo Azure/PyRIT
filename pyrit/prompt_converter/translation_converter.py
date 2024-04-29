@@ -75,13 +75,8 @@ class TranslationConverter(PromptConverter):
                     conversation_id=conversation_id,
                     sequence=1,
                     prompt_target_identifier=self.converter_target.get_identifier(),
-<<<<<<< HEAD
                     original_value_data_type=input_type,
                     converted_value_data_type=input_type,
-=======
-                    original_prompt_data_type=input_type,
-                    converted_prompt_data_type=input_type,
->>>>>>> main
                     converter_identifiers=[self.get_identifier()],
                 )
             ]

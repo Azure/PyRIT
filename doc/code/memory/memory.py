@@ -38,7 +38,9 @@ message_list = [
     ),
 ]
 
-memory.add_request_response_to_memory(request=PromptRequestResponse(message_list))
+memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
+memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
+memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
 
 
 entries = memory.get_chat_messages_with_conversation_id(conversation_id=conversation_id)

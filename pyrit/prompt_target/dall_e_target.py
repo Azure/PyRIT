@@ -109,11 +109,7 @@ class DALLETarget(PromptTarget):
 
         self._memory.add_request_response_to_memory(request=prompt_request)
 
-<<<<<<< HEAD
         return await self._generate_images_async(prompt=request.converted_value, request=request)
-=======
-        return await self._generate_images_async(prompt=request.converted_prompt_text, request=request)
->>>>>>> main
 
     async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
         try:
@@ -180,11 +176,7 @@ class DALLETarget(PromptTarget):
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 
-<<<<<<< HEAD
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
-=======
-        if prompt_request.request_pieces[0].converted_prompt_data_type != "text":
->>>>>>> main
             raise ValueError("This target only supports text prompt input.")
 
         request = prompt_request.request_pieces[0]

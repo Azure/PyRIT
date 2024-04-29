@@ -40,7 +40,9 @@ next_message = PromptRequestPiece(
 )
 
 message_list.append(next_message)
-duckdb_memory.add_request_response_to_memory(request=PromptRequestResponse(message_list))
+
+for message in message_list:
+    duckdb_memory.add_request_response_to_memory(request=PromptRequestResponse([message]))
 
 # %%
 duckdb_memory.export_conversation_by_id(conversation_id=conversation_id)
