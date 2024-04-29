@@ -196,6 +196,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Returns:
             PromptRequestResponse: The updated conversation entry with the response from the prompt target.
         """
+        self.validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         prompt_req_res_entries = self._memory.get_conversation(conversation_id=request.conversation_id)
@@ -300,7 +301,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         if len(prompt_request.request_pieces) > 2:
             raise ValueError("This target only supports a two prompt request pieces text and image_path.")
 
-        converted_prompt_data_types = [request_piece.converted_value for request_piece in prompt_request.request_pieces]
+        converted_prompt_data_types = [
+            request_piece.converted_value_data_type for request_piece in prompt_request.request_pieces
+        ]
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError("This target only supports text and image_path.")
