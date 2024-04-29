@@ -15,7 +15,6 @@ from tests.mocks import get_sample_conversations
 
 @pytest.fixture
 def dalle_target() -> DALLETarget:
-def dalle_target() -> DALLETarget:
     return DALLETarget(
         deployment_name="test",
         endpoint="test",
@@ -28,10 +27,6 @@ def sample_conversations() -> list[PromptRequestPiece]:
     return get_sample_conversations()
 
 
-def test_initialization_with_required_parameters(dalle_target: DALLETarget):
-    assert dalle_target
-    assert dalle_target.deployment_name == "test"
-    assert dalle_target.image_target is not None
 def test_initialization_with_required_parameters(dalle_target: DALLETarget):
     assert dalle_target
     assert dalle_target.deployment_name == "test"
