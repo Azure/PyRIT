@@ -194,8 +194,8 @@ class PromptNormalizer(abc.ABC):
             entries.append(
                 PromptRequestPiece(
                     role="user",
-                    original_prompt_text=request_piece.prompt_text,
-                    converted_prompt_text=converted_prompt_text,
+                    original_value=request_piece.prompt_text,
+                    converted_value=converted_prompt_text,
                     conversation_id=conversation_id,
                     sequence=sequence,
                     labels=labels,
@@ -203,8 +203,8 @@ class PromptNormalizer(abc.ABC):
                     converter_identifiers=converter_identifiers,
                     prompt_target_identifier=target.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
-                    original_prompt_data_type=request_piece.prompt_data_type,
-                    converted_prompt_data_type=converted_prompt_type,
+                    original_value_data_type=request_piece.prompt_data_type,
+                    converted_value_data_type=converted_prompt_type,
                 )
             )
 

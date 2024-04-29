@@ -47,7 +47,7 @@ with AzureOpenAIChatTarget(
 ) as target_llm:
     request = PromptRequestPiece(
         role="user",
-        original_prompt_text="this is a test prompt",
+        original_value="this is a test prompt",
     ).to_prompt_request_response()
     target_llm.send_prompt(prompt_request=request)
 

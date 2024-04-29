@@ -133,7 +133,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
         logger.info(f"Processing: {prompt_request}")
         prompt_template_config = PromptTemplateConfig(
-            template=request.converted_prompt_text,
+            template=request.converted_value,
             name=self._plugin_name,
             template_format="semantic-kernel",
             execution_settings=self._execution_settings,

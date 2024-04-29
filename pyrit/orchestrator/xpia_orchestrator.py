@@ -170,7 +170,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
             orchestrator_identifier=self.get_identifier(),
         )
 
-        return processing_response.request_pieces[0].converted_prompt_text
+        return processing_response.request_pieces[0].converted_value
 
 
 class XPIAManualProcessingOrchestrator(XPIAOrchestrator):

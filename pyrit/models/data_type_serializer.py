@@ -3,6 +3,7 @@
 
 import abc
 import base64
+import hashlib
 import os
 import time
 
@@ -13,14 +14,14 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.models import PromptDataType
 
 
-def data_serializer_factory(*, data_type: PromptDataType, prompt_text: str = None, extension: str = None):
-    if prompt_text:
+def data_serializer_factory(*, data_type: PromptDataType, value: str = None, extension: str = None):
+    if value:
         if data_type == "text":
-            return TextDataTypeSerializer(prompt_text=prompt_text)
+            return TextDataTypeSerializer(prompt_text=value)
         elif data_type == "image_path":
-            return ImagePathDataTypeSerializer(prompt_text=prompt_text)
+            return ImagePathDataTypeSerializer(prompt_text=value)
         elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(prompt_text=prompt_text)
+            return AudioPathDataTypeSerializer(prompt_text=value)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
@@ -40,7 +41,7 @@ class DataTypeSerializer(abc.ABC):
     """
 
     data_type: PromptDataType
-    prompt_text: str
+    value: str
     data_directory: Path
     file_extension: str
 
@@ -55,16 +56,16 @@ class DataTypeSerializer(abc.ABC):
         """
         Saves the data to disk.
         """
-        self.prompt_text = str(self.get_data_filename())
-        with open(self.prompt_text, "wb") as file:
+        self.value = str(self.get_data_filename())
+        with open(self.value, "wb") as file:
             file.write(data)
 
     def save_b64_image(self, data: str) -> None:
         """
         Saves the base64 encoded image to disk.
         """
-        self.prompt_text = str(self.get_data_filename())
-        with open(self.prompt_text, "wb") as file:
+        self.value = str(self.get_data_filename())
+        with open(self.value, "wb") as file:
             image_bytes = base64.b64decode(data)
             file.write(image_bytes)
 
@@ -75,10 +76,10 @@ class DataTypeSerializer(abc.ABC):
         if not self.data_on_disk():
             raise TypeError(f"Data for data Type {self.data_type} is not stored on disk")
 
-        if not self.prompt_text:
+        if not self.value:
             raise RuntimeError("Prompt text not set")
 
-        with open(self.prompt_text, "rb") as file:
+        with open(self.value, "rb") as file:
             return file.read()
 
     def read_data_base64(self) -> str:
@@ -87,6 +88,18 @@ class DataTypeSerializer(abc.ABC):
         """
         byte_array = self.read_data()
         return base64.b64encode(byte_array).decode("utf-8")
+
+    def get_sha256(self) -> str:
+        input_bytes: bytes
+
+        if self.data_on_disk():
+            with open(self.value, "rb") as file:
+                input_bytes = file.read()
+        else:
+            input_bytes = self.value.encode("utf-8")
+
+        hash_object = hashlib.sha256(input_bytes)
+        return hash_object.hexdigest()
 
     def get_data_filename(self) -> Path:
         """
@@ -137,7 +150,7 @@ class DataTypeSerializer(abc.ABC):
 class TextDataTypeSerializer(DataTypeSerializer):
     def __init__(self, *, prompt_text: str):
         self.data_type = "text"
-        self.prompt_text = prompt_text
+        self.value = prompt_text
 
     def data_on_disk(self) -> bool:
         return False
@@ -150,10 +163,10 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
         self.file_extension = extension if extension else "png"
 
         if prompt_text:
-            self.prompt_text = prompt_text
+            self.value = prompt_text
 
-            if not os.path.isfile(self.prompt_text):
-                raise FileNotFoundError(f"File does not exist: {self.prompt_text}")
+            if not os.path.isfile(self.value):
+                raise FileNotFoundError(f"File does not exist: {self.value}")
 
     def data_on_disk(self) -> bool:
         return True
@@ -166,10 +179,10 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
         self.file_extension = extension if extension else "mp3"
 
         if prompt_text:
-            self.prompt_text = prompt_text
+            self.value = prompt_text
 
-            if not os.path.isfile(self.prompt_text):
-                raise FileNotFoundError(f"File does not exist: {self.prompt_text}")
+            if not os.path.isfile(self.value):
+                raise FileNotFoundError(f"File does not exist: {self.value}")
 
     def data_on_disk(self) -> bool:
         return True

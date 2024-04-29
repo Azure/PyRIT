@@ -33,7 +33,7 @@ default_values.load_default_env()
 # %%
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text=prompt_to_send,
+    original_value=prompt_to_send,
 ).to_prompt_request_response()
 
 image_location = ""
@@ -46,11 +46,10 @@ with DALLETarget(
     image_resp = await img_prompt_target.send_prompt_async(prompt_request=request)  # type: ignore
     if image_resp:
         print(image_resp)
-        image_location = image_resp.request_pieces[0].converted_prompt_text
+        image_location = image_resp.request_pieces[0].converted_value
         print(image_location)
     else:
         print("image blocked! ")
-# print(f"metadata: {image_resp.prompt_metadata}")
 
 # %% [markdown]
 # ### Viewing the genereated image:

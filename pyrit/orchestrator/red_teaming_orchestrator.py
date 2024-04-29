@@ -160,7 +160,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier(),
             )
             .request_pieces[0]
-            .converted_prompt_text
+            .converted_value
         )
 
         if completion_state:
@@ -199,7 +199,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 labels=self._global_memory_labels,
             )
             .request_pieces[0]
-            .converted_prompt_text
+            .converted_value
         )
 
         return response_text

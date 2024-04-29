@@ -11,10 +11,9 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
-from pyrit.prompt_normalizer import DataTypeSerializer
 from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_normalizer.data_type_serializer import data_serializer_factory
+from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -133,7 +132,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(prompt_text=image_path, data_type="image_path", extension=ext)
+        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
         base64_encoded_data = image_serializer.read_data_base64()
         # Construct the data URL, as per Azure OpenAI GPTV local image format
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image
@@ -157,18 +156,18 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             role = None
             for prompt_request_piece in prompt_request_pieces:
                 role = prompt_request_piece.role
-                if prompt_request_piece.converted_prompt_data_type == "text":
-                    entry = {"type": "text", "text": prompt_request_piece.converted_prompt_text}
+                if prompt_request_piece.converted_value_data_type == "text":
+                    entry = {"type": "text", "text": prompt_request_piece.converted_value}
                     content.append(entry)
-                elif prompt_request_piece.converted_prompt_data_type == "image_path":
+                elif prompt_request_piece.converted_value_data_type == "image_path":
                     data_base64_encoded_url = self._convert_local_image_to_data_url(
-                        prompt_request_piece.converted_prompt_text
+                        prompt_request_piece.converted_value
                     )
                     entry = {"type": "image_url", "image_url": data_base64_encoded_url}
                     content.append(entry)
                 else:
                     raise ValueError(
-                        f"Multimodal data type {prompt_request_piece.original_prompt_data_type} is not yet supported."
+                        f"Multimodal data type {prompt_request_piece.converted_value_data_type} is not yet supported."
                     )
 
             if not role:
@@ -197,6 +196,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Returns:
             PromptRequestResponse: The updated conversation entry with the response from the prompt target.
         """
+        self.validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         prompt_req_res_entries = self._memory.get_conversation(conversation_id=request.conversation_id)
@@ -302,7 +302,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             raise ValueError("This target only supports a two prompt request pieces text and image_path.")
 
         converted_prompt_data_types = [
-            request_piece.converted_prompt_data_type for request_piece in prompt_request.request_pieces
+            request_piece.converted_value_data_type for request_piece in prompt_request.request_pieces
         ]
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:

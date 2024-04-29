@@ -93,7 +93,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier(),
             )
 
-            answer = response.request_pieces[0].converted_prompt_text
+            answer = response.request_pieces[0].converted_value
             curr_score = self._scorer.score_question(question=question_entry, answer=answer)
 
             if self._verbose:

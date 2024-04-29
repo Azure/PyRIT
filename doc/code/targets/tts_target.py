@@ -14,7 +14,7 @@ default_values.load_default_env()
 
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text="Hello, I am an audio prompt",
+    original_value="Hello, I am an audio prompt",
 ).to_prompt_request_response()
 
 

@@ -108,14 +108,14 @@ class SelfAskScorer(SupportTextClassification):
             [
                 PromptRequestPiece(
                     role="user",
-                    original_prompt_text=text,
+                    original_value=text,
                     conversation_id=self._conversation_id,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
             ]
         )
 
-        response_text = self._chat_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
+        response_text = self._chat_target.send_prompt(prompt_request=request).request_pieces[0].converted_value
 
         try:
             parsed_response = json.loads(response_text)

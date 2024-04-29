@@ -38,7 +38,7 @@ default_values.load_default_env()
 
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text=jailbreak_prompt,
+    original_value=jailbreak_prompt,
 ).to_prompt_request_response()
 
 
@@ -67,7 +67,7 @@ test_normalizer_id = None
 
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text=jailbreak_prompt,
+    original_value=jailbreak_prompt,
 ).to_prompt_request_response()
 
 with AzureBlobStorageTarget(

@@ -40,12 +40,12 @@ class ConversationAnalytics:
         similar_messages = []
 
         for memory in all_memories:
-            if memory.converted_prompt_text == chat_message_content:
+            if memory.converted_value == chat_message_content:
                 similar_messages.append(
                     ConversationMessageWithSimilarity(
                         score=1.0,
                         role=memory.role,
-                        content=memory.converted_prompt_text,
+                        content=memory.converted_value,
                         metric="exact_match",  # Exact match
                     )
                 )

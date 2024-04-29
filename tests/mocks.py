@@ -1,8 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import tempfile
+
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, Optional
+import uuid
 
 from sqlalchemy import inspect
 
@@ -71,11 +74,11 @@ class MockPromptTarget(PromptChatTarget):
         self.system_prompt = system_prompt
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
+        self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
         return None
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self.prompt_sent.append(prompt_request.request_pieces[0].converted_prompt_text)
+        self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
         return None
 
 
@@ -97,33 +100,50 @@ def get_memory_interface() -> Generator[MemoryInterface, None, None]:
     duckdb_memory.dispose_engine()
 
 
+def get_image_request_piece() -> PromptRequestPiece:
+    file_name: str
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
+        file_name = temp_file.name
+        temp_file.write(b"image data")
+
+        return PromptRequestPiece(
+            role="user",
+            original_value=file_name,
+            converted_value=file_name,
+            original_value_data_type="image_path",
+            converted_value_data_type="image_path",
+        )
+
+
 def get_sample_conversations() -> list[PromptRequestPiece]:
 
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
 
+    conversation_1 = str(uuid.uuid4())
+
     return [
         PromptRequestPiece(
             role="user",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="Hello, how are you?",
-            conversation_id="12345",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            conversation_id=conversation_1,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="I'm fine, thank you!",
-            conversation_id="12346",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            conversation_id=conversation_1,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="I'm fine, thank you!",
-            conversation_id="33333",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            conversation_id=str(uuid.uuid4()),
             orchestrator_identifier=orchestrator2.get_identifier(),
         ),
     ]

@@ -1,11 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Literal, Optional
+from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
-
-ChatMessageRole = Literal["system", "user", "assistant"]
+from pyrit.models import ChatMessageRole
 
 
 class ToolCall(BaseModel):
