@@ -50,7 +50,7 @@ dependencies = [
     "jupyter>=1.0.0",
     "ipykernel>=6.29.4",
     "logzero>=1.7.0",
-    "ml-collections==0.1.1", 
+    "ml-collections==0.1.1",
     "numpy>=1.26.4",
     "onnxruntime>=1.14.1",
     "onnx>=1.16.0",
