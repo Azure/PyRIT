@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import asyncio
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import concurrent.futures
 import logging
 import json
@@ -86,9 +87,14 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
-        api_key = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-        )
+        try:
+            api_key = default_values.get_required_value(
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+            )
+        except ValueError:
+            logger.info("No API Key provided, authenticating with DefaultAzureCredential() for https://cognitiveservices.azure.com/.default")
+            token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+
         final_headers: dict = {}
         try:
             request_headers = default_values.get_required_value(
@@ -102,12 +108,20 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         except ValueError:
             logger.info("No headers have been passed, setting empty default headers")
 
-        self._client = AzureOpenAI(
-            api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
-        )
-        self._async_client = AsyncAzureOpenAI(
-            api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
-        )
+        if api_key:
+            self._client = AzureOpenAI(
+                api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
+            )
+            self._async_client = AsyncAzureOpenAI(
+                api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
+            )
+        elif token_provider:
+            self._client = AzureOpenAI(
+                azure_ad_token_provider=token_provider, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
+            )
+            self._async_client = AsyncAzureOpenAI(
+                azure_ad_token_provider=token_provider, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
+            )
 
     def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
