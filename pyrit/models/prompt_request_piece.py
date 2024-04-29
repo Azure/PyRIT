@@ -101,6 +101,4 @@ class PromptRequestPiece(abc.ABC):
         return PromptRequestResponse([self])  # noqa F821
 
     def __str__(self):
-        if self.prompt_target_identifier:
-            return f"{self.prompt_target_identifier['__type__']}: {self.role}: {self.converted_value}"
-        return f": {self.role}: {self.converted_value}"
+        return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"
