@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from unittest.mock import patch
+import uuid
 
 import pytest
 
@@ -46,8 +47,10 @@ def test_initialization_invalid_num_images():
 @patch("pyrit.prompt_target.dall_e_target.DALLETarget._generate_images_async")
 @pytest.mark.asyncio
 async def test_send_prompt_async(mock_image, dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
+    request = sample_conversations[0]
+    request.conversation_id = str(uuid.uuid4())
     mock_image.return_value = {"data": [{"b64_json": "mock_json"}]}
-    resp = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([sample_conversations[0]]))
+    resp = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
     assert resp
 
 
@@ -61,7 +64,7 @@ async def test_dalle_validate_request_length(dalle_target: DALLETarget, sample_c
 @pytest.mark.asyncio
 async def test_dalle_validate_prompt_type(dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
     request_piece = sample_conversations[0]
-    request_piece.converted_prompt_data_type = "image_path"
+    request_piece.converted_value_data_type = "image_path"
     request = PromptRequestResponse(request_pieces=[request_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await dalle_target.send_prompt_async(prompt_request=request)

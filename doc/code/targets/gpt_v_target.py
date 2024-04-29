@@ -24,16 +24,16 @@ request_pieces = [
     PromptRequestPiece(
         role="user",
         conversation_id=test_conversation_id,
-        original_prompt_text="Describe this picture:",
-        original_prompt_data_type="text",
-        converted_prompt_data_type="text",
+        original_value="Describe this picture:",
+        original_value_data_type="text",
+        converted_value_data_type="text",
     ),
     PromptRequestPiece(
         role="user",
         conversation_id=test_conversation_id,
-        original_prompt_text=str(image_path),
-        original_prompt_data_type="image_path",
-        converted_prompt_data_type="image_path",
+        original_value=str(image_path),
+        original_value_data_type="image_path",
+        converted_value_data_type="image_path",
     ),
 ]
 

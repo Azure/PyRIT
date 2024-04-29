@@ -167,7 +167,7 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
     sample_conversations.append(
         PromptRequestPiece(
             role="user",
-            original_prompt_text="original prompt text",
+            original_value="original prompt text",
             conversation_id=conversation_id,
         )
     )

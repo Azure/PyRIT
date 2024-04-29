@@ -57,19 +57,19 @@ class VariationConverter(PromptConverter):
             [
                 PromptRequestPiece(
                     role="user",
-                    original_prompt_text=prompt,
-                    converted_prompt_text=prompt,
+                    original_value=prompt,
+                    converted_value=prompt,
                     conversation_id=conversation_id,
                     sequence=1,
                     prompt_target_identifier=self.converter_target.get_identifier(),
-                    original_prompt_data_type=input_type,
-                    converted_prompt_data_type=input_type,
+                    original_value_data_type=input_type,
+                    converted_value_data_type=input_type,
                     converter_identifiers=[self.get_identifier()],
                 )
             ]
         )
 
-        response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
+        response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_value
 
         try:
             ret_text = json.loads(response_msg)[0]

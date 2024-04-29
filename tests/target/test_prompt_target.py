@@ -72,7 +72,7 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
     chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "system"
-    assert chats[0].converted_prompt_text == "system prompt"
+    assert chats[0].converted_value == "system prompt"
 
 
 def test_send_prompt_user_no_system(
@@ -85,7 +85,7 @@ def test_send_prompt_user_no_system(
         mock.return_value = openai_mock_return
 
         request = sample_entries[0]
-        request.converted_prompt_text = "hi, I am a victim chatbot, how can I help?"
+        request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
         azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
@@ -114,7 +114,7 @@ def test_send_prompt_with_system(
         )
 
         request = sample_entries[0]
-        request.converted_prompt_text = "hi, I am a victim chatbot, how can I help?"
+        request.converted_value = "hi, I am a victim chatbot, how can I help?"
         request.conversation_id = "1"
 
         azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
@@ -142,7 +142,7 @@ def test_send_prompt_with_system_calls_chat_complete(
         )
 
         request = sample_entries[0]
-        request.converted_prompt_text = "hi, I am a victim chatbot, how can I help?"
+        request.converted_value = "hi, I am a victim chatbot, how can I help?"
         request.conversation_id = "1"
 
         azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))

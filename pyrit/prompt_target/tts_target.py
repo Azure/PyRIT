@@ -9,7 +9,7 @@ from typing import Literal
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.prompt_normalizer.data_type_serializer import data_serializer_factory
+from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_target import PromptTarget
 
 from pyrit.common import net_utility
@@ -81,7 +81,7 @@ class AzureTTSTarget(PromptTarget):
 
         body = {
             "model": self._model,
-            "input": request.converted_prompt_text,
+            "input": request.converted_value,
             "voice": self._voice,
             "file": self._response_format,
             "language": self._language,
@@ -110,7 +110,7 @@ class AzureTTSTarget(PromptTarget):
         audio_response.save_data(data=data)
 
         response_entry = self._memory.add_response_entries_to_memory(
-            request=request, response_text_pieces=[audio_response.prompt_text], response_type="audio_path"
+            request=request, response_text_pieces=[audio_response.value], response_type="audio_path"
         )
 
         return response_entry
@@ -119,7 +119,7 @@ class AzureTTSTarget(PromptTarget):
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 
-        if prompt_request.request_pieces[0].converted_prompt_data_type != "text":
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
 
         request = prompt_request.request_pieces[0]

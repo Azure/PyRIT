@@ -32,8 +32,8 @@ class PromptChatTarget(PromptTarget):
             request=PromptRequestPiece(
                 role="system",
                 conversation_id=conversation_id,
-                original_prompt_text=system_prompt,
-                converted_prompt_text=system_prompt,
+                original_value=system_prompt,
+                converted_value=system_prompt,
                 prompt_target_identifier=self.get_identifier(),
                 orchestrator_identifier=orchestrator_identifier,
                 labels=labels,
@@ -57,8 +57,8 @@ class PromptChatTarget(PromptTarget):
                 PromptRequestPiece(
                     role="user",
                     conversation_id=conversation_id,
-                    original_prompt_text=prompt,
-                    converted_prompt_text=prompt,
+                    original_value=prompt,
+                    converted_value=prompt,
                     prompt_target_identifier=self.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
                     labels=labels,
@@ -85,8 +85,8 @@ class PromptChatTarget(PromptTarget):
                 PromptRequestPiece(
                     role="user",
                     conversation_id=conversation_id,
-                    original_prompt_text=prompt,
-                    converted_prompt_text=prompt,
+                    original_value=prompt,
+                    converted_value=prompt,
                     prompt_target_identifier=self.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
                     labels=labels,

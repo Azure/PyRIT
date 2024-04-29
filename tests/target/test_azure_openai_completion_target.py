@@ -53,8 +53,8 @@ def prompt_request_response() -> PromptRequestResponse:
             PromptRequestPiece(
                 role="user",
                 conversation_id="1234",
-                original_prompt_text="hello",
-                converted_prompt_text="hello",
+                original_value="hello",
+                converted_value="hello",
                 prompt_target_identifier={"target": "target-identifier"},
                 orchestrator_identifier={"test": "test"},
                 labels={"test": "test"},
@@ -75,7 +75,7 @@ async def test_azure_complete_async_return(
             prompt_request=prompt_request_response
         )
         assert len(response.request_pieces) == 1
-        assert response.request_pieces[0].converted_prompt_text == "hi"
+        assert response.request_pieces[0].converted_value == "hi"
 
 
 def test_azure_invalid_key_raises():
