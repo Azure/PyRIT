@@ -362,3 +362,5 @@ def test_validate_request_unsupported_data_types(azure_gptv_chat_engine: AzureOp
     assert "This target only supports text and image_path." in str(
         excinfo.value
     ), "Error not raised for unsupported data types"
+
+    os.remove(image_piece.original_value)
