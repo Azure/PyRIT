@@ -192,14 +192,14 @@ class MemoryInterface(abc.ABC):
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
-                    original_prompt_text=resp_text,
-                    converted_prompt_text=resp_text,
+                    original_value=resp_text,
+                    converted_value=resp_text,
                     conversation_id=request.conversation_id,
                     labels=request.labels,
                     prompt_target_identifier=request.prompt_target_identifier,
                     orchestrator_identifier=request.orchestrator_identifier,
-                    original_prompt_data_type=response_type,
-                    converted_prompt_data_type=response_type,
+                    original_value_data_type=response_type,
+                    converted_value_data_type=response_type,
                     prompt_metadata=prompt_metadata,
                     response_error=error,
                 )
@@ -227,7 +227,7 @@ class MemoryInterface(abc.ABC):
             list[ChatMessage]: The list of chat messages.
         """
         memory_entries = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
-        return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
+        return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
         """

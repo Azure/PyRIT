@@ -5,6 +5,7 @@ import abc
 import asyncio
 import concurrent.futures
 
+from typing import Optional
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
@@ -22,12 +23,13 @@ class PromptNormalizer(abc.ABC):
 
     def send_prompt(
         self,
+        *,
         normalizer_request: NormalizerRequest,
         target: PromptTarget,
         conversation_id: str = None,
         sequence: int = -1,
-        labels={},
-        orchestrator_identifier: dict[str, str] = None,
+        labels: Optional[dict[str, str]] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -37,8 +39,8 @@ class PromptNormalizer(abc.ABC):
             target (PromptTarget): The target to send the request to.
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
             sequence (int, optional): The sequence number of the request. Defaults to -1.
-            labels (dict, optional): Additional labels for the request. Defaults to {}.
-            orchestrator_identifier (Orchestrator, optional): The orchestrator to use. Defaults to None.
+            labels (dict[str, str], optional): Additional labels for the request. Defaults to None.
+            orchestrator_identifier (dict[str, str], optional): The orchestrator identifier. Defaults to None.
 
         Returns:
             PromptRequestResponse: The response received from the target.
@@ -62,12 +64,13 @@ class PromptNormalizer(abc.ABC):
 
     async def send_prompt_async(
         self,
+        *,
         normalizer_request: NormalizerRequest,
         target: PromptTarget,
         conversation_id: str = None,
         sequence: int = -1,
-        labels=None,
-        orchestrator_identifier: dict[str, str] = None,
+        labels: Optional[dict[str, str]] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -77,8 +80,8 @@ class PromptNormalizer(abc.ABC):
             target (PromptTarget): The target to send the request to.
             conversation_id (str, optional): The ID of the conversation. Defaults to None.
             sequence (int, optional): The sequence number. Defaults to -1.
-            labels (dict, optional): Additional labels for the request. Defaults to None.
-            orchestrator (Orchestrator, optional): The orchestrator. Defaults to None.
+            labels (dict[str, str], optional): Additional labels for the request. Defaults to None.
+            orchestrator_identifier (dict[str, str], optional): The orchestrator identifier. Defaults to None.
 
         Returns:
             PromptRequestResponse: The response received from the target.
@@ -97,10 +100,11 @@ class PromptNormalizer(abc.ABC):
 
     async def send_prompt_batch_to_target_async(
         self,
+        *,
         requests: list[NormalizerRequest],
         target: PromptTarget,
-        labels=None,
-        orchestrator_identifier: dict[str, str] = None,
+        labels: Optional[dict[str, str]] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
         batch_size: int = 10,
     ) -> list[PromptRequestResponse]:
         """
@@ -110,9 +114,9 @@ class PromptNormalizer(abc.ABC):
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects representing the prompts to
                 be sent.
             target (PromptTarget): The target to which the prompts should be sent.
-            labels (dict, optional): Additional labels to be included with the prompts. Defaults to None
-            orchestrator (Orchestrator, optional): The orchestrator to use for sending the prompts. Defaults
-                to None.
+            labels (dict[str, str], optional): Additional labels to be included with the prompts. Defaults to None
+            orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
+                the prompts. Defaults to None.
             batch_size (int, optional): The size of each batch of prompts. Defaults to 10.
 
         Returns:
@@ -145,12 +149,13 @@ class PromptNormalizer(abc.ABC):
 
     def _build_prompt_request_response(
         self,
+        *,
         request: NormalizerRequest,
         target: PromptTarget,
         conversation_id: str = None,
         sequence: int = -1,
-        labels=None,
-        orchestrator_identifier: dict[str, str] = None,
+        labels: Optional[dict[str, str]] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Builds a prompt request response based on the given parameters.
@@ -162,8 +167,9 @@ class PromptNormalizer(abc.ABC):
             target (PromptTarget): The prompt target object.
             conversation_id (str, optional): The conversation ID. Defaults to None.
             sequence (int, optional): The sequence number. Defaults to -1.
-            labels (dict, optional): The labels dictionary. Defaults to None.
-            orchestrator_identifier (Orchestrator, optional): The orchestrator object. Defaults to None.
+            labels (dict[str, str], optional): The labels dictionary. Defaults to None.
+            orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
+                the prompts. Defaults to None.
 
         Returns:
             PromptRequestResponse: The prompt request response object.
@@ -171,6 +177,8 @@ class PromptNormalizer(abc.ABC):
 
         entries = []
 
+        # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
+        conversation_id = conversation_id if conversation_id else str(uuid4())
         for request_piece in request.request_pieces:
 
             converted_prompt_text = request_piece.prompt_text
@@ -186,8 +194,8 @@ class PromptNormalizer(abc.ABC):
             entries.append(
                 PromptRequestPiece(
                     role="user",
-                    original_prompt_text=request_piece.prompt_text,
-                    converted_prompt_text=converted_prompt_text,
+                    original_value=request_piece.prompt_text,
+                    converted_value=converted_prompt_text,
                     conversation_id=conversation_id,
                     sequence=sequence,
                     labels=labels,
@@ -195,8 +203,8 @@ class PromptNormalizer(abc.ABC):
                     converter_identifiers=converter_identifiers,
                     prompt_target_identifier=target.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
-                    original_prompt_data_type=request_piece.prompt_data_type,
-                    converted_prompt_data_type=converted_prompt_type,
+                    original_value_data_type=request_piece.prompt_data_type,
+                    converted_value_data_type=converted_prompt_type,
                 )
             )
 

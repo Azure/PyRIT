@@ -44,6 +44,7 @@ def test_add_request_pieces_to_memory(
 ):
     for c in sample_conversations[:num_conversations]:
         c.conversation_id = sample_conversations[0].conversation_id
+        c.role = sample_conversations[0].role
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations[:num_conversations])
 
@@ -67,6 +68,7 @@ def test_add_request_pieces_to_memory_updates_sequence(
 ):
     for conversation in sample_conversations:
         conversation.conversation_id = sample_conversations[0].conversation_id
+        conversation.role = sample_conversations[0].role
         conversation.sequence = 17
 
     with patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_request_pieces_to_memory") as mock_add:
@@ -85,6 +87,7 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
 
     for conversation in sample_conversations:
         conversation.conversation_id = sample_conversations[0].conversation_id
+        conversation.role = sample_conversations[0].role
         conversation.sequence = 17
 
     # insert one of these into memory
@@ -164,7 +167,7 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
     sample_conversations.append(
         PromptRequestPiece(
             role="user",
-            original_prompt_text="original prompt text",
+            original_value="original prompt text",
             conversation_id=conversation_id,
         )
     )

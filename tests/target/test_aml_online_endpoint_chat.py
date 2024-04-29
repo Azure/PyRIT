@@ -7,7 +7,7 @@ import os
 import pytest
 
 from pyrit.prompt_target import AzureMLChatTarget
-from pyrit.models.models import ChatMessage
+from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNop, GenericSystemSquash, ChatMessageNormalizer
 
 

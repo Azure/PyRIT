@@ -9,7 +9,7 @@ from pyrit.score.gpt_classifier import (
     ContentClassifiers,
     LikertScales,
     ScoringInstructions,
-    SelfAskScore,
+    SelfAskScorer,
     SelfAskGptClassifier,
     SelfAskGptLikertScale,
 )
@@ -28,7 +28,7 @@ __all__ = [
     "ContentClassifiers",
     "LikertScales",
     "ScoringInstructions",
-    "SelfAskScore",
+    "SelfAskScorer",
     "SelfAskGptClassifier",
     "SelfAskGptLikertScale",
     "MarkdownInjectionClassifier",

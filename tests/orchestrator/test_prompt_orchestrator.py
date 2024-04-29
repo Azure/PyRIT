@@ -107,7 +107,7 @@ def test_orchestrator_get_memory(mock_target: MockPromptTarget):
 
     request = PromptRequestPiece(
         role="user",
-        original_prompt_text="test",
+        original_value="test",
         orchestrator_identifier=orchestrator.get_identifier(),
     ).to_prompt_request_response()
 
