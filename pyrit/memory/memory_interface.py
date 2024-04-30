@@ -113,8 +113,10 @@ class MemoryInterface(abc.ABC):
 
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
-    
-    def export_conversation_by_orchestrator_id(self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"):
+
+    def export_conversation_by_orchestrator_id(
+        self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"
+    ):
         """
         Exports conversation data with the given orchestrator ID to a specified file.
         This will contain all conversations that were sent by the same orchestrator.
