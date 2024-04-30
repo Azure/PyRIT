@@ -46,7 +46,7 @@ class TranslationConverter(PromptConverter):
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language)
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text", **kwargs) -> ConverterResult:
         """
         Generates variations of the input prompts using the converter target.
         Parameters:

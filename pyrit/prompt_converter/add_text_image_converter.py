@@ -48,8 +48,10 @@ class AddTextImageConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
+        data = data_serializer_factory(value=prompt, data_type="image_path")
+        original_img_bytes = data.read_data()
         # Open the image
-        original_img = Image.open(prompt)
+        original_img = Image.open(BytesIO(original_img_bytes))
 
         # Calculate the width of the text
         try:
@@ -80,7 +82,7 @@ class AddTextImageConverter(PromptConverter):
         image_bytes = BytesIO()
         new_img.save(image_bytes, format="png")
         image_str = base64.b64encode(image_bytes.getvalue())
-        data = data_serializer_factory(data_type="image_path")
+
         data.save_b64_image(data=image_str)
 
         return ConverterResult(output_text=str(data.value), output_type="image_path")

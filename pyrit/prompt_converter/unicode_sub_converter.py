@@ -9,7 +9,7 @@ class UnicodeSubstitutionConverter(PromptConverter):
     def __init__(self, *, start_value=0xE0000):
         self.startValue = start_value
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text", **kwargs) -> ConverterResult:
         """
         Simple converter that just encodes the prompt using any unicode starting point.
         Default is to use invisible flag emoji characters.
