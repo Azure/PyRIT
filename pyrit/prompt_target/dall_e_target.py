@@ -90,10 +90,7 @@ class DALLETarget(PromptTarget):
             )
         else:
             self.image_target = AzureOpenAIChatTarget(
-                deployment_name=deployment_name,
-                endpoint=endpoint,
-                api_key=api_key,
-                api_version=api_version
+                deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
             )
 
     def send_prompt(

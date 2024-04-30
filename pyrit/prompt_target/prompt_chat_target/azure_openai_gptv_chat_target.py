@@ -108,13 +108,21 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
         if use_aad_auth:
             logger.info("Authenticating with DefaultAzureCredential() for https://cognitiveservices.azure.com/.default")
-            token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+            token_provider = get_bearer_token_provider(
+                DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+            )
 
             self._client = AzureOpenAI(
-                azure_ad_token_provider=token_provider, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
+                azure_ad_token_provider=token_provider,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+                default_headers=final_headers,
             )
             self._async_client = AsyncAzureOpenAI(
-                azure_ad_token_provider=token_provider, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
+                azure_ad_token_provider=token_provider,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+                default_headers=final_headers,
             )
         else:
             api_key = default_values.get_required_value(

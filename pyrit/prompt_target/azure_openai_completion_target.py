@@ -83,10 +83,12 @@ class AzureOpenAICompletionTarget(PromptTarget):
         self._model = default_values.get_required_value(
             env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
         )
-     
+
         if use_aad_auth:
             logger.info("Authenticating with DefaultAzureCredential() for https://cognitiveservices.azure.com/.default")
-            token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+            token_provider = get_bearer_token_provider(
+                DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+            )
 
             self._async_client = AsyncAzureOpenAI(
                 azure_ad_token_provider=token_provider,
