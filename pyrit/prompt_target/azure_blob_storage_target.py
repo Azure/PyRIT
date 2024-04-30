@@ -120,7 +120,7 @@ class AzureBlobStorageTarget(PromptTarget):
         Returns:
             blob_url (str): The Blob URL of the created blob within the provided storage container.
         """
-
+        self.validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         file_name = f"{request.conversation_id}.txt"
@@ -135,3 +135,16 @@ class AzureBlobStorageTarget(PromptTarget):
         await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
         return PromptRequestResponse([request])
+
+    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        if prompt_request.request_pieces[0].converted_value_data_type not in ["text", "url"]:
+            raise ValueError("This target only supports text and url prompt input.")
+
+        request = prompt_request.request_pieces[0]
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+
+        if len(messages) > 0:
+            raise ValueError("This target only supports a single turn conversation.")

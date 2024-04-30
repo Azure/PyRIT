@@ -76,3 +76,5 @@ with AzureBlobStorageTarget(
 ) as abs_prompt_target:
 
     print(abs_prompt_target.send_prompt(prompt_request=request))
+
+# %%

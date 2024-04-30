@@ -64,7 +64,7 @@ class OpenAIChatInterface(PromptChatTarget):
         return response_entry
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-
+        self.validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
@@ -189,6 +189,13 @@ class OpenAIChatInterface(PromptChatTarget):
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
         return self._parse_chat_completion(response)
+
+    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
+            raise ValueError("This target only supports text prompt input.")
 
 
 class AzureOpenAIChatTarget(OpenAIChatInterface):
