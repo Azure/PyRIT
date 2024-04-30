@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import asyncio
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import concurrent.futures
 import logging
 from openai import AsyncAzureOpenAI
@@ -28,6 +29,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
         deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
+        use_aad_auth: bool = False,
         memory: MemoryInterface = None,
         api_version: str = "2023-05-15",
         max_tokens: int = 1024,
@@ -48,6 +50,10 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 Defaults to the AZURE_OPENAI_COMPLETION_ENDPOINT environment variable.
             api_key (str, optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_COMPLETION_KEY environment variable.
+            use_aad_auth (bool, optional): When set to True, user authentication is used
+                instead of API Key. DefaultAzureCredential is taken for
+                https://cognitiveservices.azure.com/.default. Please run `az login` locally
+                to leverage user AuthN.
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
@@ -71,21 +77,32 @@ class AzureOpenAICompletionTarget(PromptTarget):
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
 
-        api_key = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-        )
         endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
         self._model = default_values.get_required_value(
             env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
         )
+     
+        if use_aad_auth:
+            logger.info("Authenticating with DefaultAzureCredential() for https://cognitiveservices.azure.com/.default")
+            token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
 
-        self._async_client = AsyncAzureOpenAI(
-            api_key=api_key,
-            api_version=api_version,
-            azure_endpoint=endpoint,
-        )
+            self._async_client = AsyncAzureOpenAI(
+                azure_ad_token_provider=token_provider,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+            )
+        else:
+            api_key = default_values.get_required_value(
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+            )
+
+            self._async_client = AsyncAzureOpenAI(
+                api_key=api_key,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+            )
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
