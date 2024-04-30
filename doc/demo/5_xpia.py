@@ -77,7 +77,7 @@ from pyrit.prompt_target import AzureBlobStorageTarget
 from pyrit.score import SubStringScorer
 from pyrit.orchestrator import XPIATestOrchestrator
 
-abs_prompt_target = AzureBlobStorageTarget(
+abs_target = AzureBlobStorageTarget(
     container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"),
     sas_token=os.environ.get("AZURE_STORAGE_ACCOUNT_SAS_TOKEN"),
 )
@@ -88,12 +88,12 @@ xpia_orchestrator = XPIATestOrchestrator(
     attack_content=jailbreak_prompt,
     processing_prompt=processing_prompt_template,
     processing_target=processing_target,
-    prompt_target=abs_prompt_target,
+    attack_setup_target=abs_target,
     scorer=scorer,
     verbose=True,
 )
 
-score = xpia_orchestrator.process()
+score = xpia_orchestrator.execute()
 print(score)
 
 # clean up storage container

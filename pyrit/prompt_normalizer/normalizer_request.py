@@ -3,9 +3,8 @@
 
 import abc
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptDataType
+from pyrit.models import data_serializer_factory, PromptDataType
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import data_serializer_factory
 
 
 class NormalizerRequestPiece(abc.ABC):
@@ -59,7 +58,7 @@ class NormalizerRequestPiece(abc.ABC):
             raise ValueError("prompt_converters must be a PromptConverter List")
 
         # this validates the media exists, if needed
-        data_serializer_factory(data_type=self.prompt_data_type, prompt_text=self.prompt_text)
+        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_text)
 
 
 class NormalizerRequest:
@@ -71,4 +70,4 @@ class NormalizerRequest:
             raise ValueError("request_pieces must be a list of NormalizerRequestPiece objects")
 
         for piece in self.request_pieces:
-            piece.validate
+            piece.validate()

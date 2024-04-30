@@ -35,7 +35,7 @@ default_values.load_default_env()
 
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text="Hello world!",
+    original_value="Hello world!",
 ).to_prompt_request_response()
 
 with AzureMLChatTarget() as azure_ml_chat_target:

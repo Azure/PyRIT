@@ -85,14 +85,14 @@ async def test_send_prompt_async(
     mock_upload_async.return_value = None
     request_piece = sample_entries[0]
     conversation_id = request_piece.conversation_id
-    request_piece.converted_prompt_text = __name__
+    request_piece.converted_value = __name__
     request = PromptRequestResponse([request_piece])
 
     response = await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 
     assert response
 
-    blob_url = response.request_pieces[0].converted_prompt_text
+    blob_url = response.request_pieces[0].converted_value
 
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
     assert blob_url.__contains__(".txt")
@@ -100,4 +100,4 @@ async def test_send_prompt_async(
     chats = azure_blob_storage_target._memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "user"
-    assert azure_blob_storage_target._container_url in chats[0].converted_prompt_text
+    assert azure_blob_storage_target._container_url in chats[0].converted_value

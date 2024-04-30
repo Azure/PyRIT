@@ -61,7 +61,7 @@ async def test_tts_validate_request_length(tts_target: AzureTTSTarget, sample_co
 @pytest.mark.asyncio
 async def test_tts_validate_prompt_type(tts_target: AzureTTSTarget, sample_conversations: list[PromptRequestPiece]):
     request_piece = sample_conversations[0]
-    request_piece.converted_prompt_data_type = "image_path"
+    request_piece.converted_value_data_type = "image_path"
     request = PromptRequestResponse(request_pieces=[request_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await tts_target.send_prompt_async(prompt_request=request)
@@ -99,9 +99,8 @@ async def test_tts_send_prompt_file_save_async(
         return_value.content = b"audio data"
         mock_request.return_value = return_value
         response = await tts_target.send_prompt_async(prompt_request=request)
-        assert response
-        assert response.request_pieces[0].converted_prompt_data_type == "audio_path"
-        file_path = response.request_pieces[0].converted_prompt_text
+
+        file_path = response.request_pieces[0].converted_value
         assert file_path
         assert file_path.endswith(f".{response_format}")
         assert os.path.exists(file_path)

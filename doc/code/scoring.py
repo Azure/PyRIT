@@ -7,10 +7,10 @@
 # - `SelfAskGptClassifier`: classifies a response into one of several categories (e.g., detecting whether a text string contains a prompt injection)
 # - `SelfAskGptLikertScale`: classifies a response into one of several levels on a Likert scale (e.g., scoring the severity of misinformation within a text string)
 #
-# Both of these scorers inherit from the `SelfAskScore` class, which you can also use to create a custom scorer as follows:
+# Both of these scorers inherit from the `SelfAskScorer` class, which you can also use to create a custom scorer as follows:
 #
 # ```
-# CustomScorer = SelfAskScore(
+# CustomScorer = SelfAskScorer(
 #     prompt_template_path=custom_prompt_template,
 #     content_classifier=custom_classifier,
 #     chat_target=chat_target
@@ -30,6 +30,7 @@ from pyrit.common import default_values
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.score import SelfAskGptClassifier, ContentClassifiers
 
+
 default_values.load_default_env()
 with AzureOpenAIChatTarget() as azure_openai_chat_target:
     prompt_injection_classifier = SelfAskGptClassifier(
@@ -43,12 +44,12 @@ with AzureOpenAIChatTarget() as azure_openai_chat_target:
     """
 
     scored_response = prompt_injection_classifier.score_text(text=text_with_dan_injection_response)
-    print("Scored response is given as:", scored_response)
-    text_without_dan_injection_response = """Hello there!"""
-    # As you can see, the `score_value` is set to `prompt_injection`, which indicates our scorer interpreted the
-    # text as a prompt injeection. Below we'll try again with normal text.
+    print("[Prompt Injection] Scored response is given as:", scored_response)
+
+    # Regular Text
+    text_without_dan_injection_response = "Hello there!"
     scored_response = prompt_injection_classifier.score_text(text=text_without_dan_injection_response)
-    print("Scored response is given as:", scored_response)
+    print("[Regular Text] Scored response is given as:", scored_response)
 
 # %% [markdown]
 # ## Likert Scale Scoring
@@ -59,6 +60,7 @@ with AzureOpenAIChatTarget() as azure_openai_chat_target:
 # Looking at the scored responses, we see that the `text_with_political_misinfo` is scored as 'Severe misinformation', while `text_without_political_misinfo` is scored as 'No misinformation'.
 
 # %%
+from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.score import SelfAskGptLikertScale, LikertScales
 
 with AzureOpenAIChatTarget() as azure_openai_chat_target:
@@ -67,14 +69,14 @@ with AzureOpenAIChatTarget() as azure_openai_chat_target:
         content_classifier=LikertScales.POLITICAL_MISINFO_SCALE, chat_target=azure_openai_chat_target
     )
 
-    text_with_political_misinfo = """
-    Hillary Clinton is a member of the Illuminati!
-    """
-
+    # Misinformation
+    text_with_political_misinfo = "Hillary Clinton is a member of the Illuminati!"
     scored_response = political_misinfo_scorer.score_text(text=text_with_political_misinfo)
-    print("Scored response is given as:", scored_response)
-    text_without_political_misinfo = """Today is a beautiful day."""
-    # As you can see, the `score_value` indicates the level of severity for the misinformation example.
-    # Below we'll try again with normal text.
+    print("[Misinformation] Scored response is given as:", scored_response)
+
+    # Regular Text
+    text_without_political_misinfo = "Today is a beautiful day."
     scored_response = political_misinfo_scorer.score_text(text=text_without_political_misinfo)
-    print("Scored response is given as:", scored_response)
+    print("[Regular Text] Scored response is given as:", scored_response)
+
+# %%
