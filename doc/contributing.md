@@ -249,7 +249,7 @@ This makes it easier to distinguish versions when someone submits a bug
 as we will be able to tell if it's a release version or dev version.
 For the release branch, we have to remove this suffix.
 
-### Update Readme.md
+### Update README.md
 
 Readme.md is published to pypi and also needs to be updated so the
 links work properly.
