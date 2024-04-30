@@ -23,7 +23,7 @@ class PromptConverter(abc.ABC, Identifier):
     """
 
     @abc.abstractmethod
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text", **kwargs) -> ConverterResult:
         """
         Converts the given prompts into a different representation
 
