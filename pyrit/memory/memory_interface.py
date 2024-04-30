@@ -113,6 +113,25 @@ class MemoryInterface(abc.ABC):
 
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
+    
+    def export_conversation_by_orchestrator_id(self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"):
+        """
+        Exports conversation data with the given conversation ID to a specified file.
+
+        Args:
+            orchestrator_id (str): The ID of the orchestrator from which to export conversations.
+            file_path (str): The path to the file where the data will be exported.
+            If not provided, a default path using RESULTS_PATH will be constructed.
+            export_type (str): The format of the export. Defaults to "json".
+        """
+        data = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+
+        # If file_path is not provided, construct a default using the exporter's results_path
+        if not file_path:
+            file_name = f"{str(orchestrator_id)}.{export_type}"
+            file_path = RESULTS_PATH / file_name
+
+        self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
