@@ -1,6 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import base64
+from io import BytesIO
+
+from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from PIL import Image, ImageDraw, ImageFont
@@ -9,9 +13,8 @@ from PIL import Image, ImageDraw, ImageFont
 class AddTextImageConverter(PromptConverter):
     """Adds a string to an image"""
 
-    def __init__(self, input_file: str, output_file: str = "edited_image.png"):
+    def __init__(self, input_file: str):
         self.input_file = input_file
-        self.output_file = output_file
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
@@ -51,9 +54,14 @@ class AddTextImageConverter(PromptConverter):
 
         # Draw text and save
         draw.text((text_x, text_y), prompt, fill=(0, 0, 0), font=font)
-        new_img.save(self.output_file)
-        # return str(self.output_file)  # returns output file name for now
-        return ConverterResult(output_text=str(self.output_file), output_type="image_path")
+
+        image_bytes = BytesIO()
+        new_img.save(image_bytes, format="png")
+        image_str = base64.b64encode(image_bytes.getvalue())
+        data = data_serializer_factory(data_type="image_path")
+        data.save_b64_image(data=image_str)
+
+        return ConverterResult(output_text=str(data.value), output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"
