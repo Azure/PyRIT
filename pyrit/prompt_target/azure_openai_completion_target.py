@@ -2,12 +2,12 @@
 # Licensed under the MIT license.
 
 import asyncio
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import concurrent.futures
 import logging
 from openai import AsyncAzureOpenAI
 from openai.types.completion import Completion
 
+from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptResponse
@@ -85,10 +85,8 @@ class AzureOpenAICompletionTarget(PromptTarget):
         )
 
         if use_aad_auth:
-            logger.info("Authenticating with DefaultAzureCredential() for https://cognitiveservices.azure.com/.default")
-            token_provider = get_bearer_token_provider(
-                DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
-            )
+            logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
+            token_provider = get_token_provider_from_default_azure_credential()
 
             self._async_client = AsyncAzureOpenAI(
                 azure_ad_token_provider=token_provider,

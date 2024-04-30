@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 from abc import abstractmethod
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import logging
 import json
 from typing import Optional
@@ -10,6 +9,7 @@ from typing import Optional
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
 
+from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
@@ -259,10 +259,8 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         )
 
         if use_aad_auth:
-            logger.info("Authenticating with DefaultAzureCredential() for https://cognitiveservices.azure.com/.default")
-            token_provider = get_bearer_token_provider(
-                DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
-            )
+            logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
+            token_provider = get_token_provider_from_default_azure_credential()
 
             self._client = AzureOpenAI(
                 azure_ad_token_provider=token_provider,

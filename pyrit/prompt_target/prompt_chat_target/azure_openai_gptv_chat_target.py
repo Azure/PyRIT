@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import asyncio
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import concurrent.futures
 import logging
 import json
@@ -10,6 +9,7 @@ import json
 from openai import AsyncAzureOpenAI, AzureOpenAI
 from openai.types.chat import ChatCompletion
 
+from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent
@@ -107,10 +107,8 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             logger.info("No headers have been passed, setting empty default headers")
 
         if use_aad_auth:
-            logger.info("Authenticating with DefaultAzureCredential() for https://cognitiveservices.azure.com/.default")
-            token_provider = get_bearer_token_provider(
-                DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
-            )
+            logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
+            token_provider = get_token_provider_from_default_azure_credential()
 
             self._client = AzureOpenAI(
                 azure_ad_token_provider=token_provider,
