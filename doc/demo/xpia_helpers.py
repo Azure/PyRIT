@@ -127,6 +127,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             PromptRequestResponse: The processed prompt response.
 
         """
+        self.validate_request(prompt_request=prompt_request)
         self._memory.add_request_response_to_memory(request=prompt_request)
 
         request = prompt_request.request_pieces[0]
@@ -149,6 +150,13 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             request=request, response_text_pieces=[processing_output]
         )
         return response
+    
+    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
+            raise ValueError("This target only supports text prompt input.")
 
 
 class AzureStoragePlugin:
