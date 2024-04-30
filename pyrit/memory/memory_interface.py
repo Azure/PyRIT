@@ -116,7 +116,8 @@ class MemoryInterface(abc.ABC):
     
     def export_conversation_by_orchestrator_id(self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"):
         """
-        Exports conversation data with the given conversation ID to a specified file.
+        Exports conversation data with the given orchestrator ID to a specified file.
+        This will contain all conversations that were sent by the same orchestrator.
 
         Args:
             orchestrator_id (str): The ID of the orchestrator from which to export conversations.
