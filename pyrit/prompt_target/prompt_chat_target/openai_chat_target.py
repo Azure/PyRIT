@@ -9,6 +9,7 @@ from typing import Optional
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
 from openai.types.chat import ChatCompletion
 
+from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage
@@ -209,6 +210,7 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
+        use_aad_auth: bool = False,
         memory: MemoryInterface = None,
         api_version: str = "2023-08-01-preview",
         max_tokens: int = 1024,
@@ -229,6 +231,10 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
                 Defaults to the AZURE_OPENAI_CHAT_ENDPOINT environment variable.
             api_key (str, optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
+            use_aad_auth (bool, optional): When set to True, user authentication is used
+                instead of API Key. DefaultAzureCredential is taken for
+                https://cognitiveservices.azure.com/.default. Please run `az login` locally
+                to leverage user AuthN.
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
@@ -258,20 +264,36 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
-        api_key = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-        )
 
-        self._client = AzureOpenAI(
-            api_key=api_key,
-            api_version=api_version,
-            azure_endpoint=endpoint,
-        )
-        self._async_client = AsyncAzureOpenAI(
-            api_key=api_key,
-            api_version=api_version,
-            azure_endpoint=endpoint,
-        )
+        if use_aad_auth:
+            logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
+            token_provider = get_token_provider_from_default_azure_credential()
+
+            self._client = AzureOpenAI(
+                azure_ad_token_provider=token_provider,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+            )
+            self._async_client = AsyncAzureOpenAI(
+                azure_ad_token_provider=token_provider,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+            )
+        else:
+            api_key = default_values.get_required_value(
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+            )
+
+            self._client = AzureOpenAI(
+                api_key=api_key,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+            )
+            self._async_client = AsyncAzureOpenAI(
+                api_key=api_key,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+            )
 
 
 class OpenAIChatTarget(OpenAIChatInterface):

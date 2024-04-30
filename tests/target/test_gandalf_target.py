@@ -44,10 +44,12 @@ async def test_gandalf_validate_prompt_type(
     request = PromptRequestResponse(request_pieces=[request_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await gandalf_target.send_prompt_async(prompt_request=request)
-        
+
 
 @pytest.mark.asyncio
-async def test_gandalf_send_prompt_adds_memory_async(gandalf_target: GandalfTarget, sample_conversations: list[PromptRequestPiece]) -> None:
+async def test_gandalf_send_prompt_adds_memory_async(
+    gandalf_target: GandalfTarget, sample_conversations: list[PromptRequestPiece]
+) -> None:
 
     mock_memory = MagicMock()
     gandalf_target._memory = mock_memory
