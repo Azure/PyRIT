@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import os
-from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
+from pyrit.embedding import AzureTextEmbedding
 from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory.memory_models import EmbeddingData, PromptRequestPiece
 
@@ -30,9 +30,9 @@ class MemoryEmbedding:
         Returns:
             ConversationMemoryEntryMetadata: The generated metadata.
         """
-        if prompt_request_piece.converted_prompt_data_type == "text":
+        if prompt_request_piece.converted_value_data_type == "text":
             embedding_data = EmbeddingData(
-                embedding=self.embedding_model.generate_text_embedding(text=prompt_request_piece.converted_prompt_text)
+                embedding=self.embedding_model.generate_text_embedding(text=prompt_request_piece.converted_value)
                 .data[0]
                 .embedding,
                 embedding_type_name=self.embedding_model.__class__.__name__,

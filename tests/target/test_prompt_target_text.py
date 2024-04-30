@@ -29,7 +29,7 @@ def test_send_prompt_user_no_system(memory_interface: MemoryInterface, sample_en
     no_op = TextTarget(memory=memory_interface)
 
     request = sample_entries[0]
-    request.converted_prompt_text = "hi, I am a victim chatbot, how can I help?"
+    request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
     no_op.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
@@ -44,7 +44,7 @@ def test_send_prompt_stream(memory_interface: MemoryInterface, sample_entries: l
 
         no_op = TextTarget(memory=memory_interface, text_stream=tmp_file)
         request = sample_entries[0]
-        request.converted_prompt_text = prompt
+        request.converted_value = prompt
 
         no_op.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 

@@ -37,14 +37,15 @@ def test_export_to_json_creates_file(tmp_path, sample_conversation_entries):
 
         for expected, actual in zip(expected_content, content):
             assert expected["role"] == actual["role"]
-            assert expected["converted_prompt_text"] == actual["converted_prompt_text"]
+            assert expected["converted_value"] == actual["converted_value"]
             assert expected["conversation_id"] == actual["conversation_id"]
-            assert expected["original_prompt_data_type"] == actual["original_prompt_data_type"]
-            assert expected["original_prompt_text"] == actual["original_prompt_text"]
+            assert expected["original_value_data_type"] == actual["original_value_data_type"]
+            assert expected["original_value"] == actual["original_value"]
 
 
 def test_export_data_with_conversations(tmp_path, sample_conversation_entries):
     exporter = MemoryExporter()
+    conversation_id = sample_conversation_entries[0].conversation_id
 
     # Define the file path using tmp_path
     file_path = tmp_path / "exported_conversations.json"
@@ -60,8 +61,8 @@ def test_export_data_with_conversations(tmp_path, sample_conversation_entries):
         content = json.load(f)
         assert len(content) == 3  # Check for the expected number of items
         assert content[0]["role"] == "user"
-        assert content[0]["converted_prompt_text"] == "Hello, how are you?"
-        assert content[0]["conversation_id"] == "12345"
+        assert content[0]["converted_value"] == "Hello, how are you?"
+        assert content[0]["conversation_id"] == conversation_id
         assert content[1]["role"] == "assistant"
-        assert content[1]["converted_prompt_text"] == "I'm fine, thank you!"
-        assert content[1]["conversation_id"] == "12345"
+        assert content[1]["converted_value"] == "I'm fine, thank you!"
+        assert content[1]["conversation_id"] == conversation_id

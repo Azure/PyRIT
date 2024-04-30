@@ -16,7 +16,6 @@ import pathlib
 
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece
 
 jailbreak_template = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
@@ -39,7 +38,7 @@ default_values.load_default_env()
 
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text=jailbreak_prompt,
+    original_value=jailbreak_prompt,
 ).to_prompt_request_response()
 
 
@@ -68,7 +67,7 @@ test_normalizer_id = None
 
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text=jailbreak_prompt,
+    original_value=jailbreak_prompt,
 ).to_prompt_request_response()
 
 with AzureBlobStorageTarget(

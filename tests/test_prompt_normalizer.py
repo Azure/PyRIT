@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
+import tempfile
 from unittest.mock import MagicMock
 import pytest
 
@@ -69,28 +71,35 @@ async def test_send_prompt_async_image_converter():
 
     mock_image_converter = MagicMock(PromptConverter)
 
-    mock_image_converter.convert.return_value = ConverterResult(
-        output_type="path_to_image",
-        output_text="image_path",
-    )
+    filename: str = ""
 
-    prompt_converters = [mock_image_converter]
-    prompt_text = "Hello"
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+        f.write(b"Hello")
 
-    prompt = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
-        prompt_data_type="text",
-    )
+        mock_image_converter.convert.return_value = ConverterResult(
+            output_type="image_path",
+            output_text=filename,
+        )
 
-    normalizer = PromptNormalizer(memory=MagicMock())
+        prompt_converters = [mock_image_converter]
+        prompt_text = "Hello"
 
-    await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
+        prompt = NormalizerRequestPiece(
+            prompt_converters=prompt_converters,
+            prompt_text=prompt_text,
+            prompt_data_type="text",
+        )
 
-    # verify the prompt target received the correct arguments from the normalizer
-    sent_request = prompt_target.send_prompt_async.call_args.kwargs["prompt_request"].request_pieces[0]
-    assert sent_request.converted_prompt_text == "image_path"
-    assert sent_request.converted_prompt_data_type == "path_to_image"
+        normalizer = PromptNormalizer(memory=MagicMock())
+
+        await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
+
+        # verify the prompt target received the correct arguments from the normalizer
+        sent_request = prompt_target.send_prompt_async.call_args.kwargs["prompt_request"].request_pieces[0]
+        assert sent_request.converted_value == filename
+        assert sent_request.converted_value_data_type == "image_path"
+    os.remove(filename)
 
 
 @pytest.mark.asyncio
@@ -110,3 +119,34 @@ async def test_prompt_normalizer_send_prompt_batch_async():
     await normalizer.send_prompt_batch_to_target_async(requests=[NormalizerRequest([prompt])], target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
+
+
+def test_build_prompt_request_response():
+
+    labels = {"label1": "value1", "label2": "value2"}
+    orchestrator_identifier = {"orchestrator_id": "123"}
+
+    prompt_target = MockPromptTarget()
+    prompt_converters = [Base64Converter()]
+    prompt_text = "Hello"
+    normalizer_req_piece_1 = NormalizerRequestPiece(
+        prompt_converters=prompt_converters,
+        prompt_text=prompt_text,
+        prompt_data_type="text",
+    )
+    normalizer_req_piece_2 = NormalizerRequestPiece(
+        prompt_converters=prompt_converters,
+        prompt_text=prompt_text,
+        prompt_data_type="text",
+    )
+    normalizer = PromptNormalizer(memory=MagicMock())
+
+    response = normalizer._build_prompt_request_response(
+        request=NormalizerRequest([normalizer_req_piece_1, normalizer_req_piece_2]),
+        target=prompt_target,
+        labels=labels,
+        orchestrator_identifier=orchestrator_identifier,
+    )
+
+    # Check all prompt pieces in the response have the same conversation ID
+    assert len(set(prompt_piece.conversation_id for prompt_piece in response.request_pieces)) == 1

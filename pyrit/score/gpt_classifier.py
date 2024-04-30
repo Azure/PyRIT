@@ -28,15 +28,21 @@ class ScoringInstructions(enum.Enum):
 
 
 class ContentClassifiers(enum.Enum):
+    BIAS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "bias.yaml").resolve()
     CURRENT_EVENTS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "current_events.yaml").resolve()
+    GROUNDEDNESS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "grounded.yaml").resolve()
+    HARMFUL_CONTENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "harmful_content.yaml").resolve()
     PROMPT_INJECTION_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "prompt_injection_detector.yaml").resolve()
     QUESTION_ANSWERING_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "question_answering.yaml").resolve()
+    REFUSAL_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "refusal.yaml").resolve()
     SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
+    SEXUAL_CONTENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sexual_content.yaml").resolve()
 
 
 class LikertScales(enum.Enum):
     CYBER_SCALE = Path(LIKERT_SCALES_PATH, "cyber.yaml").resolve()
     FAIRNESS_BIAS_SCALE = Path(LIKERT_SCALES_PATH, "fairness_bias.yaml").resolve()
+    HARM_SCALE = Path(LIKERT_SCALES_PATH, "harm.yaml").resolve()
     HATE_SPEECH_SCALE = Path(LIKERT_SCALES_PATH, "hate_speech.yaml").resolve()
     PERSUASION_SCALE = Path(LIKERT_SCALES_PATH, "persuasion.yaml").resolve()
     PHISH_EMAILS_SCALE = Path(LIKERT_SCALES_PATH, "phish_emails.yaml").resolve()
@@ -45,7 +51,7 @@ class LikertScales(enum.Enum):
     VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
 
 
-class SelfAskScore(Scorer):
+class SelfAskScorer(Scorer):
     """A class that represents a self-ask score for text classification and scoring.
 
     This class is responsible for scoring text using a self-ask approach. It takes a chat target,
@@ -76,13 +82,11 @@ class SelfAskScore(Scorer):
         self._chat_target: PromptChatTarget = chat_target
         self._conversation_id = str(uuid.uuid4())
         self._normalizer_id = None  # Normalizer not used
-        self.labels = {"scorer": "self_ask_scorer"}
 
         self._chat_target.set_system_prompt(
             system_prompt=self._system_prompt,
             conversation_id=self._conversation_id,
             orchestrator_identifier=None,
-            labels=self.labels,
         )
 
     def score_text(self, text: str) -> Score:
@@ -103,15 +107,14 @@ class SelfAskScore(Scorer):
             [
                 PromptRequestPiece(
                     role="user",
-                    original_prompt_text=text,
+                    original_value=text,
                     conversation_id=self._conversation_id,
-                    labels=self.labels,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
             ]
         )
 
-        response_text = self._chat_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
+        response_text = self._chat_target.send_prompt(prompt_request=request).request_pieces[0].converted_value
 
         try:
             parsed_response = json.loads(response_text)
@@ -130,7 +133,7 @@ class SelfAskScore(Scorer):
             raise ValueError(f"Invalid JSON response from chat target: {response_text}") from e
 
 
-class SelfAskGptClassifier(SelfAskScore):
+class SelfAskGptClassifier(SelfAskScorer):
     def __init__(
         self,
         content_classifier: ContentClassifiers,
@@ -144,7 +147,7 @@ class SelfAskGptClassifier(SelfAskScore):
         )
 
 
-class SelfAskGptLikertScale(SelfAskScore):
+class SelfAskGptLikertScale(SelfAskScorer):
     def __init__(
         self,
         content_classifier: LikertScales,

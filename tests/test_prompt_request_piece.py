@@ -1,6 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
+import tempfile
+import uuid
 import pytest
 import time
 
@@ -23,8 +26,8 @@ def sample_conversations() -> list[PromptRequestPiece]:
 def test_id_set():
     entry = PromptRequestPiece(
         role="user",
-        original_prompt_text="Hello",
-        converted_prompt_text="Hello",
+        original_value="Hello",
+        converted_value="Hello",
     )
     assert entry.id is not None
 
@@ -34,8 +37,8 @@ def test_datetime_set():
     time.sleep(0.1)
     entry = PromptRequestPiece(
         role="user",
-        original_prompt_text="Hello",
-        converted_prompt_text="Hello",
+        original_value="Hello",
+        converted_value="Hello",
     )
     assert entry.timestamp > now
 
@@ -44,8 +47,8 @@ def test_converters_serialize():
     converter_identifiers = [Base64Converter().get_identifier()]
     entry = PromptRequestPiece(
         role="user",
-        original_prompt_text="Hello",
-        converted_prompt_text="Hello",
+        original_value="Hello",
+        converted_value="Hello",
         converter_identifiers=converter_identifiers,
     )
 
@@ -61,8 +64,8 @@ def test_prompt_targets_serialize():
     target = MockPromptTarget()
     entry = PromptRequestPiece(
         role="user",
-        original_prompt_text="Hello",
-        converted_prompt_text="Hello",
+        original_value="Hello",
+        converted_value="Hello",
         prompt_target_identifier=target.get_identifier(),
     )
 
@@ -75,8 +78,8 @@ def test_orchestrators_serialize():
 
     entry = PromptRequestPiece(
         role="user",
-        original_prompt_text="Hello",
-        converted_prompt_text="Hello",
+        original_value="Hello",
+        converted_value="Hello",
         orchestrator_identifier=orchestrator.get_identifier(),
     )
 
@@ -88,17 +91,48 @@ def test_orchestrators_serialize():
 def test_hashes_generated():
     entry = PromptRequestPiece(
         role="user",
-        original_prompt_text="Hello1",
-        converted_prompt_text="Hello2",
+        original_value="Hello1",
+        converted_value="Hello2",
     )
 
-    assert entry.original_prompt_data_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
-    assert entry.converted_prompt_data_sha256 == "be98c2510e417405647facb89399582fc499c3de4452b3014857f92e6baad9a9"
+    assert entry.original_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
+    assert entry.converted_value_sha256 == "be98c2510e417405647facb89399582fc499c3de4452b3014857f92e6baad9a9"
+
+
+def test_hashes_generated_files():
+    filename = ""
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+        f.write(b"Hello1")
+        f.flush()
+        f.close()
+        entry = PromptRequestPiece(
+            role="user",
+            original_value=filename,
+            converted_value=filename,
+            original_value_data_type="image_path",
+            converted_value_data_type="audio_path",
+        )
+
+        assert entry.original_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
+        assert entry.converted_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
+
+    os.remove(filename)
+
+
+def test_hashes_generated_files_unknown_type():
+    with pytest.raises(ValueError, match="Data type new_unknown_type not supported"):
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello1",
+            original_value_data_type="new_unknown_type",  # type: ignore
+        )
 
 
 def test_prompt_response_validate(sample_conversations: list[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
+        c.role = sample_conversations[0].role
 
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     request_response.validate()
@@ -111,6 +145,10 @@ def test_prompt_response_empty_throws():
 
 
 def test_prompt_response_validate_conversation_id_throws(sample_conversations: list[PromptRequestPiece]):
+    for c in sample_conversations:
+        c.role = "user"
+        c.conversation_id = str(uuid.uuid4())
+
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="Conversation ID mismatch."):
         request_response.validate()
@@ -120,9 +158,18 @@ def test_prompt_response_converted_empty_throws(sample_conversations: list[Promp
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
 
-    sample_conversations[0].converted_prompt_text = None
+    sample_conversations[0].converted_value = None
     request_response = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="Converted prompt text is None."):
+        request_response.validate()
+
+
+def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: list[PromptRequestPiece]):
+    for c in sample_conversations:
+        c.conversation_id = sample_conversations[0].conversation_id
+
+    request_response = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="Inconsistent roles within the same prompt request response entry."):
         request_response.validate()
 
 
@@ -148,7 +195,7 @@ def test_group_conversation_request_pieces_multiple_groups(sample_conversations:
     convo_group.append(
         PromptRequestPiece(
             role="user",
-            original_prompt_text="Hello",
+            original_value="Hello",
             conversation_id=convo_group[0].conversation_id,
             sequence=1,
         )

@@ -44,7 +44,6 @@ class TranslationConverter(PromptConverter):
         self.language = language
 
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language)
-        self._labels = {"converter": "TranslationConverter"}
 
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
@@ -62,7 +61,6 @@ class TranslationConverter(PromptConverter):
             system_prompt=self.system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
-            labels=self._labels,
         )
 
         if not self.input_supported(input_type):
@@ -72,19 +70,19 @@ class TranslationConverter(PromptConverter):
             [
                 PromptRequestPiece(
                     role="user",
-                    original_prompt_text=prompt,
-                    converted_prompt_text=prompt,
+                    original_value=prompt,
+                    converted_value=prompt,
                     conversation_id=conversation_id,
                     sequence=1,
-                    labels=self._labels,
                     prompt_target_identifier=self.converter_target.get_identifier(),
-                    original_prompt_data_type=input_type,
-                    converted_prompt_data_type=input_type,
+                    original_value_data_type=input_type,
+                    converted_value_data_type=input_type,
+                    converter_identifiers=[self.get_identifier()],
                 )
             ]
         )
 
-        response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
+        response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_value
 
         try:
             llm_response: dict[str, str] = json.loads(response_msg)["output"]

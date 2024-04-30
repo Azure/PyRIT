@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Optional
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
@@ -16,8 +17,8 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
         Sets the system prompt for the prompt target. May be overridden by subclasses.
@@ -31,8 +32,8 @@ class PromptChatTarget(PromptTarget):
             request=PromptRequestPiece(
                 role="system",
                 conversation_id=conversation_id,
-                original_prompt_text=system_prompt,
-                converted_prompt_text=system_prompt,
+                original_value=system_prompt,
+                converted_value=system_prompt,
                 prompt_target_identifier=self.get_identifier(),
                 orchestrator_identifier=orchestrator_identifier,
                 labels=labels,
@@ -44,8 +45,8 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Sends a text prompt to the target without having to build the prompt request.
@@ -56,8 +57,8 @@ class PromptChatTarget(PromptTarget):
                 PromptRequestPiece(
                     role="user",
                     conversation_id=conversation_id,
-                    original_prompt_text=prompt,
-                    converted_prompt_text=prompt,
+                    original_value=prompt,
+                    converted_value=prompt,
                     prompt_target_identifier=self.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
                     labels=labels,
@@ -72,8 +73,8 @@ class PromptChatTarget(PromptTarget):
         *,
         prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Sends a text prompt to the target without having to build the prompt request.
@@ -84,8 +85,8 @@ class PromptChatTarget(PromptTarget):
                 PromptRequestPiece(
                     role="user",
                     conversation_id=conversation_id,
-                    original_prompt_text=prompt,
-                    converted_prompt_text=prompt,
+                    original_value=prompt,
+                    converted_value=prompt,
                     prompt_target_identifier=self.get_identifier(),
                     orchestrator_identifier=orchestrator_identifier,
                     labels=labels,

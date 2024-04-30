@@ -24,8 +24,8 @@ def sample_conversations_entries():
 
 def test_get_similar_chat_messages_by_content(mock_memory_interface, sample_conversations_entries):
 
-    sample_conversations_entries[0].converted_prompt_text = "Hello, how are you?"
-    sample_conversations_entries[2].converted_prompt_text = "Hello, how are you?"
+    sample_conversations_entries[0].converted_value = "Hello, how are you?"
+    sample_conversations_entries[2].converted_value = "Hello, how are you?"
 
     mock_memory_interface.get_all_prompt_pieces.return_value = sample_conversations_entries
 
@@ -43,8 +43,8 @@ def test_get_similar_chat_messages_by_content(mock_memory_interface, sample_conv
 
 
 def test_get_similar_chat_messages_by_embedding(mock_memory_interface, sample_conversations_entries):
-    sample_conversations_entries[0].converted_prompt_text = "Similar message"
-    sample_conversations_entries[1].converted_prompt_text = "Different message"
+    sample_conversations_entries[0].converted_value = "Similar message"
+    sample_conversations_entries[1].converted_value = "Different message"
 
     # Mock EmbeddingData entries linked to the ConversationData entries
     target_embedding = [0.1, 0.2, 0.3]
