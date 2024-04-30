@@ -255,7 +255,7 @@ Readme.md is published to pypi and also needs to be updated so the
 links work properly.
 
 Replace all "main" links like
-"[./README.md](https://github.com/Azure/PyRIT/blob/main/doc/README.md)" with links that have the 
+"https://github.com/Azure/PyRIT/blob/main/doc/README.md" with links that have the
 correct version number, i.e.,
 "https://github.com/Azure/PyRIT/blob/releases/vx.y.z/doc/README.md".
 
