@@ -157,13 +157,12 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
-        
+
         request = prompt_request.request_pieces[0]
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
-        
 
 
 class AzureStoragePlugin:
