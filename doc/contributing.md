@@ -309,7 +309,7 @@ After the release is on PyPI, make sure to create a PR for the `main` branch whe
 is the version increase in `__init__.py` (while keeping suffix `.dev0`).
 This should be something like `x.y.z+1.dev0`.
 
-### Create Girhub Release
+### Create GitHub Release
 
 Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select the "tag"
 for which you want to create the release notes. It should match the version that you just released
