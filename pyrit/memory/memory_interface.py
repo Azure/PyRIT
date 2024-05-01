@@ -127,7 +127,7 @@ class MemoryInterface(abc.ABC):
             If not provided, a default path using RESULTS_PATH will be constructed.
             export_type (str): The format of the export. Defaults to "json".
         """
-        data = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+        data = self.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
