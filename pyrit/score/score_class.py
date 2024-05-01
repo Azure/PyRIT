@@ -2,52 +2,60 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass
+import json
 from typing import Dict, Literal
+import uuid
 
+
+ScorerType = Literal["true_false", "float_scale"]
 
 class Score:
 
-    # The data type of the score value
-    score_type: Literal["int", "float", "str", "bool"]
-    # The score value
-    score_value: int | float | str | bool
-    # A description of the meaning of the score value
-    score_description: str = ""
-    # An explanation of how the score was calculated
-    score_explanation: str = ""
-    # The raw input text that was scored
-    raw_input_score_text: str = ""
-    # The raw output of the scoring engine that was used to generate the score
-    raw_output_score_text: str = ""
-
     id: int
-    # The value the scorer ended up with; e.g. "No hate speech"
+
+    # The value the scorer ended up with; e.g. True (if bool) or 0 (if float_scale)
     score_value: str
 
-    # Extra data the scorer provides around the rationale of the score
-    score_explanation: str
+    # The type of the scorer; e.g. "bool" or "float_scale"
+    scorer_type: ScorerType
 
-    # Metadata a scorer might use
+    # The type of the harms category (e.g. "hate" or "violence")
+    score_category: str
+
+    # Extra data the scorer provides around the rationale of the score
+    score_rationale: str
+
+    # Custom metadata a scorer might use
     metadata: str
 
-    # The class of the scorer
-    scoring_class_identifier: str
+    # The identifier of the scorer class, including relavent information
+    # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
+    scorer_class_identifier: Dict[str, str]
 
-    # The criteria the scorer used to determine a score; e.g. "current_events.yaml"
-    scoring_criteria: str
-
-    # Optional: the request used for scoring
-    prompt_request_id: str
-
-    prompt_response_id: str
+    # This is the prompt_request_response_id that the score is scoring
+    # Note a scorer can generate an additional request. This is NOT that, but
+    # the request associated with what we're scoring.
+    prompt_request_response_id: str
 
 
 
 
     def __init__(self,
-                 id: int,
                  score_value: str,
-                 scoring_class_identifier: Dict[str, str],
-                 scoring_criteria: str,
+                 scorer_type: ScorerType,
+                 score_category: str,
+                 score_rationale: str,
+                 metadata: str,
+                 scorer_class_identifier: Dict[str, str],
+                 prompt_request_response_id: str,
                  ):
-        self.id
+        self.id = uuid.uuid4()
+
+        self.score_value = score_value
+        self.scorer_type = scorer_type
+        self.score_category = score_category
+        self.score_rationale = score_rationale
+        self.metadata = metadata
+        self.scorer_class_identifier = scorer_class_identifier
+        self.prompt_request_response_id = prompt_request_response_id
+

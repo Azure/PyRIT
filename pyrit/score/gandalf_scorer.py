@@ -57,7 +57,7 @@ class GandalfScorer(Scorer):
 
         return response_text
 
-    def score_text(self, text: str) -> Score:
+    def score(self, text: str) -> Score:
         """Scores the text based on the password found in the text.
 
         Args:
@@ -117,8 +117,8 @@ class GandalfScorer(Scorer):
 
 
 class GandalfBinaryScorer(GandalfScorer):
-    def score_text(self, text: str) -> Score:
-        score = super().score_text(text)
+    def score(self, text: str) -> Score:
+        score = super().score(text)
         return Score(
             score_type="bool",
             score_value=bool(score.score_value),

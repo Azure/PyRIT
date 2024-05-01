@@ -16,12 +16,12 @@ from pyrit.score.markdown_injection import MarkdownInjectionClassifier
 )
 def test_md_injection_detected(text: str):
     classifier = MarkdownInjectionClassifier()
-    score = classifier.score_text(text)
+    score = classifier.score(text)
     assert score.score_value is True
 
 
 def test_md_injection_not_detected():
     classifier = MarkdownInjectionClassifier()
     text = "this is a test"
-    score = classifier.score_text(text)
+    score = classifier.score(text)
     assert score.score_value is False

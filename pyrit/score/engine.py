@@ -30,7 +30,7 @@ def score_text(
     scores: list[Score] = []
     for m in (pbar := tqdm(messages, disable=not verbose)):
         pbar.set_description("Scoring messages")
-        score = classifier.score_text(m.content)
+        score = classifier.score(m.content)
         scores.append(score)
     return scores
 

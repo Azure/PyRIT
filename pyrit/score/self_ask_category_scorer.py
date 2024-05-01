@@ -89,7 +89,7 @@ class SelfAskScorer(Scorer):
             orchestrator_identifier=None,
         )
 
-    def score_text(self, text: str) -> Score:
+    def score(self, text: str) -> Score:
         """
         Scores the given text using the chat target.
 

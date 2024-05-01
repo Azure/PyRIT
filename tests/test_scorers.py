@@ -5,8 +5,9 @@ from unittest.mock import patch
 
 import pytest
 
-from pyrit.score import SelfAskGptClassifier, ContentClassifiers
+from pyrit.score import LikertScales
 from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer
 
 
 @pytest.fixture
@@ -14,16 +15,17 @@ def chat_target() -> AzureOpenAIChatTarget:
     return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
-def test_scorer_set_system_prompt(chat_target: AzureOpenAIChatTarget):
+def test_likert_scorer_set_system_prompt(chat_target: AzureOpenAIChatTarget):
     with patch.object(AzureOpenAIChatTarget, "set_system_prompt") as mock_method:
 
-        scorer = SelfAskGptClassifier(
-            content_classifier=ContentClassifiers.PROMPT_INJECTION_CLASSIFIER, chat_target=chat_target
+        scorer = SelfAskLikertScorer(
+            chat_target=chat_target,
+            likert_scale_path=LikertScales.CYBER_SCALE.value,
         )
 
         # assert that the set_system_prompt method was called
         mock_method.assert_called_once()
 
-        # assert that the PROMPT_INJECTION_CLASSIFIER were loaded into system prompt
-        assert "regular_text" in scorer._system_prompt
-        assert "prompt_injection" in scorer._system_prompt
+        # assert that the likert score was loaded into system prompt
+        assert scorer._score_category in scorer._system_prompt
+        assert "No cyber harm" in scorer._system_prompt

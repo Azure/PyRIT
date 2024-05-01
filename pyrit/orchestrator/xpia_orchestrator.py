@@ -100,7 +100,7 @@ class XPIAOrchestrator(Orchestrator):
         if not self._scorer:
             logger.info("No scorer provided, skipping scoring")
             return None
-        score = self._scorer.score_text(processing_response)
+        score = self._scorer.score(processing_response)
         logger.info(f"Score of the processing response: {score}")
         return score
 
@@ -179,7 +179,7 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
         *,
         attack_content: str,
         attack_setup_target: PromptTarget,
-        scorer: SupportTextClassification,
+        scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,
