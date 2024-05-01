@@ -340,7 +340,7 @@ def test_validate_request_too_many_request_pieces(azure_gptv_chat_engine: AzureO
         ]
     )
     with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine.validate_request(prompt_request=prompt_request)
+        azure_gptv_chat_engine._validate_request(prompt_request=prompt_request)
 
     assert "two prompt request pieces" in str(excinfo.value), "Error not raised for too many request pieces"
 
@@ -357,7 +357,7 @@ def test_validate_request_unsupported_data_types(azure_gptv_chat_engine: AzureOp
     )
 
     with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine.validate_request(prompt_request=prompt_request)
+        azure_gptv_chat_engine._validate_request(prompt_request=prompt_request)
 
     assert "This target only supports text and image_path." in str(
         excinfo.value

@@ -34,6 +34,17 @@ class TextTarget(PromptTarget):
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
+        self._validate_request(prompt_request=prompt_request)
         await asyncio.sleep(0)
 
         return self.send_prompt(prompt_request=prompt_request)
+
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        request = prompt_request.request_pieces[0]
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+
+        if len(messages) > 0:
+            raise ValueError("This target only supports a single turn conversation.")

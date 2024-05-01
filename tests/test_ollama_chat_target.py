@@ -8,7 +8,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import httpx
 from pyrit.prompt_target import OllamaChatTarget
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models import ChatMessage
+from tests.mocks import get_sample_conversations
+
+
+@pytest.fixture
+def sample_conversations() -> list[PromptRequestPiece]:
+    return get_sample_conversations()
 
 
 @pytest.fixture
@@ -94,3 +101,23 @@ def test_ollama_invalid_endpoint_uri_raises():
             endpoint_uri="",
             model_name="mistral",
         )
+
+
+@pytest.mark.asyncio
+async def test_ollama_validate_request_length(
+    ollama_chat_engine: OllamaChatTarget, sample_conversations: list[PromptRequestPiece]
+):
+    request = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+        await ollama_chat_engine.send_prompt_async(prompt_request=request)
+
+
+@pytest.mark.asyncio
+async def test_ollama_validate_prompt_type(
+    ollama_chat_engine: OllamaChatTarget, sample_conversations: list[PromptRequestPiece]
+):
+    request_piece = sample_conversations[0]
+    request_piece.converted_value_data_type = "image_path"
+    request = PromptRequestResponse(request_pieces=[request_piece])
+    with pytest.raises(ValueError, match="This target only supports text prompt input."):
+        await ollama_chat_engine.send_prompt_async(prompt_request=request)
