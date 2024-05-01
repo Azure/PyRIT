@@ -84,7 +84,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Fetches all entries from the specified table and returns them as model instances.
         """
         result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
-        return [entry.get_prompt_reqest_piece() for entry in result]
+        return [entry.get_prompt_request_piece() for entry in result]
 
     def get_all_embeddings(self) -> list[EmbeddingData]:
         """
