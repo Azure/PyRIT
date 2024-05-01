@@ -197,6 +197,8 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
 
 def test_export_conversation_by_orchestrator_id_file_created(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
     orchestrator1_id = sample_conversation_entries[0].orchestrator_identifier["id"]
+
+    # Default path in export_conversation_by_orchestrator_id()
     file_name = f"{str(orchestrator1_id)}.json"
     file_path = Path(RESULTS_PATH, file_name)
 
