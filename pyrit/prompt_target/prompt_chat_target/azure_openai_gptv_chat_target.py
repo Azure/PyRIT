@@ -241,7 +241,8 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         )
 
         if not resp_text:
-            raise ValueError("The chat returned an empty response.")
+            logger.error("The chat returned an empty response.")
+            resp_text = ""
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
