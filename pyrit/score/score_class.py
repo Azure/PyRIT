@@ -17,5 +17,7 @@ class Score:
     score_explanation: str = ""
     # The raw input text that was scored
     raw_input_score_text: str = ""
+    # The raw input text that was scored
+    raw_input_score_file: str = ""
     # The raw output of the scoring engine that was used to generate the score
     raw_output_score_text: str = ""

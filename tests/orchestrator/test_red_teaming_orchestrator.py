@@ -305,7 +305,7 @@ def test_attack_strategy_without_token_does_not_raise_with_scoring_orchestrator(
 @pytest.mark.parametrize("score", [True, False])
 @pytest.mark.parametrize("message_count", [0, 1, 2, 3, 4, 5, 9, 10, 11, 99, 100, 101])
 @pytest.mark.parametrize("red_teaming_chat_role", ["user", "assistant"])
-def test_is_conversation_complete_scoring(score, message_count, red_teaming_chat_role):
+def test_check_conversation_complete_scoring(score, message_count, red_teaming_chat_role):
     scorer = Mock()
     scorer.score_text = Mock(return_value=Score(score_type="bool", score_value=score))
     orchestrator = ScoringRedTeamingOrchestrator(
@@ -322,7 +322,7 @@ def test_is_conversation_complete_scoring(score, message_count, red_teaming_chat
     ]
     # conversation is complete if the last message is from the target
     # and the score is True
-    assert orchestrator.is_conversation_complete(messages, red_teaming_chat_role=red_teaming_chat_role) == (
+    assert orchestrator.check_conversation_complete(messages, red_teaming_chat_role=red_teaming_chat_role) == (
         len(messages) > 0 and red_teaming_chat_role != messages[-1].role and score
     )
 
@@ -335,7 +335,7 @@ def test_is_conversation_complete_scoring(score, message_count, red_teaming_chat
         Score(score_type="int", score_value=89),
     ],
 )
-def test_is_conversation_complete_scoring_non_bool(score):
+def test_check_conversation_complete_scoring_non_bool(score):
     scorer = Mock()
     scorer.score_text = Mock(return_value=score)
     orchestrator = ScoringRedTeamingOrchestrator(
@@ -346,7 +346,7 @@ def test_is_conversation_complete_scoring_non_bool(score):
         scorer=scorer,
     )
     with pytest.raises(ValueError):
-        orchestrator.is_conversation_complete(
+        orchestrator.check_conversation_complete(
             messages=[
                 ChatMessage(role="user", content="First message."),
                 ChatMessage(role="assistant", content="Second message."),
@@ -371,7 +371,7 @@ def end_token_red_teaming_orchestrator():
 @pytest.mark.parametrize("message_count", [0, 1, 2, 3, 4, 5, 9, 10, 11, 99, 100, 101])
 @pytest.mark.parametrize("end_token_present", [True, False])
 @pytest.mark.parametrize("red_teaming_chat_role", ["user", "assistant"])
-def test_is_conversation_complete_end_token(
+def test_check_conversation_complete_end_token(
     end_token_red_teaming_orchestrator, message_count, end_token_present, red_teaming_chat_role
 ):
     # simulate back and forth between user and assistant
@@ -389,6 +389,6 @@ def test_is_conversation_complete_end_token(
         messages = [ChatMessage(role="system", content="The system prompt.")] + messages
     # the conversation is complete if the red teaming bot as indicated by
     # red_teaming_chat_role sends the end token
-    assert end_token_red_teaming_orchestrator.is_conversation_complete(
+    assert end_token_red_teaming_orchestrator.check_conversation_complete(
         messages, red_teaming_chat_role=red_teaming_chat_role
     ) == (end_token_present and last_message_role == red_teaming_chat_role and message_count > 0)

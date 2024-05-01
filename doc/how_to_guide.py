@@ -105,7 +105,7 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 # teaming LLM and sends it to the target.
 # The full execution of the attack strategy over potentially multiple turns requires a mechanism
 # to determine if the goal has been achieved.
-# This is captured via the `is_conversation_complete()` method.
+# This is captured via the `check_conversation_complete()` method.
 # Classes that extend the `RedTeamingOrchestrator` can have their own implementation of this method,
 # e.g.,
 #

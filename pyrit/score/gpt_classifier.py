@@ -14,6 +14,7 @@ from pyrit.score import Score, SupportTextClassification
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH, LIKERT_SCALES_PATH, SCORING_INSTRUCTIONS_PATH
+from pyrit.score.support_classification import SupportImageClassification
 
 
 @dataclass
@@ -51,7 +52,7 @@ class LikertScales(enum.Enum):
     VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
 
 
-class SelfAskScorer(SupportTextClassification):
+class SelfAskScorer:
     """A class that represents a self-ask score for text classification and scoring.
 
     This class is responsible for scoring text using a self-ask approach. It takes a chat target,
@@ -67,12 +68,16 @@ class SelfAskScorer(SupportTextClassification):
     def __init__(
         self,
         prompt_template_path: ScoringInstructions,
-        content_classifier: Union[ContentClassifiers, LikertScales],
+        content_classifier: Union[ContentClassifiers, LikertScales, Path],
         chat_target: PromptChatTarget,
     ) -> None:
         # Create the system prompt with the categories
         categories_as_string = ""
-        category_file_contents = yaml.safe_load(Path(content_classifier.value).read_text(encoding="utf-8"))
+        if isinstance(content_classifier, Path):
+            content_classifier_path = content_classifier
+        else:
+            content_classifier_path = Path(content_classifier.value)
+        category_file_contents = yaml.safe_load(content_classifier_path.read_text(encoding="utf-8"))
         for k, v in category_file_contents.items():
             category = Category(name=k, description=v)
             categories_as_string += f"'{category.name}': {category.description}\n"
@@ -89,6 +94,7 @@ class SelfAskScorer(SupportTextClassification):
             orchestrator_identifier=None,
         )
 
+class SelfAskTextScorer(SelfAskScorer, SupportTextClassification):
     # @tenacity.retry(wait=tenacity.wait_fixed(1), stop=tenacity.stop_after_attempt(8))
     def score_text(self, text: str) -> Score:
         """
@@ -134,7 +140,82 @@ class SelfAskScorer(SupportTextClassification):
             raise ValueError(f"Invalid JSON response from chat target: {response_text}") from e
 
 
-class SelfAskGptClassifier(SelfAskScorer):
+class SelfAskImageScorer(SelfAskScorer, SupportImageClassification):
+    # @tenacity.retry(wait=tenacity.wait_fixed(1), stop=tenacity.stop_after_attempt(8))
+    async def score_image(self, image_path: str) -> Score:
+        """
+        Scores the given text using the chat target.
+
+        Args:
+            text (str): The text to be scored.
+
+        Returns:
+            Score: An object containing the score information.
+
+        Raises:
+            ValueError: If the response from the chat target is not a valid JSON.
+        """
+
+        request_pieces = [
+            PromptRequestPiece(
+                role="user",
+                conversation_id=self._conversation_id,
+                original_value=str(image_path),
+                original_value_data_type="image_path",
+                converted_value_data_type="image_path",
+            ),
+        ]
+
+        prompt_request_response = PromptRequestResponse(request_pieces=request_pieces)
+
+        response = await self._chat_target.send_prompt_async(prompt_request=prompt_request_response)
+        
+        try:
+            parsed_response = json.loads(response.request_pieces[0].converted_value)
+
+            score = Score(
+                score_type="str",
+                score_value=parsed_response["category_name"],
+                score_description=parsed_response["category_description"],
+                score_explanation=parsed_response["rationale"],
+                raw_input_score_text=str(image_path),
+                raw_output_score_text=response.request_pieces[0].converted_value,
+            )
+            return score
+
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Invalid JSON response from chat target: {response.request_pieces[0].converted_value}"
+            ) from e
+
+
+class SelfAskBinaryImageScorer(SelfAskImageScorer):
+    def __init__(
+        self,
+        prompt_template_path: ScoringInstructions,
+        content_classifier: ContentClassifiers,
+        chat_target: PromptChatTarget,
+        success_categories: list[str],
+    ) -> None:
+
+        super().__init__(
+            prompt_template_path=prompt_template_path,
+            content_classifier=content_classifier,
+            chat_target=chat_target,
+        )
+        self._success_categories = success_categories
+    
+    async def score_image(self, image_path: str) -> Score:
+        score = await super().score_image(image_path)
+        return Score(
+            score_type="bool",
+            score_value=bool(score.score_value in self._success_categories),
+            score_description=score.score_description,
+            score_explanation=score.score_explanation,
+        )
+
+
+class SelfAskGptClassifier(SelfAskTextScorer):
     def __init__(
         self,
         content_classifier: ContentClassifiers,
@@ -148,7 +229,7 @@ class SelfAskGptClassifier(SelfAskScorer):
         )
 
 
-class SelfAskGptLikertScale(SelfAskScorer):
+class SelfAskGptLikertScale(SelfAskTextScorer):
     def __init__(
         self,
         content_classifier: LikertScales,
