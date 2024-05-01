@@ -49,22 +49,6 @@ request = PromptRequestPiece(
 with AzureOpenAIChatTarget(use_aad_auth=False) as azure_openai_chat_target:
     print(azure_openai_chat_target.send_prompt(prompt_request=request))
 
-# %%
-from pyrit.models import PromptRequestPiece
-from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.common import default_values
-
-default_values.load_default_env()
-
-request = PromptRequestPiece(
-    role="user",
-    original_value=jailbreak_prompt,
-).to_prompt_request_response()
-
-
-with AzureOpenAIChatTarget() as azure_openai_chat_target:
-    print(azure_openai_chat_target.send_prompt(prompt_request=request))
-
 # %% [markdown]
 # The `AzureBlobStorageTarget` inherits from `PromptTarget`, meaning it has functionality to send prompts. In contrast to `PromptChatTarget`s, `PromptTarget`s do not interact with chat assistants.
 # This prompt target in particular will take in a prompt and upload it as a text file to the provided Azure Storage Account Container.
@@ -96,5 +80,3 @@ with AzureBlobStorageTarget(
 ) as abs_prompt_target:
 
     print(abs_prompt_target.send_prompt(prompt_request=request))
-
-# %%
