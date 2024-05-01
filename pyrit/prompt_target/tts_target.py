@@ -72,7 +72,7 @@ class AzureTTSTarget(PromptTarget):
         return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self.validate_request(prompt_request=prompt_request)
+        self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         self._memory.add_request_response_to_memory(request=prompt_request)
@@ -115,7 +115,7 @@ class AzureTTSTarget(PromptTarget):
 
         return response_entry
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 

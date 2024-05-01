@@ -87,7 +87,6 @@ gandalf_password_scorer = GandalfBinaryScorer(
     chat_engine=aoai_chat,
 )
 
-
 # %% [markdown]
 # Initialize the `ScoringRedTeamingOrchestrator` with the specified attack strategy and parameters, and automatically manage resources using a context manager to execute the red teaming attack strategy.
 
