@@ -34,12 +34,12 @@ class TextTarget(PromptTarget):
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        self.validate_request(prompt_request=prompt_request)
+        self._validate_request(prompt_request=prompt_request)
         await asyncio.sleep(0)
 
         return self.send_prompt(prompt_request=prompt_request)
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 

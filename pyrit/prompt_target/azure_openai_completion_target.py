@@ -115,7 +115,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
         """
         Sends a normalized prompt async to the prompt target.
         """
-        self.validate_request(prompt_request=prompt_request)
+        self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         self._memory.add_request_response_to_memory(request=prompt_request)
@@ -149,7 +149,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
 
         return response_entry
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 

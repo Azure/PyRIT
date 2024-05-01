@@ -81,7 +81,7 @@ class MockPromptTarget(PromptChatTarget):
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
         return None
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
         Validates the provided prompt request response
         """

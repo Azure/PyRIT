@@ -65,7 +65,7 @@ class OpenAIChatInterface(PromptChatTarget):
         return response_entry
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self.validate_request(prompt_request=prompt_request)
+        self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
@@ -191,7 +191,7 @@ class OpenAIChatInterface(PromptChatTarget):
         )
         return self._parse_chat_completion(response)
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 

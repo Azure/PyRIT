@@ -120,7 +120,7 @@ class AzureBlobStorageTarget(PromptTarget):
         Returns:
             blob_url (str): The Blob URL of the created blob within the provided storage container.
         """
-        self.validate_request(prompt_request=prompt_request)
+        self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         file_name = f"{request.conversation_id}.txt"
@@ -136,7 +136,7 @@ class AzureBlobStorageTarget(PromptTarget):
 
         return PromptRequestResponse([request])
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 

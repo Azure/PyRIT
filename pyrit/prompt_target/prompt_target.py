@@ -40,7 +40,7 @@ class PromptTarget(abc.ABC, Identifier):
         """
 
     @abc.abstractmethod
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
         Validates the provided prompt request response
         """
