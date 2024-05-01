@@ -1,14 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import base64
-from io import BytesIO
 import logging
+import pathlib
+
+from io import BytesIO
+from augly.image.transforms import OverlayText
+from augly.utils import base_paths
 
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -18,21 +21,30 @@ class AddTextImageConverter(PromptConverter):
     Adds a string to an image
 
     Args:
-        font (optional, str): font to use - will load default font if not provided
-        font_size (optional, float): size of font to use
+        font (optional, str): path of font to use - will set to source sans pro as default
         color (optional, tuple): color to print text in, using RGB values, black is the default if not provided
+        font_size (optional, float): size of font to use
+        x_pos (optional, float): x coordinate to place text in (0 is left most)
+        y_pos (optional, float): y coordinate to place text in (0 is upper most)
+
     """
 
-    def __init__(self, font: str = "", font_size: float = 0.1, color: tuple[int, int, int] = (255, 255, 255)):
+    def __init__(
+        self,
+        font: str = "",
+        color: tuple[int, int, int] = (255, 255, 255),
+        font_size: float = 0.05,
+        x_pos: int = 0,
+        y_pos: int = 0,
+    ):
         if font:
-            try:
-                self.font = ImageFont.load(font)
-            except Exception:
-                self.font = ImageFont.load_default()
+            self.font = font
         else:
-            self.font = ImageFont.load_default()
+            self.font = pathlib.Path(base_paths.FONTS_DIR) / "SourceSansPro-Black.ttf"
         self.font_size = font_size
         self.color = color
+        self.x = x_pos
+        self.y = y_pos
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "image_path", **kwargs) -> ConverterResult:
         """
@@ -53,39 +65,44 @@ class AddTextImageConverter(PromptConverter):
         # Open the image
         original_img = Image.open(BytesIO(original_img_bytes))
 
-        # Calculate the width of the text
+        text_ascii_rep = []
+        # Splits prompt into list[int] representation needed for augly
+        text_to_add = kwargs["text_to_add"]
+        for word in text_to_add.split("\n"):
+            word_list = []
+            for letter in word:
+                word_list.append(ord(letter) - 32)
+
+            text_ascii_rep.append(word_list)
+
+        output_file = data.get_data_filename()
         try:
-            text_to_add = kwargs["text_to_add"]
-        except KeyError:
-            logger.info("No text was provided to addTextImageConverter, returning original image")
-            return ConverterResult(output_text=prompt, output_type="image_path")
+            overlay_text = OverlayText(
+                text=text_ascii_rep,
+                font_file=self.font,
+                color=self.color,
+                font_size=self.font_size,
+                x_pos=self.x,
+                y_pos=self.y,
+            )
 
-        text_width = self.font.getlength(text_to_add)
+        except OSError:
+            logger.error(f"could not load font {self.font}. Switching to default")
+            overlay_text = OverlayText(
+                text=text_ascii_rep,
+                font_file=pathlib.Path(base_paths.FONTS_DIR) / "SourceSansPro-Black.ttf",
+                font_size=self.font_size,
+                color=self.color,
+                x_pos=self.x,
+                y_pos=self.y,
+            )
 
-        # Calculate the dimensions for the new image with space for text
-        text_height = 100
-        new_width = original_img.width
-        new_height = original_img.height + text_height
-
-        # Create a new image with white background and old photo
-        new_img = Image.new("RGB", (new_width, new_height), self.color)
-        new_img.paste(original_img, (0, 0))
-        draw = ImageDraw.Draw(new_img)
-
-        # Calculate text position at the bottom center
-        text_x = (new_width - text_width) // 2
-        text_y = original_img.height + 10  # 10 pixels below the original image
-
-        # Draw text and save
-        draw.text((text_x, text_y), text_to_add, fill=(0, 0, 0), font=self.font)
-
-        image_bytes = BytesIO()
-        new_img.save(image_bytes, format="png")
-        image_str = base64.b64encode(image_bytes.getvalue())
-
-        data.save_b64_image(data=image_str)
-
-        return ConverterResult(output_text=str(data.value), output_type="image_path")
+        except Exception as e:
+            logger.error(f"Error with augly: {e}")
+            raise
+        new_img = overlay_text.apply_transform(image=original_img)
+        new_img.save(fp=output_file)
+        return ConverterResult(output_text=output_file, output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"
