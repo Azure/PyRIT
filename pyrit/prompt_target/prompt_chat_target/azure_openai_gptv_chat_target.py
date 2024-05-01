@@ -221,7 +221,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Returns:
             PromptRequestResponse: The updated conversation entry with the response from the prompt target.
         """
-        self.validate_request(prompt_request=prompt_request)
+        self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         prompt_req_res_entries = self._memory.get_conversation(conversation_id=request.conversation_id)
@@ -312,7 +312,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         )
         return self._parse_chat_completion(response)
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
