@@ -56,16 +56,6 @@ def test_send_prompt_stream(memory_interface: MemoryInterface, sample_entries: l
     assert prompt in content, "The prompt was not found in the temporary file content."
 
 
-def test_text_target_validate_request_length(
-    memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]
-):
-    no_op = TextTarget(memory=memory_interface)
-    request = PromptRequestResponse(request_pieces=sample_entries)
-
-    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
-        no_op.send_prompt(prompt_request=request)
-
-
 @pytest.mark.asyncio
 async def test_text_target_send_async_validate_request_length(
     memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]
@@ -74,18 +64,6 @@ async def test_text_target_send_async_validate_request_length(
     request = PromptRequestResponse(request_pieces=sample_entries)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await no_op.send_prompt_async(prompt_request=request)
-
-
-def test_text_target_validate_previous_conversations(
-    memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]
-):
-    no_op = TextTarget(memory=memory_interface)
-    request_piece = sample_entries[0]
-    no_op._memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=[request_piece]))
-    request = PromptRequestResponse(request_pieces=[request_piece])
-
-    with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
-        no_op.send_prompt(prompt_request=request)
 
 
 @pytest.mark.asyncio
