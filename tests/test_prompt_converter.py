@@ -2,22 +2,25 @@
 # Licensed under the MIT license.
 
 from pyrit.prompt_converter import (
+    AddTextImageConverter,
+    AsciiArtConverter,
+    AzureSpeechTextToAudioConverter,
     Base64Converter,
+    LeetspeakConverter,
+    RandomCapitalLettersConverter,
+    ROT13Converter,
+    SearchReplaceConverter,
+    StringJoinConverter,
+    TranslationConverter,
     UnicodeSubstitutionConverter,
     UnicodeConfusableConverter,
-    StringJoinConverter,
-    ROT13Converter,
-    AsciiArtConverter,
     VariationConverter,
-    TranslationConverter,
-    RandomCapitalLettersConverter,
-    AzureSpeechTextToAudioConverter,
-    SearchReplaceConverter,
-    LeetspeakConverter,
 )
+
 import pytest
 import os
 
+from PIL import Image
 from tests.mocks import MockPromptTarget
 from unittest.mock import patch, MagicMock
 import azure.cognitiveservices.speech as speechsdk
@@ -201,3 +204,22 @@ def test_send_prompt_to_audio_file_raises_value_error() -> None:
     prompt = "     "
     with pytest.raises(ValueError):
         assert converter.convert(prompt=prompt, input_type="text")  # type: ignore
+
+
+def test_add_text_image_converter_invalid_input_image() -> None:
+    converter = AddTextImageConverter()
+    with pytest.raises(FileNotFoundError):
+        assert converter.convert(prompt="mock_image.png", input_type="image_path", text_to_add="test")  # type: ignore
+
+
+def test_add_text_image_converter() -> None:
+    converter = AddTextImageConverter()
+    mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
+    mock_image.save("test.png")
+
+    converted_image = converter.convert(prompt="test.png", input_type="image_path", text_to_add="test")
+    assert converted_image
+    assert converted_image.output_text
+    assert os.path.exists(converted_image.output_text)
+    os.remove(converted_image.output_text)
+    os.remove("test.png")

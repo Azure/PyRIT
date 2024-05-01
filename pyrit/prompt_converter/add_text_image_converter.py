@@ -31,7 +31,7 @@ class AddTextImageConverter(PromptConverter):
 
     def __init__(
         self,
-        font: str = "",
+        font: str = None,
         color: tuple[int, int, int] = (255, 255, 255),
         font_size: float = 0.05,
         x_pos: int = 0,
@@ -40,7 +40,8 @@ class AddTextImageConverter(PromptConverter):
         if font:
             self.font = font
         else:
-            self.font = pathlib.Path(base_paths.FONTS_DIR) / "SourceSansPro-Black.ttf"
+            font_path = pathlib.Path(base_paths.FONTS_DIR) / "SourceSansPro-Black.ttf"
+            self.font = str(font_path)
         self.font_size = font_size
         self.color = color
         self.x = x_pos
