@@ -27,7 +27,6 @@ class TextTarget(PromptTarget):
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
-        self.validate_request(prompt_request=prompt_request)
         self._text_stream.write(f"{str(prompt_request)}\n")
         self._memory.add_request_response_to_memory(request=prompt_request)
 
