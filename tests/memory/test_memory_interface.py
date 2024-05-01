@@ -195,8 +195,10 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
                     assert False, "Conversation IDs are not grouped together"
 
 
-def test_export_conversation_by_orchestrator_id_file_created(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
-    orchestrator1_id = sample_conversation_entries[0].orchestrator_identifier["id"]
+def test_export_conversation_by_orchestrator_id_file_created(
+    memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]
+):
+    orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
 
     # Default path in export_conversation_by_orchestrator_id()
     file_name = f"{str(orchestrator1_id)}.json"
@@ -206,7 +208,7 @@ def test_export_conversation_by_orchestrator_id_file_created(memory: MemoryInter
 
     with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
         mock_get.return_value = sample_conversation_entries
-        memory.export_conversation_by_orchestrator_id(orchestrator_id=orchestrator1_id)
+        memory.export_conversation_by_orchestrator_id(orchestrator_id=int(orchestrator1_id))
 
         # Verify file was created
         assert file_path.exists()
