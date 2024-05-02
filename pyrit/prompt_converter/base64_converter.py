@@ -8,7 +8,7 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 class Base64Converter(PromptConverter):
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text", **kwargs) -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that just base64 encodes the prompt
         """

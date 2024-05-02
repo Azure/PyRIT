@@ -113,7 +113,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             logger.error("Failed to convert prompt to audio: %s", str(e))
             raise
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text", **kwargs) -> None:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> None:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
         self.send_prompt_to_audio_file(prompt, self._output_format)

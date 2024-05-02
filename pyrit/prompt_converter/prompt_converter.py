@@ -5,7 +5,6 @@ import abc
 from dataclasses import dataclass
 
 from pyrit.models import PromptDataType, Identifier
-from typing import Any, Dict, Optional
 
 
 @dataclass
@@ -24,9 +23,7 @@ class PromptConverter(abc.ABC, Identifier):
     """
 
     @abc.abstractmethod
-    def convert(
-        self, *, prompt: str, input_type: PromptDataType = "text", **kwargs: Optional[Dict[Any, Any]]
-    ) -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompts into a different representation
 

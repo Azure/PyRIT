@@ -24,7 +24,7 @@ class LeetspeakConverter(PromptConverter):
             "z": ["2"],
         }
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text", **kwargs) -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter to generate leatspeak version of a prompt.
         Since there are multiple character variations, this is non-deterministic.
