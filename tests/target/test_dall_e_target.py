@@ -1,15 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch, MagicMock, AsyncMock
 import uuid
 import os
-
 import pytest
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import DALLETarget
+
+from tests.mocks import get_sample_conversations
 
 
 @pytest.fixture
@@ -19,6 +20,11 @@ def dalle_target() -> DALLETarget:
         endpoint="test",
         api_key="test",
     )
+
+
+@pytest.fixture
+def sample_conversations() -> list[PromptRequestPiece]:
+    return get_sample_conversations()
 
 
 def test_initialization_with_required_parameters(dalle_target: DALLETarget):
