@@ -12,7 +12,7 @@ class AsciiArtConverter(PromptConverter):
     def __init__(self, font="rand"):
         self.font_value = font
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text", **kwargs) -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converter that uses art to convert strings to ASCII art.
         This can sometimes bypass LLM filters
