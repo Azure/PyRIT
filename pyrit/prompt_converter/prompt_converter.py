@@ -5,7 +5,7 @@ import abc
 from dataclasses import dataclass
 
 from pyrit.models import PromptDataType, Identifier
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 
 @dataclass

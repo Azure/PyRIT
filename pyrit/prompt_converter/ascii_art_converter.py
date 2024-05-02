@@ -28,4 +28,5 @@ class AsciiArtConverter(PromptConverter):
         return ConverterResult(output_text=text2art(prompt, font=self.font_value), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
+        """ Make sure input type is text"""
         return input_type == "text"
