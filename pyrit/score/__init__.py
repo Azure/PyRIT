@@ -36,6 +36,7 @@ __all__ = [
     "MarkdownInjectionClassifier",
     "SubStringScorer",
     "TextConversationTokenFinder",
+    "SubStringScorer",
     "AzureContentFilter",
     "CrescendoScorer",
 ]

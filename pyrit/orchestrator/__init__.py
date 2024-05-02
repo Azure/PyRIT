@@ -23,4 +23,5 @@ __all__ = [
     "XPIAOrchestrator",
     "XPIAManualProcessingOrchestrator",
     "CrescendoOrchestrator",
+    "CrescendoOrchestrator",
 ]
