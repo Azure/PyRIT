@@ -38,7 +38,6 @@ def test_initialization_invalid_num_images():
         )
 
 
-"""
 @patch("pyrit.prompt_target.dall_e_target.DALLETarget._generate_images_async")
 @pytest.mark.asyncio
 async def test_send_prompt_async(mock_image, dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
@@ -75,7 +74,6 @@ async def test_dalle_validate_previous_conversations(
 
     with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
         await dalle_target.send_prompt_async(prompt_request=request)
-"""
 
 
 @pytest.mark.asyncio
@@ -86,48 +84,48 @@ async def test_dalle_send_prompt_file_save_async() -> None:
         original_value="draw me a test picture",
     ).to_prompt_request_response()
 
-    with patch(
-        "pyrit.prompt_target.dall_e_target.DALLETarget._generate_images_async", new_callable=AsyncMock
-    ) as mock_request:
-        return_value = MagicMock()
-        return_value.content = b"test image data"
-        mock_request.return_value = return_value
-        mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test")
-        response = await mock_dalle_target.send_prompt_async(prompt_request=request)
-        print("HERE resp: ", response)
-        file_path = response.request_pieces[0].converted_value
-        print("HERE: file", file_path)
-        assert file_path
-        assert file_path.endswith(".png")
+    mock_return = MagicMock()
 
-        assert os.path.exists(file_path)
+    # "test image data" b64 encoded
+    mock_return.model_dump_json.return_value = '{"data": [{"b64_json": "dGVzdCBpbWFnZSBkYXRh"}]}'
 
-        print("here opening data")
-        data = open(file_path, "rb").read()
-        print(data)
+    mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test")
+    mock_dalle_target.image_target._async_client.images = MagicMock()
+    mock_dalle_target.image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
 
-        assert data == b"test image data"
-        os.remove(file_path)
+    response = await mock_dalle_target.send_prompt_async(prompt_request=request)
+    file_path = response.request_pieces[0].converted_value
+    assert file_path
+    assert file_path.endswith(".png")
+
+    assert os.path.exists(file_path)
+
+    data = open(file_path, "rb").read()
+
+    assert data == b"test image data"
+    os.remove(file_path)
 
 
-"""
 @pytest.mark.asyncio
 async def test_dalle_send_prompt_adds_memory_async() -> None:
 
     mock_memory = MagicMock()
-    mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
 
     request = PromptRequestPiece(
         role="user",
         original_value="draw me a test picture",
     ).to_prompt_request_response()
-    with patch("pyrit.prompt_target.dall_e_target.DALLETarget._generate_images_async", new_callable=AsyncMock
-    ) as mock_request:
-        return_value = MagicMock()
-        return_value.content = b"fake_image_data"
-        mock_request.return_value = return_value
 
-        await mock_dalle_target.send_prompt_async(prompt_request=request)
-        assert mock_memory.add_request_response_to_memory.called, "Request and Response need to be added to memory"
+    mock_return = MagicMock()
 
-"""
+    # "test image data" b64 encoded
+    mock_return.model_dump_json.return_value = '{"data": [{"b64_json": "dGVzdCBpbWFnZSBkYXRh"}]}'
+
+    mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
+    mock_dalle_target.image_target._async_client.images = MagicMock()
+    mock_dalle_target.image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
+
+    response = await mock_dalle_target.send_prompt_async(prompt_request=request)
+    assert response
+    assert mock_memory.add_request_response_to_memory.called, "Request and Response need to be added to memory"
+    assert mock_memory.add_response_entries_to_memory.called, "Request and Response need to be added to memory"
