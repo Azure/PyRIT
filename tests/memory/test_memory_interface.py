@@ -3,15 +3,18 @@
 
 from typing import Generator
 from unittest.mock import MagicMock, patch
+from pathlib import Path
 import pytest
 import random
 from string import ascii_lowercase
 
+from pyrit.common.path import RESULTS_PATH
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_models import PromptRequestPiece
+from pyrit.memory.memory_exporter import MemoryExporter
+from pyrit.memory.memory_models import PromptRequestPiece, PromptMemoryEntry
 from pyrit.models import PromptRequestResponse
 
-from tests.mocks import get_memory_interface, get_sample_conversations
+from tests.mocks import get_memory_interface, get_sample_conversations, get_sample_conversation_entries
 
 
 @pytest.fixture
@@ -22,6 +25,11 @@ def memory() -> Generator[MemoryInterface, None, None]:
 @pytest.fixture
 def sample_conversations() -> list[PromptRequestPiece]:
     return get_sample_conversations()
+
+
+@pytest.fixture
+def sample_conversation_entries() -> list[PromptMemoryEntry]:
+    return get_sample_conversation_entries()
 
 
 def generate_random_string(length: int = 10) -> str:
@@ -161,7 +169,7 @@ def test_insert_prompt_memories_not_inserts_embedding(
 
 
 def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
-    conversation_id = sample_conversations[0].orchestrator_identifier["id"]
+    conversation_id = sample_conversations[0].conversation_id
 
     # This new conversation piece should be grouped with other messages in the conversation
     sample_conversations.append(
@@ -185,3 +193,22 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
             if new_value != current_value:
                 if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
                     assert False, "Conversation IDs are not grouped together"
+
+
+def test_export_conversation_by_orchestrator_id_file_created(
+    memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]
+):
+    orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
+
+    # Default path in export_conversation_by_orchestrator_id()
+    file_name = f"{str(orchestrator1_id)}.json"
+    file_path = Path(RESULTS_PATH, file_name)
+
+    memory.exporter = MemoryExporter()
+
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
+        mock_get.return_value = sample_conversation_entries
+        memory.export_conversation_by_orchestrator_id(orchestrator_id=int(orchestrator1_id))
+
+        # Verify file was created
+        assert file_path.exists()

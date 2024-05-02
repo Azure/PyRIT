@@ -96,7 +96,7 @@ class PromptMemoryEntry(Base):
 
         self.response_error = entry.response_error
 
-    def get_prompt_reqest_piece(self) -> PromptRequestPiece:
+    def get_prompt_request_piece(self) -> PromptRequestPiece:
         return PromptRequestPiece(
             role=self.role,
             original_value=self.original_value,
