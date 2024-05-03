@@ -16,6 +16,9 @@ class Score:
     # The value the scorer ended up with; e.g. True (if bool) or 0 (if float_scale)
     score_value: str
 
+    # Optional value that can include a description of the score value
+    score_value_description: str
+
     # The type of the scorer; e.g. "bool" or "float_scale"
     scorer_type: ScorerType
 
@@ -42,6 +45,7 @@ class Score:
 
     def __init__(self,
                  score_value: str,
+                 score_value_description: str,
                  scorer_type: ScorerType,
                  score_category: str,
                  score_rationale: str,
@@ -52,10 +56,14 @@ class Score:
         self.id = uuid.uuid4()
 
         self.score_value = score_value
+        self.score_value_description = score_value_description
         self.scorer_type = scorer_type
         self.score_category = score_category
         self.score_rationale = score_rationale
         self.metadata = metadata
         self.scorer_class_identifier = scorer_class_identifier
         self.prompt_request_response_id = prompt_request_response_id
+
+    def __str__(self):
+        return f"{self.scorer_class_identifier}: {self.score_value}: {self.score_value_description}: {self.score_rationale}"
 

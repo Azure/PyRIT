@@ -95,7 +95,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
         likert_scale_description = ""
 
         for description in descriptions:
-            name = description["name"]
+            name = description["score_value"]
             desc = description["description"]
 
             if int(name) < 0 or int(name) > 5:
@@ -124,24 +124,29 @@ class SelfAskLikertScorer(FloatScaleScorer):
             ]
         )
 
-        response_text = await self._chat_target.send_chat_prompt_async(prompt_request=request).request_pieces[0].converted_value
+        response = await self._chat_target.send_prompt_async(prompt_request=request)
+        response_json = response.request_pieces[0].converted_value
 
         try:
-            parsed_response = json.loads(response_text)
+            parsed_response = json.loads(response_json)
 
-            # score_likert_value = 
+            # score_likert_value =
 
             score = Score(
-                score_type=self._score_type,
                 score_value=parsed_response["score_value"],
-                score_description=parsed_response["category_description"],
-                score_explanation=parsed_response["rationale"],
-                raw_output_score_text=response_text,
+                score_value_description=parsed_response["description"],
+                scorer_type=self._score_type,
+                score_category=self._score_category,
+                score_rationale=parsed_response["rationale"],
+                scorer_class_identifier=self.get_identifier(),
+                metadata=None,
+                prompt_request_response_id=request_response.id,
             )
             return score
 
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON response from chat target: {response_text}") from e
+            raise ValueError(f"Invalid JSON response from chat target: {response_json}") from e
+
 
     def validate(self, request_response: PromptRequestPiece):
         if request_response.converted_value_data_type != "text":
