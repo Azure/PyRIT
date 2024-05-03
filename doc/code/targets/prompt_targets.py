@@ -42,7 +42,11 @@ request = PromptRequestPiece(
 ).to_prompt_request_response()
 
 
-with AzureOpenAIChatTarget() as azure_openai_chat_target:
+# By default, AOAI Chat Targets will use an API Key configured within environment variables to authenticate
+# There is an option to use the DefaultAzureCredential for User Authentication as well, for all AOAI Chat Targets.
+# When `use_aad_auth=True`, ensure the user has 'Cognitive Service OpenAI User' role assigned on the AOAI Resource
+# and `az login` is used to authenticate with the correct identity
+with AzureOpenAIChatTarget(use_aad_auth=False) as azure_openai_chat_target:
     print(azure_openai_chat_target.send_prompt(prompt_request=request))
 
 # %% [markdown]
