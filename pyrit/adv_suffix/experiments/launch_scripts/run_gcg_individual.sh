@@ -32,4 +32,3 @@ python -u ../main.py \
     --config.n_steps=100 \
     --config.test_steps=50 \
     --config.batch_size=128
-

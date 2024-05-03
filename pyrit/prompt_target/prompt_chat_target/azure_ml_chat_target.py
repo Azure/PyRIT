@@ -67,6 +67,7 @@ class AzureMLChatTarget(PromptChatTarget):
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
+        self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
@@ -94,6 +95,7 @@ class AzureMLChatTarget(PromptChatTarget):
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
+        self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
@@ -148,7 +150,6 @@ class AzureMLChatTarget(PromptChatTarget):
         Returns:
             str: The generated response message.
         """
-
         headers = self._get_headers()
         payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
 
@@ -236,3 +237,10 @@ class AzureMLChatTarget(PromptChatTarget):
         }
 
         return headers
+
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
+            raise ValueError("This target only supports text prompt input.")

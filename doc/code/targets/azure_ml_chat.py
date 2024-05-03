@@ -41,7 +41,6 @@ request = PromptRequestPiece(
 with AzureMLChatTarget() as azure_ml_chat_target:
     print(azure_ml_chat_target.send_prompt(prompt_request=request))
 
-
 # %% [markdown]
 #
 # You can then use this cell anywhere you would use a `PromptTarget` object.

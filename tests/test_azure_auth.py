@@ -5,7 +5,7 @@ import time
 from unittest.mock import Mock, patch
 
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
-from pyrit.auth.azure_auth import AzureAuth
+from pyrit.auth.azure_auth import AzureAuth, get_token_provider_from_default_azure_credential
 
 curr_epoch_time = int(time.time())
 mock_token = "fake token"
@@ -36,3 +36,10 @@ def test_refresh_expiration():
         token = test_instance.refresh_token()
         assert token
         assert mock_get_token.call_count == 2
+
+
+def test_get_token_provider_from_default_azure_credential():
+    with patch("azure.identity.DefaultAzureCredential.get_token") as mock_default_cred:
+        mock_default_cred.return_value = Mock(token=mock_token, expires_on=curr_epoch_time)
+        token_provider = get_token_provider_from_default_azure_credential(scope="https://mocked_endpoint.azure.com")
+        assert token_provider() == mock_token
