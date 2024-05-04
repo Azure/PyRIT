@@ -2,10 +2,13 @@ import os
 from ml_collections import config_dict
 from pyrit.common import default_values
 
-default_values.load_default_env()
-token = os.environ.get("HF_TOKEN"),
+
 
 def get_config():
+    # Load HuggingFace token from .env
+    default_values.load_default_env()
+    token = os.environ.get("HF_TOKEN")
+
     config = config_dict.ConfigDict()
 
     # Experiment type

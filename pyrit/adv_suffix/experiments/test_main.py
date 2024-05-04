@@ -1,13 +1,10 @@
-from absl import app, flags
+from absl import flags
 from ml_collections import config_flags
 import time
-import importlib
 import numpy as np
-from absl import app
-from ml_collections import config_flags
 import sys
 import os
-
+import torch.multiprocessing as mp
 
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(base_path)
@@ -17,25 +14,22 @@ import llm_attacks.gcg as attack_lib
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:
     def __init__(self, config_path):
-        
+        if mp.get_start_method(allow_none=True) != 'spawn':
+            mp.set_start_method("spawn")
         self._CONFIG = config_flags.DEFINE_config_file("config")
         flags.FLAGS(['main.py', '--config', config_path])
 
-    def set_training_params(self, train_data, result_prefix, n_train_data, n_steps, test_steps):
-        self.train_data = train_data
-        self.result_prefix = result_prefix
-        self.n_train_data = n_train_data
-        self.n_steps = n_steps
-        self.test_steps = test_steps
 
-    def generate_suffix(self):
+    def generate_suffix(self, train_data, result_prefix, n_train_data, n_steps, test_steps, data_offset, batch_size):
+
         params = self._CONFIG.value
-        params.n_steps = self.n_steps if hasattr(self, 'n_steps') else 100
-        params.test_steps = self.test_steps if hasattr(self, 'test_steps') else 50
-        params.n_train_data = self.n_train_data if hasattr(self, 'n_train_data') else 50
-        params.result_prefix = self.result_prefix
-        params.train_data = self.train_data
-
+        params.train_data = train_data
+        params.result_prefix = result_prefix
+        params.n_train_data = n_train_data
+        params.n_steps = n_steps
+        params.test_steps = test_steps
+        params.data_offset = data_offset
+        params.batch_size = batch_size
 
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
         process_fn = lambda s: s.replace("Sure, h", "H")
@@ -51,7 +45,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         }
 
         timestamp = time.strftime("%Y%m%d-%H:%M:%S")
-        print(timestamp)
         if params.transfer:
             attack = attack_lib.ProgressiveMultiPromptAttack(
                 train_goals,
