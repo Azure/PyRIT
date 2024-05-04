@@ -12,6 +12,7 @@ from openai import BadRequestError
 from pyrit.common.path import RESULTS_PATH
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory
+from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece, PromptResponseError
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
@@ -73,7 +74,7 @@ class DALLETarget(PromptTarget):
         self.n = num_images
 
         self.deployment_name = deployment_name
-        self.image_target = AzureOpenAIChatTarget(
+        self._image_target = AzureOpenAIChatTarget(
             deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
         )
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
@@ -102,8 +103,9 @@ class DALLETarget(PromptTarget):
             prompt_request (PromptRequestResponse): the prompt to send formatted as an object
         Returns: response from target model formatted as an object
         """
-
-        self.validate_request(prompt_request=prompt_request)
+        # TODO: fix
+        prompt_request.request_pieces = [prompt_request.request_pieces[-1]]
+        # self.validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         self._memory.add_request_response_to_memory(request=prompt_request)
@@ -112,33 +114,19 @@ class DALLETarget(PromptTarget):
 
     async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
         try:
-            if self.dalle_version == "dall-e-3":
-                if self.quality and self.style:
-                    response = await self.image_target._async_client.images.generate(
-                        model=self.deployment_name,
-                        prompt=prompt,
-                        n=self.n,
-                        size=self.image_size,
-                        response_format="b64_json",
-                        quality=self.quality,
-                        style=self.style,
-                    )
-                else:
-                    response = await self.image_target._async_client.images.generate(
-                        model=self.deployment_name,
-                        prompt=prompt,
-                        n=self.n,
-                        size=self.image_size,
-                        response_format="b64_json",
-                    )
-            else:
-                response = await self.image_target._async_client.images.generate(
-                    model=self.deployment_name,
-                    prompt=prompt,
-                    n=self.n,
-                    size=self.image_size,
-                    response_format="b64_json",
-                )
+            image_generation_args = {
+                "model": self.deployment_name,
+                "prompt": prompt,
+                "n": self.n,
+                "size": self.image_size,
+                "response_format": "b64_json",
+            }
+            if self.dalle_version == "dall-e-3" and self.quality and self.style:
+                    image_generation_args["quality"] = self.quality
+                    image_generation_args["style"] = self.style
+            response = await self._image_target._async_client.images.generate(
+                **image_generation_args
+            )
             json_response = json.loads(response.model_dump_json())
 
             data = data_serializer_factory(data_type="image_path")
@@ -146,27 +134,31 @@ class DALLETarget(PromptTarget):
             data.save_b64_image(data=b64_data)
             prompt_text = data.value
             error: PromptResponseError = "none"
+            response_type: PromptDataType = "image_path"
 
         except BadRequestError as e:
             json_response = {"exception type": "Blocked", "data": ""}
             json_response["error"] = e.body
             prompt_text = "content blocked"
             error = "blocked"
+            response_type = "text"
 
         except json.JSONDecodeError as e:
             json_response = {"error": e, "exception type": "JSON Error"}
             prompt_text = "JSON Error"
             error = "processing"
+            response_type = "text"
 
         except Exception as e:
             json_response = {"error": e, "exception type": "exception"}
             prompt_text = "target error"
             error = "unknown"
+            response_type = "text"
 
         return self._memory.add_response_entries_to_memory(
             request=request,
             response_text_pieces=[prompt_text],
-            response_type="image_path",
+            response_type=response_type,
             prompt_metadata=json.dumps(json_response),
             error=error,
         )

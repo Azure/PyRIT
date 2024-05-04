@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import json
+import logging
 import uuid
 import yaml
 
@@ -15,6 +16,9 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTempla
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH, LIKERT_SCALES_PATH, SCORING_INSTRUCTIONS_PATH
 from pyrit.score.support_classification import SupportImageClassification
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -171,6 +175,7 @@ class SelfAskImageScorer(SelfAskScorer, SupportImageClassification):
         response = await self._chat_target.send_prompt_async(prompt_request=prompt_request_response)
         
         try:
+            logger.info(f"Received scoring response: {response.request_pieces[0].converted_value}")
             parsed_response = json.loads(response.request_pieces[0].converted_value)
 
             score = Score(

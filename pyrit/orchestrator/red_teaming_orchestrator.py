@@ -4,7 +4,10 @@
 import logging
 from typing import Optional, Union
 from uuid import uuid4
+from PIL import Image
+from io import BytesIO
 
+from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
@@ -80,7 +83,7 @@ class RedTeamingOrchestrator(Orchestrator):
         self._use_score_as_feedback = use_score_as_feedback
         self._scorer = scorer
 
-    def check_conversation_complete(self) -> Score:
+    async def check_conversation_complete(self) -> Score:
         """
         Returns True if the conversation is complete, False otherwise.
         This function uses the scorer to classify the last response.
@@ -91,7 +94,7 @@ class RedTeamingOrchestrator(Orchestrator):
         if not prompt_request_responses:
             # If there are no messages, then the conversation is not complete.
             return False
-        if prompt_request_responses[-1].role in ["user", "system"]:
+        if prompt_request_responses[-1].request_pieces[0].role in ["user", "system"]:
             # If the last message is a system or red teaming chat message,
             # then the conversation is not yet complete.
             return False
@@ -100,13 +103,14 @@ class RedTeamingOrchestrator(Orchestrator):
         if isinstance(self._scorer, SupportTextClassification):
             score = self._scorer.score_text(text=last_message_content)
         if isinstance(self._scorer, SupportImageClassification):
-            score = self._scorer.score_image(image=last_message_content)
+            # TODO: this isn't standardized... some are async some aren't
+            score = await self._scorer.score_image(image_path=last_message_content)
         
         if score.score_type != "bool":
             raise ValueError(f"The scorer must return a boolean score. The score type is {score.score_type}.")
         return score
 
-    def apply_attack_strategy_until_completion(self, *, max_turns: int = 5):
+    async def apply_attack_strategy_until_completion(self, *, max_turns: int = 5):
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
@@ -119,21 +123,35 @@ class RedTeamingOrchestrator(Orchestrator):
         turn = 1
         success = False
         score: Score | None = None
+        blocked = False
         while turn <= max_turns:
             logger.info(f"Applying the attack strategy for turn {turn}.")
 
             send_prompt_kwargs = {}
             if self._use_score_as_feedback and score:
                 send_prompt_kwargs["score_explanation"] = score.score_explanation
+            if blocked:
+                send_prompt_kwargs["blocked"] = "Request to target failed: blocked. Please rewrite your prompt to avoid getting blocked next time."
+                blocked = False
 
-            self.send_prompt(**send_prompt_kwargs)
-            score = self.check_conversation_complete()
-            if bool(score.score_value):
-                success = True
-                logger.info(
-                    "The red teaming orchestrator has completed the conversation and achieved the objective.",
-                )
-                break
+            response = self.send_prompt(**send_prompt_kwargs)
+            self._display_response(response)
+
+            # Check if there was an error. No error or blocked error is acceptable
+            # since the red teaming chat can still continue the conversation.
+            if response.response_error not in ["none", "blocked"]:
+                raise RuntimeError(f"Response error: {response.response_error}")
+
+            if response.response_error == "none":
+                score = await self.check_conversation_complete()
+                if bool(score.score_value):
+                    success = True
+                    logger.info(
+                        "The red teaming orchestrator has completed the conversation and achieved the objective.",
+                    )
+                    break
+            else:
+                score = None
             turn += 1
 
         if not success:
@@ -143,6 +161,15 @@ class RedTeamingOrchestrator(Orchestrator):
             )
 
         return score
+    
+    def _display_response(self, response_piece: PromptRequestPiece) -> None:
+        if response_piece.response_error == "none" and response_piece.converted_value_data_type == "image_path" and is_in_ipython_session():
+            with open(response_piece.converted_value, "rb") as f:
+                img = Image.open(f)
+                # Jupyter built-in display function only works in notebooks.
+                display(img)
+        if response_piece.response_error == "blocked":
+            print("---\nContent blocked, cannot show a response.\n---")
 
     def send_prompt(self, *, prompt: Optional[str] = None, score_explanation: Optional[str] = None) -> PromptRequestPiece:
         """
@@ -194,14 +221,6 @@ class RedTeamingOrchestrator(Orchestrator):
         )
 
         return response_piece
-
-    # def _display_response(self, response_piece: PromptRequestPiece) -> None:
-    #     if response_piece.converted_value == "content blocked":
-    #         print("---\nContent blocked, cannot show a response.\n---")
-    #     else:
-    #         with open(response_piece.converted_value, "rb") as f:
-    #             img = Image.open(f)
-    #             display(img)
 
     def _get_prompt_from_red_teaming_target(self, *, score_explanation: Optional[str] = None) -> str:
         # If we have previously exchanged messages with the attack target
