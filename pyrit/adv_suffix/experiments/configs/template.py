@@ -1,5 +1,9 @@
+import os
 from ml_collections import config_dict
+from pyrit.common import default_values
 
+default_values.load_default_env()
+token = os.environ.get("HF_TOKEN"),
 
 def get_config():
     config = config_dict.ConfigDict()
@@ -27,7 +31,7 @@ def get_config():
     config.tokenizer_kwargs = [{"use_fast": False}]
 
     config.model_paths = ["/data/vicuna/vicuna-7b-v1.3"]
-    config.token = "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"
+    config.token = token
     config.model_kwargs = [{"low_cpu_mem_usage": True, "use_cache": False}]
     config.conversation_templates = ["vicuna"]
     config.devices = ["cuda:0"]
