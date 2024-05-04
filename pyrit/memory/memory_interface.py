@@ -4,7 +4,7 @@
 import abc
 from pathlib import Path
 
-from typing import Union
+from typing import Optional, Union
 from uuid import uuid4
 
 from pyrit.memory.memory_models import EmbeddingData
@@ -116,36 +116,37 @@ class MemoryInterface(abc.ABC):
 
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
-
-    def duplicate_orchestrator_conversations(
+    
+    def duplicate_conversation_for_new_orchestrator(
         self,
         *,
-        orchestrator_id: Union[int, str],
-        new_orchestrator_id: Union[int, str],
-        conversation_id_map: dict[str, str] = None,
+        new_orchestrator_id: str,
+        conversation_id: str,
+        new_conversation_id: Optional[str] = None,
     ) -> None:
         """
-        Duplicates all conversations from one orchestrator to another.
+        Duplicates a conversation from one orchestrator to another.
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
         One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
-        the memory. Instead, one needs to duplicate the conversations and continue with the new orchestrator ID.
+        the memory. Instead, one needs to duplicate the conversation and continue with the new orchestrator ID.
 
         Args:
-            orchestrator_id (int | str): The orchestrator ID with existing conversations.
-            new_orchestrator_id (int | str): The new orchestrator ID to assign to the duplicated conversations.
+            new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
+            conversation_id (str): The conversation ID with existing conversations.
+            new_conversation_id (str): The new conversation ID to assign to the duplicated conversations.
+                If no new_conversation_id is provided, a new one will be generated.
         """
-        prompt_pieces = self.get_orchestrator_conversations(orchestrator_id=int(orchestrator_id))
+        new_conversation_id = new_conversation_id or str(uuid4())
+        if conversation_id == new_conversation_id:
+            raise ValueError("The new conversation ID must be different from the existing conversation ID.")
+        prompt_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
         for piece in prompt_pieces:
             piece.id = uuid4()
-            piece.orchestrator_identifier["id"] = str(new_orchestrator_id)
-            if piece.conversation_id not in conversation_id_map:
-                raise ValueError(
-                    f"Conversation ID {piece.conversation_id} not found in conversation_id_map."
-                    "The conversation_id_map must contain all conversation IDs used in the context of "
-                    "the orchestrator."
-                )
-            piece.conversation_id = conversation_id_map[piece.conversation_id]
+            if piece.orchestrator_identifier["id"] == new_orchestrator_id:
+                raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
+            piece.orchestrator_identifier["id"] = new_orchestrator_id
+            piece.conversation_id = new_conversation_id
 
         self._add_request_pieces_to_memory(request_pieces=prompt_pieces)
 
