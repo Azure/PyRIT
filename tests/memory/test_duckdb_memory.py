@@ -61,12 +61,12 @@ def test_conversation_data_schema(setup_duckdb_database):
         "prompt_metadata",
         "converter_identifiers",
         "prompt_target_identifier",
-        "original_prompt_data_type",
-        "original_prompt_text",
-        "original_prompt_data_sha256",
-        "converted_prompt_data_type",
-        "converted_prompt_text",
-        "converted_prompt_data_sha256",
+        "original_value_data_type",
+        "original_value",
+        "original_value_sha256",
+        "converted_value_data_type",
+        "converted_value",
+        "converted_value_sha256",
     ]
 
     for column in expected_columns:
@@ -100,12 +100,12 @@ def test_conversation_data_column_types(setup_duckdb_database):
         "prompt_metadata": String,
         "converter_identifiers": String,
         "prompt_target_identifier": String,
-        "original_prompt_data_type": String,
-        "original_prompt_text": String,
-        "original_prompt_data_sha256": String,
-        "converted_prompt_data_type": String,
-        "converted_prompt_text": String,
-        "converted_prompt_data_sha256": String,
+        "original_value_data_type": String,
+        "original_value": String,
+        "original_value_sha256": String,
+        "converted_value_data_type": String,
+        "converted_value": String,
+        "converted_value_sha256": String,
     }
 
     for column, expected_type in expected_column_types.items():
@@ -151,9 +151,9 @@ def test_insert_entry(setup_duckdb_database):
             id=uuid.uuid4(),
             conversation_id="123",
             role="user",
-            original_prompt_data_type="text",
-            original_prompt_text="Hello",
-            converted_prompt_text="Hello",
+            original_value_data_type="text",
+            original_value="Hello",
+            converted_value="Hello",
         )
     )
     # Use the _insert_entry method to insert the entry into the database
@@ -164,9 +164,9 @@ def test_insert_entry(setup_duckdb_database):
         inserted_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
         assert inserted_entry is not None
         assert inserted_entry.role == "user"
-        assert inserted_entry.original_prompt_text == "Hello"
+        assert inserted_entry.original_value == "Hello"
         sha265 = "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969"
-        assert inserted_entry.original_prompt_data_sha256 == sha265
+        assert inserted_entry.original_value_sha256 == sha265
 
 
 def test_insert_entry_violates_constraint(setup_duckdb_database):
@@ -178,8 +178,8 @@ def test_insert_entry_violates_constraint(setup_duckdb_database):
             id=fixed_uuid,
             conversation_id="123",
             role="user",
-            original_prompt_text="Hello",
-            converted_prompt_text="Hello",
+            original_value="Hello",
+            converted_value="Hello",
         )
     )
 
@@ -188,8 +188,8 @@ def test_insert_entry_violates_constraint(setup_duckdb_database):
             id=fixed_uuid,
             conversation_id="456",
             role="user",
-            original_prompt_text="Hello again",
-            converted_prompt_text="Hello again",
+            original_value="Hello again",
+            converted_value="Hello again",
         )
     )
 
@@ -211,8 +211,8 @@ def test_insert_entries(setup_duckdb_database):
             entry=PromptRequestPiece(
                 conversation_id=str(i),
                 role="user",
-                original_prompt_text=f"Message {i}",
-                converted_prompt_text=f"CMessage {i}",
+                original_value=f"Message {i}",
+                converted_value=f"CMessage {i}",
             )
         )
         for i in range(5)
@@ -227,16 +227,14 @@ def test_insert_entries(setup_duckdb_database):
         for i, entry in enumerate(inserted_entries):
             assert entry.conversation_id == str(i)
             assert entry.role == "user"
-            assert entry.original_prompt_text == f"Message {i}"
-            assert entry.converted_prompt_text == f"CMessage {i}"
+            assert entry.original_value == f"Message {i}"
+            assert entry.converted_value == f"CMessage {i}"
 
 
 def test_insert_embedding_entry(setup_duckdb_database):
     # Create a ConversationData entry
     conversation_entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(
-            conversation_id="123", role="user", original_prompt_text="Hello", converted_prompt_text="abc"
-        )
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="abc")
     )
 
     # Insert the ConversationData entry using the _insert_entry method
@@ -293,8 +291,8 @@ def test_query_entries(setup_duckdb_database, sample_conversation_entries):
 
     for i in range(3):
         sample_conversation_entries[i].conversation_id = str(i)
-        sample_conversation_entries[i].original_prompt_text = f"Message {i}"
-        sample_conversation_entries[i].converted_prompt_text = f"Message {i}"
+        sample_conversation_entries[i].original_value = f"Message {i}"
+        sample_conversation_entries[i].converted_value = f"Message {i}"
 
     setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
 
@@ -307,15 +305,13 @@ def test_query_entries(setup_duckdb_database, sample_conversation_entries):
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1"
     )
     assert len(specific_entry) == 1
-    assert specific_entry[0].original_prompt_text == "Message 1"
+    assert specific_entry[0].original_value == "Message 1"
 
 
 def test_update_entries(setup_duckdb_database):
     # Insert a test entry
     entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(
-            conversation_id="123", role="user", original_prompt_text="Hello", converted_prompt_text="Hello"
-        )
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
     setup_duckdb_database._insert_entry(entry)
@@ -324,14 +320,12 @@ def test_update_entries(setup_duckdb_database):
     entries_to_update = setup_duckdb_database.query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
-    setup_duckdb_database.update_entries(
-        entries=entries_to_update, update_fields={"original_prompt_text": "Updated Hello"}
-    )
+    setup_duckdb_database.update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
 
     # Verify the entry was updated
     with setup_duckdb_database.get_session() as session:
         updated_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
-        assert updated_entry.original_prompt_text == "Updated Hello"
+        assert updated_entry.original_value == "Updated Hello"
 
 
 def test_get_all_memory(setup_duckdb_database, sample_conversation_entries):
@@ -358,8 +352,8 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
                 conversation_id=specific_conversation_id,
                 role="user",
                 sequence=1,
-                original_prompt_text="Test content",
-                converted_prompt_text="Test content",
+                original_value="Test content",
+                converted_value="Test content",
                 labels={"normalizer_id": "id1"},
                 converter_identifiers=converter_identifiers,
                 prompt_target_identifier=target.get_identifier(),
@@ -378,7 +372,7 @@ def test_get_memories_with_json_properties(setup_duckdb_database):
         retrieved_entry = retrieved_entries[0].request_pieces[0]
         assert retrieved_entry.conversation_id == specific_conversation_id
         assert retrieved_entry.role == "user"
-        assert retrieved_entry.original_prompt_text == "Test content"
+        assert retrieved_entry.original_value == "Test content"
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
         assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 10  # Assuming the test runs quickly
 
@@ -404,8 +398,8 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
             entry=PromptRequestPiece(
                 conversation_id="123",
                 role="user",
-                original_prompt_text="Hello 1",
-                converted_prompt_text="Hello 1",
+                original_value="Hello 1",
+                converted_value="Hello 1",
                 orchestrator_identifier=orchestrator1.get_identifier(),
             )
         ),
@@ -413,8 +407,8 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
             entry=PromptRequestPiece(
                 conversation_id="456",
                 role="user",
-                original_prompt_text="Hello 2",
-                converted_prompt_text="Hello 2",
+                original_value="Hello 2",
+                converted_value="Hello 2",
                 orchestrator_identifier=orchestrator2.get_identifier(),
             )
         ),
@@ -422,8 +416,8 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
             entry=PromptRequestPiece(
                 conversation_id="789",
                 role="user",
-                original_prompt_text="Hello 3",
-                converted_prompt_text="Hello 1",
+                original_value="Hello 3",
+                converted_value="Hello 1",
                 orchestrator_identifier=orchestrator1.get_identifier(),
             )
         ),
@@ -443,7 +437,7 @@ def test_get_memories_with_orchestrator_id(setup_duckdb_database):
         assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
         for retrieved_entry in retrieved_entries:
             assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
-            assert "Hello" in retrieved_entry.original_prompt_text  # Basic check to ensure content is as expected
+            assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
 
 
 def test_update_entries_by_conversation_id(setup_duckdb_database, sample_conversation_entries):
@@ -454,7 +448,7 @@ def test_update_entries_by_conversation_id(setup_duckdb_database, sample_convers
     sample_conversation_entries[2].conversation_id = specific_conversation_id
 
     sample_conversation_entries[1].conversation_id = "other_id"
-    original_content = sample_conversation_entries[1].original_prompt_text
+    original_content = sample_conversation_entries[1].original_value
 
     # Insert the ConversationData entries using the _insert_entries method within a session
     with setup_duckdb_database.get_session() as session:
@@ -462,7 +456,7 @@ def test_update_entries_by_conversation_id(setup_duckdb_database, sample_convers
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id
-        update_fields = {"original_prompt_text": "Updated content", "role": "assistant"}
+        update_fields = {"original_value": "Updated content", "role": "assistant"}
 
         # Use the update_entries_by_conversation_id method to update the entries
         update_result = setup_duckdb_database.update_entries_by_conversation_id(
@@ -476,9 +470,9 @@ def test_update_entries_by_conversation_id(setup_duckdb_database, sample_convers
             PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == specific_conversation_id
         )
         for entry in updated_entries:
-            assert entry.original_prompt_text == "Updated content"
+            assert entry.original_value == "Updated content"
             assert entry.role == "assistant"
 
         # Verify that the entry with a different conversation_id was not updated
         other_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="other_id").first()
-        assert other_entry.original_prompt_text == original_content  # Content should remain unchanged
+        assert other_entry.original_value == original_content  # Content should remain unchanged

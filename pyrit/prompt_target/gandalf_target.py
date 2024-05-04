@@ -49,17 +49,25 @@ class GandalfTarget(PromptTarget):
         return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        response = await self._complete_text_async(request.converted_prompt_text)
+        response = await self._complete_text_async(request.converted_value)
 
         response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[response])
 
         return response_entry
+
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
+            raise ValueError("This target only supports text prompt input.")
 
     async def _complete_text_async(self, text: str) -> str:
         payload: dict[str, object] = {

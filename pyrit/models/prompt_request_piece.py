@@ -2,26 +2,13 @@
 # Licensed under the MIT license.
 
 import abc
-import hashlib
 import uuid
 
 from datetime import datetime
-from typing import Dict, Literal, List
+from typing import Dict, List, Optional
 from uuid import uuid4
 
-from pyrit.models import ChatMessage, ChatMessageRole
-
-
-PromptDataType = Literal["text", "image_path", "audio_path", "url"]
-
-"""
-The type of the error in the prompt response
-blocked: blocked by an external filter e.g. Azure Filters
-model: the model refused to answer or request e.g. "I'm sorry..."
-processing: there is an exception thrown unrelated to the query
-unknown: the type of error is unknown
-"""
-PromptResponseError = Literal["none", "blocked", "model", "processing", "unknown"]
+from pyrit.models import ChatMessage, data_serializer_factory, ChatMessageRole, PromptDataType, PromptResponseError
 
 
 class PromptRequestPiece(abc.ABC):
@@ -41,13 +28,13 @@ class PromptRequestPiece(abc.ABC):
             e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
         converters (list[PromptConverter]): The converters for the prompt.
         prompt_target (PromptTarget): The target for the prompt.
-        orchestrator (Orchestrator): The orchestrator for the prompt.
-        original_prompt_data_type (PromptDataType): The data type of the original prompt (text, image)
-        original_prompt_text (str): The text of the original prompt. If prompt is an image, it's a link.
-        original_prompt_data_sha256 (str): The SHA256 hash of the original prompt data.
-        converted_prompt_data_type (PromptDataType): The data type of the converted prompt (text, image)
-        converted_prompt_text (str): The text of the converted prompt. If prompt is an image, it's a link.
-        converted_prompt_data_sha256 (str): The SHA256 hash of the original prompt data.
+        orchestrator_identifier (Dict[str, str]): The orchestrator identifier for the prompt.
+        original_value_data_type (PromptDataType): The data type of the original prompt (text, image)
+        original_value (str): The text of the original prompt. If prompt is an image, it's a link.
+        original_value_sha256 (str): The SHA256 hash of the original prompt data.
+        converted_value_data_type (PromptDataType): The data type of the converted prompt (text, image)
+        converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
+        converted_value_sha256 (str): The SHA256 hash of the original prompt data.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -57,18 +44,18 @@ class PromptRequestPiece(abc.ABC):
         self,
         *,
         role: ChatMessageRole,
-        original_prompt_text: str,
-        converted_prompt_text: str = None,
-        id: uuid.UUID = None,
-        conversation_id: str = None,
+        original_value: str,
+        converted_value: Optional[str] = None,
+        id: Optional[uuid.UUID] = None,
+        conversation_id: Optional[str] = None,
         sequence: int = -1,
-        labels: Dict[str, str] = None,
-        prompt_metadata: str = None,
-        converter_identifiers: List[Dict[str, str]] = None,
-        prompt_target_identifier: Dict[str, str] = None,
-        orchestrator_identifier: Dict[str, str] = None,
-        original_prompt_data_type: PromptDataType = "text",
-        converted_prompt_data_type: PromptDataType = "text",
+        labels: Optional[Dict[str, str]] = None,
+        prompt_metadata: Optional[str] = None,
+        converter_identifiers: Optional[List[Dict[str, str]]] = None,
+        prompt_target_identifier: Optional[Dict[str, str]] = None,
+        orchestrator_identifier: Optional[Dict[str, str]] = None,
+        original_value_data_type: PromptDataType = "text",
+        converted_value_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",
     ):
 
@@ -76,8 +63,8 @@ class PromptRequestPiece(abc.ABC):
 
         self.role = role
 
-        if converted_prompt_text is None:
-            converted_prompt_text = original_prompt_text
+        if converted_value is None:
+            converted_value = original_value
 
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
@@ -91,28 +78,27 @@ class PromptRequestPiece(abc.ABC):
         self.prompt_target_identifier = prompt_target_identifier
         self.orchestrator_identifier = orchestrator_identifier
 
-        self.original_prompt_text = original_prompt_text
-        self.original_prompt_data_type = original_prompt_data_type
-        self.original_prompt_data_sha256 = self._create_sha256(original_prompt_text)
+        self.original_value = original_value
+        self.original_value_data_type = original_value_data_type
 
-        self.converted_prompt_data_type = converted_prompt_data_type
-        self.converted_prompt_text = converted_prompt_text
-        self.converted_prompt_data_sha256 = self._create_sha256(converted_prompt_text)
+        original_serializer = data_serializer_factory(data_type=original_value_data_type, value=original_value)
+        self.original_value_sha256 = original_serializer.get_sha256()
+
+        self.converted_value = converted_value
+        self.converted_value_data_type = converted_value_data_type
+
+        converted_serializer = data_serializer_factory(data_type=converted_value_data_type, value=converted_value)
+        self.converted_value_sha256 = converted_serializer.get_sha256()
 
         self.response_error = response_error
 
     def to_chat_message(self) -> ChatMessage:
-        return ChatMessage(role=self.role, content=self.converted_prompt_text)
+        return ChatMessage(role=self.role, content=self.converted_value)
 
     def to_prompt_request_response(self) -> "PromptRequestResponse":  # type: ignore # noqa F821
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
         return PromptRequestResponse([self])  # noqa F821
 
-    def _create_sha256(self, text: str) -> str:
-        input_bytes = text.encode("utf-8")
-        hash_object = hashlib.sha256(input_bytes)
-        return hash_object.hexdigest()
-
     def __str__(self):
-        return f"{self.prompt_target_identifier}: {self.role}: {self.converted_prompt_text}"
+        return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"

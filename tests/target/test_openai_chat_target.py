@@ -13,6 +13,12 @@ from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
 from pyrit.prompt_target import AzureOpenAIChatTarget, OpenAIChatTarget
+from tests.mocks import get_sample_conversations
+
+
+@pytest.fixture
+def sample_conversations() -> list[PromptRequestPiece]:
+    return get_sample_conversations()
 
 
 @pytest.fixture
@@ -59,8 +65,8 @@ def prompt_request_response() -> PromptRequestResponse:
             PromptRequestPiece(
                 role="user",
                 conversation_id="1234",
-                original_prompt_text="hello",
-                converted_prompt_text="hello",
+                original_value="hello",
+                converted_value="hello",
                 prompt_target_identifier={"target": "target-identifier"},
                 orchestrator_identifier={"test": "test"},
                 labels={"test": "test"},
@@ -78,7 +84,7 @@ def execute_openai_send_prompt(
         mock_create.return_value = mock_return
         response: PromptRequestResponse = target.send_prompt(prompt_request=prompt_request_response)
         assert len(response.request_pieces) == 1
-        assert response.request_pieces[0].converted_prompt_text == "hi"
+        assert response.request_pieces[0].converted_value == "hi"
 
 
 async def execute_openai_send_prompt_async(
@@ -90,7 +96,7 @@ async def execute_openai_send_prompt_async(
         mock_create.return_value = mock_return
         response: PromptRequestResponse = await target.send_prompt_async(prompt_request=prompt_request_response)
         assert len(response.request_pieces) == 1
-        assert response.request_pieces[0].converted_prompt_text == "hi"
+        assert response.request_pieces[0].converted_value == "hi"
 
 
 @pytest.mark.asyncio
@@ -125,6 +131,46 @@ def test_openai_complete_chat_return(
     prompt_request_response: PromptRequestResponse,
 ):
     execute_openai_send_prompt(openai_chat_target, prompt_request_response, openai_mock_return)
+
+
+@pytest.mark.asyncio
+async def test_openai_validate_request_length(
+    openai_chat_target: OpenAIChatTarget, sample_conversations: list[PromptRequestPiece]
+):
+    request = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+        await openai_chat_target.send_prompt_async(prompt_request=request)
+
+
+@pytest.mark.asyncio
+async def test_azure_openai_validate_request_length(
+    azure_chat_target: AzureOpenAIChatTarget, sample_conversations: list[PromptRequestPiece]
+):
+    request = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+        await azure_chat_target.send_prompt_async(prompt_request=request)
+
+
+@pytest.mark.asyncio
+async def test_openai_validate_prompt_type(
+    openai_chat_target: OpenAIChatTarget, sample_conversations: list[PromptRequestPiece]
+):
+    request_piece = sample_conversations[0]
+    request_piece.converted_value_data_type = "image_path"
+    request = PromptRequestResponse(request_pieces=[request_piece])
+    with pytest.raises(ValueError, match="This target only supports text prompt input."):
+        await openai_chat_target.send_prompt_async(prompt_request=request)
+
+
+@pytest.mark.asyncio
+async def test_azure_openai_validate_prompt_type(
+    azure_chat_target: AzureOpenAIChatTarget, sample_conversations: list[PromptRequestPiece]
+):
+    request_piece = sample_conversations[0]
+    request_piece.converted_value_data_type = "image_path"
+    request = PromptRequestResponse(request_pieces=[request_piece])
+    with pytest.raises(ValueError, match="This target only supports text prompt input."):
+        await azure_chat_target.send_prompt_async(prompt_request=request)
 
 
 def test_azure_invalid_key_raises():

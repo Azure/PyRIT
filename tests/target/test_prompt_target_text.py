@@ -29,7 +29,7 @@ def test_send_prompt_user_no_system(memory_interface: MemoryInterface, sample_en
     no_op = TextTarget(memory=memory_interface)
 
     request = sample_entries[0]
-    request.converted_prompt_text = "hi, I am a victim chatbot, how can I help?"
+    request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
     no_op.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
@@ -44,7 +44,7 @@ def test_send_prompt_stream(memory_interface: MemoryInterface, sample_entries: l
 
         no_op = TextTarget(memory=memory_interface, text_stream=tmp_file)
         request = sample_entries[0]
-        request.converted_prompt_text = prompt
+        request.converted_value = prompt
 
         no_op.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
@@ -54,3 +54,26 @@ def test_send_prompt_stream(memory_interface: MemoryInterface, sample_entries: l
     os.remove(tmp_file.name)
 
     assert prompt in content, "The prompt was not found in the temporary file content."
+
+
+@pytest.mark.asyncio
+async def test_text_target_send_async_validate_request_length(
+    memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]
+):
+    no_op = TextTarget(memory=memory_interface)
+    request = PromptRequestResponse(request_pieces=sample_entries)
+    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+        await no_op.send_prompt_async(prompt_request=request)
+
+
+@pytest.mark.asyncio
+async def test_text_target_send_async_validate_previous_conversations(
+    memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]
+):
+    no_op = TextTarget(memory=memory_interface)
+    request_piece = sample_entries[0]
+    no_op._memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=[request_piece]))
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
+        await no_op.send_prompt_async(prompt_request=request)

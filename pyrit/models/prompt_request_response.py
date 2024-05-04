@@ -25,13 +25,20 @@ class PromptRequestResponse:
             raise ValueError("Empty request pieces.")
 
         conversation_id = self.request_pieces[0].conversation_id
-
+        role = None
         for request_piece in self.request_pieces:
+
             if request_piece.conversation_id != conversation_id:
                 raise ValueError("Conversation ID mismatch.")
 
-            if not request_piece.converted_prompt_text:
+            if not request_piece.converted_value:
                 raise ValueError("Converted prompt text is None.")
+
+            if not role:
+                role = request_piece.role
+
+            elif role != request_piece.role:
+                raise ValueError("Inconsistent roles within the same prompt request response entry.")
 
     def __str__(self):
         ret = ""

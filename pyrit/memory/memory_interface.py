@@ -149,6 +149,28 @@ class MemoryInterface(abc.ABC):
 
         self._add_request_pieces_to_memory(request_pieces=prompt_pieces)
 
+    def export_conversation_by_orchestrator_id(
+        self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"
+    ):
+        """
+        Exports conversation data with the given orchestrator ID to a specified file.
+        This will contain all conversations that were sent by the same orchestrator.
+
+        Args:
+            orchestrator_id (str): The ID of the orchestrator from which to export conversations.
+            file_path (str): The path to the file where the data will be exported.
+            If not provided, a default path using RESULTS_PATH will be constructed.
+            export_type (str): The format of the export. Defaults to "json".
+        """
+        data = self.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
+
+        # If file_path is not provided, construct a default using the exporter's results_path
+        if not file_path:
+            file_name = f"{str(orchestrator_id)}.{export_type}"
+            file_path = RESULTS_PATH / file_name
+
+        self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
@@ -227,14 +249,14 @@ class MemoryInterface(abc.ABC):
             request_pieces=[
                 PromptRequestPiece(
                     role="assistant",
-                    original_prompt_text=resp_text,
-                    converted_prompt_text=resp_text,
+                    original_value=resp_text,
+                    converted_value=resp_text,
                     conversation_id=request.conversation_id,
                     labels=request.labels,
                     prompt_target_identifier=request.prompt_target_identifier,
                     orchestrator_identifier=request.orchestrator_identifier,
-                    original_prompt_data_type=response_type,
-                    converted_prompt_data_type=response_type,
+                    original_value_data_type=response_type,
+                    converted_value_data_type=response_type,
                     prompt_metadata=prompt_metadata,
                     response_error=error,
                 )
@@ -262,7 +284,7 @@ class MemoryInterface(abc.ABC):
             list[ChatMessage]: The list of chat messages.
         """
         memory_entries = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
-        return [ChatMessage(role=me.role, content=me.converted_prompt_text) for me in memory_entries]  # type: ignore
+        return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
         """

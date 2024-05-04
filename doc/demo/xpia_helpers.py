@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Any
+from typing import Any, Optional
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestResponse
@@ -111,8 +111,8 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        orchestrator_identifier: dict[str, str],
-        labels: dict,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         raise NotImplementedError("System prompt currently not supported.")
 
@@ -127,13 +127,14 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             PromptRequestResponse: The processed prompt response.
 
         """
+        self._validate_request(prompt_request=prompt_request)
         self._memory.add_request_response_to_memory(request=prompt_request)
 
         request = prompt_request.request_pieces[0]
 
         logger.info(f"Processing: {prompt_request}")
         prompt_template_config = PromptTemplateConfig(
-            template=request.converted_prompt_text,
+            template=request.converted_value,
             name=self._plugin_name,
             template_format="semantic-kernel",
             execution_settings=self._execution_settings,
@@ -149,6 +150,19 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             request=request, response_text_pieces=[processing_output]
         )
         return response
+
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
+            raise ValueError("This target only supports text prompt input.")
+
+        request = prompt_request.request_pieces[0]
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+
+        if len(messages) > 0:
+            raise ValueError("This target only supports a single turn conversation.")
 
 
 class AzureStoragePlugin:

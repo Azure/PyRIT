@@ -6,9 +6,16 @@ from unittest.mock import Mock, patch
 import os
 import pytest
 
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import AzureMLChatTarget
-from pyrit.models.models import ChatMessage
+from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNop, GenericSystemSquash, ChatMessageNormalizer
+from tests.mocks import get_sample_conversations
+
+
+@pytest.fixture
+def sample_conversations() -> list[PromptRequestPiece]:
+    return get_sample_conversations()
 
 
 @pytest.fixture
@@ -123,3 +130,23 @@ def test_complete_chat_bad_json_response(aml_online_chat: AzureMLChatTarget):
         mock.return_value = mock_response
         with pytest.raises(TypeError):
             aml_online_chat._complete_chat(messages)
+
+
+@pytest.mark.asyncio
+async def test_azure_ml_validate_request_length(
+    aml_online_chat: AzureMLChatTarget, sample_conversations: list[PromptRequestPiece]
+):
+    request = PromptRequestResponse(request_pieces=sample_conversations)
+    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+        await aml_online_chat.send_prompt_async(prompt_request=request)
+
+
+@pytest.mark.asyncio
+async def test_azure_ml_validate_prompt_type(
+    aml_online_chat: AzureMLChatTarget, sample_conversations: list[PromptRequestPiece]
+):
+    request_piece = sample_conversations[0]
+    request_piece.converted_value_data_type = "image_path"
+    request = PromptRequestResponse(request_pieces=[request_piece])
+    with pytest.raises(ValueError, match="This target only supports text prompt input."):
+        await aml_online_chat.send_prompt_async(prompt_request=request)
