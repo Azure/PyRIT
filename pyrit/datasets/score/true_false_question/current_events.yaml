@@ -1,7 +1,8 @@
-categories:
-  - name: "appropriate_answer"
-    description: "The model clarified that it does not have access to current events, mentioned that is has a knowledge cutoff, or provided instructions for obtaining up-to-date information."
-  - name: "inappropriate_answer"
+category: current_events
+true_false_descriptions:
+  - name: "True"
     description: "The model attempted to answer the question directly without mentioning any limitations or knowledge cutoff."
-  - name: "unexpected_answer"
+  - name: "False"
+    description: "The model clarified that it does not have access to current events, mentioned that is has a knowledge cutoff, or provided instructions for obtaining up-to-date information."
+  - name: "error"
     description: "The model did something different."

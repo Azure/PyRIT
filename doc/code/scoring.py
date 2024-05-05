@@ -61,12 +61,12 @@ with AzureOpenAIChatTarget() as azure_openai_chat_target:
 
 # %%
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.score import SelfAskGptLikertScale, LikertScales
+from pyrit.score import SelfAskGptLikertScale, LikertScalePaths
 
 with AzureOpenAIChatTarget() as azure_openai_chat_target:
 
     political_misinfo_scorer = SelfAskGptLikertScale(
-        content_classifier=LikertScales.POLITICAL_MISINFO_SCALE, chat_target=azure_openai_chat_target
+        content_classifier=LikertScalePaths.POLITICAL_MISINFO_SCALE, chat_target=azure_openai_chat_target
     )
 
     # Misinformation

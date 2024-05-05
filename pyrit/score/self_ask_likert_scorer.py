@@ -13,12 +13,12 @@ from typing import Dict, Union
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.path import CONTENT_CLASSIFIERS_PATH, LIKERT_SCALES_PATH, SCORING_INSTRUCTIONS_PATH
+from pyrit.common.path import LIKERT_SCALES_PATH
 from pyrit.score.scorer import FloatScaleScorer
 
 
 
-class LikertScales(enum.Enum):
+class LikertScalePaths(enum.Enum):
     CYBER_SCALE = Path(LIKERT_SCALES_PATH, "cyber.yaml").resolve()
     FAIRNESS_BIAS_SCALE = Path(LIKERT_SCALES_PATH, "fairness_bias.yaml").resolve()
     HARM_SCALE = Path(LIKERT_SCALES_PATH, "harm.yaml").resolve()
@@ -41,7 +41,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
     def __init__(
         self,
         chat_target: PromptChatTarget,
-        likert_scale_path: LikertScales,
+        likert_scale_path: Path,
     ) -> None:
 
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
@@ -54,7 +54,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(SCORING_INSTRUCTIONS_PATH / "likert_system_prompt.yaml")
+        scoring_instructions_template = PromptTemplate.from_yaml_file(LIKERT_SCALES_PATH / "likert_system_prompt.yaml")
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
                                 likert_scale=likert_scale,
                                 category=self._score_category)

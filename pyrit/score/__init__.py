@@ -7,7 +7,7 @@ from pyrit.score.engine import evaluate, evaluate_async, score_text
 from pyrit.score.gandalf_scorer import GandalfScorer, GandalfBinaryScorer
 from pyrit.score.self_ask_category_scorer import SelfAskCategoryScorer
 from pyrit.score.self_ask_likert_scorer import (
-    LikertScales,
+    LikertScalePaths,
     SelfAskLikertScorer,
 )
 from pyrit.score.markdown_injection import MarkdownInjectionClassifier
@@ -24,7 +24,7 @@ __all__ = [
     "GandalfScorer",
     "GandalfBinaryScorer",
     "SelfAskCategoryScorer",
-    "LikertScales",
+    "LikertScalePaths",
     "SelfAskLikertScorer",
     "MarkdownInjectionClassifier",
     "SubStringScorer",

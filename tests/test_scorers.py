@@ -10,8 +10,8 @@ import pytest
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.score import LikertScales
-from pyrit.score.self_ask_category_scorer import ContentClassifiers, SelfAskCategoryScorer
+from pyrit.score import LikertScalePaths
+from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer
 
 from pyrit.score.substring_scorer import SubStringScorer
@@ -72,7 +72,7 @@ def test_category_scorer_set_system_prompt():
 
     scorer = SelfAskCategoryScorer(
         chat_target=chat_target,
-        content_classifier=ContentClassifiers.HARMFUL_CONTENT_CLASSIFIER,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -92,7 +92,7 @@ async def test_category_scorer_score(scorer_category_response_bullying: PromptRe
 
     scorer = SelfAskCategoryScorer(
         chat_target=chat_target,
-        content_classifier=ContentClassifiers.HARMFUL_CONTENT_CLASSIFIER,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
     )
 
     score = await scorer.score_text("this has a lot of bullying")
@@ -115,7 +115,7 @@ async def test_category_scorer_score_false(scorer_category_response_false: Promp
 
     scorer = SelfAskCategoryScorer(
         chat_target=chat_target,
-        content_classifier=ContentClassifiers.HARMFUL_CONTENT_CLASSIFIER,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
     )
 
     score = await scorer.score_text("this has no bullying")
@@ -132,7 +132,7 @@ def test_likert_scorer_set_system_prompt():
 
     scorer = SelfAskLikertScorer(
         chat_target=chat_target,
-        likert_scale_path=LikertScales.CYBER_SCALE.value,
+        likert_scale_path=LikertScalePaths.CYBER_SCALE.value,
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -152,7 +152,7 @@ async def test_likert_scorer_score(scorer_likert_response: PromptRequestResponse
 
     scorer = SelfAskLikertScorer(
         chat_target=chat_target,
-        likert_scale_path=LikertScales.CYBER_SCALE.value,
+        likert_scale_path=LikertScalePaths.CYBER_SCALE.value,
     )
 
     score = await scorer.score_text("No cyber harm")
@@ -167,15 +167,12 @@ async def test_likert_scorer_score(scorer_likert_response: PromptRequestResponse
     assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"
 
 @pytest.mark.asyncio
-async def test_likert_scorer_validate(image_request_piece: PromptRequestPiece):
+async def test_substring_scorer_validate(image_request_piece: PromptRequestPiece):
 
-    chat_target = MagicMock()
-
-    scorer = SelfAskLikertScorer(
-        chat_target=chat_target,
-        likert_scale_path=LikertScales.CYBER_SCALE.value,
+    scorer = SubStringScorer(
+        substring="test",
+        category="new_category"
     )
-
     with pytest.raises(ValueError, match="Expected text data type"):
         await scorer.score(image_request_piece)
 

@@ -13,12 +13,12 @@ from typing import Dict, Union
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.path import CONTENT_CLASSIFIERS_PATH, LIKERT_SCALES_PATH, SCORING_INSTRUCTIONS_PATH
+from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
 from pyrit.score.scorer import TrueFalseScorer
 
 
 
-class ContentClassifiers(enum.Enum):
+class ContentClassifierPaths(enum.Enum):
     HARMFUL_CONTENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "harmful_content.yaml").resolve()
     SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
 
@@ -39,17 +39,17 @@ class SelfAskCategoryScorer(TrueFalseScorer):
     def __init__(
         self,
         chat_target: PromptChatTarget,
-        content_classifier: ContentClassifiers,
+        content_classifier: Path,
     ) -> None:
         self._score_type = "true_false"
 
-        category_file_contents = yaml.safe_load(Path(content_classifier.value).read_text(encoding="utf-8"))
+        category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 
         self._false_category = category_file_contents["false_category"]
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
 
         scoring_instructions_template = PromptTemplate.from_yaml_file(
-            SCORING_INSTRUCTIONS_PATH / "classification_system_prompt.yaml"
+            CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
 
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(categories=categories_as_string)
