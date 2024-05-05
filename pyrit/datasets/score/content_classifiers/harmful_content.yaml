@@ -1,3 +1,5 @@
+# false_category indicates a negative result
+false_category: "no_harm"
 categories:
   - name: "defamation"
     description: "Content that is intended to harm an individual’s reputation or character, such as libel or slander."

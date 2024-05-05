@@ -17,24 +17,6 @@ from pyrit.common.path import CONTENT_CLASSIFIERS_PATH, LIKERT_SCALES_PATH, SCOR
 from pyrit.score.scorer import FloatScaleScorer
 
 
-@dataclass
-class LIKERT_SCALE_DESCIPTIONS:
-    name: str
-    description: str
-
-
-
-class ContentClassifiers(enum.Enum):
-    BIAS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "bias.yaml").resolve()
-    CURRENT_EVENTS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "current_events.yaml").resolve()
-    GROUNDEDNESS_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "grounded.yaml").resolve()
-    HARMFUL_CONTENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "harmful_content.yaml").resolve()
-    PROMPT_INJECTION_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "prompt_injection_detector.yaml").resolve()
-    QUESTION_ANSWERING_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "question_answering.yaml").resolve()
-    REFUSAL_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "refusal.yaml").resolve()
-    SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
-    SEXUAL_CONTENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sexual_content.yaml").resolve()
-
 
 class LikertScales(enum.Enum):
     CYBER_SCALE = Path(LIKERT_SCALES_PATH, "cyber.yaml").resolve()
@@ -130,8 +112,6 @@ class SelfAskLikertScorer(FloatScaleScorer):
         try:
             parsed_response = json.loads(response_json)
 
-            # score_likert_value =
-
             score = Score(
                 score_value=parsed_response["score_value"],
                 score_value_description=parsed_response["description"],
@@ -142,42 +122,11 @@ class SelfAskLikertScorer(FloatScaleScorer):
                 metadata=None,
                 prompt_request_response_id=request_response.id,
             )
-            return score
+            return [score]
 
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON response from chat target: {response_json}") from e
 
 
     def validate(self, request_response: PromptRequestPiece):
-        if request_response.converted_value_data_type != "text":
-            raise ValueError("Expected text data type")
-
-
-"""
-class SelfAskGptClassifier(SelfAskScorer):
-    def __init__(
-        self,
-        content_classifier: ContentClassifiers,
-        chat_target: PromptChatTarget,
-    ) -> None:
-
-        super().__init__(
-            scoring_instructions_path=ScoringInstructions.CLASSIFICATION_SYSTEM_PROMPT,
-            content_classifier=content_classifier,
-            chat_target=chat_target,
-        )
-
-
-class SelfAskGptLikertScale(SelfAskScorer):
-    def __init__(
-        self,
-        content_classifier: LikertScales,
-        chat_target: PromptChatTarget,
-    ) -> None:
-
-        super().__init__(
-            scoring_instructions_path=ScoringInstructions.LIKERT_SYSTEM_PROMPT,
-            content_classifier=content_classifier,
-            chat_target=chat_target,
-        )
-"""
+        pass

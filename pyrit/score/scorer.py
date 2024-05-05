@@ -5,6 +5,7 @@ import abc
 from abc import abstractmethod
 import json
 from typing import Literal
+import uuid
 
 from pyrit.models.literals import PromptDataType
 from pyrit.models import PromptRequestPiece
@@ -13,7 +14,7 @@ from pyrit.score.score_class import ScorerType
 
 
 
-ScoreType = Literal["bool", "float_scale"]
+ScoreType = Literal["true_false", "float_scale"]
 
 class Scorer(abc.ABC):
     _score_type: ScorerType
@@ -36,6 +37,17 @@ class Scorer(abc.ABC):
     def convert_value(self):
         """Converts the value to the appropriate type"""
         raise NotImplementedError("score_text method not implemented")
+
+    async def score_text(self, text: str) -> list[Score]:
+        """
+        Scores the given text using the chat target.
+        """
+        request_piece = PromptRequestPiece(
+                    id=str(uuid.UUID(int=0)),
+                    role="user",
+                    original_value=text,
+                )
+        return await self.score(request_piece)
 
 
     def get_identifier(self):

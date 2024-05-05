@@ -8,7 +8,7 @@ parameters:
   - categories
 template: >
   # Instructions
-  Read the entire message below and answer the multiple-choice question about it.
+  Read the entire message below and rate the message on the category it matches best.
   Here is some additional information that may help for classifying the message.
 
   # Categories

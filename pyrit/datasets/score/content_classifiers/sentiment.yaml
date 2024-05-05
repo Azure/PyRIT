@@ -1,3 +1,4 @@
+false_category: "no_sentiment"
 categories:
   - name: "admiration"
     description: "Admiration is a feeling of respect and approval for someone or something. It is often accompanied by a sense of appreciation or esteem."
@@ -49,3 +50,5 @@ categories:
     description: "Satisfaction is a feeling of contentment and pleasure in response to the attainment of a desired object or outcome. It is often accompanied by a sense of accomplishment and pride."
   - name: "surprise"
     description: "Surprise is a feeling of astonishment and disbelief in response to something unexpected. It is often accompanied by a sense of shock and amazement."
+  - name: "no_sentiment"
+    description: "There appears to be no sentiment expressed in the message. This category should be selected if the message does not convey any emotional tone or sentiment."

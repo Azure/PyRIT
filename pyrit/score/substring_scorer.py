@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.score import Score, TrueFalseScorer
 
@@ -9,21 +10,26 @@ class SubStringScorer(TrueFalseScorer):
     """
     Scorer that checks if a given substring is present in the text.
     """
-    def __init__(self, *, expected_output_substring: str, category:str = None) -> None:
+    def __init__(self, *, substring: str, category:str = None) -> None:
         super().__init__()
-        self._expected_output_substring = expected_output_substring
+        self._substring = substring
         self._category = category
+        self._score_type = "true_false"
 
-    def score(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score(self, request_response: PromptRequestPiece) -> list[Score]:
+
+        await asyncio.sleep(0)
 
         self.validate(request_response)
 
-        expected_output_substring_present = self._expected_output_substring \
+        expected_output_substring_present = self._substring \
             in request_response.converted_value
 
         return [
             Score(
                 score_value=str(expected_output_substring_present),
+                score_value_description=None,
+                metadata=None,
                 scorer_type=self._score_type,
                 score_category=self._category,
                 score_rationale=None,
