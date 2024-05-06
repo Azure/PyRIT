@@ -14,7 +14,6 @@ from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
-from pyrit.score.scorer import TrueFalseScorer
 
 
 
@@ -23,7 +22,7 @@ class ContentClassifierPaths(enum.Enum):
     SENTIMENT_CLASSIFIER = Path(CONTENT_CLASSIFIERS_PATH, "sentiment.yaml").resolve()
 
 
-class SelfAskCategoryScorer(TrueFalseScorer):
+class SelfAskCategoryScorer(Scorer):
     """A class that represents a self-ask score for text classification and scoring.
 
     This class is responsible for scoring text using a self-ask approach. It takes a chat target,
@@ -41,7 +40,6 @@ class SelfAskCategoryScorer(TrueFalseScorer):
         chat_target: PromptChatTarget,
         content_classifier: Path,
     ) -> None:
-        self._score_type = "true_false"
 
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 
@@ -75,6 +73,9 @@ class SelfAskCategoryScorer(TrueFalseScorer):
 
             category_descriptions += f"'{name}': {desc}\n"
 
+        if self._false_category not in category_descriptions:
+            raise ValueError(f"False category {self._false_category} not found in classifier categories")
+
         return category_descriptions
 
     async def score(self, request_response: PromptRequestPiece) -> list[Score]:
@@ -107,7 +108,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
             score = Score(
                 score_value=str(score_value),
                 score_value_description=parsed_response["category_description"],
-                scorer_type=self._score_type,
+                scorer_type="true_false",
                 score_category=parsed_response["category_name"],
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),

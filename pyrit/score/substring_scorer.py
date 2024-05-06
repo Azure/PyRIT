@@ -3,10 +3,10 @@
 
 import asyncio
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.score import Score, TrueFalseScorer
+from pyrit.score import Score, Scorer
 
 
-class SubStringScorer(TrueFalseScorer):
+class SubStringScorer(Scorer):
     """
     Scorer that checks if a given substring is present in the text.
     """

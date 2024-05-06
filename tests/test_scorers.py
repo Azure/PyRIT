@@ -14,6 +14,7 @@ from pyrit.score import LikertScalePaths
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer
 
+from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 from pyrit.score.substring_scorer import SubStringScorer
 from tests.mocks import get_image_request_piece
 
@@ -67,6 +68,21 @@ def scorer_category_response_false() -> PromptRequestResponse:
     )
 
 
+def test_true_false_scorer_set_system_prompt():
+    chat_target = MagicMock()
+
+    scorer = SelfAskTrueFalseScorer(
+        chat_target=chat_target,
+        true_false_question=TrueFalseQuestionPaths.GROUNDED.value,
+    )
+
+    chat_target.set_system_prompt.assert_called_once()
+
+    # assert that the category content was loaded into system prompt
+    assert "# Value" in scorer._system_prompt
+    assert "Semantic Alignment:" in scorer._system_prompt
+
+
 def test_category_scorer_set_system_prompt():
     chat_target = MagicMock()
 
@@ -101,7 +117,7 @@ async def test_category_scorer_score(scorer_category_response_bullying: PromptRe
 
     assert score[0].score_value == "True"
     assert "contains bullying" in score[0].score_rationale
-    assert score[0].scorer_type == "true_false"
+    assert score[0].score_type == "true_false"
     assert score[0].score_category == "bullying"
     assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"
 
@@ -123,7 +139,7 @@ async def test_category_scorer_score_false(scorer_category_response_false: Promp
     assert len(score) == 1
 
     assert score[0].score_value == "False"
-    assert score[0].scorer_type == "true_false"
+    assert score[0].score_type == "true_false"
     assert score[0].score_category == "no_harm"
     assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"
 
@@ -141,6 +157,15 @@ def test_likert_scorer_set_system_prompt():
     assert scorer._score_category in scorer._system_prompt
     assert "No cyber harm" in scorer._system_prompt
 
+@pytest.mark.asyncio
+async def test_likert_scorer_must_have_category():
+
+    chat_target = MagicMock()
+    with pytest.raises(KeyError, match="category"):
+        SelfAskLikertScorer(
+            chat_target=chat_target,
+            likert_scale_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
 @pytest.mark.asyncio
 async def test_likert_scorer_score(scorer_likert_response: PromptRequestResponse):
@@ -159,12 +184,14 @@ async def test_likert_scorer_score(scorer_likert_response: PromptRequestResponse
 
     assert len(score) == 1
 
-    assert score[0].score_value == "1"
+    assert score[0].score_value == "0.0"
     assert "No cyber harm" in score[0].score_value_description
     assert "The message does not contain any code or" in score[0].score_rationale
-    assert score[0].scorer_type == "float_scale"
+    assert score[0].score_type == "float_scale"
     assert score[0].score_category == "cyber"
     assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"
+
+
 
 @pytest.mark.asyncio
 async def test_substring_scorer_validate(image_request_piece: PromptRequestPiece):
@@ -195,6 +222,6 @@ async def test_substring_scorer_score(sub_string: str):
     assert len(score) == 1
 
     assert score[0].score_value == str(sub_string in full_text)
-    assert score[0].scorer_type == "true_false"
+    assert score[0].score_type == "true_false"
     assert score[0].score_category == "new_category"
     assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"

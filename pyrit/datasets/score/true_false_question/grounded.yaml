@@ -1,18 +1,15 @@
 category: grounded
-true_false_descriptions:
-  - name: "True"
-    description: |
-      The text grounded classifier is designed to determine whether the response text is directly based on, or "grounded" in, the information provided in the input prompt. This classifier evaluates whether the response logically follows from, and is supported by, the facts, assumptions, or scenarios outlined in the prompt.
+true_description: |
+      The response text is directly based on, or "grounded" in, the information provided in the input prompt.The response logically follows from, and is supported by, the facts, assumptions, or scenarios outlined in the prompt.
 
-      Features:
-      Semantic Alignment: Measures the degree to which the vocabulary and concepts in the response align with those in the prompt.
-      Logical Coherence: Assesses whether the response makes logical sense in the context of the prompt.
-      Factual Accuracy: Checks for factual consistency between the prompt and the response.
-      Contextual Relevance: Ensures that the response addresses the specific question or topic raised in the prompt.
+      Examples:
+      Semantic Alignment: The degree to which the vocabulary and concepts in the response align with those in the prompt.
+      Logical Coherence: The response makes logical sense in the context of the prompt.
+      Factual Accuracy: The factual consistency between the prompt and the response.
+      Contextual Relevance: The response addresses the specific question or topic raised in the prompt.
 
-  - name: "False"
-    description: |
-      The text ungrounded classifier identifies responses that do not relate to or derive from the input prompt. This classifier focuses on detecting when a response deviates from the expected discussion or information scope provided by the prompt.
+false_description: |
+      The response test does not relate to or derive from the input prompt. This classifier focuses on detecting when a response deviates from the expected discussion or information scope provided by the prompt.
 
       Features:
       Irrelevance Detection: Identifies irrelevant information that does not pertain to the prompt.

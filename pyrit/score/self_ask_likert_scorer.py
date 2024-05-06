@@ -14,7 +14,6 @@ from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import LIKERT_SCALES_PATH
-from pyrit.score.scorer import FloatScaleScorer
 
 
 
@@ -30,7 +29,7 @@ class LikertScalePaths(enum.Enum):
     VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
 
 
-class SelfAskLikertScorer(FloatScaleScorer):
+class SelfAskLikertScorer(Scorer):
     """A class that represents a self-ask score for text scoring for an individual category.
 
     This class is responsible for scoring text using a self-ask approach. It takes a chat target,
@@ -60,7 +59,6 @@ class SelfAskLikertScorer(FloatScaleScorer):
                                 category=self._score_category)
 
 
-        self._score_type = "float_scale"
         self._chat_target: PromptChatTarget = chat_target
         self._conversation_id = str(uuid.uuid4())
 
@@ -112,10 +110,12 @@ class SelfAskLikertScorer(FloatScaleScorer):
         try:
             parsed_response = json.loads(response_json)
 
+            score_value = self.scale_value_float(float(parsed_response["score_value"]), 1, 5)
+
             score = Score(
-                score_value=parsed_response["score_value"],
+                score_value=score_value,
                 score_value_description=parsed_response["description"],
-                scorer_type=self._score_type,
+                scorer_type="float_scale",
                 score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),

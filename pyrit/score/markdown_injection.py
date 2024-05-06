@@ -4,10 +4,11 @@
 import re
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.score import Score, TrueFalseScorer
+from pyrit.score import Score
+from pyrit.score.scorer import Scorer
 
 
-class MarkdownInjectionClassifier(TrueFalseScorer):
+class MarkdownInjectionScorer(Scorer):
 
     def __init__(self):
         super().__init__()

@@ -3,7 +3,7 @@
 
 import pytest
 
-from pyrit.score.markdown_injection import MarkdownInjectionClassifier
+from pyrit.score.markdown_injection import MarkdownInjectionScorer
 
 
 @pytest.mark.parametrize(
@@ -15,13 +15,13 @@ from pyrit.score.markdown_injection import MarkdownInjectionClassifier
     ],
 )
 def test_md_injection_detected(text: str):
-    classifier = MarkdownInjectionClassifier()
+    classifier = MarkdownInjectionScorer()
     score = classifier.score(text)
     assert score.score_value is True
 
 
 def test_md_injection_not_detected():
-    classifier = MarkdownInjectionClassifier()
+    classifier = MarkdownInjectionScorer()
     text = "this is a test"
     score = classifier.score(text)
     assert score.score_value is False
