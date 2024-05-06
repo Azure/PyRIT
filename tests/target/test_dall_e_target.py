@@ -127,7 +127,7 @@ async def test_dalle_send_prompt_adds_memory_async() -> None:
     # "test image data" b64 encoded
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": "dGVzdCBpbWFnZSBkYXRh"}]}'
 
-    mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test")
+    mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
     mock_dalle_target.image_target._async_client.images = MagicMock()
     mock_dalle_target.image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
 
