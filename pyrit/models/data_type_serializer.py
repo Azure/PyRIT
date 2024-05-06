@@ -9,6 +9,7 @@ import time
 
 from pathlib import Path
 from mimetypes import guess_type
+from PIL import Image
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models import PromptDataType
@@ -69,6 +70,10 @@ class DataTypeSerializer(abc.ABC):
             image_bytes = base64.b64decode(data)
             file.write(image_bytes)
 
+    def save_image(self, image: Image):
+        self.value = str(self.get_data_filename())
+        image.save(self.value)
+
     def read_data(self) -> bytes:
         """
         Reads the data from the disk.
@@ -88,6 +93,11 @@ class DataTypeSerializer(abc.ABC):
         """
         byte_array = self.read_data()
         return base64.b64encode(byte_array).decode("utf-8")
+
+    def read_data_image(self) -> str:
+        """
+        Reads the data from the disk for an image
+        """
 
     def get_sha256(self) -> str:
         input_bytes: bytes

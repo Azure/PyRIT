@@ -20,7 +20,7 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text", **kwargs) -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         return ConverterResult(output_text=prompt, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

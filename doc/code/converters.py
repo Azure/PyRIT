@@ -120,7 +120,7 @@ import pathlib
 image_converter = AddTextImageConverter(font_size=0.02)
 output_image_file = image_converter.convert(
     prompt=str(pathlib.Path(RESULTS_PATH / "images" / "roakey.png")),
-    text_to_add="Hello, I am a friendly and helpful raccoon named Roakey!",
+    text_to_add=["Hello, I am a friendly and helpful raccoon named Roakey!", "My favorite food is croissants"],
 )
 
 print(output_image_file)

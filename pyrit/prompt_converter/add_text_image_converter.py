@@ -31,17 +31,13 @@ class AddTextImageConverter(PromptConverter):
 
     def __init__(
         self,
-        font: str = None,
+        font: str = str(pathlib.Path(base_paths.FONTS_DIR) / "SourceSansPro-Black.ttf"),
         color: tuple[int, int, int] = (255, 255, 255),
         font_size: float = 0.05,
         x_pos: int = 0,
         y_pos: int = 0,
     ):
-        if font:
-            self.font = font
-        else:
-            font_path = pathlib.Path(base_paths.FONTS_DIR) / "SourceSansPro-Black.ttf"
-            self.font = str(font_path)
+        self.font = font
         self.font_size = font_size
         self.color = color
         self.x = x_pos
@@ -54,7 +50,7 @@ class AddTextImageConverter(PromptConverter):
         Args:
             prompt (str): The prompt to be added to the image.
             input_type (PromptDataType): type of data
-            kwargs: dictionary with input "text_to_add"
+            kwargs (dict): holds input "text_to_add" as a list with each line of text as a list entry
         Returns:
             ConverterResult: The filename of the converted image as a ConverterResult Object
         """
@@ -63,23 +59,25 @@ class AddTextImageConverter(PromptConverter):
 
         data = data_serializer_factory(value=prompt, data_type="image_path")
         original_img_bytes = data.read_data()
+
         # Open the image
         original_img = Image.open(BytesIO(original_img_bytes))
 
-        text_ascii_rep = []
+        text_ascii_int_list = []
         # Splits prompt into list[int] representation needed for augly
         text_to_add = kwargs["text_to_add"]
-        for word in text_to_add.split("\n"):
-            word_list = []
-            for letter in word:
-                word_list.append(ord(letter) - 32)
+        for line in text_to_add:  # Each line of text to add is stored as a list
+            """
+            Converts each character to an integer representation
+            this is the ascii encoding of the character subtracting 32, 
+            the numerical variance between uppercase (A -> 65) and lowercase characters (a -> 97)
+            """
+            text_to_int_line = list(ord(c) - 32 for c in line)
+            text_ascii_int_list.append(text_to_int_line)
 
-            text_ascii_rep.append(word_list)
-
-        output_file = data.get_data_filename()
         try:
             overlay_text = OverlayText(
-                text=text_ascii_rep,
+                text=text_ascii_int_list,
                 font_file=self.font,
                 color=self.color,
                 font_size=self.font_size,
@@ -87,23 +85,13 @@ class AddTextImageConverter(PromptConverter):
                 y_pos=self.y,
             )
 
-        except OSError:
-            logger.error(f"could not load font {self.font}. Switching to default")
-            overlay_text = OverlayText(
-                text=text_ascii_rep,
-                font_file=pathlib.Path(base_paths.FONTS_DIR) / "SourceSansPro-Black.ttf",
-                font_size=self.font_size,
-                color=self.color,
-                x_pos=self.x,
-                y_pos=self.y,
-            )
-
         except Exception as e:
-            logger.error(f"Error with augly: {e}")
+            logger.error(f"Encountered an error while adding text '{text_to_add}' to the input image: {e}")
             raise
+
         new_img = overlay_text.apply_transform(image=original_img)
-        new_img.save(fp=output_file)
-        return ConverterResult(output_text=output_file, output_type="image_path")
+        data.save_image(new_img)
+        return ConverterResult(output_text=data.value, output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"

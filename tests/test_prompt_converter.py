@@ -217,7 +217,7 @@ def test_add_text_image_converter() -> None:
     mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
     mock_image.save("test.png")
 
-    converted_image = converter.convert(prompt="test.png", input_type="image_path", text_to_add="test")
+    converted_image = converter.convert(prompt="test.png", input_type="image_path", text_to_add=["test"])
     assert converted_image
     assert converted_image.output_text
     assert os.path.exists(converted_image.output_text)
