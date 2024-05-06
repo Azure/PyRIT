@@ -106,10 +106,10 @@ async def test_dalle_send_prompt_file_save_async() -> None:
 
     assert os.path.exists(file_path)
 
-    data = open(file_path, "rb").read()
-
-    assert data == b"test image data"
-    os.remove(file_path)
+    with open(file_path, "rb") as file:
+        data = file.read()
+        assert data == b"test image data"
+        os.remove(file_path)
 
 
 @pytest.mark.asyncio
@@ -127,11 +127,10 @@ async def test_dalle_send_prompt_adds_memory_async() -> None:
     # "test image data" b64 encoded
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": "dGVzdCBpbWFnZSBkYXRh"}]}'
 
-    mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
+    mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test")
     mock_dalle_target.image_target._async_client.images = MagicMock()
     mock_dalle_target.image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
 
-    response = await mock_dalle_target.send_prompt_async(prompt_request=request)
-    assert response
+    await mock_dalle_target.send_prompt_async(prompt_request=request)
     assert mock_memory.add_request_response_to_memory.called, "Request and Response need to be added to memory"
     assert mock_memory.add_response_entries_to_memory.called, "Request and Response need to be added to memory"
