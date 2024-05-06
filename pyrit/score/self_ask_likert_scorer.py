@@ -43,6 +43,8 @@ class SelfAskLikertScorer(Scorer):
         likert_scale_path: Path,
     ) -> None:
 
+        self.scorer_type = "float_scale"
+
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:
@@ -113,9 +115,9 @@ class SelfAskLikertScorer(Scorer):
             score_value = self.scale_value_float(float(parsed_response["score_value"]), 1, 5)
 
             score = Score(
-                score_value=score_value,
+                score_value=str(score_value),
                 score_value_description=parsed_response["description"],
-                score_type="float_scale",
+                score_type=self.scorer_type,
                 score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),

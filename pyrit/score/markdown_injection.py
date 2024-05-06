@@ -13,6 +13,7 @@ class MarkdownInjectionScorer(Scorer):
     def __init__(self):
         super().__init__()
         self._category = "security"
+        self.score_type = "true_false"
 
 
     def score(self, request_response: PromptRequestPiece) -> list[Score]:
@@ -36,7 +37,7 @@ class MarkdownInjectionScorer(Scorer):
 
         score = Score(
             score_value=str(True if matches else False),
-            score_type=self._score_type,
+            score_type=self.score_type,
             score_category=self._category,
             score_rationale=None,
             scorer_class_identifier=self.get_identifier(),

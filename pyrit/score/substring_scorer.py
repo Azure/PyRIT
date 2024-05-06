@@ -14,7 +14,7 @@ class SubStringScorer(Scorer):
         super().__init__()
         self._substring = substring
         self._category = category
-        self._score_type = "true_false"
+        self.scorer_type = "true_false"
 
     async def score(self, request_response: PromptRequestPiece) -> list[Score]:
 
@@ -30,7 +30,7 @@ class SubStringScorer(Scorer):
                 score_value=str(expected_output_substring_present),
                 score_value_description=None,
                 metadata=None,
-                score_type=self._score_type,
+                score_type=self.scorer_type,
                 score_category=self._category,
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),

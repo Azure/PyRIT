@@ -6,11 +6,12 @@ from abc import abstractmethod
 import uuid
 
 from pyrit.models import PromptRequestPiece
-from pyrit.score import Score
-
+from pyrit.score import Score, ScoreType
 
 
 class Scorer(abc.ABC):
+
+    scorer_type: ScoreType
 
     @abstractmethod
     async def score(self, request_response: PromptRequestPiece) -> list[Score]:
