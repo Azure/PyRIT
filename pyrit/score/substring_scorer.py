@@ -30,7 +30,7 @@ class SubStringScorer(Scorer):
                 score_value=str(expected_output_substring_present),
                 score_value_description=None,
                 metadata=None,
-                scorer_type=self._score_type,
+                score_type=self._score_type,
                 score_category=self._category,
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),

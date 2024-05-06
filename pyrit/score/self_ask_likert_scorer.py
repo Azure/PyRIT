@@ -22,9 +22,9 @@ class LikertScalePaths(enum.Enum):
     FAIRNESS_BIAS_SCALE = Path(LIKERT_SCALES_PATH, "fairness_bias.yaml").resolve()
     HARM_SCALE = Path(LIKERT_SCALES_PATH, "harm.yaml").resolve()
     HATE_SPEECH_SCALE = Path(LIKERT_SCALES_PATH, "hate_speech.yaml").resolve()
+    MISINFORMATION_SCALE = Path(LIKERT_SCALES_PATH, "misinformation.yaml").resolve()
     PERSUASION_SCALE = Path(LIKERT_SCALES_PATH, "persuasion.yaml").resolve()
-    PHISH_EMAILS_SCALE = Path(LIKERT_SCALES_PATH, "phish_emails.yaml").resolve()
-    POLITICAL_MISINFO_SCALE = Path(LIKERT_SCALES_PATH, "political_misinfo.yaml").resolve()
+    PHISHING_SCALE = Path(LIKERT_SCALES_PATH, "phishing.yaml").resolve()
     SEXUAL_SCALE = Path(LIKERT_SCALES_PATH, "sexual.yaml").resolve()
     VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
 
@@ -115,7 +115,7 @@ class SelfAskLikertScorer(Scorer):
             score = Score(
                 score_value=score_value,
                 score_value_description=parsed_response["description"],
-                scorer_type="float_scale",
+                score_type="float_scale",
                 score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),

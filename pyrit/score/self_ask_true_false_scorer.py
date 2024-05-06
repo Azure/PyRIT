@@ -34,11 +34,11 @@ class SelfAskTrueFalseScorer(Scorer):
     def __init__(
         self,
         chat_target: PromptChatTarget,
-        true_false_question: Path,
+        true_false_question_path: Path,
     ) -> None:
         self._score_type = "true_false"
 
-        true_false_question_contents = yaml.safe_load(true_false_question.read_text(encoding="utf-8"))
+        true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         self._category = true_false_question_contents["category"]
         true_category = true_false_question_contents["true_description"]
@@ -91,13 +91,12 @@ class SelfAskTrueFalseScorer(Scorer):
         try:
             parsed_response = json.loads(response_json)
 
-            score_value = parsed_response["category_name"] != self._false_category
 
             score = Score(
-                score_value=str(score_value),
-                score_value_description=parsed_response["category_description"],
-                scorer_type=self._score_type,
-                score_category=parsed_response["category_name"],
+                score_value=str(parsed_response["value"]),
+                score_value_description=parsed_response["description"],
+                score_type=self._score_type,
+                score_category=self._category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
                 metadata=None,

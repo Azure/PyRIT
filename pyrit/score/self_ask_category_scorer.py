@@ -108,7 +108,7 @@ class SelfAskCategoryScorer(Scorer):
             score = Score(
                 score_value=str(score_value),
                 score_value_description=parsed_response["category_description"],
-                scorer_type="true_false",
+                score_type="true_false",
                 score_category=parsed_response["category_name"],
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),

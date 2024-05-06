@@ -47,7 +47,7 @@ template: >
       }
     },
     "required": [
-      "score_value",
+      "value",
       "description",
       "rationale"
     ]

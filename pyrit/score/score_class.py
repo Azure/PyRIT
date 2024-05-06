@@ -44,7 +44,7 @@ class Score:
     def __init__(self,
                  score_value: str,
                  score_value_description: str,
-                 scorer_type: ScoreType,
+                 score_type: ScoreType,
                  score_category: str,
                  score_rationale: str,
                  metadata: str,
@@ -53,11 +53,11 @@ class Score:
                  ):
         self.id = uuid.uuid4()
 
-        self._validate(scorer_type, score_value)
+        self._validate(score_type, score_value)
 
         self.score_value = score_value
         self.score_value_description = score_value_description
-        self.score_type = scorer_type
+        self.score_type = score_type
         self.score_category = score_category
         self.score_rationale = score_rationale
         self.metadata = metadata
@@ -73,7 +73,9 @@ class Score:
         raise ValueError(f"Unknown scorer type: {self.score_type}")
 
     def __str__(self):
-        return f"{self.scorer_class_identifier}: {self.score_value}: {self.score_value_description}: {self.score_rationale}"
+        if self.scorer_class_identifier:
+            return f"{self.scorer_class_identifier['__type__']}: {self.score_value}"
+        return f": {self.score_value}"
 
     def _validate(self, scorer_type, score_value):
         if scorer_type == "true_false" and str(score_value).lower() not in ["true", "false"]:

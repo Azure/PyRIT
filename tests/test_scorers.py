@@ -73,7 +73,7 @@ def test_true_false_scorer_set_system_prompt():
 
     scorer = SelfAskTrueFalseScorer(
         chat_target=chat_target,
-        true_false_question=TrueFalseQuestionPaths.GROUNDED.value,
+        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
     )
 
     chat_target.set_system_prompt.assert_called_once()
