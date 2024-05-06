@@ -69,7 +69,7 @@ class AddTextImageConverter(PromptConverter):
         for line in text_to_add:  # Each line of text to add is stored as a list
             """
             Converts each character to an integer representation
-            this is the ascii encoding of the character subtracting 32, 
+            this is the ascii encoding of the character subtracting 32,
             the numerical variance between uppercase (A -> 65) and lowercase characters (a -> 97)
             """
             text_to_int_line = list(ord(c) - 32 for c in line)

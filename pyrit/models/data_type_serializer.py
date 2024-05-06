@@ -70,7 +70,7 @@ class DataTypeSerializer(abc.ABC):
             image_bytes = base64.b64decode(data)
             file.write(image_bytes)
 
-    def save_image(self, image: Image):
+    def save_image(self, image: Image.Image):
         self.value = str(self.get_data_filename())
         image.save(self.value)
 
