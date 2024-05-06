@@ -46,3 +46,5 @@ request = PromptRequestPiece(
 with AzureOpenAICompletionTarget(api_key=api_key, endpoint=api_base, deployment_name=deployment_name) as target:
     response = await target.send_prompt_async(prompt_request=request)  # type: ignore
     pprint(response.request_pieces[0].converted_value, width=280, compact=True)
+
+# %%

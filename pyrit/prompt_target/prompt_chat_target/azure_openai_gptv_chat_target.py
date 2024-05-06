@@ -9,6 +9,7 @@ import json
 from openai import AsyncAzureOpenAI, AzureOpenAI
 from openai.types.chat import ChatCompletion
 
+from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent
@@ -38,6 +39,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         endpoint: str = None,
         api_key: str = None,
         headers: str = None,
+        use_aad_auth: bool = False,
         memory: MemoryInterface = None,
         api_version: str = "2023-08-01-preview",
         max_tokens: int = 1024,
@@ -56,6 +58,10 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
             api_key (str, optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
+            use_aad_auth (bool, optional): When set to True, user authentication is used
+                instead of API Key. DefaultAzureCredential is taken for
+                https://cognitiveservices.azure.com/.default. Please run `az login` locally
+                to leverage user AuthN.
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
@@ -86,9 +92,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
-        api_key = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-        )
+
         final_headers: dict = {}
         try:
             request_headers = default_values.get_required_value(
@@ -102,12 +106,33 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         except ValueError:
             logger.info("No headers have been passed, setting empty default headers")
 
-        self._client = AzureOpenAI(
-            api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
-        )
-        self._async_client = AsyncAzureOpenAI(
-            api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
-        )
+        if use_aad_auth:
+            logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
+            token_provider = get_token_provider_from_default_azure_credential()
+
+            self._client = AzureOpenAI(
+                azure_ad_token_provider=token_provider,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+                default_headers=final_headers,
+            )
+            self._async_client = AsyncAzureOpenAI(
+                azure_ad_token_provider=token_provider,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+                default_headers=final_headers,
+            )
+        else:
+            api_key = default_values.get_required_value(
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+            )
+
+            self._client = AzureOpenAI(
+                api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
+            )
+            self._async_client = AsyncAzureOpenAI(
+                api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
+            )
 
     def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
@@ -196,7 +221,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Returns:
             PromptRequestResponse: The updated conversation entry with the response from the prompt target.
         """
-        self.validate_request(prompt_request=prompt_request)
+        self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         prompt_req_res_entries = self._memory.get_conversation(conversation_id=request.conversation_id)
@@ -287,7 +312,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         )
         return self._parse_chat_completion(response)
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
 
         Args:
