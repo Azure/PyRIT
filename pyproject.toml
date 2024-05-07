@@ -62,7 +62,6 @@ dependencies = [
     "termcolor>=2.4.0",
     "tenacity>=8.2.3",
     "tokenizers>=0.19.1",
-    "torch==2.1.2",
     "transformers>=4.40.0",
     "types-requests>=2.31.0.20240406",
 ]
