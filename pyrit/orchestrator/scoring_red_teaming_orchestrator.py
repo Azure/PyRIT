@@ -1,8 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
+import concurrent.futures
+
+
 from typing import Optional, Union
 from pyrit.score import Scorer, Score
+
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
@@ -61,7 +66,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
 
-    async def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role) -> bool:
+    def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role) -> bool:
         """
         Returns True if the conversation is complete, False otherwise.
         This function uses the scorer to classify the last response.
@@ -73,7 +78,11 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
             # If the last message is a system or red teaming chat bot message,
             # then the conversation is not yet complete.
             return False
-        score: Score = (await self._scorer.score(text=messages[-1].content))[0]
+
+        # TODO this function needs to be updated to bes async
+        pool = concurrent.futures.ThreadPoolExecutor()
+        score: Score = pool.submit(asyncio.run, self._scorer.score_text_async(text=messages[-1].content)).result()[0]
+
         if score.score_type != "true_false":
             raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
         return score.get_value()

@@ -88,7 +88,7 @@ class SelfAskLikertScorer(Scorer):
         return likert_scale_description
 
 
-    async def score(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
         Scores the given text using the chat target.
         """

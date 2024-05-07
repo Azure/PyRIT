@@ -16,7 +16,7 @@ class SubStringScorer(Scorer):
         self._category = category
         self.scorer_type = "true_false"
 
-    async def score(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
 
         await asyncio.sleep(0)
 

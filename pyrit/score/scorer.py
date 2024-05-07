@@ -14,7 +14,7 @@ class Scorer(abc.ABC):
     scorer_type: ScoreType
 
     @abstractmethod
-    async def score(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -26,7 +26,7 @@ class Scorer(abc.ABC):
         """Validates the request_response piece to score"""
         raise NotImplementedError("score_text method not implemented")
 
-    async def score_text(self, text: str) -> list[Score]:
+    async def score_text_async(self, text: str) -> list[Score]:
         """
         Scores the given text using the chat target.
         """
@@ -35,7 +35,7 @@ class Scorer(abc.ABC):
                     role="user",
                     original_value=text,
                 )
-        return await self.score(request_piece)
+        return await self.score_async(request_piece)
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         # Scales a value from 0 to 1 from the min and max values

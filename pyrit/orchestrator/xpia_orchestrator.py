@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
+import concurrent.futures
 import logging
 from typing import Callable, Optional, Union
 from uuid import uuid4
@@ -100,7 +102,11 @@ class XPIAOrchestrator(Orchestrator):
         if not self._scorer:
             logger.info("No scorer provided, skipping scoring")
             return None
-        score = self._scorer.score(processing_response)
+
+        # TODO make async
+        pool = concurrent.futures.ThreadPoolExecutor()
+        score = pool.submit(asyncio.run, self._scorer.score_text_async(processing_response)).result()
+
         logger.info(f"Score of the processing response: {score}")
         return score
 

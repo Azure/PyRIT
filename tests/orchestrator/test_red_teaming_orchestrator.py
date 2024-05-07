@@ -5,7 +5,7 @@ import pathlib
 import pytest
 
 from typing import Dict, Generator, List, Union
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.prompt_target.prompt_target import PromptTarget
@@ -13,7 +13,7 @@ from pyrit.orchestrator import ScoringRedTeamingOrchestrator, EndTokenRedTeaming
 from pyrit.orchestrator.end_token_red_teaming_orchestrator import RED_TEAM_CONVERSATION_END_TOKEN
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.models import AttackStrategy, ChatMessage
-from pyrit.score import Score
+from pyrit.score import Score, Scorer
 from pyrit.common.path import DATASETS_PATH
 
 from tests.mocks import get_memory_interface
@@ -109,7 +109,9 @@ def test_send_prompt_twice(
         "prompt_target": prompt_target,
     }
     if OrchestratorType == ScoringRedTeamingOrchestrator:
-        kwargs["scorer"] = Mock()
+        scorer = MagicMock(Scorer)
+        scorer.scorer_type = "true_false"
+        kwargs["scorer"] = scorer
     red_teaming_orchestrator = OrchestratorType(**kwargs)
 
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
@@ -156,7 +158,9 @@ def test_send_fixed_prompt_then_generated_prompt(
         "prompt_target": prompt_target,
     }
     if OrchestratorType == ScoringRedTeamingOrchestrator:
-        kwargs["scorer"] = Mock()
+        scorer = MagicMock(Scorer)
+        scorer.scorer_type = "true_false"
+        kwargs["scorer"] = scorer
     red_teaming_orchestrator = OrchestratorType(**kwargs)
 
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
@@ -206,7 +210,9 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
         "prompt_target": prompt_target,
     }
     if OrchestratorType == ScoringRedTeamingOrchestrator:
-        kwargs["scorer"] = Mock()
+        mock_scorer = MagicMock()
+        mock_scorer.scorer_type = "true_false"
+        kwargs["scorer"] = mock_scorer
     red_teaming_orchestrator = OrchestratorType(**kwargs)
 
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
@@ -293,12 +299,14 @@ def test_attack_strategy_without_token_raises_with_end_token_orchestrator():
 
 def test_attack_strategy_without_token_does_not_raise_with_scoring_orchestrator():
     tokenless_strategy = "This is a strategy without end token."
+    scorer = MagicMock(Scorer)
+    scorer.scorer_type = "true_false"
     ScoringRedTeamingOrchestrator(
         attack_strategy=tokenless_strategy,
         red_teaming_chat=Mock(),
         prompt_target=Mock(),
         memory=Mock(),
-        scorer=Mock(),
+        scorer=scorer,
     )
 
 
@@ -306,14 +314,21 @@ def test_attack_strategy_without_token_does_not_raise_with_scoring_orchestrator(
 @pytest.mark.parametrize("message_count", [0, 1, 2, 3, 4, 5, 9, 10, 11, 99, 100, 101])
 @pytest.mark.parametrize("red_teaming_chat_role", ["user", "assistant"])
 def test_is_conversation_complete_scoring(score, message_count, red_teaming_chat_role):
-    scorer = Mock()
-    scorer.score_text = Mock(return_value=Score(score_type="bool", score_value=score))
+    mock_score = MagicMock(Score)
+    mock_score.score_value = score
+    mock_score.score_type = "true_false"
+    mock_score.get_value.return_value = score
+
+    mock_scorer = MagicMock(Scorer)
+    mock_scorer.scorer_type = "true_false"
+    mock_scorer.score_text_async = AsyncMock(return_value=[mock_score])
+
     orchestrator = ScoringRedTeamingOrchestrator(
         attack_strategy="some strategy",
         red_teaming_chat=Mock(),
         prompt_target=Mock(),
         memory=Mock(),
-        scorer=scorer,
+        scorer=mock_scorer,
     )
     # simulate back and forth between user and assistant
     messages = [
@@ -326,18 +341,15 @@ def test_is_conversation_complete_scoring(score, message_count, red_teaming_chat
         len(messages) > 0 and red_teaming_chat_role != messages[-1].role and score
     )
 
+def test_is_conversation_complete_scoring_non_bool():
+    mock_score = MagicMock(Score)
+    mock_score.score_type = "float_scale"
+    mock_score.score_value = 0.5
 
-@pytest.mark.parametrize(
-    "score",
-    [
-        Score(score_type="float", score_value=1.7),
-        Score(score_type="str", score_value="abc"),
-        Score(score_type="int", score_value=89),
-    ],
-)
-def test_is_conversation_complete_scoring_non_bool(score):
-    scorer = Mock()
-    scorer.score_text = Mock(return_value=score)
+    scorer = MagicMock(Scorer)
+    scorer.scorer_type = "true_false"
+    scorer.score_text_async = AsyncMock(return_value=[mock_score])
+
     orchestrator = ScoringRedTeamingOrchestrator(
         attack_strategy="some strategy",
         red_teaming_chat=Mock(),
