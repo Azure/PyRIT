@@ -5,11 +5,13 @@ import pathlib
 
 from appdirs import user_data_dir
 
+
 def get_default_results_path() -> pathlib.Path:
     if in_git_repo():
         return pathlib.Path(PYRIT_PATH, "..", "results").resolve()
     else:
         return pathlib.Path(user_data_dir("pyrit"), "results").resolve()
+
 
 def in_git_repo() -> bool:
     return pathlib.Path(HOME_PATH, ".git").exists()
@@ -32,5 +34,3 @@ RESULTS_PATH.mkdir(parents=True, exist_ok=True)
 # Path to where the logs are located
 LOG_PATH = pathlib.Path(RESULTS_PATH, "logs.txt").resolve()
 LOG_PATH.touch(exist_ok=True)
-
-
