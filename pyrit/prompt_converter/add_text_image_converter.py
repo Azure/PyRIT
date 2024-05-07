@@ -4,14 +4,12 @@
 import logging
 import pathlib
 
-from io import BytesIO
 from augly.image.transforms import OverlayText
 from augly.utils import base_paths
 
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +35,11 @@ class AddTextImageConverter(PromptConverter):
         x_pos: int = 0,
         y_pos: int = 0,
     ):
-        self.font = font
-        self.font_size = font_size
-        self.color = color
-        self.x = x_pos
-        self.y = y_pos
+        self._font = font
+        self._font_size = font_size
+        self._color = color
+        self._x = x_pos
+        self._y = y_pos
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "image_path", **kwargs) -> ConverterResult:
         """
@@ -58,39 +56,44 @@ class AddTextImageConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         data = data_serializer_factory(value=prompt, data_type="image_path")
-        original_img_bytes = data.read_data()
 
         # Open the image
-        original_img = Image.open(BytesIO(original_img_bytes))
-
+        original_img = data.read_data_image()
         text_ascii_int_list = []
-        # Splits prompt into list[int] representation needed for augly
-        text_to_add = kwargs["text_to_add"]
-        for line in text_to_add:  # Each line of text to add is stored as a list
-            """
-            Converts each character to an integer representation
-            this is the ascii encoding of the character subtracting 32,
-            the numerical variance between uppercase (A -> 65) and lowercase characters (a -> 97)
-            """
-            text_to_int_line = list(ord(c) - 32 for c in line)
-            text_ascii_int_list.append(text_to_int_line)
+
+        if "text_to_add" in kwargs:
+            # Splits prompt into list[int] representation needed for augly
+            text_to_add = kwargs["text_to_add"]
+
+            for line in text_to_add:  # Each line of text to add is stored as a list
+                """
+                Converts each character to an integer representation
+                this is the ascii encoding of the character subtracting 32,
+                the numerical variance between uppercase (A -> 65) and lowercase characters (a -> 97)
+                """
+                print(line)
+                text_to_int_line = list(ord(c) - 32 for c in line)
+                text_ascii_int_list.append(text_to_int_line)
+
+        else:
+            raise ValueError("text_to_add is required")
 
         try:
             overlay_text = OverlayText(
                 text=text_ascii_int_list,
-                font_file=self.font,
-                color=self.color,
-                font_size=self.font_size,
-                x_pos=self.x,
-                y_pos=self.y,
+                font_file=self._font,
+                color=self._color,
+                font_size=self._font_size,
+                x_pos=self._x,
+                y_pos=self._y,
             )
+            new_img = overlay_text.apply_transform(image=original_img)
+            data.save_image(new_img)
 
         except Exception as e:
             logger.error(f"Encountered an error while adding text '{text_to_add}' to the input image: {e}")
             raise
 
-        new_img = overlay_text.apply_transform(image=original_img)
-        data.save_image(new_img)
         return ConverterResult(output_text=data.value, output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

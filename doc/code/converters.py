@@ -102,10 +102,10 @@ from pyrit.prompt_converter import AddTextImageConverter
 from pyrit.common.path import HOME_PATH
 import pathlib
 
-image_converter = AddTextImageConverter(font_size=0.03, color=(0,0,0))
+image_converter = AddTextImageConverter(font_size=0.03, color=(0, 0, 0))
 output_image_file = image_converter.convert(
     prompt=str(pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"),
-    text_to_add= ["We can add text into this image now!"],
+    text_to_add=["We can add text into this image now!"],
 )
 
 print(output_image_file)
