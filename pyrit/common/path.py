@@ -10,7 +10,7 @@ def get_default_results_path() -> pathlib.Path:
     if in_git_repo():
         return pathlib.Path(PYRIT_PATH, "..", "results").resolve()
     else:
-        return pathlib.Path(user_data_dir("pyrit"), "results").resolve()
+        return pathlib.Path(user_data_dir("results", "pyrit")).resolve()
 
 
 def in_git_repo() -> bool:
