@@ -189,7 +189,7 @@ text_to_be_scored = "This is amazing!"
 classifier = SelfAskCategoryScorer(
     content_classifier=ContentClassifierPaths.SENTIMENT_CLASSIFIER.value, chat_target=red_teaming_llm
 )
-await classifier.score_text_async(text=text_to_be_scored)
+await classifier.score_text_async(text=text_to_be_scored)  # type: ignore
 
 # %% [markdown]
 # In case the content to be classified is of a different type, users can override the base class

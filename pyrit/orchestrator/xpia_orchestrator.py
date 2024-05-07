@@ -105,7 +105,7 @@ class XPIAOrchestrator(Orchestrator):
 
         # TODO make async
         pool = concurrent.futures.ThreadPoolExecutor()
-        score = pool.submit(asyncio.run, self._scorer.score_text_async(processing_response)).result()
+        score = pool.submit(asyncio.run, self._scorer.score_text_async(processing_response)).result()[0]
 
         logger.info(f"Score of the processing response: {score}")
         return score

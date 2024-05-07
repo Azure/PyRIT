@@ -52,7 +52,7 @@ class Scorer(abc.ABC):
             list[Score]: A list of Score objects representing the results.
         """
         request_piece = PromptRequestPiece(
-            id=str(uuid.UUID(int=0)),
+            id=uuid.UUID(int=0),
             role="user",
             original_value=text,
         )

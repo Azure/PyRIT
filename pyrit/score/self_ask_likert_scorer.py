@@ -93,52 +93,52 @@ class SelfAskLikertScorer(Scorer):
         return likert_scale_description
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
-            """
-            Scores the given request_response using self ask the chat target.
+        """
+        Scores the given request_response using self ask the chat target.
 
-            Args:
-                request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+        Args:
+            request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
 
-            Returns:
-                list[Score]: The request_response scored.
-                             The category is configured from the likert_scale.
-                             The score_value is a value from [0,1] that is scaled from the likert scale.
-            """
-            self.validate(request_response)
+        Returns:
+            list[Score]: The request_response scored.
+                         The category is configured from the likert_scale.
+                         The score_value is a value from [0,1] that is scaled from the likert scale.
+        """
+        self.validate(request_response)
 
-            request = PromptRequestResponse(
-                [
-                    PromptRequestPiece(
-                        role="user",
-                        original_value=request_response.converted_value,
-                        conversation_id=self._conversation_id,
-                        prompt_target_identifier=self._chat_target.get_identifier(),
-                    )
-                ]
-            )
-
-            response = await self._chat_target.send_prompt_async(prompt_request=request)
-            response_json = response.request_pieces[0].converted_value
-
-            try:
-                parsed_response = json.loads(response_json)
-
-                score_value = self.scale_value_float(float(parsed_response["score_value"]), 1, 5)
-
-                score = Score(
-                    score_value=str(score_value),
-                    score_value_description=parsed_response["description"],
-                    score_type=self.scorer_type,
-                    score_category=self._score_category,
-                    score_rationale=parsed_response["rationale"],
-                    scorer_class_identifier=self.get_identifier(),
-                    metadata=None,
-                    prompt_request_response_id=request_response.id,
+        request = PromptRequestResponse(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_value=request_response.converted_value,
+                    conversation_id=self._conversation_id,
+                    prompt_target_identifier=self._chat_target.get_identifier(),
                 )
-                return [score]
+            ]
+        )
 
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON response from chat target: {response_json}") from e
+        response = await self._chat_target.send_prompt_async(prompt_request=request)
+        response_json = response.request_pieces[0].converted_value
+
+        try:
+            parsed_response = json.loads(response_json)
+
+            score_value = self.scale_value_float(float(parsed_response["score_value"]), 1, 5)
+
+            score = Score(
+                score_value=str(score_value),
+                score_value_description=parsed_response["description"],
+                score_type=self.scorer_type,
+                score_category=self._score_category,
+                score_rationale=parsed_response["rationale"],
+                scorer_class_identifier=self.get_identifier(),
+                metadata=None,
+                prompt_request_response_id=request_response.id,
+            )
+            return [score]
+
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON response from chat target: {response_json}") from e
 
     def validate(self, request_response: PromptRequestPiece):
         pass

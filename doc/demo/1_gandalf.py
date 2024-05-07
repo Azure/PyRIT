@@ -98,8 +98,7 @@ attack_strategy = AttackStrategy(
     conversation_objective=conversation_objective,
 )
 gandalf_password_scorer = SelfAskTrueFalseScorer(
-    chat_target=aoai_chat,
-    true_false_question_path=TrueFalseQuestionPaths.GANDALF.value
+    chat_target=aoai_chat, true_false_question_path=TrueFalseQuestionPaths.GANDALF.value
 )
 
 
