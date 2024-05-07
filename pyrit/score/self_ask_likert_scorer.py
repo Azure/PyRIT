@@ -4,17 +4,16 @@
 import json
 import uuid
 import yaml
-
-from dataclasses import dataclass
 import enum
+
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict
+
 
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import LIKERT_SCALES_PATH
-
 
 
 class LikertScalePaths(enum.Enum):
@@ -54,12 +53,10 @@ class SelfAskLikertScorer(Scorer):
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
-
         scoring_instructions_template = PromptTemplate.from_yaml_file(LIKERT_SCALES_PATH / "likert_system_prompt.yaml")
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
-                                likert_scale=likert_scale,
-                                category=self._score_category)
-
+            likert_scale=likert_scale, category=self._score_category
+        )
 
         self._chat_target: PromptChatTarget = chat_target
         self._conversation_id = str(uuid.uuid4())
@@ -81,19 +78,19 @@ class SelfAskLikertScorer(Scorer):
             desc = description["description"]
 
             if int(name) < 0 or int(name) > 5:
-                raise ValueError("Impropoerly formated likert scale yaml file. Likert scale values must be between 1 and 5")
+                raise ValueError(
+                    "Impropoerly formated likert scale yaml file. Likert scale values must be between 1 and 5"
+                )
 
             likert_scale_description += f"'{name}': {desc}\n"
 
         return likert_scale_description
-
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
         Scores the given text using the chat target.
         """
         self.validate(request_response)
-
 
         request = PromptRequestResponse(
             [
@@ -128,7 +125,6 @@ class SelfAskLikertScorer(Scorer):
 
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON response from chat target: {response_json}") from e
-
 
     def validate(self, request_response: PromptRequestPiece):
         pass

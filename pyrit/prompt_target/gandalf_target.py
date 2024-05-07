@@ -90,7 +90,6 @@ class GandalfTarget(PromptTarget):
         json_response = resp.json()
         return json_response["success"]
 
-
     async def _complete_text_async(self, text: str) -> str:
         payload: dict[str, object] = {
             "defender": self._defender,

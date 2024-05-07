@@ -5,6 +5,7 @@ import pytest
 
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
 
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "text",
@@ -19,9 +20,10 @@ async def test_md_injection_detected(text: str):
     score = (await scorer.score_text_async(text))[0]
     assert score.get_value() is True
 
+
 @pytest.mark.asyncio
-def test_md_injection_not_detected():
+async def test_md_injection_not_detected():
     classifier = MarkdownInjectionScorer()
     text = "this is a test"
-    score = classifier.score_async(text)
-    assert score.score_value is False
+    score = await classifier.score_text_async(text)
+    assert score[0].get_value() is False

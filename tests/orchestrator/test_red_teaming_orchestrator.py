@@ -341,6 +341,7 @@ def test_is_conversation_complete_scoring(score, message_count, red_teaming_chat
         len(messages) > 0 and red_teaming_chat_role != messages[-1].role and score
     )
 
+
 def test_is_conversation_complete_scoring_non_bool():
     mock_score = MagicMock(Score)
     mock_score.score_type = "float_scale"

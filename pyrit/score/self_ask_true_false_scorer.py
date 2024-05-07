@@ -6,10 +6,8 @@ import pathlib
 import uuid
 import yaml
 
-from dataclasses import dataclass
 import enum
 from pathlib import Path
-from typing import Dict, Union
 
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
@@ -18,18 +16,17 @@ from pyrit.common.path import DATASETS_PATH
 
 TRUE_FALSE_QUESIONTS_PATH = pathlib.Path(DATASETS_PATH, "score", "true_false_question").resolve()
 
+
 class TrueFalseQuestionPaths(enum.Enum):
     CURRENT_EVENTS = Path(TRUE_FALSE_QUESIONTS_PATH, "current_events.yaml").resolve()
     GROUNDED = Path(TRUE_FALSE_QUESIONTS_PATH, "grounded.yaml").resolve()
     PROMPT_INJECTION = Path(TRUE_FALSE_QUESIONTS_PATH, "prompt_injection.yaml").resolve()
     QUESTION_ANSWERING = Path(TRUE_FALSE_QUESIONTS_PATH, "question_answering.yaml").resolve()
-
+    GANDALF = Path(TRUE_FALSE_QUESIONTS_PATH, "gandalf.yaml").resolve()
 
 
 class SelfAskTrueFalseScorer(Scorer):
-    """A class that represents a self-ask score for scoring.
-
-    """
+    """A class that represents a self-ask score for scoring."""
 
     def __init__(
         self,
@@ -46,16 +43,13 @@ class SelfAskTrueFalseScorer(Scorer):
 
         metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
 
-
         scoring_instructions_template = PromptTemplate.from_yaml_file(
             TRUE_FALSE_QUESIONTS_PATH / "true_false_system_prompt.yaml"
         )
 
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
-                                true_description=true_category,
-                                false_description=false_category,
-                                metadata=metadata
-                            )
+            true_description=true_category, false_description=false_category, metadata=metadata
+        )
 
         self._chat_target: PromptChatTarget = chat_target
         self._conversation_id = str(uuid.uuid4())
@@ -90,7 +84,6 @@ class SelfAskTrueFalseScorer(Scorer):
 
         try:
             parsed_response = json.loads(response_json)
-
 
             score = Score(
                 score_value=str(parsed_response["value"]),

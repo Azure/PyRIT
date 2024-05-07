@@ -1,17 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from dataclasses import dataclass
-import json
 from typing import Dict, Literal
 import uuid
 
 
 ScoreType = Literal["true_false", "float_scale"]
 
+
 class Score:
 
-    id: int
+    id: uuid.UUID | str
 
     # The value the scorer ended up with; e.g. True (if bool) or 0 (if float_scale)
     score_value: str
@@ -38,19 +37,19 @@ class Score:
     # This is the prompt_request_response_id that the score is scoring
     # Note a scorer can generate an additional request. This is NOT that, but
     # the request associated with what we're scoring.
-    prompt_request_response_id: str
+    prompt_request_response_id: uuid.UUID | str
 
-
-    def __init__(self,
-                 score_value: str,
-                 score_value_description: str,
-                 score_type: ScoreType,
-                 score_category: str,
-                 score_rationale: str,
-                 metadata: str,
-                 scorer_class_identifier: Dict[str, str],
-                 prompt_request_response_id: str,
-                 ):
+    def __init__(
+        self,
+        score_value: str,
+        score_value_description: str,
+        score_type: ScoreType,
+        score_category: str,
+        score_rationale: str,
+        metadata: str,
+        scorer_class_identifier: Dict[str, str],
+        prompt_request_response_id: str | uuid.UUID,
+    ):
         self.id = uuid.uuid4()
 
         self._validate(score_type, score_value)
@@ -87,4 +86,3 @@ class Score:
                     raise ValueError(f"Float scale scorers must have a score value between 0 and 1. Got {score_value}")
             except ValueError:
                 raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}")
-

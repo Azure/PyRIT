@@ -16,7 +16,6 @@ class MarkdownInjectionScorer(Scorer):
         self._category = "security"
         self.scorer_type = "true_false"
 
-
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """Check for markdown injection in the text. It returns True if markdown injection is detected, else False.
         Args:

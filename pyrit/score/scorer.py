@@ -31,10 +31,10 @@ class Scorer(abc.ABC):
         Scores the given text using the chat target.
         """
         request_piece = PromptRequestPiece(
-                    id=str(uuid.UUID(int=0)),
-                    role="user",
-                    original_value=text,
-                )
+            id=str(uuid.UUID(int=0)),
+            role="user",
+            original_value=text,
+        )
         return await self.score_async(request_piece)
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
@@ -47,7 +47,3 @@ class Scorer(abc.ABC):
         identifier["__type__"] = self.__class__.__name__
         identifier["__module__"] = self.__class__.__module__
         return identifier
-
-
-
-

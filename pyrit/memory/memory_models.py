@@ -158,8 +158,7 @@ class Score(Base):  # type: ignore
 
     id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
 
-
-    scorer = Column(String) # identifier for the class
+    scorer = Column(String)  # identifier for the class
 
     id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
     embedding = Column(ARRAY(Float))

@@ -10,7 +10,8 @@ class SubStringScorer(Scorer):
     """
     Scorer that checks if a given substring is present in the text.
     """
-    def __init__(self, *, substring: str, category:str = None) -> None:
+
+    def __init__(self, *, substring: str, category: str = None) -> None:
         super().__init__()
         self._substring = substring
         self._category = category
@@ -22,8 +23,7 @@ class SubStringScorer(Scorer):
 
         self.validate(request_response)
 
-        expected_output_substring_present = self._substring \
-            in request_response.converted_value
+        expected_output_substring_present = self._substring in request_response.converted_value
 
         return [
             Score(

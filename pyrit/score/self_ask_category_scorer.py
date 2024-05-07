@@ -5,16 +5,14 @@ import json
 import uuid
 import yaml
 
-from dataclasses import dataclass
 import enum
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict
 
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
-
 
 
 class ContentClassifierPaths(enum.Enum):
@@ -52,7 +50,9 @@ class SelfAskCategoryScorer(Scorer):
             CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
 
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(categories=categories_as_string)
+        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
+            categories=categories_as_string
+        )
 
         self._chat_target: PromptChatTarget = chat_target
         self._conversation_id = str(uuid.uuid4())
