@@ -220,6 +220,7 @@ def test_add_text_image_converter() -> None:
     converted_image = converter.convert(prompt="test.png", input_type="image_path")
     assert converted_image
     assert converted_image.output_text
+    assert converted_image.output_type == "image_path"
     assert os.path.exists(converted_image.output_text)
     os.remove(converted_image.output_text)
     os.remove("test.png")

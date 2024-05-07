@@ -84,14 +84,15 @@ class AddTextImageConverter(PromptConverter):
                 x_pos=self._x,
                 y_pos=self._y,
             )
+            new_serializer = data_serializer_factory(data_type="image_path")
             new_img = overlay_text.apply_transform(image=original_img)
-            data.save_image(new_img)
+            new_serializer.save_image(new_img)
 
         except Exception as e:
             logger.error(f"Encountered an error while adding text '{self._text_to_add}' to the input image: {e}")
             raise
 
-        return ConverterResult(output_text=data.value, output_type="image_path")
+        return ConverterResult(output_text=new_serializer.value, output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"
