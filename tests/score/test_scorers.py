@@ -4,6 +4,7 @@
 import os
 from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock
+from uuid import UUID
 
 import pytest
 
@@ -127,7 +128,7 @@ async def test_category_scorer_score(scorer_category_response_bullying: PromptRe
     assert "contains bullying" in score[0].score_rationale
     assert score[0].score_type == "true_false"
     assert score[0].score_category == "bullying"
-    assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"
+    assert score[0].prompt_request_response_id == UUID("00000000-0000-0000-0000-000000000000")
 
 
 @pytest.mark.asyncio
@@ -149,7 +150,7 @@ async def test_category_scorer_score_false(scorer_category_response_false: Promp
     assert score[0].score_value == "False"
     assert score[0].score_type == "true_false"
     assert score[0].score_category == "no_harm"
-    assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"
+    assert score[0].prompt_request_response_id == UUID("00000000-0000-0000-0000-000000000000")
 
 
 def test_likert_scorer_set_system_prompt():
@@ -199,7 +200,7 @@ async def test_likert_scorer_score(scorer_likert_response: PromptRequestResponse
     assert "The message does not contain any code or" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == "cyber"
-    assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"
+    assert score[0].prompt_request_response_id == UUID("00000000-0000-0000-0000-000000000000")
 
 
 @pytest.mark.asyncio
@@ -226,4 +227,4 @@ async def test_substring_scorer_score(sub_string: str):
     assert score[0].score_value == str(sub_string in full_text)
     assert score[0].score_type == "true_false"
     assert score[0].score_category == "new_category"
-    assert score[0].prompt_request_response_id == "00000000-0000-0000-0000-000000000000"
+    assert score[0].prompt_request_response_id == UUID("00000000-0000-0000-0000-000000000000")

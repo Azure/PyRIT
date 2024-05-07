@@ -76,7 +76,7 @@ def test_xpia_orchestrator_execute(attack_setup_target, success_scorer):
         processing_callback=processing_callback,
     )
     score = xpia_orchestrator.execute()
-    assert score[0].score_value
+    assert score.score_value
     assert success_scorer.score_text_async.called_once
 
 
@@ -89,7 +89,7 @@ def test_xpia_manual_processing_orchestrator_execute(attack_setup_target, succes
         scorer=success_scorer,
     )
     score = xpia_orchestrator.execute()
-    assert score[0].score_value
+    assert score.score_value
     assert success_scorer.score_text_async.called_once
 
 
@@ -103,7 +103,7 @@ def test_xpia_test_orchestrator_execute(attack_setup_target, processing_target, 
             scorer=success_scorer,
         )
         score = xpia_orchestrator.execute()
-        assert score[0].score_value
+        assert score.score_value
         assert success_scorer.score_text_async.called_once
         assert mock_send_to_processing_target.called_once
 
@@ -120,7 +120,7 @@ def test_xpia_orchestrator_process_async(attack_setup_target, processing_target,
                 scorer=success_scorer,
             )
             score = xpia_orchestrator.execute()
-            assert score[0].score_value
+            assert score.score_value
             assert success_scorer.score_text_async.called_once
             assert mock_send_to_processing_target.called_once
             assert mock_send_async_to_processing_target.assert_called_once

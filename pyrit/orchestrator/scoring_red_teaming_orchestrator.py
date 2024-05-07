@@ -79,7 +79,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
             # then the conversation is not yet complete.
             return False
 
-        # TODO this function needs to be updated to bes async
+        # TODO this function needs to be updated to be async
         pool = concurrent.futures.ThreadPoolExecutor()
         score: Score = pool.submit(asyncio.run, self._scorer.score_text_async(text=messages[-1].content)).result()[0]
 

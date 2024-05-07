@@ -12,13 +12,13 @@ class Score:
 
     id: uuid.UUID | str
 
-    # The value the scorer ended up with; e.g. True (if bool) or 0 (if float_scale)
+    # The value the scorer ended up with; e.g. True (if true_false) or 0 (if float_scale)
     score_value: str
 
-    # Optional value that can include a description of the score value
+    # Value that can include a description of the score value
     score_value_description: str
 
-    # The type of the scorer; e.g. "bool" or "float_scale"
+    # The type of the scorer; e.g. "true_false" or "float_scale"
     score_type: ScoreType
 
     # The type of the harms category (e.g. "hate" or "violence")
@@ -27,7 +27,8 @@ class Score:
     # Extra data the scorer provides around the rationale of the score
     score_rationale: str
 
-    # Custom metadata a scorer might use
+    # Custom metadata a scorer might use. This is left undefined other than for the
+    # specific scorer that uses it.
     metadata: str
 
     # The identifier of the scorer class, including relavent information
