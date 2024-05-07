@@ -207,17 +207,17 @@ def test_send_prompt_to_audio_file_raises_value_error() -> None:
 
 
 def test_add_text_image_converter_invalid_input_image() -> None:
-    converter = AddTextImageConverter()
+    converter = AddTextImageConverter(text_to_add=["test"])
     with pytest.raises(FileNotFoundError):
-        assert converter.convert(prompt="mock_image.png", input_type="image_path", text_to_add="test")  # type: ignore
+        assert converter.convert(prompt="mock_image.png", input_type="image_path")  # type: ignore
 
 
 def test_add_text_image_converter() -> None:
-    converter = AddTextImageConverter()
+    converter = AddTextImageConverter(text_to_add=["test"])
     mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
     mock_image.save("test.png")
 
-    converted_image = converter.convert(prompt="test.png", input_type="image_path", text_to_add=["test"])
+    converted_image = converter.convert(prompt="test.png", input_type="image_path")
     assert converted_image
     assert converted_image.output_text
     assert os.path.exists(converted_image.output_text)

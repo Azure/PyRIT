@@ -29,19 +29,23 @@ class AddTextImageConverter(PromptConverter):
 
     def __init__(
         self,
+        text_to_add: list = None,
         font: str = str(pathlib.Path(base_paths.FONTS_DIR) / "SourceSansPro-Black.ttf"),
         color: tuple[int, int, int] = (255, 255, 255),
         font_size: float = 0.05,
         x_pos: int = 0,
         y_pos: int = 0,
     ):
+        if not text_to_add:
+            raise ValueError("Please provide valid text_to_add value")
+        self._text_to_add = text_to_add
         self._font = font
         self._font_size = font_size
         self._color = color
         self._x = x_pos
         self._y = y_pos
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "image_path", **kwargs) -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
         Converter that adds text to an image
 
@@ -61,22 +65,15 @@ class AddTextImageConverter(PromptConverter):
         original_img = data.read_data_image()
         text_ascii_int_list = []
 
-        if "text_to_add" in kwargs:
-            # Splits prompt into list[int] representation needed for augly
-            text_to_add = kwargs["text_to_add"]
-
-            for line in text_to_add:  # Each line of text to add is stored as a list
-                """
-                Converts each character to an integer representation
-                this is the ascii encoding of the character subtracting 32,
-                the numerical variance between uppercase (A -> 65) and lowercase characters (a -> 97)
-                """
-                print(line)
-                text_to_int_line = list(ord(c) - 32 for c in line)
-                text_ascii_int_list.append(text_to_int_line)
-
-        else:
-            raise ValueError("text_to_add is required")
+        # Splits prompt into list[int] representation needed for augly
+        for line in self._text_to_add:  # Each line of text to add is stored as a list
+            """
+            Converts each character to an integer representation
+            this is the ascii encoding of the character subtracting 32,
+            the numerical variance between uppercase (A -> 65) and lowercase characters (a -> 97)
+            """
+            text_to_int_line = list(ord(c) - 32 for c in line)
+            text_ascii_int_list.append(text_to_int_line)
 
         try:
             overlay_text = OverlayText(
@@ -91,7 +88,7 @@ class AddTextImageConverter(PromptConverter):
             data.save_image(new_img)
 
         except Exception as e:
-            logger.error(f"Encountered an error while adding text '{text_to_add}' to the input image: {e}")
+            logger.error(f"Encountered an error while adding text '{self._text_to_add}' to the input image: {e}")
             raise
 
         return ConverterResult(output_text=data.value, output_type="image_path")
