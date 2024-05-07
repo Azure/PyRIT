@@ -1,18 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.1
-#   kernelspec:
-#     display_name: Python 3 (ipykernel)
-#     language: python
-#     name: python3
-# ---
-
 # %% [markdown]
 # ## Converters
 #
@@ -114,13 +99,13 @@ AzureSpeechTextToAudioConverter().convert(prompt=prompt)
 
 # %%
 from pyrit.prompt_converter import AddTextImageConverter
-from pyrit.common.path import RESULTS_PATH
+from pyrit.common.path import HOME_PATH
 import pathlib
 
-image_converter = AddTextImageConverter(font_size=0.02)
+image_converter = AddTextImageConverter(font_size=0.03, color=(0,0,0))
 output_image_file = image_converter.convert(
-    prompt=str(pathlib.Path(RESULTS_PATH / "images" / "roakey.png")),
-    text_to_add=["Hello, I am a friendly and helpful raccoon named Roakey!", "My favorite food is croissants"],
+    prompt=str(pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"),
+    text_to_add= ["We can add text into this image now!"],
 )
 
 print(output_image_file)
