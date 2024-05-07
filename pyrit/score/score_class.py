@@ -64,12 +64,26 @@ class Score:
         self.prompt_request_response_id = prompt_request_response_id
 
     def get_value(self):
-        if self.score_type == "true_false":
-            return self.score_value.lower() == "true"
-        elif self.score_type == "float_scale":
-            return float(self.score_value)
+            """
+            Returns the value of the score based on its type.
 
-        raise ValueError(f"Unknown scorer type: {self.score_type}")
+            If the score type is "true_false", it returns True if the score value is "true" (case-insensitive),
+            otherwise it returns False.
+
+            If the score type is "float_scale", it returns the score value as a float.
+
+            Raises:
+                ValueError: If the score type is unknown.
+
+            Returns:
+                The value of the score based on its type.
+            """
+            if self.score_type == "true_false":
+                return self.score_value.lower() == "true"
+            elif self.score_type == "float_scale":
+                return float(self.score_value)
+
+            raise ValueError(f"Unknown scorer type: {self.score_type}")
 
     def __str__(self):
         if self.scorer_class_identifier:

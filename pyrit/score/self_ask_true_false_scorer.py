@@ -26,7 +26,7 @@ class TrueFalseQuestionPaths(enum.Enum):
 
 
 class SelfAskTrueFalseScorer(Scorer):
-    """A class that represents a self-ask score for scoring."""
+    """A class that represents a self-ask true/false for scoring."""
 
     def __init__(
         self,
@@ -62,8 +62,16 @@ class SelfAskTrueFalseScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
-        Scores the given text using the chat target.
+        Scores the given request_response using self ask the chat target.
 
+        Args:
+            request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+
+        Returns:
+            list[Score]: The request_response scored.
+                         The category is configured from the TrueFalseQuestionPath.
+                         The score_value is True or False based on which fits best.
+                         metadata can be configured to provide additional information.
         """
 
         self.validate(request_response)

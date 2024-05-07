@@ -21,16 +21,12 @@ class ContentClassifierPaths(enum.Enum):
 
 
 class SelfAskCategoryScorer(Scorer):
-    """A class that represents a self-ask score for text classification and scoring.
+    """
+    A class that represents a self-ask score for text classification and scoring.
+    Given a classifer file, it scores according to these categories and returns the category
+    the PromptRequestpiece fits best.
 
-    This class is responsible for scoring text using a self-ask approach. It takes a chat target,
-    a prompt template path, and classifier categories path as input.
-
-    Args:
-        prompt_template_path (ScoringInstructions): The path to the prompt template file.
-        content_classifier (Union[ContentClassifiers, LikertScales]): The path to the classifier file.
-        chat_target (PromptChatTarget): The chat target to interact with.
-
+    There is also a false category that is used if the promptrequestpiece does not fit any of the categories.
     """
 
     def __init__(
@@ -38,7 +34,13 @@ class SelfAskCategoryScorer(Scorer):
         chat_target: PromptChatTarget,
         content_classifier: Path,
     ) -> None:
+        """
+        Initializes a new instance of the SelfAskCategoryScorer class.
 
+        Args:
+            chat_target (PromptChatTarget): The chat target to interact with.
+            content_classifier (Path): The path to the classifier file.
+        """
         self.scorer_type = "true_false"
 
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
@@ -64,6 +66,15 @@ class SelfAskCategoryScorer(Scorer):
         )
 
     def _content_classifier_to_string(self, categories: list[Dict[str, str]]) -> str:
+        """
+        Converts the content classifier categories to a string representation to be put in a system prompt.
+
+        Args:
+            categories (list[Dict[str, str]]): The categories to convert.
+
+        Returns:
+            str: The string representation of the categories.
+        """
         if not categories:
             raise ValueError("Impropoerly formated content classifier yaml file. No categories provided")
 
@@ -82,10 +93,17 @@ class SelfAskCategoryScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
-        Scores the given text using the chat target.
+        Scores the given request_response using the chat target.
 
+        Args:
+            request_response (PromptRequestPiece): The prompt request piece to score.
+
+        Returns:
+            list[Score]: The request_response scored.
+                         The category that fits best in the response is used for score_category.
+                         The score_value is True in all cases unless no category fits. In which case,
+                         the score value is false and the _false_category is used.
         """
-
         self.validate(request_response)
 
         request = PromptRequestResponse(
