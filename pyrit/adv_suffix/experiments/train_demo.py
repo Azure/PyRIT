@@ -1,5 +1,5 @@
 import os
-from test_main import GreedyCoordinateGradientAdversarialSuffixGenerator
+from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 
 def run_trainer(model_name, setup = "behaviors", n_train_data=1, n_steps=100, test_steps=25, data_offset=0, batch_size=128):
     """

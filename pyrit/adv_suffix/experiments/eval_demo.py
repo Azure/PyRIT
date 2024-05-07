@@ -1,5 +1,5 @@
 import os
-from test_evaluation import AdversarialSuffixEvaluator
+from PyRIT.pyrit.adv_suffix.experiments.eval import AdversarialSuffixEvaluator
 
 def run_eval(model_name, logdir = "results/", setup="behaviors", batch_size=128):
     """
