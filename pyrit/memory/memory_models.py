@@ -142,6 +142,32 @@ class EmbeddingData(Base):  # type: ignore
         return f"{self.id}"
 
 
+class Score(Base):  # type: ignore
+    """
+    Represents the Score
+
+    Attributes:
+        uuid (UUID): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.
+        embedding (ARRAY(Float)): An array of floats representing the embedding vector.
+        embedding_type_name (String): The name or type of the embedding, indicating the model or method used.
+    """
+
+    __tablename__ = "Score"
+    # Allows table redefinition if already defined.
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+
+    scorer = Column(String)  # identifier for the class
+
+    id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
+    embedding = Column(ARRAY(Float))
+    embedding_type_name = Column(String)
+
+    def __str__(self):
+        return f"{self.id}"
+
+
 class ConversationMessageWithSimilarity(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: str

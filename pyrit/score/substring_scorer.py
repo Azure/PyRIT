@@ -1,21 +1,43 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.score import Score, SupportTextClassification
+import asyncio
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.score import Score, Scorer
 
 
-class SubStringScorer(SupportTextClassification):
-    def __init__(self, *, expected_output_substring: str) -> None:
+class SubStringScorer(Scorer):
+    """
+    Scorer that checks if a given substring is present in the text.
+    """
+
+    def __init__(self, *, substring: str, category: str = None) -> None:
         super().__init__()
-        self._expected_output_substring = expected_output_substring
+        self._substring = substring
+        self._category = category
+        self.scorer_type = "true_false"
 
-    def score_text(self, text: str) -> Score:
-        expected_output_substring_present = self._expected_output_substring in text
-        optional_not_text = "not " if not expected_output_substring_present else ""
-        return Score(
-            score_type="bool",
-            score_value=expected_output_substring_present,
-            score_description=f"The expected output substring is {optional_not_text}present in the text.",
-            score_explanation=f"The expected output substring {self._expected_output_substring} is "
-            f"{optional_not_text}present in the text:\n{text}",
-        )
+    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+
+        await asyncio.sleep(0)
+
+        self.validate(request_response)
+
+        expected_output_substring_present = self._substring in request_response.converted_value
+
+        return [
+            Score(
+                score_value=str(expected_output_substring_present),
+                score_value_description=None,
+                metadata=None,
+                score_type=self.scorer_type,
+                score_category=self._category,
+                score_rationale=None,
+                scorer_class_identifier=self.get_identifier(),
+                prompt_request_response_id=request_response.id,
+            )
+        ]
+
+    def validate(self, request_response: PromptRequestPiece):
+        if request_response.converted_value_data_type != "text":
+            raise ValueError("Expected text data type")

@@ -82,7 +82,7 @@ abs_target = AzureBlobStorageTarget(
     sas_token=os.environ.get("AZURE_STORAGE_ACCOUNT_SAS_TOKEN"),
 )
 
-scorer = SubStringScorer(expected_output_substring="space pirate")
+scorer = SubStringScorer(substring="space pirate")
 
 xpia_orchestrator = XPIATestOrchestrator(
     attack_content=jailbreak_prompt,
