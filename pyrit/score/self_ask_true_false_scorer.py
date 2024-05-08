@@ -100,7 +100,7 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_category=self._category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
-                metadata=None,
+                score_metadata=None,
                 prompt_request_response_id=request_response.id,
             )
             return [score]

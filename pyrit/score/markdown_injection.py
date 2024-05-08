@@ -45,7 +45,7 @@ class MarkdownInjectionScorer(Scorer):
             Score(
                 score_value=str(True if matches else False),
                 score_value_description=None,
-                metadata=None,
+                score_metadata=None,
                 score_type=self.scorer_type,
                 score_category=self._category,
                 score_rationale=None,

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.score.score_class import Score, ScoreType
+from pyrit.models import Score, ScoreType # noqa: F401
 
 from pyrit.score.scorer import Scorer
 
@@ -13,8 +13,6 @@ from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.substring_scorer import SubStringScorer
 
 __all__ = [
-    "Score",
-    "ScoreType",
     "Scorer",
     "SelfAskCategoryScorer",
     "ContentClassifierPaths",

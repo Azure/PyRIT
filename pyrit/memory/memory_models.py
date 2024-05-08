@@ -142,30 +142,27 @@ class EmbeddingData(Base):  # type: ignore
         return f"{self.id}"
 
 
-class Score(Base):  # type: ignore
+class ScoreEntry(Base):  # type: ignore
     """
-    Represents the Score
+    Represents the Score Memory Entry
 
-    Attributes:
-        uuid (UUID): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.
-        embedding (ARRAY(Float)): An array of floats representing the embedding vector.
-        embedding_type_name (String): The name or type of the embedding, indicating the model or method used.
     """
 
-    __tablename__ = "Score"
-    # Allows table redefinition if already defined.
+    __tablename__ = "ScoreEntries"
     __table_args__ = {"extend_existing": True}
 
     id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    score_value = Column(String, nullable=False)
+    score_value_description= Column(String, nullable=True)
+    score_type = Column(String, nullable=False)
+    score_category = Column(String, nullable=False)
+    score_rationale = Column(String, nullable=True)
+    score_metadata = Column(String, nullable=True)
+    scorer_class_identifier = Column(JSON)
+    prompt_request_response_id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
 
-    scorer = Column(String)  # identifier for the class
+    #def __init__(self, *, entry: Score):
 
-    id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = Column(ARRAY(Float))
-    embedding_type_name = Column(String)
-
-    def __str__(self):
-        return f"{self.id}"
 
 
 class ConversationMessageWithSimilarity(BaseModel):
