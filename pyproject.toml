@@ -86,6 +86,9 @@ dev = [
     "types-PyYAML>=6.0.12.9",
     "azure-cognitiveservices-speech>=1.36.0",
 ]
+torch = [
+    "torch>=2.3.0"
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
