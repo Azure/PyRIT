@@ -10,7 +10,7 @@ from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, Score
 
 
 Base = declarative_base()
@@ -161,7 +161,30 @@ class ScoreEntry(Base):  # type: ignore
     scorer_class_identifier = Column(JSON)
     prompt_request_response_id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
 
-    #def __init__(self, *, entry: Score):
+    def __init__(self, *, entry: Score):
+        self.id = entry.id
+        self.score_value = entry.score_value
+        self.score_value_description = entry.score_value_description
+        self.score_type = entry.score_type
+        self.score_category = entry.score_category
+        self.score_rationale = entry.score_rationale
+        self.score_metadata = entry.score_metadata
+        self.scorer_class_identifier = entry.scorer_class_identifier
+        self.prompt_request_response_id = entry.prompt_request_response_id \
+                                            if entry.prompt_request_response_id else None
+
+    def get_score(self) -> Score:
+        return Score(
+            id=self.id,
+            score_value=self.score_value,
+            score_value_description=self.score_value_description,
+            score_type=self.score_type,
+            score_category=self.score_category,
+            score_rationale=self.score_rationale,
+            score_metadata=self.score_metadata,
+            scorer_class_identifier=self.scorer_class_identifier,
+            prompt_request_response_id=self.prompt_request_response_id
+        )
 
 
 
