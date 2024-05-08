@@ -18,11 +18,11 @@ TRUE_FALSE_QUESITIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "true_false_qu
 
 
 class TrueFalseQuestionPaths(enum.Enum):
-    CURRENT_EVENTS = Path(TRUE_FALSE_QUESIONTS_PATH, "current_events.yaml").resolve()
-    GROUNDED = Path(TRUE_FALSE_QUESIONTS_PATH, "grounded.yaml").resolve()
-    PROMPT_INJECTION = Path(TRUE_FALSE_QUESIONTS_PATH, "prompt_injection.yaml").resolve()
-    QUESTION_ANSWERING = Path(TRUE_FALSE_QUESIONTS_PATH, "question_answering.yaml").resolve()
-    GANDALF = Path(TRUE_FALSE_QUESIONTS_PATH, "gandalf.yaml").resolve()
+    CURRENT_EVENTS = Path(TRUE_FALSE_QUESITIONS_PATH, "current_events.yaml").resolve()
+    GROUNDED = Path(TRUE_FALSE_QUESITIONS_PATH, "grounded.yaml").resolve()
+    PROMPT_INJECTION = Path(TRUE_FALSE_QUESITIONS_PATH, "prompt_injection.yaml").resolve()
+    QUESTION_ANSWERING = Path(TRUE_FALSE_QUESITIONS_PATH, "question_answering.yaml").resolve()
+    GANDALF = Path(TRUE_FALSE_QUESITIONS_PATH, "gandalf.yaml").resolve()
 
 
 class SelfAskTrueFalseScorer(Scorer):
@@ -44,7 +44,7 @@ class SelfAskTrueFalseScorer(Scorer):
         metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
 
         scoring_instructions_template = PromptTemplate.from_yaml_file(
-            TRUE_FALSE_QUESIONTS_PATH / "true_false_system_prompt.yaml"
+            TRUE_FALSE_QUESITIONS_PATH / "true_false_system_prompt.yaml"
         )
 
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
