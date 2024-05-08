@@ -76,7 +76,7 @@ class SelfAskCategoryScorer(Scorer):
             str: The string representation of the categories.
         """
         if not categories:
-            raise ValueError("Impropoerly formated content classifier yaml file. No categories provided")
+            raise ValueError("Improperly formatted content classifier yaml file. No categories provided")
 
         category_descriptions = ""
 
