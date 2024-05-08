@@ -1,35 +1,92 @@
-from absl import flags
-from ml_collections import config_flags
 import time
 import numpy as np
-import sys
-import os
 import torch.multiprocessing as mp
+import pyrit.adv_suffix.llm_attacks.gcg as attack_lib
 
-base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(base_path)
-from llm_attacks.base.attack_manager import get_goals_and_targets, get_workers
-import llm_attacks.gcg as attack_lib
+from ml_collections import config_dict
+from pyrit.adv_suffix.llm_attacks.base.attack_manager import get_goals_and_targets, get_workers
 
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:
-    def __init__(self, config_path):
+    def __init__(self):
         if mp.get_start_method(allow_none=True) != 'spawn':
             mp.set_start_method("spawn")
-        self._CONFIG = config_flags.DEFINE_config_file("config")
-        flags.FLAGS(['main.py', '--config', config_path])
 
+    def generate_suffix(
+        self,
+        # TODO: remove these default parameters, so that users will have to put them manually.
+        token: str = "",
+        tokenizer_paths: list = ["/data/vicuna/vicuna-7b-v1.3"],
+        tokenizer_kwargs: list = [{"use_fast": False}],
+        model_paths: list = ["/data/vicuna/vicuna-7b-v1.3"],
+        conversation_templates: list = ["vicuna"],
+        result_prefix: str = "results/individual_vicuna7b",
+        # end
+        train_data: str = "",
+        control_init: str = "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !",
+        n_train_data: int = 50,
+        n_steps: int = 500,
+        test_steps: int = 50,
+        data_offset: int = 0,
+        batch_size: int = 512,
+        transfer: bool = False,
+        target_weight: float = 1.0,
+        control_weight: float = 0.0,
+        progressive_goals: bool = False,
+        progressive_models: bool = False,
+        anneal: bool = False,
+        incr_control: bool = False,
+        stop_on_success: bool = False,
+        verbose: bool = True,
+        allow_non_ascii: bool = False,
+        num_train_models: int = 1,
+        devices: list = ["cuda:0"],
+        model_kwargs: list = [{"low_cpu_mem_usage": True, "use_cache": False}],
+        n_test_data: int = 0,
+        test_data: str = "",
+        attack: str = "gcg",
+        lr: float = 0.01,
+        topk: int = 256,
+        temp: int = 1,
+        filter_cand: bool = True,
+        gbda_deterministic: bool = True
+    ):
 
-    def generate_suffix(self, train_data, result_prefix, n_train_data, n_steps, test_steps, data_offset, batch_size):
-
-        params = self._CONFIG.value
-        params.train_data = train_data
+        params = config_dict.ConfigDict()
         params.result_prefix = result_prefix
+        params.train_data = train_data
+        params.control_init = control_init
         params.n_train_data = n_train_data
         params.n_steps = n_steps
         params.test_steps = test_steps
         params.data_offset = data_offset
         params.batch_size = batch_size
+        params.transfer = transfer
+        params.target_weight = target_weight
+        params.control_weight = control_weight
+        params.progressive_goals = progressive_goals
+        params.progressive_models = progressive_models
+        params.anneal = anneal
+        params.incr_control = incr_control
+        params.stop_on_success = stop_on_success
+        params.verbose = verbose
+        params.allow_non_ascii = allow_non_ascii
+        params.num_train_models = num_train_models
+        params.tokenizer_paths = tokenizer_paths
+        params.tokenizer_kwargs = tokenizer_kwargs
+        params.model_paths = model_paths
+        params.model_kwargs = model_kwargs
+        params.conversation_templates = conversation_templates
+        params.devices = devices
+        params.n_test_data = n_test_data
+        params.test_data = test_data
+        params.attack = attack
+        params.lr = lr
+        params.topk = topk
+        params.temp = temp
+        params.filter_cand = filter_cand
+        params.gbda_deterministic = gbda_deterministic
+        params.token = token
 
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
         process_fn = lambda s: s.replace("Sure, h", "H")
