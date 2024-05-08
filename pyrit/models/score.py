@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, Literal
+from datetime import datetime
+from typing import Dict, Literal, Optional
 import uuid
 
 
@@ -40,8 +41,13 @@ class Score:
     # the request associated with what we're scoring.
     prompt_request_response_id: uuid.UUID | str
 
+    # Timestamp of when the score was created
+    timestamp: datetime
+
     def __init__(
         self,
+        *,
+        id: Optional[uuid.UUID] = None,
         score_value: str,
         score_value_description: str,
         score_type: ScoreType,
@@ -50,8 +56,9 @@ class Score:
         score_metadata: str,
         scorer_class_identifier: Dict[str, str],
         prompt_request_response_id: str | uuid.UUID,
+        date_time: Optional[datetime] = datetime.now(),
     ):
-        self.id = uuid.uuid4()
+        self.id = id if id else uuid.uuid4()
 
         self._validate(score_type, score_value)
 
@@ -63,6 +70,7 @@ class Score:
         self.score_metadata = score_metadata
         self.scorer_class_identifier = scorer_class_identifier
         self.prompt_request_response_id = prompt_request_response_id
+        self.date_time = date_time
 
     def get_value(self):
         """
