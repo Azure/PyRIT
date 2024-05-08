@@ -28,7 +28,7 @@ class Scorer(abc.ABC):
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
-        raise NotImplementedError("score_text method not implemented")
+        raise NotImplementedError("score_async method not implemented")
 
     @abstractmethod
     def validate(self, request_response: PromptRequestPiece):
