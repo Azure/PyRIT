@@ -14,7 +14,7 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTempla
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import DATASETS_PATH
 
-TRUE_FALSE_QUESIONTS_PATH = pathlib.Path(DATASETS_PATH, "score", "true_false_question").resolve()
+TRUE_FALSE_QUESITIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "true_false_question").resolve()
 
 
 class TrueFalseQuestionPaths(enum.Enum):

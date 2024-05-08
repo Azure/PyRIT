@@ -24,7 +24,7 @@ class SelfAskCategoryScorer(Scorer):
     """
     A class that represents a self-ask score for text classification and scoring.
     Given a classifer file, it scores according to these categories and returns the category
-    the PromptRequestpiece fits best.
+    the PromptRequestPiece fits best.
 
     There is also a false category that is used if the promptrequestpiece does not fit any of the categories.
     """
@@ -77,7 +77,7 @@ class SelfAskCategoryScorer(Scorer):
             str: The string representation of the categories.
         """
         if not categories:
-            raise ValueError("Impropoerly formated content classifier yaml file. No categories provided")
+            raise ValueError("Improperly formatted content classifier yaml file. No categories provided")
 
         category_descriptions = ""
 
