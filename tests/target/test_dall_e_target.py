@@ -109,7 +109,8 @@ async def test_dalle_send_prompt_file_save_async() -> None:
     with open(file_path, "rb") as file:
         data = file.read()
         assert data == b"test image data"
-        os.remove(file_path)
+
+    os.remove(file_path)
 
 
 @pytest.mark.asyncio
