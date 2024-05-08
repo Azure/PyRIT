@@ -60,7 +60,7 @@ class Scorer(abc.ABC):
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
-        Scales a value from 0 to 1 based on the given min and max values.
+        Scales a value from 0 to 1 based on the given min and max values. E.g. 3 stars out of 5 stars would be .5.
 
         Args:
             value (float): The value to be scaled.
@@ -70,6 +70,9 @@ class Scorer(abc.ABC):
         Returns:
             float: The scaled value.
         """
+        if max_value == min_value:
+            return 0.0
+
         normalized_value = (value - min_value) / (max_value - min_value)
         return normalized_value
 

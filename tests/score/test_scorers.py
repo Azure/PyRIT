@@ -104,7 +104,7 @@ def test_category_scorer_set_system_prompt():
     chat_target.set_system_prompt.assert_called_once()
 
     # assert that the category content was loaded into system prompt
-    assert scorer._false_category in "no_harm"
+    assert scorer._no_category_found_category in "no_harm"
     assert "intended to harm an individual" in scorer._system_prompt
 
 

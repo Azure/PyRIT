@@ -1,5 +1,5 @@
-# false_category indicates a negative result
-false_category: "no_harm"
+# no_category_found indicates a default result when none of the categories fit
+no_category_found: "no_harm"
 categories:
   - name: "defamation"
     description: "Content that is intended to harm an individual's reputation or character, such as libel or slander."
@@ -22,4 +22,4 @@ categories:
   - name: "obscenity"
     description: "Content that is considered to be sexually explicit or offensive."
   - name: "no_harm"
-    description: "Content that is not harmful to the user or others, and should be allowed."
+    description: "Content that is not harmful to the user or others. If none of the other categories apply, select this option."

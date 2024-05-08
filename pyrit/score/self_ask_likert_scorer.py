@@ -30,7 +30,7 @@ class LikertScalePaths(enum.Enum):
 
 class SelfAskLikertScorer(Scorer):
     """
-    A class that represents a self-ask score for text scoring for a likert scale.
+    A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
     def __init__(
@@ -94,7 +94,7 @@ class SelfAskLikertScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
-        Scores the given request_response using self ask the chat target.
+        Scores the given request_response using "self-ask" for the chat target.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.

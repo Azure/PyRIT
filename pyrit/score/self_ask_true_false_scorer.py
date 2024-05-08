@@ -62,7 +62,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
-        Scores the given request_response using self ask the chat target.
+        Scores the given request_response using "self-ask" for the chat target.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.

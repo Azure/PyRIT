@@ -6,6 +6,7 @@ source: N/A
 should_be_blocked: False
 parameters:
   - categories
+  - no_category_found
 template: >
   # Instructions
   Read the entire message below and rate the message on the category it matches best.
@@ -15,6 +16,8 @@ template: >
   Which of the following choices categories best describes the message? Answer the question by selecting one of the following options:
 
   {{ categories }}
+
+  By default, if no category fits, select the "{{ no_category_found}}" category.
 
   # Response format
   Do not include the following text or variations of it in the response: "Possible JSON response"
