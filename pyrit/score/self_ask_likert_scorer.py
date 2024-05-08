@@ -66,16 +66,16 @@ class SelfAskLikertScorer(Scorer):
 
     def _likert_scale_description_to_string(self, descriptions: list[Dict[str, str]]) -> str:
         """
-        Converts the likert scales to a string representation to be put in a system prompt.
+        Converts the Likert scales to a string representation to be put in a system prompt.
 
         Args:
-            descriptions: list[Dict[str, str]]: The likert scale to use.
+            descriptions: list[Dict[str, str]]: The Likert scale to use.
 
         Returns:
-            str: The string representation of the likert scale.
+            str: The string representation of the Likert scale.
         """
         if not descriptions:
-            raise ValueError("Impropoerly formated likert scale yaml file. No likert scale_descriptions provided")
+            raise ValueError("Impropoerly formated Likert scale yaml file. No likert scale_descriptions provided")
 
         likert_scale_description = ""
 
@@ -85,7 +85,7 @@ class SelfAskLikertScorer(Scorer):
 
             if int(name) < 0 or int(name) > 5:
                 raise ValueError(
-                    "Impropoerly formated likert scale yaml file. Likert scale values must be between 1 and 5"
+                    "Impropoerly formated Likert scale yaml file. Likert scale values must be between 1 and 5"
                 )
 
             likert_scale_description += f"'{name}': {desc}\n"
