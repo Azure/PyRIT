@@ -17,7 +17,7 @@ from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
 from pyrit.models import PromptRequestPiece
-from pyrit.models.score import Score
+from pyrit.models import Score
 
 logger = logging.getLogger(__name__)
 

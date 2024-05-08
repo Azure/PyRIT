@@ -153,7 +153,7 @@ class ScoreEntry(Base):  # type: ignore
 
     id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
     score_value = Column(String, nullable=False)
-    score_value_description= Column(String, nullable=True)
+    score_value_description = Column(String, nullable=True)
     score_type = Column(String, nullable=False)
     score_category = Column(String, nullable=False)
     score_rationale = Column(String, nullable=True)
@@ -161,7 +161,6 @@ class ScoreEntry(Base):  # type: ignore
     scorer_class_identifier = Column(JSON)
     prompt_request_response_id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     date_time = Column(DateTime, nullable=False)
-
 
     def __init__(self, *, entry: Score):
         self.id = entry.id
@@ -172,8 +171,7 @@ class ScoreEntry(Base):  # type: ignore
         self.score_rationale = entry.score_rationale
         self.score_metadata = entry.score_metadata
         self.scorer_class_identifier = entry.scorer_class_identifier
-        self.prompt_request_response_id = entry.prompt_request_response_id \
-                                            if entry.prompt_request_response_id else None
+        self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
         self.date_time = entry.date_time
 
     def get_score(self) -> Score:
@@ -187,9 +185,8 @@ class ScoreEntry(Base):  # type: ignore
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
             prompt_request_response_id=self.prompt_request_response_id,
-            date_time=self.date_time
+            date_time=self.date_time,
         )
-
 
 
 class ConversationMessageWithSimilarity(BaseModel):

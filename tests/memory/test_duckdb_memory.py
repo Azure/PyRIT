@@ -15,8 +15,7 @@ from sqlalchemy.sql.sqltypes import NullType
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
-from pyrit.models import PromptRequestPiece
-from pyrit.models.score import Score
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -478,6 +477,7 @@ def test_update_entries_by_conversation_id(setup_duckdb_database, sample_convers
         other_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="other_id").first()
         assert other_entry.original_value == original_content  # Content should remain unchanged
 
+
 def test_add_score_get_score(setup_duckdb_database, sample_conversation_entries):
     prompt_id = sample_conversation_entries[0].id
 
@@ -491,7 +491,7 @@ def test_add_score_get_score(setup_duckdb_database, sample_conversation_entries)
         score_rationale="Test score",
         score_metadata="Test metadata",
         scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=prompt_id
+        prompt_request_response_id=prompt_id,
     )
 
     setup_duckdb_database.add_scores_to_memory(scores=[score])

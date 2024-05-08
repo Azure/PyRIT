@@ -32,5 +32,7 @@ __all__ = [
     "PromptResponseError",
     "PromptDataType",
     "PromptRequestResponse",
+    "Score",
+    "ScoreType",
     "TextDataTypeSerializer",
 ]

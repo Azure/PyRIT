@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import Score, ScoreType # noqa: F401
+from pyrit.models import Score, ScoreType  # noqa: F401
 
 from pyrit.score.scorer import Scorer
 
