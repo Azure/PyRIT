@@ -17,7 +17,7 @@ template: >
 
   Here is a description of what should be classified as "True". {{ true_description }}
 
-  Anything else that is not true should be classified as "False". Here are further examples. {{ false_description }}
+  Anything else that is not true should be classified as "False". To further explain: {{ false_description }}
 
   # Response format
   Do not include the following text or variations of it in the response: "Possible JSON response"
