@@ -1,6 +1,8 @@
 import os
 import yaml
 from train import GreedyCoordinateGradientAdversarialSuffixGenerator
+from pyrit.common import default_values
+
 def _load_yaml_to_dict(config_path: str) -> dict:
     with open(config_path, 'r') as f:
         data = yaml.safe_load(f)
@@ -24,7 +26,8 @@ def run_trainer(
 
     if model_name not in ["mistral", "llama2"]:
         raise ValueError("Model name not supported. Currently supports 'mistral' and 'llama2'")
-
+    
+    default_values.load_default_env()
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         raise ValueError("Please set the HF_TOKEN environment variable")
