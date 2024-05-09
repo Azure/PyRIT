@@ -15,7 +15,7 @@ from sqlalchemy.sql.sqltypes import NullType
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -476,3 +476,38 @@ def test_update_entries_by_conversation_id(setup_duckdb_database, sample_convers
         # Verify that the entry with a different conversation_id was not updated
         other_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="other_id").first()
         assert other_entry.original_value == original_content  # Content should remain unchanged
+
+
+@pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
+def test_add_score_get_score(setup_duckdb_database, sample_conversation_entries, score_type):
+    prompt_id = sample_conversation_entries[0].id
+
+    setup_duckdb_database._insert_entries(entries=sample_conversation_entries)
+
+    score_value = str(True) if score_type == "true_false" else "0.8"
+
+    score = Score(
+        score_value=score_value,
+        score_value_description="High score",
+        score_type=score_type,
+        score_category="test",
+        score_rationale="Test score",
+        score_metadata="Test metadata",
+        scorer_class_identifier={"__type__": "TestScorer"},
+        prompt_request_response_id=prompt_id,
+    )
+
+    setup_duckdb_database.add_scores_to_memory(scores=[score])
+
+    # Fetch the score we just added
+    db_score = setup_duckdb_database.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_id])
+    assert db_score
+    assert len(db_score) == 1
+    assert db_score[0].score_value == score_value
+    assert db_score[0].score_value_description == "High score"
+    assert db_score[0].score_type == score_type
+    assert db_score[0].score_category == "test"
+    assert db_score[0].score_rationale == "Test score"
+    assert db_score[0].score_metadata == "Test metadata"
+    assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
+    assert db_score[0].prompt_request_response_id == prompt_id
