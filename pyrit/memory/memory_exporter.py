@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import csv
 import json
 import uuid
 from datetime import datetime
 from pathlib import Path
+from collections.abc import MutableMapping
 
 from sqlalchemy.inspection import inspect
 
@@ -21,7 +23,8 @@ class MemoryExporter:
         # Using strategy design pattern for export functionality.
         self.export_strategies = {
             "json": self.export_to_json,
-            # Future formats can be added here, e.g., "csv": self._export_to_csv
+            "csv": self.export_to_csv
+            # Future formats can be added here
         }
 
     def export_data(self, data: list[Base], *, file_path: Path = None, export_type: str = "json"):  # type: ignore
@@ -64,6 +67,31 @@ class MemoryExporter:
         export_data = [self.model_to_dict(instance) for instance in data]
         with open(file_path, "w") as f:
             json.dump(export_data, f, indent=4)
+    
+    def export_to_csv(self, data: list[Base], file_path: Path = None) -> None:  # type: ignore
+        """
+        Exports the provided data to a CSV file at the specified file path.
+        Each item in the data list, representing a row from the table,
+        is converted to a dictionary before being written to the file.
+
+        Args:
+            data (list[Base]): The data to be exported, as a list of SQLAlchemy model instances.
+            file_path (Path): The full path, including the file name, where the data will be exported.
+
+        Raises:
+            ValueError: If no file_path is provided.
+        """
+        if not file_path:
+            raise ValueError("Please provide a valid file path for exporting data.")
+        if not data:
+            raise ValueError("No data to export.")
+
+        export_data = [_flatten_dict(self.model_to_dict(instance)) for instance in data]
+        fieldnames = list(export_data[0].keys())
+        with open(file_path, "w", newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(export_data)
 
     def model_to_dict(self, model_instance: Base):  # type: ignore
         """
@@ -89,3 +117,15 @@ class MemoryExporter:
             else:
                 model_dict[column.name] = value
         return model_dict
+
+
+
+def _flatten_dict(d: MutableMapping, parent_key: str = '', sep: str = '.') -> MutableMapping:
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, MutableMapping):
+            items.extend(_flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
