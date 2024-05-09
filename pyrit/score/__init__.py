@@ -10,8 +10,6 @@ from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScaleP
 from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
-from pyrit.score.substring_scorer import SubStringScorer
-from pyrit.score.text import TextConversationTokenFinder
 from pyrit.score.azure_content_filter import AzureContentFilter
 from pyrit.score.crescendo_scorer import CrescendoScorer
 from pyrit.score.substring_scorer import SubStringScorer
@@ -29,7 +27,6 @@ __all__ = [
     "TrueFalseQuestionPaths",
     "MarkdownInjectionScorer",
     "SubStringScorer",
-    "TextConversationTokenFinder",
     "AzureContentFilter",
     "CrescendoScorer",
 ]

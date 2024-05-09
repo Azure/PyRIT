@@ -138,6 +138,16 @@ with AzureOpenAIChatTarget() as self_ask_target:
 #
 
 
+# %% [markdown]
+#
+# Score text using Azure Content Safety API
+#
+# In order to use this API, you need to configure a few environment variables:
+# AZURE_CONTENT_SAFETY_API_ENDPOINT: The endpoint for the Azure Content Safety API
+# AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API
+#
+
+
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.

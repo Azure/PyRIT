@@ -285,15 +285,6 @@ class ToolCall(BaseModel):
     function: str
 
 
-class ChatMessage(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    role: ChatMessageRole
-    content: str
-    name: Optional[str] = None
-    tool_calls: Optional[list[ToolCall]] = None
-    tool_call_id: Optional[str] = None
-
-
 class EmbeddingUsageInformation(BaseModel):
     model_config = ConfigDict(extra="forbid")
     prompt_tokens: int
