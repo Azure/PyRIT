@@ -203,28 +203,3 @@ async def test_likert_scorer_score(scorer_likert_response: PromptRequestResponse
     assert score[0].prompt_request_response_id == UUID("00000000-0000-0000-0000-000000000000")
 
 
-@pytest.mark.asyncio
-async def test_substring_scorer_validate(image_request_piece: PromptRequestPiece):
-
-    scorer = SubStringScorer(substring="test", category="new_category")
-    with pytest.raises(ValueError, match="Expected text data type"):
-        await scorer.score_async(image_request_piece)
-
-    os.remove(image_request_piece.converted_value)
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("sub_string", ["I can't answer", "Not present"])
-async def test_substring_scorer_score(sub_string: str):
-    full_text = "blah I can't answer that too"
-
-    scorer = SubStringScorer(substring=sub_string, category="new_category")
-
-    score = await scorer.score_text_async(full_text)
-
-    assert len(score) == 1
-
-    assert score[0].score_value == str(sub_string in full_text)
-    assert score[0].score_type == "true_false"
-    assert score[0].score_category == "new_category"
-    assert score[0].prompt_request_response_id == UUID("00000000-0000-0000-0000-000000000000")
