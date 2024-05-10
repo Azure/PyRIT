@@ -84,17 +84,16 @@ abs_target = AzureBlobStorageTarget(
 
 scorer = SubStringScorer(substring="space pirate")
 
-xpia_orchestrator = XPIATestOrchestrator(
+with XPIATestOrchestrator(
     attack_content=jailbreak_prompt,
     processing_prompt=processing_prompt_template,
     processing_target=processing_target,
     attack_setup_target=abs_target,
     scorer=scorer,
     verbose=True,
-)
-
-score = xpia_orchestrator.execute()
-print(score)
+) as xpia_orchestrator:
+    score = xpia_orchestrator.execute()
+    print(score)
 
 # clean up storage container
 from azure.storage.blob import ContainerClient
