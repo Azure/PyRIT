@@ -12,11 +12,7 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 
 from pyrit.score.substring_scorer import SubStringScorer
-from tests.mocks import get_image_request_piece, get_memory_interface
-
-@pytest.fixture
-def image_request_piece() -> PromptRequestPiece:
-    return get_image_request_piece()
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
@@ -48,7 +44,8 @@ async def test_substring_scorer_score(sub_string: str, memory: MemoryInterface):
     assert score[0].score_value == str(sub_string in full_text)
     assert score[0].score_type == "true_false"
     assert score[0].score_category == "new_category"
-    assert score[0].prompt_request_response_id == None
+    assert score[0].prompt_request_response_id is None
+
 
 @pytest.mark.asyncio
 async def test_substring_scorer_adds_to_memory():

@@ -30,11 +30,7 @@ class SelfAskTrueFalseScorer(Scorer):
     """A class that represents a self-ask true/false for scoring."""
 
     def __init__(
-        self,
-        *,
-        chat_target: PromptChatTarget,
-        true_false_question_path: Path,
-        memory: MemoryInterface = None
+        self, *, chat_target: PromptChatTarget, true_false_question_path: Path, memory: MemoryInterface = None
     ) -> None:
         self.scorer_type = "true_false"
 

@@ -17,7 +17,6 @@ class MarkdownInjectionScorer(Scorer):
         self.scorer_type = "true_false"
         self._memory = memory if memory else DuckDBMemory()
 
-
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
         Check for markdown injection in the text. It returns True if markdown injection is detected, else False.

@@ -1,11 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
-from uuid import UUID
 
 import pytest
 
@@ -16,12 +14,8 @@ from pyrit.score import LikertScalePaths
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer
 
-from tests.mocks import get_image_request_piece, get_memory_interface
+from tests.mocks import get_memory_interface
 
-
-@pytest.fixture
-def image_request_piece() -> PromptRequestPiece:
-    return get_image_request_piece()
 
 @pytest.fixture
 def scorer_likert_response() -> PromptRequestResponse:
@@ -42,9 +36,11 @@ def scorer_likert_response() -> PromptRequestResponse:
 
     return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
 
+
 @pytest.fixture
 def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
+
 
 def test_likert_scorer_set_system_prompt():
     chat_target = MagicMock()
@@ -59,6 +55,7 @@ def test_likert_scorer_set_system_prompt():
     # assert that the likert score was loaded into system prompt
     assert scorer._score_category in scorer._system_prompt
     assert "No cyber harm" in scorer._system_prompt
+
 
 @pytest.mark.asyncio
 async def test_likert_scorer_must_have_category():
@@ -78,9 +75,7 @@ async def test_likert_scorer_adds_to_memory(scorer_likert_response: PromptReques
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
 
     scorer = SelfAskLikertScorer(
-        chat_target=chat_target,
-        likert_scale_path=LikertScalePaths.CYBER_SCALE.value,
-        memory=memory
+        chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value, memory=memory
     )
 
     await scorer.score_text_async(text="string")
@@ -96,9 +91,7 @@ async def test_likert_scorer_score(memory: MemoryInterface, scorer_likert_respon
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
 
     scorer = SelfAskLikertScorer(
-        chat_target=chat_target,
-        likert_scale_path=LikertScalePaths.CYBER_SCALE.value,
-        memory=memory
+        chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value, memory=memory
     )
 
     score = await scorer.score_text_async("No cyber harm")
@@ -110,4 +103,4 @@ async def test_likert_scorer_score(memory: MemoryInterface, scorer_likert_respon
     assert "The message does not contain any code or" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == "cyber"
-    assert score[0].prompt_request_response_id == None
+    assert score[0].prompt_request_response_id is None

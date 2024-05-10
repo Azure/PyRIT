@@ -9,6 +9,7 @@ from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from tests.mocks import get_memory_interface
 
+
 @pytest.fixture
 def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
@@ -35,6 +36,7 @@ async def test_md_injection_not_detected(memory: MemoryInterface):
     text = "this is a test"
     score = await classifier.score_text_async(text)
     assert score[0].get_value() is False
+
 
 @pytest.mark.asyncio
 async def test_md_injection_adds_to_memory():

@@ -34,12 +34,7 @@ class SelfAskLikertScorer(Scorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    def __init__(
-        self,
-        chat_target: PromptChatTarget,
-        likert_scale_path: Path,
-        memory: MemoryInterface = None
-    ) -> None:
+    def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path, memory: MemoryInterface = None) -> None:
 
         self.scorer_type = "float_scale"
 

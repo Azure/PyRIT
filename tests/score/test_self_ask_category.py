@@ -1,11 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
-from uuid import UUID
 
 import pytest
 
@@ -14,12 +12,7 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 
-from tests.mocks import get_image_request_piece, get_memory_interface
-
-
-@pytest.fixture
-def image_request_piece() -> PromptRequestPiece:
-    return get_image_request_piece()
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
@@ -86,7 +79,7 @@ async def test_category_scorer_score(memory: MemoryInterface, scorer_category_re
     scorer = SelfAskCategoryScorer(
         chat_target=chat_target,
         content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory
+        memory=memory,
     )
 
     score = await scorer.score_text_async("this has a lot of bullying")
@@ -97,11 +90,13 @@ async def test_category_scorer_score(memory: MemoryInterface, scorer_category_re
     assert "contains bullying" in score[0].score_rationale
     assert score[0].score_type == "true_false"
     assert score[0].score_category == "bullying"
-    assert score[0].prompt_request_response_id == None
+    assert score[0].prompt_request_response_id is None
 
 
 @pytest.mark.asyncio
-async def test_category_scorer_score_false(memory: MemoryInterface, scorer_category_response_false: PromptRequestResponse):
+async def test_category_scorer_score_false(
+    memory: MemoryInterface, scorer_category_response_false: PromptRequestResponse
+):
 
     chat_target = MagicMock()
 
@@ -110,7 +105,7 @@ async def test_category_scorer_score_false(memory: MemoryInterface, scorer_categ
     scorer = SelfAskCategoryScorer(
         chat_target=chat_target,
         content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory
+        memory=memory,
     )
 
     score = await scorer.score_text_async("this has no bullying")
@@ -120,7 +115,8 @@ async def test_category_scorer_score_false(memory: MemoryInterface, scorer_categ
     assert score[0].score_value == "False"
     assert score[0].score_type == "true_false"
     assert score[0].score_category == "no_harm"
-    assert score[0].prompt_request_response_id == None
+    assert score[0].prompt_request_response_id is None
+
 
 @pytest.mark.asyncio
 async def test_category_scorer_adds_to_memory(scorer_category_response_false: PromptRequestResponse):
@@ -131,15 +127,9 @@ async def test_category_scorer_adds_to_memory(scorer_category_response_false: Pr
     scorer = SelfAskCategoryScorer(
         chat_target=chat_target,
         content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory
+        memory=memory,
     )
 
     await scorer.score_text_async(text="string")
 
     memory.add_scores_to_memory.assert_called_once()
-
-
-
-
-
-

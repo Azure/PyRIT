@@ -12,7 +12,8 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
-from tests.mocks import get_image_request_piece, get_memory_interface
+from tests.mocks import get_memory_interface
+
 
 @pytest.fixture
 def scorer_true_false_response() -> PromptRequestResponse:
@@ -50,7 +51,7 @@ async def test_true_false_scorer_score(memory: MemoryInterface, scorer_true_fals
     score = await scorer.score_text_async("true false")
 
     assert len(score) == 1
-    assert score[0].get_value() == True
+    assert score[0].get_value() is True
     assert score[0].score_value_description == "This is true"
     assert score[0].score_rationale == "rationale for true"
     assert score[0].scorer_class_identifier["__type__"] == "SelfAskTrueFalseScorer"
@@ -60,9 +61,7 @@ def test_true_false_scorer_set_system_prompt(memory: MemoryInterface):
     chat_target = MagicMock()
 
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
-        memory=memory
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -71,6 +70,7 @@ def test_true_false_scorer_set_system_prompt(memory: MemoryInterface):
     assert "# Value" in scorer._system_prompt
     assert "Semantic Alignment:" in scorer._system_prompt
 
+
 @pytest.mark.asyncio
 async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: PromptRequestResponse):
     memory = MagicMock(MemoryInterface)
@@ -78,9 +78,7 @@ async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: Prom
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
-        memory=memory
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
     )
 
     await scorer.score_text_async(text="string")

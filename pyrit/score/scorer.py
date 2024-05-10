@@ -3,7 +3,6 @@
 
 import abc
 from abc import abstractmethod
-import uuid
 
 from pyrit.models import PromptRequestPiece
 from pyrit.score import Score, ScoreType
