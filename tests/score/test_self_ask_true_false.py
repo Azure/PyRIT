@@ -72,9 +72,10 @@ def test_true_false_scorer_set_system_prompt(memory: MemoryInterface):
     assert "Semantic Alignment:" in scorer._system_prompt
 
 @pytest.mark.asyncio
-async def test_true_false_scorer_adds_to_memory():
+async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: PromptRequestResponse):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
     scorer = SelfAskTrueFalseScorer(
         chat_target=chat_target,

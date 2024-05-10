@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict
 
 
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
@@ -37,9 +38,12 @@ class SelfAskLikertScorer(Scorer):
         self,
         chat_target: PromptChatTarget,
         likert_scale_path: Path,
+        memory: MemoryInterface = None
     ) -> None:
 
         self.scorer_type = "float_scale"
+
+        self._memory = memory if memory else DuckDBMemory()
 
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
@@ -94,7 +98,7 @@ class SelfAskLikertScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
-        Scores the given request_response using "self-ask" for the chat target.
+        Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
@@ -135,6 +139,7 @@ class SelfAskLikertScorer(Scorer):
                 score_metadata=None,
                 prompt_request_response_id=request_response.id,
             )
+            self._memory.add_scores_to_memory(scores=[score])
             return [score]
 
         except json.JSONDecodeError as e:
