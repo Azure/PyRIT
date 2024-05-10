@@ -1,9 +1,8 @@
 import time
 import numpy as np
 import torch.multiprocessing as mp
-import pyrit.adv_suffix.llm_attacks.gcg as attack_lib
-
 from ml_collections import config_dict
+import pyrit.adv_suffix.llm_attacks.gcg as attack_lib
 from pyrit.adv_suffix.llm_attacks.base.attack_manager import get_goals_and_targets, get_workers
 
 
@@ -12,16 +11,14 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         if mp.get_start_method(allow_none=True) != 'spawn':
             mp.set_start_method("spawn")
 
+
     def generate_suffix(
         self,
-        # TODO: remove these default parameters, so that users will have to put them manually.
         token: str = "",
-        tokenizer_paths: list = ["/data/vicuna/vicuna-7b-v1.3"],
-        tokenizer_kwargs: list = [{"use_fast": False}],
-        model_paths: list = ["/data/vicuna/vicuna-7b-v1.3"],
-        conversation_templates: list = ["vicuna"],
-        result_prefix: str = "results/individual_vicuna7b",
-        # end
+        tokenizer_paths: list = [],
+        model_paths: list = [],
+        conversation_templates: list = [],
+        result_prefix: str = "",
         train_data: str = "",
         control_init: str = "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !",
         n_train_data: int = 50,
@@ -42,6 +39,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         num_train_models: int = 1,
         devices: list = ["cuda:0"],
         model_kwargs: list = [{"low_cpu_mem_usage": True, "use_cache": False}],
+        tokenizer_kwargs: list = [{"use_fast": False}],
         n_test_data: int = 0,
         test_data: str = "",
         attack: str = "gcg",

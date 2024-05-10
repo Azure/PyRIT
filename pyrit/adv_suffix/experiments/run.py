@@ -1,7 +1,7 @@
 import os
 import yaml
-from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 from pyrit.common import default_values
+from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 
 def _load_yaml_to_dict(config_path: str) -> dict:
     with open(config_path, 'r') as f:
