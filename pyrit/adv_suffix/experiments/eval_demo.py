@@ -1,7 +1,22 @@
 import os
-from PyRIT.pyrit.adv_suffix.experiments.eval import AdversarialSuffixEvaluator
+import yaml
+from pyrit.common import default_values
+from pyrit.adv_suffix.experiments.eval import AdversarialSuffixEvaluator
 
-def run_eval(model_name, logdir = "results/", setup="behaviors", batch_size=128):
+
+def _load_yaml_to_dict(config_path: str) -> dict:
+    with open(config_path, 'r') as f:
+        data = yaml.safe_load(f)
+    return data
+
+
+def run_evaluator(
+    model_name: str,
+    logdir = "results/",
+    setup="behaviors",
+    **extra_config_parameters
+):
+    
     """
     Evaluate suffixes generated - single model single prompt
 
@@ -10,16 +25,36 @@ def run_eval(model_name, logdir = "results/", setup="behaviors", batch_size=128)
         setup (str): Identifier for the setup, should be consistent with the name used in suffix genearation
         batch_size (int): Size of the batch used in training. Default is 128.
     """
-   
-    config_path = f"configs/transfer_{model_name}.py"
-    evaluator = AdversarialSuffixEvaluator(config_path)
-    evaluator.parse_logs(logdir, setup)
+
+    if model_name not in ["mistral", "llama2"]:
+        raise ValueError("Model name not supported. Currently supports 'mistral' and 'llama2'")
+    
+    default_values.load_default_env()
+    hf_token = os.environ.get("HF_TOKEN")
+    if not hf_token:
+        raise ValueError("Please set the HF_TOKEN environment variable")
+    
+    runtime_config = {
+        "train_data": f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_{setup}.csv",
+        "logfile": "results/individual_behavior_controls.json",
+        "token": hf_token,
+    }
+    if model_name == "mistral":
+        config = _load_yaml_to_dict("configs/transfer_mistral.yaml")
+    if model_name == "llama2":
+        config = _load_yaml_to_dict("configs/transfer_llama_2.yaml")
+
+    config.update(runtime_config)
+    config.update(extra_config_parameters)
+
+    evaluator = AdversarialSuffixEvaluator(logdir, setup)
+    evaluator.parse_logs()
 
     if not os.path.exists('eval'):
         os.makedirs('eval')
-    train_data_path = f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_{setup}.csv"
-    evaluator.evaluate_suffix(model_name, train_data=train_data_path, batch_size=batch_size)
+
+    evaluator.evaluate_suffix(model_name = model_name, **config)
 
 
 if __name__ == '__main__':
-    run_eval(model_name = "mistral")
+    run_evaluator(model_name = "mistral")
