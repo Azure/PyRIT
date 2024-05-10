@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
+import concurrent.futures
 import logging
 from typing import Callable, Optional, Union
 from uuid import uuid4
-from pyrit.score import SupportTextClassification
+from pyrit.score import Scorer
 
 from pyrit.memory import MemoryInterface
 from pyrit.score import Score
@@ -25,7 +27,7 @@ class XPIAOrchestrator(Orchestrator):
         attack_content: str,
         attack_setup_target: PromptTarget,
         processing_callback: Callable[[], str],
-        scorer: Optional[SupportTextClassification] = None,
+        scorer: Optional[Scorer] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,
@@ -100,7 +102,11 @@ class XPIAOrchestrator(Orchestrator):
         if not self._scorer:
             logger.info("No scorer provided, skipping scoring")
             return None
-        score = self._scorer.score_text(processing_response)
+
+        # TODO make async
+        pool = concurrent.futures.ThreadPoolExecutor()
+        score = pool.submit(asyncio.run, self._scorer.score_text_async(processing_response)).result()[0]
+
         logger.info(f"Score of the processing response: {score}")
         return score
 
@@ -113,7 +119,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         processing_prompt: str,
         processing_target: PromptTarget,
         attack_setup_target: PromptTarget,
-        scorer: SupportTextClassification,
+        scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,
@@ -179,7 +185,7 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
         *,
         attack_content: str,
         attack_setup_target: PromptTarget,
-        scorer: SupportTextClassification,
+        scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,

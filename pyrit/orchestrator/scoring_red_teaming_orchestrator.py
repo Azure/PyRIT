@@ -1,8 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
+import concurrent.futures
+
+
 from typing import Optional, Union
-from pyrit.score import SupportTextClassification
+from pyrit.score import Scorer, Score
+
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, ChatMessage
@@ -19,7 +24,7 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
         prompt_target: PromptTarget,
         red_teaming_chat: PromptChatTarget,
         initial_red_teaming_prompt: str = "Begin Conversation",
-        scorer: SupportTextClassification,
+        scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,
@@ -56,6 +61,9 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
             memory_labels=memory_labels,
             verbose=verbose,
         )
+
+        if scorer.scorer_type != "true_false":
+            raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
 
     def is_conversation_complete(self, messages: list[ChatMessage], *, red_teaming_chat_role) -> bool:
@@ -70,7 +78,11 @@ class ScoringRedTeamingOrchestrator(RedTeamingOrchestrator):
             # If the last message is a system or red teaming chat bot message,
             # then the conversation is not yet complete.
             return False
-        score = self._scorer.score_text(text=messages[-1].content)
-        if score.score_type != "bool":
-            raise ValueError(f"The scorer must return a boolean score. The score type is {score.score_type}.")
-        return bool(score.score_value)
+
+        # TODO this function needs to be updated to be async
+        pool = concurrent.futures.ThreadPoolExecutor()
+        score: Score = pool.submit(asyncio.run, self._scorer.score_text_async(text=messages[-1].content)).result()[0]
+
+        if score.score_type != "true_false":
+            raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
+        return score.get_value()

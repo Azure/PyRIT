@@ -69,6 +69,27 @@ class GandalfTarget(PromptTarget):
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
 
+    async def check_password(self, password: str) -> bool:
+        """
+        Checks if the password is correct
+
+        True means the password is correct, False means it is not
+        """
+        payload: dict[str, object] = {
+            "defender": self._defender,
+            "password": password,
+        }
+
+        resp = await net_utility.make_request_and_raise_if_error_async(
+            endpoint_uri=self._endpoint, method="POST", request_body=payload, post_type="data"
+        )
+
+        if not resp.text:
+            raise ValueError("The chat returned an empty response.")
+
+        json_response = resp.json()
+        return json_response["success"]
+
     async def _complete_text_async(self, text: str) -> str:
         payload: dict[str, object] = {
             "defender": self._defender,

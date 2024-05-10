@@ -8,7 +8,7 @@ from typing import Optional, Union
 from uuid import uuid4
 
 from pyrit.memory.memory_models import EmbeddingData
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError, PromptDataType
+from pyrit.models import PromptRequestResponse, Score, PromptRequestPiece, PromptResponseError, PromptDataType
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
@@ -88,6 +88,18 @@ class MemoryInterface(abc.ABC):
     def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
         """
         Inserts embedding data into memory storage
+        """
+
+    @abc.abstractmethod
+    def add_scores_to_memory(self, *, scores: list[Score]) -> None:
+        """
+        Inserts a list of scores into the memory storage.
+        """
+
+    @abc.abstractmethod
+    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
+        """
+        Gets a list of scores based on prompt_request_response_ids.
         """
 
     def get_conversation(self, *, conversation_id: str) -> list[PromptRequestResponse]:
