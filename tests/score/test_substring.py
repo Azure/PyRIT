@@ -2,10 +2,11 @@
 # Licensed under the MIT license.
 
 import os
+import pytest
+
 from typing import Generator
 from unittest.mock import MagicMock
 
-import pytest
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece

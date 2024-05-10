@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pytest
+
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
-
-import pytest
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
