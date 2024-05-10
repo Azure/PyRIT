@@ -2,10 +2,8 @@
 # Licensed under the MIT license.
 
 import os
-from textwrap import dedent
 from typing import Generator
-from unittest.mock import AsyncMock, MagicMock
-from uuid import UUID
+from unittest.mock import MagicMock
 
 import pytest
 

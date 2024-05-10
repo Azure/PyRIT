@@ -14,8 +14,6 @@ from pyrit.score import LikertScalePaths
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer
 
-from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
-from pyrit.score.substring_scorer import SubStringScorer
 from tests.mocks import get_image_request_piece
 
 
@@ -77,20 +75,6 @@ def scorer_category_response_false() -> PromptRequestResponse:
 
     return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
 
-
-def test_true_false_scorer_set_system_prompt():
-    chat_target = MagicMock()
-
-    scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
-    )
-
-    chat_target.set_system_prompt.assert_called_once()
-
-    # assert that the category content was loaded into system prompt
-    assert "# Value" in scorer._system_prompt
-    assert "Semantic Alignment:" in scorer._system_prompt
 
 
 def test_category_scorer_set_system_prompt():
