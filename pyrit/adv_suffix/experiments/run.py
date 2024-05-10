@@ -32,8 +32,8 @@ def run_trainer(
     if not hf_token:
         raise ValueError("Please set the HF_TOKEN environment variable")
 
-    config = {
-        "train_data_path":  f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_{setup}.csv",
+    runtime_config = {
+        "train_data": f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_{setup}.csv",
         "result_prefix": f"results/individual_{setup}_{model_name}_gcg_offset_{data_offset}",
         "token": hf_token
     }
@@ -42,9 +42,9 @@ def run_trainer(
     if model_name == "llama2":
         config = _load_yaml_to_dict("configs/individual_llama_2.yaml")
 
-
+    config.update(runtime_config)
     config.update(extra_config_parameters)
-
+    
     trainer = GreedyCoordinateGradientAdversarialSuffixGenerator()
     if not os.path.exists('results'):
         os.makedirs('results')
@@ -53,5 +53,5 @@ def run_trainer(
 
 
 if __name__ == '__main__':
-    run_trainer(model_name = "mistral", setup = "behaviors")
+    run_trainer(model_name = "mistral", setup = "behaviors", n_train_data = 1, n_steps = 100, test_steps = 25)
 
