@@ -12,7 +12,12 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 
 from pyrit.score.substring_scorer import SubStringScorer
-from tests.mocks import get_memory_interface
+from tests.mocks import get_image_request_piece, get_memory_interface
+
+
+@pytest.fixture
+def image_request_piece() -> PromptRequestPiece:
+    return get_image_request_piece()
 
 
 @pytest.fixture
