@@ -27,12 +27,12 @@ def read_file(file_path, export_type):
         with open(file_path, "r") as f:
             return json.load(f)
     elif export_type == "csv":
-        with open(file_path, "r", newline='') as f:
+        with open(file_path, "r", newline="") as f:
             reader = csv.DictReader(f)
             return [row for row in reader]
     else:
         raise ValueError(f"Invalid export type: {export_type}")
-    
+
 
 def export(export_type, exporter, data, file_path):
     if export_type == "json":
@@ -41,7 +41,7 @@ def export(export_type, exporter, data, file_path):
         exporter.export_to_csv(data, file_path)
     else:
         raise ValueError(f"Invalid export type: {export_type}")
-    
+
 
 @pytest.mark.parametrize("export_type", ["json", "csv"])
 def test_export_to_json_creates_file(tmp_path, sample_conversation_entries, export_type):

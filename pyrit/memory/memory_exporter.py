@@ -3,6 +3,7 @@
 
 import csv
 import json
+from typing import Any
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +24,7 @@ class MemoryExporter:
         # Using strategy design pattern for export functionality.
         self.export_strategies = {
             "json": self.export_to_json,
-            "csv": self.export_to_csv
+            "csv": self.export_to_csv,
             # Future formats can be added here
         }
 
@@ -67,7 +68,7 @@ class MemoryExporter:
         export_data = [self.model_to_dict(instance) for instance in data]
         with open(file_path, "w") as f:
             json.dump(export_data, f, indent=4)
-    
+
     def export_to_csv(self, data: list[Base], file_path: Path = None) -> None:  # type: ignore
         """
         Exports the provided data to a CSV file at the specified file path.
@@ -88,7 +89,7 @@ class MemoryExporter:
 
         export_data = [_flatten_dict(self.model_to_dict(instance)) for instance in data]
         fieldnames = list(export_data[0].keys())
-        with open(file_path, "w", newline='') as f:
+        with open(file_path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(export_data)
@@ -119,9 +120,8 @@ class MemoryExporter:
         return model_dict
 
 
-
-def _flatten_dict(d: MutableMapping, parent_key: str = '', sep: str = '.') -> MutableMapping:
-    items = []
+def _flatten_dict(d: MutableMapping, parent_key: str = "", sep: str = ".") -> MutableMapping:
+    items: list[tuple[Any, Any]] = []
     for k, v in d.items():
         new_key = parent_key + sep + k if parent_key else k
         if isinstance(v, MutableMapping):
