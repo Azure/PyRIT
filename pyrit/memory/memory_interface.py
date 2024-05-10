@@ -4,7 +4,7 @@
 import abc
 from pathlib import Path
 
-from typing import Optional, Union
+from typing import Optional
 from uuid import uuid4
 
 from pyrit.memory.memory_models import EmbeddingData
@@ -128,7 +128,7 @@ class MemoryInterface(abc.ABC):
 
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
-    
+
     def duplicate_conversation_for_new_orchestrator(
         self,
         *,

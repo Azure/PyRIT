@@ -63,11 +63,7 @@ def test_add_request_pieces_to_memory(
 
 @pytest.mark.parametrize("new_conversation_id1", [None, "12345"])
 @pytest.mark.parametrize("new_conversation_id2", [None, "23456"])
-def test_duplicate_memory(
-    memory: MemoryInterface,
-    new_conversation_id1: str | None,
-    new_conversation_id2: str | None
-):
+def test_duplicate_memory(memory: MemoryInterface, new_conversation_id1: str | None, new_conversation_id2: str | None):
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
     conversation_id_1 = "11111"
@@ -76,39 +72,39 @@ def test_duplicate_memory(
     pieces = [
         PromptRequestPiece(
             role="user",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="Hello, how are you?",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
             conversation_id=conversation_id_1,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="I'm fine, thank you!",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_1,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="I'm fine, thank you!",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_3,
             orchestrator_identifier=orchestrator2.get_identifier(),
         ),
         PromptRequestPiece(
             role="user",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="Hello, how are you?",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
             conversation_id=conversation_id_2,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(
             role="assistant",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="I'm fine, thank you!",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_2,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
@@ -120,12 +116,12 @@ def test_duplicate_memory(
     memory.duplicate_conversation_for_new_orchestrator(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_1,
-        new_conversation_id=new_conversation_id1
+        new_conversation_id=new_conversation_id1,
     )
     memory.duplicate_conversation_for_new_orchestrator(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_2,
-        new_conversation_id=new_conversation_id2
+        new_conversation_id=new_conversation_id2,
     )
     all_pieces = memory.get_all_prompt_pieces()
     assert len(all_pieces) == 9
@@ -148,8 +144,8 @@ def test_duplicate_memory_conversation_id_collision(memory: MemoryInterface):
     pieces = [
         PromptRequestPiece(
             role="user",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="Hello, how are you?",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
             conversation_id=conversation_id_1,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
@@ -158,10 +154,10 @@ def test_duplicate_memory_conversation_id_collision(memory: MemoryInterface):
     memory._add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 1
     with pytest.raises(ValueError):
-        memory.duplicate_orchestrator_conversations(
+        memory.duplicate_conversation_for_new_orchestrator(
             new_orchestrator_id=str(orchestrator2.get_identifier()["id"]),
             conversation_id=conversation_id_1,
-            new_conversation_id=conversation_id_1
+            new_conversation_id=conversation_id_1,
         )
 
 
@@ -172,8 +168,8 @@ def test_duplicate_memory_orchestrator_id_collision(memory: MemoryInterface):
     pieces = [
         PromptRequestPiece(
             role="user",
-            original_prompt_text="original prompt text",
-            converted_prompt_text="Hello, how are you?",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
             conversation_id=conversation_id_1,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
@@ -182,10 +178,10 @@ def test_duplicate_memory_orchestrator_id_collision(memory: MemoryInterface):
     memory._add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 1
     with pytest.raises(ValueError):
-        memory.duplicate_orchestrator_conversations(
+        memory.duplicate_conversation_for_new_orchestrator(
             new_orchestrator_id=str(orchestrator1.get_identifier()["id"]),
             conversation_id=conversation_id_1,
-            new_conversation_id=conversation_id_2
+            new_conversation_id=conversation_id_2,
         )
 
 
