@@ -103,9 +103,8 @@ class DALLETarget(PromptTarget):
             prompt_request (PromptRequestResponse): the prompt to send formatted as an object
         Returns: response from target model formatted as an object
         """
-        # TODO: fix
         prompt_request.request_pieces = [prompt_request.request_pieces[-1]]
-        # self.validate_request(prompt_request=prompt_request)
+        self.validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         self._memory.add_request_response_to_memory(request=prompt_request)
@@ -113,17 +112,18 @@ class DALLETarget(PromptTarget):
         return await self._generate_images_async(prompt=request.converted_value, request=request)
 
     async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
+        image_generation_args = {
+            "model": self.deployment_name,
+            "prompt": prompt,
+            "n": self.n,
+            "size": self.image_size,
+            "response_format": "b64_json",
+        }
+        if self.dalle_version == "dall-e-3" and self.quality and self.style:
+            image_generation_args["quality"] = self.quality
+            image_generation_args["style"] = self.style
+
         try:
-            image_generation_args = {
-                "model": self.deployment_name,
-                "prompt": prompt,
-                "n": self.n,
-                "size": self.image_size,
-                "response_format": "b64_json",
-            }
-            if self.dalle_version == "dall-e-3" and self.quality and self.style:
-                    image_generation_args["quality"] = self.quality
-                    image_generation_args["style"] = self.style
             response = await self._image_target._async_client.images.generate(
                 **image_generation_args
             )
@@ -169,9 +169,3 @@ class DALLETarget(PromptTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
-
-        request = prompt_request.request_pieces[0]
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-
-        if len(messages) > 0:
-            raise ValueError("This target only supports a single turn conversation.")
