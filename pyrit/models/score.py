@@ -54,7 +54,7 @@ class Score:
         score_category: str,
         score_rationale: str,
         score_metadata: str,
-        scorer_class_identifier: Dict[str, str],
+        scorer_class_identifier: Dict[str, str] = None,
         prompt_request_response_id: str | uuid.UUID,
         date_time: Optional[datetime] = datetime.now(),
     ):

@@ -75,16 +75,17 @@ class MemoryInterface(abc.ABC):
             list[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
-    @abc.abstractmethod
-    def _add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
-        """
-        Inserts a list of prompt request pieces into the memory storage.
-        """
 
     @abc.abstractmethod
     def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
         """
         Inserts embedding data into memory storage
+        """
+
+    @abc.abstractmethod
+    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+        """
+        Inserts a list of prompt request pieces into the memory storage.
         """
 
     @abc.abstractmethod
@@ -168,7 +169,7 @@ class MemoryInterface(abc.ABC):
 
         self._update_sequence(request_pieces=request_pieces)
 
-        self._add_request_pieces_to_memory(request_pieces=request_pieces)
+        self.add_request_pieces_to_memory(request_pieces=request_pieces)
 
         if self.memory_embedding:
             for piece in request_pieces:
