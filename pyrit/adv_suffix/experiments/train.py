@@ -47,7 +47,8 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         topk: int = 256,
         temp: int = 1,
         filter_cand: bool = True,
-        gbda_deterministic: bool = True
+        gbda_deterministic: bool = True,
+        logfile: str = ""
     ):
 
         params = config_dict.ConfigDict()
@@ -85,7 +86,8 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.filter_cand = filter_cand
         params.gbda_deterministic = gbda_deterministic
         params.token = token
-
+        params.logfile = logfile
+        print(params)
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
         process_fn = lambda s: s.replace("Sure, h", "H")
         process_fn2 = lambda s: s.replace("Sure, here is", "Sure, here's")

@@ -11,7 +11,7 @@ def _load_yaml_to_dict(config_path: str) -> dict:
 
 def run_trainer(
     model_name: str,
-    setup: str = "behaviors",
+    setup: str = "single",
     data_offset: int = 0,
     **extra_config_parameters
 ):
@@ -31,16 +31,19 @@ def run_trainer(
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         raise ValueError("Please set the HF_TOKEN environment variable")
-
     runtime_config = {
-        "train_data": f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_{setup}.csv",
-        "result_prefix": f"results/individual_{setup}_{model_name}_gcg_offset_{data_offset}",
+        "train_data": f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_behaviors.csv",
+        "result_prefix": f"results/individual_behaviors_{model_name}_gcg_offset_{data_offset}",
         "token": hf_token
     }
-    if model_name == "mistral":
-        config = _load_yaml_to_dict("configs/individual_mistral.yaml")
-    if model_name == "llama2":
-        config = _load_yaml_to_dict("configs/individual_llama_2.yaml")
+    if setup != "single":
+        runtime_config["progressive_goals"] = True
+        runtime_config["stop_on_success"] = True
+        config_name = "transfer"
+    else:
+        config_name = "individual"
+    
+    config = _load_yaml_to_dict(f"configs/{config_name}_{model_name}.yaml")
 
     config.update(runtime_config)
     config.update(extra_config_parameters)
@@ -53,5 +56,7 @@ def run_trainer(
 
 
 if __name__ == '__main__':
-    run_trainer(model_name = "mistral", setup = "behaviors", n_train_data = 1, n_steps = 100, test_steps = 25)
+    # run_trainer(model_name = "mistral", setup = "single", n_train_data = 2, n_steps = 100, test_steps = 25)
+    run_trainer(model_name = "mistral", setup = "multiple", n_train_data = 10, n_test_data=3, n_steps = 40, test_steps = 1, batch_size = 128)
+
 
