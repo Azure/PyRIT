@@ -15,7 +15,7 @@ def test_attack_strategy_strings():
 
 def test_attack_strategy_from_file():
     strategy_path = (
-        pathlib.Path(os.getcwd()) / "pyrit" / "datasets" / "orchestrators" / "red_teaming" / "end_token.yaml"
+        pathlib.Path(os.getcwd()) / "pyrit" / "datasets" / "orchestrators" / "red_teaming" / "text_generation.yaml"
     )
     with open(strategy_path, "r") as strategy_file:
         strategy = strategy_file.read()

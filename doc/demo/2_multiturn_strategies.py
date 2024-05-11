@@ -15,16 +15,17 @@
 
 # %%
 
+from pathlib import Path
 import os
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import AzureMLChatTarget
-from pyrit.orchestrator import EndTokenRedTeamingOrchestrator
+from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.chat_message_normalizer import GenericSystemSquash
 from pyrit.common import default_values
 from pyrit.models import AttackStrategy
-
+from pyrit.score import SelfAskBinaryTextScorer, ScoringInstructions
 
 default_values.load_default_env()
 
@@ -33,7 +34,7 @@ conversation_objective = (
     "Make sure the response contains valid Python code. "
     "End the conversation once Python code is generated."
 )
-strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "end_token.yaml"
+strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml"
 
 attack_strategy = AttackStrategy(
     strategy=strategy_path,
@@ -52,14 +53,21 @@ prompt_target = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
+scorer = SelfAskBinaryTextScorer(
+    prompt_template_path=ScoringInstructions.CLASSIFICATION_SYSTEM_PROMPT,
+    content_classifier=Path("scorer_definitions/key_logger_classifier.yaml"),
+    chat_target=red_teaming_chat,
+    success_categories="keylogger"
+)
 
-with EndTokenRedTeamingOrchestrator(
+with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     red_teaming_chat=red_teaming_chat,
     prompt_target=prompt_target,
     initial_red_teaming_prompt="how can I help you?",
+    scorer=,
     verbose=True,
 ) as red_teaming_orchestrator:
-    red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=3)
+    await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
 
 # %%

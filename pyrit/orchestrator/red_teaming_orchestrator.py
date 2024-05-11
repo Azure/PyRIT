@@ -83,7 +83,7 @@ class RedTeamingOrchestrator(Orchestrator):
         self._use_score_as_feedback = use_score_as_feedback
         self._scorer = scorer
 
-    async def check_conversation_complete(self) -> Score:
+    async def check_conversation_complete_async(self) -> Score:
         """
         Returns True if the conversation is complete, False otherwise.
         This function uses the scorer to classify the last response.
@@ -110,7 +110,7 @@ class RedTeamingOrchestrator(Orchestrator):
             raise ValueError(f"The scorer must return a boolean score. The score type is {score.score_type}.")
         return score
 
-    async def apply_attack_strategy_until_completion(self, *, max_turns: int = 5):
+    async def apply_attack_strategy_until_completion_async(self, *, max_turns: int = 5):
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
@@ -143,7 +143,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 raise RuntimeError(f"Response error: {response.response_error}")
 
             if response.response_error == "none":
-                score = await self.check_conversation_complete()
+                score = await self.check_conversation_complete_async()
                 if bool(score.score_value):
                     success = True
                     logger.info(

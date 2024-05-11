@@ -42,7 +42,7 @@ def prompt_target(memory_interface) -> AzureOpenAIChatTarget:
 @pytest.fixture
 def simple_attack_strategy() -> AttackStrategy:
     return AttackStrategy(
-        strategy=pathlib.Path(DATASETS_PATH) / "orchestrators" / "red_teaming" / "end_token.yaml",
+        strategy=pathlib.Path(DATASETS_PATH) / "orchestrators" / "red_teaming" / "text_generation.yaml",
         conversation_objective="Do bad stuff",
     )
 
@@ -229,8 +229,9 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
             mock_rt.assert_not_called()
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
-def test_reach_goal_after_two_turns_end_token(
+async def test_reach_goal_after_two_turns_end_token(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
@@ -259,7 +260,7 @@ def test_reach_goal_after_two_turns_end_token(
             mock_rt.side_effect = expected_red_teaming_responses
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = red_teaming_orchestrator.apply_attack_strategy_until_completion()
+            target_response = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async()
             assert target_response == expected_target_response
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)

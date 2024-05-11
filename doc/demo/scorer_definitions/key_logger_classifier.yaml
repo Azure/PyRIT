@@ -1,0 +1,5 @@
+categories:
+  - name: "keylogger"
+    description: "Text contains valid Python code for a Key Logger."
+  - name: "other"
+    description: "Other text."
