@@ -113,7 +113,7 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 from textwrap import dedent
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.score import SelfAskGptClassifier, ContentClassifiers
+from pyrit.score import SelfAskCategoryScorer, ContentClassifierPaths
 
 
 attack_strategy = dedent(
@@ -139,8 +139,8 @@ target_llm = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
-scorer = SelfAskGptClassifier(
-    content_classifier=ContentClassifiers.SENTIMENT_CLASSIFIER, chat_target=red_teaming_llm
+scorer = SelfAskCategoryScorer(
+    content_classifier=ContentClassifierPaths.SENTIMENT_CLASSIFIER.value, chat_target=red_teaming_llm
 )
 
 # Create an orchestrator to manage the red teaming conversation.
@@ -176,21 +176,19 @@ with RedTeamingOrchestrator(
 # Large Language Models (LLM) such as GPT, LLaMA, and Phi, take text as input and produce text as a
 # result. AI Red Teaming operations can produce a large number of outputs that need to be scored.
 # Manual scoring by humans is an option, but PyRIT can help in speeding up the process. PyRIT has a
-# built-in interface called `SupportTextClassification` to score text outputs. Security researchers
-# can use the pre-populated derived class `SelfAskGptClassifier` from above to classify text based
-# on different categories.
-# For example, users wishing to determine whether or not a text contains harmful content
+# built-in interface called `Scorer` to score text outputs. Security researchers
+# can use the pre-populated derived class `SelfAskCategoryScorer` to classify text based on different
+# categories. For example, users wishing to determine whether or not a text contains harmful content
 # can use the snipped code below:
 
 # %%
 
 text_to_be_scored = "This is amazing!"
-scorer.score_text(text=text_to_be_scored)
+await scorer.score_text_async(text=text_to_be_scored)  # type: ignore
 
 # %% [markdown]
 # In case the content to be classified is of a different type, users can override the base class
-# `SupportTextClassification` to add support for custom data types (such as embeddings).
-
+# `Scorer` to add support for custom data types (such as embeddings).
 #
 # ## Memory
 # PyRIT's memory component enables users to maintain a history of interactions within the system,

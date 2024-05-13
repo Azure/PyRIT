@@ -1,44 +1,25 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.score.score_class import Score
-from pyrit.score.support_classification import SupportTextClassification, SupportImageClassification
-from pyrit.score.engine import evaluate, evaluate_async, score_text
-from pyrit.score.gandalf_classifier import GandalfScorer, GandalfBinaryScorer
-from pyrit.score.gpt_classifier import (
-    ContentClassifiers,
-    LikertScales,
-    ScoringInstructions,
-    SelfAskScorer,
-    SelfAskTextScorer,
-    SelfAskImageScorer,
-    SelfAskBinaryImageScorer,
-    SelfAskGptClassifier,
-    SelfAskGptLikertScale,
-)
-from pyrit.score.markdown_injection import MarkdownInjectionClassifier
+from pyrit.models import Score, ScoreType  # noqa: F401
+
+from pyrit.score.scorer import Scorer
+
+from pyrit.score.self_ask_category_scorer import SelfAskCategoryScorer, ContentClassifierPaths
+from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
+from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
+
+from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.substring_scorer import SubStringScorer
-from pyrit.score.text import TextConversationTokenFinder
 
 __all__ = [
-    "Score",
-    "SupportTextClassification",
-    "SupportImageClassification",
-    "evaluate",
-    "evaluate_async",
-    "score_text",
-    "GandalfScorer",
-    "GandalfBinaryScorer",
-    "ContentClassifiers",
-    "LikertScales",
-    "ScoringInstructions",
-    "SelfAskScorer",
-    "SelfAskTextScorer",
-    "SelfAskImageScorer",
-    "SelfAskBinaryImageScorer",
-    "SelfAskGptClassifier",
-    "SelfAskGptLikertScale",
-    "MarkdownInjectionClassifier",
+    "Scorer",
+    "SelfAskCategoryScorer",
+    "ContentClassifierPaths",
+    "LikertScalePaths",
+    "SelfAskLikertScorer",
+    "SelfAskTrueFalseScorer",
+    "TrueFalseQuestionPaths",
+    "MarkdownInjectionScorer",
     "SubStringScorer",
-    "TextConversationTokenFinder",
 ]

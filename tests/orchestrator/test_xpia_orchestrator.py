@@ -10,10 +10,10 @@ from pyrit.orchestrator import (
 )
 import pytest
 
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
-from pyrit.prompt_target import PromptTarget
-from pyrit.score import Score, SupportTextClassification
+from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.score import Score, Scorer
 from tests.mocks import get_memory_interface, MockPromptTarget
 
 
@@ -33,10 +33,16 @@ def processing_target() -> PromptTarget:
 
 
 @pytest.fixture
-def success_scorer() -> SupportTextClassification:
-    scorer = Mock()
-    scorer.score_text = Mock(return_value=Score(score_type="bool", score_value=True))
-    return scorer
+def success_scorer() -> Scorer:
+    mock_score = MagicMock(Score)
+    mock_score.score_value = True
+    mock_score.score_type = "true_false"
+    mock_score.get_value.return_value = True
+
+    mock_scorer = MagicMock(Scorer)
+    mock_scorer.scorer_type = "true_false"
+    mock_scorer.score_text_async = AsyncMock(return_value=[mock_score])
+    return mock_scorer
 
 
 def test_xpia_orchestrator_execute_no_scorer(attack_setup_target):
@@ -71,7 +77,7 @@ def test_xpia_orchestrator_execute(attack_setup_target, success_scorer):
     )
     score = xpia_orchestrator.execute()
     assert score.score_value
-    assert success_scorer.score_text.called_once
+    assert success_scorer.score_text_async.called_once
 
 
 def test_xpia_manual_processing_orchestrator_execute(attack_setup_target, success_scorer, monkeypatch):
@@ -84,7 +90,7 @@ def test_xpia_manual_processing_orchestrator_execute(attack_setup_target, succes
     )
     score = xpia_orchestrator.execute()
     assert score.score_value
-    assert success_scorer.score_text.called_once
+    assert success_scorer.score_text_async.called_once
 
 
 def test_xpia_test_orchestrator_execute(attack_setup_target, processing_target, success_scorer):
@@ -98,7 +104,7 @@ def test_xpia_test_orchestrator_execute(attack_setup_target, processing_target, 
         )
         score = xpia_orchestrator.execute()
         assert score.score_value
-        assert success_scorer.score_text.called_once
+        assert success_scorer.score_text_async.called_once
         assert mock_send_to_processing_target.called_once
 
 
@@ -115,6 +121,6 @@ def test_xpia_orchestrator_process_async(attack_setup_target, processing_target,
             )
             score = xpia_orchestrator.execute()
             assert score.score_value
-            assert success_scorer.score_text.called_once
+            assert success_scorer.score_text_async.called_once
             assert mock_send_to_processing_target.called_once
             assert mock_send_async_to_processing_target.assert_called_once

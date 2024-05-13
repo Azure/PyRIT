@@ -12,6 +12,8 @@ import textwrap
 class TextScoreResult(BaseModel):
     """Represents the result of scoring a text.
 
+    Do not build on this class; this class needs to be rewritten.
+
     Attributes:
         provided_answer (str): The provided answer.
         correct_answer (str): The correct answer.

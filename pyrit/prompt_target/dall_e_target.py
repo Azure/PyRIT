@@ -29,6 +29,10 @@ class DALLETarget(PromptTarget):
         deployment_name (str): The name of the deployment.
         endpoint (str): The endpoint URL for the service.
         api_key (str): The API key for accessing the service.
+        use_aad_auth (bool, optional): When set to True, user authentication is used
+            instead of API Key. DefaultAzureCredential is taken for
+            https://cognitiveservices.azure.com/.default. Please run `az login` locally
+            to leverage user AuthN.
         api_version (str, optional): The API version. Defaults to "2024-02-01".
         image_size (str, optional): The size of the image to output, must be a value of VALID_SIZES.
             Defaults to 1024x1024.
@@ -47,6 +51,7 @@ class DALLETarget(PromptTarget):
         deployment_name: str = None,
         endpoint: str = None,
         api_key: str = None,
+        use_aad_auth: bool = False,
         api_version: str = "2024-02-01",
         image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024",
         num_images: int = 1,
@@ -74,12 +79,20 @@ class DALLETarget(PromptTarget):
         self.n = num_images
 
         self.deployment_name = deployment_name
-        self._image_target = AzureOpenAIChatTarget(
-            deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
-        )
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
-
         self.headers = headers
+
+        if use_aad_auth:
+            self._image_target = AzureOpenAIChatTarget(
+                deployment_name=deployment_name,
+                endpoint=endpoint,
+                api_version=api_version,
+                use_aad_auth=True,
+            )
+        else:
+            self._image_target = AzureOpenAIChatTarget(
+                deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
+            )
 
     def send_prompt(
         self,
@@ -103,8 +116,8 @@ class DALLETarget(PromptTarget):
             prompt_request (PromptRequestResponse): the prompt to send formatted as an object
         Returns: response from target model formatted as an object
         """
-        prompt_request.request_pieces = [prompt_request.request_pieces[-1]]
-        self.validate_request(prompt_request=prompt_request)
+
+        self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         self._memory.add_request_response_to_memory(request=prompt_request)
@@ -163,7 +176,7 @@ class DALLETarget(PromptTarget):
             error=error,
         )
 
-    def validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
 

@@ -216,6 +216,8 @@ If you don't know who the maintainers are but you need to reach them
 please file an issue or (if it needs to remain private) contact the
 email address listed in pyproject.toml
 
+### Decide the Next Version
+
 First, decide what the next release version is going to be.
 We follow semantic versioning for Python projects; see
 https://semver.org/ for more details.
@@ -238,6 +240,8 @@ at least until we hit major version `1`.
 With that in mind, the reason for the release and the set of changes
 that happened since the last release will influence the new version number.
 
+### Update __init__.py and pyproject.toml
+
 Make sure the version data in pyproject.toml is set correctly.
 Keep that version in sync with `__init__.py` which is usually set to
 the next planned version with suffix `.dev0`.
@@ -245,23 +249,38 @@ This makes it easier to distinguish versions when someone submits a bug
 as we will be able to tell if it's a release version or dev version.
 For the release branch, we have to remove this suffix.
 
-Before running the following command replace all "local" links like
-"./doc/README.md" with links that will work from any website, i.e.,
+### Update README.md
+
+Readme.md is published to pypi and also needs to be updated so the
+links work properly.
+
+Replace all "main" links like
+"https://github.com/Azure/PyRIT/blob/main/doc/README.md" with links that have the
+correct version number, i.e.,
 "https://github.com/Azure/PyRIT/blob/releases/vx.y.z/doc/README.md".
-For images, the past releases didn't succeed in getting them to render.
-For the next release, let's try and modify the image links to the "raw"
+
+For images, update using the "raw"
 link, e.g.,
 "https://raw.githubusercontent.com/Azure/PyRIT/releases/vx.y.z/assets/pyrit_architecture.png".
+
 This is required for the release branch because PyPI does not pick up
 other files besides the README, which results in local links breaking.
+
+### Publish to github
 
 Commit your changes and push them to the repository on a branch called
 `releases/vx.y.z`, then run
 
 ```bash
+git commit -m "release vx.y.z"
+git push origin releases/vx.y.z
 git tag -a vx.y.z -m "vx.y.z release"
 git push --tags
 ```
+
+Check the branch to make sure it looks as intended (e.g. check the links in the README work properly).
+
+### Build Package Publish to PyPi
 
 To build the package wheel and archive for PyPI run
 
@@ -289,6 +308,8 @@ If successful, it will print
 After the release is on PyPI, make sure to create a PR for the `main` branch where the only change
 is the version increase in `__init__.py` (while keeping suffix `.dev0`).
 This should be something like `x.y.z+1.dev0`.
+
+### Create GitHub Release
 
 Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select the "tag"
 for which you want to create the release notes. It should match the version that you just released

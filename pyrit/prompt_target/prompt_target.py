@@ -39,6 +39,12 @@ class PromptTarget(abc.ABC, Identifier):
         Sends a normalized prompt async to the prompt target.
         """
 
+    @abc.abstractmethod
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        """
+        Validates the provided prompt request response
+        """
+
     def __enter__(self):
         """Enter the runtime context related to this object."""
         return self  # You can return self or another object that should be used in the with-statement.
