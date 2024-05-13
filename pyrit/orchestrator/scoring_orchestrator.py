@@ -43,21 +43,46 @@ class ScoringOrchestrator(Orchestrator):
 
 
     async def score_prompts_by_orchestrator_id_async(
-        self, *, scorer: Scorer, orchestrator_ids: list[str]
+        self,
+        *,
+        scorer: Scorer,
+        orchestrator_ids: list[str],
+        responses_only: bool = True,
     ) -> list[Score]:
         """
-        Sends the prompts to the prompt target.
+        Scores prompts using the Scorer for prompts correlated to the orchestrator_ids.
         """
 
         requests: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
-            requests.append(self._memory.get_orchestrator_conversations(orchestrator_id=id))
+            requests.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
 
-        return await self._score_prompts_async(prompts=requests, scorer=scorer)
+        if responses_only:
+            requests = self._extract_responses_only(requests)
+
+        return await self._score_prompts_batch_async(prompts=requests, scorer=scorer)
 
 
+    async def score_prompts_by_request_id_async(
+        self, *, scorer: Scorer, request_ids: list[str]
+    ) -> list[Score]:
+        """
+        Scores prompts using the Scorer for prompts with the request_ids
+        """
 
-    async def _score_prompts_async(self, prompts: list[PromptRequestPiece], scorer: Scorer) -> list[Score]:
+        requests: list[PromptRequestPiece] = []
+        requests = self._memory.get_prompt_request_pieces_by_id(request_ids=request_ids)
+
+        return await self._score_prompts_batch_async(prompts=requests, scorer=scorer)
+
+    def _extract_responses_only(self, request_responses: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
+        """
+        Extracts the responses from the list of PromptRequestResponse objects.
+        """
+        return [response for response in request_responses if response.role == "assistant"]
+
+
+    async def _score_prompts_batch_async(self, prompts: list[PromptRequestPiece], scorer: Scorer) -> list[Score]:
         results = []
 
         for prompts_batch in self._chunked_prompts(prompts, self._batch_size):
