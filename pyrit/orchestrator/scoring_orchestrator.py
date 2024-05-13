@@ -4,17 +4,11 @@
 import asyncio
 import logging
 
-from typing import Optional
-
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptDataType, PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.score import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
-from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
