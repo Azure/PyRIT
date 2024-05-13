@@ -179,8 +179,11 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
         image = Image.open(self.value)
         return image
 
-    def save_image(self, image: Image.Image):
-        self.value = str(self.get_data_filename())
+    def save_image(self, image: Image.Image, filename:str=None):
+        if not filename:
+            self.value = str(self.get_data_filename())
+        else:
+            self.value = filename
         image.save(self.value)
 
 

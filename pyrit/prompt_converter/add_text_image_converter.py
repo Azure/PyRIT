@@ -19,12 +19,13 @@ class AddTextImageConverter(PromptConverter):
     Adds a string to an image
 
     Args:
+        text_to_add (list[str]): text to add to image with each line of text as an entry in the list 
         font (optional, str): path of font to use - will set to source sans pro as default
         color (optional, tuple): color to print text in, using RGB values, black is the default if not provided
         font_size (optional, float): size of font to use
         x_pos (optional, float): x coordinate to place text in (0 is left most)
         y_pos (optional, float): y coordinate to place text in (0 is upper most)
-
+        output_filename (optional, str): filename to store converted image. If not provided a unique UUID will be used
     """
 
     def __init__(
@@ -35,6 +36,7 @@ class AddTextImageConverter(PromptConverter):
         font_size: float = 0.05,
         x_pos: int = 0,
         y_pos: int = 0,
+        output_filename:str = None
     ):
         if not text_to_add:
             raise ValueError("Please provide valid text_to_add value")
@@ -44,6 +46,7 @@ class AddTextImageConverter(PromptConverter):
         self._color = color
         self._x = x_pos
         self._y = y_pos
+        self._output_name = output_filename
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
@@ -52,7 +55,6 @@ class AddTextImageConverter(PromptConverter):
         Args:
             prompt (str): The prompt to be added to the image.
             input_type (PromptDataType): type of data
-            kwargs (dict): holds input "text_to_add" as a list with each line of text as a list entry
         Returns:
             ConverterResult: The filename of the converted image as a ConverterResult Object
         """
@@ -86,7 +88,7 @@ class AddTextImageConverter(PromptConverter):
             )
             new_serializer = data_serializer_factory(data_type="image_path")
             new_img = overlay_text.apply_transform(image=original_img)
-            new_serializer.save_image(new_img)
+            new_serializer.save_image(new_img, filename=self._output_name)
 
         except Exception as e:
             logger.error(f"Encountered an error while adding text '{self._text_to_add}' to the input image: {e}")
