@@ -13,8 +13,7 @@ from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.score.score_class import Score
-from pyrit.score import Scorer
+from pyrit.score import Scorer, Score
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +83,7 @@ class RedTeamingOrchestrator(Orchestrator):
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
         
-    async def check_conversation_complete_async(self) -> Score:
+    async def check_conversation_complete_async(self) -> bool:
         """
         Returns True if the conversation is complete, False otherwise.
         This function uses the scorer to classify the last response.
@@ -103,9 +102,9 @@ class RedTeamingOrchestrator(Orchestrator):
         last_message_content = prompt_request_responses[-1].request_pieces[0].converted_value
         last_message_type = prompt_request_responses[-1].request_pieces[0].converted_value_data_type
         if last_message_type == "text":
-            score = await self._scorer.score_text(text=last_message_content)
+            score = (await self._scorer.score_text_async(text=last_message_content))[0]
         elif last_message_type == "image_path":
-            score = await self._scorer.score_image(image_path=last_message_content)
+            score = (await self._scorer.score_image_async(image_path=last_message_content))[0]
         else:
             raise ValueError(f"Unsupported message type: {last_message_type}")
         
