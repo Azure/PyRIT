@@ -45,6 +45,9 @@ class HITLScorer(Scorer):
 
         await asyncio.sleep(0)
 
+        print("Scoring the following:")
+        print(request_response)
+
         score_value = input("Enter score value (e.g., 'True' for true_false or a value between '0.0'\
                              and '1.0 for float_scale): ")
 
