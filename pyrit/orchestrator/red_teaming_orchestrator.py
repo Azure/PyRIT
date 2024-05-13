@@ -5,17 +5,16 @@ import logging
 from typing import Optional, Union
 from uuid import uuid4
 from PIL import Image
-from io import BytesIO
 
 from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.memory import MemoryInterface
-from pyrit.models import AttackStrategy, ChatMessage, PromptRequestPiece
+from pyrit.models import AttackStrategy, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 from pyrit.score.score_class import Score
-from pyrit.score.support_classification import SupportTextClassification, SupportImageClassification
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ class RedTeamingOrchestrator(Orchestrator):
         red_teaming_chat: PromptChatTarget,
         initial_red_teaming_prompt: Optional[str] = "Begin conversation",
         prompt_converters: Optional[list[PromptConverter]] = None,
-        scorer: Union[SupportTextClassification | SupportImageClassification],
+        scorer: Scorer,
         use_score_as_feedback: bool = False,
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
@@ -102,11 +101,13 @@ class RedTeamingOrchestrator(Orchestrator):
             return False
 
         last_message_content = prompt_request_responses[-1].request_pieces[0].converted_value
-        if isinstance(self._scorer, SupportTextClassification):
-            score = self._scorer.score_text(text=last_message_content)
-        if isinstance(self._scorer, SupportImageClassification):
-            # TODO: this isn't standardized... some are async some aren't
+        last_message_type = prompt_request_responses[-1].request_pieces[0].converted_value_data_type
+        if last_message_type == "text":
+            score = await self._scorer.score_text(text=last_message_content)
+        elif last_message_type == "image_path":
             score = await self._scorer.score_image(image_path=last_message_content)
+        else:
+            raise ValueError(f"Unsupported message type: {last_message_type}")
         
         if score.score_type != "true_false":
             raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
