@@ -4,8 +4,8 @@ import uuid
 from pathlib import Path
 from typing import Union
 
-from pyrit.interfaces import SupportTextClassification
-from pyrit.models import Score, ScorerStrategy
+from pyrit.score import Score, Scorer
+from pyrit.score.scorer_strategy import ScorerStrategy
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
@@ -23,8 +23,8 @@ META_JUDGE_PROMPT = Path(__file__).parent / "crescendo" / "meta_judge_prompt.yam
 REFUSE_JUDGE_PROMPT = Path(__file__).parent / "crescendo" / "refuse_judge_prompt.yaml"
 
 
-class CrescendoScorer(SupportTextClassification):
-    def __init__(self, prompt: Union[str, Path], chat_target: PromptChatTarget, **kwargs) -> None:
+class CrescendoScorer(Scorer):
+    def __init__(self, prompt: Union[str, Path], chat_target: PromptChatTarget) -> None:
         # Load classifier
         self._chat_target = chat_target
 
@@ -33,23 +33,35 @@ class CrescendoScorer(SupportTextClassification):
 
         self.labels = {"scorer": "crescendo_scorer"}
 
-        self.scorer_strategy = ScorerStrategy(strategy=prompt, **kwargs)
+        self.prompt = prompt
 
         self._chat_target.set_system_prompt(
-            system_prompt=str(self.scorer_strategy),
+            system_prompt="You are a helpful assistant.",
             conversation_id=self._conversation_id,
             orchestrator_identifier=None,
             labels=self.labels,
         )
 
     # @tenacity.retry(stop=tenacity.stop_after_attempt(3))
-    def score_text(self, text: str) -> Score:
+    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+
+        self.validate(request_response)
+
+        # get all the key value pairs from the request_response.metadata json and pass them onto the
+        # ScorerStrategy kwargs
+        kwargs = {}
+        if request_response.prompt_metadata:
+            metadata = json.loads(request_response.prompt_metadata)
+            kwargs = metadata
+
+        self.scorer_strategy = ScorerStrategy(strategy=self.prompt, **kwargs)
 
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
                     role="user",
-                    original_prompt_text=text,
+                    original_value=str(self.scorer_strategy),
+                    converted_value=str(self.scorer_strategy),
                     conversation_id=self._conversation_id,
                     labels=self.labels,
                     prompt_target_identifier=self._chat_target.get_identifier(),
@@ -57,29 +69,39 @@ class CrescendoScorer(SupportTextClassification):
             ]
         )
 
-        response_text = self._chat_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
+        response_text = self._chat_target.send_prompt(prompt_request=request).request_pieces[0].converted_value
 
         try:
             parsed_response = json.loads(response_text)
 
             score = Score(
-                score_type="bool",
+                score_type="true_false",
                 score_value=(
                     parsed_response["result_flag"]
                     if "result_flag" in parsed_response
                     else parsed_response["second_layer_result_flag"]
                 ),
-                score_description=(
-                    parsed_response["result_percentage"] if "result_percentage" in parsed_response else None
+                score_value_description="result_flag",
+                score_category=None,
+                metadata=(
+                    "result_percentage=" + str(parsed_response["result_percentage"])
+                    if "result_percentage" in parsed_response
+                    else ""
                 ),
-                score_explanation=(
+                score_rationale=(
                     parsed_response["result_explanation"]
                     if "result_explanation" in parsed_response
                     else parsed_response["second_layer_result_explanation"]
                 ),
+                scorer_class_identifier=self.get_identifier(),
+                prompt_request_response_id=request_response.id,
             )
 
-            return score
+            return [score]
 
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON response from chat target: {response_text}") from e
+
+    def validate(self, request_response: PromptRequestPiece):
+        if request_response.converted_value_data_type != "text":
+            raise ValueError("Crescendo scorer only supports text data type")
