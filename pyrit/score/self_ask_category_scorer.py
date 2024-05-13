@@ -9,6 +9,7 @@ import enum
 from pathlib import Path
 from typing import Dict
 
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
@@ -33,6 +34,7 @@ class SelfAskCategoryScorer(Scorer):
         self,
         chat_target: PromptChatTarget,
         content_classifier: Path,
+        memory: MemoryInterface = None,
     ) -> None:
         """
         Initializes a new instance of the SelfAskCategoryScorer class.
@@ -42,6 +44,8 @@ class SelfAskCategoryScorer(Scorer):
             content_classifier (Path): The path to the classifier file.
         """
         self.scorer_type = "true_false"
+
+        self._memory = memory if memory else DuckDBMemory()
 
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 
@@ -94,7 +98,7 @@ class SelfAskCategoryScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
-        Scores the given request_response using the chat target.
+        Scores the given request_response using the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece to score.
@@ -136,6 +140,8 @@ class SelfAskCategoryScorer(Scorer):
                 score_metadata=None,
                 prompt_request_response_id=request_response.id,
             )
+
+            self._memory.add_scores_to_memory(scores=[score])
             return [score]
 
         except json.JSONDecodeError as e:
