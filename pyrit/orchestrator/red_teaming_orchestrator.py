@@ -81,8 +81,10 @@ class RedTeamingOrchestrator(Orchestrator):
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
         self._use_score_as_feedback = use_score_as_feedback
+        if scorer.scorer_type != "true_false":
+            raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
-
+        
     async def check_conversation_complete_async(self) -> Score:
         """
         Returns True if the conversation is complete, False otherwise.
@@ -106,9 +108,9 @@ class RedTeamingOrchestrator(Orchestrator):
             # TODO: this isn't standardized... some are async some aren't
             score = await self._scorer.score_image(image_path=last_message_content)
         
-        if score.score_type != "bool":
-            raise ValueError(f"The scorer must return a boolean score. The score type is {score.score_type}.")
-        return score
+        if score.score_type != "true_false":
+            raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
+        return score.get_value()
 
     async def apply_attack_strategy_until_completion_async(self, *, max_turns: int = 5):
         """
