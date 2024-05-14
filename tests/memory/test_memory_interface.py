@@ -110,7 +110,7 @@ def test_duplicate_memory(memory: MemoryInterface, new_conversation_id1: str | N
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
     ]
-    memory._add_request_pieces_to_memory(request_pieces=pieces)
+    memory.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 5
     orchestrator3 = Orchestrator()
     memory.duplicate_conversation_for_new_orchestrator(
@@ -151,7 +151,7 @@ def test_duplicate_memory_conversation_id_collision(memory: MemoryInterface):
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
     ]
-    memory._add_request_pieces_to_memory(request_pieces=pieces)
+    memory.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 1
     with pytest.raises(ValueError):
         memory.duplicate_conversation_for_new_orchestrator(
@@ -175,7 +175,7 @@ def test_duplicate_memory_orchestrator_id_collision(memory: MemoryInterface):
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
     ]
-    memory._add_request_pieces_to_memory(request_pieces=pieces)
+    memory.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 1
     with pytest.raises(ValueError):
         memory.duplicate_conversation_for_new_orchestrator(

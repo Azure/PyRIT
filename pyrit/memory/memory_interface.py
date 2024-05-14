@@ -160,7 +160,7 @@ class MemoryInterface(abc.ABC):
             piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
 
-        self._add_request_pieces_to_memory(request_pieces=prompt_pieces)
+        self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
 
     def export_conversation_by_orchestrator_id(
         self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"
