@@ -3,9 +3,12 @@
 
 import logging
 import pathlib
+import base64
 
 from augly.image.transforms import OverlayText
 from augly.utils import base_paths
+from io import BytesIO
+from PIL import Image
 
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptDataType
@@ -19,7 +22,7 @@ class AddTextImageConverter(PromptConverter):
     Adds a string to an image
 
     Args:
-        text_to_add (list[str]): text to add to image with each line of text as an entry in the list 
+        text_to_add (list[str]): text to add to image with each line of text as an entry in the list
         font (optional, str): path of font to use - will set to source sans pro as default
         color (optional, tuple): color to print text in, using RGB values, black is the default if not provided
         font_size (optional, float): size of font to use
@@ -36,7 +39,7 @@ class AddTextImageConverter(PromptConverter):
         font_size: float = 0.05,
         x_pos: int = 0,
         y_pos: int = 0,
-        output_filename:str = None
+        output_filename: str = None,
     ):
         if not text_to_add:
             raise ValueError("Please provide valid text_to_add value")
@@ -64,7 +67,10 @@ class AddTextImageConverter(PromptConverter):
         data = data_serializer_factory(value=prompt, data_type="image_path")
 
         # Open the image
-        original_img = data.read_data_image()
+
+        original_img_bytes = data.read_data()
+        original_img = Image.open(BytesIO(original_img_bytes))
+
         text_ascii_int_list = []
 
         # Splits prompt into list[int] representation needed for augly
@@ -86,9 +92,15 @@ class AddTextImageConverter(PromptConverter):
                 x_pos=self._x,
                 y_pos=self._y,
             )
-            new_serializer = data_serializer_factory(data_type="image_path")
+
+            image_bytes = BytesIO()
+            image_type = prompt.split(".")[-1]
+
             new_img = overlay_text.apply_transform(image=original_img)
-            new_serializer.save_image(new_img, filename=self._output_name)
+            new_img.save(image_bytes, format=image_type)
+            image_str = base64.b64encode(image_bytes.getvalue())
+            new_serializer = data_serializer_factory(data_type="image_path")
+            new_serializer.save_b64_image(data=image_str, output_filename=self._output_name)
 
         except Exception as e:
             logger.error(f"Encountered an error while adding text '{self._text_to_add}' to the input image: {e}")

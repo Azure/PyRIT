@@ -9,7 +9,6 @@ import time
 
 from pathlib import Path
 from mimetypes import guess_type
-from PIL import Image
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models import PromptDataType
@@ -61,11 +60,14 @@ class DataTypeSerializer(abc.ABC):
         with open(self.value, "wb") as file:
             file.write(data)
 
-    def save_b64_image(self, data: str) -> None:
+    def save_b64_image(self, data: str, output_filename: str) -> None:
         """
         Saves the base64 encoded image to disk.
         """
-        self.value = str(self.get_data_filename())
+        if not output_filename:
+            self.value = str(self.get_data_filename())
+        else:
+            self.value = output_filename
         with open(self.value, "wb") as file:
             image_bytes = base64.b64decode(data)
             file.write(image_bytes)
@@ -171,20 +173,6 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
 
     def data_on_disk(self) -> bool:
         return True
-
-    def read_data_image(self) -> Image.Image:
-        """
-        Reads the data from the disk for an image
-        """
-        image = Image.open(self.value)
-        return image
-
-    def save_image(self, image: Image.Image, filename:str=None):
-        if not filename:
-            self.value = str(self.get_data_filename())
-        else:
-            self.value = filename
-        image.save(self.value)
 
 
 class AudioPathDataTypeSerializer(DataTypeSerializer):
