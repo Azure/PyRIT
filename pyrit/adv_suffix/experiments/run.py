@@ -24,7 +24,7 @@ def run_trainer(
         data_offset (int): Offset index to start from in the training data. Default is 0.
     """
 
-    if model_name not in ["mistral", "llama2"]:
+    if model_name not in ["mistral", "llama2", "llama_mistral"]:
         raise ValueError("Model name not supported. Currently supports 'mistral' and 'llama2'")
     
     default_values.load_default_env()
@@ -57,6 +57,8 @@ def run_trainer(
 
 if __name__ == '__main__':
     # run_trainer(model_name = "mistral", setup = "single", n_train_data = 2, n_steps = 100, test_steps = 25)
-    run_trainer(model_name = "mistral", setup = "multiple", n_train_data = 10, n_test_data=3, n_steps = 40, test_steps = 1, batch_size = 128)
+    # run_trainer(model_name = "mistral", setup = "multiple", n_train_data = 10, n_test_data=3, n_steps = 40, test_steps = 1, batch_size = 128)
+    run_trainer(model_name = "llama_mistral", setup = "multiple", num_train_models = 2, n_train_data = 2, n_test_data=1, n_steps = 10, test_steps = 1, batch_size = 64)
+
 
 
