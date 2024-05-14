@@ -3,6 +3,7 @@
 
 import asyncio
 import csv
+import json
 from pathlib import Path
 import sys
 
@@ -46,23 +47,28 @@ class TextTarget(PromptTarget):
 
         request_responses = []
 
-        with open(csv_file_path, newline='') as csvfile:
+        with open(csv_file_path, newline="") as csvfile:
             csvreader = csv.DictReader(csvfile)
+
             for row in csvreader:
+                sequence_str = row.get("sequence", None)
+                labels_str = row.get("labels", None)
+                labels = json.loads(labels_str) if labels_str else None
+
                 request_response = PromptRequestPiece(
-                    role=row["role"],
+                    role=row["role"],  # type: ignore
                     original_value=row["value"],
-                    original_value_data_type=row.get["data_type", None],
+                    original_value_data_type=row.get["data_type", None],  # type: ignore
                     conversation_id=row.get("conversation_id", None),
-                    sequence=row.get("sequence", None),
-                    labels=row.get("labels", None),
-                    response_error=row.get("response_error", None),
+                    sequence=int(sequence_str) if sequence_str else None,
+                    labels=labels,
+                    response_error=row.get("response_error", None),  # type: ignore
                     prompt_target_identifier=self.get_identifier(),
                 )
                 request_responses.append(request_response)
 
         # This is post validation, so the prompt_request_pieces should be okay and normalized
-        self._memory.add_request_pieces_to_memory(request_responses=request_responses)
+        self._memory.add_request_pieces_to_memory(request_pieces=request_responses)
         return request_responses
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:

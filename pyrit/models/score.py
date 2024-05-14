@@ -64,6 +64,10 @@ class Score:
 
         self.score_value = score_value
         self.score_value_description = score_value_description
+
+        if score_type not in ScoreType.__args__:  # type: ignore
+            raise ValueError(f"Score type {score_type} is not a valid score type.")
+
         self.score_type = score_type
         self.score_category = score_category
         self.score_rationale = score_rationale

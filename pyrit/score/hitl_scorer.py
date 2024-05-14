@@ -18,17 +18,17 @@ class HITLScorer(Scorer):
     def __init__(self, *, memory: MemoryInterface = None) -> None:
         self._memory = memory if memory else DuckDBMemory()
 
-    def import_scores_from_csv(self, csv_file_path: Path) -> list[Score]:
+    def import_scores_from_csv(self, csv_file_path: Path | str) -> list[Score]:
 
         scores = []
 
-        with open(csv_file_path, newline='') as csvfile:
+        with open(csv_file_path, newline="") as csvfile:
             csvreader = csv.DictReader(csvfile)
             for row in csvreader:
                 score = Score(
                     score_value=row["score_value"],
                     score_value_description=row.get("score_value_description", None),
-                    score_type=row["score_type"],
+                    score_type=row["score_type"],  # type: ignore
                     score_category=row.get("score_category", None),
                     score_rationale=row.get("score_rationale", None),
                     score_metadata=row.get("score_metadata", None),
@@ -38,7 +38,7 @@ class HITLScorer(Scorer):
                 scores.append(score)
 
         # This is post validation, so the scores should be okay and normalized
-        self._memory.add_scores_to_memory(scores=score)
+        self._memory.add_scores_to_memory(scores=scores)
         return scores
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
@@ -48,8 +48,10 @@ class HITLScorer(Scorer):
         print("Scoring the following:")
         print(request_response)
 
-        score_value = input("Enter score value (e.g., 'True' for true_false or a value between '0.0'\
-                             and '1.0 for float_scale): ")
+        score_value = input(
+            "Enter score value (e.g., 'True' for true_false or a value between '0.0'\
+                             and '1.0 for float_scale): "
+        )
 
         prompt_request_response_id = input("Enter prompt request response ID: ")
 
@@ -62,7 +64,7 @@ class HITLScorer(Scorer):
         score = Score(
             score_value=score_value,
             score_value_description=score_value_description,
-            score_type=score_type,
+            score_type=score_type,  # type: ignore
             score_category=score_category,
             score_rationale=score_rationale,
             score_metadata=score_metadata,
@@ -72,7 +74,6 @@ class HITLScorer(Scorer):
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-
 
     def _optional_input(self, prompt):
         value = input(prompt)

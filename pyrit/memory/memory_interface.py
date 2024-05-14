@@ -75,7 +75,6 @@ class MemoryInterface(abc.ABC):
             list[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
-
     @abc.abstractmethod
     def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
         """

@@ -20,6 +20,14 @@ from pyrit.score.substring_scorer import SubStringScorer
 from tests.mocks import get_image_request_piece, get_memory_interface
 
 
+@pytest.fixture
+def image_request_piece() -> PromptRequestPiece:
+    return get_image_request_piece()
+
+
+@pytest.fixture
+def memory() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
 
 
 @pytest.fixture
@@ -39,27 +47,30 @@ def test_import_scores_from_csv(score: Score):
     memory = MagicMock(MemoryInterface)
     scorer = HITLScorer(memory=memory)
 
-    field_names = ["score_value",
-                   "score_value_description",
-                   "score_type",
-                   "score_category",
-                   "score_rationale",
-                   "score_metadata",
-                   "scorer_class_identifier",
-                   "prompt_request_response_id"]
+    field_names = [
+        "score_value",
+        "score_value_description",
+        "score_type",
+        "score_category",
+        "score_rationale",
+        "score_metadata",
+        "scorer_class_identifier",
+        "prompt_request_response_id",
+    ]
 
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as csvfile:
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as csvfile:
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(field_names)
-        csvwriter.writerow([
-            score.score_value,
-            score.score_value_description,
-            score.score_type,
-            score.score_category,
-            score.score_rationale,
-            score.score_metadata,
-            score.scorer_class_identifier,
-            score.prompt_request_response_id
+        csvwriter.writerow(
+            [
+                score.score_value,
+                score.score_value_description,
+                score.score_type,
+                score.score_category,
+                score.score_rationale,
+                score.score_metadata,
+                score.scorer_class_identifier,
+                score.prompt_request_response_id,
             ]
         )
 

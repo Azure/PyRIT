@@ -64,7 +64,7 @@ def test_add_request_pieces_to_memory_calls_validate(memory: MemoryInterface):
     request_response = MagicMock(PromptRequestResponse)
     request_response.request_pieces = [MagicMock(PromptRequestPiece)]
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_request_pieces_to_memory"),
+        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
         patch("pyrit.memory.memory_interface.MemoryInterface._update_sequence"),
     ):
         memory.add_request_response_to_memory(request=request_response)
@@ -79,7 +79,7 @@ def test_add_request_pieces_to_memory_updates_sequence(
         conversation.role = sample_conversations[0].role
         conversation.sequence = 17
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_request_pieces_to_memory") as mock_add:
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
         memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
         assert mock_add.called
 
@@ -101,7 +101,7 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
     # insert one of these into memory
     memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_request_pieces_to_memory") as mock_add:
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
         memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
         assert mock_add.called
 
@@ -117,7 +117,7 @@ def test_add_response_entries_to_memory_updates_sequence(
     request = [sample_conversations[0]]
     memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=request))
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_request_pieces_to_memory") as mock_add:
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
         memory.add_response_entries_to_memory(request=request[0], response_text_pieces=["test"])
 
         assert mock_add.called
@@ -137,7 +137,7 @@ def test_insert_prompt_memories_inserts_embedding(
     memory.enable_embedding(embedding_model=embedding_mock)
 
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_request_pieces_to_memory"),
+        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
         patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_embeddings_to_memory") as mock_embedding,
     ):
 
@@ -159,7 +159,7 @@ def test_insert_prompt_memories_not_inserts_embedding(
     memory.disable_embedding()
 
     with (
-        patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_request_pieces_to_memory"),
+        patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory"),
         patch("pyrit.memory.duckdb_memory.DuckDBMemory._add_embeddings_to_memory") as mock_embedding,
     ):
 
