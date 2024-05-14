@@ -97,15 +97,15 @@ memory.dispose_engine()
 #
 # ![scoring_1.png](../../../assets/scoring_1.png)
 #
-# 1. Export the data to a CSV
+# 2. Export the data to a CSV
 #
 # ![scoring_2.png](../../../assets/scoring_2_export.png)
 #
-# 1. Use it as an excel sheet! You can use pivot tables, etc. To visualize the data.
+# 3. Use it as an excel sheet! You can use pivot tables, etc. To visualize the data.
 #
 # ![scoring_2.png](../../../assets/scoring_3_pivot.png)
 #
-# 1. Optionally, if you caught things you wanted to update, you could either change in the database or directly in the excel and re-import. Note: mapping is sometimes not 100% so updating in the database is best.
+# 4. Optionally, if you caught things you wanted to update, you could either change in the database or directly in the excel and re-import. Note: mapping is sometimes not 100% so updating in the database is best.
 #
 # ### Entering Manual Prompts
 #
