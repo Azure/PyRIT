@@ -9,6 +9,7 @@ import yaml
 import enum
 from pathlib import Path
 
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
@@ -29,11 +30,11 @@ class SelfAskTrueFalseScorer(Scorer):
     """A class that represents a self-ask true/false for scoring."""
 
     def __init__(
-        self,
-        chat_target: PromptChatTarget,
-        true_false_question_path: Path,
+        self, *, chat_target: PromptChatTarget, true_false_question_path: Path, memory: MemoryInterface = None
     ) -> None:
         self.scorer_type = "true_false"
+
+        self._memory = memory if memory else DuckDBMemory()
 
         true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
@@ -62,7 +63,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
-        Scores the given request_response using "self-ask" for the chat target.
+        Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
@@ -100,9 +101,11 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_category=self._category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
-                metadata=None,
+                score_metadata=None,
                 prompt_request_response_id=request_response.id,
             )
+
+            self._memory.add_scores_to_memory(scores=[score])
             return [score]
 
         except json.JSONDecodeError as e:
