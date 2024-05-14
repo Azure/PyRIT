@@ -10,7 +10,7 @@ from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import Scorer
 
 
-class HITLScorer(Scorer):
+class HumanInTheLoopScorer(Scorer):
     """
     Create scores from manual human input and adds them to the database.
     """

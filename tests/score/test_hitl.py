@@ -15,7 +15,7 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 
 from pyrit.models.score import Score
-from pyrit.score.hitl_scorer import HITLScorer
+from pyrit.score.hitl_scorer import HumanInTheLoopScorer
 from pyrit.score.substring_scorer import SubStringScorer
 from tests.mocks import get_image_request_piece, get_memory_interface
 
@@ -45,7 +45,7 @@ def score() -> Score:
 
 def test_import_scores_from_csv(score: Score):
     memory = MagicMock(MemoryInterface)
-    scorer = HITLScorer(memory=memory)
+    scorer = HumanInTheLoopScorer(memory=memory)
 
     field_names = [
         "score_value",
