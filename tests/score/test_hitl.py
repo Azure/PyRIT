@@ -88,6 +88,7 @@ def test_import_scores_from_csv(score: Score):
     assert scores[0].prompt_request_response_id == score.prompt_request_response_id
 
     memory.add_scores_to_memory.assert_called_once()
+    os.remove(csvfile.name)
 
 
 @pytest.mark.asyncio

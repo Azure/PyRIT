@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from datetime import datetime
-from typing import Dict, Literal, Optional
+from typing import Dict, Literal, Optional, get_args
 import uuid
 
 
@@ -65,7 +65,7 @@ class Score:
         self.score_value = score_value
         self.score_value_description = score_value_description
 
-        if score_type not in ScoreType.__args__:  # type: ignore
+        if score_type not in get_args(ScoreType):
             raise ValueError(f"Score type {score_type} is not a valid score type.")
 
         self.score_type = score_type

@@ -5,7 +5,7 @@ import abc
 import uuid
 
 from datetime import datetime
-from typing import Dict, List, Optional, Literal
+from typing import Dict, List, Optional, Literal, get_args
 from uuid import uuid4
 
 from pyrit.models import ChatMessage, data_serializer_factory, ChatMessageRole, PromptDataType, PromptResponseError
@@ -89,7 +89,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.original_value = original_value
 
-        if original_value_data_type not in PromptDataType.__args__:  # type: ignore
+        if original_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"original_value_data_type {original_value_data_type} is not a valid data type.")
 
         self.original_value_data_type = original_value_data_type
@@ -99,7 +99,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.converted_value = converted_value
 
-        if converted_value_data_type not in PromptDataType.__args__:  # type: ignore
+        if converted_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"converted_value_data_type {converted_value_data_type} is not a valid data type.")
 
         self.converted_value_data_type = converted_value_data_type
@@ -107,7 +107,7 @@ class PromptRequestPiece(abc.ABC):
         converted_serializer = data_serializer_factory(data_type=converted_value_data_type, value=converted_value)
         self.converted_value_sha256 = converted_serializer.get_sha256()
 
-        if response_error not in PromptResponseError.__args__:  # type: ignore
+        if response_error not in get_args(PromptResponseError):
             raise ValueError(f"response_error {response_error} is not a valid response error.")
 
         self.response_error = response_error
