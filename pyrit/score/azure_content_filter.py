@@ -55,7 +55,7 @@ class AzureContentFilter(Scorer):
             score_value=result.severity,
             score_value_description="severity",
             score_category=result.category,
-            metadata=None,
+            score_metadata=None,
             score_rationale=None,
             scorer_class_identifier=self.get_identifier(),
             prompt_request_response_id=request_response.id,

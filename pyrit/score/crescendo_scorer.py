@@ -83,7 +83,7 @@ class CrescendoScorer(Scorer):
                 ),
                 score_value_description="result_flag",
                 score_category=None,
-                metadata=(
+                score_metadata=(
                     "result_percentage=" + str(parsed_response["result_percentage"])
                     if "result_percentage" in parsed_response
                     else ""
