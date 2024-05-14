@@ -84,7 +84,7 @@ def test_import_scores_from_csv(score: Score):
     assert scores[0].score_rationale == score.score_rationale
     assert scores[0].score_metadata == score.score_metadata
     assert scores[0].scorer_class_identifier
-    assert scores[0].scorer_class_identifier["__type__"] == "HITLScorer"
+    assert scores[0].scorer_class_identifier["__type__"] == "HumanInTheLoopScorer"
     assert scores[0].prompt_request_response_id == score.prompt_request_response_id
 
     memory.add_scores_to_memory.assert_called_once()
