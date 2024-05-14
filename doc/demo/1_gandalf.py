@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # Introduction
 #
@@ -53,7 +68,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import GandalfTarget, GandalfLevel, AzureOpenAIChatTarget
 from pyrit.orchestrator import ScoringRedTeamingOrchestrator
 from pyrit.common import default_values
-from pyrit.score import GandalfBinaryScorer
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 from pyrit.models import AttackStrategy
 
 default_values.load_default_env()
@@ -82,10 +97,10 @@ attack_strategy = AttackStrategy(
     strategy=strategy_path,
     conversation_objective=conversation_objective,
 )
-gandalf_password_scorer = GandalfBinaryScorer(
-    level=gandalf_level,
-    chat_engine=aoai_chat,
+gandalf_password_scorer = SelfAskTrueFalseScorer(
+    chat_target=aoai_chat, true_false_question_path=TrueFalseQuestionPaths.GANDALF.value
 )
+
 
 # %% [markdown]
 # Initialize the `ScoringRedTeamingOrchestrator` with the specified attack strategy and parameters, and automatically manage resources using a context manager to execute the red teaming attack strategy.

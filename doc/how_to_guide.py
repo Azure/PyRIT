@@ -176,24 +176,24 @@ with EndTokenRedTeamingOrchestrator(
 # Large Language Models (LLM) such as GPT, LLaMA, and Phi, take text as input and produce text as a
 # result. AI Red Teaming operations can produce a large number of outputs that need to be scored.
 # Manual scoring by humans is an option, but PyRIT can help in speeding up the process. PyRIT has a
-# built-in interface called `SupportTextClassification` to score text outputs. Security researchers
-# can use the pre-populated derived class `SelfAskGptClassifier` to classify text based on different
+# built-in interface called `Scorer` to score text outputs. Security researchers
+# can use the pre-populated derived class `SelfAskCategoryScorer` to classify text based on different
 # categories. For example, users wishing to determine whether or not a text contains harmful content
 # can use the snipped code below:
 
 # %%
 
-from pyrit.score import SelfAskGptClassifier, ContentClassifiers
+from pyrit.score import SelfAskCategoryScorer, ContentClassifierPaths
 
 text_to_be_scored = "This is amazing!"
-classifier = SelfAskGptClassifier(
-    content_classifier=ContentClassifiers.SENTIMENT_CLASSIFIER, chat_target=red_teaming_llm
+classifier = SelfAskCategoryScorer(
+    content_classifier=ContentClassifierPaths.SENTIMENT_CLASSIFIER.value, chat_target=red_teaming_llm
 )
-classifier.score_text(text=text_to_be_scored)
+await classifier.score_text_async(text=text_to_be_scored)  # type: ignore
 
 # %% [markdown]
 # In case the content to be classified is of a different type, users can override the base class
-# `SupportTextClassification` to add support for custom data types (such as embeddings).
+# `Scorer` to add support for custom data types (such as embeddings).
 #
 # ## Memory
 # PyRIT's memory component enables users to maintain a history of interactions within the system,

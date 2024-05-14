@@ -10,7 +10,7 @@ from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, Score
 
 
 Base = declarative_base()
@@ -140,6 +140,53 @@ class EmbeddingData(Base):  # type: ignore
 
     def __str__(self):
         return f"{self.id}"
+
+
+class ScoreEntry(Base):  # type: ignore
+    """
+    Represents the Score Memory Entry
+
+    """
+
+    __tablename__ = "ScoreEntries"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    score_value = Column(String, nullable=False)
+    score_value_description = Column(String, nullable=True)
+    score_type = Column(String, nullable=False)
+    score_category = Column(String, nullable=False)
+    score_rationale = Column(String, nullable=True)
+    score_metadata = Column(String, nullable=True)
+    scorer_class_identifier = Column(JSON)
+    prompt_request_response_id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
+    date_time = Column(DateTime, nullable=False)
+
+    def __init__(self, *, entry: Score):
+        self.id = entry.id
+        self.score_value = entry.score_value
+        self.score_value_description = entry.score_value_description
+        self.score_type = entry.score_type
+        self.score_category = entry.score_category
+        self.score_rationale = entry.score_rationale
+        self.score_metadata = entry.score_metadata
+        self.scorer_class_identifier = entry.scorer_class_identifier
+        self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
+        self.date_time = entry.date_time
+
+    def get_score(self) -> Score:
+        return Score(
+            id=self.id,
+            score_value=self.score_value,
+            score_value_description=self.score_value_description,
+            score_type=self.score_type,
+            score_category=self.score_category,
+            score_rationale=self.score_rationale,
+            score_metadata=self.score_metadata,
+            scorer_class_identifier=self.scorer_class_identifier,
+            prompt_request_response_id=self.prompt_request_response_id,
+            date_time=self.date_time,
+        )
 
 
 class ConversationMessageWithSimilarity(BaseModel):

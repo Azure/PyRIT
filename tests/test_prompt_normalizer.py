@@ -71,7 +71,7 @@ async def test_send_prompt_async_image_converter():
 
     mock_image_converter = MagicMock(PromptConverter)
 
-    filename: str = ""
+    filename = ""
 
     with tempfile.NamedTemporaryFile(delete=False) as f:
         filename = f.name

@@ -5,10 +5,13 @@ import abc
 import uuid
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Literal
 from uuid import uuid4
 
 from pyrit.models import ChatMessage, data_serializer_factory, ChatMessageRole, PromptDataType, PromptResponseError
+
+
+Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
 
 class PromptRequestPiece(abc.ABC):
@@ -54,9 +57,11 @@ class PromptRequestPiece(abc.ABC):
         converter_identifiers: Optional[List[Dict[str, str]]] = None,
         prompt_target_identifier: Optional[Dict[str, str]] = None,
         orchestrator_identifier: Optional[Dict[str, str]] = None,
+        scorer_identifier: Dict[str, str] = None,
         original_value_data_type: PromptDataType = "text",
         converted_value_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",
+        originator: Originator = "undefined",
     ):
 
         self.id = id if id else uuid4()
@@ -77,6 +82,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.prompt_target_identifier = prompt_target_identifier
         self.orchestrator_identifier = orchestrator_identifier
+        self.scorer_identifier = scorer_identifier
 
         self.original_value = original_value
         self.original_value_data_type = original_value_data_type
@@ -91,6 +97,7 @@ class PromptRequestPiece(abc.ABC):
         self.converted_value_sha256 = converted_serializer.get_sha256()
 
         self.response_error = response_error
+        self.originator = originator
 
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=self.role, content=self.converted_value)
