@@ -95,6 +95,8 @@ class Score:
             return self.score_value.lower() == "true"
         elif self.score_type == "float_scale":
             return float(self.score_value)
+        elif self.score_type == "severity":
+            return int(self.score_value)
 
         raise ValueError(f"Unknown scorer type: {self.score_type}")
 

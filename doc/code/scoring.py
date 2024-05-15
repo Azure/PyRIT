@@ -147,8 +147,7 @@ with AzureOpenAIChatTarget() as self_ask_target:
 #
 
 # %% [markdown]
-#
-# Score text using Azure Content Safety API
+# ## Score text using Azure Content Safety API
 #
 # In order to use this API, you need to configure a few environment variables:
 # AZURE_CONTENT_SAFETY_API_ENDPOINT: The endpoint for the Azure Content Safety API
@@ -180,11 +179,10 @@ response = PromptRequestPiece(
 )
 
 score = await azure_content_filter.score_async(response)  # type: ignore
-print(score[0])  # should be value 2 base on the documentation
+assert score[0].get_value() == 2  # should be value 2 base on the documentation
 
 # %% [markdown]
-#
-# Score text using the crescendo scorer
+# ## Score text using the crescendo scorer
 #
 # In order to use this API, you need to configure a few environment variables:
 # AZURE_OPENAI_CHAT_ENDPOINT: The endpoint for the Azure AOAI deployment
