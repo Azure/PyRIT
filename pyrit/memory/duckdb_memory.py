@@ -112,12 +112,12 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[int]) -> list[PromptRequestPiece]:
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
 
         Args:
-            prompt_ids (list[int]): The prompt IDs to match.
+            prompt_ids (list[str]): The prompt IDs to match.
 
         Returns:
             list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.

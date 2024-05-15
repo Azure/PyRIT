@@ -89,6 +89,10 @@ class MockPromptTarget(PromptChatTarget):
 
 
 def get_memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_duckdb_memory()
+
+
+def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 

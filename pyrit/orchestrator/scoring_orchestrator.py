@@ -82,7 +82,8 @@ class ScoringOrchestrator(Orchestrator):
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
 
-        return results
+        # results is a list[list[str]] and needs to be flattened
+        return [score for sublist in results for score in sublist]
 
     def _chunked_prompts(self, prompts, size):
         for i in range(0, len(prompts), size):

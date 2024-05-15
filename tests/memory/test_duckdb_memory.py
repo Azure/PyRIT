@@ -13,19 +13,19 @@ from sqlalchemy import String, DateTime, INTEGER, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.sqltypes import NullType
 
-from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
-from tests.mocks import get_memory_interface
+from tests.mocks import get_duckdb_memory
 from tests.mocks import get_sample_conversation_entries
 
 
 @pytest.fixture
-def memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
+def memory_interface() -> Generator[DuckDBMemory, None, None]:
+    yield from get_duckdb_memory()
 
 
 @pytest.fixture
@@ -387,7 +387,7 @@ def test_get_memories_with_json_properties(memory_interface):
         assert labels["normalizer_id"] == "id1"
 
 
-def test_get_memories_with_orchestrator_id(memory_interface: MemoryInterface):
+def test_get_memories_with_orchestrator_id(memory_interface: DuckDBMemory):
     # Define a specific normalizer_id
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
@@ -423,23 +423,18 @@ def test_get_memories_with_orchestrator_id(memory_interface: MemoryInterface):
         ),
     ]
 
-    # Insert the ConversationData entries using the _insert_entries method within a session
-    with memory_interface.get_session() as session:
-        memory_interface._insert_entries(entries=entries)
-        session.commit()  # Ensure all entries are committed to the database
+    memory_interface._insert_entries(entries=entries)
 
-        orchestrator1_id = orchestrator1.get_identifier()["id"]
+    orchestrator1_id = int(orchestrator1.get_identifier()["id"])
 
-        # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-        retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(
-            orchestrator_id=orchestrator1_id
-        )
+    # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
+    retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator1_id)
 
-        # Verify that the retrieved entries match the expected normalizer_id
-        assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
-        for retrieved_entry in retrieved_entries:
-            assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
-            assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
+    # Verify that the retrieved entries match the expected normalizer_id
+    assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
+    for retrieved_entry in retrieved_entries:
+        assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
+        assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
 
 
 def test_update_entries_by_conversation_id(memory_interface, sample_conversation_entries):
