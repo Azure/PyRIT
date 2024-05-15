@@ -3,7 +3,6 @@
 
 import abc
 from abc import abstractmethod
-import uuid
 
 from pyrit.models import PromptRequestPiece
 from pyrit.score import Score, ScoreType
@@ -52,10 +51,11 @@ class Scorer(abc.ABC):
             list[Score]: A list of Score objects representing the results.
         """
         request_piece = PromptRequestPiece(
-            id=uuid.UUID(int=0),
             role="user",
             original_value=text,
         )
+
+        request_piece.id = None
         return await self.score_async(request_piece)
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:

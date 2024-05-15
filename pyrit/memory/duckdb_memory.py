@@ -12,11 +12,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
-from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base
+from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
 from pyrit.models import PromptRequestPiece
+from pyrit.models import Score
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +134,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def _add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
@@ -145,6 +146,22 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Inserts embedding data into memory storage
         """
         self._insert_entries(entries=embedding_data)
+
+    def add_scores_to_memory(self, *, scores: list[Score]) -> None:
+        """
+        Inserts a list of scores into the memory storage.
+        """
+        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
+
+    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
+        """
+        Gets a list of scores based on prompt_request_response_ids.
+        """
+        entries = self.query_entries(
+            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
+        )
+
+        return [entry.get_score() for entry in entries]
 
     def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
         """
