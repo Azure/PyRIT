@@ -62,7 +62,7 @@ class DataTypeSerializer(abc.ABC):
         with open(self.value, "wb") as file:
             file.write(data)
 
-     def save_b64_image(self, data: str, output_filename: str=None) -> None:
+    def save_b64_image(self, data: str, output_filename: str=None) -> None:
         """
         Saves the base64 encoded image to disk.
         """
