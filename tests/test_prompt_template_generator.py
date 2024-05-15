@@ -4,7 +4,7 @@
 import pytest
 
 from pyrit.common.prompt_template_generator import PromptTemplateGenerator
-from pyrit.models import ChatMessage
+from pyrit.models.chat_message import ChatMessage
 
 
 @pytest.fixture

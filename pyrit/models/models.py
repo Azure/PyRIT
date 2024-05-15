@@ -264,6 +264,13 @@ class AttackStrategy:
         return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
 
 
+class ToolCall(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    type: str
+    function: str
+
+
 class EmbeddingUsageInformation(BaseModel):
     model_config = ConfigDict(extra="forbid")
     prompt_tokens: int
