@@ -121,6 +121,32 @@ def get_image_request_piece() -> PromptRequestPiece:
         )
 
 
+def get_audio_request_piece() -> PromptRequestPiece:
+    file_name: str
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+        file_name = temp_file.name
+        temp_file.write(b"audio data")
+
+        return PromptRequestPiece(
+            role="user",
+            original_value=file_name,
+            converted_value=file_name,
+            original_value_data_type="audio_path",
+            converted_value_data_type="audio_path",
+        )
+
+
+def get_test_request_piece() -> PromptRequestPiece:
+
+    return PromptRequestPiece(
+        role="user",
+        original_value="some text",
+        converted_value="some text",
+        original_value_data_type="text",
+        converted_value_data_type="text",
+    )
+
+
 def get_sample_conversations() -> list[PromptRequestPiece]:
 
     orchestrator1 = Orchestrator()
