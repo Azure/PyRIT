@@ -6,8 +6,10 @@ import concurrent.futures
 import logging
 import json
 
-from openai import AsyncAzureOpenAI, AzureOpenAI
+from openai import AsyncAzureOpenAI
+from openai import BadRequestError, AuthenticationError, RateLimitError
 from openai.types.chat import ChatCompletion
+from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type, after
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
@@ -16,6 +18,8 @@ from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.exceptions import AuthenticationException, BadRequestException, RateLimitException
+from pyrit.common.constants import RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS, RETRY_MAX_NUM_ATTEMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         temperature: float = 1.0,
         top_p: int = 1,
         frequency_penalty: float = 0.5,
-        presence_penalty: float = 0.5,
+        presence_penalty: float = 0.5
     ) -> None:
         """
         Class that initializes an Azure Open AI GPTV chat target
@@ -110,26 +114,17 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
             token_provider = get_token_provider_from_default_azure_credential()
 
-            self._client = AzureOpenAI(
-                azure_ad_token_provider=token_provider,
-                api_version=api_version,
-                azure_endpoint=endpoint,
-                default_headers=final_headers,
-            )
             self._async_client = AsyncAzureOpenAI(
                 azure_ad_token_provider=token_provider,
                 api_version=api_version,
                 azure_endpoint=endpoint,
-                default_headers=final_headers,
+                default_headers=final_headers
             )
         else:
             api_key = default_values.get_required_value(
                 env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
             )
 
-            self._client = AzureOpenAI(
-                api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
-            )
             self._async_client = AsyncAzureOpenAI(
                 api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
             )
@@ -208,16 +203,13 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         """
         pool = concurrent.futures.ThreadPoolExecutor()
         return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
+    
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
             prompt_request (PromptRequestResponse): The prompt request response object.
-
-        Raises:
-            ValueError: If the response from the prompt target is empty.
-
+            
         Returns:
             PromptRequestResponse: The updated conversation entry with the response from the prompt target.
         """
@@ -232,21 +224,34 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         self._memory.add_request_response_to_memory(request=prompt_request)
 
         messages = self._build_chat_messages(prompt_req_res_entries)
-        resp_text = await self._complete_chat_async(
-            messages=messages,
-            top_p=self._top_p,
-            temperature=self._temperature,
-            frequency_penalty=self._frequency_penalty,
-            presence_penalty=self._presence_penalty,
-        )
+        try:
+            resp_text = await self._complete_chat_async(
+                messages=messages,
+                top_p=self._top_p,
+                temperature=self._temperature,
+                frequency_penalty=self._frequency_penalty,
+                presence_penalty=self._presence_penalty,
+            )
 
-        if not resp_text:
-            raise ValueError("The chat returned an empty response.")
+            if not resp_text:
+                raise ValueError("The chat returned an empty response.")
+            logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-        logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
-
+            response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
+        except BadRequestError as bre:
+            # Handle bad request error when content filter system detects harmful content
+            bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
+            resp_text = bad_request_exception.process_exception()
+            response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text], error="blocked")
+        except AuthenticationError as auth_err:
+            # Handle authentication errors
+            raise AuthenticationException(message=auth_err.message)
+        except RateLimitError as rle:
+            # Handle the rate limit exception after exhausting the maximum number of retries.
+            rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
+            resp_text = rate_limit_exception.process_exception()
+            response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text], error="error")
+            
         return response_entry
 
     def _parse_chat_completion(self, response):
@@ -259,15 +264,16 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Returns:
             str: The generated response message
         """
-        try:
-            response_message = response.choices[0].message.content
-        except KeyError as ex:
-            if response.choices[0].finish_reason == "content_filter":
-                raise RuntimeError(f"Azure blocked the response due to content filter. Response: {response}") from ex
-            else:
-                raise RuntimeError(f"Error in Azure Chat. Response: {response}") from ex
+        response_message = response.choices[0].message.content
         return response_message
 
+    @retry(
+        reraise=True,
+        retry=retry_if_exception_type(RateLimitError)|retry_if_exception_type(BadRequestError),
+        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS), 
+        after=after.after_log(logger, logging.INFO),
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS)
+    )
     async def _complete_chat_async(
         self,
         messages: list[ChatMessageListContent],
@@ -298,7 +304,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Returns:
             str: The generated response message.
         """
-
+        
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_tokens=max_tokens,
@@ -310,7 +316,16 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             stream=False,
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
-        return self._parse_chat_completion(response)
+        finish_reason = response.choices[0].finish_reason
+        # finish_reason="stop" means API returned complete message and 
+        # "length" means API returned incomplete message due to max_tokens limit. 
+        if finish_reason in ["stop", "length"]:
+            response = self._parse_chat_completion(response)
+        elif finish_reason == "content_filter":
+            message = response.choices[0]
+            content_filter_exception = BadRequestException(message=message)
+            response = content_filter_exception.process_exception()
+        return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.

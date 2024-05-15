@@ -13,6 +13,6 @@ model: the model refused to answer or request e.g. "I'm sorry..."
 processing: there is an exception thrown unrelated to the query
 unknown: the type of error is unknown
 """
-PromptResponseError = Literal["none", "blocked", "model", "processing", "unknown"]
+PromptResponseError = Literal["none", "blocked", "error", "model", "processing", "unknown"]
 
 ChatMessageRole = Literal["system", "user", "assistant"]
