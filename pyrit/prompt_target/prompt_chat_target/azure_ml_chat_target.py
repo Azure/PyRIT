@@ -1,12 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import asyncio
+import concurrent.futures
 import logging
 
-from pyrit.chat_message_normalizer import ChatMessageNormalizer, ChatMessageNop
+from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse
-from pyrit.models import ChatMessage
+from pyrit.models import ChatMessage, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -66,32 +67,11 @@ class AzureMLChatTarget(PromptChatTarget):
         self._repetition_penalty = repetition_penalty
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.request_pieces[0]
-
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-        messages.append(request.to_chat_message())
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        logger.info(f"Sending the following prompt to the prompt target: {request}")
-
-        resp_text = self._complete_chat(
-            messages=messages,
-            temperature=self._temperature,
-            top_p=self._top_p,
-            repetition_penalty=self._repetition_penalty,
-        )
-
-        if not resp_text:
-            raise ValueError("The chat returned an empty response.")
-
-        logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
-
-        return response_entry
+        """
+        Deprecated. Use send_prompt_async instead.
+        """
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 

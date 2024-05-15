@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-
+import asyncio
+import concurrent.futures
 from typing import Optional
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import PromptTarget
+
 from pyrit.memory import MemoryInterface
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_target import PromptTarget
 
 
 class PromptChatTarget(PromptTarget):
@@ -49,24 +51,18 @@ class PromptChatTarget(PromptTarget):
         labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
-        Sends a text prompt to the target without having to build the prompt request.
+        Deprecated. Use send_chat_prompt_async instead.
         """
-
-        request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    conversation_id=conversation_id,
-                    original_value=prompt,
-                    converted_value=prompt,
-                    prompt_target_identifier=self.get_identifier(),
-                    orchestrator_identifier=orchestrator_identifier,
-                    labels=labels,
-                )
-            ]
-        )
-
-        return self.send_prompt(prompt_request=request)
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(
+            asyncio.run,
+            self.send_chat_prompt_async(
+                prompt=prompt,
+                conversation_id=conversation_id,
+                orchestrator_identifier=orchestrator_identifier,
+                labels=labels,
+            ),
+        ).result()
 
     async def send_chat_prompt_async(
         self,
