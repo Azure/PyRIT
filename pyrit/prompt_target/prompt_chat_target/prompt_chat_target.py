@@ -51,18 +51,24 @@ class PromptChatTarget(PromptTarget):
         labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
-        Deprecated. Use send_chat_prompt_async instead.
+        Sends a text prompt to the target without having to build the prompt request.
         """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(
-            asyncio.run,
-            self.send_chat_prompt_async(
-                prompt=prompt,
-                conversation_id=conversation_id,
-                orchestrator_identifier=orchestrator_identifier,
-                labels=labels,
-            ),
-        ).result()
+
+        request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    conversation_id=conversation_id,
+                    original_value=prompt,
+                    converted_value=prompt,
+                    prompt_target_identifier=self.get_identifier(),
+                    orchestrator_identifier=orchestrator_identifier,
+                    labels=labels,
+                )
+            ]
+        )
+
+        return self.send_prompt(prompt_request=request)
 
     async def send_chat_prompt_async(
         self,
