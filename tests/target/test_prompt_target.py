@@ -74,6 +74,7 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
     assert chats[0].role == "system"
     assert chats[0].converted_value == "system prompt"
 
+
 @pytest.mark.asyncio
 async def test_send_prompt_user_no_system(
     azure_openai_target: AzureOpenAIChatTarget,
@@ -96,6 +97,7 @@ async def test_send_prompt_user_no_system(
         assert chats[0].role == "user"
         assert chats[1].role == "assistant"
 
+
 @pytest.mark.asyncio
 async def test_send_prompt_with_system(
     azure_openai_target: AzureOpenAIChatTarget,
@@ -103,7 +105,7 @@ async def test_send_prompt_with_system(
     sample_entries: list[PromptRequestPiece],
 ):
 
-    with patch("openai.resources.chat.AsyncCompletions.create" , new_callable=AsyncMock) as mock:
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
         mock.return_value = openai_mock_return
 
         azure_openai_target.set_system_prompt(
@@ -123,6 +125,7 @@ async def test_send_prompt_with_system(
         assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
         assert chats[0].role == "system"
         assert chats[1].role == "user"
+
 
 @pytest.mark.asyncio
 async def test_send_prompt_with_system_calls_chat_complete(

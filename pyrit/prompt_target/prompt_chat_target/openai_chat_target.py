@@ -35,7 +35,6 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
-
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
@@ -63,6 +62,7 @@ class OpenAIChatInterface(PromptChatTarget):
         response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
 
         return response_entry
+
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]

@@ -49,7 +49,7 @@ with AzureOpenAIChatTarget(
         role="user",
         original_value="this is a test prompt",
     ).to_prompt_request_response()
-    await target_llm.send_prompt_async(prompt_request=request)
+    await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
 
 # %% [markdown]
 # To expand to a wider variety of harms, it may be beneficial to write prompt templates instead of the

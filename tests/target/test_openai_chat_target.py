@@ -74,6 +74,7 @@ def prompt_request_response() -> PromptRequestResponse:
         ]
     )
 
+
 async def execute_openai_send_prompt_async(
     target: OpenAIChatInterface,
     prompt_request_response: PromptRequestResponse,

@@ -1,7 +1,5 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import asyncio
-import concurrent.futures
 from typing import Optional
 
 from pyrit.memory import MemoryInterface
