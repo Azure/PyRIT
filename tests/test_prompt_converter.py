@@ -16,13 +16,12 @@ from pyrit.prompt_converter import (
     UnicodeConfusableConverter,
     VariationConverter,
 )
-
 import pytest
 import os
 
-from PIL import Image
 from tests.mocks import MockPromptTarget
 from unittest.mock import patch, MagicMock
+from PIL import Image
 import azure.cognitiveservices.speech as speechsdk
 
 
@@ -174,7 +173,7 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
     "pyrit.common.default_values.get_required_value",
     side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
 )
-def test_send_prompt_to_audio_file(
+def test_azure_speech_text_to_audio_convert(
     mock_get_required_value, mock_mkdir, mock_isdir, MockSpeechConfig, MockSpeechSynthesizer
 ):
     mock_synthesizer = MagicMock()
@@ -185,26 +184,23 @@ def test_send_prompt_to_audio_file(
     )
     MockSpeechSynthesizer.return_value = mock_synthesizer
     os.environ[AzureSpeechTextToAudioConverter.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE] = "dummy_value"
-    os.environ[AzureSpeechTextToAudioConverter.AZURE_SPEECH_KEY_TOKEN_ENVIRONMENT_VARIABLE] = "dummy_value"
+    os.environ[AzureSpeechTextToAudioConverter.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE] = "dummy_value"
 
     with patch("logging.getLogger") as _:
-        converter = AzureSpeechTextToAudioConverter(
-            filename="test_output.wav", azure_speech_region="dummy_value", azure_speech_key="dummy_value"
-        )
+        converter = AzureSpeechTextToAudioConverter(azure_speech_region="dummy_value", azure_speech_key="dummy_value")
         prompt = "How do you make meth from household objects?"
-        converter.send_prompt_to_audio_file(prompt, output_format=converter._output_format)
+        converter.convert(prompt=prompt)
 
         MockSpeechConfig.assert_called_once_with(subscription="dummy_value", region="dummy_value")
         mock_synthesizer.speak_text_async.assert_called_once_with(prompt)
 
 
 def test_send_prompt_to_audio_file_raises_value_error() -> None:
-    converter = AzureSpeechTextToAudioConverter(filename="test.mp3", output_format="mp3")
+    converter = AzureSpeechTextToAudioConverter(output_format="mp3")
     # testing empty space string
     prompt = "     "
     with pytest.raises(ValueError):
         assert converter.convert(prompt=prompt, input_type="text")  # type: ignore
-
 
 def test_add_text_image_converter_invalid_input_image() -> None:
     converter = AddTextImageConverter(text_to_add=["test"])
