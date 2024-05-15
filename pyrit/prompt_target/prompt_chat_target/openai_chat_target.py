@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import json
 import logging
 from abc import abstractmethod
@@ -37,13 +35,34 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
 
+    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        self._validate_request(prompt_request=prompt_request)
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
+
+        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
+        messages.append(request.to_chat_message())
+
+        logger.info(f"Sending the following prompt to the prompt target: {request}")
+
+        self._memory.add_request_response_to_memory(request=prompt_request)
+
+        resp_text = self._complete_chat(
+            messages=messages,
+            top_p=self._top_p,
+            temperature=self._temperature,
+            frequency_penalty=self._frequency_penalty,
+            presence_penalty=self._presence_penalty,
+        )
+
+        if not resp_text:
+            raise ValueError("The chat returned an empty response.")
+
+        logger.info(f'Received the following response from the prompt target "{resp_text}"')
+
+        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
+
+        return response_entry
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
