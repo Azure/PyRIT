@@ -5,7 +5,7 @@ import asyncio
 import logging
 
 from pyrit.memory import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptDataType, PromptRequestPiece
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -35,12 +35,11 @@ class ScoringOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._batch_size = batch_size
 
-
     async def score_prompts_by_orchestrator_id_async(
         self,
         *,
         scorer: Scorer,
-        orchestrator_ids: list[str],
+        orchestrator_ids: list[int],
         responses_only: bool = True,
     ) -> list[Score]:
         """
@@ -56,16 +55,13 @@ class ScoringOrchestrator(Orchestrator):
 
         return await self._score_prompts_batch_async(prompts=requests, scorer=scorer)
 
-
-    async def score_prompts_by_request_id_async(
-        self, *, scorer: Scorer, request_ids: list[str]
-    ) -> list[Score]:
+    async def score_prompts_by_request_id_async(self, *, scorer: Scorer, prompt_ids: list[str]) -> list[Score]:
         """
-        Scores prompts using the Scorer for prompts with the request_ids
+        Scores prompts using the Scorer for prompts with the prompt_ids
         """
 
         requests: list[PromptRequestPiece] = []
-        requests = self._memory.get_prompt_request_pieces_by_id(request_ids=request_ids)
+        requests = self._memory.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
 
         return await self._score_prompts_batch_async(prompts=requests, scorer=scorer)
 
@@ -75,16 +71,13 @@ class ScoringOrchestrator(Orchestrator):
         """
         return [response for response in request_responses if response.role == "assistant"]
 
-
     async def _score_prompts_batch_async(self, prompts: list[PromptRequestPiece], scorer: Scorer) -> list[Score]:
         results = []
 
         for prompts_batch in self._chunked_prompts(prompts, self._batch_size):
             tasks = []
             for prompt in prompts_batch:
-                tasks.append(
-                    scorer.score_async(request=prompt)
-                )
+                tasks.append(scorer.score_async(request_response=prompt))
 
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
@@ -94,4 +87,3 @@ class ScoringOrchestrator(Orchestrator):
     def _chunked_prompts(self, prompts, size):
         for i in range(0, len(prompts), size):
             yield prompts[i : i + size]
-
