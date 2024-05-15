@@ -145,3 +145,100 @@ with AzureOpenAIChatTarget() as self_ask_target:
 #
 # score_value, score_value_description, score_type, score_category, score_rationale, score_metadata, scorer_class_identifier ,prompt_request_response_id
 #
+
+# %% [markdown]
+# ## Score text using Azure Content Safety API
+#
+# In order to use this API, you need to configure a few environment variables:
+# AZURE_CONTENT_SAFETY_API_ENDPOINT: The endpoint for the Azure Content Safety API
+# AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API
+#
+
+# %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+import os
+import uuid
+from azure.ai.contentsafety.models import TextCategory
+from pyrit.score import AzureContentFilterScorer
+from pyrit.common import default_values
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.memory import DuckDBMemory
+
+
+default_values.load_default_env()
+memory = DuckDBMemory()
+
+# Set up the Azure Content Filter
+azure_content_filter = AzureContentFilterScorer(
+    api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
+    endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
+    harm_category=TextCategory.HATE,
+    memory=memory,
+)
+
+response = PromptRequestPiece(
+    role="system",
+    original_value_data_type="text",
+    original_value="I hate you.",
+    converted_value_data_type="text",
+    converted_value="I hate you.",
+    conversation_id=str(uuid.uuid4()),
+)
+
+# need to write it manually to memory as score table has a foreign key constraint
+memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
+
+score = await azure_content_filter.score_async(response)  # type: ignore
+assert score[0].get_value() == 2  # should be value 2 base on the documentation
+
+# %% [markdown]
+# ## Score image using Azure Content Safety API
+#
+# In order to use this API, you need to configure a few environment variables:
+# AZURE_CONTENT_SAFETY_API_ENDPOINT: The endpoint for the Azure Content Safety API
+# AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API
+#
+
+# %%
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+import os
+import uuid
+import pathlib
+from azure.ai.contentsafety.models import TextCategory
+from pyrit.common.path import HOME_PATH
+from pyrit.score import AzureContentFilterScorer
+from pyrit.common import default_values
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.memory import DuckDBMemory
+
+
+default_values.load_default_env()
+memory = DuckDBMemory()
+
+# Set up the Azure Content Filter
+azure_content_filter = AzureContentFilterScorer(
+    api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
+    endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
+    harm_category=TextCategory.HATE,
+    memory=memory,
+)
+
+image_path = pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"
+response = PromptRequestPiece(
+    role="system",
+    original_value_data_type="image_path",
+    original_value=str(image_path),
+    converted_value_data_type="image_path",
+    converted_value=str(image_path),
+    conversation_id=str(uuid.uuid4()),
+)
+
+# need to write it manually to memory as score table has a foreign key constraint
+memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
+
+score = await azure_content_filter.score_async(response)  # type: ignore
+assert score[0].get_value() == 0  # should be value 2 base on the documentation
+
+# %%
