@@ -63,6 +63,7 @@ async def test_ollama_complete_chat_async_return(ollama_chat_engine: OllamaChatT
         ret = await ollama_chat_engine._complete_chat_async(messages=[ChatMessage(role="user", content="hello")])
         assert ret == " Hello."
 
+
 def test_ollama_invalid_model_raises():
     os.environ[OllamaChatTarget.MODEL_NAME_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):

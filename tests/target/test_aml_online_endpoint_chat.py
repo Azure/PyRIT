@@ -53,6 +53,7 @@ def test_get_headers_with_valid_api_key(aml_online_chat: AzureMLChatTarget):
     }
     assert aml_online_chat._get_headers() == expected_headers
 
+
 @pytest.mark.asyncio
 async def test_complete_chat_async(aml_online_chat: AzureMLChatTarget):
     messages = [
@@ -96,6 +97,7 @@ async def test_complete_chat_async_with_nop_normalizer(
         assert len(body["input_data"]["input_string"]) == 2
         assert body["input_data"]["input_string"][0]["role"] == "system"
 
+
 @pytest.mark.asyncio
 async def test_complete_chat_async_with_squashnormalizer(aml_online_chat: AzureMLChatTarget):
     aml_online_chat.chat_message_normalizer = GenericSystemSquash()
@@ -105,7 +107,7 @@ async def test_complete_chat_async_with_squashnormalizer(aml_online_chat: AzureM
         ChatMessage(role="user", content="user content"),
     ]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async" , new_callable=AsyncMock) as mock:
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
         mock_response = Mock()
         mock_response.json.return_value = {"output": "extracted response"}
         mock.return_value = mock_response
@@ -118,6 +120,7 @@ async def test_complete_chat_async_with_squashnormalizer(aml_online_chat: AzureM
         assert body
         assert len(body["input_data"]["input_string"]) == 1
         assert body["input_data"]["input_string"][0]["role"] == "user"
+
 
 @pytest.mark.asyncio
 async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLChatTarget):
