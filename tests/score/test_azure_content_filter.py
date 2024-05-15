@@ -53,3 +53,10 @@ async def test_azure_content_filter_scorer_validate_text(text_request_piece: Pro
 
     # should not raise an error
     scorer.validate(text_request_piece)
+
+
+@pytest.mark.asyncio
+async def test_azure_content_filter_scorer_get_azure_severity():
+
+    scorer = AzureContentFilterScorer(harm_category=TextCategory.HATE)
+    assert scorer.get_azure_severity("0.02") == 2

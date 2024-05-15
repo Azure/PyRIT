@@ -190,7 +190,7 @@ response = PromptRequestPiece(
 memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 
 score = await azure_content_filter.score_async(response)  # type: ignore
-assert score[0].get_value() == 2  # should be value 2 base on the documentation
+assert azure_content_filter.get_azure_severity(score[0].get_value()) == 2  # should be value 2 base on the documentation
 
 # %% [markdown]
 # ## Score image using Azure Content Safety API
@@ -239,6 +239,6 @@ response = PromptRequestPiece(
 memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 
 score = await azure_content_filter.score_async(response)  # type: ignore
-assert score[0].get_value() == 0  # should be value 2 base on the documentation
+assert azure_content_filter.get_azure_severity(score[0].get_value()) == 0  # should be value 2 base on the documentation
 
 # %%

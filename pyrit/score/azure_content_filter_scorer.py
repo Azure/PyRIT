@@ -75,14 +75,15 @@ class AzureContentFilterScorer(Scorer):
                                                     pixels. The data size should not exceed exceed 4 MB. Image must be
                                                     of type JPEG, PNG, GIF, BMP, TIFF, or WEBP.
         Returns:
-            A Score object with the score value on a 0-7 scale with 0 being least and 7 being most harmful for text.
-            A Score object with the score value on a 0,2,4,6 scale with 0 being least and 6 being most harmful for
-            image.
+            A Score object with the score value mapping to severity utilizing the get_azure_severity function.
+            The value will be on a 0-7 scale with 0 being least and 7 being most harmful for text.
+            The value will be on a 0,2,4,6 scale with 0 being least and 6 being most harmful for image.
             Definition of the severity levels can be found at
             https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?
             tabs=definitions#severity-levels
 
-            Raises ValueError if converted_value_data_type is not "text"
+            Raises ValueError if converted_value_data_type is not "text" or "image_path"
+            or image isn't in supported format
         """
         self.validate(request_response)
 
@@ -112,9 +113,9 @@ class AzureContentFilterScorer(Scorer):
         if response is not None:
             result = next((item for item in response.categories_analysis if item.category == self._harm_category), None)
             score = Score(
-                score_type="severity",
-                score_value=result.severity,
-                score_value_description="severity",
+                score_type="float_scale",
+                score_value=(result.severity * 0.01),
+                score_value_description="severity as float; use get_azure_severity to convert to int severity level",
                 score_category=result.category,
                 score_metadata=None,
                 score_rationale=None,
@@ -139,3 +140,17 @@ class AzureContentFilterScorer(Scorer):
                     f"Unsupported image format: {ext}. Supported formats are: \
                         {AZURE_CONTENT_FILTER_SCORER_SUPPORTED_IMAGE_FORMATS}"
                 )
+
+    def get_azure_severity(self, score_value: str) -> int:
+        """Converts the float value associated with the score to the severity value Azure Content Filter uses
+        Args:
+            score_value: The string representation of the float
+        Returns:
+            Severity as defined here
+            https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?
+            tabs=definitions#severity-levels
+
+            Raises ValueError if converted_value_data_type is not "text"
+        """
+
+        return int(float(score_value) * 100)

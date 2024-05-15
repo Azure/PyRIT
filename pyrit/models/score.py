@@ -6,7 +6,7 @@ from typing import Dict, Literal, Optional, get_args
 import uuid
 
 
-ScoreType = Literal["true_false", "float_scale", "severity"]
+ScoreType = Literal["true_false", "float_scale"]
 
 
 class Score:
@@ -95,8 +95,6 @@ class Score:
             return self.score_value.lower() == "true"
         elif self.score_type == "float_scale":
             return float(self.score_value)
-        elif self.score_type == "severity":
-            return int(self.score_value)
 
         raise ValueError(f"Unknown scorer type: {self.score_type}")
 
@@ -115,10 +113,3 @@ class Score:
                     raise ValueError(f"Float scale scorers must have a score value between 0 and 1. Got {score_value}")
             except ValueError:
                 raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}")
-        elif scorer_type == "severity":
-            try:
-                score = int(score_value)
-                if not (0 <= score <= 100):
-                    raise ValueError(f"Severity scorers must have a score value between 0 and 100. Got {score_value}")
-            except ValueError:
-                raise ValueError(f"Severity scorers require a numeric score value. Got {score_value}")
