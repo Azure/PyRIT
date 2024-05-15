@@ -155,7 +155,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def _add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
