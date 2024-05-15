@@ -68,19 +68,6 @@ class OllamaChatTarget(PromptChatTarget):
 
         return response_entry
 
-    def _complete_chat(
-        self,
-        messages: list[ChatMessage],
-    ) -> str:
-        headers = self._get_headers()
-        payload = self._construct_http_body(messages)
-
-        response = net_utility.make_request_and_raise_if_error(
-            endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
-        )
-
-        return response.json()["message"]["content"]
-
     async def _complete_chat_async(
         self,
         messages: list[ChatMessage],

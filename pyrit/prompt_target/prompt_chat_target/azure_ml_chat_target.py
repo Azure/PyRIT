@@ -101,44 +101,6 @@ class AzureMLChatTarget(PromptChatTarget):
 
         return response_entry
 
-    def _complete_chat(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int = 400,
-        temperature: float = 1.0,
-        top_p: int = 1,
-        repetition_penalty: float = 1.2,
-    ) -> str:
-        """
-        Completes a chat interaction by generating a response to the given input prompt.
-
-        This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
-
-        Args:
-            messages (list[ChatMessage]): The chat messages objects containing the role and content.
-            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-            temperature (float, optional): Controls randomness in the response generation.
-                Defaults to 1.0. 1 is more random, 0 is less.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
-                1 is more random, 0 is less.
-            repetition_penalty (float, optional): Controls repetition in the response generation.
-                Defaults to 1.2.
-
-        Raises:
-            Exception: For any errors during the process.
-
-        Returns:
-            str: The generated response message.
-        """
-        headers = self._get_headers()
-        payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
-
-        response = net_utility.make_request_and_raise_if_error(
-            endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
-        )
-
-        return response.json()["output"]
-
     async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
