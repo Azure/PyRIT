@@ -65,6 +65,9 @@ class DataTypeSerializer(abc.ABC):
     def save_b64_image(self, data: str, output_filename: str=None) -> None:
         """
         Saves the base64 encoded image to disk.
+        Arguments:
+            data: string with base64 data
+            output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
         """
         if output_filename:
             self.value = output_filename
