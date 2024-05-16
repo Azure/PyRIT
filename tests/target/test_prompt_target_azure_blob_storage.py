@@ -79,6 +79,46 @@ def test_initialization_with_no_container_url_raises():
 
 @patch("azure.storage.blob.aio.ContainerClient.upload_blob")
 @pytest.mark.asyncio
+async def test_azure_blob_storage_validate_request_length(
+    mock_upload_async, azure_blob_storage_target: AzureBlobStorageTarget, sample_entries: list[PromptRequestPiece]
+):
+    mock_upload_async.return_value = None
+    request = PromptRequestResponse(request_pieces=sample_entries)
+    with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
+        await azure_blob_storage_target.send_prompt_async(prompt_request=request)
+
+
+@patch("azure.storage.blob.aio.ContainerClient.upload_blob")
+@pytest.mark.asyncio
+async def test_azure_blob_storage_validate_prompt_type(
+    mock_upload_async, azure_blob_storage_target: AzureBlobStorageTarget, sample_entries: list[PromptRequestPiece]
+):
+    mock_upload_async.return_value = None
+    request_piece = sample_entries[0]
+    request_piece.converted_value_data_type = "image_path"
+    request = PromptRequestResponse(request_pieces=[request_piece])
+    with pytest.raises(ValueError, match="This target only supports text and url prompt input."):
+        await azure_blob_storage_target.send_prompt_async(prompt_request=request)
+
+
+@patch("azure.storage.blob.aio.ContainerClient.upload_blob")
+@pytest.mark.asyncio
+async def test_azure_blob_storage_validate_prev_convs(
+    mock_upload_async, azure_blob_storage_target: AzureBlobStorageTarget, sample_entries: list[PromptRequestPiece]
+):
+    mock_upload_async.return_value = None
+    request_piece = sample_entries[0]
+    azure_blob_storage_target._memory.add_request_response_to_memory(
+        request=PromptRequestResponse(request_pieces=[request_piece])
+    )
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
+        await azure_blob_storage_target.send_prompt_async(prompt_request=request)
+
+
+@patch("azure.storage.blob.aio.ContainerClient.upload_blob")
+@pytest.mark.asyncio
 async def test_send_prompt_async(
     mock_upload_async, azure_blob_storage_target: AzureBlobStorageTarget, sample_entries: list[PromptRequestPiece]
 ):

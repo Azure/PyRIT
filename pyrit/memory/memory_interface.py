@@ -4,8 +4,11 @@
 import abc
 from pathlib import Path
 
+from typing import Optional
+from uuid import uuid4
+
 from pyrit.memory.memory_models import EmbeddingData
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptResponseError, PromptDataType
+from pyrit.models import PromptRequestResponse, Score, PromptRequestPiece, PromptResponseError, PromptDataType
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding
@@ -76,15 +79,27 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+        """
+        Inserts embedding data into memory storage
+        """
+
+    @abc.abstractmethod
+    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
         """
 
     @abc.abstractmethod
-    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+    def add_scores_to_memory(self, *, scores: list[Score]) -> None:
         """
-        Inserts embedding data into memory storage
+        Inserts a list of scores into the memory storage.
+        """
+
+    @abc.abstractmethod
+    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
+        """
+        Gets a list of scores based on prompt_request_response_ids.
         """
 
     def get_conversation(self, *, conversation_id: str) -> list[PromptRequestResponse]:
@@ -114,6 +129,61 @@ class MemoryInterface(abc.ABC):
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
+    def duplicate_conversation_for_new_orchestrator(
+        self,
+        *,
+        new_orchestrator_id: str,
+        conversation_id: str,
+        new_conversation_id: Optional[str] = None,
+    ) -> None:
+        """
+        Duplicates a conversation from one orchestrator to another.
+
+        This can be useful when an attack strategy requires branching out from a particular point in the conversation.
+        One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
+        the memory. Instead, one needs to duplicate the conversation and continue with the new orchestrator ID.
+
+        Args:
+            new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
+            conversation_id (str): The conversation ID with existing conversations.
+            new_conversation_id (str): The new conversation ID to assign to the duplicated conversations.
+                If no new_conversation_id is provided, a new one will be generated.
+        """
+        new_conversation_id = new_conversation_id or str(uuid4())
+        if conversation_id == new_conversation_id:
+            raise ValueError("The new conversation ID must be different from the existing conversation ID.")
+        prompt_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        for piece in prompt_pieces:
+            piece.id = uuid4()
+            if piece.orchestrator_identifier["id"] == new_orchestrator_id:
+                raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
+            piece.orchestrator_identifier["id"] = new_orchestrator_id
+            piece.conversation_id = new_conversation_id
+
+        self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+
+    def export_conversation_by_orchestrator_id(
+        self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"
+    ):
+        """
+        Exports conversation data with the given orchestrator ID to a specified file.
+        This will contain all conversations that were sent by the same orchestrator.
+
+        Args:
+            orchestrator_id (str): The ID of the orchestrator from which to export conversations.
+            file_path (str): The path to the file where the data will be exported.
+            If not provided, a default path using RESULTS_PATH will be constructed.
+            export_type (str): The format of the export. Defaults to "json".
+        """
+        data = self.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
+
+        # If file_path is not provided, construct a default using the exporter's results_path
+        if not file_path:
+            file_name = f"{str(orchestrator_id)}.{export_type}"
+            file_path = RESULTS_PATH / file_name
+
+        self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
@@ -134,7 +204,7 @@ class MemoryInterface(abc.ABC):
 
         self._update_sequence(request_pieces=request_pieces)
 
-        self._add_request_pieces_to_memory(request_pieces=request_pieces)
+        self.add_request_pieces_to_memory(request_pieces=request_pieces)
 
         if self.memory_embedding:
             for piece in request_pieces:

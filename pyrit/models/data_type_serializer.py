@@ -45,6 +45,8 @@ class DataTypeSerializer(abc.ABC):
     data_directory: Path
     file_extension: str
 
+    _file_path: Path = None
+
     @abc.abstractmethod
     def data_on_disk(self) -> bool:
         """
@@ -60,11 +62,17 @@ class DataTypeSerializer(abc.ABC):
         with open(self.value, "wb") as file:
             file.write(data)
 
-    def save_b64_image(self, data: str) -> None:
+    def save_b64_image(self, data: str, output_filename: str = None) -> None:
         """
         Saves the base64 encoded image to disk.
+        Arguments:
+            data: string with base64 data
+            output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
         """
-        self.value = str(self.get_data_filename())
+        if output_filename:
+            self.value = output_filename
+        else:
+            self.value = str(self.get_data_filename())
         with open(self.value, "wb") as file:
             image_bytes = base64.b64decode(data)
             file.write(image_bytes)
@@ -103,8 +111,11 @@ class DataTypeSerializer(abc.ABC):
 
     def get_data_filename(self) -> Path:
         """
-        Generates a unique filename for the data file.
+        Generates or retrieves a unique filename for the data file.
         """
+        if self._file_path:
+            return self._file_path
+
         if not self.data_on_disk():
             raise TypeError("Data is not stored on disk")
 
@@ -115,7 +126,8 @@ class DataTypeSerializer(abc.ABC):
             self.data_directory.mkdir(parents=True, exist_ok=True)
 
         ticks = int(time.time() * 1_000_000)
-        return Path(self.data_directory, f"{ticks}.{self.file_extension}")
+        self._file_path = Path(self.data_directory, f"{ticks}.{self.file_extension}")
+        return self._file_path
 
     @staticmethod
     def path_exists(file_path: str) -> bool:

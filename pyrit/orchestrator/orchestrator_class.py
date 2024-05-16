@@ -72,7 +72,7 @@ class Orchestrator(abc.ABC, Identifier):
         """
         return self._memory.get_orchestrator_conversations(orchestrator_id=id(self))
 
-    def get_identifier(self):
+    def get_identifier(self) -> dict[str, str]:
         orchestrator_dict = {}
         orchestrator_dict["__type__"] = self.__class__.__name__
         orchestrator_dict["__module__"] = self.__class__.__module__

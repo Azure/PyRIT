@@ -206,24 +206,6 @@ def test_build_chat_messages_with_unsupported_data_types(azure_gptv_chat_engine:
     assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
 
 
-def test_build_chat_messages_no_roles(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
-    entries = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="",  # type: ignore
-                    converted_value_data_type="text",
-                    original_value="Hello",
-                    converted_value="Hello",
-                )
-            ]
-        )
-    ]
-    with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine._build_chat_messages(entries)
-    assert "No role could be determined from the prompt request pieces." in str(excinfo.value)
-
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_adds_to_memory(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
     mock_memory = MagicMock()
@@ -340,7 +322,7 @@ def test_validate_request_too_many_request_pieces(azure_gptv_chat_engine: AzureO
         ]
     )
     with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine.validate_request(prompt_request=prompt_request)
+        azure_gptv_chat_engine._validate_request(prompt_request=prompt_request)
 
     assert "two prompt request pieces" in str(excinfo.value), "Error not raised for too many request pieces"
 
@@ -357,7 +339,7 @@ def test_validate_request_unsupported_data_types(azure_gptv_chat_engine: AzureOp
     )
 
     with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine.validate_request(prompt_request=prompt_request)
+        azure_gptv_chat_engine._validate_request(prompt_request=prompt_request)
 
     assert "This target only supports text and image_path." in str(
         excinfo.value

@@ -3,6 +3,7 @@
 
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
+from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.search_replace_converter import SearchReplaceConverter
@@ -18,6 +19,7 @@ from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpe
 
 
 __all__ = [
+    "AddTextImageConverter",
     "AsciiArtConverter",
     "Base64Converter",
     "ConverterResult",
