@@ -46,14 +46,14 @@ class ScoringOrchestrator(Orchestrator):
         Scores prompts using the Scorer for prompts correlated to the orchestrator_ids.
         """
 
-        requests: list[PromptRequestPiece] = []
+        request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
-            requests.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
+            request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
 
         if responses_only:
-            requests = self._extract_responses_only(requests)
+            request_pieces = self._extract_responses_only(request_pieces)
 
-        return await self._score_prompts_batch_async(prompts=requests, scorer=scorer)
+        return await self._score_prompts_batch_async(prompts=request_pieces, scorer=scorer)
 
     async def score_prompts_by_request_id_async(self, *, scorer: Scorer, prompt_ids: list[str]) -> list[Score]:
         """
