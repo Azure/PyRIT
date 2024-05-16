@@ -13,6 +13,7 @@ from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueF
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.substring_scorer import SubStringScorer
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
+from pyrit.score.self_ask_verify_scorer import SelfAskVerifyScorer, VerifierQuestionPaths
 
 __all__ = [
     "Scorer",
@@ -26,4 +27,6 @@ __all__ = [
     "MarkdownInjectionScorer",
     "SubStringScorer",
     "AzureContentFilterScorer",
+    "SelfAskVerifyScorer",
+    "VerifierQuestionPaths",
 ]
