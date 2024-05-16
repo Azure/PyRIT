@@ -94,7 +94,8 @@ class AddTextImageConverter(PromptConverter):
             )
 
             image_bytes = BytesIO()
-            image_type = prompt.split(".")[-1]
+            mime_type = data.get_mime_type(prompt)
+            image_type = mime_type.split("/")[-1]
 
             new_img = overlay_text.apply_transform(image=original_img)
             new_img.save(image_bytes, format=image_type)
