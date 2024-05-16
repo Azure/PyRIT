@@ -15,32 +15,34 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTempla
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import DATASETS_PATH
 
-VERIFY_QUESTIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "verify").resolve()
+META_SCORER_QUESTIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "meta").resolve()
 
 
-class VerifierQuestionPaths(enum.Enum):
-    META_JUDGE_PROMPT = Path(VERIFY_QUESTIONS_PATH, "meta_judge.yaml").resolve()
+class MetaScorerQuestionPaths(enum.Enum):
+    META_JUDGE_PROMPT = Path(META_SCORER_QUESTIONS_PATH, "meta_judge.yaml").resolve()
 
 
-class SelfAskVerifyScorer(Scorer):
-    """A class that represents a self-ask verifier for scoring."""
+class SelfAskMetaScorer(Scorer):
+    """A class that represents a self-ask meta scorer for scoring."""
 
     def __init__(
-        self, *, chat_target: PromptChatTarget, verifier_question_path: Path, memory: MemoryInterface = None
+        self, *, chat_target: PromptChatTarget, meta_scorer_question_path: Path, memory: MemoryInterface = None
     ) -> None:
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
 
-        verifier_question_contents = yaml.safe_load(verifier_question_path.read_text(encoding="utf-8"))
+        meta_scorer_question_contents = yaml.safe_load(meta_scorer_question_path.read_text(encoding="utf-8"))
 
-        self._category = verifier_question_contents["category"]
-        true_category = verifier_question_contents["true_description"]
-        false_category = verifier_question_contents["false_description"]
+        self._category = meta_scorer_question_contents["category"]
+        true_category = meta_scorer_question_contents["true_description"]
+        false_category = meta_scorer_question_contents["false_description"]
 
-        metadata = verifier_question_contents["metadata"] if "metadata" in verifier_question_contents else ""
+        metadata = meta_scorer_question_contents["metadata"] if "metadata" in meta_scorer_question_contents else ""
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(VERIFY_QUESTIONS_PATH / "verifier_prompt.yaml")
+        scoring_instructions_template = PromptTemplate.from_yaml_file(
+            META_SCORER_QUESTIONS_PATH / "meta_scorer_prompt.yaml"
+        )
 
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
             true_description=true_category, false_description=false_category, metadata=metadata
@@ -64,7 +66,7 @@ class SelfAskVerifyScorer(Scorer):
 
         Returns:
             list[Score]: The request_response scored.
-                         The category is configured from the VerifierQuestionPath.
+                         The category is configured from the MetaScorerQuestionPath.
                          The score_value is True or False based on which fits best.
                          metadata can be configured to provide additional information.
         """
@@ -107,4 +109,4 @@ class SelfAskVerifyScorer(Scorer):
 
     def validate(self, request_response: PromptRequestPiece):
         if request_response.converted_value_data_type != "text":
-            raise ValueError("Self-ask verifier scorer only supports text data type")
+            raise ValueError("Self-ask meta scorer only supports text data type")

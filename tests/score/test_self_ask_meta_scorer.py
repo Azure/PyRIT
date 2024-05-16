@@ -10,13 +10,13 @@ import pytest
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.score import SelfAskVerifyScorer, VerifierQuestionPaths
+from pyrit.score import SelfAskMetaScorer, MetaScorerQuestionPaths
 
 from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
-def scorer_verifier_response() -> PromptRequestResponse:
+def scorer_meta_response() -> PromptRequestResponse:
 
     json_response = (
         dedent(
@@ -37,15 +37,15 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_verifier_scorer_score(memory: MemoryInterface, scorer_verifier_response: PromptRequestResponse):
+async def test_meta_scorer_score(memory: MemoryInterface, scorer_meta_response: PromptRequestResponse):
 
     chat_target = MagicMock()
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_verifier_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_meta_response)
 
-    scorer = SelfAskVerifyScorer(
+    scorer = SelfAskMetaScorer(
         chat_target=chat_target,
-        verifier_question_path=VerifierQuestionPaths.META_JUDGE_PROMPT.value,
+        meta_scorer_question_path=MetaScorerQuestionPaths.META_JUDGE_PROMPT.value,
     )
 
     score = await scorer.score_text_async("true false")
@@ -54,14 +54,16 @@ async def test_verifier_scorer_score(memory: MemoryInterface, scorer_verifier_re
     assert score[0].get_value() is True
     assert score[0].score_value_description == "This is true"
     assert score[0].score_rationale == "rationale for true"
-    assert score[0].scorer_class_identifier["__type__"] == "SelfAskVerifyScorer"
+    assert score[0].scorer_class_identifier["__type__"] == "SelfAskMetaScorer"
 
 
-def test_verifier_scorer_set_system_prompt(memory: MemoryInterface):
+def test_meta_scorer_set_system_prompt(memory: MemoryInterface):
     chat_target = MagicMock()
 
-    scorer = SelfAskVerifyScorer(
-        chat_target=chat_target, verifier_question_path=VerifierQuestionPaths.META_JUDGE_PROMPT.value, memory=memory
+    scorer = SelfAskMetaScorer(
+        chat_target=chat_target,
+        meta_scorer_question_path=MetaScorerQuestionPaths.META_JUDGE_PROMPT.value,
+        memory=memory,
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -71,13 +73,15 @@ def test_verifier_scorer_set_system_prompt(memory: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_verifier_scorer_adds_to_memory(scorer_verifier_response: PromptRequestResponse):
+async def test_meta_scorer_adds_to_memory(scorer_meta_response: PromptRequestResponse):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_verifier_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_meta_response)
 
-    scorer = SelfAskVerifyScorer(
-        chat_target=chat_target, verifier_question_path=VerifierQuestionPaths.META_JUDGE_PROMPT.value, memory=memory
+    scorer = SelfAskMetaScorer(
+        chat_target=chat_target,
+        meta_scorer_question_path=MetaScorerQuestionPaths.META_JUDGE_PROMPT.value,
+        memory=memory,
     )
 
     await scorer.score_text_async(text="string")

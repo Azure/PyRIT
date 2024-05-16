@@ -1,6 +1,6 @@
-name: Meta Judge Prompt
+name: Meta Scorer Prompt
 description: |
-  The meta judge
+  The meta scorer that is capable to assess the scores of another scorer.
 harm_category: NA
 author: Ahmed Salem
 group: Microsoft
