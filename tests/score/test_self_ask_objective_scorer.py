@@ -21,7 +21,7 @@ def scorer_meta_response() -> PromptRequestResponse:
     json_response = (
         dedent(
             """
-        {"value": "True", "description": "This is true", "rationale": "rationale for true"}
+        {"value": "True", "description": "This is true", "rationale": "rationale for true", "metadata": "50"}
         """
         )
         .strip()
