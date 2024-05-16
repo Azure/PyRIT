@@ -71,7 +71,7 @@ class RandomCapitalLettersConverter(PromptConverter):
         """
         pool = concurrent.futures.ThreadPoolExecutor()
         return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
-    
+
     async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that converts the prompt to capital letters via a percentage .
@@ -82,4 +82,3 @@ class RandomCapitalLettersConverter(PromptConverter):
         output = self.string_to_upper_case_by_percentage(self.percentage, prompt)
 
         return ConverterResult(output_text=output, output_type="text")
-    

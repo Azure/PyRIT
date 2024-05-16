@@ -47,13 +47,13 @@ class TranslationConverter(PromptConverter):
 
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language)
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "image_type") -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Deprecated. Use async_convert instead.
         """
         pool = concurrent.futures.ThreadPoolExecutor()
         return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
-    
+
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
     async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

@@ -31,6 +31,7 @@ def test_base64_prompt_converter() -> None:
     assert output.output_text == "dGVzdA=="
     assert output.output_type == "text"
 
+
 def test_rot13_converter_init() -> None:
     converter = ROT13Converter()
     output = converter.convert(prompt="test", input_type="text")
@@ -221,13 +222,15 @@ def test_add_text_image_converter() -> None:
     os.remove(converted_image.output_text)
     os.remove("test.png")
 
-#### TESTING ASYNC VERSIONS:
+
+# TESTING ASYNC VERSIONS:
 @pytest.mark.asyncio
-def test_base64_prompt_converter() -> None:
+async def test_async_base64_prompt_converter() -> None:
     converter = Base64Converter()
     output = converter.convert(prompt="test", input_type="text")
     assert output.output_text == "dGVzdA=="
     assert output.output_type == "text"
+
 
 @pytest.mark.asyncio
 async def test_async_rot13_converter_init() -> None:
@@ -236,12 +239,14 @@ async def test_async_rot13_converter_init() -> None:
     assert output.output_text == "grfg"
     assert output.output_type == "text"
 
+
 @pytest.mark.asyncio
 async def test_async_unicode_sub_default_prompt_converter() -> None:
     converter = UnicodeSubstitutionConverter()
     output = await converter.async_convert(prompt="test", input_type="text")
     assert output.output_text == "\U000e0074\U000e0065\U000e0073\U000e0074"
     assert output.output_type == "text"
+
 
 @pytest.mark.asyncio
 async def test_async_unicode_sub_ascii_prompt_converter() -> None:
@@ -250,12 +255,14 @@ async def test_async_unicode_sub_ascii_prompt_converter() -> None:
     assert output.output_text == "\U00000074\U00000065\U00000073\U00000074"
     assert output.output_type == "text"
 
+
 @pytest.mark.asyncio
 async def test_async_str_join_converter_default() -> None:
     converter = StringJoinConverter()
     output = await converter.async_convert(prompt="test", input_type="text")
     assert output.output_text == "t-e-s-t"
     assert output.output_type == "text"
+
 
 @pytest.mark.asyncio
 async def test_async_str_join_converter_init() -> None:
@@ -264,11 +271,13 @@ async def test_async_str_join_converter_init() -> None:
     assert output.output_text == "t***e***s***t"
     assert output.output_type == "text"
 
+
 @pytest.mark.asyncio
 async def test_async_str_join_converter_none_raises() -> None:
     converter = StringJoinConverter()
     with pytest.raises(TypeError):
         assert await converter.async_convert(prompt=None, input_type="text")
+
 
 @pytest.mark.asyncio
 async def async_test_str_join_converter_invalid_type_raises() -> None:
@@ -276,11 +285,13 @@ async def async_test_str_join_converter_invalid_type_raises() -> None:
     with pytest.raises(ValueError):
         assert await converter.async_convert(prompt="test", input_type="invalid")  # type: ignore # noqa
 
+
 @pytest.mark.asyncio
 async def test_async_str_join_converter_unsupported_type_raises() -> None:
     converter = StringJoinConverter()
     with pytest.raises(ValueError):
         assert await converter.async_convert(prompt="test", input_type="image_path")
+
 
 @pytest.mark.asyncio
 async def test_async_ascii_art() -> None:
@@ -292,12 +303,14 @@ async def test_async_ascii_art() -> None:
     )
     assert output.output_type == "text"
 
+
 @pytest.mark.asyncio
 async def test_async_unicode_confusable_converter() -> None:
     converter = UnicodeConfusableConverter(deterministic=True)
     output = await converter.async_convert(prompt="lorem ipsum dolor sit amet", input_type="text")
     assert output.output_text == "ïỎ𐒴ḕ𝗠 ïṗṡ𝘶𝗠 𝑫ỎïỎ𐒴 ṡï𝚝 ḁ𝗠ḕ𝚝"
     assert output.output_type == "text"
+
 
 @pytest.mark.asyncio
 async def test_async_character_replacement_converter() -> None:
@@ -306,12 +319,14 @@ async def test_async_character_replacement_converter() -> None:
     assert output.output_text == "Hello_World_!"
     assert output.output_type == "text"
 
+
 @pytest.mark.asyncio
 async def test_async_leetcode_converter() -> None:
     converter = LeetspeakConverter()
     output = await converter.async_convert(prompt="mood", input_type="text")
     assert output.output_text == "m00d"
     assert output.output_type == "text"
+
 
 @pytest.mark.asyncio
 async def test_async_capital_letter_converter() -> None:
@@ -328,6 +343,7 @@ async def test_async_capital_letter_converter() -> None:
         " TO BE REDONE!"
     )
 
+
 @pytest.mark.asyncio
 async def test_async_capital_letter_converter_with_twentyfive_percent() -> None:
     percentage = 25.0
@@ -343,6 +359,7 @@ async def test_async_capital_letter_converter_with_twentyfive_percent() -> None:
     upper_count = sum(1 for char in actual_converted_text if char.isupper())
     expected_percentage = (upper_count / len(prompt)) * 100.0 if actual_converted_text else 0
     assert expected_percentage == percentage
+
 
 @pytest.mark.asyncio
 @patch("azure.cognitiveservices.speech.SpeechSynthesizer")
@@ -374,6 +391,7 @@ async def test_async_azure_speech_text_to_audio_convert(
         MockSpeechConfig.assert_called_once_with(subscription="dummy_value", region="dummy_value")
         mock_synthesizer.speak_text_async.assert_called_once_with(prompt)
 
+
 @pytest.mark.asyncio
 async def test_async_send_prompt_to_audio_file_raises_value_error() -> None:
     converter = AzureSpeechTextToAudioConverter(output_format="mp3")
@@ -382,11 +400,13 @@ async def test_async_send_prompt_to_audio_file_raises_value_error() -> None:
     with pytest.raises(ValueError):
         assert await converter.async_convert(prompt=prompt, input_type="text")  # type: ignore
 
+
 @pytest.mark.asyncio
 async def test_async_add_text_image_converter_invalid_input_image() -> None:
     converter = AddTextImageConverter(text_to_add=["test"])
     with pytest.raises(FileNotFoundError):
         assert await converter.async_convert(prompt="mock_image.png", input_type="image_path")  # type: ignore
+
 
 @pytest.mark.asyncio
 async def test_async_add_text_image_converter() -> None:

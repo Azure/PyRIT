@@ -13,12 +13,12 @@ class MockPromptConverter(PromptConverter):
 
     def __init__(self) -> None:
         pass
-    
+
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         return ConverterResult(output_text=prompt, output_type="text")
-    
-    def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        return ConverterResult(output_text=prompt, output_type="text")
+
+    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        return await ConverterResult(output_text=prompt, output_type="text") #type: ignore
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

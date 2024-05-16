@@ -64,7 +64,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         """
         pool = concurrent.futures.ThreadPoolExecutor()
         return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
-    
+
     async def async_convert(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -112,5 +112,3 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             raise
 
         return ConverterResult(output_text=audio_serializer_file, output_type="audio_path")
-
-    

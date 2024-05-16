@@ -18,7 +18,7 @@ class UnicodeSubstitutionConverter(PromptConverter):
         """
         pool = concurrent.futures.ThreadPoolExecutor()
         return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
-    
+
     async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that just encodes the prompt using any unicode starting point.
