@@ -31,7 +31,7 @@ def text_request_piece() -> PromptRequestPiece:
 @pytest.mark.asyncio
 async def test_azure_content_filter_scorer_validate_audio(audio_request_piece: PromptRequestPiece):
 
-    scorer = AzureContentFilterScorer(harm_category=TextCategory.HATE)
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_category=TextCategory.HATE)
     with pytest.raises(ValueError, match="Azure Content Filter Scorer only supports text and image_path data type"):
         await scorer.validate(audio_request_piece)
 
@@ -41,7 +41,7 @@ async def test_azure_content_filter_scorer_validate_audio(audio_request_piece: P
 @pytest.mark.asyncio
 async def test_azure_content_filter_scorer_validate_image(image_request_piece: PromptRequestPiece):
 
-    scorer = AzureContentFilterScorer(harm_category=TextCategory.HATE)
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_category=TextCategory.HATE)
 
     # should not raise an error
     scorer.validate(image_request_piece)
@@ -52,7 +52,7 @@ async def test_azure_content_filter_scorer_validate_image(image_request_piece: P
 @pytest.mark.asyncio
 async def test_azure_content_filter_scorer_validate_text(text_request_piece: PromptRequestPiece):
 
-    scorer = AzureContentFilterScorer(harm_category=TextCategory.HATE)
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_category=TextCategory.HATE)
 
     # should not raise an error
     scorer.validate(text_request_piece)
@@ -61,7 +61,7 @@ async def test_azure_content_filter_scorer_validate_text(text_request_piece: Pro
 @pytest.mark.asyncio
 async def test_azure_content_filter_scorer_get_azure_severity():
 
-    scorer = AzureContentFilterScorer(harm_category=TextCategory.HATE)
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_category=TextCategory.HATE)
     assert scorer.get_azure_severity("0.02") == 2
 
 
@@ -70,7 +70,7 @@ async def test_azure_content_filter_scorer_get_azure_severity():
 async def test_azure_content_filter_scorer_adds_to_memory(analyze_text):
     memory = MagicMock(MemoryInterface)
 
-    scorer = AzureContentFilterScorer(harm_category=TextCategory.HATE, memory=memory)
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_category=TextCategory.HATE, memory=memory)
     await scorer.score_text_async(text="I hate you!")
 
     memory.add_scores_to_memory.assert_called_once()
@@ -80,7 +80,7 @@ async def test_azure_content_filter_scorer_adds_to_memory(analyze_text):
 @patch.object(AzureContentFilterScorer, "analyze_text", return_value=2)
 async def test_azure_content_filter_scorer_score(analyze_text):
 
-    scorer = AzureContentFilterScorer(harm_category=TextCategory.HATE)
+    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_category=TextCategory.HATE)
     score = await scorer.score_text_async(text="I hate you!")
 
     assert len(score) == 1
