@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import logging
-from typing import Literal
-
 import azure.cognitiveservices.speech as speechsdk
+import concurrent.futures
+import asyncio
 
+from typing import Literal
 from pyrit.common import default_values
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptDataType
@@ -55,9 +56,16 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._output_format = output_format
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
+        return input_type == "audio_path"
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
+        """
+        Deprecated. Use async_convert instead.
+        """
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
+    
+    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
@@ -104,3 +112,5 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             raise
 
         return ConverterResult(output_text=audio_serializer_file, output_type="audio_path")
+
+    

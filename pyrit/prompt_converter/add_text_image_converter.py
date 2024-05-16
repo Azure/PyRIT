@@ -4,6 +4,8 @@
 import logging
 import pathlib
 import base64
+import concurrent.futures
+import asyncio
 
 from augly.image.transforms import OverlayText
 from augly.utils import base_paths
@@ -52,6 +54,13 @@ class AddTextImageConverter(PromptConverter):
         self._output_name = output_filename
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
+        """
+        Deprecated. Use async_convert instead.
+        """
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
+    
+    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
         Converter that adds text to an image
 

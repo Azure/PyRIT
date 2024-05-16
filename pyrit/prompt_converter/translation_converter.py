@@ -2,6 +2,8 @@ import json
 import logging
 import uuid
 import pathlib
+import concurrent.futures
+import asyncio
 
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
@@ -45,8 +47,15 @@ class TranslationConverter(PromptConverter):
 
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language)
 
+    def convert(self, *, prompt: str, input_type: PromptDataType = "image_type") -> ConverterResult:
+        """
+        Deprecated. Use async_convert instead.
+        """
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
+    
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Generates variations of the input prompts using the converter target.
         Parameters:
@@ -82,7 +91,8 @@ class TranslationConverter(PromptConverter):
             ]
         )
 
-        response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_value
+        response = await self.converter_target.send_prompt_async(prompt_request=request)
+        response_msg = response.request_pieces[0].converted_value
 
         try:
             llm_response: dict[str, str] = json.loads(response_msg)["output"]
