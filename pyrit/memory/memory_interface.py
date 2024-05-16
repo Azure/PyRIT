@@ -79,15 +79,15 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
-        """
-        Inserts embedding data into memory storage
-        """
-
-    @abc.abstractmethod
     def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
+        """
+
+    @abc.abstractmethod
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+        """
+        Inserts embedding data into memory storage
         """
 
     @abc.abstractmethod
@@ -115,9 +115,21 @@ class MemoryInterface(abc.ABC):
         request_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
-    def get_orchestrator_conversations(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    @abc.abstractmethod
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
         """
-        Retrieves a list of PromptRequestResponse objects that have the specified orchestrator ID.
+        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
+
+        Args:
+            prompt_ids (list[int]): The prompt IDs to match.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
+        """
+
+    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+        """
+        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
         Args:
             orchestrator_id (int): The orchestrator ID to match.
@@ -175,7 +187,7 @@ class MemoryInterface(abc.ABC):
             If not provided, a default path using RESULTS_PATH will be constructed.
             export_type (str): The format of the export. Defaults to "json".
         """
-        data = self.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
+        data = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
