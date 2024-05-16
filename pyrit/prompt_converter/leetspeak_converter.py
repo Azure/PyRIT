@@ -1,9 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import random
+import concurrent.futures
+import asyncio
+
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-import random
 
 
 class LeetspeakConverter(PromptConverter):
@@ -25,6 +28,13 @@ class LeetspeakConverter(PromptConverter):
         }
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Deprecated. Use async_convert instead.
+        """
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
+    
+    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter to generate leatspeak version of a prompt.
         Since there are multiple character variations, this is non-deterministic.

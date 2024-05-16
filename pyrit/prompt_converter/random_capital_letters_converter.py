@@ -3,6 +3,8 @@
 
 import random
 import logging
+import concurrent.futures
+import asyncio
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -65,6 +67,13 @@ class RandomCapitalLettersConverter(PromptConverter):
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
+        Deprecated. Use async_convert instead.
+        """
+        pool = concurrent.futures.ThreadPoolExecutor()
+        return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
+    
+    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
         Simple converter that converts the prompt to capital letters via a percentage .
         """
         if not self.input_supported(input_type):
@@ -73,3 +82,4 @@ class RandomCapitalLettersConverter(PromptConverter):
         output = self.string_to_upper_case_by_percentage(self.percentage, prompt)
 
         return ConverterResult(output_text=output, output_type="text")
+    
