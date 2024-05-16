@@ -82,17 +82,19 @@ class DALLETarget(PromptTarget):
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
         self.headers = headers
 
+        target_kwargs = {
+            "deployment_name": deployment_name,
+            "endpoint": endpoint,
+            "api_version": api_version,
+        }
         if use_aad_auth:
-            self._image_target = AzureOpenAIChatTarget(
-                deployment_name=deployment_name,
-                endpoint=endpoint,
-                api_version=api_version,
-                use_aad_auth=True,
-            )
+            target_kwargs["use_aad_auth"] = True
         else:
-            self._image_target = AzureOpenAIChatTarget(
-                deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
-            )
+            target_kwargs["api_key"] = api_key
+        self._image_target = AzureOpenAIChatTarget(
+            **target_kwargs
+        )
+
 
     def send_prompt(
         self,

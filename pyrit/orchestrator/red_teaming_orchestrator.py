@@ -78,14 +78,16 @@ class RedTeamingOrchestrator(Orchestrator):
         self._red_teaming_chat._memory = self._memory
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
+        if not self._initial_red_teaming_prompt:
+            raise ValueError("The initial red teaming prompt cannot be empty.")
         self._use_score_as_feedback = use_score_as_feedback
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
         
-    async def check_conversation_complete_async(self) -> bool:
+    async def check_conversation_complete_async(self) -> Score:
         """
-        Returns True if the conversation is complete, False otherwise.
+        Returns the scoring result of the conversation.
         This function uses the scorer to classify the last response.
         """
         prompt_request_responses = self._memory.get_conversation(
@@ -110,9 +112,9 @@ class RedTeamingOrchestrator(Orchestrator):
         
         if score.score_type != "true_false":
             raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
-        return score.get_value()
+        return score
 
-    async def apply_attack_strategy_until_completion_async(self, *, max_turns: int = 5):
+    async def apply_attack_strategy_until_completion_async(self, *, max_turns: int = 5) -> Score:
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
@@ -131,29 +133,24 @@ class RedTeamingOrchestrator(Orchestrator):
 
             send_prompt_kwargs = {}
             if self._use_score_as_feedback and score:
-                send_prompt_kwargs["score_explanation"] = score.score_explanation
-            if blocked:
-                send_prompt_kwargs["blocked"] = "Request to target failed: blocked. Please rewrite your prompt to avoid getting blocked next time."
-                blocked = False
+                send_prompt_kwargs["feedback"] = score.score_rationale
 
             response = self.send_prompt(**send_prompt_kwargs)
             self._display_response(response)
 
-            # Check if there was an error. No error or blocked error is acceptable
-            # since the red teaming chat can still continue the conversation.
-            if response.response_error not in ["none", "blocked"]:
-                raise RuntimeError(f"Response error: {response.response_error}")
-
             if response.response_error == "none":
                 score = await self.check_conversation_complete_async()
-                if bool(score.score_value):
+                if bool(score.get_value()):
                     success = True
                     logger.info(
                         "The red teaming orchestrator has completed the conversation and achieved the objective.",
                     )
                     break
-            else:
+            elif response.response_error == "blocked":
                 score = None
+            else:
+                raise RuntimeError(f"Response error: {response.response_error}")
+
             turn += 1
 
         if not success:
@@ -174,7 +171,7 @@ class RedTeamingOrchestrator(Orchestrator):
         if response_piece.response_error == "blocked":
             print("---\nContent blocked, cannot show a response.\n---")
 
-    def send_prompt(self, *, prompt: Optional[str] = None, score_explanation: Optional[str] = None) -> PromptRequestPiece:
+    def send_prompt(self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False) -> PromptRequestPiece:
         """
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
@@ -183,12 +180,12 @@ class RedTeamingOrchestrator(Orchestrator):
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
                 This can only be specified for the first iteration at this point.
-            score_explanation: The explanation of the score to send to the red teaming chat.
-                This is feedback from a previous iteration of send_prompt that is determined
-                through a scorer and passed back to the red teaming chat to improve the next prompt.
-                For text-to-text applications, this may not be needed.
+            feedback: feedback from a previous iteration of send_prompt.
+                This can either be a score if the request completed, or a short prompt to rewrite
+                the input if the request was blocked.
+                The feedback is passed back to the red teaming chat to improve the next prompt.
                 For text-to-image applications, for example, there is no immediate text output
-                that can be passed back to the red teaming chat, so the scorer explanation is the
+                that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
         """
         target_messages = self._memory.get_chat_messages_with_conversation_id(
@@ -204,7 +201,7 @@ class RedTeamingOrchestrator(Orchestrator):
             logger.info(
                 "Generating a prompt for the prompt target using the red teaming LLM."
             )
-            prompt = self._get_prompt_from_red_teaming_target(score_explanation=score_explanation)
+            prompt = self._get_prompt_from_red_teaming_target(feedback=feedback)
 
         target_prompt_obj = NormalizerRequestPiece(
             prompt_converters=self._prompt_converters,
@@ -225,7 +222,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return response_piece
 
-    def _get_prompt_from_red_teaming_target(self, *, score_explanation: Optional[str] = None) -> str:
+    def _get_prompt_for_red_teaming_chat(self, *, feedback: str | None) -> str:
         # If we have previously exchanged messages with the attack target
         # we can use the last message from the attack target as the new
         # prompt for the red teaming chat.
@@ -234,33 +231,53 @@ class RedTeamingOrchestrator(Orchestrator):
         last_response_from_attack_target = self._get_last_attack_target_response()
         if not last_response_from_attack_target:
             logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
-            prompt_text = self._initial_red_teaming_prompt
+            return self._initial_red_teaming_prompt
         else:
-            if last_response_from_attack_target.response_error != "none":
-                prompt_text = f"Request to target failed: {last_response_from_attack_target.response_error}"
-            else:
-                # A successful response from the attack target exists.
-                # If the attack target responds with text we can use that as the new prompt.
-                # Otherwise, we need to rely on the scorer's (textual) explanation.
-                if last_response_from_attack_target.converted_value_data_type == "text":
+            # If the attack target responds with text we can use that as the new prompt
+            # unless the response is an error (which may include blocked image requests, for example).
+            if last_response_from_attack_target.converted_value_data_type == "text":
+                if last_response_from_attack_target.response_error == "none":
                     prompt_text = last_response_from_attack_target.converted_value
-                elif self._use_score_as_feedback and score_explanation:
-                    prompt_text = score_explanation
+                    if self._use_score_as_feedback:
+                        # concatenate the feedback to the response from the attack target
+                        prompt_text += "\n\n" + feedback
+                    return prompt_text
+                elif last_response_from_attack_target.response_error == "blocked":
+                    return "Request to target failed: blocked. Please rewrite your prompt to avoid getting blocked next time."
                 else:
-                    base_error_message = (
-                        "The attack target does not respond with text output, "
-                        "so the scorer explanation is the only textual feedback "
-                        "that can be passed to the red teaming chat. "
-                    )
-                    if not self._use_score_as_feedback:
-                        raise ValueError(
-                            f"{base_error_message}"
-                            "However, the use_score_as_feedback flag is set to False."
-                        )
-                    raise ValueError(
-                        f"{base_error_message}"
-                        "However, no score_explanation was provided."
-                    )
+                    return f"Request to target failed: {last_response_from_attack_target.response_error}"
+            
+            # The remainer of this method handles the case where the attack target
+            # does not respond with text output, but other modalities.
+            # If the response type is not text, the request should have succeeded.
+            if last_response_from_attack_target.response_error != "none":
+                raise RuntimeError(
+                    "Request to target failed despite the returned data type "
+                    f"{last_response_from_attack_target.converted_value_data_type}: {last_response_from_attack_target.response_error}"
+                )
+            
+            # The last response was successful and the response type is not text.
+            # If the use_score_as_feedback flag is set, we can use the score rationale as feedback.
+            base_error_message = (
+                "The attack target does not respond with text output, "
+                "so the scoring rationale is the only textual feedback "
+                "that can be passed to the red teaming chat. "
+            )
+            if not self._use_score_as_feedback:
+                raise ValueError(
+                    f"{base_error_message}"
+                    "However, the use_score_as_feedback flag is set to False so it cannot be utilized."
+                )
+            if not feedback:
+                raise ValueError(
+                    f"{base_error_message}"
+                    "However, no scoring rationale was provided by the scorer."
+                )
+            return feedback
+
+
+    def _get_prompt_from_red_teaming_target(self, *, feedback: Optional[str] = None) -> str:
+        prompt_text = self._get_prompt_for_red_teaming_chat(feedback=feedback)
 
         if self._is_first_turn_with_red_teaming_chat():
             self._red_teaming_chat.set_system_prompt(

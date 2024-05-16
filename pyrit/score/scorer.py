@@ -58,7 +58,7 @@ class Scorer(abc.ABC):
         request_piece.id = None
         return await self.score_async(request_piece)
     
-    async def score_image_async(self, file_path: str) -> list[Score]:
+    async def score_image_async(self, image_path: str) -> list[Score]:
         """
         Scores the given image using the chat target.
 
@@ -70,8 +70,8 @@ class Scorer(abc.ABC):
         """
         request_piece = PromptRequestPiece(
             role="user",
-            original_value=file_path,
-            converted_value=file_path,
+            original_value=image_path,
+            converted_value=image_path,
             original_value_data_type="image_path",
             converted_value_data_type="image_path",
         )

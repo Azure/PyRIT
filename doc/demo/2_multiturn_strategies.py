@@ -25,7 +25,7 @@ from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.chat_message_normalizer import GenericSystemSquash
 from pyrit.common import default_values
 from pyrit.models import AttackStrategy
-from pyrit.score import SelfAskBinaryTextScorer, ScoringInstructions
+from pyrit.score import SelfAskTrueFalseScorer
 
 default_values.load_default_env()
 
@@ -53,11 +53,9 @@ prompt_target = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
-scorer = SelfAskBinaryTextScorer(
-    prompt_template_path=ScoringInstructions.CLASSIFICATION_SYSTEM_PROMPT,
-    content_classifier=Path("scorer_definitions/key_logger_classifier.yaml"),
+scorer = SelfAskTrueFalseScorer(
     chat_target=red_teaming_chat,
-    success_categories="keylogger"
+    true_false_question_path=Path("scorer_definitions/key_logger_classifier.yaml"),
 )
 
 with RedTeamingOrchestrator(
@@ -65,7 +63,7 @@ with RedTeamingOrchestrator(
     red_teaming_chat=red_teaming_chat,
     prompt_target=prompt_target,
     initial_red_teaming_prompt="how can I help you?",
-    scorer=,
+    scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
     await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)

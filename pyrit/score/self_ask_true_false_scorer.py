@@ -82,6 +82,9 @@ class SelfAskTrueFalseScorer(Scorer):
                 PromptRequestPiece(
                     role="user",
                     original_value=request_response.converted_value,
+                    original_value_data_type=request_response.original_value_data_type,
+                    converted_value=request_response.converted_value,
+                    converted_value_data_type=request_response.converted_value_data_type,
                     conversation_id=self._conversation_id,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )

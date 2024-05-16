@@ -32,6 +32,7 @@
 # %%
 
 import os
+from pathlib import Path
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
@@ -113,7 +114,7 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 from textwrap import dedent
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.score import SelfAskCategoryScorer, ContentClassifierPaths
+from pyrit.score import SelfAskTrueFalseScorer
 
 
 attack_strategy = dedent(
@@ -139,8 +140,9 @@ target_llm = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
-scorer = SelfAskCategoryScorer(
-    content_classifier=ContentClassifierPaths.SENTIMENT_CLASSIFIER.value, chat_target=red_teaming_llm
+scorer = SelfAskTrueFalseScorer(
+    true_false_question_path=Path("demo/scorer_definitions/offensive_comment_classifier.yaml"),
+    chat_target=red_teaming_llm
 )
 
 # Create an orchestrator to manage the red teaming conversation.
