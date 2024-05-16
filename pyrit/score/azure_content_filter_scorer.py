@@ -87,36 +87,19 @@ class AzureContentFilterScorer(Scorer):
         """
         self.validate(request_response)
 
-        response = None
+        severity = None
         if request_response.converted_value_data_type == "text":
-            request = AnalyzeTextOptions(
-                text=request_response.converted_value,
-                categories=[self._harm_category],
-                output_type="EightSeverityLevels",
-            )
-            # Analyze text and geting the results for the category specified
-            response = self._azureCFClient.analyze_text(request)
+            severity = self.analyze_text(request_response.converted_value)
         elif request_response.converted_value_data_type == "image_path":
-            ext = DataTypeSerializer.get_extension(request_response.converted_value)
-            image_serializer = data_serializer_factory(
-                value=request_response.converted_value, data_type="image_path", extension=ext
-            )
-            base64_encoded_data = image_serializer.read_data_base64()
+            severity = self.analyze_image(request_response.converted_value)
 
-            image_data = ImageData(content=base64_encoded_data)
-            request = AnalyzeImageOptions(
-                image=image_data, categories=[self._harm_category], output_type="FourSeverityLevels"
-            )
-            # Analyze image and geting the results for the category specified
-            response = self._azureCFClient.analyze_image(request)
+        if severity is not None:
 
-        if response is not None:
-            result = next((item for item in response.categories_analysis if item.category == self._harm_category), None)
             score = Score(
                 score_type="float_scale",
-                score_value=(result.severity * 0.01),
+                score_value=str(severity * 0.01),
                 score_value_description="severity as float; use get_azure_severity to convert to int severity level",
-                score_category=result.category,
+                score_category=str(self._harm_category),
                 score_metadata=None,
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
@@ -154,3 +137,49 @@ class AzureContentFilterScorer(Scorer):
         """
 
         return int(float(score_value) * 100)
+
+    def analyze_text(self, text: str) -> int:
+        """Analyze the text and get the results for the category specified
+        Args:
+            text: The text to be analyzed
+        Returns:
+            severity
+        """
+
+        request = AnalyzeTextOptions(
+            text=text,
+            categories=[self._harm_category],
+            output_type="EightSeverityLevels",
+        )
+        # Analyze text and geting the results for the category specified
+
+        response = self._azureCFClient.analyze_text(request)
+        if response is not None:
+            result = next((item for item in response.categories_analysis if item.category == self._harm_category), None)
+            return result.severity
+        else:
+            raise ValueError("No response from Azure Content Filter API")
+
+    def analyze_image(self, image_path: str) -> int:
+        """Analyze the image and get the results for the category specified
+        Args:
+            image_path: The image_path of the image to be analyzed
+        Returns:
+            AnalyzeTextOptions object
+        """
+
+        ext = DataTypeSerializer.get_extension(image_path)
+        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
+        base64_encoded_data = image_serializer.read_data_base64()
+
+        image_data = ImageData(content=base64_encoded_data)
+        request = AnalyzeImageOptions(
+            image=image_data, categories=[self._harm_category], output_type="FourSeverityLevels"
+        )
+        # Analyze image and geting the results for the category specified
+        response = self._azureCFClient.analyze_image(request)
+        if response is not None:
+            result = next((item for item in response.categories_analysis if item.category == self._harm_category), None)
+            return result.severity
+        else:
+            raise ValueError("No response from Azure Content Filter API")
