@@ -66,6 +66,6 @@ with RedTeamingOrchestrator(
     scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
-    await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
+    await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
 
 # %%

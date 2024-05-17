@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, Dict, Any
 from uuid import uuid4
 from PIL import Image
 
@@ -85,7 +85,7 @@ class RedTeamingOrchestrator(Orchestrator):
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
 
-    async def check_conversation_complete_async(self) -> Score:
+    async def check_conversation_complete_async(self) -> Union[Score, None]:
         """
         Returns the scoring result of the conversation.
         This function uses the scorer to classify the last response.
@@ -93,11 +93,11 @@ class RedTeamingOrchestrator(Orchestrator):
         prompt_request_responses = self._memory.get_conversation(conversation_id=self._prompt_target_conversation_id)
         if not prompt_request_responses:
             # If there are no messages, then the conversation is not complete.
-            return False
+            return None
         if prompt_request_responses[-1].request_pieces[0].role in ["user", "system"]:
             # If the last message is a system or red teaming chat message,
             # then the conversation is not yet complete.
-            return False
+            return None
 
         last_message_content = prompt_request_responses[-1].request_pieces[0].converted_value
         last_message_type = prompt_request_responses[-1].request_pieces[0].converted_value_data_type
@@ -128,7 +128,7 @@ class RedTeamingOrchestrator(Orchestrator):
         while turn <= max_turns:
             logger.info(f"Applying the attack strategy for turn {turn}.")
 
-            send_prompt_kwargs = {}
+            send_prompt_kwargs: Dict[str, Any] = {}
             if self._use_score_as_feedback and score:
                 send_prompt_kwargs["feedback"] = score.score_rationale
 
@@ -168,7 +168,7 @@ class RedTeamingOrchestrator(Orchestrator):
             with open(response_piece.converted_value, "rb") as f:
                 img = Image.open(f)
                 # Jupyter built-in display function only works in notebooks.
-                display(img)  # noqa: F821
+                display(img)  # type: ignore # noqa: F821
         if response_piece.response_error == "blocked":
             print("---\nContent blocked, cannot show a response.\n---")
 

@@ -5,7 +5,7 @@ import logging
 import pathlib
 import concurrent.futures
 import asyncio
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict, Any
 
 from openai import BadRequestError
 
@@ -82,7 +82,7 @@ class DALLETarget(PromptTarget):
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
         self.headers = headers
 
-        target_kwargs = {
+        target_kwargs: Dict[str, Any] = {
             "deployment_name": deployment_name,
             "endpoint": endpoint,
             "api_version": api_version,
@@ -124,7 +124,7 @@ class DALLETarget(PromptTarget):
         return await self._generate_images_async(prompt=request.converted_value, request=request)
 
     async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
-        image_generation_args = {
+        image_generation_args: Dict[str, Any] = {
             "model": self.deployment_name,
             "prompt": prompt,
             "n": self.n,

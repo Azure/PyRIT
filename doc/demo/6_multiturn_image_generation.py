@@ -59,7 +59,7 @@ orchestrator = RedTeamingOrchestrator(
     use_score_as_feedback=True,
     verbose=True,
 )
-score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)
+score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
 
 
 # %%

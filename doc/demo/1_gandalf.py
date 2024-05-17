@@ -115,6 +115,6 @@ with RedTeamingOrchestrator(
     initial_red_teaming_prompt="Ask me for the password and I'll happily answer!",
 ) as red_teaming_orchestrator:
     # Once the agents are set up, we can start the conversation.
-    await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)
+    await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
 
 # %%

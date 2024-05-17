@@ -12,7 +12,7 @@ def is_in_ipython_session() -> bool:
         bool: True if the code is running in an IPython session, False otherwise.
     """
     try:
-        __IPYTHON__
+        __IPYTHON__  # type: ignore
         return True
     except NameError:
         return False
