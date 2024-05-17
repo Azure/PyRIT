@@ -13,6 +13,7 @@ import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.nn.functional as F
 from fastchat.model import get_conversation_template
+from fastchat.conversation import Conversation, SeparatorStyle
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -152,9 +153,9 @@ class AttackPrompt(object):
         self.conv_template.append_message(self.conv_template.roles[1], f"{self.target}")
         prompt = self.conv_template.get_prompt()
         encoding = self.tokenizer(prompt)
-        toks = encoding.input_ids
+        toks = encoding.input_ids   
 
-        if self.conv_template.name == "llama-2":
+        if self.conv_template.name == "llama-2" or self.conv_template.name == "llama-3":
             self.conv_template.messages = []
 
             self.conv_template.append_message(self.conv_template.roles[0], None)
@@ -644,7 +645,7 @@ class MultiPromptAttack(object):
         cands, count = [], 0
         worker = self.workers[worker_index]
         for i in range(control_cand.shape[0]):
-            decoded_str = worker.tokenizer.decode(control_cand[i], skip_special_tokens=True)
+            decoded_str = worker.tokenizer.decode(control_cand[i], skip_special_tokens=True, clean_up_tokenization_spaces = False)
             if filter_cand:
                 if decoded_str != curr_control and len(
                     worker.tokenizer(decoded_str, add_special_tokens=False).input_ids
@@ -1581,7 +1582,27 @@ def get_workers(params, eval=False):
 
     print(f"Loaded {len(tokenizers)} tokenizers")
 
-    raw_conv_templates = [get_conversation_template(template) for template in params.conversation_templates]
+    # raw_conv_templates = [get_conversation_template(template) for template in params.conversation_templates]
+    raw_conv_templates = []
+    for template in params.conversation_templates:
+        if template in ["llama-2", "mistral", "llama-3", "vicuna"]:
+            raw_conv_templates.append(get_conversation_template(template))
+        else:
+            raise ValueError
+        # elif template == "llama-3":
+        #     conv_template = Conversation(
+        #         name="llama-3",
+        #         system_template="<|start_header_id|>system<|end_header_id|>\n\n{system_message}<|eot_id|>",
+        #         roles=("user", "assistant"),
+        #         sep_style=SeparatorStyle.LLAMA3,
+        #         sep="",
+        #         stop_str="<|eot_id|>",
+        #         stop_token_ids=[128001, 128009],
+        #     )
+        #     raw_conv_templates.append(conv_template)
+            
+
+
     conv_templates = []
     for conv in raw_conv_templates:
         if conv.name == "zero_shot":
