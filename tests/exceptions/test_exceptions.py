@@ -5,6 +5,7 @@ import json
 import logging
 from pyrit.exceptions import PyritException, BadRequestException, RateLimitException, EmptyResponseException
 
+
 def test_pyrit_exception_initialization():
     ex = PyritException(500, "Internal Server Error")
     assert ex.status_code == 500
