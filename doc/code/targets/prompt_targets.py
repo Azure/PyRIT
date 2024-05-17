@@ -47,7 +47,7 @@ request = PromptRequestPiece(
 # When `use_aad_auth=True`, ensure the user has 'Cognitive Service OpenAI User' role assigned on the AOAI Resource
 # and `az login` is used to authenticate with the correct identity
 with AzureOpenAIChatTarget(use_aad_auth=False) as azure_openai_chat_target:
-    print(azure_openai_chat_target.send_prompt(prompt_request=request))
+    print(await azure_openai_chat_target.send_prompt_async(prompt_request=request))  # type: ignore
 
 # %% [markdown]
 # The `AzureBlobStorageTarget` inherits from `PromptTarget`, meaning it has functionality to send prompts. In contrast to `PromptChatTarget`s, `PromptTarget`s do not interact with chat assistants.
@@ -79,4 +79,4 @@ with AzureBlobStorageTarget(
     sas_token=os.environ.get("AZURE_STORAGE_ACCOUNT_SAS_TOKEN"),
 ) as abs_prompt_target:
 
-    print(abs_prompt_target.send_prompt(prompt_request=request))
+    print(await abs_prompt_target.send_prompt_async(prompt_request=request))  # type: ignore
