@@ -50,7 +50,7 @@ with AzureOpenAIChatTarget(
         role="user",
         original_value="this is a test prompt",
     ).to_prompt_request_response()
-    target_llm.send_prompt(prompt_request=request)
+    await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
 
 # %% [markdown]
 # To expand to a wider variety of harms, it may be beneficial to write prompt templates instead of the
@@ -102,7 +102,7 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 # - run a single turn of the attack strategy or
 # - try to achieve the goal as specified in the attack strategy which may take multiple turns.
 #
-# The single turn is executed with the `send_prompt()` method. It generates the prompt using the red
+# The single turn is executed with the `send_prompt_async()` method. It generates the prompt using the red
 # teaming LLM and sends it to the target.
 # The full execution of the attack strategy over potentially multiple turns requires a mechanism
 # to determine if the goal has been achieved. This happens via a scorer that evaluates the output of the
@@ -160,7 +160,7 @@ with RedTeamingOrchestrator(
     # or the maximum number of turns is reached.
     await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
 
-    # Alternatively, use send_prompt() to generate just a single turn of the attack strategy.
+    # Alternatively, use send_prompt_async() to generate just a single turn of the attack strategy.
 
 # %% [markdown]
 # Going a step further, we can generalize the attack strategy into templates as mentioned in an earlier

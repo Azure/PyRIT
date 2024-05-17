@@ -64,27 +64,6 @@ async def test_ollama_complete_chat_async_return(ollama_chat_engine: OllamaChatT
         assert ret == " Hello."
 
 
-def test_ollama_complete_chat_return(ollama_chat_engine: OllamaChatTarget):
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock_create:
-        mock_create.return_value = httpx.Response(
-            200,
-            json={
-                "model": "mistral",
-                "created_at": "2024-04-13T16:14:52.69602Z",
-                "message": {"role": "assistant", "content": " Hello."},
-                "done": True,
-                "total_duration": 254579625,
-                "load_duration": 276542,
-                "prompt_eval_count": 20,
-                "prompt_eval_duration": 222911000,
-                "eval_count": 3,
-                "eval_duration": 30879000,
-            },
-        )
-        ret = ollama_chat_engine._complete_chat(messages=[ChatMessage(role="user", content="hello")])
-        assert ret == " Hello."
-
-
 def test_ollama_invalid_model_raises():
     os.environ[OllamaChatTarget.MODEL_NAME_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
