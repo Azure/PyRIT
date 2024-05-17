@@ -1,3 +1,21 @@
+# %% [markdown]
+# In this example, we'll try to convince an image generation model to generate a harmful image.
+# For this purpose, we use PyRIT's `RedTeamingOrchestrator` that leverages a red teaming
+# LLM to generate prompts that are then sent to the image generation endpoint. Behind the scenes,
+# this will use an Azure OpenAI endpoint to generate the prompts and send them to the target.
+# The target chat bot will then respond to the prompts, and the responses will be scored by
+# the `RedTeamingOrchestrator` to determine if the objective has been achieved. 
+# Notably, scoring happens with an Azure OpenAI GPT-V model that can process our scoring instructions
+# plus image and generate a score based on the image content.
+# The score is then used as feedback to the red teaming LLM to generate new prompts.
+# Similarly, if the image generation prompt gets blocked by content filters we use that as
+# feedback to the red teaming LLM.
+# This process will continue until the objective is achieved (i.e., a harmful image is generated)
+# or a maximum number of attempts is reached.
+#
+# Note that for this to work well, the `RedTeamingOrchestrator` requires a red teaming LLM
+# without content moderation or other kinds of safety filtering mechanisms.
+# And even then, it depends on the model, and may not succeed every time.
 
 # %%
 import os
