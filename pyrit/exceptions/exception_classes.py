@@ -30,13 +30,6 @@ class BadRequestException(PyritException):
     
     def __init__(self, status_code: int = 400, *, message: str = "Bad Request"):
         super().__init__(status_code, message)
-    
-
-class AuthenticationException(PyritException):
-    """Exception class for authentication errors."""
-    
-    def __init__(self, status_code: int = 401, *, message: str = "Unauthorized"):
-        super().__init__(status_code, message)
         
 
 class RateLimitException(PyritException):
@@ -44,5 +37,12 @@ class RateLimitException(PyritException):
     
     def __init__(self, status_code: int = 429, *, message: str = "Rate Limit Exception"):
         super().__init__(status_code, message)
+        
+
+class EmptyResponseException(BadRequestException):
+    """Exception class for empty response errors."""
+    
+    def __init__(self, status_code: int = 204, *, message: str = "No Content"):
+        super().__init__(status_code=status_code, message=message)
 
 

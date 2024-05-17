@@ -164,6 +164,38 @@ pre-commit run --all-files
 # run hooks on a specific file
 pre-commit run --files <file_name>
 ```
+### Exception Handling Guidelines
+
+In our PyRIT framework, proper exception handling is crucial for maintaining robustness and reliability. We have centralized exceptions in a dedicated [module](../pyrit/exceptions/exception_classes.py) to streamline this process. When working with orchestrators, targets, converters, and scorers, and handle exceptions please adhere to the following guidelines:
+
+#### General Guidelines
+
+1. **Centralized Exceptions**: Use the exceptions defined in our centralized exceptions module or create new ones as necessary in the same module.
+2. **Inherit `PyritException`**: Ensure any new exceptions inherit from `PyritException` to maintain consistency.
+3. **Exception Processing**: Utilize the `process_exception` method to handle exceptions appropriately.
+
+#### Specific Scenarios
+
+1. **Target Response is None or JSON Parsing Failure in Scorer**
+   - **Action**: Implement a retry mechanism to attempt the operation a few times.
+   - **If Still Failing**: Use the `process_exception` method to handle the failure and log the error.
+
+2. **RateLimitError from Endpoint/OpenAI**
+   - **Action**: Implement a retry mechanism to attempt the operation a few times.
+   - **If Still Failing**: Use the `process_exception` method to handle the failure and log the error.
+
+3. **Authentication Error**
+   - **Action**: Allow the exception to bubble up naturally without explicitly raising it again.
+
+4. **BadRequestError Caused by Content Filter**
+   - **Action**: Do not retry the operation.
+   - **If Occurring**: Use the `process_exception` method to handle the failure and log the error.
+
+5. **Unknown Exception**
+   - **Action**: Raise the exception itself to allow for proper propagation.
+   - **Future Learning**: Monitor these exceptions to learn and identify patterns for future enhancements and more specific exception handling.
+
+By following these guidelines, we ensure a consistent and robust approach to exception handling across the framework.
 
 ### Running tests
 

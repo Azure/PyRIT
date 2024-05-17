@@ -7,7 +7,7 @@ import logging
 import json
 
 from openai import AsyncAzureOpenAI
-from openai import BadRequestError, AuthenticationError, RateLimitError
+from openai import BadRequestError, RateLimitError
 from openai.types.chat import ChatCompletion
 from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type, after
 
@@ -18,7 +18,7 @@ from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.exceptions import AuthenticationException, BadRequestException, RateLimitException
+from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException
 from pyrit.common.constants import RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS, RETRY_MAX_NUM_ATTEMPTS
 
 logger = logging.getLogger(__name__)
@@ -233,8 +233,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 presence_penalty=self._presence_penalty,
             )
 
-            if not resp_text:
-                raise ValueError("The chat returned an empty response.")
+            
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
             response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
@@ -243,13 +242,16 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
             resp_text = bad_request_exception.process_exception()
             response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text], error="blocked")
-        except AuthenticationError as auth_err:
-            # Handle authentication errors
-            raise AuthenticationException(message=auth_err.message)
         except RateLimitError as rle:
             # Handle the rate limit exception after exhausting the maximum number of retries.
             rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
             resp_text = rate_limit_exception.process_exception()
+            response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text], error="error")
+        except EmptyResponseException as ere:
+            # Handle the empty response exception after exhausting the maximum number of retries.
+            message = f"Empty response from the target even after {RETRY_MAX_NUM_ATTEMPTS} retries."
+            empty_response_exception = EmptyResponseException(message=message)
+            resp_text = empty_response_exception.process_exception()
             response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text], error="error")
             
         return response_entry
@@ -269,7 +271,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
     @retry(
         reraise=True,
-        retry=retry_if_exception_type(RateLimitError)|retry_if_exception_type(BadRequestError),
+        retry=retry_if_exception_type(RateLimitError)|retry_if_exception_type(EmptyResponseException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS), 
         after=after.after_log(logger, logging.INFO),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS)
@@ -325,6 +327,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             message = response.choices[0]
             content_filter_exception = BadRequestException(message=message)
             response = content_filter_exception.process_exception()
+        # Handle empty response
+        if not response:
+            raise EmptyResponseException("The chat returned an empty response.")
         return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
