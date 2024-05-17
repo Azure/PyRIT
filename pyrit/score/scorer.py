@@ -57,7 +57,7 @@ class Scorer(abc.ABC):
 
         request_piece.id = None
         return await self.score_async(request_piece)
-    
+
     async def score_image_async(self, image_path: str) -> list[Score]:
         """
         Scores the given image using the chat target.

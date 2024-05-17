@@ -4,7 +4,7 @@
 # LLM to generate prompts that are then sent to the image generation endpoint. Behind the scenes,
 # this will use an Azure OpenAI endpoint to generate the prompts and send them to the target.
 # The target chat bot will then respond to the prompts, and the responses will be scored by
-# the `RedTeamingOrchestrator` to determine if the objective has been achieved. 
+# the `RedTeamingOrchestrator` to determine if the objective has been achieved.
 # Notably, scoring happens with an Azure OpenAI GPT-V model that can process our scoring instructions
 # plus image and generate a score based on the image content.
 # The score is then used as feedback to the red teaming LLM to generate new prompts.

@@ -91,10 +91,7 @@ class DALLETarget(PromptTarget):
             target_kwargs["use_aad_auth"] = True
         else:
             target_kwargs["api_key"] = api_key
-        self._image_target = AzureOpenAIChatTarget(
-            **target_kwargs
-        )
-
+        self._image_target = AzureOpenAIChatTarget(**target_kwargs)
 
     def send_prompt(
         self,
@@ -139,9 +136,7 @@ class DALLETarget(PromptTarget):
             image_generation_args["style"] = self.style
 
         try:
-            response = await self._image_target._async_client.images.generate(
-                **image_generation_args
-            )
+            response = await self._image_target._async_client.images.generate(**image_generation_args)
             json_response = json.loads(response.model_dump_json())
 
             data = data_serializer_factory(data_type="image_path")

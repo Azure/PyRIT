@@ -84,15 +84,13 @@ class RedTeamingOrchestrator(Orchestrator):
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
-        
+
     async def check_conversation_complete_async(self) -> Score:
         """
         Returns the scoring result of the conversation.
         This function uses the scorer to classify the last response.
         """
-        prompt_request_responses = self._memory.get_conversation(
-            conversation_id=self._prompt_target_conversation_id
-        )
+        prompt_request_responses = self._memory.get_conversation(conversation_id=self._prompt_target_conversation_id)
         if not prompt_request_responses:
             # If there are no messages, then the conversation is not complete.
             return False
@@ -109,7 +107,7 @@ class RedTeamingOrchestrator(Orchestrator):
             score = (await self._scorer.score_image_async(image_path=last_message_content))[0]
         else:
             raise ValueError(f"Unsupported message type: {last_message_type}")
-        
+
         if score.score_type != "true_false":
             raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
         return score
@@ -127,7 +125,6 @@ class RedTeamingOrchestrator(Orchestrator):
         turn = 1
         success = False
         score: Score | None = None
-        blocked = False
         while turn <= max_turns:
             logger.info(f"Applying the attack strategy for turn {turn}.")
 
@@ -160,18 +157,24 @@ class RedTeamingOrchestrator(Orchestrator):
             )
 
         return score
-    
+
     def _display_response(self, response_piece: PromptRequestPiece) -> None:
         # If running in notebook environment, display the image.
-        if response_piece.response_error == "none" and response_piece.converted_value_data_type == "image_path" and is_in_ipython_session():
+        if (
+            response_piece.response_error == "none"
+            and response_piece.converted_value_data_type == "image_path"
+            and is_in_ipython_session()
+        ):
             with open(response_piece.converted_value, "rb") as f:
                 img = Image.open(f)
                 # Jupyter built-in display function only works in notebooks.
-                display(img)
+                display(img)  # noqa: F821
         if response_piece.response_error == "blocked":
             print("---\nContent blocked, cannot show a response.\n---")
 
-    def send_prompt(self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False) -> PromptRequestPiece:
+    def send_prompt(
+        self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False
+    ) -> PromptRequestPiece:
         """
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
@@ -198,9 +201,7 @@ class RedTeamingOrchestrator(Orchestrator):
         else:
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
             # A special case is the very first message, which means there are no prior messages.
-            logger.info(
-                "Generating a prompt for the prompt target using the red teaming LLM."
-            )
+            logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
             prompt = self._get_prompt_from_red_teaming_target(feedback=feedback)
 
         target_prompt_obj = NormalizerRequestPiece(
@@ -209,16 +210,13 @@ class RedTeamingOrchestrator(Orchestrator):
             prompt_data_type="text",
         )
 
-        response_piece = (
-            self._prompt_normalizer.send_prompt(
-                normalizer_request=NormalizerRequest([target_prompt_obj]),
-                target=self._prompt_target,
-                conversation_id=self._prompt_target_conversation_id,
-                labels=self._global_memory_labels,
-                orchestrator_identifier=self.get_identifier(),
-            )
-            .request_pieces[0]
-        )
+        response_piece = self._prompt_normalizer.send_prompt(
+            normalizer_request=NormalizerRequest([target_prompt_obj]),
+            target=self._prompt_target,
+            conversation_id=self._prompt_target_conversation_id,
+            labels=self._global_memory_labels,
+            orchestrator_identifier=self.get_identifier(),
+        ).request_pieces[0]
 
         return response_piece
 
@@ -243,19 +241,23 @@ class RedTeamingOrchestrator(Orchestrator):
                         prompt_text += "\n\n" + feedback
                     return prompt_text
                 elif last_response_from_attack_target.response_error == "blocked":
-                    return "Request to target failed: blocked. Please rewrite your prompt to avoid getting blocked next time."
+                    return (
+                        "Request to target failed: blocked. "
+                        "Please rewrite your prompt to avoid getting blocked next time."
+                    )
                 else:
                     return f"Request to target failed: {last_response_from_attack_target.response_error}"
-            
+
             # The remainer of this method handles the case where the attack target
             # does not respond with text output, but other modalities.
             # If the response type is not text, the request should have succeeded.
             if last_response_from_attack_target.response_error != "none":
                 raise RuntimeError(
                     "Request to target failed despite the returned data type "
-                    f"{last_response_from_attack_target.converted_value_data_type}: {last_response_from_attack_target.response_error}"
+                    f"{last_response_from_attack_target.converted_value_data_type}: "
+                    f"{last_response_from_attack_target.response_error}"
                 )
-            
+
             # The last response was successful and the response type is not text.
             # If the use_score_as_feedback flag is set, we can use the score rationale as feedback.
             base_error_message = (
@@ -269,12 +271,8 @@ class RedTeamingOrchestrator(Orchestrator):
                     "However, the use_score_as_feedback flag is set to False so it cannot be utilized."
                 )
             if not feedback:
-                raise ValueError(
-                    f"{base_error_message}"
-                    "However, no scoring rationale was provided by the scorer."
-                )
+                raise ValueError(f"{base_error_message}" "However, no scoring rationale was provided by the scorer.")
             return feedback
-
 
     def _get_prompt_from_red_teaming_target(self, *, feedback: Optional[str] = None) -> str:
         prompt_text = self._get_prompt_for_red_teaming_chat(feedback=feedback)
@@ -301,13 +299,8 @@ class RedTeamingOrchestrator(Orchestrator):
         return response_text
 
     def _get_last_attack_target_response(self) -> PromptRequestPiece | None:
-        target_messages = self._memory.get_conversation(
-            conversation_id=self._prompt_target_conversation_id
-        )
-        assistant_responses = [
-            m.request_pieces[0] for m in target_messages
-            if m.request_pieces[0].role == "assistant"
-        ]
+        target_messages = self._memory.get_conversation(conversation_id=self._prompt_target_conversation_id)
+        assistant_responses = [m.request_pieces[0] for m in target_messages if m.request_pieces[0].role == "assistant"]
         return assistant_responses[-1] if len(assistant_responses) > 0 else None
 
     def _is_first_turn_with_red_teaming_chat(self):

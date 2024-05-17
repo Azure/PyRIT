@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from pyrit.memory import MemoryInterface
 from pyrit.prompt_target import PromptTarget, AzureOpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.models import AttackStrategy, ChatMessage
+from pyrit.models import AttackStrategy
 from pyrit.score import Score, Scorer
 from pyrit.common.path import DATASETS_PATH
 
@@ -101,12 +101,13 @@ def test_send_prompt_twice(
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat = chat_completion_engine,
-        memory = memory_interface,
-        attack_strategy = attack_strategy,
-        initial_red_teaming_prompt = "how can I help you?",
-        prompt_target = prompt_target,
-        scorer=scorer)
+        red_teaming_chat=chat_completion_engine,
+        memory=memory_interface,
+        attack_strategy=attack_strategy,
+        initial_red_teaming_prompt="how can I help you?",
+        prompt_target=prompt_target,
+        scorer=scorer,
+    )
 
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
@@ -145,12 +146,13 @@ def test_send_fixed_prompt_then_generated_prompt(
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat = chat_completion_engine,
-        memory = memory_interface,
-        attack_strategy = attack_strategy,
-        initial_red_teaming_prompt = "how can I help you?",
-        prompt_target = prompt_target,
-        scorer=scorer)
+        red_teaming_chat=chat_completion_engine,
+        memory=memory_interface,
+        attack_strategy=attack_strategy,
+        initial_red_teaming_prompt="how can I help you?",
+        prompt_target=prompt_target,
+        scorer=scorer,
+    )
 
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
@@ -192,12 +194,13 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat = chat_completion_engine,
-        memory = memory_interface,
-        attack_strategy = attack_strategy,
-        initial_red_teaming_prompt = "how can I help you?",
-        prompt_target = prompt_target,
-        scorer=scorer)
+        red_teaming_chat=chat_completion_engine,
+        memory=memory_interface,
+        attack_strategy=attack_strategy,
+        initial_red_teaming_prompt="how can I help you?",
+        prompt_target=prompt_target,
+        scorer=scorer,
+    )
 
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
@@ -251,16 +254,13 @@ async def test_is_conversation_complete_scoring(score, message_count):
                     converted_value_data_type="text",
                 )
             ]
-        ) for i in range(message_count)
+        )
+        for i in range(message_count)
     ]
-    orchestrator._memory.get_conversation = MagicMock(
-        return_value=simulated_messages
-    )
+    orchestrator._memory.get_conversation = MagicMock(return_value=simulated_messages)
     # conversation is complete if the last message is from the target
     # and the score is True
-    assert await orchestrator.check_conversation_complete_async() == (
-        len(simulated_messages) > 0 and score
-    )
+    assert await orchestrator.check_conversation_complete_async() == (len(simulated_messages) > 0 and score)
 
 
 @pytest.mark.asyncio
@@ -281,53 +281,52 @@ async def test_is_conversation_complete_scoring_non_bool():
         scorer=scorer,
     )
     orchestrator._memory.get_conversation = MagicMock(
-        return_value=
-            [
-                PromptRequestResponse(
-                    request_pieces=[
-                        PromptRequestPiece(
-                            role="user",
-                            original_value="First message.",
-                            converted_value="First message.",
-                            original_value_data_type="text",
-                            converted_value_data_type="text",
-                        )
-                    ]
-                ),
-                PromptRequestResponse(
-                    request_pieces=[
-                        PromptRequestPiece(
-                            role="assistant",
-                            original_value="Second message.",
-                            converted_value="Second message.",
-                            original_value_data_type="text",
-                            converted_value_data_type="text",
-                        )
-                    ]
-                ),
-                PromptRequestResponse(
-                    request_pieces=[
-                        PromptRequestPiece(
-                            role="user",
-                            original_value="Third message.",
-                            converted_value="Third message.",
-                            original_value_data_type="text",
-                            converted_value_data_type="text",
-                        )
-                    ]
-                ),
-                PromptRequestResponse(
-                    request_pieces=[
-                        PromptRequestPiece(
-                            role="assistant",
-                            original_value="Fourth message.",
-                            converted_value="Fourth message.",
-                            original_value_data_type="text",
-                            converted_value_data_type="text",
-                        )
-                    ]
-                )
-            ]
+        return_value=[
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="user",
+                        original_value="First message.",
+                        converted_value="First message.",
+                        original_value_data_type="text",
+                        converted_value_data_type="text",
+                    )
+                ]
+            ),
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="assistant",
+                        original_value="Second message.",
+                        converted_value="Second message.",
+                        original_value_data_type="text",
+                        converted_value_data_type="text",
+                    )
+                ]
+            ),
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="user",
+                        original_value="Third message.",
+                        converted_value="Third message.",
+                        original_value_data_type="text",
+                        converted_value_data_type="text",
+                    )
+                ]
+            ),
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="assistant",
+                        original_value="Fourth message.",
+                        converted_value="Fourth message.",
+                        original_value_data_type="text",
+                        converted_value_data_type="text",
+                    )
+                ]
+            ),
+        ]
     )
     with pytest.raises(ValueError):
         await orchestrator.check_conversation_complete_async()
