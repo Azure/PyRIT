@@ -23,20 +23,7 @@ class PromptConverter(abc.ABC, Identifier):
     """
 
     @abc.abstractmethod
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Converts the given prompts into a different representation
-
-        Args:
-            prompt: The prompt to be converted.
-
-        Returns:
-            str: The converted representation of the prompts.
-        """
-        pass
-
-    @abc.abstractmethod
-    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompts into a different representation
 

@@ -1,6 +1,5 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import concurrent.futures
 import asyncio
 
 from pyrit.models import PromptDataType
@@ -14,14 +13,7 @@ class AsciiArtConverter(PromptConverter):
     def __init__(self, font="rand"):
         self.font_value = font
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Deprecated. Use async_convert instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
-
-    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converter that uses art to convert strings to ASCII art.
         This can sometimes bypass LLM filters
@@ -34,6 +26,7 @@ class AsciiArtConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
+        await asyncio.sleep(0)
         return ConverterResult(output_text=text2art(prompt, font=self.font_value), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

@@ -56,11 +56,12 @@ class PromptNormalizer(abc.ABC):
         )
         try:
             # Use the synchronous prompt sending method by default.
-            return target.send_prompt(prompt_request=request_response)
+            return target.send_prompt(prompt_request=request_response)  # type: ignore
         except NotImplementedError:
             # Alternatively, use async if sync is unavailable.
             pool = concurrent.futures.ThreadPoolExecutor()
-            return pool.submit(asyncio.run, target.send_prompt_async(prompt_request=request_response)).result()
+            response = pool.submit(asyncio.run, target.send_prompt_async(request_response))  # type: ignore
+            return response.result()
 
     async def send_prompt_async(
         self,
@@ -86,7 +87,7 @@ class PromptNormalizer(abc.ABC):
         Returns:
             PromptRequestResponse: The response received from the target.
         """
-        request = self._build_prompt_request_response(
+        request = await self._build_prompt_request_response(
             request=normalizer_request,
             target=target,
             conversation_id=conversation_id,
@@ -147,7 +148,7 @@ class PromptNormalizer(abc.ABC):
         for i in range(0, len(prompts), size):
             yield prompts[i : i + size]
 
-    def _build_prompt_request_response(
+    async def _build_prompt_request_response(
         self,
         *,
         request: NormalizerRequest,
@@ -185,12 +186,14 @@ class PromptNormalizer(abc.ABC):
             converted_prompt_type = request_piece.prompt_data_type
 
             for converter in request_piece.prompt_converters:
-                converter_output = converter.convert(prompt=converted_prompt_text, input_type=converted_prompt_type)
+                converter_output = await converter.convert(
+                    prompt=converted_prompt_text, input_type=converted_prompt_type
+                )
                 converted_prompt_text = converter_output.output_text
                 converted_prompt_type = converter_output.output_type
 
             converter_identifiers = [converter.get_identifier() for converter in request_piece.prompt_converters]
-
+            await asyncio.sleep(0)
             entries.append(
                 PromptRequestPiece(
                     role="user",

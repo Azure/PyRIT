@@ -1,9 +1,11 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+
 import json
 import logging
 import uuid
 import pathlib
-import concurrent.futures
-import asyncio
 
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
@@ -35,15 +37,8 @@ class VariationConverter(PromptConverter):
             prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(self.number_variations))
         )
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """
-        Deprecated. Use async_convert instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
-
     @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
-    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Generates variations of the input prompts using the converter target.
         Parameters:

@@ -20,14 +20,14 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:  # type: ignore
         return ConverterResult(output_text=prompt, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
 
-def test_send_prompt_multiple_converters():
+async def test_send_prompt_multiple_converters():
     prompt_target = MockPromptTarget()
     prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
     prompt_text = "Hello"
@@ -38,10 +38,10 @@ def test_send_prompt_multiple_converters():
         prompt_data_type="text",
         metadata="metadata",
     )
-
+    print("HERE!!!", prompt)
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    normalizer.send_prompt(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
+    await normalizer.send_prompt(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
@@ -121,7 +121,8 @@ async def test_prompt_normalizer_send_prompt_batch_async():
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
 
-def test_build_prompt_request_response():
+@pytest.mark.asyncio
+async def test_build_prompt_request_response():
 
     labels = {"label1": "value1", "label2": "value2"}
     orchestrator_identifier = {"orchestrator_id": "123"}
@@ -141,7 +142,7 @@ def test_build_prompt_request_response():
     )
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    response = normalizer._build_prompt_request_response(
+    response = await normalizer._build_prompt_request_response(
         request=NormalizerRequest([normalizer_req_piece_1, normalizer_req_piece_2]),
         target=prompt_target,
         labels=labels,

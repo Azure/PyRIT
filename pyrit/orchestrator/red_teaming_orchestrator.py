@@ -77,7 +77,7 @@ class RedTeamingOrchestrator(Orchestrator):
         """Returns True if the conversation is complete, False otherwise."""
         pass
 
-    def apply_attack_strategy_until_completion(self, max_turns: int = 5):
+    async def apply_attack_strategy_until_completion(self, max_turns: int = 5):
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
         """
@@ -87,7 +87,7 @@ class RedTeamingOrchestrator(Orchestrator):
         overall_response = None
         while turn <= max_turns:
             logger.info(f"Applying the attack strategy for turn {turn}.")
-            response = self.send_prompt(completion_state=completion_state)
+            response = await self.send_prompt(completion_state=completion_state)
             # If the conversation is complete without a target response in the current iteration
             # then the overall response is the last iteration's response.
             overall_response = response if response else overall_response
@@ -107,7 +107,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return overall_response
 
-    def send_prompt(self, *, prompt: Optional[str] = None, completion_state: CompletionState = None):
+    async def send_prompt(self, *, prompt: Optional[str] = None, completion_state: CompletionState = None):
         """
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
@@ -133,7 +133,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 "No prompt for prompt target provided. "
                 "Generating a prompt for the prompt target using the red teaming LLM."
             )
-            prompt = self._get_prompt_from_red_teaming_target(target_messages)
+            prompt = await self._get_prompt_from_red_teaming_target(target_messages)
 
         red_teaming_chat_messages = self._memory.get_chat_messages_with_conversation_id(
             conversation_id=self._red_teaming_chat_conversation_id
@@ -151,17 +151,15 @@ class RedTeamingOrchestrator(Orchestrator):
             prompt_data_type="text",
         )
 
-        response_text = (
-            self._prompt_normalizer.send_prompt(
-                normalizer_request=NormalizerRequest([target_prompt_obj]),
-                target=self._prompt_target,
-                conversation_id=self._prompt_target_conversation_id,
-                labels=self._global_memory_labels,
-                orchestrator_identifier=self.get_identifier(),
-            )
-            .request_pieces[0]
-            .converted_value
+        response = await self._prompt_normalizer.send_prompt_async(
+            normalizer_request=NormalizerRequest([target_prompt_obj]),
+            target=self._prompt_target,
+            conversation_id=self._prompt_target_conversation_id,
+            labels=self._global_memory_labels,
+            orchestrator_identifier=self.get_identifier(),
         )
+
+        response_text = response.request_pieces[0].converted_value
 
         if completion_state:
             target_messages.append(ChatMessage(role="user", content=response_text))
@@ -170,7 +168,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return response_text
 
-    def _get_prompt_from_red_teaming_target(self, target_messages: list[ChatMessage]):
+    async def _get_prompt_from_red_teaming_target(self, target_messages: list[ChatMessage]):
 
         assistant_responses = [m for m in target_messages if m.role == "assistant"]
         if len(assistant_responses) > 0:
@@ -191,15 +189,12 @@ class RedTeamingOrchestrator(Orchestrator):
                 labels=self._global_memory_labels,
             )
 
-        response_text = (
-            self._red_teaming_chat.send_chat_prompt(
-                prompt=prompt_text,
-                conversation_id=self._red_teaming_chat_conversation_id,
-                orchestrator_identifier=self.get_identifier(),
-                labels=self._global_memory_labels,
-            )
-            .request_pieces[0]
-            .converted_value
+        response = await self._red_teaming_chat.send_chat_prompt_async(
+            prompt=prompt_text,
+            conversation_id=self._red_teaming_chat_conversation_id,
+            orchestrator_identifier=self.get_identifier(),
+            labels=self._global_memory_labels,
         )
+        response_text = response.request_pieces[0].converted_value
 
         return response_text

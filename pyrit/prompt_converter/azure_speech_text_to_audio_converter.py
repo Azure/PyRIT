@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 import logging
 import azure.cognitiveservices.speech as speechsdk
-import concurrent.futures
 import asyncio
 
 from typing import Literal
@@ -58,14 +57,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
-        """
-        Deprecated. Use async_convert instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.async_convert(prompt=prompt, input_type=input_type)).result()
-
-    async def async_convert(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
+    async def convert(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
@@ -110,5 +102,5 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         except Exception as e:
             logger.error("Failed to convert prompt to audio: %s", str(e))
             raise
-
+        await asyncio.sleep(0)
         return ConverterResult(output_text=audio_serializer_file, output_type="audio_path")
