@@ -7,9 +7,4 @@ from pyrit.exceptions.exception_classes import PyritException
 from pyrit.exceptions.exception_classes import RateLimitException
 
 
-__all__ = [
-    "BadRequestException",
-    "EmptyResponseException",
-    "PyritException",
-    "RateLimitException"
-]
+__all__ = ["BadRequestException", "EmptyResponseException", "PyritException", "RateLimitException"]

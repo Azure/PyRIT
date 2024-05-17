@@ -50,7 +50,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         temperature: float = 1.0,
         top_p: int = 1,
         frequency_penalty: float = 0.5,
-        presence_penalty: float = 0.5
+        presence_penalty: float = 0.5,
     ) -> None:
         """
         Class that initializes an Azure Open AI GPTV chat target
@@ -118,7 +118,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 azure_ad_token_provider=token_provider,
                 api_version=api_version,
                 azure_endpoint=endpoint,
-                default_headers=final_headers
+                default_headers=final_headers,
             )
         else:
             api_key = default_values.get_required_value(
@@ -203,13 +203,13 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         """
         pool = concurrent.futures.ThreadPoolExecutor()
         return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-    
+
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
         Args:
             prompt_request (PromptRequestResponse): The prompt request response object.
-            
+
         Returns:
             PromptRequestResponse: The updated conversation entry with the response from the prompt target.
         """
@@ -233,27 +233,34 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 presence_penalty=self._presence_penalty,
             )
 
-            
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-            response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text]
+            )
         except BadRequestError as bre:
             # Handle bad request error when content filter system detects harmful content
             bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
             resp_text = bad_request_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text], error="blocked")
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text], error="blocked"
+            )
         except RateLimitError as rle:
             # Handle the rate limit exception after exhausting the maximum number of retries.
             rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
             resp_text = rate_limit_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text], error="error")
-        except EmptyResponseException as ere:
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text], error="error"
+            )
+        except EmptyResponseException:
             # Handle the empty response exception after exhausting the maximum number of retries.
             message = f"Empty response from the target even after {RETRY_MAX_NUM_ATTEMPTS} retries."
             empty_response_exception = EmptyResponseException(message=message)
             resp_text = empty_response_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text], error="error")
-            
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text], error="error"
+            )
+
         return response_entry
 
     def _parse_chat_completion(self, response):
@@ -271,10 +278,10 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
     @retry(
         reraise=True,
-        retry=retry_if_exception_type(RateLimitError)|retry_if_exception_type(EmptyResponseException),
-        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS), 
+        retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
+        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=after.after_log(logger, logging.INFO),
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS)
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )
     async def _complete_chat_async(
         self,
@@ -306,7 +313,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         Returns:
             str: The generated response message.
         """
-        
+
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_tokens=max_tokens,
@@ -319,18 +326,19 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
         finish_reason = response.choices[0].finish_reason
-        # finish_reason="stop" means API returned complete message and 
-        # "length" means API returned incomplete message due to max_tokens limit. 
+        extracted_response: str = ""
+        # finish_reason="stop" means API returned complete message and
+        # "length" means API returned incomplete message due to max_tokens limit.
         if finish_reason in ["stop", "length"]:
-            response = self._parse_chat_completion(response)
+            extracted_response = self._parse_chat_completion(response)
+            # Handle empty response
+            if not extracted_response:
+                raise EmptyResponseException(message="The chat returned an empty response.")
         elif finish_reason == "content_filter":
             message = response.choices[0]
-            content_filter_exception = BadRequestException(message=message)
-            response = content_filter_exception.process_exception()
-        # Handle empty response
-        if not response:
-            raise EmptyResponseException("The chat returned an empty response.")
-        return response
+            content_filter_exception = BadRequestException(message=str(message))
+            extracted_response = content_filter_exception.process_exception()
+        return extracted_response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.
