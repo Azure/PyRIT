@@ -118,7 +118,7 @@ async def test_send_prompt_twice(
             mock_rt.return_value = "First red teaming chat response"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = await red_teaming_orchestrator.send_prompt()
+            target_response = await red_teaming_orchestrator.send_prompt_async()
             assert target_response == expected_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
@@ -129,7 +129,7 @@ async def test_send_prompt_twice(
             second_target_response = "Second target response"
             mock_rt.return_value = "Second red teaming chat response"
             mock_target.return_value = second_target_response
-            target_response = await red_teaming_orchestrator.send_prompt()
+            target_response = await red_teaming_orchestrator.send_prompt_async()
             assert target_response == second_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
@@ -168,7 +168,7 @@ async def test_send_fixed_prompt_then_generated_prompt(
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_responses = "First target response"
             mock_target.return_value = expected_target_responses
-            target_response = await red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
+            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
             assert target_response == expected_target_responses
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
@@ -182,7 +182,7 @@ async def test_send_fixed_prompt_then_generated_prompt(
             mock_rt.return_value = expected_generated_red_teaming_response
             mock_target.return_value = expected_target_response
 
-            target_response = await red_teaming_orchestrator.send_prompt()
+            target_response = await red_teaming_orchestrator.send_prompt_async()
             assert target_response == expected_target_response
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
@@ -221,7 +221,7 @@ async def test_send_fixed_prompt_beyond_first_iteration_failure(
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = await red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
+            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
             assert target_response == expected_target_response
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
 
@@ -232,7 +232,7 @@ async def test_send_fixed_prompt_beyond_first_iteration_failure(
             expected_target_response = "Second target response"
             mock_target.return_value = expected_target_response
             with pytest.raises(ValueError):
-                target_response = await red_teaming_orchestrator.send_prompt(prompt=second_fixed_input_prompt)
+                target_response = await red_teaming_orchestrator.send_prompt_async(prompt=second_fixed_input_prompt)
             mock_rt.assert_not_called()
 
 
@@ -271,7 +271,7 @@ async def test_reach_goal_after_two_turns_end_token(
             mock_rt.side_effect = expected_red_teaming_responses
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = await red_teaming_orchestrator.apply_attack_strategy_until_completion()
+            target_response = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async()
             assert target_response == expected_target_response
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)

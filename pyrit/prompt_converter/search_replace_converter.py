@@ -18,7 +18,7 @@ class SearchReplaceConverter(PromptConverter):
         self.old_value = old_value
         self.new_value = new_value
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that just replaces character in string with a chosen new character
 

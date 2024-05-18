@@ -57,7 +57,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 

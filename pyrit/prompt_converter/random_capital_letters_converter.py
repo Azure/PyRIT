@@ -64,7 +64,7 @@ class RandomCapitalLettersConverter(PromptConverter):
                 output[pos] = prompt[pos].upper()
         return "".join(output)
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that converts the prompt to capital letters via a percentage .
         """

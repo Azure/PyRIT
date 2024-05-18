@@ -13,7 +13,7 @@ class AsciiArtConverter(PromptConverter):
     def __init__(self, font="rand"):
         self.font_value = font
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converter that uses art to convert strings to ASCII art.
         This can sometimes bypass LLM filters

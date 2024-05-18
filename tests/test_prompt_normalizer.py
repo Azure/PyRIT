@@ -20,7 +20,7 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:  # type: ignore
+    def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:  # type: ignore
         return ConverterResult(output_text=prompt, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
@@ -77,7 +77,7 @@ async def test_send_prompt_async_image_converter():
         filename = f.name
         f.write(b"Hello")
 
-        mock_image_converter.convert.return_value = ConverterResult(
+        mock_image_converter.convert_async.return_value = ConverterResult(
             output_type="image_path",
             output_text=filename,
         )

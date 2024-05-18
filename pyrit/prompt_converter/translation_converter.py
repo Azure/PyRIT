@@ -44,7 +44,7 @@ class TranslationConverter(PromptConverter):
 
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language)
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Generates variations of the input prompts using the converter target.
         Parameters:

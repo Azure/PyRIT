@@ -14,7 +14,7 @@ class MockPromptConverter(PromptConverter):
     def __init__(self) -> None:
         pass
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:  # type: ignore
+    async def convert_async(self, *, prompt, input_type: PromptDataType = "text") -> ConverterResult:  # type: ignore
         return ConverterResult(output_text=prompt, output_type="text")  # type: ignore
 
     def input_supported(self, input_type: PromptDataType) -> bool:

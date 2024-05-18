@@ -52,7 +52,7 @@ class AddTextImageConverter(PromptConverter):
         self._y = y_pos
         self._output_name = output_filename
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
         Converter that adds text to an image
 

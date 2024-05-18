@@ -14,7 +14,7 @@ class UnicodeConfusableConverter(PromptConverter):
         """Set up a converter. The 'deterministic' argument is for unittesting only."""
         self.deterministic = deterministic
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompts into things that look similar, but are actually different,
         using Unicode confusables -- e.g., replacing a Latin 'a' with a Cyrillic 'а'.
