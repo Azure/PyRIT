@@ -1,0 +1,32 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+from pyrit.models import PromptDataType
+from pyrit.prompt_converter import PromptConverter, ConverterResult
+
+
+class SuffixAppendConverter(PromptConverter):
+
+    def __init__(self, *, suffix="!!!!!!!!!!!!"):
+        self.suffix = suffix
+
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Simple converter that appends a given suffix to the prompt.
+        E.g. with a suffix `!!!`, it converts a prompt of `test` to `test!!!`
+
+        See PyRIT/pyrit/adv_suffix for adversarial suffix generation
+
+        Args:
+            prompt (str): The prompt to be converted.
+
+        Returns:
+            list[str]: The converted prompts.
+        """
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
+
+        return ConverterResult(output_text= prompt + self.suffix, output_type="text")
+
+    def input_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
