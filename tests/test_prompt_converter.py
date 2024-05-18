@@ -15,6 +15,7 @@ from pyrit.prompt_converter import (
     UnicodeSubstitutionConverter,
     UnicodeConfusableConverter,
     VariationConverter,
+    SuffixAppendConverter,
 )
 import pytest
 import os
@@ -163,6 +164,13 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
     upper_count = sum(1 for char in actual_converted_text if char.isupper())
     expected_percentage = (upper_count / len(prompt)) * 100.0 if actual_converted_text else 0
     assert expected_percentage == percentage
+
+
+def test_suffix_converter_init() -> None:
+    converter = SuffixAppendConverter(suffix="!!!")
+    output = converter.convert(prompt="test", input_type="text")
+    assert output.output_text == "test!!!"
+    assert output.output_type == "text"
 
 
 @patch("azure.cognitiveservices.speech.SpeechSynthesizer")
