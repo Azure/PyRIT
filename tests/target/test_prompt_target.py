@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from typing import Generator
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
@@ -75,19 +75,20 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
     assert chats[0].converted_value == "system prompt"
 
 
-def test_send_prompt_user_no_system(
+@pytest.mark.asyncio
+async def test_send_prompt_user_no_system(
     azure_openai_target: AzureOpenAIChatTarget,
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):
 
-    with patch("openai.resources.chat.Completions.create") as mock:
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
         mock.return_value = openai_mock_return
 
         request = sample_entries[0]
         request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
-        azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
+        await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
         chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(
             conversation_id=request.conversation_id
@@ -97,13 +98,14 @@ def test_send_prompt_user_no_system(
         assert chats[1].role == "assistant"
 
 
-def test_send_prompt_with_system(
+@pytest.mark.asyncio
+async def test_send_prompt_with_system(
     azure_openai_target: AzureOpenAIChatTarget,
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):
 
-    with patch("openai.resources.chat.Completions.create") as mock:
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
         mock.return_value = openai_mock_return
 
         azure_openai_target.set_system_prompt(
@@ -117,7 +119,7 @@ def test_send_prompt_with_system(
         request.converted_value = "hi, I am a victim chatbot, how can I help?"
         request.conversation_id = "1"
 
-        azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
+        await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
         chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(conversation_id="1")
         assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
@@ -125,13 +127,14 @@ def test_send_prompt_with_system(
         assert chats[1].role == "user"
 
 
-def test_send_prompt_with_system_calls_chat_complete(
+@pytest.mark.asyncio
+async def test_send_prompt_with_system_calls_chat_complete(
     azure_openai_target: AzureOpenAIChatTarget,
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):
 
-    with patch("openai.resources.chat.Completions.create") as mock:
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
         mock.return_value = openai_mock_return
 
         azure_openai_target.set_system_prompt(
@@ -145,6 +148,6 @@ def test_send_prompt_with_system_calls_chat_complete(
         request.converted_value = "hi, I am a victim chatbot, how can I help?"
         request.conversation_id = "1"
 
-        azure_openai_target.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
+        await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
         mock.assert_called_once()
