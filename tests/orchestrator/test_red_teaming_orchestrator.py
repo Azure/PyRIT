@@ -86,8 +86,9 @@ def _check_two_conversation_ids(conversations):
     ), "There should be two conversation threads, one with target and one with rt target"
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
-def test_send_prompt_twice(
+async def test_send_prompt_twice(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
@@ -114,7 +115,7 @@ def test_send_prompt_twice(
             mock_rt.return_value = "First red teaming chat response"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = red_teaming_orchestrator.send_prompt()
+            target_response = await red_teaming_orchestrator.send_prompt_async()
             assert target_response.converted_value == expected_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
@@ -125,14 +126,15 @@ def test_send_prompt_twice(
             second_target_response = "Second target response"
             mock_rt.return_value = "Second red teaming chat response"
             mock_target.return_value = second_target_response
-            target_response = red_teaming_orchestrator.send_prompt()
+            target_response = await red_teaming_orchestrator.send_prompt_async()
             assert target_response.converted_value == second_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
-def test_send_fixed_prompt_then_generated_prompt(
+async def test_send_fixed_prompt_then_generated_prompt(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
@@ -159,7 +161,7 @@ def test_send_fixed_prompt_then_generated_prompt(
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_responses = "First target response"
             mock_target.return_value = expected_target_responses
-            target_response = red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
+            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
             assert target_response.converted_value == expected_target_responses
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
@@ -173,14 +175,15 @@ def test_send_fixed_prompt_then_generated_prompt(
             mock_rt.return_value = expected_generated_red_teaming_response
             mock_target.return_value = expected_target_response
 
-            target_response = red_teaming_orchestrator.send_prompt()
+            target_response = await red_teaming_orchestrator.send_prompt_async()
             assert target_response.converted_value == expected_target_response
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
-def test_send_fixed_prompt_beyond_first_iteration_failure(
+async def test_send_fixed_prompt_beyond_first_iteration_failure(
     prompt_target: PromptTarget,
     chat_completion_engine: AzureOpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
@@ -207,7 +210,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = red_teaming_orchestrator.send_prompt(prompt=fixed_input_prompt)
+            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
             assert target_response.converted_value == expected_target_response
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
 
@@ -218,7 +221,7 @@ def test_send_fixed_prompt_beyond_first_iteration_failure(
             expected_target_response = "Second target response"
             mock_target.return_value = expected_target_response
             with pytest.raises(ValueError):
-                target_response = red_teaming_orchestrator.send_prompt(prompt=second_fixed_input_prompt)
+                target_response = await red_teaming_orchestrator.send_prompt_async(prompt=second_fixed_input_prompt)
             mock_rt.assert_not_called()
 
 

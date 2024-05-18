@@ -132,7 +132,7 @@ class RedTeamingOrchestrator(Orchestrator):
             if self._use_score_as_feedback and score:
                 send_prompt_kwargs["feedback"] = score.score_rationale
 
-            response = self.send_prompt(**send_prompt_kwargs)
+            response = await self.send_prompt_async(**send_prompt_kwargs)
             self._display_response(response)
 
             if response.response_error == "none":
@@ -172,7 +172,7 @@ class RedTeamingOrchestrator(Orchestrator):
         if response_piece.response_error == "blocked":
             logger.info("---\nContent blocked, cannot show a response.\n---")
 
-    def send_prompt(
+    async def send_prompt_async(
         self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False
     ) -> PromptRequestPiece:
         """
@@ -183,7 +183,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
                 This can only be specified for the first iteration at this point.
-            feedback: feedback from a previous iteration of send_prompt.
+            feedback: feedback from a previous iteration of send_prompt_async.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
                 The feedback is passed back to the red teaming chat to improve the next prompt.
@@ -202,7 +202,7 @@ class RedTeamingOrchestrator(Orchestrator):
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
             # A special case is the very first message, which means there are no prior messages.
             logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
-            prompt = self._get_prompt_from_red_teaming_target(feedback=feedback)
+            prompt = await self._get_prompt_from_red_teaming_target(feedback=feedback)
 
         target_prompt_obj = NormalizerRequestPiece(
             prompt_converters=self._prompt_converters,
@@ -210,7 +210,7 @@ class RedTeamingOrchestrator(Orchestrator):
             prompt_data_type="text",
         )
 
-        response_piece = self._prompt_normalizer.send_prompt(
+        response_piece = await self._prompt_normalizer.send_prompt_async(
             normalizer_request=NormalizerRequest([target_prompt_obj]),
             target=self._prompt_target,
             conversation_id=self._prompt_target_conversation_id,
@@ -274,7 +274,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 raise ValueError(f"{base_error_message}" "However, no scoring rationale was provided by the scorer.")
             return feedback
 
-    def _get_prompt_from_red_teaming_target(self, *, feedback: Optional[str] = None) -> str:
+    async def _get_prompt_from_red_teaming_target(self, *, feedback: Optional[str] = None) -> str:
         prompt_text = self._get_prompt_for_red_teaming_chat(feedback=feedback)
 
         if self._is_first_turn_with_red_teaming_chat():
@@ -286,7 +286,7 @@ class RedTeamingOrchestrator(Orchestrator):
             )
 
         response_text = (
-            self._red_teaming_chat.send_chat_prompt(
+            await self._red_teaming_chat.send_chat_prompt_async(
                 prompt=prompt_text,
                 conversation_id=self._red_teaming_chat_conversation_id,
                 orchestrator_identifier=self.get_identifier(),
