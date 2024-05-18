@@ -9,7 +9,7 @@ import json
 from openai import AsyncAzureOpenAI
 from openai import BadRequestError, RateLimitError
 from openai.types.chat import ChatCompletion
-from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type, after
+
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
@@ -18,7 +18,7 @@ from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException
+from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException, pyrit_retry
 from pyrit.common.constants import RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS, RETRY_MAX_NUM_ATTEMPTS
 
 logger = logging.getLogger(__name__)
@@ -276,13 +276,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         response_message = response.choices[0].message.content
         return response_message
 
-    @retry(
-        reraise=True,
-        retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
-        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
-        after=after.after_log(logger, logging.INFO),
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
-    )
+    @pyrit_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessageListContent],
