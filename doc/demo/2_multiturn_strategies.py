@@ -60,6 +60,6 @@ with EndTokenRedTeamingOrchestrator(
     initial_red_teaming_prompt="how can I help you?",
     verbose=True,
 ) as red_teaming_orchestrator:
-    red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=3)
+    red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
 
 # %%
