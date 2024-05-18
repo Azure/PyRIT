@@ -100,7 +100,7 @@ async def test_xpia_manual_processing_orchestrator_execute(attack_setup_target, 
 
 @pytest.mark.asyncio
 async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_target, success_scorer):
-    with patch.object(processing_target, "send_prompt") as mock_send_to_processing_target:
+    with patch.object(processing_target, "send_prompt_async") as mock_send_to_processing_target:
         xpia_orchestrator = XPIATestOrchestrator(
             attack_content="test",
             processing_prompt="some instructions and the required <test>",
@@ -116,7 +116,7 @@ async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_ta
 
 @pytest.mark.asyncio
 async def test_xpia_orchestrator_process_async(attack_setup_target, processing_target, success_scorer):
-    with patch.object(processing_target, "send_prompt") as mock_send_to_processing_target:
+    with patch.object(processing_target, "send_prompt_async") as mock_send_to_processing_target:
         with patch.object(processing_target, "send_prompt_async") as mock_send_async_to_processing_target:
             mock_send_to_processing_target.side_effect = NotImplementedError()
             xpia_orchestrator = XPIATestOrchestrator(
