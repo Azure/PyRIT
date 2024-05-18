@@ -19,7 +19,7 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException, pyrit_retry
-from pyrit.common.constants import RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS, RETRY_MAX_NUM_ATTEMPTS
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -243,14 +243,14 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
             resp_text = bad_request_exception.process_exception()
             response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], error="blocked"
+                request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
             )
         except RateLimitError as rle:
             # Handle the rate limit exception after exhausting the maximum number of retries.
             rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
             resp_text = rate_limit_exception.process_exception()
             response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], error="error"
+                request=request, response_text_pieces=[resp_text], response_type="error", error="error"
             )
         except EmptyResponseException:
             # Handle the empty response exception after exhausting the maximum number of retries.
@@ -258,7 +258,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             empty_response_exception = EmptyResponseException(message=message)
             resp_text = empty_response_exception.process_exception()
             response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], error="error"
+                request=request, response_text_pieces=[resp_text], response_type="error", error="error"
             )
 
         return response_entry

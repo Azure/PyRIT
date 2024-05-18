@@ -50,7 +50,7 @@ class EmptyResponseException(BadRequestException):
 
     def __init__(self, status_code: int = 204, *, message: str = "No Content"):
         super().__init__(status_code=status_code, message=message)
-        
+
 
 def pyrit_retry(func: Callable) -> Callable:
     """
@@ -71,5 +71,5 @@ def pyrit_retry(func: Callable) -> Callable:
         retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=after_log(logger, logging.INFO),
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS)
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)

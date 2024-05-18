@@ -441,6 +441,9 @@ async def test_send_prompt_async_empty_response(
                 '{"status_code": 204, "message": "Empty response from the target even after 5 retries."}'
             )
             assert response.request_pieces[0].converted_value == expected_error_message
+            assert response.request_pieces[0].converted_value_data_type == "error"
+            assert response.request_pieces[0].original_value == expected_error_message
+            assert response.request_pieces[0].original_value_data_type == "error"
             assert str(constants.RETRY_MAX_NUM_ATTEMPTS) in response.request_pieces[0].converted_value
     os.remove(tmp_file_name)
 
@@ -455,11 +458,16 @@ async def test_send_prompt_async_rate_limit_exception(azure_gptv_chat_engine: Az
     )
     setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
     prompt_request = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="12345", original_value="Hello")]
     )
 
     result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
     assert "Rate Limit Reached" in result.request_pieces[0].converted_value
+    assert "Rate Limit Reached" in result.request_pieces[0].original_value
+    assert result.request_pieces[0].original_value_data_type == "error"
+    assert result.request_pieces[0].converted_value_data_type == "error"
+    expected_sha_256 = "7d0ed53fb1c888e3467776735ee117e328c24f1a588a5f8756ba213c9b0b84a9"
+    assert result.request_pieces[0].original_value_sha256 == expected_sha_256
 
 
 @pytest.mark.asyncio
@@ -473,11 +481,16 @@ async def test_send_prompt_async_bad_request_error(azure_gptv_chat_engine: Azure
     setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
 
     prompt_request = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="1236748", original_value="Hello")]
     )
 
     result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
     assert "Bad Request Error" in result.request_pieces[0].converted_value
+    assert "Bad Request Error" in result.request_pieces[0].original_value
+    assert result.request_pieces[0].original_value_data_type == "error"
+    assert result.request_pieces[0].converted_value_data_type == "error"
+    expected_sha256 = "4e98b0da48c028f090473fe5cc71461a921465f807ae66c5f7ae9d0e9f301f77"
+    assert result.request_pieces[0].original_value_sha256 == expected_sha256
 
 
 def test_parse_chat_completion_successful(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):

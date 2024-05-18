@@ -173,6 +173,7 @@ In our PyRIT framework, proper exception handling is crucial for maintaining rob
 1. **Centralized Exceptions**: Use the exceptions defined in our centralized exceptions module or create new ones as necessary in the same module.
 2. **Inherit `PyritException`**: Ensure any new exceptions inherit from `PyritException` to maintain consistency.
 3. **Exception Processing**: Utilize the `process_exception` method to handle exceptions appropriately.
+4. **Add Response Entries to Memory**: After handling an exception using the `process_exception` method. While adding response entries to memory, ensure to set the `response_type` and `error` parameter to `error` to help identify the responses in the database for easy filtering.
 
 #### Specific Scenarios
 
@@ -194,6 +195,10 @@ In our PyRIT framework, proper exception handling is crucial for maintaining rob
 5. **Unknown Exception**
    - **Action**: Raise the exception itself to allow for proper propagation.
    - **Future Learning**: Monitor these exceptions to learn and identify patterns for future enhancements and more specific exception handling.
+
+6. **Set Error to Original Value/Converted Value**
+
+   - **Action**: After processing the exception, while adding the response entry to the DB, set the error message to the `original_value` and `converted_value`. These fields of `PromptRequestPiece` should be used to ensure proper testing.
 
 By following these guidelines, we ensure a consistent and robust approach to exception handling across the framework.
 
