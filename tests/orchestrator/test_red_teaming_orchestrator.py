@@ -260,7 +260,9 @@ async def test_is_conversation_complete_scoring(score, message_count):
     orchestrator._memory.get_conversation = MagicMock(return_value=simulated_messages)
     # conversation is complete if the last message is from the target
     # and the score is True
-    assert await orchestrator.check_conversation_complete_async() == (len(simulated_messages) > 0 and score)
+    actual_result = await orchestrator.check_conversation_complete_async()
+    is_failure = not bool(actual_result) or not actual_result.score_value
+    assert not is_failure == (len(simulated_messages) > 0 and score)
 
 
 @pytest.mark.asyncio

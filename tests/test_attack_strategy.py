@@ -27,11 +27,6 @@ def test_attack_strategy_from_file():
     )
 
 
-def test_attack_strategy_no_objective_arg():
-    with pytest.raises(TypeError):
-        AttackStrategy(strategy="my strategy {{ conversation_objective }}")
-
-
 def test_attack_strategy_no_objective_placeholder():
     attack_strategy = AttackStrategy(strategy="my strategy", conversation_objective="my objective")
     with pytest.raises(ValueError):

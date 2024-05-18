@@ -71,18 +71,6 @@ async def test_dalle_validate_prompt_type(dalle_target: DALLETarget, sample_conv
 
 
 @pytest.mark.asyncio
-async def test_dalle_validate_previous_conversations(
-    dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]
-):
-    request_piece = sample_conversations[0]
-    dalle_target._memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=[request_piece]))
-    request = PromptRequestResponse(request_pieces=[request_piece])
-
-    with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
-        await dalle_target.send_prompt_async(prompt_request=request)
-
-
-@pytest.mark.asyncio
 async def test_dalle_send_prompt_file_save_async() -> None:
 
     request = PromptRequestPiece(

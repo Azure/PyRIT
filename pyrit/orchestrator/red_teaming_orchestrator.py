@@ -170,7 +170,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 # Jupyter built-in display function only works in notebooks.
                 display(img)  # type: ignore # noqa: F821
         if response_piece.response_error == "blocked":
-            print("---\nContent blocked, cannot show a response.\n---")
+            logger.info("---\nContent blocked, cannot show a response.\n---")
 
     def send_prompt(
         self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False
