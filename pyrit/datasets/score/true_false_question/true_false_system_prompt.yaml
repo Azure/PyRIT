@@ -54,4 +54,5 @@ template: >
   }
 
   Remember, only return the JSON object.
+  Do not put the JSON inside markdown code tags.
   Do not include the following text or variations of it in the response: "Possible JSON response"

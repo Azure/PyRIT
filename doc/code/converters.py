@@ -1,13 +1,29 @@
-# %% [markdown]
-# ### Converters
-#
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: pyrit-311
+# ---
+
+# ## Converters
+
 # Converters are used to transform prompts before sending them to the target.
 #
 # This can be useful for a variety of reasons, such as encoding the prompt in a different format, or adding additional information to the prompt. For example, you might want to convert a prompt to base64 before sending it to the target, or add a prefix to the prompt to indicate that it is a question.
-#
+
+# ### Simple Converters
+
 # Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter
 
-# %%
+# +
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
@@ -28,13 +44,24 @@ print(RandomCapitalLettersConverter().convert(prompt=prompt))
 print(RandomCapitalLettersConverter(percentage=25.0).convert(prompt=prompt))
 
 print(AsciiArtConverter().convert(prompt=prompt))
+# -
 
 
-# %% [markdown]
+# ### Orchestrators
+
+# Converters should be thought of as a piece in the pipeine.
+#
+# An orchestrator will typically initialize these requests, and they are sent to a target.
+# Converters can also stack, so a converter is used one after another.
+#
+# See [demo3](../demo/3_send_all_prompts.ipynb) and [demo4](../demo/4_prompt_variation.ipynb) for an example of how to use a converter in the pipeline.
+
+# ### Converters with LLMs
+
 # Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this.
 # However, converters like this are significantly slower to run.
 
-# %%
+# +
 import os
 import pathlib
 
@@ -59,20 +86,14 @@ with AzureOpenAIChatTarget(
     )
     variation_converter = VariationConverter(converter_target=attack_llm, prompt_template=variation_converter_strategy)
     print(variation_converter.convert(prompt=prompt))
+# -
 
-# %% [markdown]
-# Converters should be thought of as a piece in the pipeine.
-#
-# An orchestrator will typically initialize these requests, and they are sent to a target.
-# Converters can also stack, so a converter is used one after another.
-#
-# See [demo3](../demo/3_send_all_prompts.ipynb) and [demo4](../demo/4_prompt_variation.ipynb) for an example of how to use a converter in the pipeline.
+# ### Audio Converters
 
-# %% [markdown]
 #
 # Converters can also be multi-modal. Because it's an abstract function used interchangeably on a single `PromptRequestPiece`, it can only deal with one input value and type per time, and have one output value and type per time. Below is an example of using `AzureSpeechTextToAudioConverter`, which has an input type of `text` and an output type of `audio_path`.
 
-# %%
+# +
 
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
 
@@ -82,4 +103,32 @@ audio_convert_result = AzureSpeechTextToAudioConverter(output_format="mp3").conv
 
 print(audio_convert_result)
 assert os.path.exists(audio_convert_result.output_text)
-# %%
+# -
+
+# ### Image Converters
+
+# Text can be added to images by using the `AddTextImageConverter`.
+# The converted image file will be saved in the db/results/images folder. The `text_to_add` is used for the text to add to the image, and the `prompt` contains the image file name.
+
+# +
+from pyrit.prompt_converter import AddTextImageConverter
+from pyrit.common.path import HOME_PATH
+import pathlib
+
+image_converter = AddTextImageConverter(
+    font_size=0.03, color=(0, 0, 0), text_to_add=["We can add text into this image now!"]
+)
+output_image_file = image_converter.convert(
+    prompt=str(pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"),
+)
+
+print(output_image_file)
+# -
+
+# To view the resulting image, run the code below
+
+# +
+from PIL import Image
+
+output_image = Image.open(output_image_file.output_text)
+output_image.show()

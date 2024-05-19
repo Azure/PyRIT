@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-
 from typing import Optional
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import PromptTarget
+
 from pyrit.memory import MemoryInterface
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_target import PromptTarget
 
 
 class PromptChatTarget(PromptTarget):
