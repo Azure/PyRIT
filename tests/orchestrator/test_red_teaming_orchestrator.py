@@ -110,8 +110,8 @@ async def test_send_prompt_twice(
         scorer=scorer,
     )
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
-        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
             mock_rt.return_value = "First red teaming chat response"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
@@ -156,8 +156,8 @@ async def test_send_fixed_prompt_then_generated_prompt(
         scorer=scorer,
     )
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
-        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_responses = "First target response"
             mock_target.return_value = expected_target_responses
@@ -205,8 +205,8 @@ async def test_send_fixed_prompt_beyond_first_iteration_failure(
         scorer=scorer,
     )
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat") as mock_rt:
-        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat") as mock_target:
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_rt:
+        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
