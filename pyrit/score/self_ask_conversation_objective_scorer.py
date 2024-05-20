@@ -15,41 +15,42 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTempla
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import DATASETS_PATH
 
-TRUE_FALSE_QUESITIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "true_false_question").resolve()
+OBJECTIVE_QUESTIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "conversation_objective").resolve()
 
 
-class TrueFalseQuestionPaths(enum.Enum):
-    CURRENT_EVENTS = Path(TRUE_FALSE_QUESITIONS_PATH, "current_events.yaml").resolve()
-    GROUNDED = Path(TRUE_FALSE_QUESITIONS_PATH, "grounded.yaml").resolve()
-    PROMPT_INJECTION = Path(TRUE_FALSE_QUESITIONS_PATH, "prompt_injection.yaml").resolve()
-    QUESTION_ANSWERING = Path(TRUE_FALSE_QUESITIONS_PATH, "question_answering.yaml").resolve()
-    GANDALF = Path(TRUE_FALSE_QUESITIONS_PATH, "gandalf.yaml").resolve()
+class ObjectiveQuestionPaths(enum.Enum):
+    EVALUATION = Path(OBJECTIVE_QUESTIONS_PATH, "eval.yaml").resolve()
+    REFUSAL = Path(OBJECTIVE_QUESTIONS_PATH, "refusal.yaml").resolve()
 
 
-class SelfAskTrueFalseScorer(Scorer):
-    """A class that represents a self-ask true/false for scoring."""
+class SelfAskObjectiveScorer(Scorer):
+    """A class that represents a self-ask true/false for scoring a response against a given objective."""
 
     def __init__(
-        self, *, chat_target: PromptChatTarget, true_false_question_path: Path, memory: MemoryInterface = None
+        self, *, chat_target: PromptChatTarget, objective_question_path: Path, memory: MemoryInterface = None
     ) -> None:
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
 
-        true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
+        objective_question_contents = yaml.safe_load(objective_question_path.read_text(encoding="utf-8"))
 
-        self._category = true_false_question_contents["category"]
-        true_category = true_false_question_contents["true_description"]
-        false_category = true_false_question_contents["false_description"]
+        self._category = objective_question_contents["category"]
+        objective_scorer_objective = objective_question_contents["objective_scorer_objective"]
+        true_category = objective_question_contents["true_description"]
+        false_category = objective_question_contents["false_description"]
 
-        metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
+        metadata = objective_question_contents["metadata"] if "metadata" in objective_question_contents else ""
 
         scoring_instructions_template = PromptTemplate.from_yaml_file(
-            TRUE_FALSE_QUESITIONS_PATH / "true_false_system_prompt.yaml"
+            OBJECTIVE_QUESTIONS_PATH / "conversation_objective_prompt.yaml"
         )
 
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
-            true_description=true_category, false_description=false_category, metadata=metadata
+            objective_scorer_objective=objective_scorer_objective,
+            true_description=true_category,
+            false_description=false_category,
+            metadata=metadata,
         )
 
         self._chat_target: PromptChatTarget = chat_target
@@ -82,9 +83,6 @@ class SelfAskTrueFalseScorer(Scorer):
                 PromptRequestPiece(
                     role="user",
                     original_value=request_response.converted_value,
-                    original_value_data_type=request_response.original_value_data_type,
-                    converted_value=request_response.converted_value,
-                    converted_value_data_type=request_response.converted_value_data_type,
                     conversation_id=self._conversation_id,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
@@ -104,7 +102,7 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_category=self._category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=None,
+                score_metadata=parsed_response["metadata"],
                 prompt_request_response_id=request_response.id,
             )
 

@@ -15,37 +15,33 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTempla
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import DATASETS_PATH
 
-TRUE_FALSE_QUESITIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "true_false_question").resolve()
+META_SCORER_QUESTIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "meta").resolve()
 
 
-class TrueFalseQuestionPaths(enum.Enum):
-    CURRENT_EVENTS = Path(TRUE_FALSE_QUESITIONS_PATH, "current_events.yaml").resolve()
-    GROUNDED = Path(TRUE_FALSE_QUESITIONS_PATH, "grounded.yaml").resolve()
-    PROMPT_INJECTION = Path(TRUE_FALSE_QUESITIONS_PATH, "prompt_injection.yaml").resolve()
-    QUESTION_ANSWERING = Path(TRUE_FALSE_QUESITIONS_PATH, "question_answering.yaml").resolve()
-    GANDALF = Path(TRUE_FALSE_QUESITIONS_PATH, "gandalf.yaml").resolve()
+class MetaScorerQuestionPaths(enum.Enum):
+    META_JUDGE_PROMPT = Path(META_SCORER_QUESTIONS_PATH, "meta_judge.yaml").resolve()
 
 
-class SelfAskTrueFalseScorer(Scorer):
-    """A class that represents a self-ask true/false for scoring."""
+class SelfAskMetaScorer(Scorer):
+    """A class that represents a self-ask meta scorer for scoring."""
 
     def __init__(
-        self, *, chat_target: PromptChatTarget, true_false_question_path: Path, memory: MemoryInterface = None
+        self, *, chat_target: PromptChatTarget, meta_scorer_question_path: Path, memory: MemoryInterface = None
     ) -> None:
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
 
-        true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
+        meta_scorer_question_contents = yaml.safe_load(meta_scorer_question_path.read_text(encoding="utf-8"))
 
-        self._category = true_false_question_contents["category"]
-        true_category = true_false_question_contents["true_description"]
-        false_category = true_false_question_contents["false_description"]
+        self._category = meta_scorer_question_contents["category"]
+        true_category = meta_scorer_question_contents["true_description"]
+        false_category = meta_scorer_question_contents["false_description"]
 
-        metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
+        metadata = meta_scorer_question_contents["metadata"] if "metadata" in meta_scorer_question_contents else ""
 
         scoring_instructions_template = PromptTemplate.from_yaml_file(
-            TRUE_FALSE_QUESITIONS_PATH / "true_false_system_prompt.yaml"
+            META_SCORER_QUESTIONS_PATH / "meta_scorer_prompt.yaml"
         )
 
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
@@ -70,7 +66,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
         Returns:
             list[Score]: The request_response scored.
-                         The category is configured from the TrueFalseQuestionPath.
+                         The category is configured from the MetaScorerQuestionPath.
                          The score_value is True or False based on which fits best.
                          metadata can be configured to provide additional information.
         """
@@ -82,9 +78,6 @@ class SelfAskTrueFalseScorer(Scorer):
                 PromptRequestPiece(
                     role="user",
                     original_value=request_response.converted_value,
-                    original_value_data_type=request_response.original_value_data_type,
-                    converted_value=request_response.converted_value,
-                    converted_value_data_type=request_response.converted_value_data_type,
                     conversation_id=self._conversation_id,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
@@ -115,4 +108,5 @@ class SelfAskTrueFalseScorer(Scorer):
             raise ValueError(f"Invalid JSON response from chat target: {response_json}") from e
 
     def validate(self, request_response: PromptRequestPiece):
-        pass
+        if request_response.converted_value_data_type != "text":
+            raise ValueError("Self-ask meta scorer only supports text data type")
