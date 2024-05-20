@@ -1,14 +1,29 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 #
-# The Orchestrator is a top level component that red team operators will interact with most. It is responsible for telling PyRIT what endpoints to connect to and how to send prompts. Most attack strategies can be thought of as orchestrators.
+# The Orchestrator is a top level component that red team operators will interact with most. It is responsible for telling PyRIT what endpoints to connect to and how to send prompts.
 #
 # In general, a strategy for tackling a scenario will be
 #
-# 1. Making/using a `PromptTarget` (the part that interacts with what you're testing)
-# 1. Making/using a set of initial datasets (what you're sending to the target)
-# 1. Making/using a `PromptConverter` (this changes the inital prompts; default is often to not transform)
-# 1. Making/using a `Scorer` (this evaluates the outcome of the response)
-# 1. Making/using an `Orchestrator` (this determines the overall attack strategy)
+# 1. Making/using a `PromptTarget`
+# 1. Making/using a set of initial prompts
+# 1. Making/using a `PromptConverter` (default is often to not transform)
+# 1. Making/using a `Scorer` (this is often to self ask)
+# 1. Making/using an `Orchestrator`
 #
 # Orchestrators can tackle complicated scenarios, but this example is about as simple as it gets (while still being useful). Here, we'll send all prompts in a file, use a converter to base64-encode the prompts, and send them to a PromptTarget.
 #
@@ -47,7 +62,6 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
 # ## Benchmark Orchestrator
 
 # %%
-
 from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
@@ -104,7 +118,7 @@ benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
     chat_model_under_evaluation=target, scorer=qa_scorer, verbose=True
 )
 
-benchmark_orchestrator.evaluate()
+await benchmark_orchestrator.evaluate()  # type: ignore
 
 # %%
 correct_count = 0

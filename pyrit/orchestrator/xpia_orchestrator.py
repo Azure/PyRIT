@@ -70,7 +70,7 @@ class XPIAOrchestrator(Orchestrator):
         self._processing_conversation_id = str(uuid4())
         self._attack_content = str(attack_content)
 
-    def execute(self) -> Union[Score, None]:
+    async def execute_async(self) -> Union[Score, None]:
         """Executes the entire XPIA operation.
 
         This method sends the attack content to the prompt target, processes the response
@@ -86,7 +86,7 @@ class XPIAOrchestrator(Orchestrator):
             converters=self._prompt_converters, prompt_text=self._attack_content, prompt_type="text"
         )
 
-        response = self._prompt_normalizer.send_prompt(
+        response = await self._prompt_normalizer.send_prompt_async(
             normalizer_request=target_request,
             target=self._attack_setup_target,
             labels=self._global_memory_labels,
@@ -152,7 +152,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
             attack_content=attack_content,
             attack_setup_target=attack_setup_target,
             scorer=scorer,
-            processing_callback=self._process,
+            processing_callback=self._process_async,  # type: ignore
             prompt_converters=prompt_converters,
             memory=memory,
             memory_labels=memory_labels,
@@ -164,12 +164,12 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         self._processing_conversation_id = str(uuid4())
         self._processing_prompt = processing_prompt
 
-    def _process(self) -> str:
+    async def _process_async(self) -> str:
         processing_prompt_req = self._create_normalizer_request(
             converters=[], prompt_text=self._processing_prompt, prompt_type="text"
         )
 
-        processing_response = self._prompt_normalizer.send_prompt(
+        processing_response = await self._prompt_normalizer.send_prompt_async(
             normalizer_request=processing_prompt_req,
             target=self._processing_target,
             labels=self._global_memory_labels,
