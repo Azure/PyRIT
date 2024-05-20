@@ -19,7 +19,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
     using a scoring mechanism.
 
     Args:
-        BaseRedTeamingOrchestrator (_type_): _description_
+        Orchestrator (_type_): _description_
     """
 
     _memory: MemoryInterface
@@ -40,7 +40,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         verbose: bool = False,
     ) -> None:
         """
-        Initializes a BenchmarkOrchestrator object.
+        Initializes a QuestionAnsweringBenchmarkOrchestrator object.
 
         Args:
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
