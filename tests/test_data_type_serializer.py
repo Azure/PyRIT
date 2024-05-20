@@ -8,6 +8,7 @@ import pytest
 from pyrit.models import (
     ImagePathDataTypeSerializer,
     TextDataTypeSerializer,
+    ErrorDataTypeSerializer,
     DataTypeSerializer,
     data_serializer_factory,
 )
@@ -27,6 +28,15 @@ def test_data_serializer_factory_text_with_data():
     assert normalizer.data_on_disk() is False
 
 
+def test_data_serializer_factory_error_with_data():
+    normalizer = data_serializer_factory(data_type="error", value="test")
+    assert isinstance(normalizer, DataTypeSerializer)
+    assert isinstance(normalizer, ErrorDataTypeSerializer)
+    assert normalizer.data_type == "error"
+    assert normalizer.value == "test"
+    assert normalizer.data_on_disk() is False
+
+
 def test_data_serializer_text_read_data_throws():
     normalizer = data_serializer_factory(data_type="text", value="test")
     with pytest.raises(TypeError):
@@ -35,6 +45,18 @@ def test_data_serializer_text_read_data_throws():
 
 def test_data_serializer_text_save_data_throws():
     normalizer = data_serializer_factory(data_type="text", value="test")
+    with pytest.raises(TypeError):
+        normalizer.save_data(b"\x00")
+
+
+def test_data_serializer_error_read_data_throws():
+    normalizer = data_serializer_factory(data_type="error", value="test")
+    with pytest.raises(TypeError):
+        normalizer.read_data()
+
+
+def test_data_serializer_error_save_data_throws():
+    normalizer = data_serializer_factory(data_type="error", value="test")
     with pytest.raises(TypeError):
         normalizer.save_data(b"\x00")
 

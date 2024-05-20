@@ -22,6 +22,8 @@ def data_serializer_factory(*, data_type: PromptDataType, value: str = None, ext
             return ImagePathDataTypeSerializer(prompt_text=value)
         elif data_type == "audio_path":
             return AudioPathDataTypeSerializer(prompt_text=value)
+        elif data_type == "error":
+            return ErrorDataTypeSerializer(prompt_text=value)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
@@ -162,6 +164,15 @@ class DataTypeSerializer(abc.ABC):
 class TextDataTypeSerializer(DataTypeSerializer):
     def __init__(self, *, prompt_text: str):
         self.data_type = "text"
+        self.value = prompt_text
+
+    def data_on_disk(self) -> bool:
+        return False
+
+
+class ErrorDataTypeSerializer(DataTypeSerializer):
+    def __init__(self, *, prompt_text: str):
+        self.data_type = "error"
         self.value = prompt_text
 
     def data_on_disk(self) -> bool:
