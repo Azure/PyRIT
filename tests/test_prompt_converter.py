@@ -169,7 +169,7 @@ def test_capital_letter_converter_with_twentyfive_percent() -> None:
 def test_suffix_converter_init() -> None:
     converter = SuffixAppendConverter(suffix="!!!")
     output = converter.convert(prompt="test", input_type="text")
-    assert output.output_text == "test!!!"
+    assert output.output_text == "test !!!"
     assert output.output_type == "text"
 
 

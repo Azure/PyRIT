@@ -7,7 +7,10 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 class SuffixAppendConverter(PromptConverter):
 
-    def __init__(self, *, suffix="!!!!!!!!!!!!"):
+    def __init__(self, *, suffix: str):
+        if not suffix:
+            raise ValueError("Please specify a suffix (str) to be appended to the prompt.")
+
         self.suffix = suffix
 
     def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
@@ -26,7 +29,7 @@ class SuffixAppendConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        return ConverterResult(output_text=prompt + self.suffix, output_type="text")
+        return ConverterResult(output_text=prompt + " " + self.suffix, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
