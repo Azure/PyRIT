@@ -287,7 +287,7 @@ memory = DuckDBMemory()
 azure_content_filter = AzureContentFilterScorer(
     api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
-    harm_category=TextCategory.HATE,
+    harm_categories=TextCategory.HATE,
     memory=memory,
 )
 
@@ -335,7 +335,7 @@ memory = DuckDBMemory()
 azure_content_filter = AzureContentFilterScorer(
     api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
-    harm_category=TextCategory.HATE,
+    harm_categories=TextCategory.HATE,
     memory=memory,
 )
 
