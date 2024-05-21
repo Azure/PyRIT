@@ -69,7 +69,7 @@ class AzureContentFilterScorer(Scorer):
         )
 
         if self._api_key is not None and self._endpoint is not None:
-            self._azureCFClient = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
+            self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
         else:
             raise ValueError("Please provide the Azure Content Safety API key and endpoint")
 
@@ -101,7 +101,7 @@ class AzureContentFilterScorer(Scorer):
                 categories=self._harm_categories,
                 output_type="EightSeverityLevels",
             )
-            filter_result = self._azureCFClient.analyze_text(text_request_options)  # type: ignore
+            filter_result = self._azure_cf_client.analyze_text(text_request_options)  # type: ignore
 
         elif request_response.converted_value_data_type == "image_path":
             base64_encoded_data = self._get_base64_image_data(request_response)
@@ -109,7 +109,7 @@ class AzureContentFilterScorer(Scorer):
             image_request_options = AnalyzeImageOptions(
                 image=image_data, categories=self._harm_categories, output_type="EightSeverityLevels"
             )
-            filter_result = self._azureCFClient.analyze_image(image_request_options)  # type: ignore
+            filter_result = self._azure_cf_client.analyze_image(image_request_options)  # type: ignore
 
         scores = []
 

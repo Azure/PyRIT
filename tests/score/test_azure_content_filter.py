@@ -74,7 +74,7 @@ async def test_azure_content_filter_scorer_adds_to_memory():
     mock_client = MagicMock()
     mock_client.analyze_text.return_value = {"categoriesAnalysis": [{"severity": "2", "category": "Hate"}]}
 
-    scorer._azureCFClient = mock_client
+    scorer._azure_cf_client = mock_client
 
     await scorer.score_text_async(text="I hate you!")
 
@@ -89,7 +89,7 @@ async def test_azure_content_filter_scorer_score():
     mock_client = MagicMock()
     mock_client.analyze_text.return_value = {"categoriesAnalysis": [{"severity": "2", "category": "Hate"}]}
 
-    scorer._azureCFClient = mock_client
+    scorer._azure_cf_client = mock_client
 
     score = await scorer.score_text_async(text="I hate you!")
 
