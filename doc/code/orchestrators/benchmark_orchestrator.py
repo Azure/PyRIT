@@ -17,6 +17,10 @@ from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, Quest
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
+from pyrit.common import default_values
+
+default_values.load_default_env()
+
 target = AzureOpenAIChatTarget(
     deployment_name="defense-gpt35",
 )
