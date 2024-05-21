@@ -6,11 +6,18 @@ import logging
 from abc import abstractmethod
 from typing import Optional
 
-from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, BadRequestError, OpenAI, RateLimitError
 from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
+from pyrit.exceptions.exception_classes import (
+    BadRequestException,
+    EmptyResponseException,
+    RateLimitException,
+    pyrit_retry,
+)
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
@@ -74,20 +81,46 @@ class OpenAIChatInterface(PromptChatTarget):
 
         self._memory.add_request_response_to_memory(request=prompt_request)
 
-        resp_text = await self._complete_chat_async(
-            messages=messages,
-            top_p=self._top_p,
-            temperature=self._temperature,
-            frequency_penalty=self._frequency_penalty,
-            presence_penalty=self._presence_penalty,
-        )
+        try:
+            resp_text = await self._complete_chat_async(
+                messages=messages,
+                top_p=self._top_p,
+                temperature=self._temperature,
+                frequency_penalty=self._frequency_penalty,
+                presence_penalty=self._presence_penalty,
+            )
 
-        if not resp_text:
-            raise ValueError("The chat returned an empty response.")
+            if not resp_text:
+                raise ValueError("The chat returned an empty response.")
 
-        logger.info(f'Received the following response from the prompt target "{resp_text}"')
+            logger.info(f'Received the following response from the prompt target "{resp_text}"')
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text]
+            )
 
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
+        except BadRequestError as bre:
+            # Handle bad request error when content filter system detects harmful content
+            bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
+            resp_text = bad_request_exception.process_exception()
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
+            )
+
+        except RateLimitError as rle:
+            # Handle the rate limit exception after exhausting the maximum number of retries.
+            rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
+            resp_text = rate_limit_exception.process_exception()
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text], response_type="error", error="error"
+            )
+        except EmptyResponseException:
+            # Handle the empty response exception after exhausting the maximum number of retries.
+            message = f"Empty response from the target even after {RETRY_MAX_NUM_ATTEMPTS} retries."
+            empty_response_exception = EmptyResponseException(message=message)
+            resp_text = empty_response_exception.process_exception()
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text], response_type="error", error="error"
+            )
 
         return response_entry
 
@@ -110,6 +143,7 @@ class OpenAIChatInterface(PromptChatTarget):
                 raise RuntimeError(f"Error in Azure Chat. Response: {response}") from ex
         return response_message
 
+    @pyrit_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
@@ -152,7 +186,20 @@ class OpenAIChatInterface(PromptChatTarget):
             stream=False,
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
-        return self._parse_chat_completion(response)
+        finish_reason = response.choices[0].finish_reason
+        extracted_response: str = ""
+        # finish_reason="stop" means API returned complete message and
+        # "length" means API returned incomplete message due to max_tokens limit.
+        if finish_reason in ["stop", "length"]:
+            extracted_response = self._parse_chat_completion(response)
+            # Handle empty response
+            if not extracted_response:
+                raise EmptyResponseException(message="The chat returned an empty response.")
+        elif finish_reason == "content_filter":
+            message = response.choices[0]
+            content_filter_exception = BadRequestException(message=str(message))
+            extracted_response = content_filter_exception.process_exception()
+        return extracted_response
 
     def _complete_chat(
         self,
