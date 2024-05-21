@@ -19,7 +19,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
     using a scoring mechanism.
 
     Args:
-        BaseRedTeamingOrchestrator (_type_): _description_
+        Orchestrator (_type_): _description_
     """
 
     _memory: MemoryInterface
@@ -40,7 +40,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         verbose: bool = False,
     ) -> None:
         """
-        Initializes a BenchmarkOrchestrator object.
+        Initializes a QuestionAnsweringBenchmarkOrchestrator object.
 
         Args:
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
@@ -72,7 +72,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             yamp_data = yaml.safe_load(default_data)
             self.evaluation_system_prompt = yamp_data.get("content")
 
-    def evaluate(self) -> None:
+    async def evaluate(self) -> None:
         """Evaluates the question answering dataset and prints the results."""
         self._chat_model_under_evaluation.set_system_prompt(
             system_prompt=self.evaluation_system_prompt,
@@ -85,7 +85,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
             request = self._create_normalizer_request(question_prompt, "text")
 
-            response = self._normalizer.send_prompt(
+            response = await self._normalizer.send_prompt_async(
                 normalizer_request=request,
                 target=self._chat_model_under_evaluation,
                 conversation_id=self._conversation_id,

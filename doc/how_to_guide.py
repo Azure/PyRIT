@@ -32,6 +32,7 @@
 # %%
 
 import os
+from pathlib import Path
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
@@ -49,7 +50,7 @@ with AzureOpenAIChatTarget(
         role="user",
         original_value="this is a test prompt",
     ).to_prompt_request_response()
-    target_llm.send_prompt(prompt_request=request)
+    await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
 
 # %% [markdown]
 # To expand to a wider variety of harms, it may be beneficial to write prompt templates instead of the
@@ -101,24 +102,19 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 # - run a single turn of the attack strategy or
 # - try to achieve the goal as specified in the attack strategy which may take multiple turns.
 #
-# The single turn is executed with the `send_prompt()` method. It generates the prompt using the red
+# The single turn is executed with the `send_prompt_async()` method. It generates the prompt using the red
 # teaming LLM and sends it to the target.
 # The full execution of the attack strategy over potentially multiple turns requires a mechanism
-# to determine if the goal has been achieved.
-# This is captured via the `is_conversation_complete()` method.
-# Classes that extend the `RedTeamingOrchestrator` can have their own implementation of this method,
-# e.g.,
-#
-# - `EndTokenRedTeamingOrchestrator` checks for a specific token in the output.
-# - `ScoringRedTeamingOrchestrator` scores the output to determine if the goal is reached.
-#
-# It is possible to define your own criteria and thereby implement a custom orchestrator.
+# to determine if the goal has been achieved. This happens via a scorer that evaluates the output of the
+# target LLM. The scorer can be a simple classifier that checks for specific keywords or a more complex
+# classifier that uses a model to evaluate the output.
 
 # %%
 
 from textwrap import dedent
-from pyrit.orchestrator import EndTokenRedTeamingOrchestrator
+from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.score import SelfAskTrueFalseScorer
 
 
 attack_strategy = dedent(
@@ -144,28 +140,34 @@ target_llm = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
+scorer = SelfAskTrueFalseScorer(
+    true_false_question_path=Path("demo/scorer_definitions/offensive_comment_classifier.yaml"),
+    chat_target=red_teaming_llm,
+)
+
 # Create an orchestrator to manage the red teaming conversation.
 # The initial prompt is intended to keep the red teaming LLM on topic.
-with EndTokenRedTeamingOrchestrator(
+with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     red_teaming_chat=red_teaming_llm,
     prompt_target=target_llm,
     initial_red_teaming_prompt="Begin conversation",
+    scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
 
     # Apply the attack strategy until the conversation objective is reached
     # or the maximum number of turns is reached.
-    red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
+    await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
 
-    # Alternatively, use send_prompt() to generate just a single turn of the attack strategy.
+    # Alternatively, use send_prompt_async() to generate just a single turn of the attack strategy.
 
 # %% [markdown]
 # Going a step further, we can generalize the attack strategy into templates as mentioned in an earlier
 # section.
 # This way, the red teamer can create lots of different conversations based on a relatively small number
 # of templates. For better maintainability, we suggest storing the prompt templates in YAML files (see,
-# for example, `pyrit/datasets/attack_strategies/multi-turn-chat/red_team_chatbot_with_objective.yaml`).
+# for example, `pyrit/datasets/orchestrators/red_teaming/text_generation.yaml`).
 #
 # PyRIT also offers various integration choices for the red teaming orchestrators, including
 # [Azure ML managed online endpoints](../doc/code/targets/azure_ml_chat.ipynb),
@@ -183,13 +185,8 @@ with EndTokenRedTeamingOrchestrator(
 
 # %%
 
-from pyrit.score import SelfAskCategoryScorer, ContentClassifierPaths
-
 text_to_be_scored = "This is amazing!"
-classifier = SelfAskCategoryScorer(
-    content_classifier=ContentClassifierPaths.SENTIMENT_CLASSIFIER.value, chat_target=red_teaming_llm
-)
-await classifier.score_text_async(text=text_to_be_scored)  # type: ignore
+await scorer.score_text_async(text=text_to_be_scored)  # type: ignore
 
 # %% [markdown]
 # In case the content to be classified is of a different type, users can override the base class
