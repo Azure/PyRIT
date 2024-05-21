@@ -5,6 +5,7 @@ import logging
 from typing import Optional, Union, Dict, Any
 from uuid import uuid4
 from PIL import Image
+from colorama import Fore, Style
 
 from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.memory import MemoryInterface
@@ -69,6 +70,7 @@ class RedTeamingOrchestrator(Orchestrator):
         )
 
         self._prompt_target = prompt_target
+        self._achieved_objective = False
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target._memory = self._memory
@@ -99,14 +101,7 @@ class RedTeamingOrchestrator(Orchestrator):
             # then the conversation is not yet complete.
             return None
 
-        last_message_content = prompt_request_responses[-1].request_pieces[0].converted_value
-        last_message_type = prompt_request_responses[-1].request_pieces[0].converted_value_data_type
-        if last_message_type == "text":
-            score = (await self._scorer.score_text_async(text=last_message_content))[0]
-        elif last_message_type == "image_path":
-            score = (await self._scorer.score_image_async(image_path=last_message_content))[0]
-        else:
-            raise ValueError(f"Unsupported message type: {last_message_type}")
+        score = (await self._scorer.score_async(request_response=prompt_request_responses[-1].request_pieces[0]))[0]
 
         if score.score_type != "true_false":
             raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
@@ -133,12 +128,12 @@ class RedTeamingOrchestrator(Orchestrator):
                 send_prompt_kwargs["feedback"] = score.score_rationale
 
             response = await self.send_prompt_async(**send_prompt_kwargs)
-            self._display_response(response)
 
             if response.response_error == "none":
                 score = await self.check_conversation_complete_async()
                 if bool(score.get_value()):
                     success = True
+                    self._achieved_objective = True
                     logger.info(
                         "The red teaming orchestrator has completed the conversation and achieved the objective.",
                     )
@@ -221,6 +216,33 @@ class RedTeamingOrchestrator(Orchestrator):
         ).request_pieces[0]
 
         return response_piece
+
+    def print_conversation(self):
+        """Prints the conversation between the prompt target and the red teaming bot."""
+        target_messages = self._memory._get_prompt_pieces_with_conversation_id(
+            conversation_id=self._prompt_target_conversation_id
+        )
+
+        if not target_messages or len(target_messages) == 0:
+            print("No conversation with the target")
+            return
+
+        if self._achieved_objective:
+            print("The red teaming orchestrator has completed the conversation and achieved the objective.")
+        else:
+            print("The red teaming orchestrator has not achieved the objective.")
+
+        for message in target_messages:
+            if message.role == "user":
+                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+            else:
+                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                self._display_response(message)
+
+            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+            if scores and len(scores) > 0:
+                score = scores[0]
+                print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
     def _handle_text_response(self, last_response_from_attack_target, feedback) -> str:
         # If the attack target responds with text we can use that as the new prompt

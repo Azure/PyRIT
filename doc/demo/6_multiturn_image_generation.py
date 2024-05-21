@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # In this example, we'll try to convince an image generation model to generate a harmful image.
 # For this purpose, we use PyRIT's `RedTeamingOrchestrator` that leverages a red teaming
@@ -18,6 +33,7 @@
 # And even then, it depends on the model, and may not succeed every time.
 
 # %%
+import logging
 import os
 from pathlib import Path
 
@@ -28,6 +44,8 @@ from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.prompt_target import AzureOpenAIChatTarget, DALLETarget, AzureOpenAIGPTVChatTarget
 
+
+logging.basicConfig(level=logging.WARNING)
 
 default_values.load_default_env()
 
@@ -60,6 +78,10 @@ orchestrator = RedTeamingOrchestrator(
     verbose=True,
 )
 score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
+orchestrator.print_conversation()
+
+
+orchestrator.dispose_db_engine()
 
 
 # %%
