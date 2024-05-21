@@ -166,6 +166,14 @@ async def test_capital_letter_converter() -> None:
 
 
 @pytest.mark.asyncio
+async def test_suffix_append_converter() -> None:
+    converter = SuffixAppendConverter(suffix="!!!")
+    output = await converter.convert_async(prompt="test", input_type="text")
+    assert output.output_text == "test !!!"
+    assert output.output_type == "text"
+
+
+@pytest.mark.asyncio
 async def test_capital_letter_converter_with_twentyfive_percent() -> None:
     percentage = 25.0
     prompt = "welc"
@@ -181,6 +189,7 @@ async def test_capital_letter_converter_with_twentyfive_percent() -> None:
     upper_count = sum(1 for char in actual_converted_text if char.isupper())
     expected_percentage = (upper_count / len(prompt)) * 100.0 if actual_converted_text else 0
     assert expected_percentage == percentage
+
 
 @patch("azure.cognitiveservices.speech.SpeechSynthesizer")
 @patch("azure.cognitiveservices.speech.SpeechConfig")

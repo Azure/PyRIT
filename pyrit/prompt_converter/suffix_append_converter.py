@@ -14,7 +14,7 @@ class SuffixAppendConverter(PromptConverter):
 
         self.suffix = suffix
 
-    async def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that appends a given suffix to the prompt.
         E.g. with a suffix `!!!`, it converts a prompt of `test` to `test!!!`
@@ -30,7 +30,7 @@ class SuffixAppendConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
         await asyncio.sleep(0)
-        
+
         return ConverterResult(output_text=prompt + " " + self.suffix, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
