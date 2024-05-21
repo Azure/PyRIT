@@ -38,7 +38,7 @@ class AzureContentFilterScorer(Scorer):
         endpoint: str = None,
         api_key: str = None,
         harm_categories: list[TextCategory] = None,
-        memory: MemoryInterface = None
+        memory: MemoryInterface = None,
     ) -> None:
 
         self._memory = memory if memory else DuckDBMemory()
@@ -57,7 +57,7 @@ class AzureContentFilterScorer(Scorer):
         super().__init__()
 
         if harm_categories:
-            self._harm_categories = harm_categories
+            self._harm_categories = [category.value for category in harm_categories]
         else:
             self._harm_categories = [category.value for category in TextCategory]
 
@@ -94,24 +94,22 @@ class AzureContentFilterScorer(Scorer):
         """
         self.validate(request_response)
 
-        filter_result = {}
+        filter_result: dict[str, list] = {}
         if request_response.converted_value_data_type == "text":
-            request_options = AnalyzeTextOptions(
+            text_request_options = AnalyzeTextOptions(
                 text=request_response.converted_value,
                 categories=self._harm_categories,
                 output_type="EightSeverityLevels",
             )
-            filter_result = self._azureCFClient.analyze_text(request_options)
+            filter_result = self._azureCFClient.analyze_text(text_request_options)  # type: ignore
 
         elif request_response.converted_value_data_type == "image_path":
             base64_encoded_data = self._get_base64_image_data(request_response)
             image_data = ImageData(content=base64_encoded_data)
-            request_options = AnalyzeImageOptions(
-                image=image_data,
-                categories=self._harm_categories,
-                output_type="EightSeverityLevels"
+            image_request_options = AnalyzeImageOptions(
+                image=image_data, categories=self._harm_categories, output_type="EightSeverityLevels"
             )
-            filter_result = self._azureCFClient.analyze_image(request_options)
+            filter_result = self._azureCFClient.analyze_image(image_request_options)  # type: ignore
 
         scores = []
 
@@ -169,51 +167,4 @@ class AzureContentFilterScorer(Scorer):
             Raises ValueError if converted_value_data_type is not "text"
         """
 
-        # TODO change back
-        return int(float(score_value) * 100)
-
-    async def _analyze_text_async(self, text: str) -> int:
-        """Analyze the text and get the results for the category specified
-        Args:
-            text: The text to be analyzed
-        Returns:
-            severity
-        """
-
-        request = AnalyzeTextOptions(
-            text=text,
-            categories=[self._harm_categories],
-            output_type="EightSeverityLevels",
-        )
-        # Analyze text and geting the results for the category specified
-
-        response = self._azureCFClient.analyze_text(request)
-        if response is not None:
-            result = next((item for item in response.categories_analysis if item.category == self._harm_categories), None)
-            return result.severity
-        else:
-            raise ValueError("No response from Azure Content Filter API")
-
-    def analyze_image(self, image_path: str) -> int:
-        """Analyze the image and get the results for the category specified
-        Args:
-            image_path: The image_path of the image to be analyzed
-        Returns:
-            AnalyzeTextOptions object
-        """
-
-        ext = DataTypeSerializer.get_extension(image_path)
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
-        base64_encoded_data = image_serializer.read_data_base64()
-
-        image_data = ImageData(content=base64_encoded_data)
-        request = AnalyzeImageOptions(
-            image=image_data, categories=[self._harm_categories], output_type="EightSeverityLevels"
-        )
-        # Analyze image and geting the results for the category specified
-        response = self._azureCFClient.analyze_image(request)
-        if response is not None:
-            result = next((item for item in response.categories_analysis if item.category == self._harm_categories), None)
-            return result.severity
-        else:
-            raise ValueError("No response from Azure Content Filter API")
+        return round(float(score_value) * 7)
