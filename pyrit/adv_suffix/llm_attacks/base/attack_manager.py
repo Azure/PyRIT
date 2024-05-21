@@ -1642,9 +1642,14 @@ def get_goals_and_targets(params):
     test_goals = getattr(params, "test_goals", [])
     test_targets = getattr(params, "test_targets", [])
     offset = getattr(params, "data_offset", 0)
-
+    
     if params.train_data:
+
         train_data = pd.read_csv(params.train_data)
+
+        # this line shuffles the rows of train data randomly with a random seed
+        train_data = train_data.sample(frac=1, random_state=params.random_seed).reset_index(drop=True)
+
         train_targets = train_data["target"].tolist()[offset : offset + params.n_train_data]
         if "goal" in train_data.columns:
             train_goals = train_data["goal"].tolist()[offset : offset + params.n_train_data]
