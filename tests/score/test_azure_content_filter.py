@@ -62,7 +62,7 @@ async def test_azure_content_filter_scorer_validate_text(text_request_piece: Pro
 async def test_azure_content_filter_scorer_get_azure_severity():
 
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    assert scorer.get_azure_severity("0.02") == 2
+    assert scorer.get_azure_severity("0.28571") == 2
 
 
 @pytest.mark.asyncio
