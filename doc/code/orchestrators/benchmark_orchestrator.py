@@ -73,7 +73,7 @@ benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
     chat_model_under_evaluation=target, scorer=qa_scorer, verbose=True
 )
 
-benchmark_orchestrator.evaluate()
+await benchmark_orchestrator.evaluate()  # type: ignore
 
 # %%
 correct_count = 0
