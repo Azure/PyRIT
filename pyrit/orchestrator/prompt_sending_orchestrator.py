@@ -1,12 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import logging
 
 from typing import Optional
 
 from pyrit.memory import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.models.prompt_request_piece import PromptDataType, PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -94,27 +95,45 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
     
+        response_pieces_to_score = []
         if self._scorer:
             for response in responses:
                 for piece in response.request_pieces:
                     if piece.role == "assistant":
-                        response_data_type = piece.converted_value_data_type
-                
-                        # TODO: This is a list...are we assuming there could be multiple assistant responses?
-                        # e.g. for multiturn? Is this orchestrator single-turn only?
+                        # Add to a list of responses to score
+                        response_pieces_to_score.append(piece)
+                        # self._scorer.score_async(piece.converted_value) # Note this is adding score to the memory in another (score) table
 
-                        if response_data_type == "text":
-                            score_func = self._scorer.score_text_async
-                        elif response_data_type == "image_path":
-                            score_func = self._scorer.score_image_async
-                        else:
-                            raise ValueError(f"Cannot score unsupported response data type of: {response_data_type}")
-                        
-                        response.score = score_func(piece.converted_value) # TODO: Assumes only one assitant request piece per PromptRequestResponse...
-                        # TODO: Maybe consider having this on the PromptRequestPiece object instead
+                        # TODO: Add batch support to score here, would this go into the scorer class?
+                        # TODO: Maybe consider having this on the PromptRequestPiece object instead --> this could be in another story to correspond
+                            # If we implement this then we won't need the score table in DB
+                        # Orchestrator.get_memory(score_table) -- this is how we interact with the results
 
-                        print(response.score)
+        self._score_prompts_batch_async(prompts=response_pieces_to_score, scorer=self._scorer) # This will add scores to the memory in the ScoreEntries table
+        # These should be correlated by PromptRequestResponseID
+        # TODO: Figure out how to extract these in a way that's demoable and where you can cross check the scoring with the PromptRequestResponse object --
+        # Maybe this should be a helper function to get these into the same table or a follow-up story?
 
         return responses
+    
+    # Note: These are functions within scoring_orchestrator...think about if they belong here?
+    # This is modified to not return the score objects, and instead to just chunk and score
+    async def _score_prompts_batch_async(self, prompts: list[PromptRequestPiece], scorer: Scorer) -> None:
+        results = []
+
+        for prompts_batch in self._chunked_prompts(prompts, self._batch_size):
+            tasks = []
+            for prompt in prompts_batch:
+                tasks.append(scorer.score_async(request_response=prompt))
+
+            batch_results = await asyncio.gather(*tasks)
+            results.extend(batch_results)
+
+        # results is a list[list[str]] and needs to be flattened
+        # return [score for sublist in results for score in sublist]
+    
+    def _chunked_prompts(self, prompts, size):
+        for i in range(0, len(prompts), size):
+            yield prompts[i : i + size]
             
 

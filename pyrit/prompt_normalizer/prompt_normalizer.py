@@ -97,6 +97,8 @@ class PromptNormalizer(abc.ABC):
                 )
 
             batch_results = await asyncio.gather(*tasks)
+
+            # score in batches? maybe look at where this function is called to understand impact.
             results.extend(batch_results)
 
         return results
