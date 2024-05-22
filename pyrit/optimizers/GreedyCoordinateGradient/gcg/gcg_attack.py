@@ -5,7 +5,13 @@ import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
 
-from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import AttackPrompt, MultiPromptAttack, PromptManager, get_embedding_matrix, get_embeddings
+from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import (
+    AttackPrompt,
+    MultiPromptAttack,
+    PromptManager,
+    get_embedding_matrix,
+    get_embeddings,
+)
 
 
 def token_gradients(model, input_ids, input_slice, target_slice, loss_slice):
@@ -106,13 +112,8 @@ class GCGMultiPromptAttack(MultiPromptAttack):
         target_weight=1,
         control_weight=0.1,
         verbose=False,
-        opt_only=False,
         filter_cand=True,
     ):
-
-        # GCG currently does not support optimization_only mode,
-        # so opt_only does not change the inner loop.
-        opt_only = False
 
         main_device = self.models[0].device
         control_cands = []

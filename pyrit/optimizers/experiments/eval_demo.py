@@ -5,18 +5,12 @@ from pyrit.optimizers.experiments.eval import AdversarialSuffixEvaluator
 
 
 def _load_yaml_to_dict(config_path: str) -> dict:
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         data = yaml.safe_load(f)
     return data
 
 
-def run_evaluator(
-    model_name: str,
-    logdir = "results/",
-    setup="behaviors",
-    **extra_config_parameters
-):
-    
+def run_evaluator(model_name: str, logdir="results/", setup="behaviors", **extra_config_parameters):
     """
     Evaluate suffixes generated - single model single prompt
 
@@ -28,12 +22,12 @@ def run_evaluator(
 
     if model_name not in ["mistral", "llama2"]:
         raise ValueError("Model name not supported. Currently supports 'mistral' and 'llama2'")
-    
+
     default_values.load_default_env()
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         raise ValueError("Please set the HF_TOKEN environment variable")
-    
+
     runtime_config = {
         "train_data": f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_{setup}.csv",
         "logfile": "results/individual_behavior_controls.json",
@@ -50,11 +44,11 @@ def run_evaluator(
     evaluator = AdversarialSuffixEvaluator(logdir, setup)
     evaluator.parse_logs()
 
-    if not os.path.exists('eval'):
-        os.makedirs('eval')
+    if not os.path.exists("eval"):
+        os.makedirs("eval")
 
-    evaluator.evaluate_suffix(model_name = model_name, **config)
+    evaluator.evaluate_suffix(model_name=model_name, **config)
 
 
-if __name__ == '__main__':
-    run_evaluator(model_name = "mistral")
+if __name__ == "__main__":
+    run_evaluator(model_name="mistral")

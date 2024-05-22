@@ -8,9 +8,8 @@ from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import get_go
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:
     def __init__(self):
-        if mp.get_start_method(allow_none=True) != 'spawn':
+        if mp.get_start_method(allow_none=True) != "spawn":
             mp.set_start_method("spawn")
-
 
     def generate_suffix(
         self,
@@ -48,7 +47,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         filter_cand: bool = True,
         gbda_deterministic: bool = True,
         logfile: str = "",
-        random_seed: int = 42
+        random_seed: int = 42,
     ):
 
         params = config_dict.ConfigDict()
@@ -155,4 +154,3 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
 
         for worker in workers + test_workers:
             worker.stop()
-
