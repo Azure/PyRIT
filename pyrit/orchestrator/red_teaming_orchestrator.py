@@ -118,7 +118,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 The default value is 5.
         """
         turn = 1
-        success = False
+        self._achieved_objective = False
         score: Score | None = None
         while turn <= max_turns:
             logger.info(f"Applying the attack strategy for turn {turn}.")
@@ -132,7 +132,6 @@ class RedTeamingOrchestrator(Orchestrator):
             if response.response_error == "none":
                 score = await self.check_conversation_complete_async()
                 if bool(score.get_value()):
-                    success = True
                     self._achieved_objective = True
                     logger.info(
                         "The red teaming orchestrator has completed the conversation and achieved the objective.",
@@ -145,7 +144,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
             turn += 1
 
-        if not success:
+        if not self._achieved_objective:
             logger.info(
                 "The red teaming orchestrator has not achieved the objective after the maximum "
                 f"number of turns ({max_turns}).",

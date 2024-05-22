@@ -69,19 +69,16 @@ attack_strategy = AttackStrategy(
     strategy=strategy_path,
     image_objective=image_objective,
 )
-orchestrator = RedTeamingOrchestrator(
+with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     prompt_target=img_prompt_target,
     red_teaming_chat=red_teaming_llm,
     scorer=scorer,
     use_score_as_feedback=True,
     verbose=True,
-)
-score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
-orchestrator.print_conversation()
-
-
-orchestrator.dispose_db_engine()
+) as orchestrator:
+    score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
+    orchestrator.print_conversation()
 
 
 # %%
