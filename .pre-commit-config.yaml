@@ -24,6 +24,20 @@ repos:
       - id: flake8
         exclude: doc/
 
+  - repo: local
+    hooks:
+    - id: check-links-md
+      name: Check Links in Markdown
+      entry: pytest --check-links --tb=short
+      language: python
+      files: ^doc/.*\.md$
+    - id: check-links-py
+      name: Check Links in Python Files
+      entry: python ./.github/check_links.py
+      language: python
+      files: ^doc/.*\.py$
+      additional_dependencies: ['requests']
+
   - repo: https://github.com/pycqa/pylint
     rev: v3.0.3
     hooks:
