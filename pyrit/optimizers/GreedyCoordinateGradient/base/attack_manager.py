@@ -1641,7 +1641,6 @@ def get_goals_and_targets(params):
     train_targets = getattr(params, "targets", [])
     test_goals = getattr(params, "test_goals", [])
     test_targets = getattr(params, "test_targets", [])
-    offset = getattr(params, "data_offset", 0)
     
     if params.train_data:
 
@@ -1650,25 +1649,25 @@ def get_goals_and_targets(params):
         # this line shuffles the rows of train data randomly with a random seed
         train_data = train_data.sample(frac=1, random_state=params.random_seed).reset_index(drop=True)
 
-        train_targets = train_data["target"].tolist()[offset : offset + params.n_train_data]
+        train_targets = train_data["target"].tolist()[:params.n_train_data]
         if "goal" in train_data.columns:
-            train_goals = train_data["goal"].tolist()[offset : offset + params.n_train_data]
+            train_goals = train_data["goal"].tolist()[:params.n_train_data]
         else:
             train_goals = [""] * len(train_targets)
         if params.test_data and params.n_test_data > 0:
             test_data = pd.read_csv(params.test_data)
-            test_targets = test_data["target"].tolist()[offset : offset + params.n_test_data]
+            test_targets = test_data["target"].tolist()[:params.n_test_data]
             if "goal" in test_data.columns:
-                test_goals = test_data["goal"].tolist()[offset : offset + params.n_test_data]
+                test_goals = test_data["goal"].tolist()[:params.n_test_data]
             else:
                 test_goals = [""] * len(test_targets)
         elif params.n_test_data > 0:
             test_targets = train_data["target"].tolist()[
-                offset + params.n_train_data : offset + params.n_train_data + params.n_test_data
+                params.n_train_data : params.n_train_data + params.n_test_data
             ]
             if "goal" in train_data.columns:
                 test_goals = train_data["goal"].tolist()[
-                    offset + params.n_train_data : offset + params.n_train_data + params.n_test_data
+                    params.n_train_data : params.n_train_data + params.n_test_data
                 ]
             else:
                 test_goals = [""] * len(test_targets)

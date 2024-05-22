@@ -24,7 +24,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         n_train_data: int = 50,
         n_steps: int = 500,
         test_steps: int = 50,
-        data_offset: int = 0,
         batch_size: int = 512,
         transfer: bool = False,
         target_weight: float = 1.0,
@@ -59,7 +58,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.n_train_data = n_train_data
         params.n_steps = n_steps
         params.test_steps = test_steps
-        params.data_offset = data_offset
         params.batch_size = batch_size
         params.transfer = transfer
         params.target_weight = target_weight

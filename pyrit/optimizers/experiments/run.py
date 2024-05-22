@@ -12,16 +12,17 @@ def _load_yaml_to_dict(config_path: str) -> dict:
 def run_trainer(
     model_name: str,
     setup: str = "single",
-    data_offset: int = 0,
     **extra_config_parameters
 ):
     """
     Trains and generates adversarial suffix - single model single prompt
 
     Args:
-        model_name (str): The name of the model, currently supports "mistral" and "llama2"
-        setup (str): Identifier for the setup, currently supporst "behavors"
-        data_offset (int): Offset index to start from in the training data. Default is 0.
+        model_name (str): The name of the model, currently supports "mistral", "llama_2", "llama_3", "vicuna", "all_models"
+        setup (str): Identifier for the setup, currently supporst 
+            - "single": one prompt one model
+            - "multiple": multiple prompts one model or multiple prompts multiple models
+
     """
 
     if model_name not in ["mistral", "llama_2", "llama_3", "vicuna", "all_models"]:
@@ -33,7 +34,7 @@ def run_trainer(
         raise ValueError("Please set the HF_TOKEN environment variable")
     runtime_config = {
         "train_data": f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_behaviors.csv",
-        "result_prefix": f"results/individual_behaviors_{model_name}_gcg_offset_{data_offset}",
+        "result_prefix": f"results/individual_behaviors_{model_name}_gcg",
         "token": hf_token
     }
     if setup != "single":
@@ -57,8 +58,8 @@ def run_trainer(
 
 if __name__ == '__main__':
     # run_trainer(model_name = "vicuna", setup = "single", n_train_data = 1, n_steps = 150, test_steps = 25, batch_size = 256)
-    # run_trainer(model_name = "mistral", setup = "multiple", n_train_data = 10, n_test_data=3, n_steps = 40, test_steps = 1, batch_size = 128)
-    run_trainer(model_name = "all_models", setup = "multiple", num_train_models = 4, n_train_data = 2, n_test_data=1, n_steps = 100, test_steps = 1, batch_size = 512, random_seed = 42)
+    run_trainer(model_name = "mistral", setup = "multiple", n_train_data = 2, n_test_data=1, n_steps = 40, test_steps = 1, batch_size = 128)
+    # run_trainer(model_name = "all_models", setup = "multiple", num_train_models = 4, n_train_data = 2, n_test_data=1, n_steps = 100, test_steps = 1, batch_size = 512, random_seed = 42)
 
 
 
