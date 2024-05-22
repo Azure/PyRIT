@@ -16,6 +16,7 @@ class PromptRequestResponse:
 
     def __init__(self, request_pieces: list[PromptRequestPiece]):
         self.request_pieces = request_pieces
+        self.score = None
 
     def validate(self):
         """
