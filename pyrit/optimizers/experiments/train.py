@@ -2,8 +2,8 @@ import time
 import numpy as np
 import torch.multiprocessing as mp
 from ml_collections import config_dict
-import pyrit.adv_suffix.llm_attacks.gcg as attack_lib
-from pyrit.adv_suffix.llm_attacks.base.attack_manager import get_goals_and_targets, get_workers
+import pyrit.optimizers.GreedyCoordinateGradient.gcg as attack_lib
+from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
 
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:

@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
 
-from pyrit.adv_suffix.llm_attacks.base.attack_manager import AttackPrompt, MultiPromptAttack, PromptManager, get_embedding_matrix, get_embeddings
+from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import AttackPrompt, MultiPromptAttack, PromptManager, get_embedding_matrix, get_embeddings
 
 
 def token_gradients(model, input_ids, input_slice, target_slice, loss_slice):

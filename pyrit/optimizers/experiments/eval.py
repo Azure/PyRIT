@@ -5,7 +5,7 @@ import time
 import torch
 import numpy as np
 from ml_collections import config_dict
-from pyrit.adv_suffix.llm_attacks.base.attack_manager import AttackPrompt, MultiPromptAttack, PromptManager, EvaluateAttack, get_workers
+from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import AttackPrompt, MultiPromptAttack, PromptManager, EvaluateAttack, get_workers
 
 
 class AdversarialSuffixEvaluator:

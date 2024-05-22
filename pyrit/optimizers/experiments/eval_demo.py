@@ -1,7 +1,7 @@
 import os
 import yaml
 from pyrit.common import default_values
-from pyrit.adv_suffix.experiments.eval import AdversarialSuffixEvaluator
+from pyrit.optimizers.experiments.eval import AdversarialSuffixEvaluator
 
 
 def _load_yaml_to_dict(config_path: str) -> dict:
