@@ -191,6 +191,7 @@ async def test_capital_letter_converter_with_twentyfive_percent() -> None:
     assert expected_percentage == percentage
 
 
+@pytest.mark.asyncio
 @patch("azure.cognitiveservices.speech.SpeechSynthesizer")
 @patch("azure.cognitiveservices.speech.SpeechConfig")
 @patch("os.path.isdir", return_value=True)
