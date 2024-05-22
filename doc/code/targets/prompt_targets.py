@@ -1,6 +1,6 @@
 # %% [markdown]
 # ## Prompt Targets
-# Prompt Targets are endpoints for where to send prompts. They are typically used with [orchestrators](https://github.com/Azure/PyRIT/blob/main/doc/code/orchestrator.ipynb),
+# Prompt Targets are endpoints for where to send prompts. They are typically used with [orchestrators](../orchestrators/orchestrator.ipynb),
 # but will be shown individually in this doc. An orchestrator's main job is to change prompts to a given format, apply any converters, and then send them off to prompt targets.
 # Within an orchestrator, prompt targets are (mostly) swappable, meaning you can use the same logic with different target endpoints.
 #

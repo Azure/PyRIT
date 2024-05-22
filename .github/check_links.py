@@ -5,10 +5,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 URL_PATTERN = re.compile(r'https?://[^\s)"]+')
 
+
 def extract_urls(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         content = file.read()
     return URL_PATTERN.findall(content)
+
 
 def check_url(url):
     try:
@@ -18,6 +20,7 @@ def check_url(url):
         return url, True
     except requests.RequestException:
         return url, False
+
 
 def check_links_in_file(file_path):
     urls = extract_urls(file_path)
@@ -30,10 +33,12 @@ def check_links_in_file(file_path):
                 broken_urls.append(url)
     return broken_urls
 
+
 if __name__ == "__main__":
     files = sys.argv[1:]
     all_broken_urls = {}
     for file_path in files:
+        print(f"Checking links in {file_path}")
         broken_urls = check_links_in_file(file_path)
         if broken_urls:
             all_broken_urls[file_path] = broken_urls

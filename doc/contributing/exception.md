@@ -1,6 +1,6 @@
 ### Exception Handling Guidelines
 
-In our PyRIT framework, proper exception handling is crucial for maintaining robustness and reliability. We have centralized exceptions in a dedicated [module](../pyrit/exceptions/exception_classes.py) to streamline this process. When working with orchestrators, targets, converters, and scorers, and handle exceptions please adhere to the following guidelines:
+In our PyRIT framework, proper exception handling is crucial for maintaining robustness and reliability. We have centralized exceptions in a dedicated [module](../../pyrit/exceptions/exception_classes.py) to streamline this process. When working with orchestrators, targets, converters, and scorers, and handle exceptions please adhere to the following guidelines:
 
 #### General Guidelines
 
