@@ -100,8 +100,8 @@ class Score:
 
     def __str__(self):
         if self.scorer_class_identifier:
-            return f"{self.scorer_class_identifier['__type__']}: {self.score_value}"
-        return f": {self.score_value}"
+            return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
+        return f": {self.score_category}: {self.score_value}"
 
     def _validate(self, scorer_type, score_value):
         if scorer_type == "true_false" and str(score_value).lower() not in ["true", "false"]:

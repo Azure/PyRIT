@@ -53,9 +53,15 @@ class HumanInTheLoopScorer(Scorer):
                              and '1.0 for float_scale): "
         )
 
-        prompt_request_response_id = input("Enter prompt request response ID: ")
+        score_type = "float_scale"
+        if score_value.lower() == "true" or score_value.lower() == "false":
+            score_type = "true_false"
+        else:
+            # This will throw an exception if the score is not a float
+            value = float(score_value)
+            if value < 0 or value > 1:
+                raise ValueError("Score value must be between 0 and 1 for float_scale scores")
 
-        score_type = input("Enter score type (e.g., 'true_false' or 'float_scale'): ")
         score_category = input("Enter score category (e.g., 'hate' or 'violence'): ")
         score_value_description = self._optional_input("Enter score value description (optional): ")
         score_rationale = self._optional_input("Enter score rationale (optional): ")
@@ -69,7 +75,7 @@ class HumanInTheLoopScorer(Scorer):
             score_rationale=score_rationale,
             score_metadata=score_metadata,
             scorer_class_identifier=self.get_identifier(),
-            prompt_request_response_id=prompt_request_response_id,
+            prompt_request_response_id=request_response.id,
         )
 
         self._memory.add_scores_to_memory(scores=[score])
