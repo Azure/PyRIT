@@ -20,8 +20,6 @@ train_data: ""
 test_data: ""
 n_train_data: 50
 n_test_data: 0
-data_offset: 0
-attack: "gcg"
 control_init: "! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !"
 n_steps: 500
 test_steps: 50

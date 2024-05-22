@@ -10,13 +10,12 @@ def _load_yaml_to_dict(config_path: str) -> dict:
     return data
 
 
-def run_evaluator(model_name: str, logdir="results/", setup="behaviors", **extra_config_parameters):
+def run_evaluator(model_name: str, logdir="results/", **extra_config_parameters):
     """
     Evaluate suffixes generated - single model single prompt
 
     Args:
         model_name (str): The name of the model, should be consistent with the name used in suffix genearation
-        setup (str): Identifier for the setup, should be consistent with the name used in suffix genearation
         batch_size (int): Size of the batch used in training. Default is 128.
     """
 
@@ -29,7 +28,9 @@ def run_evaluator(model_name: str, logdir="results/", setup="behaviors", **extra
         raise ValueError("Please set the HF_TOKEN environment variable")
 
     runtime_config = {
-        "train_data": f"https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_{setup}.csv",
+        "train_data": (
+            "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/harmful_behaviors.csv"
+        ),
         "logfile": "results/individual_behavior_controls.json",
         "token": hf_token,
     }

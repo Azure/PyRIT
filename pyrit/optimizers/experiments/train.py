@@ -2,7 +2,8 @@ import time
 import numpy as np
 import torch.multiprocessing as mp
 from ml_collections import config_dict
-import pyrit.optimizers.GreedyCoordinateGradient.gcg as attack_lib
+import pyrit.optimizers.GreedyCoordinateGradient.gcg.gcg_attack as attack_lib
+from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import IndividualPromptAttack, ProgressiveMultiPromptAttack
 from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
 
 
@@ -40,7 +41,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         tokenizer_kwargs: list = [{"use_fast": False}],
         n_test_data: int = 0,
         test_data: str = "",
-        attack: str = "gcg",
         lr: float = 0.01,
         topk: int = 256,
         temp: int = 1,
@@ -77,7 +77,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.devices = devices
         params.n_test_data = n_test_data
         params.test_data = test_data
-        params.attack = attack
         params.lr = lr
         params.topk = topk
         params.temp = temp
@@ -95,14 +94,14 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
 
         workers, test_workers = get_workers(params)
         managers = {
-            "AP": attack_lib.AttackPrompt,
-            "PM": attack_lib.PromptManager,
-            "MPA": attack_lib.MultiPromptAttack,
+            "AP": attack_lib.GCGAttackPrompt,
+            "PM": attack_lib.GCGPromptManager,
+            "MPA": attack_lib.GCGMultiPromptAttack,
         }
 
         timestamp = time.strftime("%Y%m%d-%H:%M:%S")
         if params.transfer:
-            attack = attack_lib.ProgressiveMultiPromptAttack(
+            attack = ProgressiveMultiPromptAttack(
                 train_goals,
                 train_targets,
                 workers,
@@ -121,7 +120,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
             )
         else:
             print("attack")
-            attack = attack_lib.IndividualPromptAttack(
+            attack = IndividualPromptAttack(
                 train_goals,
                 train_targets,
                 workers,

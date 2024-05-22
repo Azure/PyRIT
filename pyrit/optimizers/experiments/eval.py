@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import time
 import torch
@@ -15,7 +14,7 @@ from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import (
 
 
 class AdversarialSuffixEvaluator:
-    def __init__(self, logdir=f"results/", mode="behaviors"):
+    def __init__(self, logdir="results/", mode="behaviors"):
         self.logdir = logdir
         self.mode = mode
 
