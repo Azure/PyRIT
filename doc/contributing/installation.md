@@ -2,7 +2,7 @@
 
 To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/install_pyrit.md).
 
-However, because of the nature of the tool, it is often the case that targets/orchestrators/converters/core code needs to be modified. This section walks through how to install PyRIT as a contributor.
+However, there are many reasons to install as a contributor. Yes, of course, if you want to contribute. But also because of the nature of the tool, it is often the case that targets/orchestrators/converters/core code needs to be modified. This section walks through how to install PyRIT as a contributor.
 
 ## Prerequisite software
 
@@ -70,8 +70,6 @@ This is a guide for how to install PyRIT into a `conda` environment.
 
    See [this post](https://stackoverflow.com/questions/77134272/pip-install-dev-with-pyproject-toml-not-working) for more details.
 
-
-   ## Dev Resources
 
 ## Local Environment Setup
 
