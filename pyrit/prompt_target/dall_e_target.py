@@ -5,13 +5,14 @@ import logging
 import pathlib
 import concurrent.futures
 import asyncio
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict, Any
 
 from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory
+from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece, PromptResponseError
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
@@ -81,17 +82,16 @@ class DALLETarget(PromptTarget):
         self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
         self.headers = headers
 
+        target_kwargs: Dict[str, Any] = {
+            "deployment_name": deployment_name,
+            "endpoint": endpoint,
+            "api_version": api_version,
+        }
         if use_aad_auth:
-            self.image_target = AzureOpenAIChatTarget(
-                deployment_name=deployment_name,
-                endpoint=endpoint,
-                api_version=api_version,
-                use_aad_auth=True,
-            )
+            target_kwargs["use_aad_auth"] = True
         else:
-            self.image_target = AzureOpenAIChatTarget(
-                deployment_name=deployment_name, endpoint=endpoint, api_key=api_key, api_version=api_version
-            )
+            target_kwargs["api_key"] = api_key
+        self._image_target = AzureOpenAIChatTarget(**target_kwargs)
 
     def send_prompt(
         self,
@@ -124,34 +124,19 @@ class DALLETarget(PromptTarget):
         return await self._generate_images_async(prompt=request.converted_value, request=request)
 
     async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
+        image_generation_args: Dict[str, Any] = {
+            "model": self.deployment_name,
+            "prompt": prompt,
+            "n": self.n,
+            "size": self.image_size,
+            "response_format": "b64_json",
+        }
+        if self.dalle_version == "dall-e-3" and self.quality and self.style:
+            image_generation_args["quality"] = self.quality
+            image_generation_args["style"] = self.style
+
         try:
-            if self.dalle_version == "dall-e-3":
-                if self.quality and self.style:
-                    response = await self.image_target._async_client.images.generate(
-                        model=self.deployment_name,
-                        prompt=prompt,
-                        n=self.n,
-                        size=self.image_size,
-                        response_format="b64_json",
-                        quality=self.quality,
-                        style=self.style,
-                    )
-                else:
-                    response = await self.image_target._async_client.images.generate(
-                        model=self.deployment_name,
-                        prompt=prompt,
-                        n=self.n,
-                        size=self.image_size,
-                        response_format="b64_json",
-                    )
-            else:
-                response = await self.image_target._async_client.images.generate(
-                    model=self.deployment_name,
-                    prompt=prompt,
-                    n=self.n,
-                    size=self.image_size,
-                    response_format="b64_json",
-                )
+            response = await self._image_target._async_client.images.generate(**image_generation_args)
             json_response = json.loads(response.model_dump_json())
 
             data = data_serializer_factory(data_type="image_path")
@@ -159,27 +144,31 @@ class DALLETarget(PromptTarget):
             data.save_b64_image(data=b64_data)
             prompt_text = data.value
             error: PromptResponseError = "none"
+            response_type: PromptDataType = "image_path"
 
         except BadRequestError as e:
             json_response = {"exception type": "Blocked", "data": ""}
             json_response["error"] = e.body
             prompt_text = "content blocked"
             error = "blocked"
+            response_type = "text"
 
         except json.JSONDecodeError as e:
             json_response = {"error": e, "exception type": "JSON Error"}
             prompt_text = "JSON Error"
             error = "processing"
+            response_type = "text"
 
         except Exception as e:
             json_response = {"error": e, "exception type": "exception"}
             prompt_text = "target error"
             error = "unknown"
+            response_type = "text"
 
         return self._memory.add_response_entries_to_memory(
             request=request,
             response_text_pieces=[prompt_text],
-            response_type="image_path",
+            response_type=response_type,
             prompt_metadata=json.dumps(json_response),
             error=error,
         )
@@ -190,9 +179,3 @@ class DALLETarget(PromptTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
-
-        request = prompt_request.request_pieces[0]
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-
-        if len(messages) > 0:
-            raise ValueError("This target only supports a single turn conversation.")

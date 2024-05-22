@@ -58,6 +58,27 @@ class Scorer(abc.ABC):
         request_piece.id = None
         return await self.score_async(request_piece)
 
+    async def score_image_async(self, image_path: str) -> list[Score]:
+        """
+        Scores the given image using the chat target.
+
+        Args:
+            text (str): The image to be scored.
+
+        Returns:
+            list[Score]: A list of Score objects representing the results.
+        """
+        request_piece = PromptRequestPiece(
+            role="user",
+            original_value=image_path,
+            converted_value=image_path,
+            original_value_data_type="image_path",
+            converted_value_data_type="image_path",
+        )
+
+        request_piece.id = None
+        return await self.score_async(request_piece)
+
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
         Scales a value from 0 to 1 based on the given min and max values. E.g. 3 stars out of 5 stars would be .5.

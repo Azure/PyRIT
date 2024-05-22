@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from datetime import datetime
-from typing import Dict, Literal, Optional
+from typing import Dict, Literal, Optional, get_args
 import uuid
 
 
@@ -54,7 +54,7 @@ class Score:
         score_category: str,
         score_rationale: str,
         score_metadata: str,
-        scorer_class_identifier: Dict[str, str],
+        scorer_class_identifier: Dict[str, str] = None,
         prompt_request_response_id: str | uuid.UUID,
         date_time: Optional[datetime] = datetime.now(),
     ):
@@ -64,6 +64,10 @@ class Score:
 
         self.score_value = score_value
         self.score_value_description = score_value_description
+
+        if score_type not in get_args(ScoreType):
+            raise ValueError(f"Score type {score_type} is not a valid score type.")
+
         self.score_type = score_type
         self.score_category = score_category
         self.score_rationale = score_rationale
@@ -96,8 +100,8 @@ class Score:
 
     def __str__(self):
         if self.scorer_class_identifier:
-            return f"{self.scorer_class_identifier['__type__']}: {self.score_value}"
-        return f": {self.score_value}"
+            return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
+        return f": {self.score_category}: {self.score_value}"
 
     def _validate(self, scorer_type, score_value):
         if scorer_type == "true_false" and str(score_value).lower() not in ["true", "false"]:

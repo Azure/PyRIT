@@ -70,7 +70,7 @@ class Orchestrator(abc.ABC, Identifier):
         """
         Retrieves the memory associated with this orchestrator.
         """
-        return self._memory.get_orchestrator_conversations(orchestrator_id=id(self))
+        return self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id(self))
 
     def get_identifier(self) -> dict[str, str]:
         orchestrator_dict = {}

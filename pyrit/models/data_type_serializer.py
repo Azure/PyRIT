@@ -22,6 +22,8 @@ def data_serializer_factory(*, data_type: PromptDataType, value: str = None, ext
             return ImagePathDataTypeSerializer(prompt_text=value)
         elif data_type == "audio_path":
             return AudioPathDataTypeSerializer(prompt_text=value)
+        elif data_type == "error":
+            return ErrorDataTypeSerializer(prompt_text=value)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
@@ -62,11 +64,17 @@ class DataTypeSerializer(abc.ABC):
         with open(self.value, "wb") as file:
             file.write(data)
 
-    def save_b64_image(self, data: str) -> None:
+    def save_b64_image(self, data: str, output_filename: str = None) -> None:
         """
         Saves the base64 encoded image to disk.
+        Arguments:
+            data: string with base64 data
+            output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
         """
-        self.value = str(self.get_data_filename())
+        if output_filename:
+            self.value = output_filename
+        else:
+            self.value = str(self.get_data_filename())
         with open(self.value, "wb") as file:
             image_bytes = base64.b64decode(data)
             file.write(image_bytes)
@@ -156,6 +164,15 @@ class DataTypeSerializer(abc.ABC):
 class TextDataTypeSerializer(DataTypeSerializer):
     def __init__(self, *, prompt_text: str):
         self.data_type = "text"
+        self.value = prompt_text
+
+    def data_on_disk(self) -> bool:
+        return False
+
+
+class ErrorDataTypeSerializer(DataTypeSerializer):
+    def __init__(self, *, prompt_text: str):
+        self.data_type = "error"
         self.value = prompt_text
 
     def data_on_disk(self) -> bool:

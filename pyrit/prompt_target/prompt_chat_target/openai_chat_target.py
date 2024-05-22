@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from abc import abstractmethod
-import logging
 import json
+import logging
+from abc import abstractmethod
 from typing import Optional
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI
@@ -12,8 +12,7 @@ from openai.types.chat import ChatCompletion
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessage
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ class OpenAIChatInterface(PromptChatTarget):
         pass
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-
+        self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)

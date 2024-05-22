@@ -121,7 +121,7 @@ def test_hashes_generated_files():
 
 
 def test_hashes_generated_files_unknown_type():
-    with pytest.raises(ValueError, match="Data type new_unknown_type not supported"):
+    with pytest.raises(ValueError, match="is not a valid data type."):
         PromptRequestPiece(
             role="user",
             original_value="Hello1",
@@ -205,3 +205,19 @@ def test_group_conversation_request_pieces_multiple_groups(sample_conversations:
     assert len(groups) == 2
     assert groups[0].request_pieces[0].sequence == 0
     assert groups[1].request_pieces[0].sequence == 1
+
+
+def test_prompt_request_piece_no_roles():
+    with pytest.raises(ValueError) as excinfo:
+        PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="",  # type: ignore
+                    converted_value_data_type="text",
+                    original_value="Hello",
+                    converted_value="Hello",
+                )
+            ]
+        )
+
+        assert "not a valid role." in str(excinfo.value)

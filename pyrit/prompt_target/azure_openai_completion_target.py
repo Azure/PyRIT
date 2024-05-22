@@ -4,6 +4,7 @@
 import asyncio
 import concurrent.futures
 import logging
+
 from openai import AsyncAzureOpenAI
 from openai.types.completion import Completion
 
@@ -13,7 +14,6 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import PromptResponse
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target.prompt_target import PromptTarget
-
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
-        Sends a normalized prompt to the prompt target and adds the request and response to memory
+        Deprecated. Sends a normalized prompt to the prompt target and adds the request and response to memory
         """
         pool = concurrent.futures.ThreadPoolExecutor()
         return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()

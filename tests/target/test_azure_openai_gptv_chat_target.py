@@ -10,11 +10,13 @@ from tempfile import NamedTemporaryFile
 
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
+from openai import BadRequestError, RateLimitError
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import AzureOpenAIGPTVChatTarget
 from pyrit.models import ChatMessageListContent
+from pyrit.common import constants
 
 from tests.mocks import get_image_request_piece
 
@@ -206,24 +208,6 @@ def test_build_chat_messages_with_unsupported_data_types(azure_gptv_chat_engine:
     assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
 
 
-def test_build_chat_messages_no_roles(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
-    entries = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="",  # type: ignore
-                    converted_value_data_type="text",
-                    original_value="Hello",
-                    converted_value="Hello",
-                )
-            ]
-        )
-    ]
-    with pytest.raises(ValueError) as excinfo:
-        azure_gptv_chat_engine._build_chat_messages(entries)
-    assert "No role could be determined from the prompt request pieces." in str(excinfo.value)
-
-
 @pytest.mark.asyncio
 async def test_send_prompt_async_adds_to_memory(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
     mock_memory = MagicMock()
@@ -249,6 +233,117 @@ async def test_send_prompt_async_adds_to_memory(azure_gptv_chat_engine: AzureOpe
     azure_gptv_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
 
     assert result is not None, "Expected a result but got None"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_empty_response_adds_to_memory(
+    azure_openai_mock_return: ChatCompletion, azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget
+):
+    mock_memory = MagicMock()
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_response_entries_to_memory = AsyncMock()
+
+    azure_gptv_chat_engine._memory = mock_memory
+
+    with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
+        tmp_file_name = tmp_file.name
+    assert os.path.exists(tmp_file_name)
+    prompt_req_resp = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="user",
+                conversation_id="12345679",
+                original_value="hello",
+                converted_value="hello",
+                original_value_data_type="text",
+                converted_value_data_type="text",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            ),
+            PromptRequestPiece(
+                role="user",
+                conversation_id="12345679",
+                original_value=tmp_file_name,
+                converted_value=tmp_file_name,
+                original_value_data_type="image_path",
+                converted_value_data_type="image_path",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            ),
+        ]
+    )
+    # Make assistant response empty
+    azure_openai_mock_return.choices[0].message.content = ""
+    with patch.object(
+        azure_gptv_chat_engine, "_convert_local_image_to_data_url", return_value="data:image/jpeg;base64,encoded_string"
+    ):
+        with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
+            mock_create.return_value = azure_openai_mock_return
+            response: PromptRequestResponse = await azure_gptv_chat_engine.send_prompt_async(
+                prompt_request=prompt_req_resp
+            )
+
+            azure_gptv_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="12345679")
+            azure_gptv_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(
+                request=prompt_req_resp
+            )
+            azure_gptv_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
+            assert response is not None, "Expected a result but got None"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_rate_limit_exception_adds_to_memory(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
+    mock_memory = MagicMock()
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_response_entries_to_memory = AsyncMock()
+
+    azure_gptv_chat_engine._memory = mock_memory
+
+    response = MagicMock()
+    response.status_code = 429
+    mock_complete_chat_async = AsyncMock(
+        side_effect=RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
+    )
+    setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
+    prompt_request = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
+    )
+
+    result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
+    assert result is not None
+    azure_gptv_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
+    azure_gptv_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+    azure_gptv_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_bad_request_error_adds_to_memory(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
+    mock_memory = MagicMock()
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_response_entries_to_memory = AsyncMock()
+
+    azure_gptv_chat_engine._memory = mock_memory
+
+    response = MagicMock()
+    response.status_code = 400
+    mock_complete_chat_async = AsyncMock(
+        side_effect=BadRequestError("Bad Request", response=response, body="Bad Request")
+    )
+    setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
+    prompt_request = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
+    )
+
+    result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
+    assert result is not None
+    azure_gptv_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
+    azure_gptv_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+    azure_gptv_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -298,27 +393,104 @@ async def test_send_prompt_async(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
-    mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
-    azure_gptv_chat_engine._memory = mock_memory
+async def test_send_prompt_async_empty_response(
+    azure_openai_mock_return: ChatCompletion, azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget
+):
+    with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
+        tmp_file_name = tmp_file.name
+    assert os.path.exists(tmp_file_name)
+    prompt_req_resp = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="user",
+                conversation_id="12345679",
+                original_value="hello",
+                converted_value="hello",
+                original_value_data_type="text",
+                converted_value_data_type="text",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            ),
+            PromptRequestPiece(
+                role="user",
+                conversation_id="12345679",
+                original_value=tmp_file_name,
+                converted_value=tmp_file_name,
+                original_value_data_type="image_path",
+                converted_value_data_type="image_path",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            ),
+        ]
+    )
+    # Make assistant response empty
+    azure_openai_mock_return.choices[0].message.content = ""
+    with patch.object(
+        azure_gptv_chat_engine, "_convert_local_image_to_data_url", return_value="data:image/jpeg;base64,encoded_string"
+    ):
+        with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
+            mock_create.return_value = azure_openai_mock_return
+            constants.RETRY_MAX_NUM_ATTEMPTS = 5
+            response: PromptRequestResponse = await azure_gptv_chat_engine.send_prompt_async(
+                prompt_request=prompt_req_resp
+            )
+            assert len(response.request_pieces) == 1
+            expected_error_message = (
+                '{"status_code": 204, "message": "Empty response from the target even after 5 retries."}'
+            )
+            assert response.request_pieces[0].converted_value == expected_error_message
+            assert response.request_pieces[0].converted_value_data_type == "error"
+            assert response.request_pieces[0].original_value == expected_error_message
+            assert response.request_pieces[0].original_value_data_type == "error"
+            assert str(constants.RETRY_MAX_NUM_ATTEMPTS) in response.request_pieces[0].converted_value
+    os.remove(tmp_file_name)
 
-    mock_complete_chat_async = AsyncMock(return_value="")
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_rate_limit_exception(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
+
+    response = MagicMock()
+    response.status_code = 429
+    mock_complete_chat_async = AsyncMock(
+        side_effect=RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
+    )
+    setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
+    prompt_request = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="12345", original_value="Hello")]
+    )
+
+    result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
+    assert "Rate Limit Reached" in result.request_pieces[0].converted_value
+    assert "Rate Limit Reached" in result.request_pieces[0].original_value
+    assert result.request_pieces[0].original_value_data_type == "error"
+    assert result.request_pieces[0].converted_value_data_type == "error"
+    expected_sha_256 = "7d0ed53fb1c888e3467776735ee117e328c24f1a588a5f8756ba213c9b0b84a9"
+    assert result.request_pieces[0].original_value_sha256 == expected_sha_256
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_bad_request_error(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
+
+    response = MagicMock()
+    response.status_code = 400
+    mock_complete_chat_async = AsyncMock(
+        side_effect=BadRequestError("Bad Request Error", response=response, body="Bad request")
+    )
     setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
 
     prompt_request = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", original_value="Hello", conversation_id="123")]
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="1236748", original_value="Hello")]
     )
 
-    with pytest.raises(ValueError) as excinfo:
-        await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
-
-    assert "The chat returned an empty response." in str(
-        excinfo.value
-    ), "Expected ValueError for empty response not raised"
-    azure_gptv_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
+    result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
+    assert "Bad Request Error" in result.request_pieces[0].converted_value
+    assert "Bad Request Error" in result.request_pieces[0].original_value
+    assert result.request_pieces[0].original_value_data_type == "error"
+    assert result.request_pieces[0].converted_value_data_type == "error"
+    expected_sha256 = "4e98b0da48c028f090473fe5cc71461a921465f807ae66c5f7ae9d0e9f301f77"
+    assert result.request_pieces[0].original_value_sha256 == expected_sha256
 
 
 def test_parse_chat_completion_successful(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):

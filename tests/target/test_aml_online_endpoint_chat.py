@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import os
 import pytest
@@ -54,23 +54,25 @@ def test_get_headers_with_valid_api_key(aml_online_chat: AzureMLChatTarget):
     assert aml_online_chat._get_headers() == expected_headers
 
 
-def test_complete_chat(aml_online_chat: AzureMLChatTarget):
+@pytest.mark.asyncio
+async def test_complete_chat_async(aml_online_chat: AzureMLChatTarget):
     messages = [
         ChatMessage(role="user", content="user content"),
     ]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock:
         mock_response = Mock()
         mock_response.json.return_value = {"output": "extracted response"}
         mock.return_value = mock_response
-        response = aml_online_chat._complete_chat(messages)
+        response = await aml_online_chat._complete_chat_async(messages)
         assert response == "extracted response"
         mock.assert_called_once()
 
 
 # The None parameter checks the default is the same as ChatMessageNop
+@pytest.mark.asyncio
 @pytest.mark.parametrize("message_normalizer", [None, ChatMessageNop()])
-def test_complete_chat_with_nop_normalizer(
+async def test_complete_chat_async_with_nop_normalizer(
     aml_online_chat: AzureMLChatTarget, message_normalizer: ChatMessageNormalizer
 ):
     if message_normalizer:
@@ -81,11 +83,11 @@ def test_complete_chat_with_nop_normalizer(
         ChatMessage(role="user", content="user content"),
     ]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
         mock_response = Mock()
         mock_response.json.return_value = {"output": "extracted response"}
         mock.return_value = mock_response
-        response = aml_online_chat._complete_chat(messages)
+        response = await aml_online_chat._complete_chat_async(messages)
         assert response == "extracted response"
 
         args, kwargs = mock.call_args
@@ -96,7 +98,8 @@ def test_complete_chat_with_nop_normalizer(
         assert body["input_data"]["input_string"][0]["role"] == "system"
 
 
-def test_complete_chat_with_squashnormalizer(aml_online_chat: AzureMLChatTarget):
+@pytest.mark.asyncio
+async def test_complete_chat_async_with_squashnormalizer(aml_online_chat: AzureMLChatTarget):
     aml_online_chat.chat_message_normalizer = GenericSystemSquash()
 
     messages = [
@@ -104,11 +107,11 @@ def test_complete_chat_with_squashnormalizer(aml_online_chat: AzureMLChatTarget)
         ChatMessage(role="user", content="user content"),
     ]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
         mock_response = Mock()
         mock_response.json.return_value = {"output": "extracted response"}
         mock.return_value = mock_response
-        response = aml_online_chat._complete_chat(messages)
+        response = await aml_online_chat._complete_chat_async(messages)
         assert response == "extracted response"
 
         args, kwargs = mock.call_args
@@ -119,17 +122,18 @@ def test_complete_chat_with_squashnormalizer(aml_online_chat: AzureMLChatTarget)
         assert body["input_data"]["input_string"][0]["role"] == "user"
 
 
-def test_complete_chat_bad_json_response(aml_online_chat: AzureMLChatTarget):
+@pytest.mark.asyncio
+async def test_complete_chat_async_bad_json_response(aml_online_chat: AzureMLChatTarget):
     messages = [
         ChatMessage(role="user", content="user content"),
     ]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error") as mock:
+    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock:
         mock_response = Mock()
         mock_response.json.return_value = {"bad response"}
         mock.return_value = mock_response
         with pytest.raises(TypeError):
-            aml_online_chat._complete_chat(messages)
+            await aml_online_chat._complete_chat_async(messages)
 
 
 @pytest.mark.asyncio
