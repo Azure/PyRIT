@@ -2,6 +2,7 @@ import os
 import yaml
 from pyrit.common import default_values
 from train import GreedyCoordinateGradientAdversarialSuffixGenerator
+import argparse
 
 def _load_yaml_to_dict(config_path: str) -> dict:
     with open(config_path, 'r') as f:
@@ -9,7 +10,13 @@ def _load_yaml_to_dict(config_path: str) -> dict:
     return data
 
 
+MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna"]
+ALL_MODELS = "all_models"
+MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
+
+
 def run_trainer(
+    *,
     model_name: str,
     setup: str = "single",
     data_offset: int = 0,
@@ -24,7 +31,7 @@ def run_trainer(
         data_offset (int): Offset index to start from in the training data. Default is 0.
     """
 
-    if model_name not in ["mistral", "llama_2", "llama_3", "vicuna", "all_models"]:
+    if model_name not in MODEL_NAMES:
         raise ValueError("Model name not supported. Currently supports 'mistral' and 'llama2'")
     
     default_values.load_default_env()
@@ -55,10 +62,27 @@ def run_trainer(
     trainer.generate_suffix(**config)
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Script to run the adversarial suffix trainer')
+    parser.add_argument('--model_name', type=str, help='The name of the model')
+    parser.add_argument('--setup', type=str, default='multiple', help="'single' or 'multiple' prompts. Multiple optimizes jointly over all prompts while single optimizes separate suffixes for each prompt.")
+    parser.add_argument('--n_train_data', type=int, help='Number of training data')
+    parser.add_argument('--n_test_data', type=int, help='Number of test data')
+    parser.add_argument('--n_steps', type=int, default=100, help='Number of steps')
+    parser.add_argument('--batch_size', type=int, default=512, help='Batch size')
+
+    return parser.parse_args()
+    
+
 if __name__ == '__main__':
-    # run_trainer(model_name = "vicuna", setup = "single", n_train_data = 1, n_steps = 150, test_steps = 25, batch_size = 256)
-    # run_trainer(model_name = "mistral", setup = "multiple", n_train_data = 10, n_test_data=3, n_steps = 40, test_steps = 1, batch_size = 128)
-    run_trainer(model_name = "all_models", setup = "multiple", num_train_models = 4, n_train_data = 2, n_test_data=1, n_steps = 100, test_steps = 1, batch_size = 512)
-
-
-
+    args = parse_arguments()
+    run_trainer(
+        model_name=args.model_name,
+        num_train_models=len(MODEL_NAMES) if args.model_name == ALL_MODELS else 1,
+        setup=args.setup,
+        n_train_data=args.n_train_data,
+        n_test_data=args.n_test_data,
+        n_steps=args.n_steps,
+        batch_size=args.batch_size,
+        test_steps=1
+    )
