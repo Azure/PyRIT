@@ -1582,24 +1582,12 @@ def get_workers(params, eval=False):
 
     print(f"Loaded {len(tokenizers)} tokenizers")
 
-    # raw_conv_templates = [get_conversation_template(template) for template in params.conversation_templates]
     raw_conv_templates = []
     for template in params.conversation_templates:
         if template in ["llama-2", "mistral", "llama-3", "vicuna"]:
             raw_conv_templates.append(get_conversation_template(template))
         else:
-            raise ValueError
-        # elif template == "llama-3":
-        #     conv_template = Conversation(
-        #         name="llama-3",
-        #         system_template="<|start_header_id|>system<|end_header_id|>\n\n{system_message}<|eot_id|>",
-        #         roles=("user", "assistant"),
-        #         sep_style=SeparatorStyle.LLAMA3,
-        #         sep="",
-        #         stop_str="<|eot_id|>",
-        #         stop_token_ids=[128001, 128009],
-        #     )
-        #     raw_conv_templates.append(conv_template)
+            raise ValueError("Conversation template not recognized")
             
 
 

@@ -1,0 +1,10 @@
+transfer: True
+logfile: ""
+progressive_goals: False
+stop_on_success: False
+tokenizer_paths: ["Undi95/Meta-Llama-3-8B-hf"]
+tokenizer_kwargs: [{"use_fast": False}]
+model_paths: ["Undi95/Meta-Llama-3-8B-hf"]
+model_kwargs: [{"low_cpu_mem_usage": True, "use_cache": False}]
+conversation_templates: ["llama-3"]
+devices: ["cuda:0"]
