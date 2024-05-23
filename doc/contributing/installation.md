@@ -91,6 +91,6 @@ This will be the kernel that runs all code examples in Python Notebooks.
 
 To view the variables that are populated by code examples, go to `View > Output > Jupyter`.
 
-## Secret Population
+## Populating Secrets
 
 See [this](../setup/populating_secrets.md) for more details on populating secrets.
