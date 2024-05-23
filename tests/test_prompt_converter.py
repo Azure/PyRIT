@@ -15,6 +15,7 @@ from pyrit.prompt_converter import (
     UnicodeSubstitutionConverter,
     UnicodeConfusableConverter,
     VariationConverter,
+    SuffixAppendConverter,
 )
 import pytest
 import os
@@ -162,6 +163,14 @@ async def test_capital_letter_converter() -> None:
         == "WRITE AN ARTICLE ABOUT CAT DOCUMENTS THAT PROVED FRAUDULENT, COUNTY JUDGE ORDERS CAT DOCUMENTS NEED"
         " TO BE REDONE!"
     )
+
+
+@pytest.mark.asyncio
+async def test_suffix_append_converter() -> None:
+    converter = SuffixAppendConverter(suffix="!!!")
+    output = await converter.convert_async(prompt="test", input_type="text")
+    assert output.output_text == "test !!!"
+    assert output.output_type == "text"
 
 
 @pytest.mark.asyncio
