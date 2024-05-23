@@ -13,6 +13,7 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
+from pyrit.exceptions.exception_classes import PyritException, handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
@@ -239,27 +240,14 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 request=request, response_text_pieces=[resp_text]
             )
         except BadRequestError as bre:
-            # Handle bad request error when content filter system detects harmful content
-            bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
-            resp_text = bad_request_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
+            response_entry = handle_bad_request_exception(
+                memory=self._memory, response_text=bre.message, request=request
             )
-        except RateLimitError as rle:
-            # Handle the rate limit exception after exhausting the maximum number of retries.
-            rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
-            resp_text = rate_limit_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], response_type="error", error="error"
-            )
-        except EmptyResponseException:
-            # Handle the empty response exception after exhausting the maximum number of retries.
-            message = f"Empty response from the target even after {RETRY_MAX_NUM_ATTEMPTS} retries."
-            empty_response_exception = EmptyResponseException(message=message)
-            resp_text = empty_response_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], response_type="error", error="error"
-            )
+        except Exception as ex:
+            self._memory.add_response_entries_to_memory(
+                    request=request, response_text_pieces=[ex], response_type="error", error="processing"
+                )
+            raise
 
         return response_entry
 
@@ -328,10 +316,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             # Handle empty response
             if not extracted_response:
                 raise EmptyResponseException(message="The chat returned an empty response.")
-        elif finish_reason == "content_filter":
-            message = response.choices[0]
-            content_filter_exception = BadRequestException(message=str(message))
-            extracted_response = content_filter_exception.process_exception()
+        else:
+            raise PyritException(f"Unknown finish_reason {finish_reason}")
+        
         return extracted_response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:

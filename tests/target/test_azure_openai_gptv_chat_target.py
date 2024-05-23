@@ -12,6 +12,9 @@ from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 from openai import BadRequestError, RateLimitError
 
+from pyrit.exceptions.exception_classes import EmptyResponseException
+from pyrit.memory.duckdb_memory import DuckDBMemory
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target import AzureOpenAIGPTVChatTarget
@@ -28,6 +31,7 @@ def azure_gptv_chat_engine() -> AzureOpenAIGPTVChatTarget:
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
         api_version="some_version",
+        memory=DuckDBMemory(db_path=":memory:"),
     )
 
 
@@ -393,7 +397,7 @@ async def test_send_prompt_async(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response(
+async def test_send_prompt_async_empty_response_retries(
     azure_openai_mock_return: ChatCompletion, azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget
 ):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
@@ -433,23 +437,18 @@ async def test_send_prompt_async_empty_response(
         with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
             mock_create.return_value = azure_openai_mock_return
             constants.RETRY_MAX_NUM_ATTEMPTS = 5
-            response: PromptRequestResponse = await azure_gptv_chat_engine.send_prompt_async(
-                prompt_request=prompt_req_resp
-            )
-            assert len(response.request_pieces) == 1
-            expected_error_message = (
-                '{"status_code": 204, "message": "Empty response from the target even after 5 retries."}'
-            )
-            assert response.request_pieces[0].converted_value == expected_error_message
-            assert response.request_pieces[0].converted_value_data_type == "error"
-            assert response.request_pieces[0].original_value == expected_error_message
-            assert response.request_pieces[0].original_value_data_type == "error"
-            assert str(constants.RETRY_MAX_NUM_ATTEMPTS) in response.request_pieces[0].converted_value
-    os.remove(tmp_file_name)
+            azure_gptv_chat_engine._memory = MagicMock(MemoryInterface)
+
+            with pytest.raises(EmptyResponseException):
+                await azure_gptv_chat_engine.send_prompt_async(
+                    prompt_request=prompt_req_resp
+                )
+
+            assert mock_create.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_rate_limit_exception(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
+async def test_send_prompt_async_rate_limit_exception_retries(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
 
     response = MagicMock()
     response.status_code = 429
@@ -461,13 +460,10 @@ async def test_send_prompt_async_rate_limit_exception(azure_gptv_chat_engine: Az
         request_pieces=[PromptRequestPiece(role="user", conversation_id="12345", original_value="Hello")]
     )
 
-    result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
-    assert "Rate Limit Reached" in result.request_pieces[0].converted_value
-    assert "Rate Limit Reached" in result.request_pieces[0].original_value
-    assert result.request_pieces[0].original_value_data_type == "error"
-    assert result.request_pieces[0].converted_value_data_type == "error"
-    expected_sha_256 = "7d0ed53fb1c888e3467776735ee117e328c24f1a588a5f8756ba213c9b0b84a9"
-    assert result.request_pieces[0].original_value_sha256 == expected_sha_256
+    with pytest.raises(RateLimitError):
+        await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
+
+    assert mock_complete_chat_async.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
 
 
 @pytest.mark.asyncio
