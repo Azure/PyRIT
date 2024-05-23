@@ -25,7 +25,7 @@
 # ## Write prompts yourself
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
-# the classes from the [PromptChatTarget](https://github.com/main/pyrit/prompt_target/prompt_chat_target) module (e.g.,
+# the classes from the [PromptChatTarget](./code/targets/prompt_targets.ipynb) module (e.g.,
 # AzureOpenAIChatTarget for Azure OpenAI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
 # packages (e.g., the [openai](https://github.com/openai/openai-python) Python package). When using `PromptChatTarget` and `PromptTarget` classes, always employ them within a "with" context manager to ensure automatic and safe release of database connections after use as shown below.
 

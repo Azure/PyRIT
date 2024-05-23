@@ -27,7 +27,7 @@ This is the least defined component, because attacks can get *complicated*. They
 
 Orchestrators should contain all the logic for different types of attacks. For example, PAIR, tree of attack, or crescendo should be implemented primarily as orchestrators.
 
-Ways to contribute: Check out our [orchestrator docs](./orchestrator.ipynb) and [orchestrator code](../../pyrit/orchestrator/). There are hundreds of attacks outlined in research papers. A lot of these can be orchestrators. If you find an attack that doesn't fit the orchestrator model please tell us since we want to try to make it easier to orchestrate these. Are there scenarios you can write orchestrators for?
+Ways to contribute: Check out our [orchestrator docs](./orchestrators/orchestrator.ipynb) and [orchestrator code](../../pyrit/orchestrator/). There are hundreds of attacks outlined in research papers. A lot of these can be orchestrators. If you find an attack that doesn't fit the orchestrator model please tell us since we want to try to make it easier to orchestrate these. Are there scenarios you can write orchestrators for?
 
 ## Converters
 
