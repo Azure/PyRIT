@@ -14,7 +14,7 @@ The PyRIT codebase uses whitespace for organization / visual clues so developers
 
 Deviations from any particular rule can occur depending on context and need.
 
-- Strict rules should be included in the pre-commit hooks internally as well as externally . This is currently run as part of the build pipelines. If we want to enforce style, it's best to do here.
+- Strict rules should be included in the pre-commit hooks. This is currently run as part of the build pipelines. If we want to enforce style, it's best to do here.
 - Use explicit types and return values when possible
 - Comments are highly encouraged. We use docstrings under the function. The docstring format should align with Google guidelines .
 - Long line lengths are discouraged (>= ~120)
