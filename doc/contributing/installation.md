@@ -74,7 +74,9 @@ This is a guide for how to install PyRIT into a `conda` environment.
 ## Local Environment Setup
 
 PyRIT is compatible with Windows, Linux, and MacOS.
+
 If you're using Windows and prefer to run the tool in a Linux environment, you can do so using Windows Subsystem for Linux (WSL).
+
 Alternatively, you can run the tool directly on Windows using PowerShell.
 
 **Visual Studio Code** is the code editor of choice for the AI Red Team: Download [here](https://code.visualstudio.com/Download).

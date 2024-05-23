@@ -48,5 +48,3 @@ if __name__ == "__main__":
             for url in urls:
                 print(f"  - {url}")
         sys.exit(1)
-    else:
-        sys.exit(0)
