@@ -7,15 +7,17 @@ import concurrent.futures
 import asyncio
 from typing import Literal, Optional, Dict, Any
 
-from openai import BadRequestError
+from openai import BadRequestError, RateLimitError
 
 from pyrit.common.path import RESULTS_PATH
+from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException, pyrit_retry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory
 from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece, PromptResponseError
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -136,42 +138,65 @@ class DALLETarget(PromptTarget):
             image_generation_args["style"] = self.style
 
         try:
-            response = await self._image_target._async_client.images.generate(**image_generation_args)
-            json_response = json.loads(response.model_dump_json())
-
+            b64_data = await self._generate_image_response_async(image_generation_args)
             data = data_serializer_factory(data_type="image_path")
-            b64_data = json_response["data"][0]["b64_json"]
             data.save_b64_image(data=b64_data)
-            prompt_text = data.value
+            resp_text = data.value
             error: PromptResponseError = "none"
             response_type: PromptDataType = "image_path"
 
-        except BadRequestError as e:
-            json_response = {"exception type": "Blocked", "data": ""}
-            json_response["error"] = e.body
-            prompt_text = "content blocked"
+        except BadRequestError as bre:
+            # Handle bad request error when content filter system detects harmful content
+            bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
+            resp_text = bad_request_exception.process_exception()
             error = "blocked"
-            response_type = "text"
+            response_type = "error"
 
-        except json.JSONDecodeError as e:
-            json_response = {"error": e, "exception type": "JSON Error"}
-            prompt_text = "JSON Error"
-            error = "processing"
-            response_type = "text"
+        except RateLimitError as rle:
+            # Handle the rate limit exception after exhausting the maximum number of retries.
+            rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
+            resp_text = rate_limit_exception.process_exception()
+            error = "error"
+            response_type = "error"
 
-        except Exception as e:
-            json_response = {"error": e, "exception type": "exception"}
-            prompt_text = "target error"
-            error = "unknown"
-            response_type = "text"
+        except EmptyResponseException:
+            # Handle the empty response exception after exhausting the maximum number of retries.
+            message = f"Empty response from the target even after {RETRY_MAX_NUM_ATTEMPTS} retries."
+            empty_response_exception = EmptyResponseException(message=message)
+            resp_text = empty_response_exception.process_exception()
+            error = "error"
+            response_type = "error"
 
         return self._memory.add_response_entries_to_memory(
-            request=request,
-            response_text_pieces=[prompt_text],
-            response_type=response_type,
-            prompt_metadata=json.dumps(json_response),
-            error=error,
+            request=request, response_text_pieces=[resp_text], response_type=response_type, error=error
         )
+
+    @pyrit_retry
+    async def _generate_image_response_async(self, image_generation_args):
+        """
+        Asynchronously generates an image using the provided generation arguments.
+
+        Retries the function if it raises RateLimitError (HTTP 429) or EmptyResponseException,
+        with a wait time between retries that follows an exponential backoff strategy.
+        Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+        Args:
+            image_generation_args (dict): The arguments required for image generation.
+
+        Returns:
+            The generated image  in base64 format.
+
+        Raises:
+            RateLimitError: If the rate limit is exceeded and the maximum number of retries is exhausted.
+            EmptyResponseException: If the response is empty after exhausting the maximum number of retries.
+        """
+        result = await self._image_target._async_client.images.generate(**image_generation_args)
+        json_response = json.loads(result.model_dump_json())
+        b64_data = json_response["data"][0]["b64_json"]
+        # Handle empty response using retry
+        if not b64_data:
+            raise EmptyResponseException(message="The chat returned an empty response.")
+        return b64_data
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
