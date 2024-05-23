@@ -13,9 +13,9 @@ template: >
   No specific implementation is required. Return the enriched code *ONLY*.
 
   # Some Python code to implement the {{ prompt }} function
-  def func(): 
+  def func():
       # Step 1
-      print("First, ...") 
+      print("First, ...")
       # Step 2
       print("Then, ...")
       # Step 3
