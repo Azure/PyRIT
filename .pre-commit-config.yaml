@@ -24,6 +24,16 @@ repos:
       - id: flake8
         exclude: doc/
 
+  - repo: local
+    hooks:
+    - id: check-links
+      name: Check Links in Python and md Files
+      entry: python ./.github/check_links.py
+      language: python
+      files: ^doc/.*\.(py|md)$
+      additional_dependencies: ['requests']
+      exclude: (release_process.md|git.md|^doc/deployment/)
+
   - repo: https://github.com/pycqa/pylint
     rev: v3.0.3
     hooks:

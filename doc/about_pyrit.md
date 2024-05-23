@@ -4,7 +4,7 @@ The Python Risk Identification Tool for generative AI (PyRIT) is an open access 
 
 ## Architecture
 
-![PyRIT architecture](./../assets/pyrit_architecture.png)
+![PyRIT architecture](../assets/pyrit_architecture.png)
 
 The PyRIT framework architecture is designed to evaluate the robustness of Large Language Models (LLMs). The framework is composed of several key components, each serving a distinct purpose.
 
@@ -35,7 +35,7 @@ The result is passed back to the red teaming bot to inform the next iteration of
 
 ## Methodology
 
-This tool uses “self-ask” when making inferences to the large language models
+This tool uses self-ask when making inferences to the large language models
 to not only return a response, but to also qualify the contents of the initial
 prompt and obtain other useful information that would otherwise not be
 available.
