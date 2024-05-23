@@ -10,11 +10,13 @@ from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptDataType, PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
+from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.score import Scorer
+from pyrit.score import Scorer, Score
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        scorer: Optional[Scorer] = None,
+        scorer_list: Optional[list[Scorer]] = None,
         memory: MemoryInterface = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -44,13 +46,10 @@ class PromptSendingOrchestrator(Orchestrator):
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
         """
-        super().__init__(
-            prompt_converters=prompt_converters,
-            scorer=scorer,
-            memory=memory,
-            verbose=verbose)
+        super().__init__(prompt_converters=prompt_converters, memory=memory, verbose=verbose)
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._scorer_list = scorer_list
 
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
@@ -94,46 +93,23 @@ class PromptSendingOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
-    
-        response_pieces_to_score = []
-        if self._scorer:
-            for response in responses:
-                for piece in response.request_pieces:
-                    if piece.role == "assistant":
-                        # Add to a list of responses to score
-                        response_pieces_to_score.append(piece)
-                        # self._scorer.score_async(piece.converted_value) # Note this is adding score to the memory in another (score) table
 
-                        # TODO: Add batch support to score here, would this go into the scorer class?
-                        # TODO: Maybe consider having this on the PromptRequestPiece object instead --> this could be in another story to correspond
-                            # If we implement this then we won't need the score table in DB
-                        # Orchestrator.get_memory(score_table) -- this is how we interact with the results
+        if self._scorer_list:
+            with ScoringOrchestrator() as scoring_orchestrator:
+                for scorer in self._scorer_list:
+                    await scoring_orchestrator.score_prompts_by_orchestrator_id_async(
+                        scorer=scorer,
+                        orchestrator_ids=[self.get_identifier()["id"]],
+                    )
 
-        self._score_prompts_batch_async(prompts=response_pieces_to_score, scorer=self._scorer) # This will add scores to the memory in the ScoreEntries table
-        # These should be correlated by PromptRequestResponseID
-        # TODO: Figure out how to extract these in a way that's demoable and where you can cross check the scoring with the PromptRequestResponse object --
-        # Maybe this should be a helper function to get these into the same table or a follow-up story?
+            # TODO: Maybe consider having this on the PromptRequestPiece object instead --> this could be in another story to correspond
+            # If we implement this then we won't need the score table in DB
 
         return responses
-    
-    # Note: These are functions within scoring_orchestrator...think about if they belong here?
-    # This is modified to not return the score objects, and instead to just chunk and score
-    async def _score_prompts_batch_async(self, prompts: list[PromptRequestPiece], scorer: Scorer) -> None:
-        results = []
 
-        for prompts_batch in self._chunked_prompts(prompts, self._batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(scorer.score_async(request_response=prompt))
-
-            batch_results = await asyncio.gather(*tasks)
-            results.extend(batch_results)
-
-        # results is a list[list[str]] and needs to be flattened
-        # return [score for sublist in results for score in sublist]
-    
-    def _chunked_prompts(self, prompts, size):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]
-            
-
+    def get_score_memory(self):
+        """
+        Retrieves the scores of the PromptRequestPieces associated with this orchestrator.
+        These exist if a scorer is provided to the orchestrator.
+        """
+        return self._memory.get_scores_by_orchestrator_id(orchestrator_id=id(self))

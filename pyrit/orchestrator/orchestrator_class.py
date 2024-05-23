@@ -23,13 +23,11 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        scorer: Optional[Scorer] = None,
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = {},
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []
-        self._scorer = scorer
         self._memory = memory or DuckDBMemory()
         self._verbose = verbose
 
@@ -68,9 +66,6 @@ class Orchestrator(abc.ABC, Identifier):
 
         request = NormalizerRequest([request_piece])
         return request
-    
-    def score_response(self):
-        self._scorer.score
 
     def get_memory(self):
         """
