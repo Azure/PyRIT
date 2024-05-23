@@ -7,7 +7,7 @@ import logging
 import json
 
 from openai import AsyncAzureOpenAI
-from openai import BadRequestError, RateLimitError
+from openai import BadRequestError
 from openai.types.chat import ChatCompletion
 
 
@@ -19,8 +19,7 @@ from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException, pyrit_retry
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
+from pyrit.exceptions import EmptyResponseException, pyrit_retry
 
 logger = logging.getLogger(__name__)
 
@@ -245,8 +244,8 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             )
         except Exception as ex:
             self._memory.add_response_entries_to_memory(
-                    request=request, response_text_pieces=[ex], response_type="error", error="processing"
-                )
+                request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"
+            )
             raise
 
         return response_entry
@@ -317,8 +316,8 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             if not extracted_response:
                 raise EmptyResponseException(message="The chat returned an empty response.")
         else:
-            raise PyritException(f"Unknown finish_reason {finish_reason}")
-        
+            raise PyritException(message=f"Unknown finish_reason {finish_reason}")
+
         return extracted_response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
