@@ -66,7 +66,7 @@ async def test_send_prompt_async_empty_response(
     mock_return = MagicMock()
     # make b64_json value empty to test retries when empty response was returned
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": ""}]}'
-    dalle_target._image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
+    setattr(dalle_target._image_target._async_client.images, "generate", AsyncMock(return_value=mock_return))
     constants.RETRY_MAX_NUM_ATTEMPTS = 5
     response: PromptRequestResponse = await dalle_target.send_prompt_async(
         prompt_request=PromptRequestResponse([request])
@@ -224,7 +224,7 @@ async def test_send_prompt_async_empty_response_adds_memory() -> None:
     mock_dalle_target._memory = mock_memory
     response = await mock_dalle_target.send_prompt_async(prompt_request=request)
     assert response is not None, "Expected a result but got None"
-    mock_memory.add_response_entries_to_memory.assert_called_once(), "Request and Response need to be added to memory"
+    mock_memory.add_response_entries_to_memory.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -243,10 +243,10 @@ async def test_send_prompt_async_rate_limit_adds_memory() -> None:
     mock_dalle_target._memory = mock_memory
 
     # mocking openai.RateLimitError
-    response = MagicMock()
-    response.status_code = 429
+    mock_resp = MagicMock()
+    mock_resp.status_code = 429
     mock_generate_image_response_async = AsyncMock(
-        side_effect=RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
+        side_effect=RateLimitError("Rate Limit Reached", response=mock_resp, body="Rate limit reached")
     )
     setattr(mock_dalle_target, "_generate_image_response_async", mock_generate_image_response_async)
 
@@ -272,10 +272,10 @@ async def test_send_prompt_async_bad_request_adds_memory() -> None:
     mock_dalle_target._memory = mock_memory
 
     # mocking openai.BadRequestError
-    response = MagicMock()
-    response.status_code = 400
+    mock_resp = MagicMock()
+    mock_resp.status_code = 400
     mock_generate_image_response_async = AsyncMock(
-        side_effect=BadRequestError("Bad Request", response=response, body="Bad Request")
+        side_effect=BadRequestError("Bad Request", response=mock_resp, body="Bad Request")
     )
 
     setattr(mock_dalle_target, "_generate_image_response_async", mock_generate_image_response_async)
