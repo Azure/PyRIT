@@ -9,13 +9,13 @@ from openai import BadRequestError, RateLimitError
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
+from pyrit.exceptions.exception_classes import EmptyResponseException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import OpenAIChatInterface
 from pyrit.prompt_target import AzureOpenAIChatTarget, OpenAIChatTarget
 from pyrit.common import constants
-from pyrit.exceptions import EmptyResponseException
 from tests.mocks import get_sample_conversations
 
 
@@ -251,6 +251,34 @@ async def test_send_prompt_async_rate_limit_exception_retries(azure_chat_target:
 
 
 @pytest.mark.asyncio
+async def test_send_prompt_async_rate_limit_exception_adds_to_memory(azure_chat_target: AzureOpenAIChatTarget):
+    mock_memory = MagicMock()
+    mock_memory.get_chat_messages_with_conversation_id.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_response_entries_to_memory = AsyncMock()
+
+    azure_chat_target._memory = mock_memory
+
+    response = MagicMock()
+    response.status_code = 429
+    mock_complete_chat_async = AsyncMock(
+        side_effect=RateLimitError("Rate Limit Reached", response=response, body="Rate limit reached")
+    )
+    setattr(azure_chat_target, "_complete_chat_async", mock_complete_chat_async)
+    prompt_request = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
+    )
+
+    with pytest.raises(RateLimitError) as rle:
+        await azure_chat_target.send_prompt_async(prompt_request=prompt_request)
+        azure_chat_target._memory.get_chat_messages_with_conversation_id.assert_called_once_with(conversation_id="123")
+        azure_chat_target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+        azure_chat_target._memory.add_response_entries_to_memory.assert_called_once()
+
+    assert str(rle.value) == "Rate Limit Reached"
+
+
+@pytest.mark.asyncio
 async def test_send_prompt_async_bad_request_error(azure_chat_target: AzureOpenAIChatTarget):
     response = MagicMock()
     response.status_code = 400
@@ -299,3 +327,122 @@ def test_validate_request_too_many_request_pieces(azure_chat_target: AzureOpenAI
     assert "target only supports a single prompt request piece" in str(
         excinfo.value
     ), "Error not raised for too many request pieces"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_adds_to_memory(azure_chat_target: AzureOpenAIChatTarget):
+    mock_memory = MagicMock()
+    mock_memory.get_chat_messages_with_conversation_id.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_response_entries_to_memory = AsyncMock()
+
+    azure_chat_target._memory = mock_memory
+
+    mock_complete_chat_async = AsyncMock(return_value="Mock response text")
+
+    setattr(azure_chat_target, "_complete_chat_async", mock_complete_chat_async)
+
+    prompt_request = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
+    )
+
+    result = await azure_chat_target.send_prompt_async(prompt_request=prompt_request)
+
+    azure_chat_target._memory.get_chat_messages_with_conversation_id.assert_called_once_with(conversation_id="123")
+    azure_chat_target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+    azure_chat_target._memory.add_response_entries_to_memory.assert_called_once()
+
+    assert result is not None, "Expected a result but got None"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_empty_response_adds_to_memory(
+    openai_mock_return: ChatCompletion, azure_chat_target: AzureOpenAIChatTarget
+):
+    mock_memory = MagicMock()
+    mock_memory.get_chat_messages_with_conversation_id.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_response_entries_to_memory = AsyncMock()
+
+    azure_chat_target._memory = mock_memory
+
+    prompt_req_resp = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="user",
+                conversation_id="12345679",
+                original_value="hello",
+                converted_value="hello",
+                original_value_data_type="text",
+                converted_value_data_type="text",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            )
+        ]
+    )
+    # Make assistant response empty
+    openai_mock_return.choices[0].message.content = ""
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = openai_mock_return
+        with pytest.raises(EmptyResponseException) as e:
+            await azure_chat_target.send_prompt_async(prompt_request=prompt_req_resp)
+            azure_chat_target._memory.get_chat_messages_with_conversation_id.assert_called_once_with(
+                conversation_id="12345679"
+            )
+            azure_chat_target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_req_resp)
+            azure_chat_target._memory.add_response_entries_to_memory.assert_called_once()
+        assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_bad_request_error_adds_to_memory(azure_chat_target: AzureOpenAIChatTarget):
+    mock_memory = MagicMock()
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_response_entries_to_memory = AsyncMock()
+
+    azure_chat_target._memory = mock_memory
+
+    response = MagicMock()
+    response.status_code = 400
+    mock_complete_chat_async = AsyncMock(
+        side_effect=BadRequestError("Bad Request", response=response, body="Bad Request")
+    )
+    setattr(azure_chat_target, "_complete_chat_async", mock_complete_chat_async)
+    prompt_request = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
+    )
+
+    with pytest.raises(BadRequestError) as bre:
+        await azure_chat_target.send_prompt_async(prompt_request=prompt_request)
+        azure_chat_target._memory.get_conversation.assert_called_once_with(conversation_id="123")
+        azure_chat_target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
+        azure_chat_target._memory.add_response_entries_to_memory.assert_called_once()
+
+    assert str(bre.value) == "Bad Request"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async(openai_mock_return: ChatCompletion, azure_chat_target: AzureOpenAIChatTarget):
+    prompt_req_resp = PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="user",
+                conversation_id="12345679",
+                original_value="hello",
+                converted_value="hello",
+                original_value_data_type="text",
+                converted_value_data_type="text",
+                prompt_target_identifier={"target": "target-identifier"},
+                orchestrator_identifier={"test": "test"},
+                labels={"test": "test"},
+            )
+        ]
+    )
+
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = openai_mock_return
+        response: PromptRequestResponse = await azure_chat_target.send_prompt_async(prompt_request=prompt_req_resp)
+        assert len(response.request_pieces) == 1
+        assert response.request_pieces[0].converted_value == "hi"
