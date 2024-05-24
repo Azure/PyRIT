@@ -7,17 +7,17 @@ import concurrent.futures
 import asyncio
 from typing import Literal, Optional, Dict, Any
 
-from openai import BadRequestError, RateLimitError
+from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
-from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException, pyrit_retry
+from pyrit.exceptions import EmptyResponseException, pyrit_retry
+from pyrit.exceptions.exception_classes import handle_bad_request_exception
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory
 from pyrit.models.literals import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece, PromptResponseError
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -142,34 +142,29 @@ class DALLETarget(PromptTarget):
             data = data_serializer_factory(data_type="image_path")
             data.save_b64_image(data=b64_data)
             resp_text = data.value
-            error: PromptResponseError = "none"
             response_type: PromptDataType = "image_path"
 
+            response_entry = self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[resp_text], response_type=response_type
+            )
+
         except BadRequestError as bre:
-            # Handle bad request error when content filter system detects harmful content
-            bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
-            resp_text = bad_request_exception.process_exception()
-            error = "blocked"
-            response_type = "error"
+            # # Handle bad request error when content filter system detects harmful content
+            # bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
+            # resp_text = bad_request_exception.process_exception()
+            # error = "blocked"
+            # response_type = "error"
+            response_entry = handle_bad_request_exception(
+                memory=self._memory, response_text=bre.message, request=request
+            )
 
-        except RateLimitError as rle:
-            # Handle the rate limit exception after exhausting the maximum number of retries.
-            rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
-            resp_text = rate_limit_exception.process_exception()
-            error = "error"
-            response_type = "error"
+        except Exception as ex:
+            self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"
+            )
+            raise
 
-        except EmptyResponseException:
-            # Handle the empty response exception after exhausting the maximum number of retries.
-            message = f"Empty response from the target even after {RETRY_MAX_NUM_ATTEMPTS} retries."
-            empty_response_exception = EmptyResponseException(message=message)
-            resp_text = empty_response_exception.process_exception()
-            error = "error"
-            response_type = "error"
-
-        return self._memory.add_response_entries_to_memory(
-            request=request, response_text_pieces=[resp_text], response_type=response_type, error=error
-        )
+        return response_entry
 
     @pyrit_retry
     async def _generate_image_response_async(self, image_generation_args):

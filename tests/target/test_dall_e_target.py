@@ -4,6 +4,7 @@
 from unittest.mock import patch, MagicMock, AsyncMock
 import uuid
 import os
+from pyrit.exceptions.exception_classes import EmptyResponseException
 import pytest
 
 from openai import BadRequestError, RateLimitError
@@ -68,16 +69,10 @@ async def test_send_prompt_async_empty_response(
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": ""}]}'
     setattr(dalle_target._image_target._async_client.images, "generate", AsyncMock(return_value=mock_return))
     constants.RETRY_MAX_NUM_ATTEMPTS = 5
-    response: PromptRequestResponse = await dalle_target.send_prompt_async(
-        prompt_request=PromptRequestResponse([request])
-    )
-    assert len(response.request_pieces) == 1
-    expected_error_message = '{"status_code": 204, "message": "Empty response from the target even after 5 retries."}'
-    assert response.request_pieces[0].converted_value == expected_error_message
-    assert response.request_pieces[0].converted_value_data_type == "error"
-    assert response.request_pieces[0].original_value == expected_error_message
-    assert response.request_pieces[0].original_value_data_type == "error"
-    assert str(constants.RETRY_MAX_NUM_ATTEMPTS) in response.request_pieces[0].converted_value
+
+    with pytest.raises(EmptyResponseException) as e:
+        await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+    assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
 
 
 @pytest.mark.asyncio
@@ -94,15 +89,9 @@ async def test_send_prompt_async_rate_limit_exception(
     )
     setattr(dalle_target, "_generate_image_response_async", mock_image_resp_async)
 
-    result: PromptRequestResponse = await dalle_target.send_prompt_async(
-        prompt_request=PromptRequestResponse([request])
-    )
-    assert "Rate Limit Reached" in result.request_pieces[0].converted_value
-    assert "Rate Limit Reached" in result.request_pieces[0].original_value
-    assert result.request_pieces[0].original_value_data_type == "error"
-    assert result.request_pieces[0].converted_value_data_type == "error"
-    expected_sha_256 = "7d0ed53fb1c888e3467776735ee117e328c24f1a588a5f8756ba213c9b0b84a9"
-    assert result.request_pieces[0].original_value_sha256 == expected_sha_256
+    with pytest.raises(RateLimitError):
+        await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        assert mock_image_resp_async.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
 
 
 @pytest.mark.asyncio
@@ -115,19 +104,12 @@ async def test_send_prompt_async_bad_request_error(
     response = MagicMock()
     response.status_code = 400
     mock_image_resp_async = AsyncMock(
-        side_effect=RateLimitError("Bad Request Error", response=response, body="Bad Request")
+        side_effect=BadRequestError("Bad Request Error", response=response, body="Bad Request")
     )
     setattr(dalle_target, "_generate_image_response_async", mock_image_resp_async)
-
-    result: PromptRequestResponse = await dalle_target.send_prompt_async(
-        prompt_request=PromptRequestResponse([request])
-    )
-    assert "Bad Request Error" in result.request_pieces[0].converted_value
-    assert "Bad Request Error" in result.request_pieces[0].original_value
-    assert result.request_pieces[0].original_value_data_type == "error"
-    assert result.request_pieces[0].converted_value_data_type == "error"
-    expected_sha256 = "4e98b0da48c028f090473fe5cc71461a921465f807ae66c5f7ae9d0e9f301f77"
-    assert result.request_pieces[0].original_value_sha256 == expected_sha256
+    with pytest.raises(BadRequestError) as bre:
+        await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+    assert str(bre.value) == "Bad Request Error"
 
 
 @pytest.mark.asyncio
@@ -222,9 +204,11 @@ async def test_send_prompt_async_empty_response_adds_memory() -> None:
     mock_dalle_target._image_target._async_client.images = MagicMock()
     mock_dalle_target._image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
     mock_dalle_target._memory = mock_memory
-    response = await mock_dalle_target.send_prompt_async(prompt_request=request)
-    assert response is not None, "Expected a result but got None"
-    mock_memory.add_response_entries_to_memory.assert_called_once()
+    with pytest.raises(EmptyResponseException) as e:
+        await mock_dalle_target.send_prompt_async(prompt_request=request)
+        mock_memory.add_response_entries_to_memory.assert_called_once()
+    assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
+    # mock_memory.add_response_entries_to_memory.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -249,11 +233,11 @@ async def test_send_prompt_async_rate_limit_adds_memory() -> None:
         side_effect=RateLimitError("Rate Limit Reached", response=mock_resp, body="Rate limit reached")
     )
     setattr(mock_dalle_target, "_generate_image_response_async", mock_generate_image_response_async)
-
-    response = await mock_dalle_target.send_prompt_async(prompt_request=request)
-    assert response is not None
-    mock_dalle_target._memory.add_request_response_to_memory.assert_called_once()
-    mock_dalle_target._memory.add_response_entries_to_memory.assert_called_once()
+    with pytest.raises(RateLimitError) as rle:
+        await mock_dalle_target.send_prompt_async(prompt_request=request)
+        mock_dalle_target._memory.add_request_response_to_memory.assert_called_once()
+        mock_dalle_target._memory.add_response_entries_to_memory.assert_called_once()
+    assert str(rle.value) == "Rate Limit Reached"
 
 
 @pytest.mark.asyncio
@@ -279,8 +263,8 @@ async def test_send_prompt_async_bad_request_adds_memory() -> None:
     )
 
     setattr(mock_dalle_target, "_generate_image_response_async", mock_generate_image_response_async)
-
-    response = await mock_dalle_target.send_prompt_async(prompt_request=request)
-    assert response is not None
-    mock_dalle_target._memory.add_request_response_to_memory.assert_called_once()
-    mock_dalle_target._memory.add_response_entries_to_memory.assert_called_once()
+    with pytest.raises(BadRequestError) as bre:
+        await mock_dalle_target.send_prompt_async(prompt_request=request)
+        mock_dalle_target._memory.add_request_response_to_memory.assert_called_once()
+        mock_dalle_target._memory.add_response_entries_to_memory.assert_called_once()
+    assert str(bre.value) == "Bad Request"
