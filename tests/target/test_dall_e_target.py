@@ -208,7 +208,6 @@ async def test_send_prompt_async_empty_response_adds_memory() -> None:
         await mock_dalle_target.send_prompt_async(prompt_request=request)
         mock_memory.add_response_entries_to_memory.assert_called_once()
     assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
-    # mock_memory.add_response_entries_to_memory.assert_called_once()
 
 
 @pytest.mark.asyncio
