@@ -6,18 +6,14 @@ import logging
 from abc import abstractmethod
 from typing import Optional
 
-from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, BadRequestError, OpenAI, RateLimitError
+from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, BadRequestError, OpenAI
 from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
-from pyrit.exceptions.exception_classes import (
-    BadRequestException,
-    EmptyResponseException,
-    RateLimitException,
-    pyrit_retry,
-)
+from pyrit.exceptions import BadRequestException, EmptyResponseException, pyrit_retry
+from pyrit.exceptions.exception_classes import PyritException, handle_bad_request_exception
+
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget
@@ -61,9 +57,6 @@ class OpenAIChatInterface(PromptChatTarget):
             presence_penalty=self._presence_penalty,
         )
 
-        if not resp_text:
-            raise ValueError("The chat returned an empty response.")
-
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
         response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
@@ -97,30 +90,15 @@ class OpenAIChatInterface(PromptChatTarget):
             response_entry = self._memory.add_response_entries_to_memory(
                 request=request, response_text_pieces=[resp_text]
             )
-
         except BadRequestError as bre:
-            # Handle bad request error when content filter system detects harmful content
-            bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
-            resp_text = bad_request_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
+            response_entry = handle_bad_request_exception(
+                memory=self._memory, response_text=bre.message, request=request
             )
-
-        except RateLimitError as rle:
-            # Handle the rate limit exception after exhausting the maximum number of retries.
-            rate_limit_exception = RateLimitException(rle.status_code, message=rle.message)
-            resp_text = rate_limit_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], response_type="error", error="error"
+        except Exception as e:
+            self._memory.add_response_entries_to_memory(
+                request=request, response_text_pieces=[str(e)], response_type="error", error="processing"
             )
-        except EmptyResponseException:
-            # Handle the empty response exception after exhausting the maximum number of retries.
-            message = f"Empty response from the target even after {RETRY_MAX_NUM_ATTEMPTS} retries."
-            empty_response_exception = EmptyResponseException(message=message)
-            resp_text = empty_response_exception.process_exception()
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text], response_type="error", error="error"
-            )
+            raise
 
         return response_entry
 
@@ -137,10 +115,7 @@ class OpenAIChatInterface(PromptChatTarget):
         try:
             response_message = response.choices[0].message.content
         except KeyError as ex:
-            if response.choices[0].finish_reason == "content_filter":
-                raise RuntimeError(f"Azure blocked the response due to content filter. Response: {response}") from ex
-            else:
-                raise RuntimeError(f"Error in Azure Chat. Response: {response}") from ex
+            raise PyritException(message=f"Error in Azure Chat. Response: {response}") from ex
         return response_message
 
     @pyrit_retry

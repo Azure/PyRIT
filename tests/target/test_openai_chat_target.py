@@ -9,11 +9,13 @@ from openai import BadRequestError, RateLimitError
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import OpenAIChatInterface
 from pyrit.prompt_target import AzureOpenAIChatTarget, OpenAIChatTarget
 from pyrit.common import constants
+from pyrit.exceptions import EmptyResponseException
 from tests.mocks import get_sample_conversations
 
 
@@ -202,33 +204,7 @@ def test_openai_invalid_endpoint_raises():
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_bad_request_error_adds_to_memory(azure_chat_target: AzureOpenAIChatTarget):
-    mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
-
-    azure_chat_target._memory = mock_memory
-
-    response = MagicMock()
-    response.status_code = 400
-    mock_complete_chat_async = AsyncMock(
-        side_effect=BadRequestError("Bad Request", response=response, body="Bad Request")
-    )
-    setattr(azure_chat_target, "_complete_chat_async", mock_complete_chat_async)
-    prompt_request = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
-    )
-
-    result = await azure_chat_target.send_prompt_async(prompt_request=prompt_request)
-    assert result is not None
-    azure_chat_target._memory.get_chat_messages_with_conversation_id.assert_called_once_with(conversation_id="123")
-    azure_chat_target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-    azure_chat_target._memory.add_response_entries_to_memory.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_send_prompt_async_empty_response(
+async def test_send_prompt_async_empty_response_retries(
     openai_mock_return: ChatCompletion, azure_chat_target: AzureOpenAIChatTarget
 ):
     prompt_req_resp = PromptRequestResponse(
@@ -251,27 +227,14 @@ async def test_send_prompt_async_empty_response(
     with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = openai_mock_return
         constants.RETRY_MAX_NUM_ATTEMPTS = 5
-        response: PromptRequestResponse = await azure_chat_target.send_prompt_async(prompt_request=prompt_req_resp)
-        assert len(response.request_pieces) == 1
-        expected_error_message = (
-            '{"status_code": 204, "message": "Empty response from the target even after 5 retries."}'
-        )
-        assert response.request_pieces[0].converted_value == expected_error_message
-        assert response.request_pieces[0].converted_value_data_type == "error"
-        assert response.request_pieces[0].original_value == expected_error_message
-        assert response.request_pieces[0].original_value_data_type == "error"
-        assert str(constants.RETRY_MAX_NUM_ATTEMPTS) in response.request_pieces[0].converted_value
+        azure_chat_target._memory = MagicMock(MemoryInterface)
+        with pytest.raises(EmptyResponseException):
+            await azure_chat_target.send_prompt_async(prompt_request=prompt_req_resp)
+        assert mock_create.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_rate_limit_exception_adds_to_memory(azure_chat_target: AzureOpenAIChatTarget):
-    mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
-
-    azure_chat_target._memory = mock_memory
-
+async def test_send_prompt_async_rate_limit_exception_retries(azure_chat_target: AzureOpenAIChatTarget):
     response = MagicMock()
     response.status_code = 429
     mock_complete_chat_async = AsyncMock(
@@ -282,11 +245,26 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(azure_chat_
         request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
     )
 
-    result = await azure_chat_target.send_prompt_async(prompt_request=prompt_request)
-    assert result is not None
-    azure_chat_target._memory.get_chat_messages_with_conversation_id.assert_called_once_with(conversation_id="123")
-    azure_chat_target._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-    azure_chat_target._memory.add_response_entries_to_memory.assert_called_once()
+    with pytest.raises(RateLimitError):
+        await azure_chat_target.send_prompt_async(prompt_request=prompt_request)
+        assert mock_complete_chat_async.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_bad_request_error(azure_chat_target: AzureOpenAIChatTarget):
+    response = MagicMock()
+    response.status_code = 400
+    mock_complete_chat_async = AsyncMock(
+        side_effect=BadRequestError("Bad Request", response=response, body="Bad Request")
+    )
+    setattr(azure_chat_target, "_complete_chat_async", mock_complete_chat_async)
+
+    prompt_request = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
+    )
+    with pytest.raises(BadRequestError) as bre:
+        await azure_chat_target.send_prompt_async(prompt_request=prompt_request)
+        assert str(bre.value == "Bad Request Error")
 
 
 def test_parse_chat_completion_successful(azure_chat_target: AzureOpenAIChatTarget):
@@ -317,7 +295,6 @@ def test_validate_request_too_many_request_pieces(azure_chat_target: AzureOpenAI
     )
     with pytest.raises(ValueError) as excinfo:
         azure_chat_target._validate_request(prompt_request=prompt_request)
-        print(excinfo)
 
     assert "target only supports a single prompt request piece" in str(
         excinfo.value
