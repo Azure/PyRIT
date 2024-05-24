@@ -149,11 +149,6 @@ class DALLETarget(PromptTarget):
             )
 
         except BadRequestError as bre:
-            # # Handle bad request error when content filter system detects harmful content
-            # bad_request_exception = BadRequestException(bre.status_code, message=bre.message)
-            # resp_text = bad_request_exception.process_exception()
-            # error = "blocked"
-            # response_type = "error"
             response_entry = handle_bad_request_exception(
                 memory=self._memory, response_text=bre.message, request=request
             )
