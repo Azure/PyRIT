@@ -403,8 +403,8 @@ class AttackPrompt(object):
         return self.input_ids[self._control_slice]
 
     @control_toks.setter
-    def control_toks(self, control_toks):
-        self.control = self.tokenizer.decode(control_toks)
+    def control_toks(self, input_control_toks):
+        self.control = self.tokenizer.decode(input_control_toks)
         self._update_ids()
 
     @property
@@ -537,22 +537,22 @@ class PromptManager(object):
         return iter(self._prompts)
 
     @property
-    def control_str(self):
-        return self._prompts[0].control_str
-
-    @property
     def control_toks(self):
         return self._prompts[0].control_toks
+
+    @control_toks.setter
+    def control_toks(self, input_control_toks):
+        for prompt in self._prompts:
+            prompt.control_toks = input_control_toks
+
+    @property
+    def control_str(self):
+        return self._prompts[0].control_str
 
     @control_str.setter
     def control_str(self, control):
         for prompt in self._prompts:
             prompt.control_str = control
-
-    @control_toks.setter
-    def control_toks(self, control_toks):
-        for prompt in self._prompts:
-            prompt.control_toks = control_toks
 
     @property
     def disallowed_toks(self):
@@ -692,18 +692,23 @@ class MultiPromptAttack(object):
             return True if e_prime < e else math.exp(-(e_prime - e) / T) >= random.random()
 
         if target_weight is None:
+
             def target_weight_fn(_):
                 return 1
-        elif isinstance(target_weight, (int, float)):
-            def target_weight_fn():
+
+        else:
+
+            def target_weight_fn(_):
                 return target_weight
 
         if control_weight is None:
+
             def control_weight_fn(_):
                 return 0.1
 
-        elif isinstance(control_weight, (int, float)):
-            def control_weight_fn():
+        else:
+
+            def control_weight_fn(_):
                 return control_weight
 
         steps = 0

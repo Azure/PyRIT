@@ -1,5 +1,6 @@
 import time
 import numpy as np
+from typing import Union
 import torch.multiprocessing as mp
 from ml_collections import config_dict
 import pyrit.optimizers.GreedyCoordinateGradient.gcg.gcg_attack as attack_lib
@@ -93,6 +94,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
 
         def process_fn(s):
             return s.replace("Sure, h", "H")
+
         def process_fn2(s):
             return s.replace("Sure, here is", "Sure, here's")
 
@@ -107,6 +109,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         }
 
         timestamp = time.strftime("%Y%m%d-%H:%M:%S")
+        attack: Union[ProgressiveMultiPromptAttack, IndividualPromptAttack]
         if params.transfer:
             attack = ProgressiveMultiPromptAttack(
                 train_goals,
@@ -126,7 +129,6 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
                 mpa_n_steps=params.n_steps,
             )
         else:
-            print("attack")
             attack = IndividualPromptAttack(
                 train_goals,
                 train_targets,
