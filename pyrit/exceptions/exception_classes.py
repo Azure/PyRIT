@@ -10,13 +10,17 @@ from openai import RateLimitError
 from typing import Callable
 
 from pyrit.common.constants import RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS, RETRY_MAX_NUM_ATTEMPTS
+from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse
+
 
 logger = logging.getLogger(__name__)
 
 
 class PyritException(Exception, ABC):
 
-    def __init__(self, status_code, message):
+    def __init__(self, status_code=500, *, message: str = "An error occured"):
         self.status_code = status_code
         self.message = message
         super().__init__(f"Status Code: {status_code}, Message: {message}")
@@ -35,14 +39,14 @@ class BadRequestException(PyritException):
     """Exception class for bad client requests."""
 
     def __init__(self, status_code: int = 400, *, message: str = "Bad Request"):
-        super().__init__(status_code, message)
+        super().__init__(status_code, message=message)
 
 
 class RateLimitException(PyritException):
     """Exception class for authentication errors."""
 
     def __init__(self, status_code: int = 429, *, message: str = "Rate Limit Exception"):
-        super().__init__(status_code, message)
+        super().__init__(status_code, message=message)
 
 
 class EmptyResponseException(BadRequestException):
@@ -50,6 +54,26 @@ class EmptyResponseException(BadRequestException):
 
     def __init__(self, status_code: int = 204, *, message: str = "No Content"):
         super().__init__(status_code=status_code, message=message)
+
+
+def handle_bad_request_exception(
+    memory: MemoryInterface, response_text: str, request: PromptRequestPiece
+) -> PromptRequestResponse:
+
+    if "content_filter" in response_text:
+        # Handle bad request error when content filter system detects harmful content
+        bad_request_exception = BadRequestException(400, message=response_text)
+        resp_text = bad_request_exception.process_exception()
+        response_entry = memory.add_response_entries_to_memory(
+            request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
+        )
+    else:
+        memory.add_response_entries_to_memory(
+            request=request, response_text_pieces=[response_text], response_type="error", error="processing"
+        )
+        raise
+
+    return response_entry
 
 
 def pyrit_retry(func: Callable) -> Callable:
