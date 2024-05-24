@@ -61,15 +61,14 @@ if __name__ == "__main__":
     run_trainer(model_name="vicuna", setup="single", n_train_data=1, n_steps=150, test_steps=25, batch_size=256)
 
     run_trainer(
-        model_name="mistral", setup="multiple", n_train_data=2, n_test_data=1, n_steps=40, test_steps=1, batch_size=128
+        model_name="mistral", setup="multiple", n_train_data=2, n_steps=40, test_steps=1, batch_size=128
     )
 
     run_trainer(
         model_name="all_models",
         setup="multiple",
         num_train_models=4,
-        n_train_data=2,
-        n_test_data=1,
+        n_train_data=25,
         n_steps=100,
         test_steps=1,
         batch_size=512,
