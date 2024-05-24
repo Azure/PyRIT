@@ -3,7 +3,10 @@ import numpy as np
 import torch.multiprocessing as mp
 from ml_collections import config_dict
 import pyrit.optimizers.GreedyCoordinateGradient.gcg.gcg_attack as attack_lib
-from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import IndividualPromptAttack, ProgressiveMultiPromptAttack
+from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import (
+    IndividualPromptAttack,
+    ProgressiveMultiPromptAttack,
+)
 from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
 
 
@@ -87,8 +90,12 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.random_seed = random_seed
         print(params)
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
-        process_fn = lambda s: s.replace("Sure, h", "H")
-        process_fn2 = lambda s: s.replace("Sure, here is", "Sure, here's")
+
+        def process_fn(s):
+            return s.replace("Sure, h", "H")
+        def process_fn2(s):
+            return s.replace("Sure, here is", "Sure, here's")
+
         train_targets = [process_fn(t) if np.random.random() < 0.5 else process_fn2(t) for t in train_targets]
         test_targets = [process_fn(t) if np.random.random() < 0.5 else process_fn2(t) for t in test_targets]
 

@@ -183,7 +183,7 @@ class AttackPrompt(object):
             python_tokenizer = False or self.conv_template.name == "oasst_pythia"
             try:
                 encoding.char_to_token(len(prompt) - 1)
-            except:
+            except Exception:
                 python_tokenizer = True
             if python_tokenizer:
                 # This is specific to the vicuna and pythia tokenizer and conversation prompt.
@@ -692,13 +692,19 @@ class MultiPromptAttack(object):
             return True if e_prime < e else math.exp(-(e_prime - e) / T) >= random.random()
 
         if target_weight is None:
-            target_weight_fn = lambda _: 1
+            def target_weight_fn(_):
+                return 1
         elif isinstance(target_weight, (int, float)):
-            target_weight_fn = lambda i: target_weight
+            def target_weight_fn():
+                return target_weight
+
         if control_weight is None:
-            control_weight_fn = lambda _: 0.1
+            def control_weight_fn(_):
+                return 0.1
+
         elif isinstance(control_weight, (int, float)):
-            control_weight_fn = lambda i: control_weight
+            def control_weight_fn():
+                return control_weight
 
         steps = 0
         loss = best_loss = 1e6
@@ -819,7 +825,7 @@ class MultiPromptAttack(object):
         n_em = self.parse_results(prompt_tests_mb)
         n_loss = self.parse_results(model_tests_loss)
         total_tests = self.parse_results(np.ones(prompt_tests_jb.shape, dtype=int))
-        n_loss = [l / t if t > 0 else 0 for l, t in zip(n_loss, total_tests)]
+        n_loss = [lo / t if t > 0 else 0 for lo, t in zip(n_loss, total_tests)]
 
         tests["n_passed"] = n_passed
         tests["n_em"] = n_em
