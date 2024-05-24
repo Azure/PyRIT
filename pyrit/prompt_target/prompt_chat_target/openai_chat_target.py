@@ -6,12 +6,12 @@ import logging
 from abc import abstractmethod
 from typing import Optional
 
-from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, BadRequestError, OpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI, BadRequestError
 from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.exceptions import BadRequestException, EmptyResponseException, pyrit_retry
+from pyrit.exceptions import EmptyResponseException, pyrit_retry
 from pyrit.exceptions.exception_classes import PyritException, handle_bad_request_exception
 
 from pyrit.memory import MemoryInterface
@@ -83,9 +83,6 @@ class OpenAIChatInterface(PromptChatTarget):
                 presence_penalty=self._presence_penalty,
             )
 
-            if not resp_text:
-                raise ValueError("The chat returned an empty response.")
-
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
             response_entry = self._memory.add_response_entries_to_memory(
                 request=request, response_text_pieces=[resp_text]
@@ -112,10 +109,7 @@ class OpenAIChatInterface(PromptChatTarget):
         Returns:
             str: The generated response message
         """
-        try:
-            response_message = response.choices[0].message.content
-        except KeyError as ex:
-            raise PyritException(message=f"Error in Azure Chat. Response: {response}") from ex
+        response_message = response.choices[0].message.content
         return response_message
 
     @pyrit_retry
@@ -170,10 +164,8 @@ class OpenAIChatInterface(PromptChatTarget):
             # Handle empty response
             if not extracted_response:
                 raise EmptyResponseException(message="The chat returned an empty response.")
-        elif finish_reason == "content_filter":
-            message = response.choices[0]
-            content_filter_exception = BadRequestException(message=str(message))
-            extracted_response = content_filter_exception.process_exception()
+        else:
+            raise PyritException(message=f"Unknown finish_reason {finish_reason}")
         return extracted_response
 
     def _complete_chat(
