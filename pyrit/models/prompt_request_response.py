@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.models import PromptRequestPiece
+from pyrit.models.literals import PromptDataType, PromptResponseError
 
 
 class PromptRequestResponse:
@@ -108,3 +109,30 @@ def group_conversation_request_pieces_by_sequence(
 
     sorted_sequences = sorted(conversation_by_sequence.keys())
     return [PromptRequestResponse(conversation_by_sequence[seq]) for seq in sorted_sequences]
+
+def construct_response_from_request(
+    request: PromptRequestPiece,
+    response_text_pieces: list[str],
+    response_type: PromptDataType = "text",
+    prompt_metadata: str = None,
+    error: PromptResponseError = "none",
+) -> PromptRequestResponse:
+        """
+        Constructs a response entry from a request.
+        """
+        return PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="assistant",
+                    original_value=resp_text,
+                    conversation_id=request.conversation_id,
+                    labels=request.labels,
+                    prompt_target_identifier=request.prompt_target_identifier,
+                    orchestrator_identifier=request.orchestrator_identifier,
+                    original_value_data_type=response_type,
+                    prompt_metadata=prompt_metadata,
+                    response_error=error,
+                )
+                for resp_text in response_text_pieces
+            ]
+        )

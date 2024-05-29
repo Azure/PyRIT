@@ -245,6 +245,8 @@ class MemoryInterface(abc.ABC):
         for piece in request_pieces:
             piece.sequence = sequence
 
+
+    # TODO I think this can be removed
     def add_response_entries_to_memory(
         self,
         *,

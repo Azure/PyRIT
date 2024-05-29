@@ -9,7 +9,10 @@ from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.models.literals import PromptDataType
+from pyrit.prompt_converter.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 
 
@@ -44,6 +47,7 @@ class PromptNormalizer(abc.ABC):
         Returns:
             PromptRequestResponse: The response received from the target.
         """
+
         request = await self._build_prompt_request_response(
             request=normalizer_request,
             target=target,
@@ -53,7 +57,17 @@ class PromptNormalizer(abc.ABC):
             orchestrator_identifier=orchestrator_identifier,
         )
 
+        self._memory.add_request_response_to_memory(request=request)
+
         response = await target.send_prompt_async(prompt_request=request)
+
+        await self._convert_response_values(
+            response_converter_configurations=normalizer_request.response_converters,
+            prompt_response=response
+        )
+
+        self._memory.add_request_response_to_memory(request=response)
+
         return response
 
     async def send_prompt_batch_to_target_async(
@@ -139,21 +153,17 @@ class PromptNormalizer(abc.ABC):
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for request_piece in request.request_pieces:
 
-            converted_prompt_text = request_piece.prompt_text
-            converted_prompt_type = request_piece.prompt_data_type
+            converted_prompt_text, converted_prompt_type = await self._get_converterd_value_and_type(
+                request_converters=request_piece.request_converters,
+                prompt_value=request_piece.prompt_value,
+                prompt_data_type=request_piece.prompt_data_type
+            )
 
-            for converter in request_piece.prompt_converters:
-                converter_output = await converter.convert_async(
-                    prompt=converted_prompt_text, input_type=converted_prompt_type
-                )
-                converted_prompt_text = converter_output.output_text
-                converted_prompt_type = converter_output.output_type
-
-            converter_identifiers = [converter.get_identifier() for converter in request_piece.prompt_converters]
+            converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
             entries.append(
                 PromptRequestPiece(
                     role="user",
-                    original_value=request_piece.prompt_text,
+                    original_value=request_piece.prompt_value,
                     converted_value=converted_prompt_text,
                     conversation_id=conversation_id,
                     sequence=sequence,
@@ -168,3 +178,45 @@ class PromptNormalizer(abc.ABC):
             )
 
         return PromptRequestResponse(request_pieces=entries)
+
+
+    async def _convert_response_values(
+            self,
+            response_converter_configurations: list[PromptResponseConverterConfiguration],
+            prompt_response: PromptRequestResponse
+    ):
+        index = 0
+        for response_piece in prompt_response.request_pieces:
+            for converter_configuration in response_converter_configurations:
+                if converter_configuration.indexes_to_apply is not None and \
+                    index not in converter_configuration.indexes_to_apply:
+                    continue
+
+                if converter_configuration.prompt_data_types_to_apply is not None and \
+                    response_piece.original_value_data_type not in converter_configuration.prompt_data_types_to_apply:
+                    continue
+
+                for converter in converter_configuration.converters:
+                    converter_output = await converter.convert_async(
+                        prompt=response_piece.original_value, input_type=response_piece.original_value_data_type
+                    )
+                    response_piece.converted_value = converter_output.output_text
+                    response_piece.converted_value_data_type = converter_output.output_type
+
+    async def _get_converterd_value_and_type(
+            self,
+            request_converters: list[PromptConverter],
+            prompt_value: str,
+            prompt_data_type: PromptDataType,
+        ):
+        converted_prompt_value = prompt_value
+        converted_prompt_type = prompt_data_type
+
+        for converter in request_converters:
+            converter_output = await converter.convert_async(
+                prompt=converted_prompt_value, input_type=converted_prompt_type
+            )
+            converted_prompt_value = converter_output.output_text
+            converted_prompt_type = converter_output.output_type
+
+        return converted_prompt_value, converted_prompt_type

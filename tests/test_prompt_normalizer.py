@@ -33,8 +33,8 @@ async def test_send_prompt_multiple_converters():
     prompt_text = "Hello"
 
     prompt = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
+        request_converters=prompt_converters,
+        prompt_value=prompt_text,
         prompt_data_type="text",
         metadata="metadata",
     )
@@ -53,8 +53,8 @@ async def test_send_prompt_async_multiple_converters():
     prompt_text = "Hello"
 
     prompt = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
+        request_converters=prompt_converters,
+        prompt_value=prompt_text,
         prompt_data_type="text",
     )
 
@@ -86,8 +86,8 @@ async def test_send_prompt_async_image_converter():
         prompt_text = "Hello"
 
         prompt = NormalizerRequestPiece(
-            prompt_converters=prompt_converters,
-            prompt_text=prompt_text,
+            request_converters=prompt_converters,
+            prompt_value=prompt_text,
             prompt_data_type="text",
         )
 
@@ -109,8 +109,8 @@ async def test_prompt_normalizer_send_prompt_batch_async():
     prompt_text = "Hello"
 
     prompt = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
+        request_converters=prompt_converters,
+        prompt_value=prompt_text,
         prompt_data_type="text",
     )
 
@@ -131,13 +131,13 @@ async def test_build_prompt_request_response():
     prompt_converters = [Base64Converter()]
     prompt_text = "Hello"
     normalizer_req_piece_1 = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
+        request_converters=prompt_converters,
+        prompt_value=prompt_text,
         prompt_data_type="text",
     )
     normalizer_req_piece_2 = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
+        request_converters=prompt_converters,
+        prompt_value=prompt_text,
         prompt_data_type="text",
     )
     normalizer = PromptNormalizer(memory=MagicMock())

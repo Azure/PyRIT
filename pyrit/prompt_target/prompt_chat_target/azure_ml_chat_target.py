@@ -8,6 +8,7 @@ from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestResponse
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,6 @@ class AzureMLChatTarget(PromptChatTarget):
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
         messages.append(request.to_chat_message())
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -96,10 +96,7 @@ class AzureMLChatTarget(PromptChatTarget):
             raise ValueError("The chat returned an empty response.")
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
-
-        return response_entry
+        return construct_response_from_request(request=request, response_text_pieces=[resp_text])
 
     async def _complete_chat_async(
         self,

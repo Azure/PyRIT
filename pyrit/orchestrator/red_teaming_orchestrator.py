@@ -199,8 +199,8 @@ class RedTeamingOrchestrator(Orchestrator):
             prompt = await self._get_prompt_from_red_teaming_target(feedback=feedback)
 
         target_prompt_obj = NormalizerRequestPiece(
-            prompt_converters=self._prompt_converters,
-            prompt_text=prompt,
+            request_converters=self._prompt_converters,
+            prompt_value=prompt,
             prompt_data_type="text",
         )
 
