@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import string
 import asyncio
 
@@ -23,17 +26,18 @@ class AtbashConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
+        output_text = self._atbash(prompt)
         await asyncio.sleep(0)
-        return ConverterResult(output_text=self.atbash(prompt), output_type="text")
+        return ConverterResult(output_text=output_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
-    def atbash(self, text: str) -> str:
-        def shift(alphabet: str = None) -> str:
+    def _atbash(self, text: str) -> str:
+        def reverse(alphabet: str) -> str:
             return alphabet[::-1]
 
         alphabet = (string.ascii_lowercase, string.ascii_uppercase, string.digits)
-        shifted_alphabet = tuple(map(shift, alphabet))
-        translation_table = str.maketrans("".join(alphabet), "".join(shifted_alphabet))
+        reversed_alphabet = tuple(map(reverse, alphabet))
+        translation_table = str.maketrans("".join(alphabet), "".join(reversed_alphabet))
         return text.translate(translation_table)

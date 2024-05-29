@@ -4,9 +4,13 @@
 from pyrit.prompt_converter import (
     AddTextImageConverter,
     AsciiArtConverter,
+    AtbashConverter,
     AzureSpeechTextToAudioConverter,
     Base64Converter,
+    CaesarConverter,
+    CipherConverter,
     LeetspeakConverter,
+    MorseConverter,
     RandomCapitalLettersConverter,
     ROT13Converter,
     SearchReplaceConverter,
@@ -16,10 +20,6 @@ from pyrit.prompt_converter import (
     UnicodeConfusableConverter,
     VariationConverter,
     SuffixAppendConverter,
-    AtbashConverter,
-    CaesarConverter,
-    CipherConverter,
-    MorseConverter,
 )
 import pytest
 import os
@@ -281,18 +281,10 @@ async def test_atbash_converter() -> None:
 
 
 @pytest.mark.asyncio
-async def test_caesar_converter_default_offset() -> None:
-    converter = CaesarConverter()
+async def test_caesar_converter() -> None:
+    converter = CaesarConverter(caesar_offset=3)
     output = await converter.convert_async(prompt="Test.", input_type="text")
     assert output.output_text == "Whvw."
-    assert output.output_type == "text"
-
-
-@pytest.mark.asyncio
-async def test_caesar_converter_custom_offset() -> None:
-    converter = CaesarConverter(caesar_offet=13)
-    output = await converter.convert_async(prompt="Test.", input_type="text")
-    assert output.output_text == "Grfg."
     assert output.output_type == "text"
 
 

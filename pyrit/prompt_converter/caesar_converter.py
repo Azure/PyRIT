@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import string
 import asyncio
 
@@ -16,14 +19,14 @@ class CaesarConverter(PromptConverter):
 
     Parameters
     ---
-    caesar_offset: int, default=3
+    caesar_offset: int
         Offset for caesar cipher, range 0 to 25 (inclusive). Can also be negative for shifting backwards.
     """
 
-    def __init__(self, *, caesar_offet: int = 3) -> None:
-        if caesar_offet < -25 or caesar_offet > 25:
-            raise ValueError("caesar offset value invalid, must be between 0 and 25 inclusive.")
-        self.caesar_offset = caesar_offet
+    def __init__(self, *, caesar_offset: int) -> None:
+        if caesar_offset < -25 or caesar_offset > 25:
+            raise ValueError("caesar offset value invalid, must be between -25 and 25 inclusive.")
+        self.caesar_offset = caesar_offset
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -32,14 +35,15 @@ class CaesarConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
+        output_text = self._caesar(prompt)
         await asyncio.sleep(0)
-        return ConverterResult(output_text=self.caesar(prompt), output_type="text")
+        return ConverterResult(output_text=output_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
-    def caesar(self, text: str) -> str:
-        def shift(alphabet: str = None) -> str:
+    def _caesar(self, text: str) -> str:
+        def shift(alphabet: str) -> str:
             return alphabet[self.caesar_offset :] + alphabet[: self.caesar_offset]
 
         alphabet = (string.ascii_lowercase, string.ascii_uppercase, string.digits)

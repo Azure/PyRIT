@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import asyncio
 
 from pyrit.models import PromptDataType
@@ -20,14 +23,14 @@ class MorseConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        output_text = self.morse(prompt)
+        output_text = self._morse(prompt)
         await asyncio.sleep(0)
         return ConverterResult(output_text=output_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
-    def morse(self, text: str) -> str:
+    def _morse(self, text: str) -> str:
         text_clean = " ".join([line.strip() for line in str.splitlines(text)])
         morse_mapping = {
             "A": ".-",
@@ -84,7 +87,7 @@ class MorseConverter(PromptConverter):
             " ": "/",
         }
         extended_mapping = {
-            "%": "	------..-.-----",
+            "%": "------..-.-----",
             "À": ".--.-",
             "Å": ".--.-",
             "Ä": ".-.-",
@@ -94,7 +97,7 @@ class MorseConverter(PromptConverter):
             "Ĉ": "-.-..",
             "Ç": "-.-..",
             "Ĥ": "----",
-            " Š": "----",
+            "Š": "----",
             "Đ": "..-..",
             "É": "..-..",
             "Ę": "..-..",
