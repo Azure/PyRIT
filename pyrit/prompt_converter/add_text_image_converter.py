@@ -4,6 +4,7 @@
 import logging
 import pathlib
 import base64
+import asyncio
 
 from augly.image.transforms import OverlayText
 from augly.utils import base_paths
@@ -51,7 +52,7 @@ class AddTextImageConverter(PromptConverter):
         self._y = y_pos
         self._output_name = output_filename
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """
         Converter that adds text to an image
 
@@ -106,7 +107,7 @@ class AddTextImageConverter(PromptConverter):
         except Exception as e:
             logger.error(f"Encountered an error while adding text '{self._text_to_add}' to the input image: {e}")
             raise
-
+        await asyncio.sleep(0)
         return ConverterResult(output_text=new_serializer.value, output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

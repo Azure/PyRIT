@@ -8,6 +8,7 @@ from pyrit.models.data_type_serializer import (
     DataTypeSerializer,
     data_serializer_factory,
     TextDataTypeSerializer,
+    ErrorDataTypeSerializer,
     ImagePathDataTypeSerializer,
     AudioPathDataTypeSerializer,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "ChatMessageListContent",
     "DataTypeSerializer",
     "data_serializer_factory",
+    "ErrorDataTypeSerializer",
     "group_conversation_request_pieces_by_sequence",
     "Identifier",
     "ImagePathDataTypeSerializer",

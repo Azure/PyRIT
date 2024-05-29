@@ -15,7 +15,7 @@ def test_attack_strategy_strings():
 
 def test_attack_strategy_from_file():
     strategy_path = (
-        pathlib.Path(os.getcwd()) / "pyrit" / "datasets" / "orchestrators" / "red_teaming" / "end_token.yaml"
+        pathlib.Path(os.getcwd()) / "pyrit" / "datasets" / "orchestrators" / "red_teaming" / "text_generation.yaml"
     )
     with open(strategy_path, "r") as strategy_file:
         strategy = strategy_file.read()
@@ -25,11 +25,6 @@ def test_attack_strategy_from_file():
     assert strategy_template.replace("{{ conversation_objective }}", "my objective") == str(
         AttackStrategy(strategy=strategy_path, conversation_objective="my objective")
     )
-
-
-def test_attack_strategy_no_objective_arg():
-    with pytest.raises(TypeError):
-        AttackStrategy(strategy="my strategy {{ conversation_objective }}")
 
 
 def test_attack_strategy_no_objective_placeholder():

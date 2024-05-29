@@ -310,7 +310,7 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
         mock_get.return_value = sample_conversations
         orchestrator_id = int(sample_conversations[0].orchestrator_identifier["id"])
 
-        response = memory.get_orchestrator_conversations(orchestrator_id=orchestrator_id)
+        response = memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator_id)
 
         current_value = response[0].conversation_id
         for obj in response[1:]:
