@@ -48,16 +48,16 @@ dependencies = [
     "jsonpickle>=3.0.4",
     "jupyter>=1.0.0",
     "ipykernel>=6.29.4",
-    "libmagic>=1.0",
+    #"libmagic>=1.0",
     "logzero>=1.7.0",
     "numpy>=1.26.4",
     "onnxruntime>=1.14.1",
     "onnx>=1.16.0",
     "openai>=1.23.2",
-    "pillow>=10.3.0",
+    #"pillow>=10.3.0",
     "pydantic>=2.7.1",
     "python-dotenv>=1.0.1",
-    "python-magic-bin>=0.4.14",
+    #"python-magic-bin>=0.4.14",
     "scikit-learn>=1.4.2",
     "SQLAlchemy==2.0.28",
     "sqlalchemy-stubs==0.4",
@@ -66,6 +66,11 @@ dependencies = [
     "tokenizers>=0.19.1",
     "transformers>=4.40.0",
     "types-requests>=2.31.0.20240406",
+
+    # OS SPEC:
+    "python-magic>=0.4.27; sys_platform == 'linux'",
+    "python-magic-bin>=0.4.14; sys_platform == 'darwin' or sys_platform == 'win32'"
+
 ]
 
 [project.optional-dependencies]
@@ -83,6 +88,7 @@ dev = [
     "semantic-kernel==0.9.4b1",
     "types-PyYAML>=6.0.12.9",
 ]
+
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
