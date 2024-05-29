@@ -1,5 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# Specifies the maximum number of attempts to retry API calls in case of failures.
-MAX_RETRY_API_COUNT: int = 5
+# Retry configuration
+RETRY_WAIT_MIN_SECONDS: int = 1
+RETRY_WAIT_MAX_SECONDS: int = 60
+RETRY_MAX_NUM_ATTEMPTS: int = 5

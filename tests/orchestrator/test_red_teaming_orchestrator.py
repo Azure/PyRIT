@@ -47,7 +47,6 @@ def simple_attack_strategy() -> AttackStrategy:
 
 
 def _check_orchestrator_memory_if_no_original_prompt(memory, num_turns: int):
-
     conversations = memory.get_all_prompt_pieces()
     # one turn has system prompt, req/resp to target, req/resp to red team target
     expected_num_memories = (4 * num_turns) + 1
@@ -57,7 +56,6 @@ def _check_orchestrator_memory_if_no_original_prompt(memory, num_turns: int):
 
 
 def _check_orchestrator_memory_if_original_prompt(memory, num_turns: int):
-
     conversations = memory.get_all_prompt_pieces()
 
     if num_turns == 1:
@@ -236,7 +234,7 @@ async def test_is_conversation_complete_scoring(score, message_count):
 
     mock_scorer = MagicMock(Scorer)
     mock_scorer.scorer_type = "true_false"
-    mock_scorer.score_text_async = AsyncMock(return_value=[mock_score])
+    mock_scorer.score_async = AsyncMock(return_value=[mock_score])
 
     orchestrator = RedTeamingOrchestrator(
         attack_strategy="some strategy",
