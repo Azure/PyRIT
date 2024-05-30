@@ -261,14 +261,6 @@ class FuzzerOrchestrator(Orchestrator):
             self._rewards[prompt_node.index] += reward * \
                 max(self.beta, (1 - 0.1 * last_choice_node.level))
             
-    # async def _get_prompt_from_red_teaming_target(self, attack_content: list[str],current_seed) -> str: 
-    #     # todo iterate through the list of the prompts (questions in GPTFuzzer) and append it to the selected template (current seed)
-
-    #     #should I do current_seed.apply_custom_metaprompt_parameters()?
-    #     attack_strategy = AttackStrategy(
-    #     strategy=current_seed,
-    #     conversation_objective=attack_content,
-        )
 
 
 
