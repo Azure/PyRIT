@@ -70,14 +70,24 @@ from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 from pyrit.models import AttackStrategy
+from pyrit.memory.azure_sql_memory import AzureSQLMemory
 
 default_values.load_default_env()
+
+memory = None
+if os.environ.get('AZURE_SQL_SERVER_ENABLE'):
+    memory = AzureSQLMemory(
+        server=os.environ.get('AZURE_SQL_SERVER_HOST'),
+        database=os.environ.get('AZURE_SQL_SERVER_DB'),
+        driver_version=os.environ.get('AZURE_SQL_SERVER_DRIVER_VERSION'),
+    )
 
 gandalf_level = GandalfLevel.LEVEL_1
 aoai_chat = AzureOpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
+    memory=memory,
 )
 conversation_objective = textwrap.dedent(
     """\
