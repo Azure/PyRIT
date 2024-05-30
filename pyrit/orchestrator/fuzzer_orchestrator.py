@@ -81,6 +81,7 @@ class FuzzerOrchestrator(Orchestrator):
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
+        ratio=0.5, alpha=0.1, beta=0.2,
     ) -> None:
 
         """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
@@ -135,6 +136,9 @@ class FuzzerOrchestrator(Orchestrator):
         self._memory = self._memory
         self._initial_seed = initial_seed
         self._seed_converter = seed_converter
+        self._ratio = ratio  # balance between exploration and exploitation
+        self._alpha = alpha  # penalty for level
+        self._beta = beta   # minimal reward after penalty
 
         self._prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
             PromptNode(self, prompt) for prompt in initial_seed 
@@ -213,15 +217,12 @@ class FuzzerOrchestrator(Orchestrator):
 
 
 
-        def _get_seed_usingMCTS(self, initial_seed, ratio=0.5, alpha=0.1, beta=0.2) -> PromptNode:
-
+        def _get_seed_usingMCTS(self, initial_seed) -> PromptNode:
             self._step = 0 # to keep track of the steps or the count
             self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
             self._last_choice_index = None
             self._rewards = []
-            self._ratio = ratio  # balance between exploration and exploitation
-            self._alpha = alpha  # penalty for level
-            self._beta = beta   # minimal reward after penalty
+            
 
             seed = select(self)
             return seed
