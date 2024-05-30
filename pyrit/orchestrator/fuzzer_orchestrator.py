@@ -75,7 +75,8 @@ class FuzzerOrchestrator(Orchestrator):
         attack_content: list[str],   #questions in GPTFuzzer
         prompt_target: PromptTarget,
         initial_seed: list[str], # list of all the jailbreak prompts on which MCTS will be applied.
-        prompt_converters: list[PromptConverter],
+        prompt_converters: Optional[list[PromptConverter]] = None,
+        seed_converter: list[PromptConverter], # shorten/expand 
         scorer: Scorer,
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
@@ -97,7 +98,9 @@ class FuzzerOrchestrator(Orchestrator):
                           The converted prompt along with the attack_content will be sent to the target. 
                           
             prompt_converters: The prompt_converters to use to convert the prompts before sending 
-            them to the prompt target. The converters will be applied on the jailbreak template that was 
+            them to the prompt target. 
+            
+            seed_converter: The converter that will be applied on the jailbreak template that was 
             selected by MCTS-explore. 
             
                           The prompt converters will not be applied to the attack_content. 
@@ -131,6 +134,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._memory = self._memory
         self._initial_seed = initial_seed
+        self._seed_converter = seed_converter
 
         self._prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
             PromptNode(self, prompt) for prompt in initial_seed 
@@ -142,7 +146,7 @@ class FuzzerOrchestrator(Orchestrator):
 
         if not self._initial_seed:
             raise ValueError("The initial seed cannot be empty.")
-        if not self._prompt_converters:
+        if not self._seed_converters:
             raise ValueError("The prompt converter cannot be empty")
         
         if scorer.scorer_type != "true_false":
@@ -173,9 +177,9 @@ class FuzzerOrchestrator(Orchestrator):
             # 1. Select a seed from the list of the templates using the MCTS
             current_seed = await self._get_seed_usingMCTS(initial_seed=initial_seed)
 
-            #2. apply prompt converter to the selected template
-            target_prompt_obj = NormalizerRequestPiece(
-            prompt_converters=self._prompt_converters,
+            #2. apply prompt converter to the selected template. Apply seed converter.
+            target_seed_obj = NormalizerRequestPiece(
+            prompt_converters=self._seed_converter,
             prompt_text=current_seed,
             prompt_data_type="text",
             )
@@ -184,10 +188,16 @@ class FuzzerOrchestrator(Orchestrator):
             #Todo: should I write a separate orchestrator to do this (similar to PromptSendingOrchestrator)?
             
 
-            #4. Send request to a target
+            #4. Apply prompt converter if any and Send request to a target 
+              target_prompt_obj = NormalizerRequestPiece(
+            prompt_converters=self._prompt_converters,
+            prompt_text=prompt,
+            prompt_data_type="text",
+            )
+            
             response_piece = (
             await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=NormalizerRequest([target_prompt]),
+                normalizer_request=NormalizerRequest([target_prompt_obj]),
                 target=self._prompt_target,
                 conversation_id=self._prompt_target_conversation_id,
                 labels=self._global_memory_labels,
