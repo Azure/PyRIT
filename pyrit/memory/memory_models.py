@@ -1,14 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# mypy: ignore-errors
-
 import uuid
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Uuid
 from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy.dialects.postgresql import UUID
 
 from pyrit.models import PromptRequestPiece, Score
 
@@ -135,7 +132,7 @@ class EmbeddingData(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = Column(ARRAY(Float))
+    embedding = Column(ARRAY(Float).with_variant(JSON, 'mssql'))
     embedding_type_name = Column(String)
 
     def __str__(self):
@@ -199,6 +196,6 @@ class ConversationMessageWithSimilarity(BaseModel):
 
 class EmbeddingMessageWithSimilarity(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    uuid: uuid.Uuid
+    uuid: uuid.UUID
     metric: str
     score: float = 0.0
