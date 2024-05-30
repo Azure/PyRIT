@@ -158,7 +158,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._scorer = scorer
 
         async def execute_fuzzer(
-        self, *, initial_seed: list[str] = None, blocked: bool = False
+        self, *, initial_seed: list[str] = None
         ) -> PromptRequestPiece:
             """Send the initial seed to the MCTS-explore to select a seed at each iteration
 
