@@ -6,9 +6,9 @@
 import uuid
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
+from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Uuid
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import UUID
+# from sqlalchemy.dialects.postgresql import UUID
 
 from pyrit.models import PromptRequestPiece, Score
 
@@ -25,7 +25,7 @@ class PromptMemoryEntry(Base):
     Attributes:
         __tablename__ (str): The name of the database table.
         __table_args__ (dict): Additional arguments for the database table.
-        id (UUID): The unique identifier for the memory entry.
+        id (Uuid): The unique identifier for the memory entry.
         role (PromptType): system, assistant, user
         conversation_id (str): The identifier for the conversation which is associated with a single target.
         sequence (int): The order of the conversation within a conversation_id.
@@ -52,7 +52,7 @@ class PromptMemoryEntry(Base):
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    id = Column(Uuid, nullable=False, primary_key=True)
     role = Column(String, nullable=False)
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
@@ -126,7 +126,7 @@ class EmbeddingData(Base):  # type: ignore
     Each embedding is linked to a specific conversation entry via an id
 
     Attributes:
-        uuid (UUID): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.
+        uuid (Uuid): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.
         embedding (ARRAY(Float)): An array of floats representing the embedding vector.
         embedding_type_name (String): The name or type of the embedding, indicating the model or method used.
     """
@@ -134,7 +134,7 @@ class EmbeddingData(Base):  # type: ignore
     __tablename__ = "EmbeddingData"
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
-    id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
+    id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
     embedding = Column(ARRAY(Float))
     embedding_type_name = Column(String)
 
@@ -151,7 +151,7 @@ class ScoreEntry(Base):  # type: ignore
     __tablename__ = "ScoreEntries"
     __table_args__ = {"extend_existing": True}
 
-    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    id = Column(Uuid(as_uuid=True), nullable=False, primary_key=True)
     score_value = Column(String, nullable=False)
     score_value_description = Column(String, nullable=True)
     score_type = Column(String, nullable=False)
@@ -159,7 +159,7 @@ class ScoreEntry(Base):  # type: ignore
     score_rationale = Column(String, nullable=True)
     score_metadata = Column(String, nullable=True)
     scorer_class_identifier = Column(JSON)
-    prompt_request_response_id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
+    prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     date_time = Column(DateTime, nullable=False)
 
     def __init__(self, *, entry: Score):
@@ -199,6 +199,6 @@ class ConversationMessageWithSimilarity(BaseModel):
 
 class EmbeddingMessageWithSimilarity(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    uuid: uuid.UUID
+    uuid: uuid.Uuid
     metric: str
     score: float = 0.0
