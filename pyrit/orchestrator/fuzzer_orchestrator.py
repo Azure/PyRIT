@@ -189,8 +189,25 @@ class FuzzerOrchestrator(Orchestrator):
             )
 
             #3. append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
-            #Todo: should I write a separate orchestrator to do this (similar to PromptSendingOrchestrator)?
+            #Todo: 
+            #step1: builds a new prompt with the current selected template
+             requests: list[NormalizerRequest] = []
+             for prompt in prompt_list:
+                requests.append(
+                    target_seed_obj.apply_custom_metaprompt_parameters(prompt=prompt)
+                )
             
+             for request in requests:
+                request.validate()
+
+             await self._prompt_normalizer.send_prompt_batch_to_target_async(
+                requests=requests,
+                target=self._prompt_target,
+                labels=self._global_memory_labels,
+                orchestrator_identifier=self.get_identifier(),
+                batch_size=self._batch_size,
+              )
+
 
             #4. Apply prompt converter if any and Send request to a target 
               target_prompt_obj = NormalizerRequestPiece(
