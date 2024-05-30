@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import re
 import asyncio
 
@@ -8,6 +11,8 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 class RepeatTokenConverter(PromptConverter):
     """
     Repeat a specified token a specified number of times in addition to a given prompt.
+    Based on:
+    https://dropbox.tech/machine-learning/bye-bye-bye-evolution-of-repeated-token-attacks-on-chatgpt-models
 
     Parameters
     ---
