@@ -12,6 +12,7 @@ authors = [
     { name = "romanlutz" },
     { name = "jbolor21" },
     { name = "nina-msft" },
+    { name = "elgertam" },
 ]
 readme = "README.md"
 license = { text = "MIT" }
@@ -54,6 +55,7 @@ dependencies = [
     "onnx>=1.16.0",
     "openai>=1.23.2",
     "pydantic>=2.7.1",
+    "pyodbc>=5.1.0",
     "python-dotenv>=1.0.1",
     "scikit-learn>=1.4.2",
     "SQLAlchemy==2.0.28",
