@@ -26,13 +26,13 @@ class CompletionState:
 #Class to maintain the tree information.
 class PromptNode:
     def __init__(self,
-                 fuzzer: 'GPTFuzz_Orchestrator',
+                 fuzzer: 'FuzzerOrchestrator',
                  template: str,                #jailbreak template /prompt in GPTFuzzer
                  response: str = None,
                  results: 'list[int]' = None,
                  parent: 'PromptNode' = None,
                  ):
-        self.fuzzer: 'GPTFuzz_Orchestrator' = fuzzer
+        self.fuzzer: 'FuzzerOrchestrator' = fuzzer
         self.template: str = template
         self.response: str = response
         self.results: 'list[int]' = results
@@ -66,7 +66,7 @@ class PromptNode:
     def num_query(self):
         return len(self.results)
 
-class GPTFuzz_Orchestrator(Orchestrator):
+class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
     def __init__(
@@ -82,19 +82,44 @@ class GPTFuzz_Orchestrator(Orchestrator):
         verbose: bool = False,
     ) -> None:
 
-        """Creates an orchestrator to assess the success of jailbreak attack by automatically generating the jailbreak templates for red-teaming LLMs
+        """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
+        
         Args:
+        
             attack_content: The attack content will be the questions to the target (Similar to jailbreak_prompt). 
+            
             prompt_target: The target to send the prompts to.
-            initial_seed: list of all the jailbreak templates which will act as the seed pool. At each iteration, a seed will be selected using the MCTS-explore algorithm which will be sent to the shorten/expand prompt converter.
+            
+            initial_seed: list of all the jailbreak templates which will act as the seed pool. 
+            At each iteration, a seed will be selected using the MCTS-explore algorithm which will be sent to the 
+            shorten/expand prompt converter.
+            
                           The converted prompt along with the attack_content will be sent to the target. 
-            prompt_converters: The prompt_converters to use to convert the prompts before sending them to the prompt target. The converters will be applied on the jailbreak template that was selected by MCTS-explore. 
-                          The prompt converters will not be applied to the attack_content. Shorten/expand prompt converters.
+                          
+            prompt_converters: The prompt_converters to use to convert the prompts before sending 
+            them to the prompt target. The converters will be applied on the jailbreak template that was 
+            selected by MCTS-explore. 
+            
+                          The prompt converters will not be applied to the attack_content. 
+                          Shorten/expand prompt converters.
+                          
             scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient (False)
                 to satisfy the objective that is specified in the attack_strategy.
-            memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
+                
+            memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory 
+            will be used.
+            
             memory_labels: The labels to use for the memory. This is useful to identify the messages in the memory.
+            
             verbose: Whether to print debug information.
+
+            Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
+
+            Link: https://arxiv.org/pdf/2309.10253
+
+            Author: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
+
+            GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
         """
 
         self._prompt_target = prompt_target
@@ -104,15 +129,15 @@ class GPTFuzz_Orchestrator(Orchestrator):
         self._prompt_target._memory = self._memory
         self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_chat_conversation_id = str(uuid4())
-        self._GPTFuzzer._memory = self._memory
+        self._memory = self._memory
         self._initial_seed = initial_seed
 
-        self.prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
+        self._prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
             PromptNode(self, prompt) for prompt in initial_seed 
         ]
 
-        self.initial_prompts_nodes = self.prompt_nodes.copy()
-        for i, prompt_node in enumerate(self.prompt_nodes):
+        self._initial_prompts_nodes = self._prompt_nodes.copy()
+        for i, prompt_node in enumerate(self._prompt_nodes):
             prompt_node.index = i
 
         if not self._initial_seed:
@@ -180,28 +205,28 @@ class GPTFuzz_Orchestrator(Orchestrator):
 
         def _get_seed_usingMCTS(self, initial_seed, ratio=0.5, alpha=0.1, beta=0.2) -> PromptNode:
 
-            self.step = 0 # to keep track of the steps or the count
-            self.mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
-            self.last_choice_index = None
-            self.rewards = []
-            self.ratio = ratio  # balance between exploration and exploitation
-            self.alpha = alpha  # penalty for level
-            self.beta = beta   # minimal reward after penalty
+            self._step = 0 # to keep track of the steps or the count
+            self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
+            self._last_choice_index = None
+            self._rewards = []
+            self._ratio = ratio  # balance between exploration and exploitation
+            self._alpha = alpha  # penalty for level
+            self._beta = beta   # minimal reward after penalty
 
             seed = select(self)
             return seed
 
         def select(self) -> PromptNode:
-            self.step += 1
-            if len(self.fuzzer.prompt_nodes) > len(self.rewards):
-                self.rewards.extend(
-                    [0 for _ in range(len(self.fuzzer.prompt_nodes) - len(self.rewards))])
+            self._step += 1
+            if len(self.fuzzer._prompt_nodes) > len(self._rewards):
+                self._rewards.extend(
+                    [0 for _ in range(len(self.fuzzer._prompt_nodes) - len(self._rewards))])
 
-        self.mctc_select_path.clear()
+        self._mctc_select_path.clear()
         cur = max(  #initial path
-            self.fuzzer.initial_prompts_nodes,
+            self.fuzzer._initial_prompts_nodes,
             key=lambda pn:
-            self.rewards[pn.index] / (pn.visited_num + 1) +
+            self._rewards[pn.index] / (pn.visited_num + 1) +
             self.ratio * np.sqrt(2 * np.log(self.step) /
                                  (pn.visited_num + 0.01))
         )
@@ -214,26 +239,26 @@ class GPTFuzz_Orchestrator(Orchestrator):
                 cur.child,
                 key=lambda pn:
                 self.rewards[pn.index] / (pn.visited_num + 1) +
-                self.ratio * np.sqrt(2 * np.log(self.step) /
+                self._ratio * np.sqrt(2 * np.log(self._step) /
                                      (pn.visited_num + 0.01))
             )
-            self.mctc_select_path.append(cur) # append node to path
+            self._mctc_select_path.append(cur) # append node to path
 
-        for pn in self.mctc_select_path:
+        for pn in self._mctc_select_path:
             pn.visited_num += 1    # keep track of number of visited nodes
 
-        self.last_choice_index = cur.index
+        self._last_choice_index = cur.index
         return cur # returns the best child
 
     def update(self, prompt_nodes: 'list[PromptNode]'):
         succ_num = sum([prompt_node.num_jailbreak
-                        for prompt_node in prompt_nodes])
+                        for prompt_node in _prompt_nodes])
 
-        last_choice_node = self.fuzzer.prompt_nodes[self.last_choice_index]
-        for prompt_node in reversed(self.mctc_select_path):
+        last_choice_node = self.fuzzer._prompt_nodes[self._last_choice_index]
+        for prompt_node in reversed(self._mctc_select_path):
             reward = succ_num / (len(self.fuzzer.questions)
                                  * len(prompt_nodes))
-            self.rewards[prompt_node.index] += reward * \
+            self._rewards[prompt_node.index] += reward * \
                 max(self.beta, (1 - 0.1 * last_choice_node.level))
             
     # async def _get_prompt_from_red_teaming_target(self, attack_content: list[str],current_seed) -> str: 
