@@ -157,7 +157,7 @@ class FuzzerOrchestrator(Orchestrator):
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
 
-        async def send_prompt_async(
+        async def execute_fuzzer(
         self, *, initial_seed: list[str] = None, blocked: bool = False
         ) -> PromptRequestPiece:
             """Send the initial seed to the MCTS-explore to select a seed at each iteration
