@@ -144,7 +144,7 @@ class FuzzerOrchestrator(Orchestrator):
             raise ValueError("The initial seed cannot be empty.")
         if not self._prompt_converters:
             raise ValueError("The prompt converter cannot be empty")
-        #self._use_score_as_feedback = use_score_as_feedback
+        
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
