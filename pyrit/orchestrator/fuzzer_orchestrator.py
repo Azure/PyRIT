@@ -189,24 +189,24 @@ class FuzzerOrchestrator(Orchestrator):
             )
 
             #3. append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
-            #Todo: 
+            #Todo: clarification needed step 3 and 4. 
             #step1: builds a new prompt with the current selected template
              requests: list[NormalizerRequest] = []
-             for prompt in prompt_list:
+             for prompt in attack_content:
                 requests.append(
-                    target_seed_obj.apply_custom_metaprompt_parameters(prompt=prompt)
+                    target_seed_obj.apply_custom_metaprompt_parameters(prompt=prompt) #wrong?
                 )
             
              for request in requests:
                 request.validate()
 
-             await self._prompt_normalizer.send_prompt_batch_to_target_async(
-                requests=requests,
-                target=self._prompt_target,
-                labels=self._global_memory_labels,
-                orchestrator_identifier=self.get_identifier(),
-                batch_size=self._batch_size,
-              )
+             # await self._prompt_normalizer.send_prompt_batch_to_target_async(
+             #    requests=requests,
+             #    target=self._prompt_target,
+             #    labels=self._global_memory_labels,
+             #    orchestrator_identifier=self.get_identifier(),
+             #    batch_size=self._batch_size,
+             #  )
 
 
             #4. Apply prompt converter if any and Send request to a target 
@@ -227,6 +227,9 @@ class FuzzerOrchestrator(Orchestrator):
         ).request_pieces[0]
             
             #5. Todo: Apply scorer on the response and based on the scorer return if jailbreak successful or not.
+            #likert scorer / true/false
+            #likert scorer - should i create a yaml to score?
+            #
 
             #6. Update the rewards for each of the node. 
             update(PromptNode) #fix this
