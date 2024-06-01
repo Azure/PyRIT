@@ -263,6 +263,25 @@ def test_add_text_image_converter_invalid_text_to_add():
         AddTextImageConverter(font_name="arial.ttf")
 
 
+def test_add_text_image_converter_fallback_to_default_font(text_image_converter_sample_image_bytes, caplog):
+    converter = AddTextImageConverter(
+        text_to_add="New text!",
+        font_name="nonexistent_font.ttf",
+        color=(255, 255, 255),
+        font_size=20,
+        x_pos=10,
+        y_pos=10,
+    )
+    image = Image.open(BytesIO(text_image_converter_sample_image_bytes))
+    pixels_before = list(image.getdata())
+    updated_image = converter._add_text_to_image(image)
+    pixels_after = list(updated_image.getdata())
+    assert any(
+        record.levelname == "WARNING" and "Cannot open font resource" in record.message for record in caplog.records
+    )
+    assert pixels_before != pixels_after
+
+
 def test_text_image_converter_add_text_to_image(text_image_converter_sample_image_bytes):
     converter = AddTextImageConverter(text_to_add="Hello, World!", font_name="arial.ttf", color=(255, 255, 255))
     image = Image.open(BytesIO(text_image_converter_sample_image_bytes))

@@ -65,9 +65,12 @@ class AddTextImageConverter(PromptConverter):
         """
         draw = ImageDraw.Draw(image)
 
-        # Load the font
-        font = ImageFont.truetype(self._font_name, self._font_size)
-
+        # Try to load the specified font
+        try:
+            font = ImageFont.truetype(self._font_name, self._font_size)
+        except OSError:
+            logger.warning(f"Cannot open font resource: {self._font_name}. Using default font.")
+            font = ImageFont.load_default()
         # Calculate the maximum width in pixels with margin into account
         margin = 5
         max_width_pixels = image.size[0] - margin
