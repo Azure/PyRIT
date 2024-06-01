@@ -25,7 +25,7 @@ class AddTextImageConverter(PromptConverter):
         text_to_add (str): text to add to an image. Defaults to empty string.
         font_name (str, optional): path of font to use. Must be a TrueType font (.ttf). Defaults to "arial.ttf".
         color (tuple, optional): color to print text in, using RGB values. Defaults to (0, 0, 0).
-        font_size (optional, float): size of font to use. Defaults to 10.
+        font_size (optional, float): size of font to use. Defaults to 15.
         x_pos (int, optional): x coordinate to place text in (0 is left most). Defaults to 10.
         y_pos (int, optional): y coordinate to place text in (0 is upper most). Defaults to 10.
         output_filename (optional, str): filename to store converted image. If not provided a unique UUID will be used
