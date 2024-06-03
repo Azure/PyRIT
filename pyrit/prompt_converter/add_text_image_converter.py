@@ -33,7 +33,7 @@ class AddTextImageConverter(PromptConverter):
 
     def __init__(
         self,
-        text_to_add: str = "",
+        text_to_add: str,
         font_name: str = "arial.ttf",
         color: tuple[int, int, int] = (0, 0, 0),
         font_size: int = 15,
