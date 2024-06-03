@@ -5,6 +5,7 @@ import logging
 import base64
 import asyncio
 import string
+from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class AddTextImageConverter(PromptConverter):
     """
-    Adds a string to an image and wraps the text into multiple lines if necessary..
+    Adds a string to an image and wraps the text into multiple lines if necessary.
 
     Args:
         text_to_add (str): text to add to an image. Defaults to empty string.
@@ -33,13 +34,13 @@ class AddTextImageConverter(PromptConverter):
 
     def __init__(
         self,
-        text_to_add: str = "",
-        font_name: str = "arial.ttf",
-        color: tuple[int, int, int] = (0, 0, 0),
-        font_size: int = 15,
-        x_pos: int = 10,
-        y_pos: int = 10,
-        output_filename: str = None,
+        text_to_add: str,
+        font_name: Optional[str] = "arial.ttf",
+        color: Optional[tuple[int, int, int]] = (0, 0, 0),
+        font_size: Optional[int] = 15,
+        x_pos: Optional[int] = 10,
+        y_pos: Optional[int] = 10,
+        output_filename: Optional[str] = None,
     ):
         if not text_to_add:
             raise ValueError("Please provide valid text_to_add value")
