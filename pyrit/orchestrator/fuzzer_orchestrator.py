@@ -70,6 +70,8 @@ class PromptNode:
 class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
+    DEFAULT_SEED_CONVERTER = "shorten/expand" # fix this which one of this should be the default converter if the user given option is None?
+
     def __init__(
         self,
         *,
@@ -77,13 +79,21 @@ class FuzzerOrchestrator(Orchestrator):
         prompt_target: PromptTarget,
         initial_seed: list[str], # list of all the jailbreak prompts on which MCTS will be applied.
         prompt_converters: Optional[list[PromptConverter]] = None,
-        seed_converter: list[PromptConverter], # shorten/expand 
+        seed_converter: Optional[list[PromptConverter]] = None, # shorten/expand 
         scorer: Scorer,
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         ratio=0.5, alpha=0.1, beta=0.2,
     ) -> None:
+
+        """ Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
+
+            Link: https://arxiv.org/pdf/2309.10253
+
+            Author: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
+
+            GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master"""
 
         """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
         
@@ -118,13 +128,6 @@ class FuzzerOrchestrator(Orchestrator):
             
             verbose: Whether to print debug information.
 
-            Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
-
-            Link: https://arxiv.org/pdf/2309.10253
-
-            Author: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
-
-            GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
         """
 
         self._prompt_target = prompt_target
@@ -140,15 +143,9 @@ class FuzzerOrchestrator(Orchestrator):
         self._ratio = ratio  # balance between exploration and exploitation
         self._alpha = alpha  # penalty for level
         self._beta = beta   # minimal reward after penalty
-
-        self._prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
-            PromptNode(self, prompt) for prompt in initial_seed 
-        ]
-
         self._initial_prompts_nodes = self._prompt_nodes.copy()
-        for i, prompt_node in enumerate(self._prompt_nodes):
-            prompt_node.index = i
-
+        
+        
         if not self._initial_seed:
             raise ValueError("The initial seed cannot be empty.")
         if not self._seed_converters:
@@ -157,6 +154,13 @@ class FuzzerOrchestrator(Orchestrator):
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
+
+        self._prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
+            PromptNode(self, prompt) for prompt in initial_seed 
+        ]
+
+        for i, prompt_node in enumerate(self._prompt_nodes):
+            prompt_node.index = i
 
         async def execute_fuzzer(
         self, *, initial_seed: list[str] = None
@@ -225,7 +229,7 @@ class FuzzerOrchestrator(Orchestrator):
             true_false_classifier = SelfAskTrueFalseScorer( # change the path
                             true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
                             )
-            scored_response = await true_false_classifier.score_text_async(text=response_piece) #wrong? check this score_async?
+            scored_response = await true_false_classifier.score_async(text=response_piece) #wrong? check this score_async?
 
             #6. Update the rewards for each of the node. 
             update(PromptNode) #fix this
