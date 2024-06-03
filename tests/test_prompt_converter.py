@@ -22,7 +22,7 @@ import os
 
 from tests.mocks import MockPromptTarget
 from unittest.mock import patch, MagicMock
-from PIL import Image
+from PIL import Image, ImageFont
 from io import BytesIO
 import azure.cognitiveservices.speech as speechsdk
 
@@ -251,6 +251,8 @@ def test_add_text_image_converter_initialization():
     assert converter._font_size == 20
     assert converter._x_pos == 10
     assert converter._y_pos == 10
+    assert converter._font is not None
+    assert type(converter._font) is ImageFont.FreeTypeFont
 
 
 def test_add_text_image_converter_invalid_font():
@@ -260,7 +262,7 @@ def test_add_text_image_converter_invalid_font():
 
 def test_add_text_image_converter_invalid_text_to_add():
     with pytest.raises(ValueError):
-        AddTextImageConverter(font_name="arial.ttf")
+        AddTextImageConverter(text_to_add="", font_name="arial.ttf")
 
 
 def test_add_text_image_converter_fallback_to_default_font(text_image_converter_sample_image_bytes, caplog):
