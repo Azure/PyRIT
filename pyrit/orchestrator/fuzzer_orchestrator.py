@@ -16,6 +16,7 @@ from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, No
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer, Score
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 logger = logging.getLogger(__name__)
 
@@ -182,54 +183,49 @@ class FuzzerOrchestrator(Orchestrator):
             current_seed = await self._get_seed_usingMCTS(initial_seed=initial_seed)
 
             #2. apply prompt converter to the selected template. Apply seed converter.
-            target_seed_obj = NormalizerRequestPiece(
-            prompt_converters=self._seed_converter,
-            prompt_text=current_seed,
-            prompt_data_type="text",
-            )
+            target_seed_obj = await self._seed_converter.convert_async(prompt = current_seed)
+            target_template = PromptTemplate(target_seed_obj.output_text)
 
             #3. append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
-            #Todo: clarification needed step 3 and 4. 
             #step1: builds a new prompt with the current selected template
-             requests: list[NormalizerRequest] = []
+             jailbreak_prompts = []
              for prompt in attack_content:
-                requests.append(
-                    target_seed_obj.apply_custom_metaprompt_parameters(prompt=prompt) #wrong?
+                jailbreak_prompts.append(
+                    target_template.apply_custom_metaprompt_parameters(prompt=prompt) 
                 )
-            
-             for request in requests:
-                request.validate()
-
-             # await self._prompt_normalizer.send_prompt_batch_to_target_async(
-             #    requests=requests,
-             #    target=self._prompt_target,
-             #    labels=self._global_memory_labels,
-             #    orchestrator_identifier=self.get_identifier(),
-             #    batch_size=self._batch_size,
-             #  )
-
 
             #4. Apply prompt converter if any and Send request to a target 
-              target_prompt_obj = NormalizerRequestPiece(
-            prompt_converters=self._prompt_converters,
-            prompt_text=prompt,
-            prompt_data_type="text",
-            )
-            
-            response_piece = (
-            await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=NormalizerRequest([target_prompt_obj]),
+              requests: list[NormalizerRequest] = []
+              for jailbreak_prompt in jailbreak_prompts:
+                  requests.append(
+                      self._create_normalizer_request(
+                      prompt_text=jailbreak_prompt,
+                      prompt_type="text",
+                      converters=self._prompt_converters,
+                      )
+                    )
+
+              for request in requests:
+                  request.validate()
+
+            response_piece = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
+            await self._prompt_normalizer.send_prompt_batch_to_target_async(
+                requests=requests,
                 target=self._prompt_target,
-                conversation_id=self._prompt_target_conversation_id,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self.get_identifier(),
+                batch_size=self._batch_size, 
+                )
             )
-        ).request_pieces[0]
+
             
             #5. Todo: Apply scorer on the response and based on the scorer return if jailbreak successful or not.
-            #likert scorer / true/false
-            #likert scorer - should i create a yaml to score?
-            #
+            #true/false
+            #datasets/score/true_false_question/current_events.yaml ??????
+            true_false_classifier = SelfAskTrueFalseScorer( # change the path
+                            true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
+                            )
+            scored_response = await true_false_classifier.score_text_async(text=response_piece) #wrong? check this score_async?
 
             #6. Update the rewards for each of the node. 
             update(PromptNode) #fix this
