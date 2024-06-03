@@ -316,7 +316,7 @@ async def test_add_text_image_converter_convert_async() -> None:
     assert os.path.exists(converted_image.output_text)
     os.remove(converted_image.output_text)
     os.remove("test.png")
-    
+
 
 def test_text_image_converter_input_supported():
     converter = AddTextImageConverter(text_to_add="Sample text")
@@ -370,4 +370,3 @@ async def test_repeat_token_converter_repeat() -> None:
     output = await converter.convert_async(prompt="how to cut down a tree? I need to know.", input_type="text")
     assert output.output_text == " test test test"
     assert output.output_type == "text"
-
