@@ -296,7 +296,7 @@ class RedTeamingOrchestrator(Orchestrator):
             logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
             return self._initial_red_teaming_prompt
 
-        if last_response_from_attack_target.converted_value_data_type == "text":
+        if last_response_from_attack_target.converted_value_data_type in ["text", "error"]:
             return self._handle_text_response(last_response_from_attack_target, feedback)
 
         return self._handle_file_response(last_response_from_attack_target, feedback)
