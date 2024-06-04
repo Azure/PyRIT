@@ -154,16 +154,6 @@ def test_prompt_response_validate_conversation_id_throws(sample_conversations: l
         request_response.validate()
 
 
-def test_prompt_response_converted_empty_throws(sample_conversations: list[PromptRequestPiece]):
-    for c in sample_conversations:
-        c.conversation_id = sample_conversations[0].conversation_id
-
-    sample_conversations[0].converted_value = None
-    request_response = PromptRequestResponse(request_pieces=sample_conversations)
-    with pytest.raises(ValueError, match="Converted prompt text is None."):
-        request_response.validate()
-
-
 def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: list[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id

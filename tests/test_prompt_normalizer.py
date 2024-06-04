@@ -26,7 +26,7 @@ class MockPromptConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
-
+@pytest.mark.asyncio
 async def test_send_prompt_multiple_converters():
     prompt_target = MockPromptTarget()
     prompt_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
@@ -38,10 +38,10 @@ async def test_send_prompt_multiple_converters():
         prompt_data_type="text",
         metadata="metadata",
     )
-    print("HERE!!!", prompt)
+
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    await normalizer.send_prompt(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
+    await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
