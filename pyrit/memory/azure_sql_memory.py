@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Literal
 import struct
 import logging
 
@@ -9,8 +8,6 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
-
-from azure.identity import DefaultAzureCredential
 
 from pyrit.memory.memory_models import EmbeddingData, Base
 from pyrit.memory.memory_interface import MemoryInterface
@@ -30,32 +27,24 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     """
 
     SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
-    TOKEN_URL = "https://database.windows.net/"  # The token URL for any Azure SQL database
-    TIMEOUT_SECONDS = 60
 
     def __init__(
         self,
         *,
-        server: str,
-        database: str,
-        driver_version: Literal['17', '18'] = '18',
-        timeout: int = TIMEOUT_SECONDS,
+        connection_string: str,
+        auth_token: str = '',
         verbose: bool = False
     ):
         super(AzureSQLMemory, self).__init__()
 
-        self._server = server
-        self._database = database
-        self._timeout = timeout
-
-        if driver_version == '17':
-            self._driver = 'ODBC+Driver+17+for+SQL+Server'
-        elif driver_version == '18':
-            self._driver = 'ODBC+Driver+18+for+SQL+Server'
-        else:
-            raise ValueError(f"Unsupported driver version: {driver_version}")
+        self._connection_string = connection_string
+        self._auth_token = auth_token
 
         self.engine = self._create_engine(has_echo=verbose)
+
+        if auth_token:
+            self._enable_azure_authorization()
+
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
 
@@ -69,27 +58,31 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             has_echo (bool): Flag to enable detailed SQL execution logging.
         """
 
-        azure_credentials = DefaultAzureCredential(process_timeout=self._timeout)
-
         try:
             # Create the SQLAlchemy engine.
-            engine = create_engine(f"mssql+pyodbc://@{self._server}/{self._database}?driver={self._driver}", echo=has_echo)
+            engine = create_engine(self._connection_string, echo=has_echo)
         except SQLAlchemyError as e:
             logger.exception(f"Error creating the engine for the database: {e}")
             raise
         else:
             logger.info(f"Engine created successfully for database: {self._server}/{self._database}?driver={self._driver}")
-            @event.listens_for(engine, "do_connect")
-            def provide_token(_dialect, _conn_rec, cargs, cparams):
-                # remove the "Trusted_Connection" parameter that SQLAlchemy adds
-                cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
-                # create token credential
-                azure_token = azure_credentials.get_token(self.TOKEN_URL)
-                raw_token = azure_token.token.encode("utf-16-le")
-                token_struct = struct.pack(f"<I{len(raw_token)}s", len(raw_token), raw_token)
-                # apply it to keyword arguments
-                cparams["attrs_before"] = {self.SQL_COPT_SS_ACCESS_TOKEN: token_struct}
             return engine
+
+    def _enable_azure_authorization(self) -> None:
+        # TODO: investigate integrating this with the `azure_auth` module, enabling us to use refresh tokens, etc.
+
+        @event.listens_for(self.engine, "do_connect")
+        def provide_token(_dialect, _conn_rec, cargs, cparams):
+            # remove the "Trusted_Connection" parameter that SQLAlchemy adds
+            cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
+
+            # encode the token
+            azure_token = self._auth_token
+            azure_token_bytes = azure_token.encode("utf-16-le")
+            packed_azure_token = struct.pack(f"<I{len(azure_token_bytes)}s", len(azure_token_bytes), azure_token_bytes)
+
+            # add the encoded token
+            cparams["attrs_before"] = {self.SQL_COPT_SS_ACCESS_TOKEN: packed_azure_token}
 
     def _create_tables_if_not_exist(self):
         """
@@ -105,31 +98,31 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             logger.error(f"Error during table creation: {e}")
 
     def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
-        return super()._add_embeddings_to_memory(embedding_data=embedding_data)
+        raise NotImplementedError("add_embeddings_to_memory method not implemented")
 
     def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
-        return super()._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+        raise NotImplementedError("get_prompt_pieces_by_orchestrator method not implemented")
 
     def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
-        return super()._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        raise NotImplementedError("get_prompt_pieces_with_conversation_id method not implemented")
 
     def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
-        return super().add_request_pieces_to_memory(request_pieces=request_pieces)
+        raise NotImplementedError("add_request_pieces_to_memory method not implemented")
 
     def add_scores_to_memory(self, *, scores: list[Score]) -> None:
-        return super().add_scores_to_memory(scores=scores)
+        raise NotImplementedError("add_scores_to_memory method not implemented")
 
     def dispose_engine(self):
-        return super().dispose_engine()
+        raise NotImplementedError("dispose_engine method not implemented")
 
     def get_all_embeddings(self) -> list[EmbeddingData]:
-        return super().get_all_embeddings()
+        raise NotImplementedError("get_all_embeddings method not implemented")
 
     def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
-        return super().get_all_prompt_pieces()
+        raise NotImplementedError("get_all_prompt_pieces method not implemented")
 
     def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
-        return super().get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
+        raise NotImplementedError("get_prompt_request_pieces_by_id method not implemented")
 
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
-        return super().get_scores_by_prompt_ids(prompt_request_response_ids=prompt_request_response_ids)
+        raise NotImplementedError("get_scores_by_prompt_ids method not implemented")

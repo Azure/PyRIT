@@ -12,7 +12,6 @@ authors = [
     { name = "romanlutz" },
     { name = "jbolor21" },
     { name = "nina-msft" },
-    { name = "elgertam" },
 ]
 readme = "README.md"
 license = { text = "MIT" }
