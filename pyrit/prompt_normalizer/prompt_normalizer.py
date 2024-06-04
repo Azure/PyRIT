@@ -61,6 +61,9 @@ class PromptNormalizer(abc.ABC):
 
         response = await target.send_prompt_async(prompt_request=request)
 
+        if response is None:
+            return
+
         await self._convert_response_values(
             response_converter_configurations=normalizer_request.response_converters,
             prompt_response=response
@@ -186,6 +189,7 @@ class PromptNormalizer(abc.ABC):
             prompt_response: PromptRequestResponse
     ):
         index = 0
+
         for response_piece in prompt_response.request_pieces:
             for converter_configuration in response_converter_configurations:
                 if converter_configuration.indexes_to_apply is not None and \

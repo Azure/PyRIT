@@ -66,7 +66,7 @@ class NormalizerRequest:
     def __init__(
             self,
             request_pieces: list[NormalizerRequestPiece],
-            response_converters: list[PromptResponseConverterConfiguration] = None
+            response_converters: list[PromptResponseConverterConfiguration] = []
         ):
         """
         Represents a normalizer request.
