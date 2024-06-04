@@ -253,33 +253,33 @@ class FuzzerOrchestrator(Orchestrator):
                 self._rewards.extend(
                     [0 for _ in range(len(self.fuzzer._prompt_nodes) - len(self._rewards))])
 
-        self._mctc_select_path.clear()
-        cur = max(  #initial path
-            self.fuzzer._initial_prompts_nodes,
-            key=lambda pn:
-            self._rewards[pn.index] / (pn.visited_num + 1) +
-            self.ratio * np.sqrt(2 * np.log(self.step) /
-                                 (pn.visited_num + 0.01))
-        )
-        self.mctc_select_path.append(cur)
-
-        while len(cur.child) > 0: # while node is not a leaf 
-            if np.random.rand() < self.alpha:
-                break
-            cur = max(   #compute the bestUCT score
-                cur.child,
+            self._mctc_select_path.clear()
+            current = max(  #initial path
+                self.fuzzer._initial_prompts_nodes,
                 key=lambda pn:
-                self.rewards[pn.index] / (pn.visited_num + 1) +
-                self._ratio * np.sqrt(2 * np.log(self._step) /
-                                     (pn.visited_num + 0.01))
+                self._rewards[pn.index] / (pn.visited_num + 1) +
+                self.ratio * np.sqrt(2 * np.log(self.step) /
+                                 (pn.visited_num + 0.01))
             )
-            self._mctc_select_path.append(cur) # append node to path
+            self.mctc_select_path.append(current)
 
-        for pn in self._mctc_select_path:
-            pn.visited_num += 1    # keep track of number of visited nodes
+            while len(current.child) > 0: # while node is not a leaf 
+                if np.random.rand() < self.alpha:
+                    break
+                current = max(   #compute the bestUCT score
+                    current.child,
+                    key=lambda pn:
+                    self.rewards[pn.index] / (pn.visited_num + 1) +
+                    self._ratio * np.sqrt(2 * np.log(self._step) /
+                                     (pn.visited_num + 0.01))
+                )
+                self._mctc_select_path.append(current) # append node to path
 
-        self._last_choice_index = cur.index
-        return cur # returns the best child
+            for pn in self._mctc_select_path:
+                pn.visited_num += 1    # keep track of number of visited nodes
+
+            self._last_choice_index = current.index
+            return current # returns the best child
 
     def update(self, prompt_nodes: 'list[PromptNode]'):
         succ_num = sum([prompt_node.num_jailbreak
