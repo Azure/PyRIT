@@ -25,6 +25,7 @@ class CompletionState:
         self.is_complete = is_complete
 
 #Class to maintain the tree information.
+#todo remove variables and exports that are not necessary
 class PromptNode:
     def __init__(self,
                  fuzzer: 'FuzzerOrchestrator',
