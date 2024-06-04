@@ -211,3 +211,23 @@ def test_prompt_request_piece_no_roles():
         )
 
         assert "not a valid role." in str(excinfo.value)
+
+
+def test_prompt_request_piece_sets_original_sha256():
+    entry = PromptRequestPiece(
+        role="user",
+        original_value="Hello",
+    )
+
+    entry.original_value = "newvalue"
+    assert entry.original_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
+
+
+def test_prompt_request_piece_sets_converted_sha256():
+    entry = PromptRequestPiece(
+        role="user",
+        original_value="Hello",
+    )
+
+    entry.converted_value = "newvalue"
+    assert entry.converted_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"

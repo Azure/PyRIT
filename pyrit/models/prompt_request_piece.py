@@ -113,7 +113,6 @@ class PromptRequestPiece(abc.ABC):
         self.response_error = response_error
         self.originator = originator
 
-
     @property
     def converted_value(self) -> str:
         return self._converted_value
@@ -141,7 +140,6 @@ class PromptRequestPiece(abc.ABC):
     @property
     def original_value_sha256(self):
         return self._original_value_sha256
-
 
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=self.role, content=self.converted_value)
