@@ -65,7 +65,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Error creating the engine for the database: {e}")
             raise
         else:
-            logger.info(f"Engine created successfully for database: {self._server}/{self._database}?driver={self._driver}")
+            logger.info(f"Engine created successfully for database: {self._connection_string}")
             return engine
 
     def _enable_azure_authorization(self) -> None:
