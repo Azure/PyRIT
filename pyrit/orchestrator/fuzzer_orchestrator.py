@@ -232,7 +232,7 @@ class FuzzerOrchestrator(Orchestrator):
             true_false_classifier = SelfAskTrueFalseScorer( # change the path
                             true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
                             )
-            scored_response = await true_false_classifier.score_async(text=response_piece) #wrong? check this score_async?
+            scored_response = await true_false_classifier.score_async(text=response_piece) 
 
             #6. Update the rewards for each of the node. 
             _update(PromptNode) #fix this # todo have to update the rewards by calling _update(). Alos update the nodes based on the successful jailbreaks.
