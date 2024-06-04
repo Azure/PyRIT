@@ -1,13 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from colorama import Fore, Style
 from dataclasses import dataclass
 import json
 import logging
 from typing import Optional, Union
 from uuid import uuid4
 import re
-import yaml
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface
@@ -491,7 +491,28 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
             # to keep it separate.
             # send all conversation not only response 
 
+    def print_conversation(self):
+        """Prints the conversation between the prompt target and the red teaming bot."""
+        target_messages = self._memory._get_prompt_pieces_with_conversation_id(
+            conversation_id=self._prompt_target_conversation_id
+        )
 
+        if not target_messages or len(target_messages) == 0:
+            print("No conversation with the target")
+            return
+
+        for message in target_messages:
+            if message.role == "user":
+                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+            else:
+                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                self._display_response(message)
+
+            # TODO use PyRIT scorer first, then uncomment this section
+            # scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+            # if scores and len(scores) > 0:
+            #     score = scores[0]
+            #     print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
             
 
 
