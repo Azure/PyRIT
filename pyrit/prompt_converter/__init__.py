@@ -19,7 +19,6 @@ from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpe
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
-from pyrit.prompt_converter.cipher_converter import CipherExplanationConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 
 
@@ -42,6 +41,5 @@ __all__ = [
     "SuffixAppendConverter",
     "AtbashConverter",
     "CaesarConverter",
-    "CipherExplanationConverter",
     "MorseConverter",
 ]
