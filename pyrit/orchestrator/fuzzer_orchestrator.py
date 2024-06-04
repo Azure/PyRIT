@@ -162,6 +162,12 @@ class FuzzerOrchestrator(Orchestrator):
         for i, prompt_node in enumerate(self._prompt_nodes):
             prompt_node.index = i
 
+       #set the default seed_converter. Seed_converter= Optional[list[PromptConverter]] the list can have stacked converter. But stacked converters are not allowed. Fix this.
+        if seed_converter is None:
+            seed_converter = self.DEFAULT_SEED_CONVERTER
+        else:
+            seed_converter = self._seed_converter
+
         async def _execute_fuzzer(
         self, *, initial_seed: list[str] = None
         ) -> PromptRequestPiece:
@@ -222,14 +228,14 @@ class FuzzerOrchestrator(Orchestrator):
             
             #5. Todo: Apply scorer on the response and based on the scorer return if jailbreak successful or not.
             #true/false
-            #datasets/score/true_false_question/current_events.yaml ??????
+            #datasets/score/true_false_question/current_events.yaml ?????? Have to create a .yaml file
             true_false_classifier = SelfAskTrueFalseScorer( # change the path
                             true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
                             )
             scored_response = await true_false_classifier.score_async(text=response_piece) #wrong? check this score_async?
 
             #6. Update the rewards for each of the node. 
-            _update(PromptNode) #fix this
+            _update(PromptNode) #fix this # todo have to update the rewards by calling _update(). Alos update the nodes based on the successful jailbreaks.
 
 
 
