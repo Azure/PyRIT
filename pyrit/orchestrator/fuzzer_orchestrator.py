@@ -185,7 +185,7 @@ class FuzzerOrchestrator(Orchestrator):
             #6. Update the rewards for each of the node. update()
 
             # 1. Select a seed from the list of the templates using the MCTS
-            current_seed = await self._get_seed_usingMCTS(initial_seed=initial_seed)
+            current_seed = await self._get_seed(initial_seed=initial_seed)
 
             #2. apply prompt converter to the selected template. Apply seed converter.
             target_seed_obj = await self._seed_converter.convert_async(prompt = current_seed)
@@ -238,7 +238,7 @@ class FuzzerOrchestrator(Orchestrator):
 
 
 
-        def _get_seed_usingMCTS(self, initial_seed) -> PromptNode:
+        def _get_seed(self, initial_seed) -> PromptNode:
             self._step = 0 # to keep track of the steps or the count
             self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
             self._last_choice_index = None
