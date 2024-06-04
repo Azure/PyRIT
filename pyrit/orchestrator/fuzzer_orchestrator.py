@@ -33,39 +33,39 @@ class PromptNode:
                  results: 'list[int]' = None,
                  parent: 'PromptNode' = None,
                  ):
-        self.fuzzer: 'FuzzerOrchestrator' = fuzzer
-        self.template: str = template
-        self.response: str = response
-        self.results: 'list[int]' = results
-        self.visited_num = 0
+        self._fuzzer: 'FuzzerOrchestrator' = fuzzer
+        self._template: str = template
+        self._response: str = response
+        self._results: 'list[int]' = results
+        self._visited_num = 0
 
-        self.parent: 'PromptNode' = parent
-        self.child: 'list[PromptNode]' = []
-        self.level: int = 0 if parent is None else parent.level + 1
+        self._parent: 'PromptNode' = parent
+        self._child: 'list[PromptNode]' = []
+        self._level: int = 0 if parent is None else parent.level + 1
 
         self._index: int = None
 
     @property
-    def index(self):
+    def _index(self):
         return self._index
 
     @index.setter
-    def index(self, index: int):
+    def _index(self, index: int):
         self._index = index
-        if self.parent is not None:
-            self.parent.child.append(self)
+        if self._parent is not None:
+            self._parent._child.append(self)
 
     @property
-    def num_jailbreak(self):
-        return sum(self.results)
+    def _num_jailbreak(self):
+        return sum(self._results)
 
     @property
-    def num_reject(self):
-        return len(self.results) - sum(self.results)
+    def _num_reject(self):
+        return len(self._results) - sum(self._results)
 
     @property
-    def num_query(self):
-        return len(self.results)
+    def _num_query(self):
+        return len(self._results)
 
 class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
@@ -162,7 +162,7 @@ class FuzzerOrchestrator(Orchestrator):
         for i, prompt_node in enumerate(self._prompt_nodes):
             prompt_node.index = i
 
-        async def execute_fuzzer(
+        async def _execute_fuzzer(
         self, *, initial_seed: list[str] = None
         ) -> PromptRequestPiece:
             """Send the initial seed to the MCTS-explore to select a seed at each iteration
@@ -171,10 +171,7 @@ class FuzzerOrchestrator(Orchestrator):
                 initial seed: A list of the initial jailbreak templates that needs to be sent to the MCTS algorithm. 
 
             """
-            # target_messages = self._memory.get_chat_messages_with_conversation_id(
-            # conversation_id=self._prompt_target_conversation_id
-            # )  #message id?????
-
+        
             #Steps:
             #1. select a seed
             #2. apply prompt converter
@@ -232,7 +229,7 @@ class FuzzerOrchestrator(Orchestrator):
             scored_response = await true_false_classifier.score_async(text=response_piece) #wrong? check this score_async?
 
             #6. Update the rewards for each of the node. 
-            update(PromptNode) #fix this
+            _update(PromptNode) #fix this
 
 
 
@@ -244,53 +241,57 @@ class FuzzerOrchestrator(Orchestrator):
             self._rewards = []
             
 
-            seed = select(self)
+            seed = _select(self)
             return seed
 
-        def select(self) -> PromptNode:
+        def _select(self) -> PromptNode:
             self._step += 1
-            if len(self.fuzzer._prompt_nodes) > len(self._rewards):
+            if len(self._prompt_nodes) > len(self._rewards):
                 self._rewards.extend(
-                    [0 for _ in range(len(self.fuzzer._prompt_nodes) - len(self._rewards))])
+                    [0 for _ in range(len(self._prompt_nodes) - len(self._rewards))])
 
             self._mctc_select_path.clear()
             current = max(  #initial path
-                self.fuzzer._initial_prompts_nodes,
-                key=lambda pn:
-                self._rewards[pn.index] / (pn.visited_num + 1) +
-                self.ratio * np.sqrt(2 * np.log(self.step) /
-                                 (pn.visited_num + 0.01))
+                self._initial_prompts_nodes,
+                key= _bestUCT_score(self)
             )
             self.mctc_select_path.append(current)
 
-            while len(current.child) > 0: # while node is not a leaf 
+            while len(current._child) > 0: # while node is not a leaf 
                 if np.random.rand() < self.alpha:
                     break
                 current = max(   #compute the bestUCT score
-                    current.child,
-                    key=lambda pn:
-                    self.rewards[pn.index] / (pn.visited_num + 1) +
-                    self._ratio * np.sqrt(2 * np.log(self._step) /
-                                     (pn.visited_num + 0.01))
+                    current._child,
+                    key= _bestUCT_score(self)
                 )
                 self._mctc_select_path.append(current) # append node to path
 
             for pn in self._mctc_select_path:
-                pn.visited_num += 1    # keep track of number of visited nodes
+                pn._visited_num += 1    # keep track of number of visited nodes
 
             self._last_choice_index = current.index
             return current # returns the best child
 
-    def update(self, prompt_nodes: 'list[PromptNode]'):
-        succ_num = sum([prompt_node.num_jailbreak
+    def _bestUCT_score(self):
+        """Function to compute the score for each seed. The highest-scoring seed will be selected as the next seed.  
+         This computation is based on UCB (Upper Confidence Bound) algorithm. It uses uncertainity in the estimates to drive exploration."""
+        
+        return lambda pn:
+                    self._rewards[pn._index] / (pn._visited_num + 1) +  #seed's average reward
+                    self._ratio * np.sqrt(2 * np.log(self._step) / # self._ratio - constant that balances between the seed with high reward and the seed that is selected fewer times. 
+                                     (pn._visited_num + 0.01))
+                
+
+    def _update(self, prompt_nodes: 'list[PromptNode]'):
+        succ_num = sum([prompt_node._num_jailbreak
                         for prompt_node in _prompt_nodes])
 
-        last_choice_node = self.fuzzer._prompt_nodes[self._last_choice_index]
+        last_choice_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
-            reward = succ_num / (len(self.fuzzer.questions)
+            reward = succ_num / (len(self._fuzzer.questions) #fix this, wrong. 
                                  * len(prompt_nodes))
             self._rewards[prompt_node.index] += reward * \
-                max(self.beta, (1 - 0.1 * last_choice_node.level))
+                max(self.beta, (1 - 0.1 * last_choice_node._level))
             
 
 
