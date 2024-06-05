@@ -7,7 +7,7 @@ import struct
 from contextlib import closing
 from typing import Optional
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
@@ -95,7 +95,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         try:
             return self.query_entries(
                 PromptMemoryEntry,
-                conditions=PromptMemoryEntry.orchestrator_identifier.op('.')("id") == str(orchestrator_id),
+                conditions=and_(
+                    func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
+                    func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, '$.id') == str(orchestrator_id),
+                ),
             )
         except Exception as e:
             logger.exception(
