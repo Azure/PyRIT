@@ -104,7 +104,7 @@ class FuzzerOrchestrator(Orchestrator):
             
             prompt_target: The target to send the prompts to.
             
-            initial_seed: list of all the jailbreak templates which will act as the seed pool. 
+            initial_seed: List of all the jailbreak templates which will act as the seed pool. 
             At each iteration, a seed will be selected using the MCTS-explore algorithm which will be sent to the 
             shorten/expand prompt converter.
             
@@ -172,15 +172,15 @@ class FuzzerOrchestrator(Orchestrator):
         ) -> PromptRequestPiece:
             
             """#Steps:
-            #1. select a seed - Send the initial seed to the MCTS-explore to select a seed at each iteration
+            #1. Select a seed - Send the initial seed to the MCTS-explore to select a seed at each iteration
             
-            #2. apply prompt converter
+            #2. Apply seed converter
             
             #3. append prompt(questions in GPTFuzzer) with the selected template(seed). For each selected template append all the questions
             
-            #4. send it to target and get a response
+            #4. Apply prompt converters if any and send it to target and get a response
             
-            #5. if jailbreak is successful then retain the template in seed pool.
+            #5. If jailbreak is successful then retain the template in seed pool.
             
             #6. Update the rewards for each of the node. update()
 
@@ -195,12 +195,12 @@ class FuzzerOrchestrator(Orchestrator):
             
             current_seed = await self._get_seed(initial_seed=initial_seed)
 
-            #2. apply prompt converter to the selected template. Apply seed converter.
+            #2. Apply seed converter to the selected template.
             
             target_seed_obj = await self._seed_converter.convert_async(prompt = current_seed)
             target_template = PromptTemplate(target_seed_obj.output_text)
 
-            #3. append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
+            #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
             
              jailbreak_prompts = []
              for prompt in attack_content:
@@ -233,9 +233,9 @@ class FuzzerOrchestrator(Orchestrator):
                 )
             )
             
-            #5. Todo: Apply scorer on the response and based on the scorer return if jailbreak successful or not.
+            #5. Apply scorer on the response and based on the scorer return if jailbreak successful or not.
             #true/false
-            #datasets/score/true_false_question/current_events.yaml ?????? Have to create a .yaml file
+            #datasets/score/true_false_question/current_events.yaml ?????? todo: Have to create a .yaml file
             
             true_false_classifier = SelfAskTrueFalseScorer( # change the path
                             true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
@@ -244,7 +244,7 @@ class FuzzerOrchestrator(Orchestrator):
 
             #6. Update the rewards for each of the node.
             
-            _update(PromptNode) #fix this # todo have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
+            _update(PromptNode) #fix this # todo: have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
 
 
         def _get_seed(self, initial_seed) -> PromptNode:
