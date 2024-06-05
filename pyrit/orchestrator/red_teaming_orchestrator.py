@@ -312,10 +312,12 @@ class RedTeamingOrchestrator(Orchestrator):
                 labels=self._global_memory_labels,
             )
 
+
         response_text = (
             (
-                await self._red_teaming_chat.send_chat_prompt_async(
-                    prompt=prompt_text,
+                await self._prompt_normalizer.send_prompt_async(
+                    normalizer_request=self._create_normalizer_request(prompt_text=prompt_text),
+                    target=self._red_teaming_chat,
                     conversation_id=self._red_teaming_chat_conversation_id,
                     orchestrator_identifier=self.get_identifier(),
                     labels=self._global_memory_labels,
@@ -324,6 +326,7 @@ class RedTeamingOrchestrator(Orchestrator):
             .request_pieces[0]
             .converted_value
         )
+
 
         return response_text
 

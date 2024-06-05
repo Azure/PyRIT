@@ -12,7 +12,7 @@ from typing import Callable
 from pyrit.common.constants import RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS, RETRY_MAX_NUM_ATTEMPTS
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 
 
 logger = logging.getLogger(__name__)
@@ -57,20 +57,17 @@ class EmptyResponseException(BadRequestException):
 
 
 def handle_bad_request_exception(
-    memory: MemoryInterface, response_text: str, request: PromptRequestPiece
+    response_text: str, request: PromptRequestPiece
 ) -> PromptRequestResponse:
 
     if "content_filter" in response_text:
         # Handle bad request error when content filter system detects harmful content
         bad_request_exception = BadRequestException(400, message=response_text)
         resp_text = bad_request_exception.process_exception()
-        response_entry = memory.add_response_entries_to_memory(
+        response_entry = construct_response_from_request(
             request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
         )
     else:
-        memory.add_response_entries_to_memory(
-            request=request, response_text_pieces=[response_text], response_type="error", error="processing"
-        )
         raise
 
     return response_entry

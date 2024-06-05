@@ -9,6 +9,7 @@ import logging
 from pyrit.common import net_utility
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestResponse
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import PromptTarget
 
 
@@ -52,13 +53,11 @@ class GandalfTarget(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
         response = await self._complete_text_async(request.converted_value)
 
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[response])
+        response_entry = construct_response_from_request(request=request, response_text_pieces=[response])
 
         return response_entry
 

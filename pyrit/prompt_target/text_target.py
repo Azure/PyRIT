@@ -29,19 +29,15 @@ class TextTarget(PromptTarget):
         self.stream_name = text_stream.name
         self._text_stream = text_stream
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-
-        self._text_stream.write(f"{str(prompt_request)}\n")
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        return prompt_request
-
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)
         await asyncio.sleep(0)
 
-        return self.send_prompt(prompt_request=prompt_request)
+        self._text_stream.write(f"{str(prompt_request)}\n")
+        self._memory.add_request_response_to_memory(request=prompt_request)
+
+        return prompt_request
 
     def import_scores_from_csv(self, csv_file_path: Path) -> list[PromptRequestPiece]:
 

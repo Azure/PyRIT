@@ -8,6 +8,7 @@ from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -36,13 +37,6 @@ class OllamaChatTarget(PromptChatTarget):
         )
         self.chat_message_normalizer = chat_message_normalizer
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)
@@ -53,20 +47,14 @@ class OllamaChatTarget(PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {self} {request}")
 
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        resp = await self._complete_chat_async(
-            messages=messages,
-        )
+        resp = await self._complete_chat_async(messages=messages)
 
         if not resp:
             raise ValueError("The chat returned an empty response.")
 
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp])
-
-        return response_entry
+        return construct_response_from_request(request=request, response_text_pieces=[resp])
 
     async def _complete_chat_async(
         self,

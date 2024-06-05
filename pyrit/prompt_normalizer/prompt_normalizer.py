@@ -10,6 +10,7 @@ from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.literals import PromptDataType
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
@@ -58,13 +59,21 @@ class PromptNormalizer(abc.ABC):
         )
 
         self._memory.add_request_response_to_memory(request=request)
+        response = None
 
-        response = await target.send_prompt_async(prompt_request=request)
+        try:
+            response = await target.send_prompt_async(prompt_request=request)
+        except Exception as ex:
+            request = construct_response_from_request(
+                request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"
+            )
+            self._memory.add_request_response_to_memory(request=request)
+            raise
 
         if response is None:
             return
 
-        await self._convert_response_values(
+        await self.convert_response_values(
             response_converter_configurations=normalizer_request.response_converters,
             prompt_response=response
         )
@@ -117,6 +126,33 @@ class PromptNormalizer(abc.ABC):
             results.extend(batch_results)
 
         return results
+
+    async def convert_response_values(
+            self,
+            response_converter_configurations: list[PromptResponseConverterConfiguration],
+            prompt_response: PromptRequestResponse
+    ):
+        index = 0
+
+        for response_piece in prompt_response.request_pieces:
+            for converter_configuration in response_converter_configurations:
+                if converter_configuration.indexes_to_apply is not None and \
+                    index not in converter_configuration.indexes_to_apply:
+                    continue
+
+                index += 1
+
+                if converter_configuration.prompt_data_types_to_apply is not None and \
+                    response_piece.original_value_data_type not in converter_configuration.prompt_data_types_to_apply:
+                    continue
+
+                for converter in converter_configuration.converters:
+                    converter_output = await converter.convert_async(
+                        prompt=response_piece.original_value, input_type=response_piece.original_value_data_type
+                    )
+                    response_piece.converted_value = converter_output.output_text
+                    response_piece.converted_value_data_type = converter_output.output_type
+
 
     def _chunked_prompts(self, prompts, size):
         for i in range(0, len(prompts), size):
@@ -181,31 +217,6 @@ class PromptNormalizer(abc.ABC):
             )
 
         return PromptRequestResponse(request_pieces=entries)
-
-
-    async def _convert_response_values(
-            self,
-            response_converter_configurations: list[PromptResponseConverterConfiguration],
-            prompt_response: PromptRequestResponse
-    ):
-        index = 0
-
-        for response_piece in prompt_response.request_pieces:
-            for converter_configuration in response_converter_configurations:
-                if converter_configuration.indexes_to_apply is not None and \
-                    index not in converter_configuration.indexes_to_apply:
-                    continue
-
-                if converter_configuration.prompt_data_types_to_apply is not None and \
-                    response_piece.original_value_data_type not in converter_configuration.prompt_data_types_to_apply:
-                    continue
-
-                for converter in converter_configuration.converters:
-                    converter_output = await converter.convert_async(
-                        prompt=response_piece.original_value, input_type=response_piece.original_value_data_type
-                    )
-                    response_piece.converted_value = converter_output.output_text
-                    response_piece.converted_value_data_type = converter_output.output_type
 
     async def _get_converterd_value_and_type(
             self,

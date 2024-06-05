@@ -18,6 +18,7 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.exceptions import EmptyResponseException, pyrit_retry
 
@@ -129,13 +130,6 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
             )
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 
@@ -165,15 +159,13 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text]
-            )
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
         except BadRequestError as bre:
             response_entry = handle_bad_request_exception(
                 memory=self._memory, response_text=bre.message, request=request
             )
         except Exception as ex:
-            self._memory.add_response_entries_to_memory(
+            construct_response_from_request(
                 request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"
             )
             raise

@@ -16,6 +16,7 @@ from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory
 from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 
@@ -95,16 +96,6 @@ class DALLETarget(PromptTarget):
             target_kwargs["api_key"] = api_key
         self._image_target = AzureOpenAIChatTarget(**target_kwargs)
 
-    def send_prompt(
-        self,
-        *,
-        prompt_request: PromptRequestResponse,
-    ) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
 
     async def send_prompt_async(
         self,
@@ -120,12 +111,8 @@ class DALLETarget(PromptTarget):
 
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
+        prompt = request.converted_value
 
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        return await self._generate_images_async(prompt=request.converted_value, request=request)
-
-    async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
         image_generation_args: Dict[str, Any] = {
             "model": self.deployment_name,
             "prompt": prompt,
@@ -144,20 +131,12 @@ class DALLETarget(PromptTarget):
             resp_text = data.value
             response_type: PromptDataType = "image_path"
 
-            response_entry = self._memory.add_response_entries_to_memory(
+            response_entry = construct_response_from_request(
                 request=request, response_text_pieces=[resp_text], response_type=response_type
             )
 
         except BadRequestError as bre:
-            response_entry = handle_bad_request_exception(
-                memory=self._memory, response_text=bre.message, request=request
-            )
-
-        except Exception as ex:
-            self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"
-            )
-            raise
+            response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
 
         return response_entry
 
