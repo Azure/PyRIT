@@ -188,7 +188,9 @@ class FuzzerOrchestrator(Orchestrator):
                 initial seed: A list of the initial jailbreak templates that needs to be sent to the MCTS algorithm. 
 
             """
-        
+            # todo: define the stopping criteria. In the fuzzer paper, their stopping criteria is based on max_query(defaults to 1000, user can also specify), max_jailbreak(defaults to 1, user can specify),
+            #should we have same stopping criteria?
+            
             # 1. Select a seed from the list of the templates using the MCTS
             
             current_seed = await self._get_seed(initial_seed=initial_seed)
