@@ -87,7 +87,7 @@ class PromptRequestPiece(abc.ABC):
         self.orchestrator_identifier = orchestrator_identifier
         self.scorer_identifier = scorer_identifier
 
-        self.original_value = original_value
+        self._original_value = original_value
 
         if original_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"original_value_data_type {original_value_data_type} is not a valid data type.")
@@ -95,9 +95,9 @@ class PromptRequestPiece(abc.ABC):
         self.original_value_data_type = original_value_data_type
 
         original_serializer = data_serializer_factory(data_type=original_value_data_type, value=original_value)
-        self.original_value_sha256 = original_serializer.get_sha256()
+        self._original_value_sha256 = original_serializer.get_sha256()
 
-        self.converted_value = converted_value
+        self._converted_value = converted_value
 
         if converted_value_data_type not in get_args(PromptDataType):
             raise ValueError(f"converted_value_data_type {converted_value_data_type} is not a valid data type.")
@@ -105,13 +105,41 @@ class PromptRequestPiece(abc.ABC):
         self.converted_value_data_type = converted_value_data_type
 
         converted_serializer = data_serializer_factory(data_type=converted_value_data_type, value=converted_value)
-        self.converted_value_sha256 = converted_serializer.get_sha256()
+        self._converted_value_sha256 = converted_serializer.get_sha256()
 
         if response_error not in get_args(PromptResponseError):
             raise ValueError(f"response_error {response_error} is not a valid response error.")
 
         self.response_error = response_error
         self.originator = originator
+
+    @property
+    def converted_value(self) -> str:
+        return self._converted_value
+
+    @converted_value.setter
+    def converted_value(self, value: str):
+        self._converted_value = value
+        converted_serializer = data_serializer_factory(data_type=self.converted_value_data_type, value=value)
+        self._converted_value_sha256 = converted_serializer.get_sha256()
+
+    @property
+    def converted_value_sha256(self):
+        return self._converted_value_sha256
+
+    @property
+    def original_value(self) -> str:
+        return self._original_value
+
+    @original_value.setter
+    def original_value(self, value: str):
+        self._original_value = value
+        original_serializer = data_serializer_factory(data_type=self.original_value_data_type, value=value)
+        self._original_value_sha256 = original_serializer.get_sha256()
+
+    @property
+    def original_value_sha256(self):
+        return self._original_value_sha256
 
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=self.role, content=self.converted_value)
