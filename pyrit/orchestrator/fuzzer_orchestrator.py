@@ -161,6 +161,7 @@ class FuzzerOrchestrator(Orchestrator):
             prompt_node.index = i
 
        #set the default seed_converter. Seed_converter= Optional[list[PromptConverter]] the list can have stacked converter. But stacked converters are not allowed. Fix this.
+        #the fuzzer paper says fuzzing will be effective if we use all the mutators for fuzzing (page 14: Mutator).They are randomly selecting the mutator at each iteration. Should we follow the same?
         if seed_converter is None:
             seed_converter = self.DEFAULT_SEED_CONVERTER
         else:
@@ -293,7 +294,9 @@ class FuzzerOrchestrator(Orchestrator):
         
         """Function to compute the score for each seed. The highest-scoring seed will be selected as the next seed.  
         
-         This computation is based on UCB (Upper Confidence Bound) algorithm. It uses uncertainity in the estimates to drive exploration."""
+         This is an extension of the Monte-carlo tree search algorithm which applies Upper Confidence Bound (UCB) to the node. 
+         
+         UCB function determines the confidence interval for each node and returns the highest value which will be selected as next seed."""
         
         return lambda pn:
                     self._rewards[pn._index] / (pn._visited_num + 1) +  #seed's average reward
