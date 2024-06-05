@@ -50,6 +50,7 @@ class MockPromptConverter(PromptConverter):
         return input_type == "text"
 
 
+<<<<<<< HEAD
 @pytest.mark.asyncio
 async def test_send_prompt_async_multiple_converters(normalizer_piece: NormalizerRequestPiece):
     prompt_target = MockPromptTarget()
@@ -64,6 +65,8 @@ async def test_send_prompt_async_multiple_converters(normalizer_piece: Normalize
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
 
+=======
+>>>>>>> main
 @pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory(normalizer_piece: NormalizerRequestPiece):
     prompt_target = MockPromptTarget()
