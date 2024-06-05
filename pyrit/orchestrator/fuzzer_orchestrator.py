@@ -233,13 +233,18 @@ class FuzzerOrchestrator(Orchestrator):
             )
             
             #5. Apply scorer on the response and based on the scorer return if jailbreak successful or not.
-            #true/false
-            #datasets/score/true_false_question/current_events.yaml ?????? todo: Have to create a .yaml file
+            #true/false or categoryscorer
+            #datasets/score/content_classifiers/content_classifier_system_prompt.yaml ?????? todo: can we use the same yaml file? refusal message ""I'm Sorry, I can't help you with that" can be expanded.
+
+            content_classifier = SelfAskCategoryScorer( # change the path
+                             content_classifier=ContentClassifierPaths.CONTENT_CLASSIFIER_SYSTEM_PROMPT.value, chat_target=self._prompt_target
+                             )
+            scored_response = await content_classifier.score_async(text=response_piece) 
             
-            true_false_classifier = SelfAskTrueFalseScorer( # change the path
-                            true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
-                            )
-            scored_response = await true_false_classifier.score_async(text=response_piece) 
+            # true_false_classifier = SelfAskTrueFalseScorer( # change the path
+            #                 true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
+            #                 )
+            # scored_response = await true_false_classifier.score_async(text=response_piece) 
 
             #6. Update the rewards for each of the node.
             
