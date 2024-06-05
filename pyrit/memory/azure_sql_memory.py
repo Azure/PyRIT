@@ -26,24 +26,17 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     and session management to perform database operations.
     """
 
-    SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
-
     def __init__(
         self,
         *,
         connection_string: str,
-        auth_token: str = '',
         verbose: bool = False
     ):
         super(AzureSQLMemory, self).__init__()
 
         self._connection_string = connection_string
-        self._auth_token = auth_token
 
         self.engine = self._create_engine(has_echo=verbose)
-
-        if auth_token:
-            self._enable_azure_authorization()
 
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
@@ -67,22 +60,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         else:
             logger.info(f"Engine created successfully for database: {self._connection_string}")
             return engine
-
-    def _enable_azure_authorization(self) -> None:
-        # TODO: investigate integrating this with the `azure_auth` module, enabling us to use refresh tokens, etc.
-
-        @event.listens_for(self.engine, "do_connect")
-        def provide_token(_dialect, _conn_rec, cargs, cparams):
-            # remove the "Trusted_Connection" parameter that SQLAlchemy adds
-            cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
-
-            # encode the token
-            azure_token = self._auth_token
-            azure_token_bytes = azure_token.encode("utf-16-le")
-            packed_azure_token = struct.pack(f"<I{len(azure_token_bytes)}s", len(azure_token_bytes), azure_token_bytes)
-
-            # add the encoded token
-            cparams["attrs_before"] = {self.SQL_COPT_SS_ACCESS_TOKEN: packed_azure_token}
 
     def _create_tables_if_not_exist(self):
         """
