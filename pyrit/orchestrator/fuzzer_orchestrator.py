@@ -167,40 +167,47 @@ class FuzzerOrchestrator(Orchestrator):
         else:
             seed_converter = self._seed_converter
 
-        async def _execute_fuzzer(
+        async def execute_fuzzer(
         self, *, initial_seed: list[str] = None
         ) -> PromptRequestPiece:
-            """Send the initial seed to the MCTS-explore to select a seed at each iteration
+            
+            """#Steps:
+            #1. select a seed - Send the initial seed to the MCTS-explore to select a seed at each iteration
+            
+            #2. apply prompt converter
+            
+            #3. append prompt(questions in GPTFuzzer) with the selected template(seed). For each selected template append all the questions
+            
+            #4. send it to target and get a response
+            
+            #5. if jailbreak is successful then retain the template in seed pool.
+            
+            #6. Update the rewards for each of the node. update()
 
             Args:
                 initial seed: A list of the initial jailbreak templates that needs to be sent to the MCTS algorithm. 
 
             """
         
-            #Steps:
-            #1. select a seed
-            #2. apply prompt converter
-            #3. append prompt(questions in GPTFuzzer) with the selected template(seed). For each selected template append all the questions
-            #4. send it to target and get a response
-            #5. if jailbreak is successful then retain the template in seed pool. 
-            #6. Update the rewards for each of the node. update()
-
             # 1. Select a seed from the list of the templates using the MCTS
+            
             current_seed = await self._get_seed(initial_seed=initial_seed)
 
             #2. apply prompt converter to the selected template. Apply seed converter.
+            
             target_seed_obj = await self._seed_converter.convert_async(prompt = current_seed)
             target_template = PromptTemplate(target_seed_obj.output_text)
 
             #3. append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
-            #step1: builds a new prompt with the current selected template
+            
              jailbreak_prompts = []
              for prompt in attack_content:
                 jailbreak_prompts.append(
                     target_template.apply_custom_metaprompt_parameters(prompt=prompt) 
                 )
 
-            #4. Apply prompt converter if any and Send request to a target 
+            #4. Apply prompt converter if any and send request to a target 
+            
               requests: list[NormalizerRequest] = []
               for jailbreak_prompt in jailbreak_prompts:
                   requests.append(
@@ -223,20 +230,19 @@ class FuzzerOrchestrator(Orchestrator):
                 batch_size=self._batch_size, 
                 )
             )
-
             
             #5. Todo: Apply scorer on the response and based on the scorer return if jailbreak successful or not.
             #true/false
             #datasets/score/true_false_question/current_events.yaml ?????? Have to create a .yaml file
+            
             true_false_classifier = SelfAskTrueFalseScorer( # change the path
                             true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
                             )
             scored_response = await true_false_classifier.score_async(text=response_piece) 
 
-            #6. Update the rewards for each of the node. 
-            _update(PromptNode) #fix this # todo have to update the rewards by calling _update(). Alos update the nodes based on the successful jailbreaks.
-
-
+            #6. Update the rewards for each of the node.
+            
+            _update(PromptNode) #fix this # todo have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
 
 
         def _get_seed(self, initial_seed) -> PromptNode:
@@ -278,7 +284,9 @@ class FuzzerOrchestrator(Orchestrator):
             return current # returns the best child
 
     def _bestUCT_score(self):
+        
         """Function to compute the score for each seed. The highest-scoring seed will be selected as the next seed.  
+        
          This computation is based on UCB (Upper Confidence Bound) algorithm. It uses uncertainity in the estimates to drive exploration."""
         
         return lambda pn:
