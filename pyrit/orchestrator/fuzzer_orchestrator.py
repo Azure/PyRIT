@@ -5,7 +5,6 @@ import logging
 import numpy as np
 from typing import Optional, Union, Dict, Any
 from uuid import uuid4
-from PIL import Image
 from colorama import Fore, Style
 
 from pyrit.common.notebook_utils import is_in_ipython_session
