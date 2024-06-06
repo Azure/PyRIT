@@ -34,9 +34,8 @@ class TextTarget(PromptTarget):
         await asyncio.sleep(0)
 
         self._text_stream.write(f"{str(prompt_request)}\n")
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
-        return prompt_request
+        return None
 
     def import_scores_from_csv(self, csv_file_path: Path) -> list[PromptRequestPiece]:
 

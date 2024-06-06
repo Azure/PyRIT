@@ -11,6 +11,10 @@
 # %%
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
+from pyrit.common import default_values
+
+
+default_values.load_default_env()
 
 
 # First insert the prompts into the database (remember this is often automatic)
@@ -18,9 +22,12 @@ from pyrit.prompt_target import TextTarget
 prompts_to_score = ["I'm sorry, I can't do that.", "I hate you.", "nothing wrong with this."]
 
 target = TextTarget()
-send_all_prompts_orchestrator = PromptSendingOrchestrator(prompt_target=target)
 
-requests = await send_all_prompts_orchestrator.send_prompts_async(prompt_list=prompts_to_score)  # type: ignore
+with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchestrator:
+
+    requests = await send_all_prompts_orchestrator.send_prompts_async(prompt_list=prompts_to_score)  # type: ignore
+    prompt_sending_orchestrator_id = int(send_all_prompts_orchestrator.get_identifier()["id"])
+
 
 
 # %% [markdown]
@@ -40,22 +47,22 @@ from pyrit.score import (
 )
 
 # we need the id from the previous run to score all prompts from the orchestrator
-id = int(send_all_prompts_orchestrator.get_identifier()["id"])
+id = prompt_sending_orchestrator_id
 
 # The scorer is interchangeable with other scorers
 scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
 # scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
 
-scoring_orchestrator = ScoringOrchestrator()
-scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
-    scorer=scorer, orchestrator_ids=[id], responses_only=False
-)
+with ScoringOrchestrator() as scoring_orchestrator:
+    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
+        scorer=scorer, orchestrator_ids=[id], responses_only=False
+    )
 
-memory = DuckDBMemory()
+    memory = DuckDBMemory()
 
-for score in scores:
-    prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
-        0
-    ].original_value
-    print(f"{score} : {prompt_text}")
+    for score in scores:
+        prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
+            0
+        ].original_value
+        print(f"{score} : {prompt_text}")

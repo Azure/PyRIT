@@ -11,6 +11,7 @@ from enum import Enum
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
@@ -118,12 +119,14 @@ class AzureBlobStorageTarget(PromptTarget):
         data = str.encode(request.converted_value)
         blob_url = self._container_url + "/" + file_name
 
-        request.converted_value = blob_url
-        request.converted_value_data_type = "url"
-
         await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        return PromptRequestResponse([request])
+        response = construct_response_from_request(
+            request=request,
+            response_text_pieces=[blob_url],
+            response_type="url")
+
+        return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
