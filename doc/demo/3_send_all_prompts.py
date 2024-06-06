@@ -3,6 +3,9 @@
 # This demo is about when you have a list of prompts you want to try against a target. It includes the ways you can send the prompts,
 # how you can modify the prompts, and how you can view results. Before starting, import the necessary libraries.
 #
+# Before starting, confirm that you have the
+# [correct version of PyRIT installed](../setup/install_pyrit.md).
+#
 # The first example is as simple as it gets.
 
 # %%
