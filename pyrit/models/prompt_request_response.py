@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Optional
+
 from pyrit.models import PromptRequestPiece
 from pyrit.models.literals import PromptDataType, PromptResponseError
 
