@@ -122,9 +122,8 @@ class AzureBlobStorageTarget(PromptTarget):
         await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
         response = construct_response_from_request(
-            request=request,
-            response_text_pieces=[blob_url],
-            response_type="url")
+            request=request, response_text_pieces=[blob_url], response_type="url"
+        )
 
         return response
 

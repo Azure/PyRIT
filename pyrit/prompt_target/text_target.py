@@ -25,7 +25,6 @@ class TextTarget(PromptTarget):
 
     def __init__(self, *, text_stream: IO[str] = sys.stdout, memory: MemoryInterface = None) -> None:
         super().__init__(memory=memory)
-        self.stream_name = text_stream.name
         self._text_stream = text_stream
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
@@ -34,6 +33,7 @@ class TextTarget(PromptTarget):
         await asyncio.sleep(0)
 
         self._text_stream.write(f"{str(prompt_request)}\n")
+        self._text_stream.flush()
 
         return None
 

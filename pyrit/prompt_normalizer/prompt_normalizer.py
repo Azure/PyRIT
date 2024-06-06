@@ -144,7 +144,6 @@ class PromptNormalizer(abc.ABC):
                 ):
                     continue
 
-
                 if (
                     converter_configuration.prompt_data_types_to_apply is not None
                     and response_piece.original_value_data_type

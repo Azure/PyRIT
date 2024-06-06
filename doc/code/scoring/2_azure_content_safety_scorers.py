@@ -45,4 +45,3 @@ assert azure_content_filter.get_azure_severity(scores[0].get_value()) > 1  # sho
 
 for score in scores:
     print(score)
-
