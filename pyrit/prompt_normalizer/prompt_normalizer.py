@@ -133,17 +133,17 @@ class PromptNormalizer(abc.ABC):
         response_converter_configurations: list[PromptResponseConverterConfiguration],
         prompt_response: PromptRequestResponse,
     ):
-        index = 0
 
+        response_piece_index = 0
         for response_piece in prompt_response.request_pieces:
+
             for converter_configuration in response_converter_configurations:
                 if (
                     converter_configuration.indexes_to_apply is not None
-                    and index not in converter_configuration.indexes_to_apply
+                    and response_piece_index not in converter_configuration.indexes_to_apply
                 ):
                     continue
 
-                index += 1
 
                 if (
                     converter_configuration.prompt_data_types_to_apply is not None
@@ -158,6 +158,8 @@ class PromptNormalizer(abc.ABC):
                     )
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
+
+            response_piece_index += 1
 
     def _chunked_prompts(self, prompts, size):
         for i in range(0, len(prompts), size):
