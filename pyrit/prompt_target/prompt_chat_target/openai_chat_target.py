@@ -39,7 +39,6 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
-
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
@@ -59,9 +58,7 @@ class OpenAIChatInterface(PromptChatTarget):
             )
 
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
-            response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[resp_text]
-            )
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
         except BadRequestError as bre:
             response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
 
@@ -135,7 +132,6 @@ class OpenAIChatInterface(PromptChatTarget):
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason}")
         return extracted_response
-
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:

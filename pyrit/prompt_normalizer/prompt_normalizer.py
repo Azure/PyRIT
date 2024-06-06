@@ -74,8 +74,7 @@ class PromptNormalizer(abc.ABC):
             return
 
         await self.convert_response_values(
-            response_converter_configurations=normalizer_request.response_converters,
-            prompt_response=response
+            response_converter_configurations=normalizer_request.response_converters, prompt_response=response
         )
 
         self._memory.add_request_response_to_memory(request=response)
@@ -128,22 +127,27 @@ class PromptNormalizer(abc.ABC):
         return results
 
     async def convert_response_values(
-            self,
-            response_converter_configurations: list[PromptResponseConverterConfiguration],
-            prompt_response: PromptRequestResponse
+        self,
+        response_converter_configurations: list[PromptResponseConverterConfiguration],
+        prompt_response: PromptRequestResponse,
     ):
         index = 0
 
         for response_piece in prompt_response.request_pieces:
             for converter_configuration in response_converter_configurations:
-                if converter_configuration.indexes_to_apply is not None and \
-                    index not in converter_configuration.indexes_to_apply:
+                if (
+                    converter_configuration.indexes_to_apply is not None
+                    and index not in converter_configuration.indexes_to_apply
+                ):
                     continue
 
                 index += 1
 
-                if converter_configuration.prompt_data_types_to_apply is not None and \
-                    response_piece.original_value_data_type not in converter_configuration.prompt_data_types_to_apply:
+                if (
+                    converter_configuration.prompt_data_types_to_apply is not None
+                    and response_piece.original_value_data_type
+                    not in converter_configuration.prompt_data_types_to_apply
+                ):
                     continue
 
                 for converter in converter_configuration.converters:
@@ -152,7 +156,6 @@ class PromptNormalizer(abc.ABC):
                     )
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
-
 
     def _chunked_prompts(self, prompts, size):
         for i in range(0, len(prompts), size):
@@ -195,7 +198,7 @@ class PromptNormalizer(abc.ABC):
             converted_prompt_text, converted_prompt_type = await self._get_converterd_value_and_type(
                 request_converters=request_piece.request_converters,
                 prompt_value=request_piece.prompt_value,
-                prompt_data_type=request_piece.prompt_data_type
+                prompt_data_type=request_piece.prompt_data_type,
             )
 
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
@@ -219,11 +222,11 @@ class PromptNormalizer(abc.ABC):
         return PromptRequestResponse(request_pieces=entries)
 
     async def _get_converterd_value_and_type(
-            self,
-            request_converters: list[PromptConverter],
-            prompt_value: str,
-            prompt_data_type: PromptDataType,
-        ):
+        self,
+        request_converters: list[PromptConverter],
+        prompt_value: str,
+        prompt_data_type: PromptDataType,
+    ):
         converted_prompt_value = prompt_value
         converted_prompt_type = prompt_data_type
 

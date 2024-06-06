@@ -312,7 +312,6 @@ class RedTeamingOrchestrator(Orchestrator):
                 labels=self._global_memory_labels,
             )
 
-
         response_text = (
             (
                 await self._prompt_normalizer.send_prompt_async(
@@ -326,7 +325,6 @@ class RedTeamingOrchestrator(Orchestrator):
             .request_pieces[0]
             .converted_value
         )
-
 
         return response_text
 

@@ -8,7 +8,7 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.memory.memory_models import EmbeddingData
-from pyrit.models import PromptRequestResponse, Score, PromptRequestPiece, PromptResponseError, PromptDataType
+from pyrit.models import PromptRequestResponse, Score, PromptRequestPiece
 
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
 from pyrit.memory.memory_embedding import MemoryEmbedding

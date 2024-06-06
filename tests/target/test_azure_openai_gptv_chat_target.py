@@ -213,33 +213,6 @@ def test_build_chat_messages_with_unsupported_data_types(azure_gptv_chat_engine:
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_adds_to_memory(azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget):
-    mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
-
-    azure_gptv_chat_engine._memory = mock_memory
-
-    mock_complete_chat_async = AsyncMock(return_value="Mock response text")
-
-    mock_complete_chat_async = AsyncMock(return_value="Mock response text")
-    setattr(azure_gptv_chat_engine, "_complete_chat_async", mock_complete_chat_async)
-
-    prompt_request = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", conversation_id="123", original_value="Hello")]
-    )
-
-    result = await azure_gptv_chat_engine.send_prompt_async(prompt_request=prompt_request)
-
-    azure_gptv_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
-    azure_gptv_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-    azure_gptv_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
-
-    assert result is not None, "Expected a result but got None"
-
-
-@pytest.mark.asyncio
 async def test_send_prompt_async_empty_response_adds_to_memory(
     azure_openai_mock_return: ChatCompletion, azure_gptv_chat_engine: AzureOpenAIGPTVChatTarget
 ):

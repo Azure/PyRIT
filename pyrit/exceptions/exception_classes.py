@@ -10,9 +10,7 @@ from openai import RateLimitError
 from typing import Callable
 
 from pyrit.common.constants import RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS, RETRY_MAX_NUM_ATTEMPTS
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, construct_response_from_request
 
 
 logger = logging.getLogger(__name__)
@@ -56,9 +54,7 @@ class EmptyResponseException(BadRequestException):
         super().__init__(status_code=status_code, message=message)
 
 
-def handle_bad_request_exception(
-    response_text: str, request: PromptRequestPiece
-) -> PromptRequestResponse:
+def handle_bad_request_exception(response_text: str, request: PromptRequestPiece) -> PromptRequestResponse:
 
     if "content_filter" in response_text:
         # Handle bad request error when content filter system detects harmful content

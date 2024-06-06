@@ -96,7 +96,6 @@ class DALLETarget(PromptTarget):
             target_kwargs["api_key"] = api_key
         self._image_target = AzureOpenAIChatTarget(**target_kwargs)
 
-
     async def send_prompt_async(
         self,
         *,

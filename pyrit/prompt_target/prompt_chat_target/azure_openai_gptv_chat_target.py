@@ -161,9 +161,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
             response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
         except BadRequestError as bre:
-            response_entry = handle_bad_request_exception(
-                memory=self._memory, response_text=bre.message, request=request
-            )
+            response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
         except Exception as ex:
             construct_response_from_request(
                 request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"

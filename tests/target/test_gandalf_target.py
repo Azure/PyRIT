@@ -44,26 +44,3 @@ async def test_gandalf_validate_prompt_type(
     request = PromptRequestResponse(request_pieces=[request_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await gandalf_target.send_prompt_async(prompt_request=request)
-
-
-@pytest.mark.asyncio
-async def test_gandalf_send_prompt_adds_memory_async(
-    gandalf_target: GandalfTarget, sample_conversations: list[PromptRequestPiece]
-) -> None:
-
-    mock_memory = MagicMock()
-    gandalf_target._memory = mock_memory
-    request_piece = sample_conversations[0]
-    request_piece.conversation_id = str(uuid.uuid4())
-    request = PromptRequestResponse(request_pieces=[request_piece])
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        return_value = MagicMock()
-        return_value.content = "input data"
-        mock_request.return_value = return_value
-
-        await gandalf_target.send_prompt_async(prompt_request=request)
-
-        assert mock_memory.add_request_response_to_memory.called, "Request and Response need to be added to memory"
-        assert mock_memory.add_response_entries_to_memory.called, "Request and Response need to be added to memory"

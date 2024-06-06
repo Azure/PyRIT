@@ -16,6 +16,7 @@ class PromptResponseConverterConfiguration:
     indexes_to_apply are which pieces to apply to. By default, all indexes are applied.
     prompt_data_types_to_apply are the types of the responses to apply the converters.
     """
+
     converters: list[PromptConverter]
     indexes_to_apply: list[int] = None
     prompt_data_types_to_apply: list[PromptDataType] = None

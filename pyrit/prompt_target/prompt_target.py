@@ -27,7 +27,6 @@ class PromptTarget(abc.ABC, Identifier):
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
 
-
     @abc.abstractmethod
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """

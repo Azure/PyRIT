@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pathlib import Path
 from unittest.mock import patch, MagicMock, AsyncMock
 import uuid
 import os
@@ -47,14 +48,24 @@ def test_initialization_invalid_num_images():
         )
 
 
-@patch("pyrit.prompt_target.dall_e_target.DALLETarget._generate_images_async")
 @pytest.mark.asyncio
-async def test_send_prompt_async(mock_image, dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
+async def test_send_prompt_async(dalle_target: DALLETarget, sample_conversations: list[PromptRequestPiece]):
     request = sample_conversations[0]
-    request.conversation_id = str(uuid.uuid4())
-    mock_image.return_value = {"data": [{"b64_json": "mock_json"}]}
-    resp = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
-    assert resp
+
+    with patch(
+        "pyrit.prompt_target.dall_e_target.DALLETarget._generate_image_response_async", new_callable=AsyncMock
+    ) as mock_gen_img:
+        mock_gen_img.return_value = "aGVsbG8="
+        resp = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
+        assert resp
+        path = resp.request_pieces[0].original_value
+        assert os.path.isfile(path)
+
+        with open(path, "r") as file:
+            data = file.read()
+            assert data == "hello"
+
+        os.remove(path)
 
 
 @pytest.mark.asyncio
@@ -157,30 +168,6 @@ async def test_dalle_send_prompt_file_save_async() -> None:
         assert data == b"test image data"
 
     os.remove(file_path)
-
-
-@pytest.mark.asyncio
-async def test_dalle_send_prompt_adds_memory_async() -> None:
-
-    mock_memory = MagicMock()
-
-    request = PromptRequestPiece(
-        role="user",
-        original_value="draw me a test picture",
-    ).to_prompt_request_response()
-
-    mock_return = MagicMock()
-
-    # "test image data" b64 encoded
-    mock_return.model_dump_json.return_value = '{"data": [{"b64_json": "dGVzdCBpbWFnZSBkYXRh"}]}'
-
-    mock_dalle_target = DALLETarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
-    mock_dalle_target._image_target._async_client.images = MagicMock()
-    mock_dalle_target._image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
-
-    await mock_dalle_target.send_prompt_async(prompt_request=request)
-    assert mock_memory.add_request_response_to_memory.called, "Request and Response need to be added to memory"
-    assert mock_memory.add_response_entries_to_memory.called, "Request and Response need to be added to memory"
 
 
 @pytest.mark.asyncio

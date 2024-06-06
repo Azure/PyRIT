@@ -136,8 +136,3 @@ async def test_send_prompt_async(
 
     assert blob_url.__contains__(azure_blob_storage_target._container_url)
     assert blob_url.__contains__(".txt")
-
-    chats = azure_blob_storage_target._memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
-    assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
-    assert chats[0].role == "user"
-    assert azure_blob_storage_target._container_url in chats[0].converted_value
