@@ -115,7 +115,7 @@ def construct_response_from_request(
     request: PromptRequestPiece,
     response_text_pieces: list[str],
     response_type: PromptDataType = "text",
-    prompt_metadata: str = None,
+    prompt_metadata: Optional[str] = None,
     error: PromptResponseError = "none",
 ) -> PromptRequestResponse:
     """
