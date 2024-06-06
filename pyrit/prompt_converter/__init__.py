@@ -18,6 +18,7 @@ from pyrit.prompt_converter.variation_converter import VariationConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
 from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
+from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "AzureSpeechTextToAudioConverter",
     "SuffixAppendConverter",
     "RepeatTokenConverter",
+    "CodeChameleonConverter",
 ]
