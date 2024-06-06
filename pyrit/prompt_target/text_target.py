@@ -10,8 +10,7 @@ import sys
 from typing import IO
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 
 

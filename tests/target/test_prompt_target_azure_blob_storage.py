@@ -124,7 +124,6 @@ async def test_send_prompt_async(
 ):
     mock_upload_async.return_value = None
     request_piece = sample_entries[0]
-    conversation_id = request_piece.conversation_id
     request_piece.converted_value = __name__
     request = PromptRequestResponse([request_piece])
 

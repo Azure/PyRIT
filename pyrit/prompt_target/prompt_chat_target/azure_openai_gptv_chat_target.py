@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 import json
 
@@ -13,14 +11,12 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.exceptions.exception_classes import PyritException, handle_bad_request_exception
+from pyrit.exceptions import PyritException, EmptyResponseException
+from pyrit.exceptions import handle_bad_request_exception, pyrit_retry
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessageListContent
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models import ChatMessageListContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
+from pyrit.models import data_serializer_factory, construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.exceptions import EmptyResponseException, pyrit_retry
 
 logger = logging.getLogger(__name__)
 

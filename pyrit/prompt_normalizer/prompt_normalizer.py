@@ -8,13 +8,12 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.models.literals import PromptDataType
-from pyrit.models.prompt_request_response import construct_response_from_request
-from pyrit.prompt_converter.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
-from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptTarget
+
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
 
 
 class PromptNormalizer(abc.ABC):
@@ -65,13 +64,16 @@ class PromptNormalizer(abc.ABC):
             response = await target.send_prompt_async(prompt_request=request)
         except Exception as ex:
             request = construct_response_from_request(
-                request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"
+                request=request.request_pieces[0],
+                response_text_pieces=[str(ex)],
+                response_type="error",
+                error="processing",
             )
             self._memory.add_request_response_to_memory(request=request)
             raise
 
         if response is None:
-            return
+            return None
 
         await self.convert_response_values(
             response_converter_configurations=normalizer_request.response_converters, prompt_response=response

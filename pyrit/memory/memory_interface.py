@@ -7,15 +7,18 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.memory.memory_models import EmbeddingData
-from pyrit.models import PromptRequestResponse, Score, PromptRequestPiece
-
-from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.memory.memory_embedding import MemoryEmbedding
-from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
-from pyrit.models import group_conversation_request_pieces_by_sequence
+from pyrit.models import (
+    ChatMessage,
+    PromptRequestResponse,
+    Score,
+    PromptRequestPiece,
+    group_conversation_request_pieces_by_sequence,
+)
+
+from pyrit.memory.memory_models import EmbeddingData
+from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
+from pyrit.memory.memory_exporter import MemoryExporter
 
 
 class MemoryInterface(abc.ABC):

@@ -1,14 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import asyncio
-import concurrent.futures
+
 import logging
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestResponse
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)

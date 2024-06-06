@@ -2,8 +2,6 @@
 # Licensed under the MIT license.
 
 
-from unittest.mock import AsyncMock, MagicMock, patch
-import uuid
 import pytest
 
 from pyrit.prompt_target import GandalfLevel

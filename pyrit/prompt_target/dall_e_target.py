@@ -3,22 +3,15 @@
 import json
 import logging
 import pathlib
-import concurrent.futures
-import asyncio
-from typing import Literal, Optional, Dict, Any
 
+from typing import Literal, Optional, Dict, Any
 from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
-from pyrit.exceptions import EmptyResponseException, pyrit_retry
-from pyrit.exceptions.exception_classes import handle_bad_request_exception
+from pyrit.exceptions import EmptyResponseException, pyrit_retry, handle_bad_request_exception
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestResponse, data_serializer_factory
-from pyrit.models.literals import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import construct_response_from_request
-from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
+from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
+from pyrit.prompt_target import AzureOpenAIChatTarget, PromptTarget
 
 logger = logging.getLogger(__name__)
 

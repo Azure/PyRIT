@@ -9,7 +9,7 @@ import logging
 from pyrit.common import net_utility
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptTarget
 
 

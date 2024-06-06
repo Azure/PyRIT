@@ -1,15 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pathlib import Path
 from unittest.mock import patch, MagicMock, AsyncMock
 import uuid
 import os
-from pyrit.exceptions.exception_classes import EmptyResponseException
 import pytest
 
 from openai import BadRequestError, RateLimitError
 
+from pyrit.exceptions.exception_classes import EmptyResponseException
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import DALLETarget

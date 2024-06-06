@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
 from dataclasses import dataclass
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter

@@ -11,12 +11,11 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.exceptions import EmptyResponseException, pyrit_retry
-from pyrit.exceptions.exception_classes import PyritException, handle_bad_request_exception
-
+from pyrit.exceptions import EmptyResponseException, PyritException
+from pyrit.exceptions import pyrit_retry, handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)

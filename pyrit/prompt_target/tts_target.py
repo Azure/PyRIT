@@ -1,16 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 from typing import Literal
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models import data_serializer_factory, construct_response_from_request
 from pyrit.prompt_target import PromptTarget
 
 from pyrit.common import net_utility

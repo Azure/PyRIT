@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 
 from azure.core.exceptions import ClientAuthenticationError

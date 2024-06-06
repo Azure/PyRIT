@@ -5,8 +5,7 @@ import abc
 import logging
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestResponse
-from pyrit.models.identifiers import Identifier
+from pyrit.models import PromptRequestResponse, Identifier
 
 logger = logging.getLogger(__name__)
 
