@@ -40,7 +40,7 @@ class PromptNode:
         self._visited_num = 0
 
         self._parent: 'PromptNode' = parent
-        self._child: 'list[PromptNode]' = []
+        self._children: 'list[PromptNode]' = []
         self._level: int = 0 if parent is None else parent.level + 1
 
         self._index: int = None
@@ -53,7 +53,7 @@ class PromptNode:
     def _index(self, index: int):
         self._index = index
         if self._parent is not None:
-            self._parent._child.append(self)
+            self._parent._children.append(self)
 
     @property
     def _num_jailbreak(self):
@@ -70,16 +70,16 @@ class PromptNode:
 class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
-    DEFAULT_SEED_CONVERTER = "shorten/expand" # fix this which one of this should be the default converter if the user given option is None?
+    DEFAULT_TEMPLATE_CONVERTER = "shorten/expand" # fix this which one of this should be the default converter if the user given option is None?
 
     def __init__(
         self,
         *,
         attack_content: list[str],   #questions in GPTFuzzer
         prompt_target: PromptTarget,
-        initial_seed: list[str], # list of all the jailbreak prompts on which MCTS will be applied.
+        prompt_templates: list[str], # list of all the jailbreak prompts on which MCTS will be applied.
         prompt_converters: Optional[list[PromptConverter]] = None,
-        seed_converter: Optional[list[PromptConverter]] = None, # shorten/expand 
+        template_converter: Optional[list[PromptConverter]] = None, # shorten/expand 
         scorer: Scorer,
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
@@ -103,7 +103,7 @@ class FuzzerOrchestrator(Orchestrator):
             
             prompt_target: The target to send the prompts to.
             
-            initial_seed: List of all the jailbreak templates which will act as the seed pool. 
+            prompt_templates: List of all the jailbreak templates which will act as the seed pool. 
             At each iteration, a seed will be selected using the MCTS-explore algorithm which will be sent to the 
             shorten/expand prompt converter.
             
@@ -112,7 +112,7 @@ class FuzzerOrchestrator(Orchestrator):
             prompt_converters: The prompt_converters to use to convert the prompts before sending 
             them to the prompt target. 
             
-            seed_converter: The converter that will be applied on the jailbreak template that was 
+            template_converter: The converter that will be applied on the jailbreak template that was 
             selected by MCTS-explore. 
             
                           The prompt converters will not be applied to the attack_content. 
@@ -128,6 +128,12 @@ class FuzzerOrchestrator(Orchestrator):
             
             verbose: Whether to print debug information.
 
+            ratio: constant that balances between the seed with high reward and the seed that is selected fewer times.
+
+            alpha: Reward penalty. Reward penalty diminishes the reward for the current node and its ancestors when the path lengthens.
+
+            beta: Minimal reward. Minimal reward prevents the reward of the current node and its ancestors from being too small or negative.
+
         """
 
         self._prompt_target = prompt_target
@@ -138,15 +144,15 @@ class FuzzerOrchestrator(Orchestrator):
         self._prompt_target_conversation_id = str(uuid4())
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._memory = self._memory
-        self._initial_seed = initial_seed
-        self._seed_converter = seed_converter
+        self._prompt_templates = prompt_templates
+        self._template_converter = template_converter
         self._ratio = ratio  # balance between exploration and exploitation
         self._alpha = alpha  # penalty for level
         self._beta = beta   # minimal reward after penalty
         self._initial_prompts_nodes = self._prompt_nodes.copy()
         
         
-        if not self._initial_seed:
+        if not self._prompt_templates:
             raise ValueError("The initial seed cannot be empty.")
         
         if scorer.scorer_type != "true_false":
@@ -154,38 +160,39 @@ class FuzzerOrchestrator(Orchestrator):
         self._scorer = scorer
 
         self._prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
-            PromptNode(self, prompt) for prompt in initial_seed 
+            PromptNode(self, prompt) for prompt in prompt_templates 
         ]
 
         for i, prompt_node in enumerate(self._prompt_nodes):
             prompt_node.index = i
 
-       #set the default seed_converter. Seed_converter= Optional[list[PromptConverter]] the list can have stacked converter. But stacked converters are not allowed. Fix this.
+       #set the default template_converter. Template_converter= Optional[list[PromptConverter]] the list can have stacked converter. But stacked converters are not allowed. Fix this.
         #the fuzzer paper says fuzzing will be effective if we use all the mutators for fuzzing (page 14: Mutator).They are randomly selecting the mutator at each iteration. Should we follow the same?
-        if seed_converter is None:
-            seed_converter = self.DEFAULT_SEED_CONVERTER
+        if template_converter is None:
+            template_converter = self.DEFAULT_TEMPLATE_CONVERTER
         else:
-            seed_converter = self._seed_converter
+            template_converter = self._template_converter
 
         async def execute_fuzzer(
-        self, *, initial_seed: list[str] = None
+        self, *, prompt_templates: list[str] = None
         ) -> PromptRequestPiece:
             
-            """#Steps:
-            #1. Select a seed - Send the initial seed to the MCTS-explore to select a seed at each iteration
+            """
+            Steps:
+            1. Select a template - Send the prompt templates to the MCTS-explore to select a template at each iteration
             
-            #2. Apply seed converter
+            2. Apply template converter
             
-            #3. append prompt(questions in GPTFuzzer) with the selected template(seed). For each selected template append all the questions
+            3. Append prompt with the selected template. For each selected template append all the prompts.
             
-            #4. Apply prompt converters if any and send it to target and get a response
+            4. Apply prompt converters if any and send it to target and get a response
             
-            #5. If jailbreak is successful then retain the template in seed pool.
+            5. If jailbreak is successful then retain the template in template pool.
             
-            #6. Update the rewards for each of the node. update()
+            6. Update the rewards for each of the node. update()
 
             Args:
-                initial seed: A list of the initial jailbreak templates that needs to be sent to the MCTS algorithm. 
+                prompt_templates: A list of the initial jailbreak templates that needs to be sent to the MCTS algorithm. 
 
             """
             # todo: define the stopping criteria. In the fuzzer paper, their stopping criteria is based on max_query(defaults to 1000, user can also specify), max_jailbreak(defaults to 1, user can specify), 
@@ -193,11 +200,11 @@ class FuzzerOrchestrator(Orchestrator):
             
             # 1. Select a seed from the list of the templates using the MCTS
             
-            current_seed = await self._get_seed(initial_seed=initial_seed)
+            current_seed = await self._get_seed(prompt_templates=prompt_templates)
 
             #2. Apply seed converter to the selected template.
             
-            target_seed_obj = await self._seed_converter.convert_async(prompt = current_seed)
+            target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
             target_template = PromptTemplate(target_seed_obj.output_text)
 
             #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
@@ -252,7 +259,7 @@ class FuzzerOrchestrator(Orchestrator):
             _update(PromptNode) #fix this # todo: have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
 
 
-        def _get_seed(self, initial_seed) -> PromptNode:
+        def _get_seed(self, prompt_templates) -> PromptNode:
             self._step = 0 # to keep track of the steps or the count
             self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
             self._last_choice_index = None
@@ -271,16 +278,16 @@ class FuzzerOrchestrator(Orchestrator):
             self._mctc_select_path.clear()
             current = max(  #initial path
                 self._initial_prompts_nodes,
-                key= _bestUCT_score(self)
+                key= self._bestUCT_score()
             )
             self.mctc_select_path.append(current)
 
-            while len(current._child) > 0: # while node is not a leaf 
+            while len(current._children) > 0: # while node is not a leaf 
                 if np.random.rand() < self.alpha:
                     break
                 current = max(   #compute the bestUCT score
-                    current._child,
-                    key= _bestUCT_score(self)
+                    current._children,
+                    key= self._bestUCT_score()
                 )
                 self._mctc_select_path.append(current) # append node to path
 
