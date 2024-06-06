@@ -58,12 +58,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         try:
             # Create the SQLAlchemy engine.
             engine = create_engine(self._connection_string, echo=has_echo)
+            logger.info(f"Engine created successfully for database: {engine.name}")
+            return engine
         except SQLAlchemyError as e:
             logger.exception(f"Error creating the engine for the database: {e}")
             raise
-        else:
-            logger.info(f"Engine created successfully for database: {self._connection_string}")
-            return engine
 
     def _create_tables_if_not_exist(self):
         """
