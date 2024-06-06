@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import EmbeddingData, Base, PromptMemoryEntry
+from pyrit.memory.memory_models import EmbeddingData, Base, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import Score
@@ -133,7 +133,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
     def add_scores_to_memory(self, *, scores: list[Score]) -> None:
-        raise NotImplementedError("add_scores_to_memory method not implemented")
+        """
+        Inserts a list of scores into the memory storage.
+        """
+        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
     def dispose_engine(self):
         """
@@ -144,7 +147,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             logger.info("Engine disposed successfully.")
 
     def get_all_embeddings(self) -> list[EmbeddingData]:
-        raise NotImplementedError("get_all_embeddings method not implemented")
+        """
+        Fetches all entries from the specified table and returns them as model instances.
+        """
+        result = self.query_entries(EmbeddingData)
+        return result
 
     def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
         """
@@ -152,13 +159,37 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
         return [entry.get_prompt_request_piece() for entry in result]
-        # raise NotImplementedError("get_all_prompt_pieces method not implemented")
 
     def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
-        raise NotImplementedError("get_prompt_request_pieces_by_id method not implemented")
+        """
+        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
+
+        Args:
+            prompt_ids (list[str]): The prompt IDs to match.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
+        """
+        try:
+            return self.query_entries(
+                PromptMemoryEntry,
+                conditions=PromptMemoryEntry.id.in_(prompt_ids),
+            )
+        except Exception as e:
+            logger.exception(
+                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
+            )
+            return []
 
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
-        raise NotImplementedError("get_scores_by_prompt_ids method not implemented")
+        """
+        Gets a list of scores based on prompt_request_response_ids.
+        """
+        entries = self.query_entries(
+            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
+        )
+
+        return [entry.get_score() for entry in entries]
 
     # The following methods are not part of MemoryInterface, but seem
     # common between SQLAlchemy-based implementations, regardless of engine.
