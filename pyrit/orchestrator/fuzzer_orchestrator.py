@@ -71,6 +71,7 @@ class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
     DEFAULT_TEMPLATE_CONVERTER = "shorten/expand" # fix this which one of this should be the default converter if the user given option is None?
+    TEMPLATE_PLACEHOLDER = '[INSERT PROMPT HERE]'
 
     def __init__(
         self,
@@ -85,6 +86,7 @@ class FuzzerOrchestrator(Orchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         ratio=0.5, alpha=0.1, beta=0.2,
+        random_state = 0,
     ) -> None:
 
         """ Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
@@ -205,7 +207,11 @@ class FuzzerOrchestrator(Orchestrator):
             #2. Apply seed converter to the selected template.
             
             target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
-            target_template = PromptTemplate(target_seed_obj.output_text)
+            if TARGET_PLACEHOLDER not in target_template.output_text:
+                raise ValueError("Invalid template")
+            else:
+                target_template = PromptTemplate(target_seed_obj.output_text)
+            
 
             #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
             
@@ -230,7 +236,7 @@ class FuzzerOrchestrator(Orchestrator):
               for request in requests:
                   request.validate()
 
-            response_piece = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
+            response = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
             await self._prompt_normalizer.send_prompt_batch_to_target_async(
                 requests=requests,
                 target=self._prompt_target,
@@ -238,21 +244,14 @@ class FuzzerOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier(),
                 batch_size=self._batch_size, 
                 )
-            )
+            ).request_pieces[0] #check
             
             #5. Apply scorer on the response and based on the scorer return if jailbreak successful or not.
             #true/false or categoryscorer
             #datasets/score/content_classifiers/content_classifier_system_prompt.yaml ?????? todo: can we use the same yaml file? refusal message ""I'm Sorry, I can't help you with that" can be expanded.
 
-            content_classifier = SelfAskCategoryScorer( # change the path
-                             content_classifier=ContentClassifierPaths.CONTENT_CLASSIFIER_SYSTEM_PROMPT.value, chat_target=self._prompt_target
-                             )
-            scored_response = await content_classifier.score_async(text=response_piece) 
-            
-            # true_false_classifier = SelfAskTrueFalseScorer( # change the path
-            #                 true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=self._prompt_target
-            #                 )
-            # scored_response = await true_false_classifier.score_async(text=response_piece) 
+      
+            scored_response = await self._scorer.score_async(text=response) 
 
             #6. Update the rewards for each of the node.
             
@@ -278,7 +277,7 @@ class FuzzerOrchestrator(Orchestrator):
             self._mctc_select_path.clear()
             current = max(  #initial path
                 self._initial_prompts_nodes,
-                key= self._bestUCT_score()
+                key= self._best_UCT_score
             )
             self.mctc_select_path.append(current)
 
@@ -287,7 +286,7 @@ class FuzzerOrchestrator(Orchestrator):
                     break
                 current = max(   #compute the bestUCT score
                     current._children,
-                    key= self._bestUCT_score()
+                    key= self._best_UCT_score
                 )
                 self._mctc_select_path.append(current) # append node to path
 
@@ -297,7 +296,7 @@ class FuzzerOrchestrator(Orchestrator):
             self._last_choice_index = current.index
             return current # returns the best child
 
-    def _bestUCT_score(self):
+    def _best_UCT_score(self):
         
         """Function to compute the score for each seed. The highest-scoring seed will be selected as the next seed.  
         
@@ -312,12 +311,12 @@ class FuzzerOrchestrator(Orchestrator):
                 
 
     def _update(self, prompt_nodes: 'list[PromptNode]'):
-        succ_num = sum([prompt_node._num_jailbreak
+        success_number = sum([prompt_node._num_jailbreak
                         for prompt_node in _prompt_nodes])
 
         last_choice_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
-            reward = succ_num / (len(self._fuzzer.questions) #fix this, wrong. 
+            reward = success_number / (len(self._fuzzer.questions) #fix this, wrong. 
                                  * len(prompt_nodes))
             self._rewards[prompt_node.index] += reward * \
                 max(self.beta, (1 - 0.1 * last_choice_node._level))
