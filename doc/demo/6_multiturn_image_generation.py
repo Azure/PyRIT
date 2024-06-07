@@ -14,6 +14,7 @@
 # ---
 
 # %% [markdown]
+# # Multiturn image generation
 # In this example, we'll try to convince an image generation model to generate a harmful image.
 # For this purpose, we use PyRIT's `RedTeamingOrchestrator` that leverages a red teaming
 # LLM to generate prompts that are then sent to the image generation endpoint. Behind the scenes,
@@ -31,6 +32,9 @@
 # Note that for this to work well, the `RedTeamingOrchestrator` requires a red teaming LLM
 # without content moderation or other kinds of safety filtering mechanisms.
 # And even then, it depends on the model, and may not succeed every time.
+#
+# Before starting, confirm that you have the
+# [correct version of PyRIT installed](../setup/install_pyrit.md).
 
 # %%
 import logging

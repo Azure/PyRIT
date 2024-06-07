@@ -1,5 +1,5 @@
 # %% [markdown]
-# ## Cross-domain Prompt Injection Attacks (XPIA)
+# # Cross-domain Prompt Injection Attacks (XPIA)
 # XPIAs occur when an attacker takes over a user's session with an AI by embedding their own instructions in a piece of content that the AI system is processing.
 # In this demo, the entire flow is handled by the `XPIATestOrchestrator`.
 # It starts by the attacker uploading a file to the Azure Blob Storage container, which contains the jailbreak prompt.
@@ -7,6 +7,9 @@
 # Note that this is interchangeable with other attack setups, e.g., sending an email knowing that an LLM summarizes the contents, uploading a resume to an applicant tracking system knowing that an LLM is analyzing it for suitability for the role, etc.
 # The summarization prompt is what triggers the XPIA by making the LLM process the jailbreak.
 # Notably, the LLM may still be able to prevent getting compromised depending on its metaprompt or other content filters.
+#
+# Before starting, confirm that you have the
+# [correct version of PyRIT installed](../setup/install_pyrit.md).
 #
 # %%
 # Copyright (c) Microsoft Corporation.

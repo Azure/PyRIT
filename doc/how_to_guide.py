@@ -22,6 +22,9 @@
 # PyRIT also includes functionality to score LLM and keep track of conversation
 # history with a built-in memory which we discuss below.
 #
+# Before starting, confirm that you have the
+# [correct version of PyRIT installed](../setup/install_pyrit.md).
+#
 # ## Write prompts yourself
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
