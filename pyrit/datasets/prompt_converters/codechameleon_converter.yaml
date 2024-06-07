@@ -2,8 +2,7 @@ name: prompt_shorten
 description: |
   A general strategy for shortening prompts.
 harm_category: NA
-author: "https://arxiv.org/abs/2402.16717 CodeChameleon: Personalized Encryption
-  Framework for Jailbreaking Large Language Models"
+author: "https://arxiv.org/abs/2402.16717 CodeChameleon: Personalized Encryption Framework for Jailbreaking Large Language Models"
 group:
 source: https://github.com/huizhang-L/CodeChameleon/blob/master/template.py
 should_be_blocked: false

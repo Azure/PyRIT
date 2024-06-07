@@ -38,22 +38,25 @@ class CodeChameleonConverter(PromptConverter):
         User provided encryption function. Only used if `encrypt_mode` is "custom".
         Used to encode user prompt.
 
-
-    decrypt_fn: Callable, default=None
+    decrypt_fn: Callable or list, default=None
         User provided encryption function. Only used if `encrypt_mode` is "custom".
         Used as part of markdown code block instructions in system prompt.
+        If list is provided, strings will be treated as single statements for imports or comments. Functions
+        will take the source code of the function.
     """
 
-    def __init__(self, *, encrypt_type: str, encrypt_fn: Callable = None, decrypt_fn: Callable = None) -> None:
+    def __init__(
+        self, *, encrypt_type: str, encrypt_fn: Callable = None, decrypt_fn: Callable | list[Callable | str] = None
+    ) -> None:
         match encrypt_type:
             case "custom":
+                if encrypt_fn is None or decrypt_fn is None:
+                    raise ValueError("Encryption and decryption functions not provided to custom encrypt_type.")
                 self.encrypt_fn = encrypt_fn
-                self.decrypt_fn = (
-                    "The following is the decryption function.\n"
-                    "```python\n"
-                    f"{textwrap.dedent(str(inspect.getsource(decrypt_fn)))}"
-                    "```\n"
-                )
+                if isinstance(decrypt_fn, list):
+                    self.decrypt_fn = self._stringify_decrypt(decrypt_fn)
+                else:
+                    self.decrypt_fn = self._stringify_decrypt([decrypt_fn])
             case "reverse":
                 self.encrypt_fn = self._encrypt_reverse
                 self.decrypt_fn = self._decrypt_reverse
@@ -97,6 +100,16 @@ class CodeChameleonConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+    def _stringify_decrypt(self, elements: list) -> str:
+        output_text = "The following is the decryption function.\n```python\n"
+        for element in elements:
+            if inspect.isfunction(element):
+                output_text += textwrap.dedent(str(inspect.getsource(element))) + "\n"
+            elif isinstance(element, str):
+                output_text += str(element) + "\n"
+        output_text += "```\n"
+        return output_text
+
     def _encrypt_binary_tree(self, sentence):
         class TreeNode:
             """A node in the binary tree."""
@@ -111,11 +124,9 @@ class CodeChameleonConverter(PromptConverter):
             if start > end:
                 return None
 
-            # Middle element to make it a balanced tree
             mid = (start + end) // 2
             node = TreeNode(words[mid])
 
-            # Recursively build the left and right subtrees
             node.left = build_tree(words, start, mid - 1)
             node.right = build_tree(words, mid + 1, end)
 
@@ -125,7 +136,7 @@ class CodeChameleonConverter(PromptConverter):
             """Converts a tree to a JSON representation."""
             if node is None:
                 return None
-            return {"value": node.value, "left": tree_to_json(node.left), "right": tree_to_json(node.right)}
+            return str({"value": node.value, "left": tree_to_json(node.left), "right": tree_to_json(node.right)})
 
         words = sentence.split()
         root = build_tree(words, 0, len(words) - 1)
