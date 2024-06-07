@@ -63,14 +63,19 @@ class PromptNormalizer(abc.ABC):
         try:
             response = await target.send_prompt_async(prompt_request=request)
         except Exception as ex:
-            request = construct_response_from_request(
-                request=request.request_pieces[0],
-                response_text_pieces=[str(ex)],
-                response_type="error",
-                error="processing",
-            )
-            self._memory.add_request_response_to_memory(request=request)
-            raise
+            original_exception = ex
+            try:
+                request = construct_response_from_request(
+                    request=request.request_pieces[0],
+                    response_text_pieces=[str(ex)],
+                    response_type="error",
+                    error="processing",
+                )
+                self._memory.add_request_response_to_memory(request=request)
+            except Exception as memory_ex:
+                print(f"Failed to add request response to memory: {memory_ex}")
+            finally:
+                raise original_exception
 
         if response is None:
             return None
@@ -134,21 +139,14 @@ class PromptNormalizer(abc.ABC):
         prompt_response: PromptRequestResponse,
     ):
 
-        response_piece_index = 0
-        for response_piece in prompt_response.request_pieces:
-
+        for response_piece_index, response_piece in enumerate(prompt_response.request_pieces):
             for converter_configuration in response_converter_configurations:
-                if (
-                    converter_configuration.indexes_to_apply is not None
-                    and response_piece_index not in converter_configuration.indexes_to_apply
-                ):
-                    continue
+                indexes = converter_configuration.indexes_to_apply
+                data_types = converter_configuration.prompt_data_types_to_apply
 
-                if (
-                    converter_configuration.prompt_data_types_to_apply is not None
-                    and response_piece.original_value_data_type
-                    not in converter_configuration.prompt_data_types_to_apply
-                ):
+                if indexes and response_piece_index not in indexes:
+                    continue
+                if data_types and response_piece.original_value_data_type not in data_types:
                     continue
 
                 for converter in converter_configuration.converters:
@@ -157,8 +155,6 @@ class PromptNormalizer(abc.ABC):
                     )
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
-
-            response_piece_index += 1
 
     def _chunked_prompts(self, prompts, size):
         for i in range(0, len(prompts), size):
