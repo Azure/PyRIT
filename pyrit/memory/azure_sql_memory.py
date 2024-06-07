@@ -78,7 +78,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             logger.error(f"Error during table creation: {e}")
 
     def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
-        raise NotImplementedError("add_embeddings_to_memory method not implemented")
+        """
+        Inserts embedding data into memory storage
+        """
+        self._insert_entries(entries=embedding_data)
 
     def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
         """
