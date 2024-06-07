@@ -11,11 +11,11 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.exceptions import EmptyResponseException, pyrit_retry
-from pyrit.exceptions.exception_classes import PyritException, handle_bad_request_exception
-
+from pyrit.exceptions import EmptyResponseException, PyritException
+from pyrit.exceptions import pyrit_retry, handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -38,31 +38,6 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self._validate_request(prompt_request=prompt_request)
-        request: PromptRequestPiece = prompt_request.request_pieces[0]
-
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-        messages.append(request.to_chat_message())
-
-        logger.info(f"Sending the following prompt to the prompt target: {request}")
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        resp_text = self._complete_chat(
-            messages=messages,
-            top_p=self._top_p,
-            temperature=self._temperature,
-            frequency_penalty=self._frequency_penalty,
-            presence_penalty=self._presence_penalty,
-        )
-
-        logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
-
-        return response_entry
-
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
@@ -71,8 +46,6 @@ class OpenAIChatInterface(PromptChatTarget):
         messages.append(request.to_chat_message())
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         try:
             resp_text = await self._complete_chat_async(
@@ -84,18 +57,9 @@ class OpenAIChatInterface(PromptChatTarget):
             )
 
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text]
-            )
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
         except BadRequestError as bre:
-            response_entry = handle_bad_request_exception(
-                memory=self._memory, response_text=bre.message, request=request
-            )
-        except Exception as e:
-            self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[str(e)], response_type="error", error="processing"
-            )
-            raise
+            response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
 
         return response_entry
 
@@ -167,42 +131,6 @@ class OpenAIChatInterface(PromptChatTarget):
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason}")
         return extracted_response
-
-    def _complete_chat(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int = 1024,
-        temperature: float = 1.0,
-        top_p: int = 1,
-        frequency_penalty: float = 0.5,
-        presence_penalty: float = 0.5,
-    ) -> str:
-        """
-        Parses chat message to get response
-
-        Args:
-            messages (list[ChatMessage]): The chat message objects containing the role and content.
-            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 1024.
-            temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
-            frequency_penalty (float, optional): Controls frequency of generating same lines of text. Defaults to 0.5.
-            presence_penalty (float, optional): Controls likelihood to talk about new topics. Defaults to 0.5.
-
-        Returns:
-            str: The generated response message
-        """
-        response: ChatCompletion = self._client.chat.completions.create(
-            model=self._deployment_name,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty,
-            n=1,
-            stream=False,
-            messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
-        )
-        return self._parse_chat_completion(response)
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:
