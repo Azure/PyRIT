@@ -35,7 +35,6 @@ requires-python = ">=3.10, <3.12"
 dependencies = [
     "appdirs>=1.4.0",
     "art==6.1.0",
-    "augly==1.0.0",
     "azure-cognitiveservices-speech>=1.36.0",
     "azure-core>=1.26.1",
     "azure-identity>=1.12.0",
