@@ -30,6 +30,19 @@ The <code>run.py</code> script includes three different function call examples:
 - Optimizing 2 prompts with 1 model (mistral).
 - Optimizing 25 prompts with 4 models (vicuna, mistral, llama2 and llama3).
 
+## Other Parameters for  <code>run.py</code>
+
+- n_train_data (int, default: 1): Sets the number of training data instances that will be used in the training process.
+
+- n_steps (int, default: 100): Determines the total number of training steps to execute.
+
+- test_steps (int, default: 25): Defines the number of training steps after which a testing/validation step is performed.
+
+- batch_size (int, default: 128):  Defines how many variations of the suffix are tested in each training step. Each variation involves randomly replacing a token in the suffix to minimize the loss and find the most effective new suffix.
+
+- random_seed (int, default:42) Specifies a seed value for random number generation, used to ensure reproducibility by shuffling the dataset in a consistent manner across different runs.
+
+
 ## Reference
 "[Universal and Transferable Adversarial Attacks on Aligned Language Models](https://arxiv.org/abs/2307.15043)" by Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr, J. Zico Kolter, and Matt Fredrikson.
 
