@@ -247,3 +247,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
+
+    def reset_database(self):
+        """Drop and recreate existing tables"""
+        # Drop all existing tables
+        Base.metadata.drop_all(self.engine)
+        # Recreate the tables
+        Base.metadata.create_all(self.engine, checkfirst=True)

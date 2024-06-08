@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import tempfile
 
 from contextlib import AbstractAsyncContextManager
@@ -9,7 +10,8 @@ import uuid
 
 from sqlalchemy import inspect
 
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.common import default_values
+from pyrit.memory import AzureSQLMemory, DuckDBMemory, MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
@@ -108,6 +110,26 @@ def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
 
     yield duckdb_memory
     duckdb_memory.dispose_engine()
+
+
+def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
+    default_values.load_default_env()
+
+    # Create a test Azure SQL Server DB
+    azure_sql_memory = AzureSQLMemory(connection_string=os.environ.get("AZURE_SQL_SERVER_TEST_CONNECTION_STRING"))
+
+    azure_sql_memory.disable_embedding()
+
+    # Reset the database to ensure a clean state
+    azure_sql_memory.reset_database()
+    inspector = inspect(azure_sql_memory.engine)
+
+    # Verify that tables are created as expected
+    assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
+    assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
+
+    yield azure_sql_memory
+    azure_sql_memory.dispose_engine()
 
 
 def get_image_request_piece() -> PromptRequestPiece:
