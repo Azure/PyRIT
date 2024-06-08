@@ -1,15 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 from typing import Literal
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.models.data_type_serializer import data_serializer_factory
+from pyrit.models import data_serializer_factory, construct_response_from_request
 from pyrit.prompt_target import PromptTarget
 
 from pyrit.common import net_utility
@@ -64,18 +62,9 @@ class AzureTTSTarget(PromptTarget):
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -109,7 +98,7 @@ class AzureTTSTarget(PromptTarget):
 
         audio_response.save_data(data=data)
 
-        response_entry = self._memory.add_response_entries_to_memory(
+        response_entry = construct_response_from_request(
             request=request, response_text_pieces=[audio_response.value], response_type="audio_path"
         )
 

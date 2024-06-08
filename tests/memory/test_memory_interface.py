@@ -236,21 +236,6 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
         assert kwargs["request_pieces"][2].sequence == 1
 
 
-def test_add_response_entries_to_memory_updates_sequence(
-    memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]
-):
-    request = [sample_conversations[0]]
-    memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=request))
-
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
-        memory.add_response_entries_to_memory(request=request[0], response_text_pieces=["test"])
-
-        assert mock_add.called
-
-        args, kwargs = mock_add.call_args
-        assert kwargs["request_pieces"][0].sequence == 1, "Sequence should increment previous conversation by 1"
-
-
 def test_insert_prompt_memories_inserts_embedding(
     memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]
 ):

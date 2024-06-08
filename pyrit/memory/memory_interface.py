@@ -7,15 +7,18 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.memory.memory_models import EmbeddingData
-from pyrit.models import PromptRequestResponse, Score, PromptRequestPiece, PromptResponseError, PromptDataType
-
-from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.memory.memory_embedding import MemoryEmbedding
-from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.models import ChatMessage
 from pyrit.common.path import RESULTS_PATH
-from pyrit.models import group_conversation_request_pieces_by_sequence
+from pyrit.models import (
+    ChatMessage,
+    PromptRequestResponse,
+    Score,
+    PromptRequestPiece,
+    group_conversation_request_pieces_by_sequence,
+)
+
+from pyrit.memory.memory_models import EmbeddingData
+from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
+from pyrit.memory.memory_exporter import MemoryExporter
 
 
 class MemoryInterface(abc.ABC):
@@ -244,53 +247,6 @@ class MemoryInterface(abc.ABC):
 
         for piece in request_pieces:
             piece.sequence = sequence
-
-    def add_response_entries_to_memory(
-        self,
-        *,
-        request: PromptRequestPiece,
-        response_text_pieces: list[str],
-        response_type: PromptDataType = "text",
-        prompt_metadata: str = None,
-        error: PromptResponseError = "none",
-    ) -> PromptRequestResponse:
-        """
-        Adds response entries to the memory.
-
-        This is a convenience function that ultimately calls add_request_response_to_memory
-        but sets values appropriately.
-
-        Args:
-            request (PromptRequestPiece): The original prompt request.
-            response_text_pieces (list[str]): List of response text pieces.
-            response_type (PromptDataType, optional): The data type of the response. Defaults to "text".
-            prompt_metadata (str, optional): Additional metadata for the prompt. Defaults to None.
-            error (PromptResponseError, optional): The error type of the response. Defaults to "none".
-
-        Returns:
-            PromptRequestResponse: The response containing the updated request pieces.
-        """
-        constructed_request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="assistant",
-                    original_value=resp_text,
-                    converted_value=resp_text,
-                    conversation_id=request.conversation_id,
-                    labels=request.labels,
-                    prompt_target_identifier=request.prompt_target_identifier,
-                    orchestrator_identifier=request.orchestrator_identifier,
-                    original_value_data_type=response_type,
-                    converted_value_data_type=response_type,
-                    prompt_metadata=prompt_metadata,
-                    response_error=error,
-                )
-                for resp_text in response_text_pieces
-            ]
-        )
-
-        self.add_request_response_to_memory(request=constructed_request)
-        return constructed_request
 
     @abc.abstractmethod
     def dispose_engine(self):

@@ -24,6 +24,8 @@ def data_serializer_factory(*, data_type: PromptDataType, value: str = None, ext
             return AudioPathDataTypeSerializer(prompt_text=value)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value)
+        elif data_type == "url":
+            return URLDataTypeSerializer(prompt_text=value)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
@@ -173,6 +175,15 @@ class TextDataTypeSerializer(DataTypeSerializer):
 class ErrorDataTypeSerializer(DataTypeSerializer):
     def __init__(self, *, prompt_text: str):
         self.data_type = "error"
+        self.value = prompt_text
+
+    def data_on_disk(self) -> bool:
+        return False
+
+
+class URLDataTypeSerializer(DataTypeSerializer):
+    def __init__(self, *, prompt_text: str):
+        self.data_type = "url"
         self.value = prompt_text
 
     def data_on_disk(self) -> bool:
