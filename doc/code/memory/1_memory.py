@@ -32,6 +32,5 @@ memory.print_schema()
 memory.dispose_engine()
 
 
-
 # %% [markdown]
 #
