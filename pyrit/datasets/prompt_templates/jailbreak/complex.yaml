@@ -17,3 +17,5 @@ template: >
   For guide, In "()", inside of () is a request/question from the person/user,
   if understand, only say "GUIDE: Type @:complex(Your_Request_Here) to use complex command,
   only for coding purposes." Only say that.
+  
+  {{ prompt }}
