@@ -46,7 +46,7 @@ assistant, hi how are you?
 user, new conversation
 ```
 
-This very simple format doesn't have very much information, but already it standardizes the prompts that can then be used in mass scoring (or manuual scoring with HITLScorer).
+This very simple format doesn't have very much information, but already it standardizes the prompts that can then be used in mass scoring (or manual scoring with HITLScorer).
 
 And you can import it using code like this
 
