@@ -168,12 +168,19 @@ class FuzzerOrchestrator(Orchestrator):
         for i, prompt_node in enumerate(self._prompt_nodes):
             prompt_node.index = i
 
-       #set the default template_converter. Template_converter= Optional[list[PromptConverter]] the list can have stacked converter. But stacked converters are not allowed. Fix this.
-        #the fuzzer paper says fuzzing will be effective if we use all the mutators for fuzzing (page 14: Mutator).They are randomly selecting the mutator at each iteration. Should we follow the same?
         if template_converter is None:
             template_converter = self.DEFAULT_TEMPLATE_CONVERTER
         else:
             template_converter = self._template_converter
+
+        def is_stop(self):
+        checks = [
+            ('max_query', 'current_query'),
+            ('max_jailbreak', 'current_jailbreak'),
+            ('max_reject', 'current_reject'),
+            ('max_iteration', 'current_iteration'),
+        ]
+        return any(getattr(self, max_attr) != -1 and getattr(self, curr_attr) >= getattr(self, max_attr) for max_attr, curr_attr in checks)
 
         async def execute_fuzzer(
         self, *, prompt_templates: list[str] = None
@@ -197,8 +204,8 @@ class FuzzerOrchestrator(Orchestrator):
                 prompt_templates: A list of the initial jailbreak templates that needs to be sent to the MCTS algorithm. 
 
             """
-            # todo: define the stopping criteria. In the fuzzer paper, their stopping criteria is based on max_query(defaults to 1000, user can also specify), max_jailbreak(defaults to 1, user can specify), 
-            #Evaluated using single-question and multi-question attack. What should be our stopping criteria?
+            # stopping criteria
+            while not self.is_stop(): # fix the indendation.
             
             # 1. Select a seed from the list of the templates using the MCTS
             
