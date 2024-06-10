@@ -31,7 +31,7 @@ This is especially nice with scoring. There are countless ways to do this, but t
 
 ![scoring_2.png](../../../assets/scoring_3_pivot.png)
 
-4. Optionally, if you caught things you wanted to update, you could either change in the database or directly in the excel and re-import. Note: mapping is sometimes not 100% so updating in the database is best.
+4. Optionally, if you catch entries you want to update (e.g., if you want to correct scores), you could either change them in the database or in Excel and re-import. Note: the most stable way of doing this is in the database since the mapping can be off in some cases when reimporting.
 
 ### Entering Manual Prompts
 
