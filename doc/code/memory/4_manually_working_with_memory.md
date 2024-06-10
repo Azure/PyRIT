@@ -10,7 +10,7 @@ There are many ways to do this, but this section gives some general ideas on how
 
 Eventually, we have plans to extend the `MemoryInterface` implementation to other instances. For example, it would not be a huge task to extend it to Azure SQL Server, and operators could use that as a shared database.
 
-In the mean time, one of the easiest ways to share data is to do the following:
+In the meantime, one of the easiest ways to share data is to do the following:
 
 1. Export and import the database as described here. This allows a lot of flexibility and can include partial exports (for example based on labels or time):  https://dbeaver.com/docs/dbeaver/Data-transfer/
 2. Copy the PyRIT `results/dbdata` directory over; it will contain multi-modal data that the database references.
