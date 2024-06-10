@@ -27,7 +27,7 @@ This is especially nice with scoring. There are countless ways to do this, but t
 
 ![scoring_2.png](../../../assets/scoring_2_export.png)
 
-3. Use it as an excel sheet! You can use pivot tables, etc. To visualize the data.
+3. Use it as an excel sheet! You can use pivot tables, etc. to visualize the data.
 
 ![scoring_2.png](../../../assets/scoring_3_pivot.png)
 
