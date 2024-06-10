@@ -19,7 +19,7 @@ In the meantime, one of the easiest ways to share data is to do the following:
 
 This is especially nice with scoring. There are countless ways to do this, but this shows one example;
 
-1. Do a query with the data you want. This is an example where we're only quering scores in the "float_type" scores in the category of "misinformation"
+1. Do a query with the data you want. This is an example where we're only querying scores in the "float_type" scores in the category of "misinformation"
 
 ![scoring_1.png](../../../assets/scoring_1.png)
 
