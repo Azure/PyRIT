@@ -5,6 +5,7 @@ import textwrap
 import inspect
 import asyncio
 import pathlib
+import re
 from typing import Callable
 
 from pyrit.models import PromptDataType
@@ -108,6 +109,9 @@ class CodeChameleonConverter(PromptConverter):
             elif isinstance(element, str):
                 output_text += str(element) + "\n"
         output_text += "```\n"
+        illegal_chars = re.findall(r"\\\d+", output_text)  # If using regex, use named groups
+        if len(illegal_chars) > 0:
+            raise ValueError(f"Illegal character sequence in user decrypt function! Invalid chars: {illegal_chars}")
         return output_text
 
     def _encrypt_binary_tree(self, sentence):
