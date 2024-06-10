@@ -35,8 +35,8 @@ class PromptNode:
                  ):
         self._fuzzer: 'FuzzerOrchestrator' = fuzzer
         self._template: str = template
-        self._response: str = response
-        self._results: 'list[int]' = results
+       # self._response: str = response
+       # self._results: 'list[int]' = results
         self._visited_num = 0
 
         self._parent: 'PromptNode' = parent
@@ -70,7 +70,7 @@ class PromptNode:
 class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
-    DEFAULT_TEMPLATE_CONVERTER = "shorten/expand" # fix this which one of this should be the default converter if the user given option is None?
+    DEFAULT_TEMPLATE_CONVERTER = [ShortenConverter(), ExpandConverter()] 
     TEMPLATE_PLACEHOLDER = '[INSERT PROMPT HERE]'
 
     def __init__(
@@ -86,7 +86,7 @@ class FuzzerOrchestrator(Orchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         ratio=0.5, alpha=0.1, beta=0.2,
-        random_state = 0,
+        random_state = None,
     ) -> None:
 
         """ Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
@@ -207,8 +207,19 @@ class FuzzerOrchestrator(Orchestrator):
             #2. Apply seed converter to the selected template.
             
             target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
-            if TARGET_PLACEHOLDER not in target_template.output_text:
-                raise ValueError("Invalid template")
+            if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
+                logger.info(f"Target placeholder is empty")
+                count = 0
+                while count < 4:
+                    target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
+                    if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
+                        logger.info(f"Target placeholder is empty")
+                    else:
+                        target_template = PromptTemplate(target_seed_obj.output_text)
+                        return target_template  #check logic.
+                    count +=1
+                raise ValueError("Invalid template.")
+                    
             else:
                 target_template = PromptTemplate(target_seed_obj.output_text)
             
@@ -236,7 +247,7 @@ class FuzzerOrchestrator(Orchestrator):
               for request in requests:
                   request.validate()
 
-            response = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
+            responses = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
             await self._prompt_normalizer.send_prompt_batch_to_target_async(
                 requests=requests,
                 target=self._prompt_target,
@@ -244,14 +255,16 @@ class FuzzerOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier(),
                 batch_size=self._batch_size, 
                 )
-            ).request_pieces[0] #check
+            )
+
+            response_pieces = [response.request_pieces[0] for response in responses]
             
             #5. Apply scorer on the response and based on the scorer return if jailbreak successful or not.
-            #true/false or categoryscorer
+            #categoryscorer
             #datasets/score/content_classifiers/content_classifier_system_prompt.yaml ?????? todo: can we use the same yaml file? refusal message ""I'm Sorry, I can't help you with that" can be expanded.
 
       
-            scored_response = await self._scorer.score_async(text=response) 
+            scored_response = [await self._scorer.score_async(text=response)  for response in response_pieces]
 
             #6. Update the rewards for each of the node.
             
