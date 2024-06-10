@@ -79,9 +79,9 @@ async def test_send_normalizer_requests_async():
         f.write(b"test")
         f.flush()
         req = NormalizerRequestPiece(
-            prompt_converters=[Base64Converter()],
+            request_converters=[Base64Converter()],
             prompt_data_type="image_path",
-            prompt_text=f.name,
+            prompt_value=f.name,
         )
 
         await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])

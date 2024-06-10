@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 import json
 
@@ -13,13 +11,12 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.exceptions.exception_classes import PyritException, handle_bad_request_exception
+from pyrit.exceptions import PyritException, EmptyResponseException
+from pyrit.exceptions import handle_bad_request_exception, pyrit_retry
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessageListContent
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
+from pyrit.models import ChatMessageListContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
+from pyrit.models import data_serializer_factory, construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.exceptions import EmptyResponseException, pyrit_retry
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +126,41 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
             )
 
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        """Asynchronously sends a prompt request and handles the response within a managed conversation context.
+
+        Args:
+            prompt_request (PromptRequestResponse): The prompt request response object.
+
+        Returns:
+            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
+        """
+        self._validate_request(prompt_request=prompt_request)
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
+
+        prompt_req_res_entries = self._memory.get_conversation(conversation_id=request.conversation_id)
+        prompt_req_res_entries.append(prompt_request)
+
+        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
+
+        messages = self._build_chat_messages(prompt_req_res_entries)
+        try:
+            resp_text = await self._complete_chat_async(
+                messages=messages,
+                top_p=self._top_p,
+                temperature=self._temperature,
+                frequency_penalty=self._frequency_penalty,
+                presence_penalty=self._presence_penalty,
+            )
+
+            logger.info(f'Received the following response from the prompt target "{resp_text}"')
+
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
+        except BadRequestError as bre:
+            response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
+
+        return response_entry
+
     def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
 
@@ -196,59 +228,6 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             chat_message = ChatMessageListContent(role=role, content=content)
             chat_messages.append(chat_message)
         return chat_messages
-
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """Asynchronously sends a prompt request and handles the response within a managed conversation context.
-
-        Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
-
-        Returns:
-            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
-        """
-        self._validate_request(prompt_request=prompt_request)
-        request: PromptRequestPiece = prompt_request.request_pieces[0]
-
-        prompt_req_res_entries = self._memory.get_conversation(conversation_id=request.conversation_id)
-        prompt_req_res_entries.append(prompt_request)
-
-        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        messages = self._build_chat_messages(prompt_req_res_entries)
-        try:
-            resp_text = await self._complete_chat_async(
-                messages=messages,
-                top_p=self._top_p,
-                temperature=self._temperature,
-                frequency_penalty=self._frequency_penalty,
-                presence_penalty=self._presence_penalty,
-            )
-
-            logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text]
-            )
-        except BadRequestError as bre:
-            response_entry = handle_bad_request_exception(
-                memory=self._memory, response_text=bre.message, request=request
-            )
-        except Exception as ex:
-            self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"
-            )
-            raise
-
-        return response_entry
 
     def _parse_chat_completion(self, response):
         """

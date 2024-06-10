@@ -20,6 +20,7 @@ from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
+from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
 
 
 __all__ = [
@@ -42,4 +43,5 @@ __all__ = [
     "AtbashConverter",
     "CaesarConverter",
     "MorseConverter",
+    "RepeatTokenConverter",
 ]
