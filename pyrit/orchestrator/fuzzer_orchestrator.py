@@ -294,7 +294,7 @@ class FuzzerOrchestrator(Orchestrator):
                 self._current_query += self._num_query
 
                 if self._num_jailbreak > 0:
-                    self._prompt_nodes.append(PromptNode(self, target_template))
+                    self._prompt_nodes.append(PromptNode(self, target_template, parent= current_seed))
                 
             
                 _update(target_template) #fix this # todo: have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
