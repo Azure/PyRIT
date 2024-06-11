@@ -17,6 +17,9 @@ from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConv
 from pyrit.prompt_converter.variation_converter import VariationConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
+from pyrit.prompt_converter.atbash_converter import AtbashConverter
+from pyrit.prompt_converter.caesar_converter import CaesarConverter
+from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 
@@ -24,10 +27,13 @@ from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverte
 __all__ = [
     "AddTextImageConverter",
     "AsciiArtConverter",
+    "AtbashConverter",
     "Base64Converter",
+    "CaesarConverter",
     "CodeChameleonConverter",
     "ConverterResult",
     "LeetspeakConverter",
+    "MorseConverter",
     "PromptConverter",
     "RandomCapitalLettersConverter",
     "RepeatTokenConverter",

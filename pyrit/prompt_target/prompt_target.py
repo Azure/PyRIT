@@ -5,8 +5,7 @@ import abc
 import logging
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestResponse
-from pyrit.models.identifiers import Identifier
+from pyrit.models import PromptRequestResponse, Identifier
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +25,6 @@ class PromptTarget(abc.ABC, Identifier):
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
-
-    @abc.abstractmethod
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Sends a normalized prompt to the prompt target and adds the request and response to memory
-        """
 
     @abc.abstractmethod
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
