@@ -215,7 +215,7 @@ class FuzzerOrchestrator(Orchestrator):
 
             """
             # stopping criteria
-            while not self.is_stop(): # fix the indendation.
+            while not self.is_stop():
             
                 # 1. Select a seed from the list of the templates using the MCTS
             
