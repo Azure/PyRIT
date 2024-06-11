@@ -287,7 +287,15 @@ class FuzzerOrchestrator(Orchestrator):
                 score_values = [dic_val[key] for key in dic_val]
  
                 #6. Update the rewards for each of the node.
-                if 
+                self._num_jailbreak = sum(score_values)
+                self._num_query = len(score_values)
+
+                self._current_jailbreak += self._num_jailbreak
+                self._current_query += self._num_query
+
+                if self._num_jailbreak > 0:
+                    self._prompt_nodes.append(PromptNode(self, target_template))
+                
             
                 _update(target_template) #fix this # todo: have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
 
@@ -304,11 +312,10 @@ class FuzzerOrchestrator(Orchestrator):
 
         def _select(self) -> PromptNode:
             self._step += 1
-            if len(self._prompt_nodes) > len(self._rewards):
+            if len(self._prompt_nodes) > len(self._rewards): # if the length of list of templates greater than rewards list (when new nodes added because of successful jailbreak) assign 0 as initial reward. 
                 self._rewards.extend(
                     [0 for _ in range(len(self._prompt_nodes) - len(self._rewards))])
 
-            self._mctc_select_path.clear()
             current = max(  #initial path
                 self._initial_prompts_nodes,
                 key= self._best_UCT_score
@@ -338,10 +345,9 @@ class FuzzerOrchestrator(Orchestrator):
          
          UCB function determines the confidence interval for each node and returns the highest value which will be selected as next seed."""
         
-        return lambda pn:
-                    self._rewards[pn._index] / (pn._visited_num + 1) +  #seed's average reward
+        return self._rewards[_index] / (_visited_num + 1) +  #seed's average reward
                     self._ratio * np.sqrt(2 * np.log(self._step) / # self._ratio - constant that balances between the seed with high reward and the seed that is selected fewer times. 
-                                     (pn._visited_num + 0.01))
+                                     (_visited_num + 0.01))
                 
 
     def _update(self, prompt_nodes: 'list[PromptNode]'):
