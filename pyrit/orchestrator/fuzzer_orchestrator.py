@@ -29,8 +29,8 @@ class PromptNode:
     def __init__(self,
                  fuzzer: 'FuzzerOrchestrator',
                  template: str,                #jailbreak template /prompt in GPTFuzzer
-                 response: str = None,
-                 results: 'list[int]' = None,
+                 # response: str = None,
+                 # results: 'list[int]' = None,
                  parent: 'PromptNode' = None,
                  ):
         self._fuzzer: 'FuzzerOrchestrator' = fuzzer
@@ -55,17 +55,17 @@ class PromptNode:
         if self._parent is not None:
             self._parent._children.append(self)
 
-    @property
-    def _num_jailbreak(self):
-        return sum(self._results)
+    # @property
+    # def _num_jailbreak(self):
+    #     return sum(self._results)
 
-    @property
-    def _num_reject(self):
-        return len(self._results) - sum(self._results)
+    # @property
+    # def _num_reject(self):
+    #     return len(self._results) - sum(self._results)
 
-    @property
-    def _num_query(self):
-        return len(self._results)
+    # @property
+    # def _num_query(self):
+    #     return len(self._results)
 
 class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
@@ -87,6 +87,8 @@ class FuzzerOrchestrator(Orchestrator):
         verbose: bool = False,
         ratio=0.5, alpha=0.1, beta=0.2,
         random_state = None,
+        max_jailbreak = -1,
+        max_query = -1,
     ) -> None:
 
         """ Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
@@ -136,6 +138,10 @@ class FuzzerOrchestrator(Orchestrator):
 
             beta: Minimal reward. Minimal reward prevents the reward of the current node and its ancestors from being too small or negative.
 
+            max_jailbreak: maximum number of jailbreaks
+
+            max_query: maximum number of query.
+
         """
 
         self._prompt_target = prompt_target
@@ -152,6 +158,10 @@ class FuzzerOrchestrator(Orchestrator):
         self._alpha = alpha  # penalty for level
         self._beta = beta   # minimal reward after penalty
         self._initial_prompts_nodes = self._prompt_nodes.copy()
+        self._max_jailbreak = max_jailbreak
+        self._max_query = max_query
+        self._current_query = 0
+        self._current_jailbreak = 0
         
         
         if not self._prompt_templates:
@@ -177,8 +187,8 @@ class FuzzerOrchestrator(Orchestrator):
         checks = [
             ('max_query', 'current_query'),
             ('max_jailbreak', 'current_jailbreak'),
-            ('max_reject', 'current_reject'),
-            ('max_iteration', 'current_iteration'),
+            # ('max_reject', 'current_reject'), # should we need reject and iteration in the stopping criteria
+            # ('max_iteration', 'current_iteration'),
         ]
         return any(getattr(self, max_attr) != -1 and getattr(self, curr_attr) >= getattr(self, max_attr) for max_attr, curr_attr in checks)
 
@@ -207,75 +217,79 @@ class FuzzerOrchestrator(Orchestrator):
             # stopping criteria
             while not self.is_stop(): # fix the indendation.
             
-            # 1. Select a seed from the list of the templates using the MCTS
+                # 1. Select a seed from the list of the templates using the MCTS
             
-            current_seed = await self._get_seed(prompt_templates=prompt_templates)
+                current_seed = await self._get_seed(prompt_templates=prompt_templates)
 
-            #2. Apply seed converter to the selected template.
+                #2. Apply seed converter to the selected template.
             
-            target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
-            if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
-                logger.info(f"Target placeholder is empty")
-                count = 0
-                while count < 4:
-                    target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
-                    if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
-                        logger.info(f"Target placeholder is empty")
-                    else:
-                        target_template = PromptTemplate(target_seed_obj.output_text)
-                        return target_template  #check logic.
-                    count +=1
-                raise ValueError("Invalid template.")
+                target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
+                if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
+                    logger.info(f"Target placeholder is empty")
+                    count = 0
+                    while count < 4:
+                        target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
+                        if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
+                            logger.info(f"Target placeholder is empty")
+                        else:
+                            target_template = PromptTemplate(target_seed_obj.output_text)
+                            return target_template  #check logic.
+                        count +=1
+                    raise ValueError("Invalid template.")
                     
-            else:
-                target_template = PromptTemplate(target_seed_obj.output_text)
+                else:
+                    target_template = PromptTemplate(target_seed_obj.output_text)
             
 
-            #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
+                #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
             
-             jailbreak_prompts = []
-             for prompt in attack_content:
-                jailbreak_prompts.append(
-                    target_template.apply_custom_metaprompt_parameters(prompt=prompt) 
-                )
-
-            #4. Apply prompt converter if any and send request to a target 
-            
-              requests: list[NormalizerRequest] = []
-              for jailbreak_prompt in jailbreak_prompts:
-                  requests.append(
-                      self._create_normalizer_request(
-                      prompt_text=jailbreak_prompt,
-                      prompt_type="text",
-                      converters=self._prompt_converters,
-                      )
+                 jailbreak_prompts = []
+                 for prompt in attack_content:
+                    jailbreak_prompts.append(
+                        target_template.apply_custom_metaprompt_parameters(prompt=prompt) 
                     )
 
-              for request in requests:
-                  request.validate()
-
-            responses = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
-            await self._prompt_normalizer.send_prompt_batch_to_target_async(
-                requests=requests,
-                target=self._prompt_target,
-                labels=self._global_memory_labels,
-                orchestrator_identifier=self.get_identifier(),
-                batch_size=self._batch_size, 
-                )
-            )
-
-            response_pieces = [response.request_pieces[0] for response in responses]
+                #4. Apply prompt converter if any and send request to a target 
             
-            #5. Apply scorer on the response and based on the scorer return if jailbreak successful or not.
-            #categoryscorer
-            #datasets/score/content_classifiers/content_classifier_system_prompt.yaml ?????? todo: can we use the same yaml file? refusal message ""I'm Sorry, I can't help you with that" can be expanded.
+                  requests: list[NormalizerRequest] = []
+                  for jailbreak_prompt in jailbreak_prompts:
+                      requests.append(
+                          self._create_normalizer_request(
+                          prompt_text=jailbreak_prompt,
+                          prompt_type="text",
+                          converters=self._prompt_converters,
+                          )
+                        )
+
+                  for request in requests:
+                      request.validate()
+
+                responses = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
+                await self._prompt_normalizer.send_prompt_batch_to_target_async(
+                    requests=requests,
+                    target=self._prompt_target,
+                    labels=self._global_memory_labels,
+                    orchestrator_identifier=self.get_identifier(),
+                    batch_size=self._batch_size, 
+                    )
+                )
+
+                response_pieces = [response.request_pieces[0] for response in responses]
+            
+                #5. Apply scorer on the response and based on the scorer return if jailbreak successful or not.
+                #categoryscorer
+                #datasets/score/content_classifiers/content_classifier_system_prompt.yaml ?????? todo: can we use the same yaml file? refusal message ""I'm Sorry, I can't help you with that" can be expanded.
 
       
-            scored_response = [await self._scorer.score_async(text=response)  for response in response_pieces]
+                scored_response = [await self._scorer.score_async(text=response)  for response in response_pieces]
 
-            #6. Update the rewards for each of the node.
+                dic_val = {'reject' : 0, 'jailbreak': 1}
+                score_values = [dic_val[key] for key in dic_val]
+ 
+                #6. Update the rewards for each of the node.
+                if 
             
-            _update(PromptNode) #fix this # todo: have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
+                _update(target_template) #fix this # todo: have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
 
 
         def _get_seed(self, prompt_templates) -> PromptNode:
