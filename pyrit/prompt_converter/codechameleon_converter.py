@@ -6,7 +6,7 @@ import inspect
 import asyncio
 import pathlib
 import re
-from typing import Callable
+from typing import Callable, Optional
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -16,30 +16,37 @@ from pyrit.models import PromptTemplate
 
 class CodeChameleonConverter(PromptConverter):
     """
-    Code Chameleon Converter based on https://arxiv.org/abs/2402.16717.
+    The CodeChameleon Converter uses a combination of personal encryption and decryption functions,
+    code nesting, as well as a set of instructions for the response to bypass LLM safeguards.
+
+    The user prompt is encrypted, and the target is asked to solve the encrypted problem by completing a
+    ProblemSolver class utilizing the decryption function while following the instructions.
+
+    Code Chameleon Converter based on https://arxiv.org/abs/2402.16717 by Lv, Huijie, et al.
 
     Parameters
     ---
     encrypt_mode: {"custom", "reverse", "binary_tree", "odd_even", "length"}
-        Select built-in encryption method or provide custom encryption and decryption functions.
+        Select a built-in encryption method or provide custom encryption and decryption functions.
         - custom: User provided encryption and decryption functions. Encryption function used to encode prompt.
-        Markdown formatting and plaintext instructions appended to decryption function, used as text only.
-        Should include imports.
+          Markdown formatting and plaintext instructions appended to decryption function, used as text only.
+          Should include imports.
         - reverse: Reverse the prompt. "How to cut down a tree?" becomes "tree? a down cut to How"
         - binary_tree: Encode prompt using binary tree. "How to cut down a tree"?" becomes
-        "{'value': 'cut', 'left': {'value': 'How', 'left': None, 'right': {'value': 'to', 'left': None, 'right': None}},
-        'right': {'value': 'a', 'left': {'value': 'down', 'left': None, 'right': None},
-        'right': {'value': 'tree?', 'left': None, 'right': None}}}"
+          "{'value': 'cut',
+          'left': {'value': 'How', 'left': None, 'right': {'value': 'to', 'left': None, 'right': None}},
+          'right': {'value': 'a', 'left': {'value': 'down', 'left': None, 'right': None},
+          'right': {'value': 'tree?', 'left': None, 'right': None}}}"
         - odd_even: All words in odd indices of prompt followed by all words in even indices.
-        "How to cut down a tree?" becomes "How cut a to down tree?"
+          "How to cut down a tree?" becomes "How cut a to down tree?"
         - length: List of words in prompt sorted by length, use word as key, original index as value.
-        "How to cut down a tree?" becomes "[{'a': 4}, {'to': 1}, {'How': 0}, {'cut': 2}, {'down': 3}, {'tree?': 5}]"
+          "How to cut down a tree?" becomes "[{'a': 4}, {'to': 1}, {'How': 0}, {'cut': 2}, {'down': 3}, {'tree?': 5}]"
 
-    encrypt_fn: Callable, default=None
+    encrypt_function: Callable, default=None
         User provided encryption function. Only used if `encrypt_mode` is "custom".
         Used to encode user prompt.
 
-    decrypt_fn: Callable or list, default=None
+    decrypt_function: Callable or list, default=None
         User provided encryption function. Only used if `encrypt_mode` is "custom".
         Used as part of markdown code block instructions in system prompt.
         If list is provided, strings will be treated as single statements for imports or comments. Functions
@@ -47,29 +54,33 @@ class CodeChameleonConverter(PromptConverter):
     """
 
     def __init__(
-        self, *, encrypt_type: str, encrypt_fn: Callable = None, decrypt_fn: Callable | list[Callable | str] = None
+        self,
+        *,
+        encrypt_type: str,
+        encrypt_function: Optional[Callable] = None,
+        decrypt_function: Optional[Callable | list[Callable | str]] = None,
     ) -> None:
         match encrypt_type:
             case "custom":
-                if encrypt_fn is None or decrypt_fn is None:
-                    raise ValueError("Encryption and decryption functions not provided to custom encrypt_type.")
-                self.encrypt_fn = encrypt_fn
-                if isinstance(decrypt_fn, list):
-                    self.decrypt_fn = self._stringify_decrypt(decrypt_fn)
+                if encrypt_function is None or decrypt_function is None:
+                    raise ValueError("Encryption and decryption functions not provided for custom encrypt_type.")
+                self.encrypt_function = encrypt_function
+                if isinstance(decrypt_function, list):
+                    self.decrypt_function = self._stringify_decrypt(decrypt_function)
                 else:
-                    self.decrypt_fn = self._stringify_decrypt([decrypt_fn])
+                    self.decrypt_function = self._stringify_decrypt([decrypt_function])
             case "reverse":
-                self.encrypt_fn = self._encrypt_reverse
-                self.decrypt_fn = self._decrypt_reverse
+                self.encrypt_function = self._encrypt_reverse
+                self.decrypt_function = self._decrypt_reverse
             case "binary_tree":
-                self.encrypt_fn = self._encrypt_binary_tree
-                self.decrypt_fn = self._decrypt_binary_tree
+                self.encrypt_function = self._encrypt_binary_tree
+                self.decrypt_function = self._decrypt_binary_tree
             case "odd_even":
-                self.encrypt_fn = self._encrypt_odd_even
-                self.decrypt_fn = self._decrypt_odd_even
+                self.encrypt_function = self._encrypt_odd_even
+                self.decrypt_function = self._decrypt_odd_even
             case "length":
-                self.encrypt_fn = self._encrypt_length
-                self.decrypt_fn = self._decrypt_length
+                self.encrypt_function = self._encrypt_length
+                self.decrypt_function = self._decrypt_length
             case _:
                 raise ValueError(
                     'Encryption type not valid! Must be one of "custom", '
@@ -78,21 +89,21 @@ class CodeChameleonConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converter based on CodeChameleon paper.
+        Converter that encrypts user prompt, adds stringified decrypt function in markdown and instructions.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        if self.encrypt_fn:
-            encoded_prompt = self.encrypt_fn(prompt)
+        if self.encrypt_function:
+            encoded_prompt = self.encrypt_function(prompt)
         else:
-            encoded_prompt = ""
+            encoded_prompt = prompt
 
         prompt_template = PromptTemplate.from_yaml_file(
             pathlib.Path(DATASETS_PATH) / "prompt_converters" / "codechameleon_converter.yaml"
         )
         formatted_prompt = prompt_template.apply_custom_metaprompt_parameters(
-            decrypt_fn=self.decrypt_fn, encoded_prompt=encoded_prompt
+            decrypt_function=self.decrypt_function, encoded_prompt=encoded_prompt
         )
 
         await asyncio.sleep(0)
@@ -111,6 +122,7 @@ class CodeChameleonConverter(PromptConverter):
         output_text += "```\n"
         illegal_chars = re.findall(r"\\\d+", output_text)  # If using regex, use named groups
         if len(illegal_chars) > 0:
+            # Prevent 'invalid group reference' errors during convert when applying .yaml template with re.sub
             raise ValueError(f"Illegal character sequence in user decrypt function! Invalid chars: {illegal_chars}")
         return output_text
 
@@ -179,7 +191,8 @@ class CodeChameleonConverter(PromptConverter):
         word_data = to_json(word_data)
         return word_data
 
-    _decrypt_reverse = """The following is the decryption function.
+    _decrypt_reverse = """
+    The following is the decryption function.
     ```python
     def decryption(encrypted_problem):
         # reverse the sentence to get original problem
@@ -190,7 +203,7 @@ class CodeChameleonConverter(PromptConverter):
     """
 
     _decrypt_binary_tree = """
-    The follwing is the decryption function.
+    The following is the decryption function.
     ```python
     import json
 
