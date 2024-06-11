@@ -40,16 +40,15 @@ For the release branch, we have to remove this suffix.
 
 ### Update README.md
 
-Readme.md is published to pypi and also needs to be updated so the
+Readme.md is published to PyPI and also needs to be updated so the
 links work properly.
 
 Replace all "main" links like
-"https://github.com/Azure/PyRIT/blob/main/doc/README.md" with links that have the
-correct version number, i.e.,
+"https://github.com/Azure/PyRIT/blob/main/doc/README.md" with links that have
+the correct version number, i.e.,
 "https://github.com/Azure/PyRIT/blob/releases/vx.y.z/doc/README.md".
 
-For images, update using the "raw"
-link, e.g.,
+For images, update using the "raw" link, e.g.,
 "https://raw.githubusercontent.com/Azure/PyRIT/releases/vx.y.z/assets/pyrit_architecture.png".
 
 This is required for the release branch because PyPI does not pick up
@@ -67,9 +66,10 @@ git tag -a vx.y.z -m "vx.y.z release"
 git push --tags
 ```
 
-Check the branch to make sure it looks as intended (e.g. check the links in the README work properly).
+Check the branch to make sure it looks as intended (e.g. check the links in
+the README work properly).
 
-### Build Package Publish to PyPi
+### Build Package
 
 To build the package wheel and archive for PyPI run
 
@@ -80,6 +80,25 @@ python -m build
 This should print
 
 > Successfully built pyrit-x.y.z.tar.gz and pyrit-x.y.z-py3-none-any.whl
+
+### Test built package
+
+To ensure that the new package works out of the box we need to test it.
+Create a new conda environment with `conda create -n release-test-mm-dd-yyyy python=3.11 -y`
+and install the built wheel file `pip install dist/pyrit-x.y.z-py3-none-any.whl`.
+
+Copy the doc folder to a different location on your machine outside the
+repository.
+In the new location, run all notebooks.
+This can be done using `./doc/generate_docs/run_jupytext.ps1` or manually.
+Check the output to make sure that the notebooks succeeded.
+
+Note: copying the doc folder elsewhere is essential since we store data files
+in the repository that should be shipped with the package.
+If we run inside the repository, we may not face errors that users encounter
+with a clean installation and no locally cloned repository.
+
+### Publish to PyPi
 
 Create an account on pypi.org if you don't have one yet.
 Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
@@ -94,8 +113,9 @@ If successful, it will print
 > View at:
   https://pypi.org/project/pyrit/x.y.z/
 
-After the release is on PyPI, make sure to create a PR for the `main` branch where the only change
-is the version increase in `__init__.py` (while keeping suffix `.dev0`).
+After the release is on PyPI, make sure to create a PR for the `main` branch
+where the only change is the version increase in `__init__.py` (while keeping
+suffix `.dev0`).
 This should be something like `x.y.z+1.dev0`.
 
 ### Create GitHub Release
