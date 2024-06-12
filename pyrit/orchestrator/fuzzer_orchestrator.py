@@ -146,6 +146,7 @@ class FuzzerOrchestrator(Orchestrator):
 
         self._prompt_target = prompt_target
         self._achieved_objective = False
+        self._attack_content = attack_content
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target._memory = self._memory
@@ -355,11 +356,11 @@ class FuzzerOrchestrator(Orchestrator):
 
     def _update(self, prompt_nodes: 'list[PromptNode]'): #have to fix this function based on the output of the template converter. 
         success_number = sum([prompt_node._num_jailbreak
-                        for prompt_node in _prompt_nodes])
+                        for prompt_node in _prompt_nodes])    #Question: if output of template_converter is a str, the success_number will be always 1?
 
         last_choice_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
-            reward = success_number / (len(self._fuzzer.questions) #fix this, wrong. 
+            reward = success_number / (len(self._attack_content)
                                  * len(prompt_nodes))
             self._rewards[prompt_node.index] += reward * \
                 max(self.beta, (1 - 0.1 * last_choice_node._level))
