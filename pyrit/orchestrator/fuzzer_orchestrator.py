@@ -233,8 +233,10 @@ class FuzzerOrchestrator(Orchestrator):
                             logger.info(f"Target placeholder is empty")
                         else:
                             target_template = PromptTemplate(target_seed_obj.output_text)
+                            break
                         count +=1
-                    raise ValueError("Invalid template.")
+                    else:
+                        raise ValueError("Invalid template.")
                     
                 else:
                     target_template = PromptTemplate(target_seed_obj.output_text,parameters = list(**kwargs)) #check 
