@@ -87,7 +87,7 @@ class FuzzerOrchestrator(Orchestrator):
         verbose: bool = False,
         ratio=0.5, alpha=0.1, beta=0.2,
         random_state = None,
-        max_jailbreak = -1,
+        max_jailbreak = -1, #Question: Should we get the max_jailbreak, max_query from user or a constant value?
         max_query = -1,
     ) -> None:
 
@@ -154,7 +154,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._memory = self._memory
         self._prompt_templates = prompt_templates
         self._template_converter = template_converter
-        self._ratio = ratio  # balance between exploration and exploitation
+        self._ratio = ratio  # balance between exploration and exploitation     #question: alpha, beta and ratio values are used for computing the rewards. vaile will not change. I don't think we need a input validation. 
         self._alpha = alpha  # penalty for level
         self._beta = beta   # minimal reward after penalty
         self._initial_prompts_nodes = self._prompt_nodes.copy()
@@ -187,7 +187,7 @@ class FuzzerOrchestrator(Orchestrator):
         checks = [
             ('max_query', 'current_query'),
             ('max_jailbreak', 'current_jailbreak'),
-            # ('max_reject', 'current_reject'), # should we need reject and iteration in the stopping criteria
+            # ('max_reject', 'current_reject'), #Question: should we need reject and iteration in the stopping criteria?
             # ('max_iteration', 'current_iteration'),
         ]
         return any(getattr(self, max_attr) != -1 and getattr(self, curr_attr) >= getattr(self, max_attr) for max_attr, curr_attr in checks)
@@ -233,12 +233,14 @@ class FuzzerOrchestrator(Orchestrator):
                             logger.info(f"Target placeholder is empty")
                         else:
                             target_template = PromptTemplate(target_seed_obj.output_text)
-                            return target_template  #check logic.
+                            return target_template  #check.
                         count +=1
                     raise ValueError("Invalid template.")
                     
                 else:
-                    target_template = PromptTemplate(target_seed_obj.output_text)
+                    target_template = PromptTemplate(target_seed_obj.output_text,parameters = list(**kwargs)) #check 
+
+                target_template_node = PromptNode(self, target_template, parent= current_seed) # convert the target_template into a prompt_node to maintain the tree information
             
 
                 #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
@@ -283,7 +285,7 @@ class FuzzerOrchestrator(Orchestrator):
       
                 scored_response = [await self._scorer.score_async(text=response)  for response in response_pieces]
 
-                dic_val = {'reject' : 0, 'jailbreak': 1}
+                dic_val = {'reject' : 0, 'jailbreak': 1} 
                 score_values = [dic_val[key] for key in dic_val]
  
                 #6. Update the rewards for each of the node.
@@ -293,11 +295,11 @@ class FuzzerOrchestrator(Orchestrator):
                 self._current_jailbreak += self._num_jailbreak
                 self._current_query += self._num_query
 
-                if self._num_jailbreak > 0:
-                    self._prompt_nodes.append(PromptNode(self, target_template, parent= current_seed))
+                if self._num_jailbreak > 0: #successful jailbreak
+                    self._prompt_nodes.append(target_template_node) # append the template to the initial template list.
                 
             
-                _update(target_template) #fix this # todo: have to update the rewards by calling _update(). Also update the nodes based on the successful jailbreaks.
+                self._update(target_template_node) #update the rewards for the target_node
 
 
         def _get_seed(self, prompt_templates) -> PromptNode:
@@ -350,7 +352,7 @@ class FuzzerOrchestrator(Orchestrator):
                                      (_visited_num + 0.01))
                 
 
-    def _update(self, prompt_nodes: 'list[PromptNode]'):
+    def _update(self, prompt_nodes: 'list[PromptNode]'): #have to fix this function based on the output of the template converter. 
         success_number = sum([prompt_node._num_jailbreak
                         for prompt_node in _prompt_nodes])
 
@@ -362,7 +364,8 @@ class FuzzerOrchestrator(Orchestrator):
                 max(self.beta, (1 - 0.1 * last_choice_node._level))
             
 
-
+#Question: in the GPTFuzzer paper output of a template_converter is a list of str. I assume that the current selected template(using MCTS algorithm) is given to template converter(shorten/expand) and the output will be a 
+#template (str) that is shorten/expanded. I am doing the update for single template whereas in fuzzer paper for list of str. check the logic. 
 
 
 
