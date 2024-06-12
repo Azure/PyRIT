@@ -233,14 +233,14 @@ class FuzzerOrchestrator(Orchestrator):
                         if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
                             logger.info(f"Target placeholder is empty")
                         else:
-                            target_template = PromptTemplate(target_seed_obj.output_text)
+                            target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"])
                             break
                         count +=1
                     else:
                         raise ValueError("Invalid template.")
                     
                 else:
-                    target_template = PromptTemplate(target_seed_obj.output_text,parameters = list(**kwargs)) #check 
+                    target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"]) #check 
 
                 target_template_node = PromptNode(self, target_template, parent= current_seed) # convert the target_template into a prompt_node to maintain the tree information
             
