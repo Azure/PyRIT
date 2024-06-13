@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestResponse
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
 from azure.storage.blob import ContainerClient
@@ -128,7 +129,6 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
 
         """
         self._validate_request(prompt_request=prompt_request)
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         request = prompt_request.request_pieces[0]
 
@@ -146,9 +146,7 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         processing_output = str(processing_output)
         logger.info(f'Received the following response from the prompt target "{processing_output}"')
 
-        response = self._memory.add_response_entries_to_memory(
-            request=request, response_text_pieces=[processing_output]
-        )
+        response = construct_response_from_request(request=request, response_text_pieces=[processing_output])
         return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:

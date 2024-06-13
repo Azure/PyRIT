@@ -199,8 +199,8 @@ class RedTeamingOrchestrator(Orchestrator):
             prompt = await self._get_prompt_from_red_teaming_target(feedback=feedback)
 
         target_prompt_obj = NormalizerRequestPiece(
-            prompt_converters=self._prompt_converters,
-            prompt_text=prompt,
+            request_converters=self._prompt_converters,
+            prompt_value=prompt,
             prompt_data_type="text",
         )
 
@@ -296,7 +296,7 @@ class RedTeamingOrchestrator(Orchestrator):
             logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
             return self._initial_red_teaming_prompt
 
-        if last_response_from_attack_target.converted_value_data_type == "text":
+        if last_response_from_attack_target.converted_value_data_type in ["text", "error"]:
             return self._handle_text_response(last_response_from_attack_target, feedback)
 
         return self._handle_file_response(last_response_from_attack_target, feedback)
@@ -314,8 +314,9 @@ class RedTeamingOrchestrator(Orchestrator):
 
         response_text = (
             (
-                await self._red_teaming_chat.send_chat_prompt_async(
-                    prompt=prompt_text,
+                await self._prompt_normalizer.send_prompt_async(
+                    normalizer_request=self._create_normalizer_request(prompt_text=prompt_text),
+                    target=self._red_teaming_chat,
                     conversation_id=self._red_teaming_chat_conversation_id,
                     orchestrator_identifier=self.get_identifier(),
                     labels=self._global_memory_labels,

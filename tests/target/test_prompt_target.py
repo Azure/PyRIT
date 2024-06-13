@@ -90,41 +90,27 @@ async def test_send_prompt_user_no_system(
 
         await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
-        chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(
-            conversation_id=request.conversation_id
-        )
-        assert len(chats) == 2, f"Expected 2 chats, got {len(chats)}"
-        assert chats[0].role == "user"
-        assert chats[1].role == "assistant"
+        mock.assert_called_once()
+
+        _, kwargs = mock.call_args
+
+        assert kwargs["messages"]
+        assert len(kwargs["messages"]) == 1
+        assert kwargs["messages"][0]["role"] == "user"
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_with_system(
-    azure_openai_target: AzureOpenAIChatTarget,
-    openai_mock_return: ChatCompletion,
-    sample_entries: list[PromptRequestPiece],
-):
+async def test_set_system_prompt_adds_memory(azure_openai_target: AzureOpenAIChatTarget):
+    azure_openai_target.set_system_prompt(
+        system_prompt="system prompt",
+        conversation_id="1",
+        orchestrator_identifier=Orchestrator().get_identifier(),
+        labels={},
+    )
 
-    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
-        mock.return_value = openai_mock_return
-
-        azure_openai_target.set_system_prompt(
-            system_prompt="system prompt",
-            conversation_id="1",
-            orchestrator_identifier=Orchestrator().get_identifier(),
-            labels={},
-        )
-
-        request = sample_entries[0]
-        request.converted_value = "hi, I am a victim chatbot, how can I help?"
-        request.conversation_id = "1"
-
-        await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
-
-        chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(conversation_id="1")
-        assert len(chats) == 3, f"Expected 3 chats, got {len(chats)}"
-        assert chats[0].role == "system"
-        assert chats[1].role == "user"
+    chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(conversation_id="1")
+    assert len(chats) == 1, f"Expected 1 chats, got {len(chats)}"
+    assert chats[0].role == "system"
 
 
 @pytest.mark.asyncio
