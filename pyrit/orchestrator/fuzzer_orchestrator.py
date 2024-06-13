@@ -89,17 +89,18 @@ class FuzzerOrchestrator(Orchestrator):
         random_state = None,
         max_jailbreak = -1, #Question: Should we get the max_jailbreak, max_query from user or a constant value?
         max_query = -1,
+        batch_size: int = 10,
     ) -> None:
 
-        """ Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
+        """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
+        
+        Paper: GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
 
             Link: https://arxiv.org/pdf/2309.10253
 
             Author: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
 
-            GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master"""
-
-        """Creates an orchestrator that explores a variety of jailbreak options via fuzzing.
+            GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
         
         Args:
         
@@ -142,6 +143,8 @@ class FuzzerOrchestrator(Orchestrator):
 
             max_query: maximum number of query.
 
+            batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+
         """
 
         self._prompt_target = prompt_target
@@ -163,7 +166,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._max_query = max_query
         self._current_query = 0
         self._current_jailbreak = 0
-        
+        self._batch_size = batch_size
         
         if not self._prompt_templates:
             raise ValueError("The initial seed cannot be empty.")
@@ -185,13 +188,13 @@ class FuzzerOrchestrator(Orchestrator):
             template_converter = self._template_converter
 
         def is_stop(self):
-        checks = [
-            ('max_query', 'current_query'),
-            ('max_jailbreak', 'current_jailbreak'),
-            # ('max_reject', 'current_reject'), #Question: should we need reject and iteration in the stopping criteria?
-            # ('max_iteration', 'current_iteration'),
-        ]
-        return any(getattr(self, max_attr) != -1 and getattr(self, curr_attr) >= getattr(self, max_attr) for max_attr, curr_attr in checks)
+            checks = [
+                ('max_query', 'current_query'),
+                ('max_jailbreak', 'current_jailbreak'),
+                # ('max_reject', 'current_reject'), #Question: should we need reject and iteration in the stopping criteria?
+                # ('max_iteration', 'current_iteration'),
+            ]
+            return any(getattr(self, max_attr) != -1 and getattr(self, curr_attr) >= getattr(self, max_attr) for max_attr, curr_attr in checks)
 
         async def execute_fuzzer(
         self, *, prompt_templates: list[str] = None
@@ -240,7 +243,7 @@ class FuzzerOrchestrator(Orchestrator):
                         raise ValueError("Invalid template.")
                     
                 else:
-                    target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"]) #check 
+                    target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"])
 
                 target_template_node = PromptNode(self, target_template, parent= current_seed) # convert the target_template into a prompt_node to maintain the tree information
             
@@ -285,10 +288,16 @@ class FuzzerOrchestrator(Orchestrator):
                 #datasets/score/content_classifiers/content_classifier_system_prompt.yaml ?????? todo: can we use the same yaml file? refusal message ""I'm Sorry, I can't help you with that" can be expanded.
 
       
-                scored_response = [await self._scorer.score_async(text=response)  for response in response_pieces]
+                #scored_response = [await self._scorer.score_async(text=response)  for response in response_pieces]
+                scored_response = [] #check
+                for response in response_pieces:
+                    scored_response.append(
+                        self._scorer.score_async(text=response))
+                batch_scored_response = await asyncio.gather(*scored_response)
+                    
 
                 dic_val = {'reject' : 0, 'jailbreak': 1} 
-                score_values = [dic_val[key] for key in dic_val]
+                score_values = [dic_val[key] for key in batch_scored_response]
  
                 #6. Update the rewards for each of the node.
                 self._num_jailbreak = sum(score_values)
