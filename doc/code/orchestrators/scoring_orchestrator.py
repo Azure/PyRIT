@@ -3,7 +3,7 @@
 #
 # A very common scenario is wanting to score multiple prompts. Here is a general strategy to do that using `ScoringOrchestrator`.
 #
-# 1. Get the `PromptRequestPiece`s into the database. This is done automatically if using any targets (e.g. running any of the demos), but even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or csvs as described [here](../memory/memory.ipynb)
+# 1. Get the `PromptRequestPiece`s into the database. This is done automatically if using any targets (e.g. running any of the demos), but even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or csvs as described [here](../memory/4_manually_working_with_memory.md)
 # 1. Scoring all prompts in the database that meet any criteria
 #
 # The following example demonstrates this by manually entering prompts in the database and then scoring them.
