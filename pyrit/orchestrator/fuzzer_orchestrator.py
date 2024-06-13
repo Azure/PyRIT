@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import logging
 import numpy as np
 from typing import Optional, Union, Dict, Any
@@ -15,7 +16,11 @@ from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, No
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer, Score
-from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
+from pyrit.score import SelfAskCategoryScorer
+from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
+from pyrit.models import PromptTemplate
+
+from pyrit.exceptions import EmptyResponseException, pyrit_retry
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +54,7 @@ class PromptNode:
     def _index(self):
         return self._index
 
-    @index.setter
+    @_index.setter
     def _index(self, index: int):
         self._index = index
         if self._parent is not None:
@@ -71,12 +76,12 @@ class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
     DEFAULT_TEMPLATE_CONVERTER = [ShortenConverter(), ExpandConverter()] 
-    TEMPLATE_PLACEHOLDER = '[INSERT PROMPT HERE]'
+    
 
     def __init__(
         self,
         *,
-        attack_content: list[str],   #questions in GPTFuzzer
+        prompts: list[str],   #questions in GPTFuzzer
         prompt_target: PromptTarget,
         prompt_templates: list[str], # list of all the jailbreak prompts on which MCTS will be applied.
         prompt_converters: Optional[list[PromptConverter]] = None,
@@ -85,10 +90,8 @@ class FuzzerOrchestrator(Orchestrator):
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
-        ratio=0.5, alpha=0.1, beta=0.2,
+        frequency_weight=0.5, reward_penalty=0.1, minimum_reward=0.2,
         random_state = None,
-        max_jailbreak = -1, #Question: Should we get the max_jailbreak, max_query from user or a constant value?
-        max_query = -1,
         batch_size: int = 10,
     ) -> None:
 
@@ -104,7 +107,7 @@ class FuzzerOrchestrator(Orchestrator):
         
         Args:
         
-            attack_content: The attack content will be the questions to the target (Similar to jailbreak_prompt). 
+            prompts: The prompts will be the questions to the target. 
             
             prompt_target: The target to send the prompts to.
             
@@ -112,7 +115,7 @@ class FuzzerOrchestrator(Orchestrator):
             At each iteration, a seed will be selected using the MCTS-explore algorithm which will be sent to the 
             shorten/expand prompt converter.
             
-                          The converted prompt along with the attack_content will be sent to the target. 
+                          The converted template along with the prompt will be sent to the target. 
                           
             prompt_converters: The prompt_converters to use to convert the prompts before sending 
             them to the prompt target. 
@@ -120,11 +123,11 @@ class FuzzerOrchestrator(Orchestrator):
             template_converter: The converter that will be applied on the jailbreak template that was 
             selected by MCTS-explore. 
             
-                          The prompt converters will not be applied to the attack_content. 
+                          The prompt converters will not be applied to the prompts. 
                           Shorten/expand prompt converters.
                           
             scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient (False)
-                to satisfy the objective that is specified in the attack_strategy.
+                to satisfy the objective that is specified in the prompt.
                 
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory 
             will be used.
@@ -133,15 +136,11 @@ class FuzzerOrchestrator(Orchestrator):
             
             verbose: Whether to print debug information.
 
-            ratio: constant that balances between the seed with high reward and the seed that is selected fewer times.
+            frequency_weight: constant that balances between the seed with high reward and the seed that is selected fewer times.
 
-            alpha: Reward penalty. Reward penalty diminishes the reward for the current node and its ancestors when the path lengthens.
+            Reward penalty: Reward penalty diminishes the reward for the current node and its ancestors when the path lengthens.
 
-            beta: Minimal reward. Minimal reward prevents the reward of the current node and its ancestors from being too small or negative.
-
-            max_jailbreak: maximum number of jailbreaks
-
-            max_query: maximum number of query.
+            Minimum reward. Minimal reward prevents the reward of the current node and its ancestors from being too small or negative.
 
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
 
@@ -149,7 +148,7 @@ class FuzzerOrchestrator(Orchestrator):
 
         self._prompt_target = prompt_target
         self._achieved_objective = False
-        self._attack_content = attack_content
+        self._prompts = prompts
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target._memory = self._memory
@@ -158,12 +157,12 @@ class FuzzerOrchestrator(Orchestrator):
         self._memory = self._memory
         self._prompt_templates = prompt_templates
         self._template_converter = template_converter
-        self._ratio = ratio  # balance between exploration and exploitation     #question: alpha, beta and ratio values are used for computing the rewards. vaile will not change. I don't think we need a input validation. 
-        self._alpha = alpha  # penalty for level
-        self._beta = beta   # minimal reward after penalty
+        self._frequency_weight = frequency_weight  # balance between exploration and exploitation     
+        self._reward_penalty = reward_penalty  # penalty for level
+        self._minimum_reward = minimum_reward   # minimal reward after penalty
         self._initial_prompts_nodes = self._prompt_nodes.copy()
-        self._max_jailbreak = max_jailbreak
-        self._max_query = max_query
+        self._max_jailbreak = 1
+        self._max_query = len(self._prompt_templates) * len(self._prompts) * 10
         self._current_query = 0
         self._current_jailbreak = 0
         self._batch_size = batch_size
@@ -220,56 +219,44 @@ class FuzzerOrchestrator(Orchestrator):
             """
             # stopping criteria
             while not self.is_stop():
-            
+
                 # 1. Select a seed from the list of the templates using the MCTS
             
                 current_seed = await self._get_seed(prompt_templates=prompt_templates)
 
                 #2. Apply seed converter to the selected template.
-            
-                target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
-                if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
-                    logger.info(f"Target placeholder is empty")
-                    count = 0
-                    while count < 4:
-                        target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
-                        if TARGET_PLACEHOLDER not in target_seed_obj.output_text:
-                            logger.info(f"Target placeholder is empty")
-                        else:
-                            target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"])
-                            break
-                        count +=1
-                    else:
-                        raise ValueError("Invalid template.")
-                    
-                else:
-                    target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"])
+                try: 
+                    target_seed_obj = await self._apply_template_converter(current_seed)
+                except:
+                    raise ValueError("Invalid template")
+                
+                target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"])
 
                 target_template_node = PromptNode(self, target_template, parent= current_seed) # convert the target_template into a prompt_node to maintain the tree information
             
 
                 #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
             
-                 jailbreak_prompts = []
-                 for prompt in attack_content:
+                jailbreak_prompts = []
+                for prompt in prompts:
                     jailbreak_prompts.append(
                         target_template.apply_custom_metaprompt_parameters(prompt=prompt) 
                     )
 
                 #4. Apply prompt converter if any and send request to a target 
             
-                  requests: list[NormalizerRequest] = []
-                  for jailbreak_prompt in jailbreak_prompts:
-                      requests.append(
-                          self._create_normalizer_request(
-                          prompt_text=jailbreak_prompt,
-                          prompt_type="text",
-                          converters=self._prompt_converters,
-                          )
+                requests: list[NormalizerRequest] = []
+                for jailbreak_prompt in jailbreak_prompts:
+                    requests.append(
+                        self._create_normalizer_request(
+                        prompt_text=jailbreak_prompt,
+                        prompt_type="text",
+                        converters=self._prompt_converters,
                         )
+                    )
 
-                  for request in requests:
-                      request.validate()
+                for request in requests:
+                    request.validate()
 
                 responses = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
                 await self._prompt_normalizer.send_prompt_batch_to_target_async(
@@ -293,11 +280,11 @@ class FuzzerOrchestrator(Orchestrator):
                 for response in response_pieces:
                     scored_response.append(
                         self._scorer.score_async(text=response))
-                batch_scored_response = await asyncio.gather(*scored_response)
+                batch_scored_response = await asyncio.gather(*scored_response) #batch_scored_response will be reject/jailbreak.
                     
 
                 dic_val = {'reject' : 0, 'jailbreak': 1} 
-                score_values = [dic_val[key] for key in batch_scored_response]
+                score_values = [dic_val[key] for key in batch_scored_response.score_category]
  
                 #6. Update the rewards for each of the node.
                 self._num_jailbreak = sum(score_values)
@@ -336,7 +323,7 @@ class FuzzerOrchestrator(Orchestrator):
             self.mctc_select_path.append(current)
 
             while len(current._children) > 0: # while node is not a leaf 
-                if np.random.rand() < self.alpha:
+                if np.random.rand() < self.reward_penalty:
                     break
                 current = max(   #compute the bestUCT score
                     current._children,
@@ -358,9 +345,9 @@ class FuzzerOrchestrator(Orchestrator):
          
          UCB function determines the confidence interval for each node and returns the highest value which will be selected as next seed."""
         
-        return self._rewards[_index] / (_visited_num + 1) +  #seed's average reward
-                    self._ratio * np.sqrt(2 * np.log(self._step) / # self._ratio - constant that balances between the seed with high reward and the seed that is selected fewer times. 
-                                     (_visited_num + 0.01))
+        return self._rewards[_index] / (_visited_num + 1) +  \
+            self._frequency_weight * np.sqrt(2 * np.log(self._step) /  (_visited_num + 0.01)) # self._frequency_weight - constant that balances between the seed with high reward and the seed that is selected fewer times. 
+              
                 
 
     def _update(self, prompt_nodes: 'list[PromptNode]'): #have to fix this function based on the output of the template converter. 
@@ -369,14 +356,41 @@ class FuzzerOrchestrator(Orchestrator):
 
         last_choice_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
-            reward = success_number / (len(self._attack_content)
+            reward = success_number / (len(self._prompts)
                                  * len(prompt_nodes))
             self._rewards[prompt_node.index] += reward * \
-                max(self.beta, (1 - 0.1 * last_choice_node._level))
-            
+                max(self._minimum_reward, (1 - 0.1 * last_choice_node._level))
+            #Question: in the GPTFuzzer paper output of a template_converter is a list of str. I assume that the current selected template(using MCTS algorithm) is given to template converter(shorten/expand) and the output will be a 
+            #template (str) that is shorten/expanded. I am doing the update for single template whereas in fuzzer paper for list of str. check the logic. 
 
-#Question: in the GPTFuzzer paper output of a template_converter is a list of str. I assume that the current selected template(using MCTS algorithm) is given to template converter(shorten/expand) and the output will be a 
-#template (str) that is shorten/expanded. I am doing the update for single template whereas in fuzzer paper for list of str. check the logic. 
+    @pyrit_retry #should have a function similar to pyrit_retry in exceptions?
+    async def _apply_template_converter(self,current_seed):
+        """
+        Asynchronously applies template converter.
+
+        Retries the function if it raises EmptyResponseException,
+        Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+        Args:
+            current_seed: The template that is selected. 
+
+        Returns:
+            converted template with placeholder for prompt. 
+
+        Raises:
+            EmptyResponseException: If the prompt placeholder is empty after exhausting the maximum number of retries.
+        """
+        TEMPLATE_PLACEHOLDER = '[INSERT PROMPT HERE]'
+
+        target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
+        if TEMPLATE_PLACEHOLDER not in target_seed_obj.output_text:
+            raise EmptyResponseException(message="Prompt placeholder is empty.")
+        return target_seed_obj
+
+
+    
+  
+
 
 
 
