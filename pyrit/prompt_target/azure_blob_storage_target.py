@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 
 from azure.core.exceptions import ClientAuthenticationError
@@ -13,6 +11,7 @@ from enum import Enum
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
@@ -69,13 +68,6 @@ class AzureBlobStorageTarget(PromptTarget):
 
         super().__init__(memory=memory)
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
     async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:
         """
         (Async) Handles uploading blob to given storage container.
@@ -127,14 +119,13 @@ class AzureBlobStorageTarget(PromptTarget):
         data = str.encode(request.converted_value)
         blob_url = self._container_url + "/" + file_name
 
-        request.converted_value = blob_url
-        request.converted_value_data_type = "url"
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
         await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        return PromptRequestResponse([request])
+        response = construct_response_from_request(
+            request=request, response_text_pieces=[blob_url], response_type="url"
+        )
+
+        return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:

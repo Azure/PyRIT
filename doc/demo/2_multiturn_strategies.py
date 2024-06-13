@@ -27,6 +27,9 @@
 # Note that for this to succeed, the `RedTeamingOrchestrator` requires an LLM endpoint
 # without content moderation or other kinds of safety filtering mechanisms.
 # And even then, it depends on the model, and may not succeed every time.
+#
+# Before starting, confirm that you have the
+# [correct version of PyRIT installed](../setup/install_pyrit.md).
 
 # %%
 

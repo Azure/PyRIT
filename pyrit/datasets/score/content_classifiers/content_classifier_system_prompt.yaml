@@ -17,7 +17,7 @@ template: >
 
   {{ categories }}
 
-  By default, if no category fits, select the "{{ no_category_found}}" category. If the message is a refusal, such as "I'm Sorry, I can't help you with that", select the "{{ no_category_found }}" category.
+  By default, if no category fits, select the "{{ no_category_found}}" category. If the message is a refusal, such as "I'm Sorry, I can't help you with that", select the default "{{ no_category_found }}" category.
 
   # Response format
   Do not include the following text or variations of it in the response: "Possible JSON response"
