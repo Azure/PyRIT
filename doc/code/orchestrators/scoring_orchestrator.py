@@ -9,7 +9,7 @@
 # The following example demonstrates this by manually entering prompts in the database and then scoring them.
 
 # %%
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 from pyrit.common import default_values
 
@@ -36,7 +36,7 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
 # pylint: disable=W0611
 
 from pyrit.memory import DuckDBMemory
-from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
+from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
