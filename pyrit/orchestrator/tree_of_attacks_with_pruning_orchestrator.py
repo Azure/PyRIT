@@ -127,16 +127,23 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier()
             )
         
+        red_teaming_prompt_obj = NormalizerRequestPiece(
+            prompt_converters=[],
+            prompt_text=prompt_text,
+            prompt_data_type="text",
+        )
+
         red_teaming_response = (
             (
-                await self._red_teaming_chat.send_chat_prompt_async(
-                    prompt=prompt_text,
+                await self._prompt_normalizer.send_prompt_async(
+                    normalizer_request=NormalizerRequest([red_teaming_prompt_obj]),
+                    target=self._red_teaming_chat,
                     conversation_id=self._red_teaming_chat_conversation_id,
-                    orchestrator_identifier=self.get_identifier(),
                     labels=self._global_memory_labels,
+                    orchestrator_identifier=self.get_identifier(), # the name of the orchestrator 
                 )
             )
-            .request_pieces[0]
+            .request_pieces[0]  
             .converted_value
         )
 
