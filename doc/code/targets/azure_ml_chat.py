@@ -12,7 +12,7 @@
 #    - Navigate to the AML Studio.
 #    - Go to the 'Endpoints' section.
 #    - Retrieve the API key and endpoint URI.
-#    <br> <img src="./../../assets/aml_managed_online_endpoint_api_key.png" alt="aml_managed_online_endpoint_api_key.png" height="400"/> <br>
+#    <br> <img src="../../../assets/aml_managed_online_endpoint_api_key.png" alt="aml_managed_online_endpoint_api_key.png" height="400"/> <br>
 #
 # 1. **Set the Environment Variable:**
 #    - Add the obtained API key to an environment variable named `AZURE_ML_KEY`.
@@ -44,5 +44,5 @@ with AzureMLChatTarget() as azure_ml_chat_target:
 # %% [markdown]
 #
 # You can then use this cell anywhere you would use a `PromptTarget` object.
-# For example, you can create a red teaming orchestrator and do the entire [Gandalf Demo](../demo/1_gandalf.ipynb) but use this AML model.
-# This is also shown in the [Multiturn Demo](../demo/2_multiturn_strategies.ipynb).
+# For example, you can create a red teaming orchestrator and do the entire [Gandalf Demo](../../demo/1_gandalf.ipynb) but use this AML model.
+# This is also shown in the [Multiturn Demo](../../demo/2_multiturn_strategies.ipynb).
