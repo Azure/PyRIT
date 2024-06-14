@@ -191,14 +191,14 @@ class FuzzerOrchestrator(Orchestrator):
         else:
             template_converter = self._template_converter
 
-        def is_stop(self):
-            checks = [
-                ('max_query', 'current_query'),
-                ('max_jailbreak', 'current_jailbreak'),
-                # ('max_reject', 'current_reject'), #Question: should we need reject and iteration in the stopping criteria?
-                # ('max_iteration', 'current_iteration'),
-            ]
-            return any(getattr(self, max_attr) != -1 and getattr(self, curr_attr) >= getattr(self, max_attr) for max_attr, curr_attr in checks)
+        # def is_stop(self):
+        #     checks = [
+        #         ('max_query', 'current_query'),
+        #         ('max_jailbreak', 'current_jailbreak'),
+        #         # ('max_reject', 'current_reject'), #Question: should we need reject and iteration in the stopping criteria?
+        #         # ('max_iteration', 'current_iteration'),
+        #     ]
+        #     return any(getattr(self, max_attr) != -1 and getattr(self, curr_attr) >= getattr(self, max_attr) for max_attr, curr_attr in checks)
 
         async def execute_fuzzer(
         self, *, prompt_templates: list[str] = None
@@ -223,8 +223,12 @@ class FuzzerOrchestrator(Orchestrator):
 
             """
             # stopping criteria
-            while not self.is_stop():
-
+           # while not self.is_stop():
+            if self._current_query >= self._max_query:
+                logger.info(f"Maximum query limit reached.")
+            elif self._current_jailbreak >= self._max_jailbreak:
+                logger.info(f"Maximum number of jailbreaks reached.")
+            else:
                 # 1. Select a seed from the list of the templates using the MCTS
             
                 current_seed = await self._get_seed(prompt_templates=prompt_templates)
@@ -307,8 +311,8 @@ class FuzzerOrchestrator(Orchestrator):
 
         def _get_seed(self, prompt_templates) -> PromptNode:
             self._step = 0 # to keep track of the steps or the count
-            self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
             self._last_choice_index = None
+            self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
             self._rewards = []
             
 
@@ -350,8 +354,8 @@ class FuzzerOrchestrator(Orchestrator):
          
          UCB function determines the confidence interval for each node and returns the highest value which will be selected as next seed."""
         
-        return self._rewards[_index] / (_visited_num + 1) +  \
-            self._frequency_weight * np.sqrt(2 * np.log(self._step) /  (_visited_num + 0.01)) # self._frequency_weight - constant that balances between the seed with high reward and the seed that is selected fewer times. 
+        return self._rewards[self._index] / (self._visited_num + 1) +  \
+            self._frequency_weight * np.sqrt(2 * np.log(self._step) /  (self._visited_num + 0.01)) # self._frequency_weight - constant that balances between the seed with high reward and the seed that is selected fewer times. 
               
                 
 
