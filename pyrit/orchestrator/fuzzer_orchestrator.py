@@ -19,6 +19,9 @@ from pyrit.score import Scorer, Score
 from pyrit.score import SelfAskCategoryScorer
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.models import PromptTemplate
+from tenacity import retry, stop_after_attempt,  retry_if_exception_type, after_log
+from typing import Callable
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 
 from pyrit.exceptions import EmptyResponseException, pyrit_retry
 
@@ -91,6 +94,7 @@ class FuzzerOrchestrator(Orchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         frequency_weight=0.5, reward_penalty=0.1, minimum_reward=0.2,
+        non_leaf_nodeprobability =0.1,
         random_state = None,
         batch_size: int = 10,
     ) -> None:
@@ -160,6 +164,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._frequency_weight = frequency_weight  # balance between exploration and exploitation     
         self._reward_penalty = reward_penalty  # penalty for level
         self._minimum_reward = minimum_reward   # minimal reward after penalty
+        self._non_leaf_nodeprobability = non_leaf_nodeprobability
         self._initial_prompts_nodes = self._prompt_nodes.copy()
         self._max_jailbreak = 1
         self._max_query = len(self._prompt_templates) * len(self._prompts) * 10
@@ -323,7 +328,7 @@ class FuzzerOrchestrator(Orchestrator):
             self.mctc_select_path.append(current)
 
             while len(current._children) > 0: # while node is not a leaf 
-                if np.random.rand() < self.reward_penalty:
+                if np.random.rand() < self._non_leaf_nodeprobability:
                     break
                 current = max(   #compute the bestUCT score
                     current._children,
@@ -359,11 +364,11 @@ class FuzzerOrchestrator(Orchestrator):
             reward = success_number / (len(self._prompts)
                                  * len(prompt_nodes))
             self._rewards[prompt_node.index] += reward * \
-                max(self._minimum_reward, (1 - 0.1 * last_choice_node._level))
+                max(self._minimum_reward, (1 - self._reward_penalty * last_choice_node._level))
             #Question: in the GPTFuzzer paper output of a template_converter is a list of str. I assume that the current selected template(using MCTS algorithm) is given to template converter(shorten/expand) and the output will be a 
             #template (str) that is shorten/expanded. I am doing the update for single template whereas in fuzzer paper for list of str. check the logic. 
 
-    @pyrit_retry #should have a function similar to pyrit_retry in exceptions?
+    @pyrit_retry 
     async def _apply_template_converter(self,current_seed):
         """
         Asynchronously applies template converter.
@@ -388,9 +393,7 @@ class FuzzerOrchestrator(Orchestrator):
         return target_seed_obj
 
 
-    
-  
-
+   
 
 
 
