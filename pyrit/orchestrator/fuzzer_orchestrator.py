@@ -360,8 +360,7 @@ class FuzzerOrchestrator(Orchestrator):
                 
 
     def _update(self, prompt_nodes: 'list[PromptNode]'): #have to fix this function based on the output of the template converter. 
-        success_number = sum([prompt_node._num_jailbreak
-                        for prompt_node in _prompt_nodes])    #Question: if output of template_converter is a str, the success_number will be always 1?
+        success_number = self._num_jailbreak
 
         last_choice_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
@@ -369,9 +368,7 @@ class FuzzerOrchestrator(Orchestrator):
                                  * len(prompt_nodes))
             self._rewards[prompt_node.index] += reward * \
                 max(self._minimum_reward, (1 - self._reward_penalty * last_choice_node._level))
-            #Question: in the GPTFuzzer paper output of a template_converter is a list of str. I assume that the current selected template(using MCTS algorithm) is given to template converter(shorten/expand) and the output will be a 
-            #template (str) that is shorten/expanded. I am doing the update for single template whereas in fuzzer paper for list of str. check the logic. 
-
+            
     @pyrit_retry 
     async def _apply_template_converter(self,current_seed):
         """
