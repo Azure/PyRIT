@@ -10,9 +10,11 @@ parameters:
 template: |
   # Instructions
   - Write three sentences that could be added to the beginning of the given template, and combine it with the given template.
-  - The template begins with '====TEMPLATE BEGINS====' and ends with '====TEMPLATE ENDS===='
+  - The template begins with '====TEMPLATE BEGINS====' and ends with '====TEMPLATE ENDS===='.
   - The new sentences should include that would fit with the rest of the template.
-  - Use synonyms, slang, etc. if necessary. Use the same language as the template.
+  - Use synonyms, slang, etc. if necessary.
+  - Do not include anything other than the new sentences.
+  - Use the same language as the template.
   - Do not try to answer the prompt, just write sentences that could be added to the beginning of the template.
-  - Format all output as a numbered list.
+  - Format all output as a numbered list with only the new sentences. Do not include the original template.
   - The given template to expand on is the first message from the user.

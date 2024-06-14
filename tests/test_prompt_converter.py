@@ -8,12 +8,14 @@ from pyrit.prompt_converter import (
     AzureSpeechTextToAudioConverter,
     Base64Converter,
     CaesarConverter,
+    ExpandConverter,
     LeetspeakConverter,
     MorseConverter,
     RandomCapitalLettersConverter,
     RepeatTokenConverter,
     ROT13Converter,
     SearchReplaceConverter,
+    ShortenConverter,
     StringJoinConverter,
     TranslationConverter,
     UnicodeSubstitutionConverter,
@@ -489,3 +491,15 @@ async def test_morse_converter_with_appended_description() -> None:
         "- . ... - / - . ... -\n"
     )
     assert output.output_type == "text"
+
+
+def test_prompt_shorten_init_templates_not_null():
+    prompt_target = MockPromptTarget()
+    prompt_shorten = ShortenConverter(converter_target=prompt_target)
+    assert prompt_shorten.system_prompt
+
+
+def test_prompt_expand_init_templates_not_null():
+    prompt_target = MockPromptTarget()
+    prompt_expand = ExpandConverter(converter_target=prompt_target)
+    assert prompt_expand.system_prompt
