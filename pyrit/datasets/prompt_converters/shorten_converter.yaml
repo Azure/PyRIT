@@ -18,5 +18,5 @@ template: |
   - Do not include anything else in the output besides the condensed template.
   - Use the same language as the template.
   - Do not try to answer the prompt, just condense the template.
-  - Format the output as a string.
+  - Format the output in json as {"output": "condensed template"}.
   - The given template to condense is the first message from the user.

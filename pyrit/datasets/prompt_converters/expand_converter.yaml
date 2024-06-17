@@ -16,5 +16,5 @@ template: |
   - Do not include anything other than the new sentences.
   - Use the same language as the template.
   - Do not try to answer the prompt, just write sentences that could be added to the beginning of the template.
-  - Format all output as a numbered list with only the new sentences. Do not include the original template.
+  - Format the output in json as {"output": "new sentences"}. Do not include the original template in the output.
   - The given template to expand on is the first message from the user.

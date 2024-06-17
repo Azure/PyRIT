@@ -85,11 +85,11 @@ class ExpandConverter(PromptConverter):
             response_msg = response_msg[8:-4]
 
         try:
-            ret_text = json.loads(response_msg)[0]
+            ret_text = json.loads(response_msg)["output"]
             return ConverterResult(output_text=ret_text + " " + prompt, output_type="text")
         except json.JSONDecodeError:
-            ret_text = response_msg.splitlines()[0][3:]
-            return ConverterResult(output_text=ret_text + " " + prompt, output_type="text")
+            logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
+            raise RuntimeError(f"Error in LLM response {response_msg}")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

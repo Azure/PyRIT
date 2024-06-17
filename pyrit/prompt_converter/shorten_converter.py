@@ -82,10 +82,11 @@ class ShortenConverter(PromptConverter):
         response_msg = response.request_pieces[0].converted_value
 
         try:
-            ret_text = json.loads(response_msg)[0]
+            ret_text = json.loads(response_msg)["output"]
             return ConverterResult(output_text=ret_text, output_type="text")
         except json.JSONDecodeError:
-            return ConverterResult(output_text=response_msg, output_type="text")
+            logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
+            raise RuntimeError(f"Error in LLM response {response_msg}")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
