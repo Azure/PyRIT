@@ -41,8 +41,6 @@ class ShortenConverter(PromptConverter):
             )
         )
 
-        self.number_variations = 1
-
         self.system_prompt = str(prompt_template.apply_custom_metaprompt_parameters())
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
@@ -80,6 +78,9 @@ class ShortenConverter(PromptConverter):
 
         response = await self.converter_target.send_prompt_async(prompt_request=request)
         response_msg = response.request_pieces[0].converted_value
+
+        if response_msg[:8] == "```json\n" and response_msg[-4:] == "\n```":
+            response_msg = response_msg[8:-4]
 
         try:
             ret_text = json.loads(response_msg)["output"]

@@ -41,8 +41,6 @@ class ExpandConverter(PromptConverter):
             )
         )
 
-        self.number_variations = 1
-
         self.system_prompt = str(prompt_template.apply_custom_metaprompt_parameters())
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
