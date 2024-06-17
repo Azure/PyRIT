@@ -3,11 +3,10 @@ import logging
 import uuid
 import pathlib
 
-from pyrit.models import PromptDataType
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
+from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_retry
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -80,16 +79,22 @@ class TranslationConverter(PromptConverter):
             ]
         )
 
+        response = await self.send_variation_prompt_async(request)
+
+        return ConverterResult(output_text=response[self.language], output_type="text")
+
+    @pyrit_retry
+    async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
         response_msg = response.request_pieces[0].converted_value
-
         try:
-            llm_response: dict[str, str] = json.loads(response_msg)["output"]
-            return ConverterResult(output_text=llm_response[self.language], output_type="text")
+            llm_response: dict[str, str] = json.loads(response_msg)
+            if "output" not in llm_response:
+                raise InvalidJsonException(message=response_msg)
+            return llm_response["output"]
 
-        except json.JSONDecodeError as e:
-            logger.warn(f"Error in LLM response {response_msg}: {e}")
-            raise RuntimeError(f"Error in LLM respons {response_msg}")
+        except json.JSONDecodeError:
+            raise InvalidJsonException(message=response_msg)
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
