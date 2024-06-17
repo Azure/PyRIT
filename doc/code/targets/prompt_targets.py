@@ -27,7 +27,7 @@ print(jailbreak_prompt)
 # The `AzureOpenAIChatTarget` inherits from the `PromptChatTarget` class, which expands upon the `PromptTarget` class by adding functionality to set a system prompt.
 # `PromptChatTargets` are also targets which will give a meaningful response from an assistant when given a user prompt, making them useful for multi-turn scenarios.
 #
-# _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../../setup/setup_azure.md).
+# _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../../setup/populating_secrets.md).
 
 # %%
 from pyrit.models import PromptRequestPiece
