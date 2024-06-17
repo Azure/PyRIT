@@ -2,13 +2,17 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
 import uuid
-from unittest.mock import MagicMock
+
+from typing import Generator, Literal
+from unittest import mock
+
+import pytest
+
+from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import inspect
+from sqlalchemy import and_, func, inspect
 from sqlalchemy import String, DateTime, INTEGER
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER, NVARCHAR
 from sqlalchemy.sql.sqltypes import NullType
@@ -33,19 +37,8 @@ def sample_conversation_entries() -> list[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
-@pytest.fixture
-def mock_session():
-    session = MagicMock()
-    session.add = MagicMock()
-    session.add_all = MagicMock()
-    session.commit = MagicMock()
-    session.query = MagicMock()
-    session.merge = MagicMock()
-    session.rollback = MagicMock()
-    return session
-
-
-def test_conversation_data_schema(memory_interface):
+@pytest.mark.skip('Need to mock engine')
+def test_conversation_data_schema(memory_interface: AzureSQLMemory):
     inspector = inspect(memory_interface.engine)
     columns = inspector.get_columns("PromptMemoryEntries")
     column_names = [col["name"] for col in columns]
@@ -73,7 +66,8 @@ def test_conversation_data_schema(memory_interface):
         assert column in column_names, f"{column} not found in PromptMemoryEntries schema."
 
 
-def test_embedding_data_schema(memory_interface):
+@pytest.mark.skip('Need to mock engine')
+def test_embedding_data_schema(memory_interface: AzureSQLMemory):
     inspector = inspect(memory_interface.engine)
     columns = inspector.get_columns("EmbeddingData")
     column_names = [col["name"] for col in columns]
@@ -84,7 +78,8 @@ def test_embedding_data_schema(memory_interface):
         assert column in column_names, f"{column} not found in EmbeddingData schema."
 
 
-def test_conversation_data_column_types(memory_interface):
+@pytest.mark.skip('Need to mock engine')
+def test_conversation_data_column_types(memory_interface: AzureSQLMemory):
     inspector = inspect(memory_interface.engine)
     columns = inspector.get_columns("PromptMemoryEntries")
     column_types = {col["name"]: type(col["type"]) for col in columns}
@@ -116,7 +111,8 @@ def test_conversation_data_column_types(memory_interface):
             ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
 
 
-def test_embedding_data_column_types(memory_interface):
+@pytest.mark.skip('Need to mock engine')
+def test_embedding_data_column_types(memory_interface: AzureSQLMemory):
     inspector = inspect(memory_interface.engine)
     columns = inspector.get_columns("EmbeddingData")
     column_types = {col["name"]: col["type"].__class__ for col in columns}
@@ -146,7 +142,6 @@ def test_embedding_data_column_types(memory_interface):
 
 
 def test_insert_entry(memory_interface):
-    session = memory_interface.get_session()
     entry = PromptMemoryEntry(
         entry=PromptRequestPiece(
             id=uuid.uuid4(),
@@ -157,20 +152,24 @@ def test_insert_entry(memory_interface):
             converted_value="Hello",
         )
     )
-    # Use the _insert_entry method to insert the entry into the database
-    memory_interface._insert_entry(entry)
+
+    memory_interface = AzureSQLMemory(connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server")
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
+        assert isinstance(session, UnifiedAlchemyMagicMock)
+        session.add.assert_not_called()
+        memory_interface._insert_entry(entry)
         inserted_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
         assert inserted_entry is not None
         assert inserted_entry.role == "user"
         assert inserted_entry.original_value == "Hello"
-        sha265 = "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969"
+        sha265 = "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969"  # sha256('Hello')
         assert inserted_entry.original_value_sha256 == sha265
 
 
-def test_insert_entry_violates_constraint(memory_interface):
+@pytest.mark.skip('Relies on mocking SQL constraint behavior')
+def test_insert_entry_violates_constraint(memory_interface: AzureSQLMemory):
     # Generate a fixed UUID
     fixed_uuid = uuid.uuid4()
     # Create two entries with the same UUID
@@ -206,7 +205,7 @@ def test_insert_entry_violates_constraint(memory_interface):
             session.commit()
 
 
-def test_insert_entries(memory_interface):
+def test_insert_entries(memory_interface: AzureSQLMemory):
     entries = [
         PromptMemoryEntry(
             entry=PromptRequestPiece(
@@ -232,7 +231,7 @@ def test_insert_entries(memory_interface):
             assert entry.converted_value == f"CMessage {i}"
 
 
-def test_insert_embedding_entry(memory_interface):
+def test_insert_embedding_entry(memory_interface: AzureSQLMemory):
     # Create a ConversationData entry
     conversation_entry = PromptMemoryEntry(
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="abc")
@@ -259,7 +258,7 @@ def test_insert_embedding_entry(memory_interface):
         assert persisted_embedding_entry.embedding_type_name == "test_type"
 
 
-def test_disable_embedding(memory_interface):
+def test_disable_embedding(memory_interface: AzureSQLMemory):
     memory_interface.disable_embedding()
 
     assert (
@@ -267,7 +266,7 @@ def test_disable_embedding(memory_interface):
     ), "disable_memory flag was passed, so memory embedding should be disabled."
 
 
-def test_default_enable_embedding(memory_interface):
+def test_default_enable_embedding(memory_interface: AzureSQLMemory):
     os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = "mock_key"
     os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = "embedding"
     os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"] = "deployment"
@@ -279,7 +278,7 @@ def test_default_enable_embedding(memory_interface):
     ), "Memory embedding should be enabled when set with environment variables."
 
 
-def test_default_embedding_raises(memory_interface):
+def test_default_embedding_raises(memory_interface: AzureSQLMemory):
     os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = ""
     os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = ""
     os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"] = ""
@@ -288,7 +287,7 @@ def test_default_embedding_raises(memory_interface):
         memory_interface.enable_embedding()
 
 
-def test_query_entries(memory_interface, sample_conversation_entries):
+def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_entries: list[PromptMemoryEntry]):
 
     for i in range(3):
         sample_conversation_entries[i].conversation_id = str(i)
@@ -301,15 +300,18 @@ def test_query_entries(memory_interface, sample_conversation_entries):
     queried_entries = memory_interface.query_entries(PromptMemoryEntry)
     assert len(queried_entries) == 3
 
+    session = memory_interface.get_session()
+    session.query.reset_mock()
+
     # Query entries with a condition
-    specific_entry = memory_interface.query_entries(
+    memory_interface.query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1"
     )
-    assert len(specific_entry) == 1
-    assert specific_entry[0].original_value == "Message 1"
+
+    session.query.return_value.filter.assert_called_once_with(PromptMemoryEntry.conversation_id == "1")
 
 
-def test_get_all_memory(memory_interface, sample_conversation_entries):
+def test_get_all_memory(memory_interface: AzureSQLMemory, sample_conversation_entries: list[PromptMemoryEntry]):
 
     memory_interface._insert_entries(entries=sample_conversation_entries)
 
@@ -318,7 +320,7 @@ def test_get_all_memory(memory_interface, sample_conversation_entries):
     assert len(all_entries) == 3
 
 
-def test_get_memories_with_json_properties(memory_interface):
+def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
     # Define a specific conversation_id
     specific_conversation_id = "test_conversation_id"
 
@@ -404,9 +406,22 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
         ),
     ]
 
-    memory_interface._insert_entries(entries=entries)
-
     orchestrator1_id = int(orchestrator1.get_identifier()["id"])
+
+    session_mock = UnifiedAlchemyMagicMock(data=[
+        (
+            [
+                mock.call.query(PromptMemoryEntry),
+                mock.call.filter(and_(
+                    func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
+                    func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, '$.id') == str(orchestrator1_id),
+                ))
+            ],
+            [entry for entry in entries if entry.orchestrator_identifier == orchestrator1.get_identifier()]
+        )
+    ])
+    session_mock.__enter__.return_value = session_mock
+    memory_interface.get_session.return_value = session_mock
 
     # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
     retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator1_id)
@@ -419,7 +434,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
 
 
 @pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
-def test_add_score_get_score(memory_interface, sample_conversation_entries, score_type):
+def test_add_score_get_score(memory_interface: AzureSQLMemory, sample_conversation_entries: list[PromptMemoryEntry], score_type: Literal['float_scale'] | Literal['true_false']):
     prompt_id = sample_conversation_entries[0].id
 
     memory_interface._insert_entries(entries=sample_conversation_entries)

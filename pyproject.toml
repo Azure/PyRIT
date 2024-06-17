@@ -72,6 +72,7 @@ dev = [
     "flake8-copyright>=0.2.4",
     "jupytext>=1.16.1",
     "mypy>=1.9.0",
+    "mock-alchemy>=0.2.6",
     "pillow>=10.3.0",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",

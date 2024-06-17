@@ -6,8 +6,10 @@ import tempfile
 
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, Optional
+from unittest.mock import MagicMock, patch
 import uuid
 
+from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from sqlalchemy import inspect
 
 from pyrit.common import default_values
@@ -113,22 +115,18 @@ def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
 
 
 def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
-    default_values.load_default_env()
-
     # Create a test Azure SQL Server DB
-    azure_sql_memory = AzureSQLMemory(connection_string=os.environ.get("AZURE_SQL_SERVER_TEST_CONNECTION_STRING"))
+    azure_sql_memory = AzureSQLMemory(connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server")
 
-    azure_sql_memory.disable_embedding()
+    with patch('pyrit.memory.AzureSQLMemory.get_session') as get_session_mock:
+        session_mock = UnifiedAlchemyMagicMock()
+        session_mock.__enter__.return_value = session_mock
+        get_session_mock.return_value = session_mock
 
-    # Reset the database to ensure a clean state
-    azure_sql_memory.reset_database()
-    inspector = inspect(azure_sql_memory.engine)
+        azure_sql_memory.disable_embedding()
 
-    # Verify that tables are created as expected
-    assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
-    assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
+        yield azure_sql_memory
 
-    yield azure_sql_memory
     azure_sql_memory.dispose_engine()
 
 
