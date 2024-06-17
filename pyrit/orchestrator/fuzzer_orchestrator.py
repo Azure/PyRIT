@@ -359,8 +359,8 @@ class FuzzerOrchestrator(Orchestrator):
               
                 
 
-    def _update(self, prompt_nodes: 'list[PromptNode]'): #have to fix this function based on the output of the template converter. 
-        success_number = self._num_jailbreak
+    def _update(self, prompt_nodes: 'list[PromptNode]'): 
+        success_number = self._num_jailbreak #check 
 
         last_choice_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
@@ -386,7 +386,7 @@ class FuzzerOrchestrator(Orchestrator):
         Raises:
             EmptyResponseException: If the prompt placeholder is empty after exhausting the maximum number of retries.
         """
-        TEMPLATE_PLACEHOLDER = '[INSERT PROMPT HERE]'
+        TEMPLATE_PLACEHOLDER = '[INSERT PROMPT HERE]' #check
 
         target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
         if TEMPLATE_PLACEHOLDER not in target_seed_obj.output_text:
