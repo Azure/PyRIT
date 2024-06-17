@@ -95,7 +95,7 @@ class CodeChameleonConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         if self.encrypt_function:
-            encoded_prompt = self.encrypt_function(prompt)
+            encoded_prompt = str(self.encrypt_function(prompt))
         else:
             encoded_prompt = prompt
 
@@ -152,7 +152,7 @@ class CodeChameleonConverter(PromptConverter):
             """Converts a tree to a JSON representation."""
             if node is None:
                 return None
-            return str({"value": node.value, "left": tree_to_json(node.left), "right": tree_to_json(node.right)})
+            return {"value": node.value, "left": tree_to_json(node.left), "right": tree_to_json(node.right)}
 
         words = sentence.split()
         root = build_tree(words, 0, len(words) - 1)
@@ -191,7 +191,8 @@ class CodeChameleonConverter(PromptConverter):
         word_data = to_json(word_data)
         return word_data
 
-    _decrypt_reverse = """
+    _decrypt_reverse = textwrap.dedent(
+        """
     The following is the decryption function.
     ```python
     def decryption(encrypted_problem):
@@ -201,8 +202,10 @@ class CodeChameleonConverter(PromptConverter):
         return original_problem
     ```
     """
+    )
 
-    _decrypt_binary_tree = """
+    _decrypt_binary_tree = textwrap.dedent(
+        """
     The following is the decryption function.
     ```python
     import json
@@ -243,8 +246,10 @@ class CodeChameleonConverter(PromptConverter):
         return original_problem
     ```
     """
+    )
 
-    _decrypt_odd_even = """
+    _decrypt_odd_even = textwrap.dedent(
+        """
     The following is the decryption function.
     ```python
     def decryption(encrypted_problem):
@@ -264,8 +269,10 @@ class CodeChameleonConverter(PromptConverter):
         return original_problem
     ```
     """
+    )
 
-    _decrypt_length = """
+    _decrypt_length = textwrap.dedent(
+        """
     The following is the decryption function.
     ```python
     def decryption(encrypted_problem):
@@ -280,3 +287,4 @@ class CodeChameleonConverter(PromptConverter):
         return original_problem
     ```
     """
+    )
