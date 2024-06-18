@@ -43,7 +43,7 @@ print(await AsciiArtConverter().convert_async(prompt=prompt))  # type: ignore
 # An orchestrator will typically initialize these requests, and they are sent to a target.
 # Converters can also stack, so a converter is used one after another.
 #
-# See [demo3](../demo/3_send_all_prompts.ipynb) and [demo4](../demo/4_prompt_variation.ipynb) for an example of how to use a converter in the pipeline.
+# See [demo3](../demo/3_send_all_prompts.ipynb) and [demo4](../demo/4_using_prompt_converters.ipynb) for an example of how to use a converter in the pipeline.
 
 # %% [markdown]
 # ### Converters with LLMs

@@ -22,7 +22,7 @@
 #
 # Before you begin, ensure the following steps have been completed:
 #
-# 1. Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/setup_azure.md)
+# 1. Before starting this, make sure you are [set up and authenticated to use Azure OpenAI endpoints](../setup/populating_secrets.md)
 #
 # 2. **Deploy an Azure OpenAI:** Confirm that an Azure OpenAI service is already deployed in Azure subscription.
 #

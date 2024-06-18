@@ -50,13 +50,13 @@ Ways to contribute: Check out our [target docs](./targets/prompt_targets.ipynb) 
 
 The scoring engine is a component that gives feedback to the orchestrator on what happened with the prompt. This could be as simple as "Was this prompt blocked?" or "Was our objective achieved?"
 
-Ways to contribute: Check out our [scoring docs](./scoring.ipynb) and [code](../../pyrit/score/). Is there data you want to use to make decisions or analyze?
+Ways to contribute: Check out our [scoring docs](./scoring/) and [code](../../pyrit/score/). Is there data you want to use to make decisions or analyze?
 
 ## Memory
 
 One important thing to remember about this architecture is its swappable nature. Prompts and targets and converters and orchestrators and scorers should all be swappable. But sometimes one of these components needs additional information. If the target is an LLM, we need a way to look up previous messages sent to that session so we can properly construct the new message. If the target is a blob store, we need to know the URL to use for a future attack.
 
-This information is often communicated through [memory](./memory/memory.ipynb) which is the glue that communicates data. With memory, we can look up previous messages or custom metadata about specific components.
+This information is often communicated through [memory](./memory/) which is the glue that communicates data. With memory, we can look up previous messages or custom metadata about specific components.
 
 Memory modifications and contributions should usually be designed with the maintainers.
 
