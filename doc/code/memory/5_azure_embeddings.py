@@ -1,7 +1,7 @@
 # %% [markdown]
 # ## Azure OpenAI Embeddings
 #
-# Similarly to the [Azure OpenAI Completions](./azure_completions.ipynb) endpoint, PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
+# PyRIT allows users to get and store embeddings. The embedding response is a wrapper for the OpenAI embedding API.
 
 # %%
 # Copyright (c) Microsoft Corporation.
