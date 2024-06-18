@@ -4,7 +4,7 @@
 # This notebook gives an introduction to the concept of `ChatMessage` and `ChatMessageNormalizer` and how it can be helpful as you start to work with different models.
 #
 #
-# The main format PyRIT works with is the `ChatMessage` paradigm. Any time a user wants to store or retrieve a chat message, they will use the `ChatMessage` object.
+# The main format PyRIT works with is the `PromptRequestPiece` paradigm. Any time a user wants to store or retrieve a chat message, they will use the `PromptRequestPiece` object. However, `ChatMessage` is very common, so there are a lot of times this is the most useful. Any `PromptRequestPiece` object can be translated into a `ChatMessage` object.
 #
 # However, different models may require different formats. For example, certain models may use chatml, or may not support system messages. This is handled
 # in from `ChatMessageNormalizer` and its subclasses.
@@ -48,7 +48,7 @@ chat_messages = normalizer.from_chatml(
 print(chat_messages)
 
 # %% [markdown]
-# To see how to use this in action, check out the [aml endpoint](./aml_endpoints.ipynb) notebook. It takes a `chat_message_normalizer` parameter so that an AML model can support various chat message formats.
+# To see how to use this in action, check out the [aml endpoint](../targets/azure_ml_chat.ipynb) notebook. It takes a `chat_message_normalizer` parameter so that an AML model can support various chat message formats.
 
 # %% [markdown]
 # Besides chatml, there are many other chat templates that a model might be trained on. If you would like to apply the template stored in a Hugging Face tokenizer,

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import io
 import os
 from tempfile import NamedTemporaryFile
 from typing import Generator
@@ -25,20 +26,26 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
-def test_send_prompt_user_no_system(memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]):
-    no_op = TextTarget(memory=memory_interface)
+@pytest.mark.asyncio
+async def test_send_prompt_user_no_system(memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]):
+    output_stream = io.StringIO()
+
+    no_op = TextTarget(memory=memory_interface, text_stream=output_stream)
 
     request = sample_entries[0]
     request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
-    no_op.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
+    await no_op.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
-    chats = no_op._memory._get_prompt_pieces_with_conversation_id(conversation_id=request.conversation_id)
-    assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
-    assert chats[0].role == "user"
+    output_stream.seek(0)
+    captured_output = output_stream.read()
+
+    assert captured_output
+    assert request.converted_value in captured_output
 
 
-def test_send_prompt_stream(memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]):
+@pytest.mark.asyncio
+async def test_send_prompt_stream(memory_interface: MemoryInterface, sample_entries: list[PromptRequestPiece]):
     with NamedTemporaryFile(mode="w+", delete=False) as tmp_file:
         prompt = "hi, I am a victim chatbot, how can I help?"
 
@@ -46,7 +53,7 @@ def test_send_prompt_stream(memory_interface: MemoryInterface, sample_entries: l
         request = sample_entries[0]
         request.converted_value = prompt
 
-        no_op.send_prompt(prompt_request=PromptRequestResponse(request_pieces=[request]))
+        await no_op.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
         tmp_file.seek(0)
         content = tmp_file.read()

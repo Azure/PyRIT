@@ -40,34 +40,6 @@ class PromptChatTarget(PromptTarget):
             ).to_prompt_request_response()
         )
 
-    def send_chat_prompt(
-        self,
-        *,
-        prompt: str,
-        conversation_id: str,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
-        labels: Optional[dict[str, str]] = None,
-    ) -> PromptRequestResponse:
-        """
-        Sends a text prompt to the target without having to build the prompt request.
-        """
-
-        request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    conversation_id=conversation_id,
-                    original_value=prompt,
-                    converted_value=prompt,
-                    prompt_target_identifier=self.get_identifier(),
-                    orchestrator_identifier=orchestrator_identifier,
-                    labels=labels,
-                )
-            ]
-        )
-
-        return self.send_prompt(prompt_request=request)
-
     async def send_chat_prompt_async(
         self,
         *,

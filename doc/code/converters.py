@@ -1,18 +1,4 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     text_representation:
-#       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.16.1
-#   kernelspec:
-#     display_name: pyrit-311
-#     language: python
-#     name: pyrit-311
-# ---
-
+# %% [markdown]
 # ## Converters
 
 # Converters are used to transform prompts before sending them to the target.
@@ -46,7 +32,7 @@ print(RandomCapitalLettersConverter(percentage=25.0).convert(prompt=prompt))
 print(AsciiArtConverter().convert(prompt=prompt))
 # -
 
-
+# %% [markdown]
 # ### Orchestrators
 
 # Converters should be thought of as a piece in the pipeine.
@@ -54,7 +40,7 @@ print(AsciiArtConverter().convert(prompt=prompt))
 # An orchestrator will typically initialize these requests, and they are sent to a target.
 # Converters can also stack, so a converter is used one after another.
 #
-# See [demo3](../demo/3_send_all_prompts.ipynb) and [demo4](../demo/4_prompt_variation.ipynb) for an example of how to use a converter in the pipeline.
+# See [demo3](../demo/3_send_all_prompts.ipynb) and [demo4](../demo/4_using_prompt_converters.ipynb) for an example of how to use a converter in the pipeline.
 
 # ### Converters with LLMs
 
@@ -110,17 +96,22 @@ assert os.path.exists(audio_convert_result.output_text)
 # Text can be added to images by using the `AddTextImageConverter`.
 # The converted image file will be saved in the db/results/images folder. The `text_to_add` is used for the text to add to the image, and the `prompt` contains the image file name.
 
-# +
-from pyrit.prompt_converter import AddTextImageConverter
-from pyrit.common.path import HOME_PATH
+# %%
 import pathlib
 
-image_converter = AddTextImageConverter(
-    font_size=0.03, color=(0, 0, 0), text_to_add=["We can add text into this image now!"]
+from pyrit.prompt_converter import AddTextImageConverter
+from pyrit.common.path import HOME_PATH, DATASETS_PATH
+from pyrit.models import PromptTemplate
+
+
+jailbreak_template = PromptTemplate.from_yaml_file(
+    pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
 )
-output_image_file = image_converter.convert(
-    prompt=str(pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"),
-)
+text_to_add: str = jailbreak_template.apply_custom_metaprompt_parameters(prompt="How to cut down a stop sign?")
+
+image_converter = AddTextImageConverter(text_to_add=text_to_add)
+image_location = str(pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png")
+output_image_file = await image_converter.convert_async(prompt=image_location)  # type: ignore
 
 print(output_image_file)
 # -
@@ -129,6 +120,10 @@ print(output_image_file)
 
 # +
 from PIL import Image
+from IPython.display import display
 
-output_image = Image.open(output_image_file.output_text)
-output_image.show()
+image_path = output_image_file.output_text
+image = Image.open(image_path)
+display(image)
+
+# %%

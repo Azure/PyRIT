@@ -27,14 +27,14 @@ def test_prompt_request_piece_init_valid_arguments():
     metadata = "meta"
 
     prompt = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
+        request_converters=prompt_converters,
+        prompt_value=prompt_text,
         prompt_data_type="text",
         metadata=metadata,
     )
 
-    assert prompt.prompt_converters == prompt_converters
-    assert prompt.prompt_text == prompt_text
+    assert prompt.request_converters == prompt_converters
+    assert prompt.prompt_value == prompt_text
     assert prompt.prompt_data_type == "text"
     assert prompt.metadata == metadata
 
@@ -44,13 +44,13 @@ def test_prompt_init_no_metadata():
     prompt_text = "Hello"
 
     prompt = NormalizerRequestPiece(
-        prompt_converters=prompt_converters,
-        prompt_text=prompt_text,
+        request_converters=prompt_converters,
+        prompt_value=prompt_text,
         prompt_data_type="text",
     )
 
-    assert prompt.prompt_converters == prompt_converters
-    assert prompt.prompt_text == prompt_text
+    assert prompt.request_converters == prompt_converters
+    assert prompt.prompt_value == prompt_text
     assert prompt.prompt_data_type == "text"
     assert not prompt.metadata
 
@@ -61,8 +61,8 @@ def test_prompt_request_piece_init_invalid_converter():
 
     with pytest.raises(ValueError):
         NormalizerRequestPiece(
-            prompt_converters=["InvalidPromptConverter"],
-            prompt_text=prompt_text,
+            request_converters=["InvalidPromptConverter"],
+            prompt_value=prompt_text,
             prompt_data_type="text",
             metadata=metadata,
         )
@@ -73,8 +73,8 @@ def test_prompt_init_invalid_prompt_text():
 
     with pytest.raises(ValueError):
         NormalizerRequestPiece(
-            prompt_converters=[],
-            prompt_text=None,
+            request_converters=[],
+            prompt_value=None,
             prompt_data_type="text",
             metadata=metadata,
         )
@@ -84,7 +84,7 @@ def test_prompt_init_invalid_prompt_text():
 async def test_normalizer_request_piece_throws_no_file():
     with pytest.raises(FileNotFoundError):
         NormalizerRequestPiece(
-            prompt_converters=[Base64Converter()],
+            request_converters=[Base64Converter()],
             prompt_data_type="image_path",
-            prompt_text="non_existent_file.png",
+            prompt_value="non_existent_file.png",
         )

@@ -236,7 +236,7 @@ async def test_is_conversation_complete_scoring(score, message_count):
 
     mock_scorer = MagicMock(Scorer)
     mock_scorer.scorer_type = "true_false"
-    mock_scorer.score_text_async = AsyncMock(return_value=[mock_score])
+    mock_scorer.score_async = AsyncMock(return_value=[mock_score])
 
     orchestrator = RedTeamingOrchestrator(
         attack_strategy="some strategy",

@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 
 from openai import AsyncAzureOpenAI
@@ -12,7 +10,7 @@ from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credenti
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptResponse
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
@@ -104,21 +102,12 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 azure_endpoint=endpoint,
             )
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Sends a normalized prompt to the prompt target and adds the request and response to memory
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.
         """
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -141,7 +130,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
             model=text_response.model,
             object=text_response.object,
         )
-        response_entry = self._memory.add_response_entries_to_memory(
+        response_entry = construct_response_from_request(
             request=request,
             response_text_pieces=[prompt_response.completion],
             prompt_metadata=prompt_response.to_json(),
