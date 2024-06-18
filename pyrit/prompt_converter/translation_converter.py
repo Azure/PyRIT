@@ -9,6 +9,7 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import PromptChatTarget
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,8 @@ class TranslationConverter(PromptConverter):
 
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language)
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Generates variations of the input prompts using the converter target.
         Parameters:
@@ -80,8 +82,7 @@ class TranslationConverter(PromptConverter):
             ]
         )
 
-        response = await self.converter_target.send_prompt_async(prompt_request=request)
-        response_msg = response.request_pieces[0].converted_value
+        response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_value
 
         try:
             llm_response: dict[str, str] = json.loads(response_msg)["output"]

@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import random
-import asyncio
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -14,7 +13,7 @@ class UnicodeConfusableConverter(PromptConverter):
         """Set up a converter. The 'deterministic' argument is for unittesting only."""
         self.deterministic = deterministic
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompts into things that look similar, but are actually different,
         using Unicode confusables -- e.g., replacing a Latin 'a' with a Cyrillic 'а'.
@@ -32,7 +31,7 @@ class UnicodeConfusableConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         return_text = "".join(self._confusable(c) for c in prompt)
-        await asyncio.sleep(0)
+
         return ConverterResult(output_text=return_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

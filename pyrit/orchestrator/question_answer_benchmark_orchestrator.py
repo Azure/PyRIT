@@ -72,7 +72,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             yamp_data = yaml.safe_load(default_data)
             self.evaluation_system_prompt = yamp_data.get("content")
 
-    async def evaluate(self) -> None:
+    def evaluate(self) -> None:
         """Evaluates the question answering dataset and prints the results."""
         self._chat_model_under_evaluation.set_system_prompt(
             system_prompt=self.evaluation_system_prompt,
@@ -85,7 +85,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
             request = self._create_normalizer_request(question_prompt, "text")
 
-            response = await self._normalizer.send_prompt_async(
+            response = self._normalizer.send_prompt(
                 normalizer_request=request,
                 target=self._chat_model_under_evaluation,
                 conversation_id=self._conversation_id,

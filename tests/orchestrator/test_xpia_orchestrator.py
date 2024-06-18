@@ -45,8 +45,7 @@ def success_scorer() -> Scorer:
     return mock_scorer
 
 
-@pytest.mark.asyncio
-async def test_xpia_orchestrator_execute_no_scorer(attack_setup_target):
+def test_xpia_orchestrator_execute_no_scorer(attack_setup_target):
     def processing_callback():
         return_request_response_obj = Mock()
         return_response_piece = Mock()
@@ -59,13 +58,10 @@ async def test_xpia_orchestrator_execute_no_scorer(attack_setup_target):
         attack_setup_target=attack_setup_target,
         processing_callback=processing_callback,
     )
-
-    xpia_operation = await xpia_orchestrator.execute_async()
-    assert xpia_operation is None
+    assert xpia_orchestrator.execute() is None
 
 
-@pytest.mark.asyncio
-async def test_xpia_orchestrator_execute(attack_setup_target, success_scorer):
+def test_xpia_orchestrator_execute(attack_setup_target, success_scorer):
     def processing_callback():
         return_request_response_obj = Mock()
         return_response_piece = Mock()
@@ -79,13 +75,12 @@ async def test_xpia_orchestrator_execute(attack_setup_target, success_scorer):
         scorer=success_scorer,
         processing_callback=processing_callback,
     )
-    score = await xpia_orchestrator.execute_async()
+    score = xpia_orchestrator.execute()
     assert score.score_value
     assert success_scorer.score_text_async.called_once
 
 
-@pytest.mark.asyncio
-async def test_xpia_manual_processing_orchestrator_execute(attack_setup_target, success_scorer, monkeypatch):
+def test_xpia_manual_processing_orchestrator_execute(attack_setup_target, success_scorer, monkeypatch):
     # Mocking user input to be "test"
     monkeypatch.setattr("builtins.input", lambda _: "test")
     xpia_orchestrator = XPIAManualProcessingOrchestrator(
@@ -93,14 +88,13 @@ async def test_xpia_manual_processing_orchestrator_execute(attack_setup_target, 
         attack_setup_target=attack_setup_target,
         scorer=success_scorer,
     )
-    score = await xpia_orchestrator.execute_async()
+    score = xpia_orchestrator.execute()
     assert score.score_value
     assert success_scorer.score_text_async.called_once
 
 
-@pytest.mark.asyncio
-async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_target, success_scorer):
-    with patch.object(processing_target, "send_prompt_async") as mock_send_to_processing_target:
+def test_xpia_test_orchestrator_execute(attack_setup_target, processing_target, success_scorer):
+    with patch.object(processing_target, "send_prompt") as mock_send_to_processing_target:
         xpia_orchestrator = XPIATestOrchestrator(
             attack_content="test",
             processing_prompt="some instructions and the required <test>",
@@ -108,15 +102,14 @@ async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_ta
             attack_setup_target=attack_setup_target,
             scorer=success_scorer,
         )
-        score = await xpia_orchestrator.execute_async()
+        score = xpia_orchestrator.execute()
         assert score.score_value
         assert success_scorer.score_text_async.called_once
         assert mock_send_to_processing_target.called_once
 
 
-@pytest.mark.asyncio
-async def test_xpia_orchestrator_process_async(attack_setup_target, processing_target, success_scorer):
-    with patch.object(processing_target, "send_prompt_async") as mock_send_to_processing_target:
+def test_xpia_orchestrator_process_async(attack_setup_target, processing_target, success_scorer):
+    with patch.object(processing_target, "send_prompt") as mock_send_to_processing_target:
         with patch.object(processing_target, "send_prompt_async") as mock_send_async_to_processing_target:
             mock_send_to_processing_target.side_effect = NotImplementedError()
             xpia_orchestrator = XPIATestOrchestrator(
@@ -126,7 +119,7 @@ async def test_xpia_orchestrator_process_async(attack_setup_target, processing_t
                 attack_setup_target=attack_setup_target,
                 scorer=success_scorer,
             )
-            score = await xpia_orchestrator.execute_async()
+            score = xpia_orchestrator.execute()
             assert score.score_value
             assert success_scorer.score_text_async.called_once
             assert mock_send_to_processing_target.called_once

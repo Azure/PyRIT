@@ -25,7 +25,7 @@ class MasterKeyOrchestrator(Orchestrator):
     """
     Creates an orchestrator that executes a master key jailbreak. It combines a master key prompt with the input
     prompt to attack a target. The orchestrator sends an inital master key prompt to the target, and then follows
-    up with a seperate attack prompt. Tests show that the two-prompt approach in the master_key_orchestrator is more
+    up with a separate attack prompt. Tests show that the two-prompt approach in the master_key_orchestrator is more
     effective than the single-prompt approach taken in the prompt_sending_orchestrator.
 
     Learn more about the attack from the source below:
