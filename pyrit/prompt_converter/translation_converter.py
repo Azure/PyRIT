@@ -87,6 +87,11 @@ class TranslationConverter(PromptConverter):
     async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
         response_msg = response.request_pieces[0].converted_value
+
+        # If the JSON is valid in Markdown format, remove the Markdown formatting
+        if response_msg[:8] == "```json\n" and response_msg[-4:] == "\n```":
+            response_msg = response_msg[8:-4]
+            
         try:
             llm_response: dict[str, str] = json.loads(response_msg)
             if "output" not in llm_response:
