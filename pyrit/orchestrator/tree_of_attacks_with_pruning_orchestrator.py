@@ -23,7 +23,6 @@ from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 logger = logging.getLogger(__name__)
 
 
-# Add improvement to prompt ! the response definitely needs to be parsed 
 class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
@@ -35,7 +34,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
         red_teaming_chat: PromptChatTarget,
         scorer: PromptChatTarget,
         conversation_goal: str,
-        initial_red_teaming_prompt: str = "Begin Conversation",
+        initial_red_teaming_prompt: str,
         on_topic_checker: Optional[PromptChatTarget] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
@@ -152,7 +151,6 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
             # Failed to parse the red teaming response, prune branch.
             return TAPBranchResult(pruned=False, completed=False)
         
-        # TODO make off-topic pruning optional
         ### EVALUATOR SYSTEM  1
 
             # Pruning 1 : Prune attack that is irrelevant to the conversation and stop conversation 
