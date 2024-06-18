@@ -362,12 +362,12 @@ class FuzzerOrchestrator(Orchestrator):
     def _update(self, prompt_nodes: 'list[PromptNode]'): 
         success_number = self._num_jailbreak #check 
 
-        last_choice_node = self._prompt_nodes[self._last_choice_index]
+        last_chosen_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
             reward = success_number / (len(self._prompts)
                                  * len(prompt_nodes))
             self._rewards[prompt_node.index] += reward * \
-                max(self._minimum_reward, (1 - self._reward_penalty * last_choice_node._level))
+                max(self._minimum_reward, (1 - self._reward_penalty * last_chosen_node._level))
             
     @pyrit_retry 
     async def _apply_template_converter(self,current_seed):
