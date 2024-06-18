@@ -4,24 +4,23 @@
 import asyncio
 import logging
 import numpy as np
-from typing import Optional, Union, Dict, Any
+from typing import Optional
 from uuid import uuid4
 from colorama import Fore, Style
 
 from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.memory import MemoryInterface
-from pyrit.models import AttackStrategy, PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.prompt_normalizer import PromptNormalizer, NormalizerRequest
+from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.score import Scorer, Score
+from pyrit.score import Scorer
 from pyrit.score import SelfAskCategoryScorer
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.models import PromptTemplate
-from tenacity import retry, stop_after_attempt,  retry_if_exception_type, after_log
 from typing import Callable
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
+from pyrit.prompt_converter import shorten_converter,expand_converter
 
 from pyrit.exceptions import EmptyResponseException, pyrit_retry
 
@@ -49,7 +48,7 @@ class PromptNode:
 
         self._parent: 'PromptNode' = parent
         self._children: 'list[PromptNode]' = []
-        self._level: int = 0 if parent is None else parent.level + 1
+        self._level: int = 0 if parent is None else parent._level + 1
 
         self._index: int = None
 
@@ -184,12 +183,12 @@ class FuzzerOrchestrator(Orchestrator):
         ]
 
         for i, prompt_node in enumerate(self._prompt_nodes):
-            prompt_node.index = i
+            prompt_node._index = i
 
         if template_converter is None:
-            template_converter = self.DEFAULT_TEMPLATE_CONVERTER
+            template_converter = random.choice(self.DEFAULT_TEMPLATE_CONVERTER)
         else:
-            template_converter = self._template_converter
+            template_converter = random.choice(self._template_converter)
 
         # def is_stop(self):
         #     checks = [
@@ -241,7 +240,7 @@ class FuzzerOrchestrator(Orchestrator):
                 
                 target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"])
 
-                target_template_node = PromptNode(self, target_template, parent= current_seed) # convert the target_template into a prompt_node to maintain the tree information
+                target_template_node = PromptNode(self, target_seed_obj, parent= current_seed) # convert the target_template into a prompt_node to maintain the tree information
             
 
                 #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
@@ -369,7 +368,7 @@ class FuzzerOrchestrator(Orchestrator):
         for prompt_node in reversed(self._mctc_select_path):
             reward = success_number / (len(self._prompts)
                                  * len(prompt_nodes))
-            self._rewards[prompt_node.index] += reward * \
+            self._rewards[prompt_node._index] += reward * \
                 max(self._minimum_reward, (1 - self._reward_penalty * last_chosen_node._level))
             
     @pyrit_retry 
