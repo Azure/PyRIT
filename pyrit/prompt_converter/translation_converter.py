@@ -4,7 +4,7 @@ import uuid
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_retry
+from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
@@ -83,7 +83,7 @@ class TranslationConverter(PromptConverter):
 
         return ConverterResult(output_text=response[self.language], output_type="text")
 
-    @pyrit_retry
+    @pyrit_json_retry
     async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
         response_msg = response.request_pieces[0].converted_value

@@ -12,7 +12,7 @@ from openai.types.chat import ChatCompletion
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.exceptions import EmptyResponseException, PyritException
-from pyrit.exceptions import pyrit_retry, handle_bad_request_exception
+from pyrit.exceptions import pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.models import construct_response_from_request
@@ -76,7 +76,7 @@ class OpenAIChatInterface(PromptChatTarget):
         response_message = response.choices[0].message.content
         return response_message
 
-    @pyrit_retry
+    @pyrit_target_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
