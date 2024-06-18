@@ -1,10 +1,11 @@
 name: prompt_expand
 description: |
-  A general strategy for expanding outputs.
+  A general strategy for expanding outputs adapted from
+  https://arxiv.org/abs/2309.10253 by J. Yu et al.
 harm_category: NA
-author:
+author: J. Yu et al.
 group:
-source:
+source: https://github.com/sherdencooper/GPTFuzz/blob/master/gptfuzzer/fuzzer/mutator.py
 should_be_blocked: false
 parameters:
 template: |

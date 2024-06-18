@@ -20,6 +20,14 @@ class ExpandConverter(PromptConverter):
     """
     Converter to expand prompts by prepending sentences.
 
+    Adapted from GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
+
+        Link: https://arxiv.org/pdf/2309.10253
+
+        Author: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
+
+        GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
+
     Parameters
     ---
     converter_target: PromptChatTarget
@@ -41,7 +49,7 @@ class ExpandConverter(PromptConverter):
             )
         )
 
-        self.system_prompt = str(prompt_template.apply_custom_metaprompt_parameters())
+        self.system_prompt = prompt_template.template
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
