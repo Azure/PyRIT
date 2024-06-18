@@ -149,16 +149,14 @@ class MasterKeyOrchestrator(Orchestrator):
 
         return responses
 
-    def _chunked_prompts(self, prompts, size):
+    def _chunked_prompts(self, prompts: list[str], size: int):
         for i in range(0, len(prompts), size):
             yield prompts[i : i + size]
 
     def print_conversation(self) -> None:
         """Prints all the conversations that have occured with the prompt target."""
 
-        target_messages = self._memory.get_prompt_request_piece_by_orchestrator_id(
-            orchestrator_id=self.get_identifier()["id"]
-        )
+        target_messages = self.get_memory()
 
         if not target_messages or len(target_messages) == 0:
             print("No conversation with the target")
