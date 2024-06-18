@@ -10,7 +10,7 @@ from uuid import uuid4
 
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptDataset, PromptDataType, PromptRequestResponse
+from pyrit.models import PromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
@@ -23,12 +23,14 @@ logger = logging.getLogger(__name__)
 
 class MasterKeyOrchestrator(Orchestrator):
     """
-    Creates an orchestrator that executes a master key jailbreak. It combines a master key prompt with the input
-    prompt to attack a target. The orchestrator sends an inital master key prompt to the target, and then follows
-    up with a separate attack prompt. Tests show that the two-prompt approach in the master_key_orchestrator is more
-    effective than the single-prompt approach taken in the prompt_sending_orchestrator.
+    Creates an orchestrator that executes a master key jailbreak.
 
-    Learn more about the attack from the source below:
+    The orchestrator sends an inital master key prompt to the target, and then follows
+    up with a separate attack prompt.
+    If successful, the first prompt makes the target comply even with malicious follow-up prompts.
+    In our experiments, using two separate prompts was significantly more effective than using a single combined prompt.
+
+    Learn more about the attack from Mark Russinovich's talk at Build 2024 at the link below:
     (TimeStamp: 37:13) https://build.microsoft.com/en-US/sessions/d29a16d5-f9ea-4f5b-9adf-fae0bd688ff3
     """
 
@@ -47,8 +49,7 @@ class MasterKeyOrchestrator(Orchestrator):
             master_key_prompt (str, optional): The master key prompt sent to the target. Defaults to master_key.prompt
             prompt_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
-                                    the order they are provided. E.g. the output of converter1 is the input of
-                                    converter2.
+                the order they are provided. E.g. the output of converter1 is the input of converter2.
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
             verbose (bool, optional): If set to True, verbose output will be enabled. Defaults to False.
@@ -74,7 +75,6 @@ class MasterKeyOrchestrator(Orchestrator):
         self,
         *,
         prompt: str,
-        prompt_type: PromptDataType = "text",
     ) -> PromptRequestResponse:
         """
         Sends a master key, followed by the attack prompt to the target.
@@ -92,8 +92,8 @@ class MasterKeyOrchestrator(Orchestrator):
 
         target_master_prompt_obj = NormalizerRequestPiece(
             request_converters=self._prompt_converters,
+            prompt_data_type="text",
             prompt_value=self._master_key_prompt,
-            prompt_data_type=prompt_type,
         )
 
         await self._prompt_normalizer.send_prompt_async(
@@ -106,8 +106,8 @@ class MasterKeyOrchestrator(Orchestrator):
 
         target_prompt_obj = NormalizerRequestPiece(
             request_converters=self._prompt_converters,
+            prompt_data_type="text",
             prompt_value=prompt,
-            prompt_data_type=prompt_type,
         )
 
         return await self._prompt_normalizer.send_prompt_async(
@@ -122,7 +122,6 @@ class MasterKeyOrchestrator(Orchestrator):
         self,
         *,
         prompt_list: list[str],
-        prompt_type: PromptDataType = "text",
     ) -> list[PromptRequestResponse]:
         """
         Sends a master key and prompt to the target for each prompt in a list of prompts.
@@ -139,7 +138,6 @@ class MasterKeyOrchestrator(Orchestrator):
         for prompts_batch in self._chunked_prompts(prompt_list, self._batch_size):
             tasks = []
             for prompt in prompts_batch:
-                await asyncio.sleep(5)
                 tasks.append(
                     self.send_master_key_with_prompt_async(
                         prompt=prompt,
@@ -155,7 +153,7 @@ class MasterKeyOrchestrator(Orchestrator):
         for i in range(0, len(prompts), size):
             yield prompts[i : i + size]
 
-    def print_conversation(self):
+    def print_conversation(self) -> None:
         """Prints all the conversations that have occured with the prompt target."""
 
         target_messages = self._memory.get_prompt_request_piece_by_orchestrator_id(

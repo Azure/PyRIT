@@ -13,7 +13,7 @@ from pyrit.orchestrator.xpia_orchestrator import (
 )
 
 __all__ = [
-    "MasterKeyOrchestrator"
+    "MasterKeyOrchestrator",
     "Orchestrator",
     "PromptSendingOrchestrator",
     "RedTeamingOrchestrator",
