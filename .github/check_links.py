@@ -1,18 +1,33 @@
 import re
 import sys
+import os
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-URL_PATTERN = re.compile(r'https?://[^\s)"]+')
+# Updated regex pattern to capture URLs from Markdown and HTML
+URL_PATTERN = re.compile(r'\[.*?\]\((.*?)\)|href="([^"]+)"|src="([^"]+)"')
 
 
 def extract_urls(file_path):
     with open(file_path, "r") as file:
         content = file.read()
-    return URL_PATTERN.findall(content)
+    matches = URL_PATTERN.findall(content)
+    # Flatten the list of tuples and filter out empty strings
+    urls = [url for match in matches for url in match if url]
+    return urls
+
+
+def resolve_relative_url(base_path, url):
+    if not url.startswith(("http://", "https://", "mailto:")):
+        return os.path.abspath(os.path.join(os.path.dirname(base_path), url))
+    return url
 
 
 def check_url(url):
+    if os.path.isfile(url) or os.path.isdir(url):
+        return url, True
+    if url.startswith("mailto:"):
+        return url, True
     try:
         response = requests.head(url, allow_redirects=True, timeout=5)
         if response.status_code >= 400:
@@ -24,9 +39,10 @@ def check_url(url):
 
 def check_links_in_file(file_path):
     urls = extract_urls(file_path)
+    resolved_urls = [resolve_relative_url(file_path, url) for url in urls]
     broken_urls = []
     with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(check_url, url): url for url in urls}
+        futures = {executor.submit(check_url, url): url for url in resolved_urls}
         for future in as_completed(futures):
             url, is_valid = future.result()
             if not is_valid:
@@ -48,3 +64,5 @@ if __name__ == "__main__":
             for url in urls:
                 print(f"  - {url}")
         sys.exit(1)
+    else:
+        print("No broken links found.")
