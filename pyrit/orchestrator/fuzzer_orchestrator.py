@@ -359,7 +359,10 @@ class FuzzerOrchestrator(Orchestrator):
               
                 
 
-    def _update(self, prompt_nodes: 'list[PromptNode]'): 
+    def _update(self, prompt_node: 'PromptNode'): 
+        """
+        Function to update the reward of all the nodes in the last chosen path. 
+        """
         success_number = self._num_jailbreak #check 
 
         last_chosen_node = self._prompt_nodes[self._last_choice_index]
