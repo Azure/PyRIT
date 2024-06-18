@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import logging
-from typing import Literal
-
 import azure.cognitiveservices.speech as speechsdk
+import asyncio
 
+from typing import Literal
 from pyrit.common import default_values
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptDataType
@@ -55,9 +55,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._output_format = output_format
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
+        return input_type == "audio_path"
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
@@ -102,5 +102,5 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         except Exception as e:
             logger.error("Failed to convert prompt to audio: %s", str(e))
             raise
-
+        await asyncio.sleep(0)
         return ConverterResult(output_text=audio_serializer_file, output_type="audio_path")

@@ -3,7 +3,6 @@
 
 import abc
 import asyncio
-import concurrent.futures
 
 from typing import Optional
 from uuid import uuid4
@@ -23,47 +22,6 @@ class PromptNormalizer(abc.ABC):
     def __init__(self, *, memory: MemoryInterface) -> None:
         self._memory = memory
         self.id = str(uuid4())
-
-    def send_prompt(
-        self,
-        *,
-        normalizer_request: NormalizerRequest,
-        target: PromptTarget,
-        conversation_id: str = None,
-        sequence: int = -1,
-        labels: Optional[dict[str, str]] = None,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
-    ) -> PromptRequestResponse:
-        """
-        Sends a single request to a target.
-
-        Args:
-            normalizer_request (NormalizerRequest): The request to be sent.
-            target (PromptTarget): The target to send the request to.
-            conversation_id (str, optional): The ID of the conversation. Defaults to None.
-            sequence (int, optional): The sequence number of the request. Defaults to -1.
-            labels (dict[str, str], optional): Additional labels for the request. Defaults to None.
-            orchestrator_identifier (dict[str, str], optional): The orchestrator identifier. Defaults to None.
-
-        Returns:
-            PromptRequestResponse: The response received from the target.
-        """
-
-        request_response = self._build_prompt_request_response(
-            request=normalizer_request,
-            target=target,
-            conversation_id=conversation_id,
-            sequence=sequence,
-            labels=labels,
-            orchestrator_identifier=orchestrator_identifier,
-        )
-        try:
-            # Use the synchronous prompt sending method by default.
-            return target.send_prompt(prompt_request=request_response)
-        except NotImplementedError:
-            # Alternatively, use async if sync is unavailable.
-            pool = concurrent.futures.ThreadPoolExecutor()
-            return pool.submit(asyncio.run, target.send_prompt_async(prompt_request=request_response)).result()
 
     async def send_prompt_async(
         self,
@@ -202,7 +160,7 @@ class PromptNormalizer(abc.ABC):
         for i in range(0, len(prompts), size):
             yield prompts[i : i + size]
 
-    def _build_prompt_request_response(
+    async def _build_prompt_request_response(
         self,
         *,
         request: NormalizerRequest,
