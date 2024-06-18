@@ -91,12 +91,12 @@ def pyrit_target_retry(func: Callable) -> Callable:
     """
     return retry(
         reraise=True,
-        retry=retry_if_exception_type(RateLimitError)
-        | retry_if_exception_type(EmptyResponseException),
+        retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=after_log(logger, logging.INFO),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
+
 
 def pyrit_json_retry(func: Callable) -> Callable:
     """
@@ -119,3 +119,19 @@ def pyrit_json_retry(func: Callable) -> Callable:
         after=after_log(logger, logging.INFO),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
+
+
+def remove_markdown_json(response_msg: str) -> str:
+    """
+    Checks if the response message is in JSON format and removes Markdown formatting if present.
+
+    Args:
+        response_msg (str): The response message to check.
+
+    Returns:
+        str: The response message without Markdown formatting if present.
+    """
+    if response_msg[:8] == "```json\n" and response_msg[-4:] == "\n```":
+        response_msg = response_msg[8:-4]
+
+    return response_msg

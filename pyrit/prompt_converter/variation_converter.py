@@ -8,7 +8,12 @@ import uuid
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
+from pyrit.exceptions.exception_classes import (
+    EmptyResponseException,
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
@@ -76,12 +81,24 @@ class VariationConverter(PromptConverter):
     @pyrit_json_retry
     async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
+        if not response:  # Handle empty response
+            raise EmptyResponseException(message="The chat returned an empty response")
+
+        print("HERE: ")
+        print(response.request_pieces[0])
+
         response_msg = response.request_pieces[0].converted_value
+        response_msg = remove_markdown_json(response_msg)
         try:
             response = json.loads(response_msg)
+
         except json.JSONDecodeError:
-            raise InvalidJsonException(message=response_msg)
-        return response[0]
+            raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}")
+
+        try:
+            return response[0]
+        except KeyError:
+            raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

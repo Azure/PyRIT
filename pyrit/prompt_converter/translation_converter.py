@@ -4,7 +4,12 @@ import uuid
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
+from pyrit.exceptions.exception_classes import (
+    EmptyResponseException,
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
@@ -86,20 +91,20 @@ class TranslationConverter(PromptConverter):
     @pyrit_json_retry
     async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
-        response_msg = response.request_pieces[0].converted_value
+        if not response:  # Handle empty response
+            raise EmptyResponseException(message="The chat returned an empty response")
 
-        # If the JSON is valid in Markdown format, remove the Markdown formatting
-        if response_msg[:8] == "```json\n" and response_msg[-4:] == "\n```":
-            response_msg = response_msg[8:-4]
-            
+        response_msg = response.request_pieces[0].converted_value
+        response_msg = remove_markdown_json(response_msg)
+
         try:
             llm_response: dict[str, str] = json.loads(response_msg)
             if "output" not in llm_response:
-                raise InvalidJsonException(message=response_msg)
+                raise InvalidJsonException(message=f"Invalid JSON encountered; missing 'output' key: {response_msg}")
             return llm_response["output"]
 
         except json.JSONDecodeError:
-            raise InvalidJsonException(message=response_msg)
+            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
