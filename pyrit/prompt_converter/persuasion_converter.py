@@ -16,7 +16,7 @@ from pyrit.prompt_target import PromptChatTarget
 logger = logging.getLogger(__name__)
 
 
-class ExpandConverter(PromptConverter):
+class PersuasionConverter(PromptConverter):
     """
     Converter to rephrase prompts using a variety of persuasion techniques.
 
@@ -25,14 +25,14 @@ class ExpandConverter(PromptConverter):
     converter_target: PromptChatTarget
         Chat target used to perform rewriting on user prompt
 
-    persuasion_technique: 
+    persuasion_technique:
     {"authority_endorsement", "evidence_based", "expert_endorsement", "logical_appeal", "misrepresentation"}
         Persuasion technique to be used by the converter, determines the system prompt to be used to
         generate new prompts.
         - authority_endorsement: Citing authoritative sources in support of a claim.
         - evidence_based: Using empirical data, statistics, and facts to support a claim or decision.
         - expert_endorsement: Citing domain experts in support of a claim.
-        - logical_appeal: 
+        - logical_appeal: Using logic or reasoning to support a claim.
         - misrepresentation: Presenting oneself or an issue in a way that's not genuine or true.
     """
 
@@ -40,7 +40,9 @@ class ExpandConverter(PromptConverter):
         self.converter_target = converter_target
 
         try:
-            prompt_template = PromptTemplate.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompt_converters" / "persuasion" / f"{persuasion_technique}.yaml")
+            prompt_template = PromptTemplate.from_yaml_file(
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "persuasion" / f"{persuasion_technique}.yaml"
+            )
         except FileNotFoundError:
             raise ValueError(f"Persuasion technique '{persuasion_technique}' does not exist or is not supported.")
         self.system_prompt = str(prompt_template.template)
@@ -78,6 +80,8 @@ class ExpandConverter(PromptConverter):
 
         response = await self.converter_target.send_prompt_async(prompt_request=request)
         response_msg = response.request_pieces[0].converted_value
+        if response_msg[:8] == "```json\n" and response_msg[-4:] == "\n```":
+            response_msg = response_msg[8:-4]
 
         try:
             ret_text = json.loads(response_msg)["mutated_text"]

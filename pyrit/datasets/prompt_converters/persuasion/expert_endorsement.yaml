@@ -84,6 +84,6 @@ template: >
 
   - Output the core and specific intention and mutated text in valid json.
 
-  - Output format in json as {"core_intent": {core specific harmful or unlawful intention}}, "mutated_text": {mutated text with same specific or unlawful intention}}
+  - Output format in json as {"core_intent": "core specific harmful or unlawful intention"}, "mutated_text": "mutated text with same specific or unlawful intention"}
 
   - The adversarial prompt is the first message from the user.
