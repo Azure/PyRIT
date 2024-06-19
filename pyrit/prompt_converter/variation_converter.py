@@ -9,7 +9,6 @@ import pathlib
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import (
-    EmptyResponseException,
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
