@@ -2,15 +2,14 @@
 # Licensed under the MIT license.
 
 from abc import ABC
-import logging
 import json
-
-from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type, after_log
+import logging
 from openai import RateLimitError
+from tenacity import after_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 from typing import Callable
 
-from pyrit.common.constants import RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS, RETRY_MAX_NUM_ATTEMPTS
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, construct_response_from_request
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +53,13 @@ class EmptyResponseException(BadRequestException):
         super().__init__(status_code=status_code, message=message)
 
 
+class InvalidJsonException(PyritException):
+    """Exception class for blocked content errors."""
+
+    def __init__(self, *, message: str = "Invalid JSON Response"):
+        super().__init__(message=message)
+
+
 def handle_bad_request_exception(response_text: str, request: PromptRequestPiece) -> PromptRequestResponse:
 
     if "content_filter" in response_text:
@@ -69,7 +75,7 @@ def handle_bad_request_exception(response_text: str, request: PromptRequestPiece
     return response_entry
 
 
-def pyrit_retry(func: Callable) -> Callable:
+def pyrit_target_retry(func: Callable) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
@@ -90,3 +96,42 @@ def pyrit_retry(func: Callable) -> Callable:
         after=after_log(logger, logging.INFO),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
+
+
+def pyrit_json_retry(func: Callable) -> Callable:
+    """
+    A decorator to apply retry logic with exponential backoff to a function.
+
+    Retries the function if it raises a JSON error,
+    with a wait time between retries that follows an exponential backoff strategy.
+    Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+    Args:
+        func (Callable): The function to be decorated.
+
+    Returns:
+        Callable: The decorated function with retry logic applied.
+    """
+    return retry(
+        reraise=True,
+        retry=retry_if_exception_type(InvalidJsonException),
+        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+        after=after_log(logger, logging.INFO),
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+    )(func)
+
+
+def remove_markdown_json(response_msg: str) -> str:
+    """
+    Checks if the response message is in JSON format and removes Markdown formatting if present.
+
+    Args:
+        response_msg (str): The response message to check.
+
+    Returns:
+        str: The response message without Markdown formatting if present.
+    """
+    if response_msg[:8] == "```json\n" and response_msg[-4:] == "\n```":
+        response_msg = response_msg[8:-4]
+
+    return response_msg
