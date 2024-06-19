@@ -12,6 +12,11 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.exceptions.exception_classes import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,18 +89,25 @@ class ShortenConverter(PromptConverter):
             ]
         )
 
-        response = await self.converter_target.send_prompt_async(prompt_request=request)
-        response_msg = response.request_pieces[0].converted_value
+        response = await self.send_shorten_prompt_async(request)
 
-        if response_msg[:8] == "```json\n" and response_msg[-4:] == "\n```":
-            response_msg = response_msg[8:-4]
+        return ConverterResult(output_text=response, output_type="text")
+
+    @pyrit_json_retry
+    async def send_shorten_prompt_async(self, request):
+        response = await self.converter_target.send_prompt_async(prompt_request=request)
+
+        response_msg = response.request_pieces[0].converted_value
+        response_msg = remove_markdown_json(response_msg)
 
         try:
-            ret_text = json.loads(response_msg)["output"]
-            return ConverterResult(output_text=ret_text, output_type="text")
+            llm_response = json.loads(response_msg)
+            if "output" not in llm_response:
+                raise InvalidJsonException(message=f"Invalid JSON encountered; missing 'output' key: {response_msg}")
+            return llm_response["output"]
+
         except json.JSONDecodeError:
-            logger.warning(logging.WARNING, f"could not parse response as JSON {response_msg}")
-            raise RuntimeError(f"Error in LLM response {response_msg}")
+            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
