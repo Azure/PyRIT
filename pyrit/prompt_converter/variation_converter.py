@@ -81,11 +81,6 @@ class VariationConverter(PromptConverter):
     @pyrit_json_retry
     async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
-        if not response:  # Handle empty response
-            raise EmptyResponseException(message="The chat returned an empty response")
-
-        print("HERE: ")
-        print(response.request_pieces[0])
 
         response_msg = response.request_pieces[0].converted_value
         response_msg = remove_markdown_json(response_msg)
