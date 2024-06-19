@@ -21,6 +21,7 @@ from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
+from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
 
 
 __all__ = [
@@ -29,6 +30,7 @@ __all__ = [
     "Base64Converter",
     "ConverterResult",
     "LeetspeakConverter",
+    "PersuasionConverter",
     "PromptConverter",
     "RandomCapitalLettersConverter",
     "ROT13Converter",
