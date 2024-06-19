@@ -148,6 +148,9 @@ class FuzzerOrchestrator(Orchestrator):
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
 
         """
+        super().__init__(
+            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+        )
 
         self._prompt_target = prompt_target
         self._achieved_objective = False
@@ -164,7 +167,6 @@ class FuzzerOrchestrator(Orchestrator):
         self._reward_penalty = reward_penalty  # penalty for level
         self._minimum_reward = minimum_reward   # minimal reward after penalty
         self._non_leaf_nodeprobability = non_leaf_nodeprobability
-        self._initial_prompts_nodes = self._prompt_nodes.copy()
         self._max_jailbreak = 1
         self._max_query = len(self._prompt_templates) * len(self._prompts) * 10
         self._current_query = 0
@@ -181,6 +183,8 @@ class FuzzerOrchestrator(Orchestrator):
         self._prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
             PromptNode(self, prompt) for prompt in prompt_templates 
         ]
+
+        self._initial_prompts_nodes = self._prompt_nodes.copy()
 
         for i, prompt_node in enumerate(self._prompt_nodes):
             prompt_node._index = i
