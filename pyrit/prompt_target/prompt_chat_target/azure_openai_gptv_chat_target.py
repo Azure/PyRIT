@@ -12,7 +12,7 @@ from openai.types.chat import ChatCompletion
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.exceptions import PyritException, EmptyResponseException
-from pyrit.exceptions import handle_bad_request_exception, pyrit_retry
+from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
 from pyrit.models import data_serializer_factory, construct_response_from_request
@@ -242,7 +242,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         response_message = response.choices[0].message.content
         return response_message
 
-    @pyrit_retry
+    @pyrit_target_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessageListContent],

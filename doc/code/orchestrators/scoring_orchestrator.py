@@ -3,13 +3,13 @@
 #
 # A very common scenario is wanting to score multiple prompts. Here is a general strategy to do that using `ScoringOrchestrator`.
 #
-# 1. Get the `PromptRequestPiece`s into the database. This is done automatically if using any targets (e.g. running any of the demos), but even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or csvs as described [here](../memory/memory.ipynb)
+# 1. Get the `PromptRequestPiece`s into the database. This is done automatically if using any targets (e.g. running any of the demos), but even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or csvs as described [here](../memory/4_manually_working_with_memory.md)
 # 1. Scoring all prompts in the database that meet any criteria
 #
 # The following example demonstrates this by manually entering prompts in the database and then scoring them.
 
 # %%
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 from pyrit.common import default_values
 
@@ -36,7 +36,7 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
 # pylint: disable=W0611
 
 from pyrit.memory import DuckDBMemory
-from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
+from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
