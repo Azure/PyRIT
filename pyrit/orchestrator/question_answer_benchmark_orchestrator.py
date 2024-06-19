@@ -1,12 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import textwrap
+from typing import Optional
 import yaml
 from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.prompt_converter.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import DATASETS_PATH
@@ -18,7 +19,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
     using a scoring mechanism.
 
     Args:
-        BaseRedTeamingOrchestrator (_type_): _description_
+        Orchestrator (_type_): _description_
     """
 
     _memory: MemoryInterface
@@ -33,22 +34,22 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         chat_model_under_evaluation: PromptChatTarget,
         scorer: QuestionAnswerScorer,
         prompt_converters: list[PromptConverter] = [],
-        memory: MemoryInterface | None = None,
-        memory_labels: dict[str, str] = None,
-        evaluation_prompt: str | None = None,
+        memory: Optional[MemoryInterface] = None,
+        memory_labels: Optional[dict[str, str]] = None,
+        evaluation_prompt: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
         """
-        Initializes a BenchmarkOrchestrator object.
+        Initializes a QuestionAnsweringBenchmarkOrchestrator object.
 
         Args:
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
             prompt_converters (list[PromptConverter], optional): The prompt converters to be used.
-            memory (MemoryInterface | None, optional): The memory interface to be used. Defaults to None.
-            memory_labels (list[str], optional): The labels to be associated with the memory.
+            memory (MemoryInterface, optional): The memory interface to be used. Defaults to None.
+            memory_labels (dict[str, str], optional): The labels to be associated with the memory.
                 Defaults to ["question-answering-benchmark-orchestrator"].
-            evaluation_prompt (str | None, optional): The evaluation prompt to be used. Defaults to None.
+            evaluation_prompt (str, optional): The evaluation prompt to be used. Defaults to None.
             verbose (bool, optional): Whether to print verbose output. Defaults to False.
         """
         super().__init__(
@@ -71,7 +72,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             yamp_data = yaml.safe_load(default_data)
             self.evaluation_system_prompt = yamp_data.get("content")
 
-    def evaluate(self) -> None:
+    async def evaluate(self) -> None:
         """Evaluates the question answering dataset and prints the results."""
         self._chat_model_under_evaluation.set_system_prompt(
             system_prompt=self.evaluation_system_prompt,
@@ -84,7 +85,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
             request = self._create_normalizer_request(question_prompt, "text")
 
-            response = self._normalizer.send_prompt(
+            response = await self._normalizer.send_prompt_async(
                 normalizer_request=request,
                 target=self._chat_model_under_evaluation,
                 conversation_id=self._conversation_id,
@@ -92,7 +93,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier(),
             )
 
-            answer = response.request_pieces[0].converted_prompt_text
+            answer = response.request_pieces[0].converted_value
             curr_score = self._scorer.score_question(question=question_entry, answer=answer)
 
             if self._verbose:

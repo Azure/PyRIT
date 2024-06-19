@@ -1,6 +1,6 @@
 # %% [markdown]
 # ## Prompt Targets
-# Prompt Targets are endpoints for where to send prompts. They are typically used with [orchestrators](https://github.com/Azure/PyRIT/blob/main/doc/code/orchestrator.ipynb),
+# Prompt Targets are endpoints for where to send prompts. They are typically used with [orchestrators](../orchestrators/orchestrator.ipynb),
 # but will be shown individually in this doc. An orchestrator's main job is to change prompts to a given format, apply any converters, and then send them off to prompt targets.
 # Within an orchestrator, prompt targets are (mostly) swappable, meaning you can use the same logic with different target endpoints.
 #
@@ -16,7 +16,6 @@ import pathlib
 
 from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece
 
 jailbreak_template = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
@@ -28,7 +27,7 @@ print(jailbreak_prompt)
 # The `AzureOpenAIChatTarget` inherits from the `PromptChatTarget` class, which expands upon the `PromptTarget` class by adding functionality to set a system prompt.
 # `PromptChatTargets` are also targets which will give a meaningful response from an assistant when given a user prompt, making them useful for multi-turn scenarios.
 #
-# _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../../setup/setup_azure.md).
+# _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../../setup/populating_secrets.md).
 
 # %%
 from pyrit.models import PromptRequestPiece
@@ -39,12 +38,16 @@ default_values.load_default_env()
 
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text=jailbreak_prompt,
+    original_value=jailbreak_prompt,
 ).to_prompt_request_response()
 
 
-with AzureOpenAIChatTarget() as azure_openai_chat_target:
-    print(azure_openai_chat_target.send_prompt(prompt_request=request))
+# By default, AOAI Chat Targets will use an API Key configured within environment variables to authenticate
+# There is an option to use the DefaultAzureCredential for User Authentication as well, for all AOAI Chat Targets.
+# When `use_aad_auth=True`, ensure the user has 'Cognitive Service OpenAI User' role assigned on the AOAI Resource
+# and `az login` is used to authenticate with the correct identity
+with AzureOpenAIChatTarget(use_aad_auth=False) as azure_openai_chat_target:
+    print(await azure_openai_chat_target.send_prompt_async(prompt_request=request))  # type: ignore
 
 # %% [markdown]
 # The `AzureBlobStorageTarget` inherits from `PromptTarget`, meaning it has functionality to send prompts. In contrast to `PromptChatTarget`s, `PromptTarget`s do not interact with chat assistants.
@@ -60,7 +63,6 @@ import os
 import uuid
 
 from pyrit.prompt_target import AzureBlobStorageTarget
-from pyrit.common import default_values
 
 
 # When using a Prompt Target with an Orchestrator, conversation ID and normalizer ID are handled for you
@@ -69,7 +71,7 @@ test_normalizer_id = None
 
 request = PromptRequestPiece(
     role="user",
-    original_prompt_text=jailbreak_prompt,
+    original_value=jailbreak_prompt,
 ).to_prompt_request_response()
 
 with AzureBlobStorageTarget(
@@ -77,4 +79,4 @@ with AzureBlobStorageTarget(
     sas_token=os.environ.get("AZURE_STORAGE_ACCOUNT_SAS_TOKEN"),
 ) as abs_prompt_target:
 
-    print(abs_prompt_target.send_prompt(prompt_request=request))
+    print(await abs_prompt_target.send_prompt_async(prompt_request=request))  # type: ignore

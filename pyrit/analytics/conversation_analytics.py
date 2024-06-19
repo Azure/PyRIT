@@ -36,16 +36,16 @@ class ConversationAnalytics:
             list[ConversationMessageWithSimilarity]: A list of ConversationMessageWithSimilarity objects representing
             the similar chat messages based on content.
         """
-        all_memories = self.memory_interface.get_all_prompt_entries()
+        all_memories = self.memory_interface.get_all_prompt_pieces()
         similar_messages = []
 
         for memory in all_memories:
-            if memory.converted_prompt_text == chat_message_content:
+            if memory.converted_value == chat_message_content:
                 similar_messages.append(
                     ConversationMessageWithSimilarity(
                         score=1.0,
                         role=memory.role,
-                        content=memory.converted_prompt_text,
+                        content=memory.converted_value,
                         metric="exact_match",  # Exact match
                     )
                 )

@@ -1,8 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
+
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 class StringJoinConverter(PromptConverter):
@@ -10,7 +12,7 @@ class StringJoinConverter(PromptConverter):
     def __init__(self, *, join_value="-"):
         self.join_value = join_value
 
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Simple converter that uses str join for letters between. E.g. with a `-`
         it converts a prompt of `test` to `t-e-s-t`
@@ -23,10 +25,10 @@ class StringJoinConverter(PromptConverter):
         Returns:
             list[str]: The converted prompts.
         """
-        if not self.is_supported(input_type):
+        if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
+        await asyncio.sleep(0)
+        return ConverterResult(output_text=self.join_value.join(prompt), output_type="text")
 
-        return self.join_value.join(prompt)
-
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

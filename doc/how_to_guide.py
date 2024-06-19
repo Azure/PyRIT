@@ -22,20 +22,25 @@
 # PyRIT also includes functionality to score LLM and keep track of conversation
 # history with a built-in memory which we discuss below.
 #
+# Before starting, confirm that you have the
+# [correct version of PyRIT installed](./setup/install_pyrit.md).
+#
 # ## Write prompts yourself
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
-# the classes from the [PromptChatTarget](https://github.com/main/pyrit/prompt_target/prompt_chat_target) module (e.g.,
-# AzureOpenAIChatTarget for Azure Open AI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
+# the classes from the [PromptChatTarget](./code/targets/prompt_targets.ipynb) module (e.g.,
+# AzureOpenAIChatTarget for Azure OpenAI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
 # packages (e.g., the [openai](https://github.com/openai/openai-python) Python package). When using `PromptChatTarget` and `PromptTarget` classes, always employ them within a "with" context manager to ensure automatic and safe release of database connections after use as shown below.
 
 # %%
 
 import os
+from pathlib import Path
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 default_values.load_default_env()
 
@@ -44,13 +49,11 @@ with AzureOpenAIChatTarget(
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 ) as target_llm:
-
     request = PromptRequestPiece(
         role="user",
-        original_prompt_text="this is a test prompt",
+        original_value="this is a test prompt",
     ).to_prompt_request_response()
-
-    target_llm.send_prompt(prompt_request=request)
+    await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
 
 # %% [markdown]
 # To expand to a wider variety of harms, it may be beneficial to write prompt templates instead of the
@@ -102,24 +105,19 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 # - run a single turn of the attack strategy or
 # - try to achieve the goal as specified in the attack strategy which may take multiple turns.
 #
-# The single turn is executed with the `send_prompt()` method. It generates the prompt using the red
+# The single turn is executed with the `send_prompt_async()` method. It generates the prompt using the red
 # teaming LLM and sends it to the target.
 # The full execution of the attack strategy over potentially multiple turns requires a mechanism
-# to determine if the goal has been achieved.
-# This is captured via the `is_conversation_complete()` method.
-# Classes that extend the `RedTeamingOrchestrator` can have their own implementation of this method,
-# e.g.,
-#
-# - `EndTokenRedTeamingOrchestrator` checks for a specific token in the output.
-# - `ScoringRedTeamingOrchestrator` scores the output to determine if the goal is reached.
-#
-# It is possible to define your own criteria and thereby implement a custom orchestrator.
+# to determine if the goal has been achieved. This happens via a scorer that evaluates the output of the
+# target LLM. The scorer can be a simple classifier that checks for specific keywords or a more complex
+# classifier that uses a model to evaluate the output.
 
 # %%
 
 from textwrap import dedent
-from pyrit.orchestrator import EndTokenRedTeamingOrchestrator
+from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.score import SelfAskTrueFalseScorer
 
 
 attack_strategy = dedent(
@@ -132,7 +130,7 @@ When the conversation objective is reached, type <|done|> to end the conversatio
 """
 )
 
-# red_teaming_llm could be any LLM endpoint. Here it is Azure Open AI for illustrative purposes.
+# red_teaming_llm could be any LLM endpoint. Here it is Azure OpenAI for illustrative purposes.
 red_teaming_llm = AzureOpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
@@ -145,28 +143,34 @@ target_llm = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
+scorer = SelfAskTrueFalseScorer(
+    true_false_question_path=Path("demo/scorer_definitions/offensive_comment_classifier.yaml"),
+    chat_target=red_teaming_llm,
+)
+
 # Create an orchestrator to manage the red teaming conversation.
 # The initial prompt is intended to keep the red teaming LLM on topic.
-with EndTokenRedTeamingOrchestrator(
+with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     red_teaming_chat=red_teaming_llm,
     prompt_target=target_llm,
     initial_red_teaming_prompt="Begin conversation",
+    scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
 
     # Apply the attack strategy until the conversation objective is reached
     # or the maximum number of turns is reached.
-    red_teaming_orchestrator.apply_attack_strategy_until_completion(max_turns=5)
+    await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
 
-    # Alternatively, use send_prompt() to generate just a single turn of the attack strategy.
+    # Alternatively, use send_prompt_async() to generate just a single turn of the attack strategy.
 
 # %% [markdown]
 # Going a step further, we can generalize the attack strategy into templates as mentioned in an earlier
 # section.
 # This way, the red teamer can create lots of different conversations based on a relatively small number
 # of templates. For better maintainability, we suggest storing the prompt templates in YAML files (see,
-# for example, `pyrit/datasets/attack_strategies/multi-turn-chat/red_team_chatbot_with_objective.yaml`).
+# for example, `pyrit/datasets/orchestrators/red_teaming/text_generation.yaml`).
 #
 # PyRIT also offers various integration choices for the red teaming orchestrators, including
 # [Azure ML managed online endpoints](../doc/code/targets/azure_ml_chat.ipynb),
@@ -177,22 +181,19 @@ with EndTokenRedTeamingOrchestrator(
 # Large Language Models (LLM) such as GPT, LLaMA, and Phi, take text as input and produce text as a
 # result. AI Red Teaming operations can produce a large number of outputs that need to be scored.
 # Manual scoring by humans is an option, but PyRIT can help in speeding up the process. PyRIT has a
-# built-in interface called `SupportTextClassification` to score text outputs. Security researchers
-# can use the pre-populated derived class `SelfAskGptClassifier` to classify text based on different
+# built-in interface called `Scorer` to score text outputs. Security researchers
+# can use the pre-populated derived class `SelfAskCategoryScorer` to classify text based on different
 # categories. For example, users wishing to determine whether or not a text contains harmful content
 # can use the snipped code below:
 
 # %%
 
-from pyrit.score import SelfAskGptClassifier, SENTIMENT_CLASSIFIER
-
 text_to_be_scored = "This is amazing!"
-classifier = SelfAskGptClassifier(content_classifier=str(SENTIMENT_CLASSIFIER), chat_target=red_teaming_llm)
-classifier.score_text(text=text_to_be_scored)
+await scorer.score_text_async(text=text_to_be_scored)  # type: ignore
 
 # %% [markdown]
 # In case the content to be classified is of a different type, users can override the base class
-# `SupportTextClassification` to add support for custom data types (such as embeddings).
+# `Scorer` to add support for custom data types (such as embeddings).
 #
 # ## Memory
 # PyRIT's memory component enables users to maintain a history of interactions within the system,

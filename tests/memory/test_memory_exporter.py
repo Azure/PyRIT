@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import csv
 import json
 import pytest
 
@@ -21,47 +22,69 @@ def model_to_dict(instance):
     return {c.key: getattr(instance, c.key) for c in inspect(instance).mapper.column_attrs}
 
 
-def test_export_to_json_creates_file(tmp_path, sample_conversation_entries):
-    exporter = MemoryExporter()
-    file_path = tmp_path / "conversations.json"
+def read_file(file_path, export_type):
+    if export_type == "json":
+        with open(file_path, "r") as f:
+            return json.load(f)
+    elif export_type == "csv":
+        with open(file_path, "r", newline="") as f:
+            reader = csv.DictReader(f)
+            return [row for row in reader]
+    else:
+        raise ValueError(f"Invalid export type: {export_type}")
 
-    exporter.export_to_json(sample_conversation_entries, file_path)
+
+def export(export_type, exporter, data, file_path):
+    if export_type == "json":
+        exporter.export_to_json(data, file_path)
+    elif export_type == "csv":
+        exporter.export_to_csv(data, file_path)
+    else:
+        raise ValueError(f"Invalid export type: {export_type}")
+
+
+@pytest.mark.parametrize("export_type", ["json", "csv"])
+def test_export_to_json_creates_file(tmp_path, sample_conversation_entries, export_type):
+    exporter = MemoryExporter()
+    file_path = tmp_path / f"conversations.{export_type}"
+
+    export(export_type=export_type, exporter=exporter, data=sample_conversation_entries, file_path=file_path)
 
     assert file_path.exists()  # Check that the file was created
-    with open(file_path, "r") as f:
-        content = json.load(f)
-        # Perform more detailed checks on content if necessary
-        assert len(content) == 3  # Simple check for the number of items
-        # Convert each ConversationStore instance to a dictionary
-        expected_content = [model_to_dict(conv) for conv in sample_conversation_entries]
+    content = read_file(file_path=file_path, export_type=export_type)
+    # Perform more detailed checks on content if necessary
+    assert len(content) == 3  # Simple check for the number of items
+    # Convert each ConversationStore instance to a dictionary
+    expected_content = [model_to_dict(conv) for conv in sample_conversation_entries]
 
-        for expected, actual in zip(expected_content, content):
-            assert expected["role"] == actual["role"]
-            assert expected["converted_prompt_text"] == actual["converted_prompt_text"]
-            assert expected["conversation_id"] == actual["conversation_id"]
-            assert expected["original_prompt_data_type"] == actual["original_prompt_data_type"]
-            assert expected["original_prompt_text"] == actual["original_prompt_text"]
+    for expected, actual in zip(expected_content, content):
+        assert expected["role"] == actual["role"]
+        assert expected["converted_value"] == actual["converted_value"]
+        assert expected["conversation_id"] == actual["conversation_id"]
+        assert expected["original_value_data_type"] == actual["original_value_data_type"]
+        assert expected["original_value"] == actual["original_value"]
 
 
-def test_export_data_with_conversations(tmp_path, sample_conversation_entries):
+@pytest.mark.parametrize("export_type", ["json", "csv"])
+def test_export_to_json_data_with_conversations(tmp_path, sample_conversation_entries, export_type):
     exporter = MemoryExporter()
+    conversation_id = sample_conversation_entries[0].conversation_id
 
     # Define the file path using tmp_path
     file_path = tmp_path / "exported_conversations.json"
 
     # Call the method under test
-    exporter.export_data(sample_conversation_entries, file_path=file_path, export_type="json")
+    export(export_type=export_type, exporter=exporter, data=sample_conversation_entries, file_path=file_path)
 
     # Verify the file was created
     assert file_path.exists()
 
     # Read the file and verify its contents
-    with open(file_path, "r") as f:
-        content = json.load(f)
-        assert len(content) == 3  # Check for the expected number of items
-        assert content[0]["role"] == "user"
-        assert content[0]["converted_prompt_text"] == "Hello, how are you?"
-        assert content[0]["conversation_id"] == "12345"
-        assert content[1]["role"] == "assistant"
-        assert content[1]["converted_prompt_text"] == "I'm fine, thank you!"
-        assert content[1]["conversation_id"] == "12345"
+    content = read_file(file_path=file_path, export_type=export_type)
+    assert len(content) == 3  # Check for the expected number of items
+    assert content[0]["role"] == "user"
+    assert content[0]["converted_value"] == "Hello, how are you?"
+    assert content[0]["conversation_id"] == conversation_id
+    assert content[1]["role"] == "assistant"
+    assert content[1]["converted_value"] == "I'm fine, thank you!"
+    assert content[1]["conversation_id"] == conversation_id

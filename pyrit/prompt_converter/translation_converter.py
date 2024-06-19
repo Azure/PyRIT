@@ -3,13 +3,15 @@ import logging
 import uuid
 import pathlib
 
-from pyrit.models import PromptDataType
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_converter import PromptConverter
-from pyrit.models import PromptTemplate
 from pyrit.common.path import DATASETS_PATH
+from pyrit.exceptions.exception_classes import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
-from tenacity import retry, stop_after_attempt, wait_fixed
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +46,8 @@ class TranslationConverter(PromptConverter):
         self.language = language
 
         self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language)
-        self._labels = {"converter": "TranslationConverter"}
 
-    @retry(stop=stop_after_attempt(2), wait=wait_fixed(1))
-    def convert(self, *, prompt: str, input_type: PromptDataType = "text") -> str:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Generates variations of the input prompts using the converter target.
         Parameters:
@@ -62,37 +62,46 @@ class TranslationConverter(PromptConverter):
             system_prompt=self.system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
-            labels=self._labels,
         )
 
-        if not self.is_supported(input_type):
+        if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
                     role="user",
-                    original_prompt_text=prompt,
-                    converted_prompt_text=prompt,
+                    original_value=prompt,
+                    converted_value=prompt,
                     conversation_id=conversation_id,
                     sequence=1,
-                    labels=self._labels,
                     prompt_target_identifier=self.converter_target.get_identifier(),
-                    original_prompt_data_type=input_type,
-                    converted_prompt_data_type=input_type,
+                    original_value_data_type=input_type,
+                    converted_value_data_type=input_type,
+                    converter_identifiers=[self.get_identifier()],
                 )
             ]
         )
 
-        response_msg = self.converter_target.send_prompt(prompt_request=request).request_pieces[0].converted_prompt_text
+        response = await self.send_variation_prompt_async(request)
+
+        return ConverterResult(output_text=response[self.language], output_type="text")
+
+    @pyrit_json_retry
+    async def send_variation_prompt_async(self, request):
+        response = await self.converter_target.send_prompt_async(prompt_request=request)
+
+        response_msg = response.request_pieces[0].converted_value
+        response_msg = remove_markdown_json(response_msg)
 
         try:
-            llm_response: dict[str, str] = json.loads(response_msg)["output"]
-            return llm_response[self.language]
+            llm_response: dict[str, str] = json.loads(response_msg)
+            if "output" not in llm_response:
+                raise InvalidJsonException(message=f"Invalid JSON encountered; missing 'output' key: {response_msg}")
+            return llm_response["output"]
 
-        except json.JSONDecodeError as e:
-            logger.warn(f"Error in LLM response {response_msg}: {e}")
-            raise RuntimeError(f"Error in LLM respons {response_msg}")
+        except json.JSONDecodeError:
+            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
 
-    def is_supported(self, input_type: PromptDataType) -> bool:
+    def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

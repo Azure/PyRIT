@@ -8,7 +8,7 @@ from pyrit.interfaces import EmbeddingSupport
 from pyrit.memory import MemoryEmbedding
 from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.memory.memory_models import PromptMemoryEntry
+from pyrit.memory import PromptMemoryEntry
 from tests.mocks import get_sample_conversation_entries
 
 
@@ -28,14 +28,6 @@ class MockEmbeddingGenerator(EmbeddingSupport):
 
     def generate_text_embedding_async(self, text: str, **kwargs) -> Coroutine[Any, Any, EmbeddingResponse]:
         raise NotImplementedError()
-
-
-class MockChatGenerator(EmbeddingSupport):
-    def __init__(self):
-        pass
-
-    def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
-        return super().generate_text_embedding(text, **kwargs)
 
 
 @pytest.fixture
@@ -59,7 +51,9 @@ def test_memory_encoding_chat_message(
 ):
     chat_memory = sample_conversation_entries[0]
 
-    metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(chat_memory=chat_memory)
+    metadata = memory_encoder_w_mock_embedding_generator.generate_embedding_memory_data(
+        prompt_request_piece=chat_memory
+    )
     assert metadata.id == chat_memory.id
     assert metadata.embedding == DEFAULT_EMBEDDING_DATA.embedding
     assert metadata.embedding_type_name == "MockEmbeddingGenerator"

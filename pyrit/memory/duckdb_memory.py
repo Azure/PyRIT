@@ -12,10 +12,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
-from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base
+from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
+from pyrit.models import PromptRequestPiece
+from pyrit.models import Score
 
 logger = logging.getLogger(__name__)
 
@@ -78,12 +80,12 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def get_all_prompt_entries(self) -> list[PromptMemoryEntry]:
+    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self.query_entries(PromptMemoryEntry)
-        return result
+        result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
+        return [entry.get_prompt_request_piece() for entry in result]
 
     def get_all_embeddings(self) -> list[EmbeddingData]:
         """
@@ -92,15 +94,15 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         result = self.query_entries(EmbeddingData)
         return result
 
-    def get_prompt_entries_with_conversation_id(self, *, conversation_id: str) -> list[PromptMemoryEntry]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
         """
-        Retrieves a list of ConversationData objects that have the specified conversation ID.
+        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
         Args:
-            conversation_id (str): The conversation ID to filter the table.
+            conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[ConversationData]: A list of ConversationData objects matching the specified conversation ID.
+            list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
         """
         try:
             return self.query_entries(
@@ -110,16 +112,37 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def get_prompt_entries_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptMemoryEntry]:
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
         """
-        Retrieves a list of PromptMemoryEntry objects that have the specified orchestrator ID.
+        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
+
+        Args:
+            prompt_ids (list[str]): The prompt IDs to match.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
+        """
+        try:
+            return self.query_entries(
+                PromptMemoryEntry,
+                conditions=PromptMemoryEntry.id.in_(prompt_ids),
+            )
+        except Exception as e:
+            logger.exception(
+                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
+            )
+            return []
+
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+        """
+        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
         Args:
             orchestrator_id (str): The id of the orchestrator.
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptMemoryEntry]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
+            list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
         """
         try:
             return self.query_entries(
@@ -132,27 +155,34 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def insert_prompt_entries(self, *, entries: list[PromptMemoryEntry]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
         """
-        Inserts a list of prompt entries into the memory storage.
-        If necessary, generates embedding data for applicable entries
+        Inserts a list of prompt request pieces into the memory storage.
 
-        Args:
-            entries (list[Base]): The list of database model instances to be inserted.
         """
-        embedding_entries = []
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
-        if self.memory_embedding:
-            for chat_entry in entries:
-                embedding_entry = self.memory_embedding.generate_embedding_memory_data(chat_memory=chat_entry)
-                embedding_entries.append(embedding_entry)
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+        """
+        Inserts embedding data into memory storage
+        """
+        self._insert_entries(entries=embedding_data)
 
-        # The ordering of this is weird because after memories are inserted, we lose the reference to them
-        # and also entries must be inserted before embeddings because of the foreing key constraint
-        self.insert_entries(entries=entries)
+    def add_scores_to_memory(self, *, scores: list[Score]) -> None:
+        """
+        Inserts a list of scores into the memory storage.
+        """
+        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
-        if embedding_entries:
-            self.insert_entries(entries=embedding_entries)
+    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
+        """
+        Gets a list of scores based on prompt_request_response_ids.
+        """
+        entries = self.query_entries(
+            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
+        )
+
+        return [entry.get_score() for entry in entries]
 
     def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
         """
@@ -194,7 +224,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -209,7 +239,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
 
-    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:

@@ -1,12 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
 import logging
 
-from pyrit.chat_message_normalizer import ChatMessageNormalizer, ChatMessageNop
+from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse
-from pyrit.models import ChatMessage
+from pyrit.models import ChatMessage, PromptRequestResponse
+from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -65,44 +66,14 @@ class AzureMLChatTarget(PromptChatTarget):
         self._top_p = top_p
         self._repetition_penalty = repetition_penalty
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-
-        request = prompt_request.request_pieces[0]
-
-        messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
-
-        request.sequence = len(messages)
-        messages.append(request.to_chat_message())
-
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
-
-        logger.info(f"Sending the following prompt to the prompt target: {request}")
-
-        resp_text = self._complete_chat(
-            messages=messages,
-            temperature=self._temperature,
-            top_p=self._top_p,
-            repetition_penalty=self._repetition_penalty,
-        )
-
-        if not resp_text:
-            raise ValueError("The chat returned an empty response.")
-
-        logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
-
-        return response_entry
-
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
+        self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
-        request.sequence = len(messages)
         messages.append(request.to_chat_message())
-        self._memory.add_request_pieces_to_memory(request_pieces=[request])
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -117,49 +88,7 @@ class AzureMLChatTarget(PromptChatTarget):
             raise ValueError("The chat returned an empty response.")
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
-
-        return response_entry
-
-    def _complete_chat(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int = 400,
-        temperature: float = 1.0,
-        top_p: int = 1,
-        repetition_penalty: float = 1.2,
-    ) -> str:
-        """
-        Completes a chat interaction by generating a response to the given input prompt.
-
-        This is a synchronous wrapper for the asynchronous _generate_and_extract_response method.
-
-        Args:
-            messages (list[ChatMessage]): The chat messages objects containing the role and content.
-            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-            temperature (float, optional): Controls randomness in the response generation.
-                Defaults to 1.0. 1 is more random, 0 is less.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
-                1 is more random, 0 is less.
-            repetition_penalty (float, optional): Controls repetition in the response generation.
-                Defaults to 1.2.
-
-        Raises:
-            Exception: For any errors during the process.
-
-        Returns:
-            str: The generated response message.
-        """
-
-        headers = self._get_headers()
-        payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
-
-        response = net_utility.make_request_and_raise_if_error(
-            endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
-        )
-
-        return response.json()["output"]
+        return construct_response_from_request(request=request, response_text_pieces=[resp_text])
 
     async def _complete_chat_async(
         self,
@@ -239,3 +168,10 @@ class AzureMLChatTarget(PromptChatTarget):
         }
 
         return headers
+
+    def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
+        if len(prompt_request.request_pieces) != 1:
+            raise ValueError("This target only supports a single prompt request piece.")
+
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
+            raise ValueError("This target only supports text prompt input.")

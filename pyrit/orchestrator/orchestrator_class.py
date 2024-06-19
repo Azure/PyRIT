@@ -9,7 +9,7 @@ from typing import Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptDataType, Identifier
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +57,8 @@ class Orchestrator(abc.ABC, Identifier):
             converters = self._prompt_converters
 
         request_piece = NormalizerRequestPiece(
-            prompt_converters=converters,
-            prompt_text=prompt_text,
+            request_converters=converters,
+            prompt_value=prompt_text,
             prompt_data_type=prompt_type,
             metadata=metadata,
         )
@@ -70,9 +70,9 @@ class Orchestrator(abc.ABC, Identifier):
         """
         Retrieves the memory associated with this orchestrator.
         """
-        return self._memory.get_prompt_entries_by_orchestrator(orchestrator_id=self)
+        return self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id(self))
 
-    def get_identifier(self):
+    def get_identifier(self) -> dict[str, str]:
         orchestrator_dict = {}
         orchestrator_dict["__type__"] = self.__class__.__name__
         orchestrator_dict["__module__"] = self.__class__.__module__

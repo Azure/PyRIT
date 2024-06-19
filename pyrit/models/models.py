@@ -13,18 +13,10 @@ from typing import Literal, Optional, Type, TypeVar, Union
 
 import yaml
 from pydantic import BaseModel, ConfigDict
+from pyrit.models.chat_message import ChatMessage
 
 
 ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]
-ChatMessageRole = Literal["system", "user", "assistant"]
-
-
-@dataclass
-class Score:
-    score_type: Literal["int", "float", "str", "bool"]
-    score_value: int | float | str | bool
-    score_description: str = ""
-    score_explanation: str = ""
 
 
 class PromptResponse(BaseModel):
@@ -259,8 +251,7 @@ class PromptTemplate(YamlLoadable):
 
 @dataclass
 class AttackStrategy:
-    def __init__(self, *, strategy: Union[Path | str], conversation_objective: str, **kwargs):
-        kwargs["conversation_objective"] = conversation_objective
+    def __init__(self, *, strategy: Union[Path | str], **kwargs):
         self.kwargs = kwargs
         if isinstance(strategy, Path):
             self.strategy = PromptTemplate.from_yaml_file(strategy)
@@ -270,22 +261,6 @@ class AttackStrategy:
     def __str__(self):
         """Returns a string representation of the attack strategy."""
         return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
-
-
-class ToolCall(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    id: str
-    type: str
-    function: str
-
-
-class ChatMessage(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    role: ChatMessageRole
-    content: str
-    name: Optional[str] = None
-    tool_calls: Optional[list[ToolCall]] = None
-    tool_call_id: Optional[str] = None
 
 
 class EmbeddingUsageInformation(BaseModel):

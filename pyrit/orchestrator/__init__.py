@@ -2,18 +2,23 @@
 # Licensed under the MIT license.
 
 from pyrit.orchestrator.orchestrator_class import Orchestrator
+from pyrit.orchestrator.master_key_orchestrator import MasterKeyOrchestrator
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.red_teaming_orchestrator import RedTeamingOrchestrator
-from pyrit.orchestrator.end_token_red_teaming_orchestrator import EndTokenRedTeamingOrchestrator
-from pyrit.orchestrator.scoring_red_teaming_orchestrator import ScoringRedTeamingOrchestrator
-from pyrit.orchestrator.xpia_orchestrator import XPIATestOrchestrator
+from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
+from pyrit.orchestrator.xpia_orchestrator import (
+    XPIATestOrchestrator,
+    XPIAOrchestrator,
+    XPIAManualProcessingOrchestrator,
+)
 from pyrit.orchestrator.crescendo_orchestrator import CrescendoOrchestrator
 __all__ = [
+    "MasterKeyOrchestrator",
     "Orchestrator",
     "PromptSendingOrchestrator",
     "RedTeamingOrchestrator",
-    "EndTokenRedTeamingOrchestrator",
-    "ScoringRedTeamingOrchestrator",
+    "ScoringOrchestrator",
     "XPIATestOrchestrator",
-    "CrescendoOrchestrator"
+    "XPIAOrchestrator",
+    "XPIAManualProcessingOrchestrator",
 ]
