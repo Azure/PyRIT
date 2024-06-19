@@ -514,7 +514,7 @@ def test_prompt_shorten_init_templates_not_null():
 async def test_shorten_converter_send_prompt_async_bad_json_exception_retries(converted_value):
     prompt_target = MockPromptTarget()
 
-    prompt_variation = ShortenConverter(converter_target=prompt_target, language="en")
+    prompt_shorten = ShortenConverter(converter_target=prompt_target)
 
     with patch("tests.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
 
@@ -536,7 +536,7 @@ async def test_shorten_converter_send_prompt_async_bad_json_exception_retries(co
         mock_create.return_value = prompt_req_resp
 
         with pytest.raises(InvalidJsonException):
-            await prompt_variation.convert_async(prompt="testing", input_type="text")
+            await prompt_shorten.convert_async(prompt="testing", input_type="text")
             assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
 
 
@@ -557,7 +557,7 @@ def test_prompt_expand_init_templates_not_null():
 async def test_expand_converter_send_prompt_async_bad_json_exception_retries(converted_value):
     prompt_target = MockPromptTarget()
 
-    prompt_variation = ExpandConverter(converter_target=prompt_target, language="en")
+    prompt_expand = ExpandConverter(converter_target=prompt_target)
 
     with patch("tests.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
 
@@ -579,7 +579,7 @@ async def test_expand_converter_send_prompt_async_bad_json_exception_retries(con
         mock_create.return_value = prompt_req_resp
 
         with pytest.raises(InvalidJsonException):
-            await prompt_variation.convert_async(prompt="testing", input_type="text")
+            await prompt_expand.convert_async(prompt="testing", input_type="text")
             assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
 
 
