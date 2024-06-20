@@ -57,14 +57,18 @@ async def test_meta_scorer_score(memory: MemoryInterface, scorer_meta_response: 
     assert score[0].scorer_class_identifier["__type__"] == "SelfAskMetaScorer"
 
 
-def test_meta_scorer_set_system_prompt(memory: MemoryInterface):
+@pytest.mark.asyncio
+async def test_meta_scorer_set_system_prompt(memory: MemoryInterface, scorer_meta_response: PromptRequestResponse):
     chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_meta_response)
 
     scorer = SelfAskMetaScorer(
         chat_target=chat_target,
         meta_scorer_question_path=MetaScorerQuestionPaths.META_JUDGE_PROMPT.value,
         memory=memory,
     )
+
+    await scorer.score_text_async("true false")
 
     chat_target.set_system_prompt.assert_called_once()
 
