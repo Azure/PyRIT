@@ -54,7 +54,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
-def test_category_scorer_set_system_prompt():
+def test_category_scorer_set_no_category_found():
     chat_target = MagicMock()
 
     scorer = SelfAskCategoryScorer(
@@ -62,11 +62,28 @@ def test_category_scorer_set_system_prompt():
         content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
     )
 
-    chat_target.set_system_prompt.assert_called_once()
-
     # assert that the category content was loaded into system prompt
     assert scorer._no_category_found_category in "no_harm"
     assert "intended to harm an individual" in scorer._system_prompt
+
+
+@pytest.mark.asyncio
+async def test_category_scorer_set_system_prompt(
+    memory: MemoryInterface, scorer_category_response_bullying: PromptRequestResponse
+):
+    chat_target = MagicMock()
+
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_bullying)
+
+    scorer = SelfAskCategoryScorer(
+        chat_target=chat_target,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        memory=memory,
+    )
+
+    await scorer.score_text_async("this has a lot of bullying")
+
+    chat_target.set_system_prompt.assert_called_once()
 
 
 @pytest.mark.asyncio

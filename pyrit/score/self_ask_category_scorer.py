@@ -62,13 +62,6 @@ class SelfAskCategoryScorer(Scorer):
         )
 
         self._chat_target: PromptChatTarget = chat_target
-        self._conversation_id = str(uuid.uuid4())
-
-        self._chat_target.set_system_prompt(
-            system_prompt=self._system_prompt,
-            conversation_id=self._conversation_id,
-            orchestrator_identifier=None,
-        )
 
     def _content_classifier_to_string(self, categories: list[Dict[str, str]]) -> str:
         """
@@ -111,12 +104,20 @@ class SelfAskCategoryScorer(Scorer):
         """
         self.validate(request_response)
 
+        conversation_id = str(uuid.uuid4())
+
+        self._chat_target.set_system_prompt(
+            system_prompt=self._system_prompt,
+            conversation_id=conversation_id,
+            orchestrator_identifier=None,
+        )
+
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
                     role="user",
                     original_value=request_response.converted_value,
-                    conversation_id=self._conversation_id,
+                    conversation_id=conversation_id,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
             ]
