@@ -101,10 +101,10 @@ class ExpandConverter(PromptConverter):
         response_msg = remove_markdown_json(response_msg)
 
         try:
-            llm_response = json.loads(response_msg)
-            if "output" not in llm_response:
+            parsed_response = json.loads(response_msg)
+            if "output" not in parsed_response:
                 raise InvalidJsonException(message=f"Invalid JSON encountered; missing 'output' key: {response_msg}")
-            return llm_response["output"]
+            return parsed_response["output"]
 
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
