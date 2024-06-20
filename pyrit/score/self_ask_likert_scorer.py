@@ -7,7 +7,7 @@ import yaml
 import enum
 
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Optional, Union
 
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
@@ -34,18 +34,31 @@ class SelfAskLikertScorer(Scorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path, memory: MemoryInterface = None) -> None:
+    def __init__(
+        self,
+        *, 
+        chat_target: PromptChatTarget,
+        likert_scale_path: Optional[Path] = None,
+        likert_scale: Optional[Dict[str, Union[str, List[Dict[str, str]]]]] = None,
+        memory: MemoryInterface = None) -> None:
 
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()
 
-        likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
+        if not likert_scale_path and not likert_scale:
+            raise ValueError("Either likert_scale_path or likert_scale must be provided.")
+        if likert_scale_path and likert_scale:
+            raise ValueError("Only one of likert_scale_path or likert_scale should be provided.")
+        if likert_scale_path:
+            likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
+        elif "category" not in likert_scale or "scale_descriptions" not in likert_scale:
+            raise ValueError("category and scale_descriptions must be provided in likert_scale.")
 
         if likert_scale["category"]:
             self._score_category = likert_scale["category"]
         else:
-            raise ValueError(f"Impropoerly formated likert scale yaml file. Missing category in {likert_scale_path}.")
+            raise ValueError(f"Improperly formated likert scale yaml file. Missing category in {likert_scale_path}.")
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
@@ -74,7 +87,7 @@ class SelfAskLikertScorer(Scorer):
             str: The string representation of the Likert scale.
         """
         if not descriptions:
-            raise ValueError("Impropoerly formated Likert scale yaml file. No likert scale_descriptions provided")
+            raise ValueError("Improperly formated Likert scale yaml file. No likert scale_descriptions provided")
 
         likert_scale_description = ""
 
@@ -84,7 +97,7 @@ class SelfAskLikertScorer(Scorer):
 
             if int(name) < 0 or int(name) > 5:
                 raise ValueError(
-                    "Impropoerly formated Likert scale yaml file. Likert scale values must be between 1 and 5"
+                    "Improperly formated Likert scale yaml file. Likert scale values must be between 1 and 5"
                 )
 
             likert_scale_description += f"'{name}': {desc}\n"
