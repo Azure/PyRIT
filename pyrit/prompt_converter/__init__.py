@@ -9,6 +9,7 @@ from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
+from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.expand_converter import ExpandConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
@@ -39,6 +40,7 @@ __all__ = [
     "CaesarConverter",
     "CaesarConverter",
     "CaesarConverter",
+    "CodeChameleonConverter",
     "ConverterResult",
     "ExpandConverter",
     "LeetspeakConverter",
