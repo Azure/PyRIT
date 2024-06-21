@@ -25,6 +25,8 @@ class PersuasionConverter(PromptConverter):
     """
     Converter to rephrase prompts using a variety of persuasion techniques.
 
+    Based on https://arxiv.org/abs/2401.06373 by Zeng et al.
+
     Parameters
     ---
     converter_target: PromptChatTarget
