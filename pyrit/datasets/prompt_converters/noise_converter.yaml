@@ -1,6 +1,6 @@
 name: tone_converter
 description: |
-  A general strategy for changing the tone of a prompt.
+  A general strategy for injecting noise into a prompt.
 harm_category: NA
 author: AI Red Team
 group: AI Red Team
