@@ -21,27 +21,31 @@ from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
+from pyrit.prompt_converter.tone_converter import ToneConverter
+from pyrit.prompt_converter.noise_converter import NoiseConverter
 
 
 __all__ = [
     "AddTextImageConverter",
     "AsciiArtConverter",
+    "AtbashConverter",
+    "AzureSpeechTextToAudioConverter",
     "Base64Converter",
+    "CaesarConverter",
     "ConverterResult",
     "LeetspeakConverter",
+    "MorseConverter",
+    "NoiseConverter",
     "PromptConverter",
     "RandomCapitalLettersConverter",
+    "RepeatTokenConverter",
     "ROT13Converter",
     "SearchReplaceConverter",
     "StringJoinConverter",
+    "SuffixAppendConverter",
+    "ToneConverter",
     "TranslationConverter",
     "UnicodeConfusableConverter",
     "UnicodeSubstitutionConverter",
     "VariationConverter",
-    "AzureSpeechTextToAudioConverter",
-    "SuffixAppendConverter",
-    "AtbashConverter",
-    "CaesarConverter",
-    "MorseConverter",
-    "RepeatTokenConverter",
 ]
