@@ -22,6 +22,8 @@ from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
+from pyrit.prompt_converter.shorten_converter import ShortenConverter
+from pyrit.prompt_converter.expand_converter import ExpandConverter
 
 
 __all__ = [
@@ -32,6 +34,7 @@ __all__ = [
     "CaesarConverter",
     "CodeChameleonConverter",
     "ConverterResult",
+    "ExpandConverter",
     "LeetspeakConverter",
     "MorseConverter",
     "PromptConverter",
@@ -39,6 +42,7 @@ __all__ = [
     "RepeatTokenConverter",
     "ROT13Converter",
     "SearchReplaceConverter",
+    "ShortenConverter",
     "StringJoinConverter",
     "TranslationConverter",
     "UnicodeConfusableConverter",
