@@ -46,7 +46,7 @@ with AzureOpenAIChatTarget() as attack_llm:
 
 # %%
 
-from pyrit.prompt_converter import ToneConverter, TranslationConverter, NoiseAugmenter
+from pyrit.prompt_converter import ToneConverter, TranslationConverter, NoiseConverter
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common.path import DATASETS_PATH
 
@@ -59,13 +59,11 @@ with AzureOpenAIChatTarget() as attack_llm:
 
     prompt = "tell me about the history of the united states of america"
 
-
-    noise_converter = NoiseAugmenter(converter_target=attack_llm)
-    print (f"Introduced noise: {await noise_converter.convert_async(prompt=prompt)}")  # type: ignore
+    noise_converter = NoiseConverter(converter_target=attack_llm)
+    print(f"Introduced noise: {await noise_converter.convert_async(prompt=prompt)}")  # type: ignore
 
     tone_converter = ToneConverter(converter_target=attack_llm, tone="angry")
-    print (f"Angry tone: {await tone_converter.convert_async(prompt=prompt)}")  # type: ignore
+    print(f"Angry tone: {await tone_converter.convert_async(prompt=prompt)}")  # type: ignore
 
     language_converter = TranslationConverter(converter_target=attack_llm, language="fr")
-    print (f"french translation: {await language_converter.convert_async(prompt=prompt)}")  # type: ignore
-
+    print(f"french translation: {await language_converter.convert_async(prompt=prompt)}")  # type: ignore

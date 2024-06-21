@@ -10,5 +10,5 @@ parameters:
   - tone
 template: |
   # Instructions
-  - Your job is to rewrite the prompts to have the following tone: {{ tone }}.
-  - The rewritten prompt must retain the original meaning of the prompt.
+  - Please rewrite the prompts to have the following tone: {{ tone }}.
+  - The rewritten prompt must have the original meaning of the prompt, and only the tone modified.
