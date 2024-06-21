@@ -16,7 +16,7 @@ class NoiseConverter(PromptConverter):
         self,
         *,
         converter_target: PromptChatTarget,
-        noise: str = None,
+        noise: Optional[str] = None,
         number_errors: int = 5,
         prompt_template: PromptTemplate = None,
     ):
