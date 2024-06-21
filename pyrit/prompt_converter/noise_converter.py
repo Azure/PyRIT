@@ -24,7 +24,7 @@ class NoiseConverter(PromptConverter):
         Injects noise errors into a conversation
 
         Args:
-            converter_target (PromptChatTarget): The target chat support for the conversion which will translate
+            converter_target (PromptChatTarget): The endpoint that converts the prompt
             noise (str): The noise to inject. Grammar error, delete random letter, insert ransom space, etc.
             number_errors (int): The number of errors to inject
             prompt_template (PromptTemplate, optional): The prompt template for the conversion.
