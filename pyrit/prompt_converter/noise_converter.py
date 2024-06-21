@@ -21,7 +21,7 @@ class NoiseConverter(PromptConverter):
         prompt_template: PromptTemplate = None,
     ):
         """
-        Injects noise erros into a conversation
+        Injects noise errors into a conversation
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
