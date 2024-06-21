@@ -95,12 +95,12 @@ class PersuasionConverter(PromptConverter):
         response_msg = remove_markdown_json(response_msg)
 
         try:
-            llm_response = json.loads(response_msg)
-            if "mutated_text" not in llm_response:
+            parsed_response = json.loads(response_msg)
+            if "mutated_text" not in parsed_response:
                 raise InvalidJsonException(
                     message=f"Invalid JSON encountered; missing 'mutated_text' key: {response_msg}"
                 )
-            return llm_response["mutated_text"]
+            return parsed_response["mutated_text"]
 
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")

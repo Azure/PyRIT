@@ -910,9 +910,35 @@ def decryption(encrypted_problem):
     assert output.output_type == "text"
 
 
-def test_prompt_persuasion_init_templates_not_null():
+def test_prompt_persuasion_init_authority_endorsement_template_not_null():
     prompt_target = MockPromptTarget()
-    prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="authority_endorsement")
+    prompt_persuasion = PersuasionConverter(
+        converter_target=prompt_target, persuasion_technique="authority_endorsement"
+    )
+    assert prompt_persuasion.system_prompt
+
+
+def test_prompt_persuasion_init_evidence_based_template_not_null():
+    prompt_target = MockPromptTarget()
+    prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="evidence_based")
+    assert prompt_persuasion.system_prompt
+
+
+def test_prompt_persuasion_init_expert_endorsement_template_not_null():
+    prompt_target = MockPromptTarget()
+    prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="expert_endorsement")
+    assert prompt_persuasion.system_prompt
+
+
+def test_prompt_persuasion_init_logical_appeal_template_not_null():
+    prompt_target = MockPromptTarget()
+    prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="logical_appeal")
+    assert prompt_persuasion.system_prompt
+
+
+def test_prompt_persuasion_init_misrepresentation_template_not_null():
+    prompt_target = MockPromptTarget()
+    prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="misrepresentation")
     assert prompt_persuasion.system_prompt
 
 
@@ -927,7 +953,9 @@ def test_prompt_persuasion_init_templates_not_null():
 async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(converted_value):
     prompt_target = MockPromptTarget()
 
-    prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="authority_endorsement")
+    prompt_persuasion = PersuasionConverter(
+        converter_target=prompt_target, persuasion_technique="authority_endorsement"
+    )
 
     with patch("tests.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
 
