@@ -3,8 +3,7 @@ description: |
   A general strategy for injecting noise into a prompt.
 harm_category: NA
 author: AI Red Team
-group: AI Red Team
-source: artkit
+source: https://github.com/BCG-X-Official/artkit
 should_be_blocked: false
 parameters:
   - noise
