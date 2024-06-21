@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class ToneConverter(PromptConverter):
     def __init__(self, *, converter_target: PromptChatTarget, tone: str, prompt_template: PromptTemplate = None):
         """
-        Converts an conversation to a different tone
+        Converts a conversation to a different tone
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
