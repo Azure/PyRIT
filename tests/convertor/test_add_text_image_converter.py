@@ -100,4 +100,3 @@ def test_text_image_converter_input_supported():
     converter = AddTextImageConverter(text_to_add="Sample text")
     assert converter.input_supported("image_path") is True
     assert converter.input_supported("text") is False
-

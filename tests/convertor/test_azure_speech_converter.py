@@ -9,6 +9,7 @@ from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
 
 from unittest.mock import patch, MagicMock
 
+
 @pytest.mark.asyncio
 @patch("azure.cognitiveservices.speech.SpeechSynthesizer")
 @patch("azure.cognitiveservices.speech.SpeechConfig")

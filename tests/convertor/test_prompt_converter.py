@@ -169,8 +169,6 @@ async def test_capital_letter_converter_with_twentyfive_percent() -> None:
     assert expected_percentage == percentage
 
 
-
-
 @pytest.mark.asyncio
 async def test_atbash_converter() -> None:
     converter = AtbashConverter()
@@ -292,16 +290,14 @@ def test_tone_converter_sets_system_prompt() -> None:
     converter = ToneConverter(tone="formal", converter_target=target)
     assert "formal" in converter.system_prompt
 
+
 def test_noise_converter_sets_system_prompt_default() -> None:
     target = MagicMock()
     converter = NoiseConverter(converter_target=target)
     assert "Grammar error, Delete random letter" in converter.system_prompt
 
+
 def test_noise_converter_sets_system_prompt() -> None:
     target = MagicMock()
     converter = NoiseConverter(converter_target=target, noise="extra random periods")
     assert "extra random periods" in converter.system_prompt
-
-
-
-

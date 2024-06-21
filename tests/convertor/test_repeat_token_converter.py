@@ -8,7 +8,6 @@ from pyrit.prompt_converter import (
 import pytest
 
 
-
 @pytest.mark.asyncio
 async def test_repeat_token_converter_prepend() -> None:
     converter = RepeatTokenConverter(token_to_repeat="test", times_to_repeat=3, token_insert_mode="prepend")

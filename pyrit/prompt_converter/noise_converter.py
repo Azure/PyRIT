@@ -1,4 +1,3 @@
-import json
 import logging
 import textwrap
 import uuid
@@ -13,7 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 class NoiseConverter(PromptConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, noise: str = None, number_errors: int = 5, prompt_template: PromptTemplate = None):
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget,
+        noise: str = None,
+        number_errors: int = 5,
+        prompt_template: PromptTemplate = None,
+    ):
         """
         Injects noise erros into a conversation
 
@@ -43,8 +49,9 @@ class NoiseConverter(PromptConverter):
                 "bad auto-correct, or similar"
             )
 
-
-        self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(noise=noise, number_errors=str(number_errors))
+        self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(
+            noise=noise, number_errors=str(number_errors)
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

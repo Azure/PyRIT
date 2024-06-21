@@ -3,8 +3,8 @@
 #   jupytext:
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
+#       format_name: percent
+#       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: pyrit-311
@@ -12,11 +12,12 @@
 #     name: python3
 # ---
 
+# %% [markdown]
 # # Converters with LLMs
 #
 # Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally preffered.
 
-# +
+# %%
 import pathlib
 
 from pyrit.prompt_converter import VariationConverter
@@ -37,15 +38,15 @@ with AzureOpenAIChatTarget() as attack_llm:
     )
     variation_converter = VariationConverter(converter_target=attack_llm, prompt_template=variation_converter_strategy)
     print(await variation_converter.convert_async(prompt=prompt))  # type: ignore
-# -
 
+# %% [markdown]
 # ### Other LLM Converters
 #
 # This is not meant to be exhaustive and include all converter techniques, but hopefully illustrate some things you can do!
 
-# +
+# %%
 
-from pyrit.prompt_converter import ToneConverter, TranslationConverter, NoiseConverter
+from pyrit.prompt_converter import ToneConverter, TranslationConverter, NoiseAugmenter
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common.path import DATASETS_PATH
 
@@ -59,7 +60,7 @@ with AzureOpenAIChatTarget() as attack_llm:
     prompt = "tell me about the history of the united states of america"
 
 
-    noise_converter = NoiseConverter(converter_target=attack_llm)
+    noise_converter = NoiseAugmenter(converter_target=attack_llm)
     print (f"Introduced noise: {await noise_converter.convert_async(prompt=prompt)}")  # type: ignore
 
     tone_converter = ToneConverter(converter_target=attack_llm, tone="angry")
