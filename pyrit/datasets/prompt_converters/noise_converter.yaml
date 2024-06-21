@@ -1,4 +1,4 @@
-name: tone_converter
+name: noise_converter
 description: |
   A general strategy for injecting noise into a prompt.
 harm_category: NA
