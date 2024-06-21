@@ -42,13 +42,17 @@ def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
-def test_likert_scorer_set_system_prompt():
+@pytest.mark.asyncio
+async def test_likert_scorer_set_system_prompt(scorer_likert_response: PromptRequestResponse):
+    memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
 
     scorer = SelfAskLikertScorer(
-        chat_target=chat_target,
-        likert_scale_path=LikertScalePaths.CYBER_SCALE.value,
+        chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value, memory=memory
     )
+
+    await scorer.score_text_async(text="string")
 
     chat_target.set_system_prompt.assert_called_once()
 
