@@ -1,7 +1,8 @@
-title: Many-shot Jailbreaking
+name: Many-shot Jailbreaking
 source: https://www.anthropic.com/research/many-shot-jailbreaking
-dataset source: harmbench
-dataset reproduced by: Volkan Kutal
+harm_category: NA
+dataset_source: https://github.com/centerforaisafety/HarmBench
+dataset_replicated: https://github.com/KutalVolkan/many-shot-jailbreaking-dataset
 parameters:
   - prompt
   - examples
