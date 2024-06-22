@@ -3,7 +3,11 @@
 
 import logging
 
-from typing import Optional
+# By Volkan
+from typing import Optional, List, Dict
+import requests
+import json
+# --- End By Volkan
 
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptDataType
@@ -13,6 +17,7 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
+
 
 logger = logging.getLogger(__name__)
 
@@ -93,3 +98,32 @@ class PromptSendingOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
+
+    # TODO: By Volkan
+    def import_examples(self, source: str, source_type: str = 'repository') -> List[Dict[str, str]]:
+        """
+        Import examples from a specified source.
+
+        Args:
+            source (str): The source from which to import examples.
+            source_type (str): The type of source ('repository' or 'user'). Defaults to 'repository'.
+
+        Returns:
+            List[Dict[str, str]]: A list of examples.
+        """
+        if source_type == 'repository':
+            # Fetch examples from an external repository (e.g., via an API call)
+            response = requests.get(source)
+            if response.status_code == 200:
+                examples = response.json()
+                print("Examples fetched from repository:")
+            else:
+                raise Exception(f"Failed to fetch examples from repository. Status code: {response.status_code}")
+        elif source_type == 'user':
+            # Load examples from a user-provided file (e.g., JSON format)
+            with open(source, 'r') as file:
+                examples = json.load(file)
+        else:
+            raise ValueError("Invalid source_type. Expected 'repository' or 'user'.")
+
+        return examples

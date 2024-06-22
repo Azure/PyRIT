@@ -15,6 +15,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 from pyrit.models.chat_message import ChatMessage
 
+from typing import List, Dict
+
 
 ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]
 
@@ -311,3 +313,49 @@ class EmbeddingResponse(BaseModel):
 
     def to_json(self) -> str:
         return self.model_dump_json()
+
+
+# TODO: By Volkan
+@dataclass
+class ManyShotTemplate(PromptTemplate):
+    @classmethod
+    def from_yaml_file(cls, file_path: str):
+        with open(file_path, 'r') as file:
+            content = yaml.safe_load(file) # Safely load YAML content to avoid arbitrary code execution
+        # Return an instance of the class with loaded parameters
+        return cls(
+            template=content['template'],
+            parameters=content['parameters']
+        )
+
+    def apply_parameters(self, prompt: str, examples: List[Dict[str, str]], num_examples: int = None) -> str:
+        # Define markers for the start and end of loops in the template
+        start_marker = '{% for example in examples %}'
+        end_marker = '{% endfor %}'
+        # Find the positions of the loop markers in the template
+        start_index = self.template.find(start_marker) + len(start_marker)
+        end_index = self.template.find(end_marker)
+
+        # Extract the part of the template that is repeated for each example
+        example_template = self.template[start_index:end_index].strip()
+
+        # Limit the number of examples if num_examples is provided
+        if num_examples is not None:
+            examples = examples[:num_examples]
+
+        # Manually generate the examples string by replacing placeholders
+        examples_str = '\n\n'.join(
+            f"User: {example['user']}\nAssistant: {example['assistant']}"
+            for example in examples
+        )
+        
+        # Replace the prompt placeholder in the template
+        filled_template = self.template.replace('{{ prompt }}', prompt)
+        
+        # Replace the loop in the template with the generated examples string
+        filled_template = filled_template.replace(
+            self.template[start_index - len(start_marker):end_index + len(end_marker)],
+            examples_str
+        )
+        
+        return filled_template
