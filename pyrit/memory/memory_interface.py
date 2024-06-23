@@ -164,7 +164,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             The uuid for the new conversation.
         """
-        new_conversation_id = generate_unique_uuid(existing_uuids=[conversation_id, new_orchestrator_id])
+        new_conversation_id = str(generate_unique_uuid(existing_uuids=[conversation_id, new_orchestrator_id]))
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
         prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
         for piece in prompt_pieces:

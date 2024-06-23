@@ -244,7 +244,7 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
         for obj in response[1:]:
             new_value = obj.conversation_id
             if new_value != current_value:
-                if any(o.conversation_id == current_value for o in response[response.index(obj):]):
+                if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
                     assert False, "Conversation IDs are not grouped together"
 
 

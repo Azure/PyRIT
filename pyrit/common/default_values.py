@@ -1,9 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import dotenv
 import os
 import uuid
+
+import dotenv
 
 from pyrit.common import path
 
@@ -47,8 +48,8 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
     raise ValueError(f"Environment variable {env_var_name} is required")
 
 
-def generate_unique_uuid(*, existing_uuids: list[str]) -> str:
-    """ Generate a new string UUID-4 avoiding collisions
+def generate_unique_uuid(*, existing_uuids: list[str | uuid.UUID]) -> uuid.UUID:
+    """Generate a new string UUID-4 avoiding collisions
 
     Args:
         existing_uuids: Existing UUIDs or strings to be avoided
@@ -56,7 +57,8 @@ def generate_unique_uuid(*, existing_uuids: list[str]) -> str:
     Returns:
         A new UUID-4 string.
     """
+    existing_uuids = [str(uid) for uid in existing_uuids]
     new_uuid = uuid.uuid4()
-    while new_uuid in existing_uuids:
+    while str(new_uuid) in existing_uuids:
         new_uuid = uuid.uuid4()
-    return str(new_uuid)
+    return new_uuid
