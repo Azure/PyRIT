@@ -191,19 +191,9 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         return target_response
 
     def _parse_attacker_response(self, *, response: PromptRequestResponse) -> str:
-        # TODO. Add more error handling here since it's likely that the response will be not be JSON serializable.
         json_response = json.loads(response.request_pieces[0].converted_value)
         attacker_improvement_rationale = json_response["improvement"]  # noqa
         attacker_suggested_prompt = json_response["prompt"]
-        # extra_logging_info = {
-        #     "conversation_id": self._last_attacker_conversation_id,
-        #     "attacker_suggested_prompt": attacker_suggested_prompt,
-        #     "attacker_rationale": attacker_improvement_rationale,
-        # }
-        # logger.debug(
-        #     msg=f"PAIR Attacker bot suggested the following prompt as a candidate for next attack "
-        #     f"{json.dumps(extra_logging_info)}"
-        # )
         return attacker_suggested_prompt
 
     def _should_stop(self, *, prompt_responses: list) -> bool:
