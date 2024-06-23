@@ -11,11 +11,13 @@ from pyrit.orchestrator.xpia_orchestrator import (
     XPIAOrchestrator,
     XPIAManualProcessingOrchestrator,
 )
+from pyrit.orchestrator.pair_orchestrator import PromptAutomaticIterativeRefinementOrchestrator
 
 __all__ = [
     "MasterKeyOrchestrator",
     "Orchestrator",
     "PromptSendingOrchestrator",
+    "PromptAutomaticIterativeRefinementOrchestrator",
     "RedTeamingOrchestrator",
     "ScoringOrchestrator",
     "XPIATestOrchestrator",
