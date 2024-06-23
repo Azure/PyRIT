@@ -3,7 +3,7 @@
 
 import dotenv
 import os
-
+import uuid
 
 from pyrit.common import path
 
@@ -45,3 +45,18 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
         return value
 
     raise ValueError(f"Environment variable {env_var_name} is required")
+
+
+def generate_unique_uuid(*, existing_uuids: list[str]) -> str:
+    """ Generate a new string UUID-4 avoiding collisions
+
+    Args:
+        existing_uuids: Existing UUIDs or strings to be avoided
+
+    Returns:
+        A new UUID-4 string.
+    """
+    new_uuid = uuid.uuid4()
+    while new_uuid in existing_uuids:
+        new_uuid = uuid.uuid4()
+    return str(new_uuid)
