@@ -129,7 +129,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
         
     
     @pyrit_json_retry
-    async def _generate_red_teaming_prompt_async(self):
+    async def _generate_red_teaming_prompt_async(self) -> str:
         # Use the red teaming target to generate a prompt for the attack target.
         # The prompt for the red teaming target needs to include the latest message from the prompt target.
         # A special case is the very first message, in which case there are no prior messages
@@ -193,7 +193,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
         except InvalidJsonException as e:
             logger.error(f"Failed to generate a prompt for the prompt target: {e}")
             logger.info("Pruning the branch since we can't proceed without red teaming prompt.")
-            return TAPBranchResult(pruned=False, completed=False)
+            return TAPBranchResult(pruned=True, completed=False)
         
         if self._on_topic_checker:
             on_topic_score = (
@@ -237,7 +237,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
             prompt_target_conversation_id=self._prompt_target_conversation_id,
         )
 
-    def _parse_red_teaming_response(self, red_teaming_response: str) -> Union[str, None]:
+    def _parse_red_teaming_response(self, red_teaming_response: str) -> str:
         # The red teaming response should be in JSON format with two keys: "prompt" and "improvement".
         # We need to parse only "prompt" and return its value.
 
