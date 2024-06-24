@@ -47,14 +47,14 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         Initializes the PAIR orchestrator to run the PAIR algorithm against two targets.
 
         Args:
-            memory:
-            memory_labels:
-            verbose:
-            target:
+            memory: The memory interface to use. If None, a new memory interface will be created.
+            memory_labels: The labels to use for the memory. If None, a new memory interface will be created.
+            verbose: Whether to print debug information. Defaults to False.
+            target: The target model to jailbreak.
             desired_target_response_prefix: An example of a desired response from the target. This is used to compare
                 against the target's actual response to determine if the target has been compromised. E.g., "Sure, here
                 is code for a keylogger."
-            attacker:
+            attacker: The attacker model to use to jailbreak the target.
             attacker_objective: The objective for the attacker to achieve, as a string. E.g. "Generate a phishing
                 email" or "Generate code for a keylogger", etc. Defaults to "Sure, I'd be happy to assist with that".
 
@@ -96,7 +96,7 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         All conversations are stored in memory and retrievable via the conversation ID.
 
         Args:
-            text (str): The response to be evaluated by the Judge model.
+            text: The response to be evaluated by the Judge model.
 
         Returns:
             PromptRequestResponse: The response from the Judge model.
@@ -273,7 +273,7 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
             piece
             for piece in pieces
             if piece.orchestrator_identifier
-            and piece.orchestrator_identifier.get("__type__", "") == orchestrator_class_name
+               and piece.orchestrator_identifier.get("__type__", "") == orchestrator_class_name
         ]
 
     def _filter_by_orchestrator_instance_identifier(
@@ -308,11 +308,10 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         conversation ID and printed.
 
         Args:
-            show_successful_only (bool, optional): If set to True, only the successful jailbreaks are printed.
-                Defaults to True.
-            show_orchestrator_instance_entries_only (bool, optional): If set to True, only the entries from the current
-                orchestrator instance are printed. Otherwise all the entries from the PAIR orchestrator are retrieved
-                from memory, this might include runs from a previous instance. Defaults to False.
+            show_successful_only: If set to True, only the successful jailbreaks are printed. Defaults to True.
+            show_orchestrator_instance_entries_only: If set to True, only the entries from the current orchestrator
+                instance are printed. Otherwise all the entries from the PAIR orchestrator are retrieved from memory,
+                this might include runs from a previous instance. Defaults to False.
         """
 
         conversation_pieces = self._memory.get_all_prompt_pieces()
