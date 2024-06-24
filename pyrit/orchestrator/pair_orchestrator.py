@@ -273,7 +273,7 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
             piece
             for piece in pieces
             if piece.orchestrator_identifier
-               and piece.orchestrator_identifier.get("__type__", "") == orchestrator_class_name
+            and piece.orchestrator_identifier.get("__type__", "") == orchestrator_class_name
         ]
 
     def _filter_by_orchestrator_instance_identifier(
