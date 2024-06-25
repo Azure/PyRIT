@@ -193,7 +193,12 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
         except InvalidJsonException as e:
             logger.error(f"Failed to generate a prompt for the prompt target: {e}")
             logger.info("Pruning the branch since we can't proceed without red teaming prompt.")
-            return TAPBranchResult(pruned=True, completed=False)
+            return TAPBranchResult(
+                pruned=True,
+                completed=False,
+                orchestrator_id=self.get_identifier()["id"],
+                prompt_target_conversation_id=self._prompt_target_conversation_id,
+            )
         
         if self._on_topic_checker:
             on_topic_score = (
@@ -202,7 +207,12 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
 
             # If the prompt is not on topic we prune the branch.
             if not on_topic_score.get_value():
-                return TAPBranchResult(pruned=True, completed=False)
+                return TAPBranchResult(
+                    pruned=True,
+                    completed=False,
+                    orchestrator_id=self.get_identifier()["id"],
+                    prompt_target_conversation_id=self._prompt_target_conversation_id,
+                )
 
         target_prompt_obj = NormalizerRequestPiece(
             request_converters=self._prompt_converters,
@@ -314,14 +324,16 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
 
         if width < 1:
             raise ValueError("The width of the tree must be at least 1.")
-        if depth < 2:
-            raise ValueError("The depth of the tree must be at least 2.")
-        if branching_factor < 2:
-            raise ValueError("The branching factor of the tree must be at least 2.")
+        if depth < 1:
+            raise ValueError("The depth of the tree must be at least 1.")
+        if branching_factor < 1:
+            raise ValueError("The branching factor of the tree must be at least 1.")
 
         self._attack_width = width
         self._attack_depth = depth
         self._attack_branching_factor = branching_factor
+
+        self._orchestrators = []
 
     async def apply_attack_strategy_async(self):
         # Initialize branch orchestrators that execute a single branch of the attack
@@ -339,7 +351,7 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
             ) for _ in range(self._attack_width)
         ]
         
-        for iteration in range(self._attack_depth):
+        for iteration in range(1, self._attack_depth + 1):
             logger.info(f"Starting iteration number: {iteration}")
             results = []
             cloned_orchestrators = []
