@@ -113,3 +113,34 @@ async def test_self_ask_scorer_bad_json_exception_retries():
         await scorer.score_text_async("this has no bullying")
 
     assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
+
+
+@pytest.mark.asyncio
+async def test_self_ask_objective_scorer_bad_json_exception_retries():
+    chat_target = MagicMock()
+
+    json_response = (
+        dedent(
+            """
+            {"value": "True", "badly_named_description": "This is true", "rationale": "rationale for true"}
+            """
+        )
+        .strip()
+        .replace("\n", " ")
+    )
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
+    )
+
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskTrueFalseScorer(
+        chat_target=chat_target,
+        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+
+    assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS

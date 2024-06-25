@@ -115,3 +115,25 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries():
             await scorer.score_text_async("test scoring prompt")
 
         assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
+
+
+@pytest.mark.asyncio
+async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
+
+    chat_target = MockPromptTarget()
+
+    with patch("tests.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
+        bad_json_resp = PromptRequestResponse(
+            request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
+        )
+        mock_create.return_value = bad_json_resp
+
+        scorer = SelfAskObjectiveScorer(
+            chat_target=chat_target,
+            objective_question_path=ObjectiveQuestionPaths.REFUSAL.value,
+            memory=memory,
+        )
+        with pytest.raises(InvalidJsonException):
+            await scorer.score_text_async("test scoring prompt")
+
+        assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS

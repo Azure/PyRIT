@@ -124,30 +124,28 @@ class SelfAskCategoryScorer(Scorer):
             ]
         )
 
-        parsed_response, score_value = await self.send_chat_target_async(request)
-
-        score = Score(
-            score_value=str(score_value),
-            score_value_description=parsed_response["category_description"],
-            score_type=self.scorer_type,
-            score_category=parsed_response["category_name"],
-            score_rationale=parsed_response["rationale"],
-            scorer_class_identifier=self.get_identifier(),
-            score_metadata=None,
-            prompt_request_response_id=request_response.id,
-        )
-
+        score = await self.send_chat_target_async(request, request_response.id)
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     @pyrit_json_retry
-    async def send_chat_target_async(self, request):
+    async def send_chat_target_async(self, request, request_response_id):
         response = await self._chat_target.send_prompt_async(prompt_request=request)
 
         try:
             response_json = response.request_pieces[0].converted_value
             parsed_response = json.loads(response_json)
             score_value = parsed_response["category_name"] != self._no_category_found_category
+            score = Score(
+                score_value=str(score_value),
+                score_value_description=parsed_response["category_description"],
+                score_type=self.scorer_type,
+                score_category=parsed_response["category_name"],
+                score_rationale=parsed_response["rationale"],
+                scorer_class_identifier=self.get_identifier(),
+                score_metadata=None,
+                prompt_request_response_id=request_response_id,
+            )
 
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
@@ -155,7 +153,7 @@ class SelfAskCategoryScorer(Scorer):
         except KeyError:
             raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
 
-        return parsed_response, score_value
+        return score
 
     def validate(self, request_response: PromptRequestPiece):
         pass

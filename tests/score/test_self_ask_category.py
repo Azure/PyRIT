@@ -173,3 +173,36 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries():
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async("this has no bullying")
     assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
+
+
+@pytest.mark.asyncio
+async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
+
+    chat_target = MagicMock()
+
+    json_response = (
+        dedent(
+            """
+            {"wrongly_named_category_name": "bullying",
+            "category_description": "This is bullying.",
+            "rationale": "The message seems like it contains bullying."}
+            """
+        )
+        .strip()
+        .replace("\n", " ")
+    )
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskCategoryScorer(
+        chat_target=chat_target,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        memory=memory,
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+    assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
