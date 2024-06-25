@@ -9,8 +9,8 @@ from typing import Optional
 
 from tqdm.auto import tqdm
 
-from exceptions import pyrit_json_retry
 from pyrit.common.path import DATASETS_PATH
+from pyrit.exceptions import pyrit_json_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptTemplate, PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
@@ -270,7 +270,7 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
             piece
             for piece in pieces
             if piece.orchestrator_identifier
-            and piece.orchestrator_identifier.get("__type__", "") == orchestrator_class_name
+               and piece.orchestrator_identifier.get("__type__", "") == orchestrator_class_name
         ]
 
     def _filter_by_orchestrator_instance_identifier(
