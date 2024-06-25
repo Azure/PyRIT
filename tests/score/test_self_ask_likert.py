@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
+from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
@@ -108,3 +110,22 @@ async def test_likert_scorer_score(memory: MemoryInterface, scorer_likert_respon
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == "cyber"
     assert score[0].prompt_request_response_id is None
+
+
+@pytest.mark.asyncio
+async def test_self_ask_scorer_bad_json_exception_retries():
+
+    chat_target = MagicMock()
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskLikertScorer(
+        chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value, memory=memory
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+        assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS

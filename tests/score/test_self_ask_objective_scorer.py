@@ -3,16 +3,18 @@
 
 from textwrap import dedent
 from typing import Generator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
+from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score import SelfAskObjectiveScorer, ObjectiveQuestionPaths
 
-from tests.mocks import get_memory_interface
+from tests.mocks import MockPromptTarget, get_memory_interface
 
 
 @pytest.fixture
@@ -91,3 +93,25 @@ async def test_meta_scorer_adds_to_memory(scorer_meta_response: PromptRequestRes
     await scorer.score_text_async(text="string")
 
     memory.add_scores_to_memory.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_self_ask_objective_scorer_bad_json_exception_retries():
+
+    chat_target = MockPromptTarget()
+
+    with patch("tests.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
+        bad_json_resp = PromptRequestResponse(
+            request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
+        )
+        mock_create.return_value = bad_json_resp
+
+        scorer = SelfAskObjectiveScorer(
+            chat_target=chat_target,
+            objective_question_path=ObjectiveQuestionPaths.REFUSAL.value,
+            memory=memory,
+        )
+        with pytest.raises(InvalidJsonException):
+            await scorer.score_text_async("test scoring prompt")
+
+        assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
