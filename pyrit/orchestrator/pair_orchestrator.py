@@ -3,16 +3,18 @@
 
 import json
 import logging
+import uuid
 from collections import defaultdict
 from typing import Optional
 
 from tqdm.auto import tqdm
 
+from exceptions import pyrit_json_retry
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptTemplate, PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +37,9 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
-        target: PromptTarget,
+        target: PromptChatTarget,
         desired_target_response_prefix: str,
-        attacker: PromptTarget,
+        attacker: PromptChatTarget,
         attacker_objective: str,
         number_of_conversation_streams: int = 20,
         max_conversation_depth: int = 3,
@@ -102,21 +104,16 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
             PromptRequestResponse: The response from the Judge model.
 
         """
+        conversation_id = str(uuid.uuid4())
         judge_system_prompt = self.judge_prompt_template.apply_custom_metaprompt_parameters(
             goal=self.attacker_objective,
         )
-        # Push the system prompt to the memory
-        first_turn_system_prompt_turn = PromptRequestPiece(
-            role="system",
-            original_value=judge_system_prompt,
-            orchestrator_identifier=self.get_identifier(),
-        )
-        self._memory.add_request_pieces_to_memory(request_pieces=[first_turn_system_prompt_turn])
+        self.judge_text_model.set_system_prompt(system_prompt=judge_system_prompt, conversation_id=conversation_id)
         judge_requests = PromptRequestResponse(
             request_pieces=[
                 PromptRequestPiece(
                     role="user",
-                    conversation_id=first_turn_system_prompt_turn.conversation_id,
+                    conversation_id=conversation_id,
                     original_value=text,
                     orchestrator_identifier=self.get_identifier(),
                 )
@@ -140,16 +137,13 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
             The attacker response.
         """
         if not start_new_conversation or start_new_conversation:
+            self._last_attacker_conversation_id = str(uuid.uuid4())
             attacker_system_prompt = self.attacker_prompt_template.apply_custom_metaprompt_parameters(
                 goal=self.attacker_objective, target_str=self.desired_target_response_prefix
             )
-            attacker_system_prompt_piece = PromptRequestPiece(
-                role="system",
-                original_value=attacker_system_prompt,
-                orchestrator_identifier=self.get_identifier(),
+            self.attacker_text_model.set_system_prompt(
+                system_prompt=attacker_system_prompt, conversation_id=self._last_attacker_conversation_id
             )
-            self._last_attacker_conversation_id = attacker_system_prompt_piece.conversation_id
-            self._memory.add_request_pieces_to_memory(request_pieces=[attacker_system_prompt_piece])
         # Send a new request to the attacker
         new_request = PromptRequestResponse(
             request_pieces=[
@@ -190,6 +184,7 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         self._memory.add_request_pieces_to_memory(request_pieces=current_conversation_pieces)
         return target_response
 
+    @pyrit_json_retry
     def _parse_attacker_response(self, *, response: PromptRequestResponse) -> str:
         json_response = json.loads(response.request_pieces[0].converted_value)
         attacker_improvement_rationale = json_response["improvement"]  # noqa
@@ -212,7 +207,9 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         prompt_to_improve_upon = "Hello world!"
         t = tqdm(range(self.max_conversation_depth), disable=not self._verbose, leave=False, desc="Conversation depth")
         for depth in t:
-            attacker_response = await self._get_attacker_response_and_store(target_response=prompt_to_improve_upon)
+            attacker_response = await self._get_attacker_response_and_store(
+                target_response=prompt_to_improve_upon, start_new_conversation=depth == 0
+            )
             try:
                 attacker_prompt_suggestion = self._parse_attacker_response(response=attacker_response)
             except (json.JSONDecodeError, KeyError):
@@ -315,6 +312,7 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         """
 
         conversation_pieces = self._memory.get_all_prompt_pieces()
+
         filtered_pieces = self._filter_by_orchestrator_class(pieces=conversation_pieces)
         if show_orchestrator_instance_entries_only:
             filtered_pieces = self._filter_by_orchestrator_instance_identifier(pieces=filtered_pieces)
