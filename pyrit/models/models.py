@@ -9,13 +9,14 @@ import re
 from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, Optional, Type, TypeVar, Union
+from typing import Literal, Optional, Type, TypeVar, Union, List, Dict
 
 import yaml
+from jinja2 import Template
 from pydantic import BaseModel, ConfigDict
 from pyrit.models.chat_message import ChatMessage
 
-from typing import List, Dict
+
 
 
 ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]
@@ -315,7 +316,6 @@ class EmbeddingResponse(BaseModel):
         return self.model_dump_json()
 
 
-# TODO: By Volkan
 @dataclass
 class ManyShotTemplate(PromptTemplate):
     @classmethod
@@ -328,34 +328,11 @@ class ManyShotTemplate(PromptTemplate):
             parameters=content['parameters']
         )
 
-    def apply_parameters(self, prompt: str, examples: List[Dict[str, str]], num_examples: int = None) -> str:
-        # Define markers for the start and end of loops in the template
-        start_marker = '{% for example in examples %}'
-        end_marker = '{% endfor %}'
-        # Find the positions of the loop markers in the template
-        start_index = self.template.find(start_marker) + len(start_marker)
-        end_index = self.template.find(end_marker)
-
-        # Extract the part of the template that is repeated for each example
-        example_template = self.template[start_index:end_index].strip()
-
-        # Limit the number of examples if num_examples is provided
-        if num_examples is not None:
-            examples = examples[:num_examples]
-
-        # Manually generate the examples string by replacing placeholders
-        examples_str = '\n\n'.join(
-            f"User: {example['user']}\nAssistant: {example['assistant']}"
-            for example in examples
-        )
+    def apply_parameters(self, prompt: str, examples: List[Dict[str, str]]) -> str:
+        # Create a Jinja2 template from the template string
+        jinja_template = Template(self.template)
         
-        # Replace the prompt placeholder in the template
-        filled_template = self.template.replace('{{ prompt }}', prompt)
-        
-        # Replace the loop in the template with the generated examples string
-        filled_template = filled_template.replace(
-            self.template[start_index - len(start_marker):end_index + len(end_marker)],
-            examples_str
-        )
+        # Render the template with the provided prompt and examples
+        filled_template = jinja_template.render(prompt=prompt, examples=examples)
         
         return filled_template
