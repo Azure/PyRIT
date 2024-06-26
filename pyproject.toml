@@ -35,7 +35,6 @@ requires-python = ">=3.10, <3.12"
 dependencies = [
     "appdirs>=1.4.0",
     "art==6.1.0",
-    "augly==1.0.0",
     "azure-cognitiveservices-speech>=1.36.0",
     "azure-core>=1.26.1",
     "azure-identity>=1.12.0",
@@ -54,6 +53,7 @@ dependencies = [
     "onnx>=1.16.0",
     "openai>=1.23.2",
     "pydantic>=2.7.1",
+    "pyodbc>=5.1.0",
     "python-dotenv>=1.0.1",
     "scikit-learn>=1.4.2",
     "SQLAlchemy==2.0.28",
@@ -72,6 +72,7 @@ dev = [
     "flake8-copyright>=0.2.4",
     "jupytext>=1.16.1",
     "mypy>=1.9.0",
+    "mock-alchemy>=0.2.6",
     "pillow>=10.3.0",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",

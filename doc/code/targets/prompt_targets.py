@@ -1,6 +1,6 @@
 # %% [markdown]
 # ## Prompt Targets
-# Prompt Targets are endpoints for where to send prompts. They are typically used with [orchestrators](https://github.com/Azure/PyRIT/blob/main/doc/code/orchestrator.ipynb),
+# Prompt Targets are endpoints for where to send prompts. They are typically used with [orchestrators](../orchestrators/orchestrator.ipynb),
 # but will be shown individually in this doc. An orchestrator's main job is to change prompts to a given format, apply any converters, and then send them off to prompt targets.
 # Within an orchestrator, prompt targets are (mostly) swappable, meaning you can use the same logic with different target endpoints.
 #
@@ -27,7 +27,7 @@ print(jailbreak_prompt)
 # The `AzureOpenAIChatTarget` inherits from the `PromptChatTarget` class, which expands upon the `PromptTarget` class by adding functionality to set a system prompt.
 # `PromptChatTargets` are also targets which will give a meaningful response from an assistant when given a user prompt, making them useful for multi-turn scenarios.
 #
-# _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../../setup/setup_azure.md).
+# _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure OpenAI endpoint as described [here](../../setup/populating_secrets.md).
 
 # %%
 from pyrit.models import PromptRequestPiece

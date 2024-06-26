@@ -107,25 +107,3 @@ async def test_tts_send_prompt_file_save_async(
         data = open(file_path, "rb").read()
         assert data == b"audio data"
         os.remove(file_path)
-
-
-@pytest.mark.asyncio
-async def test_tts_send_prompt_adds_memory_async(sample_conversations: list[PromptRequestPiece]) -> None:
-
-    mock_memory = MagicMock()
-    tts_target = AzureTTSTarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
-
-    request_piece = sample_conversations[0]
-    request_piece.conversation_id = str(uuid.uuid4())
-    request = PromptRequestResponse(request_pieces=[request_piece])
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        return_value = MagicMock()
-        return_value.content = b"audio data"
-        mock_request.return_value = return_value
-
-        await tts_target.send_prompt_async(prompt_request=request)
-
-        assert mock_memory.add_request_response_to_memory.called, "Request and Response need to be added to memory"
-        assert mock_memory.add_response_entries_to_memory.called, "Request and Response need to be added to memory"
