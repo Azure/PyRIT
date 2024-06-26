@@ -57,12 +57,18 @@ async def test_true_false_scorer_score(memory: MemoryInterface, scorer_true_fals
     assert score[0].scorer_class_identifier["__type__"] == "SelfAskTrueFalseScorer"
 
 
-def test_true_false_scorer_set_system_prompt(memory: MemoryInterface):
+@pytest.mark.asyncio
+async def test_true_false_scorer_set_system_prompt(
+    memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse
+):
     chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
     scorer = SelfAskTrueFalseScorer(
         chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
     )
+
+    await scorer.score_text_async("true false")
 
     chat_target.set_system_prompt.assert_called_once()
 

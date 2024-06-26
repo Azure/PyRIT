@@ -33,7 +33,7 @@ Ways to contribute: Check out our [orchestrator docs](./orchestrators/orchestrat
 
 Converters are a powerful component that converts prompts to something else. They can be stacked and combined. They can be as varied as translating a text prompt into a Word document, rephrasing a prompt in 100 different ways, or adding a text overlay to an image.
 
-Ways to contribute: Check out our [converter docs](./converters.ipynb) [demos](../demo/4_using_prompt_converters.ipynb) and [code](../../pyrit/prompt_converter/). Are there ways prompts can be converted that would be useful for an attack?
+Ways to contribute: Check out our [converter docs](./converters/1_converters.ipynb) [demos](../demo/4_using_prompt_converters.ipynb) and [code](../../pyrit/prompt_converter/). Are there ways prompts can be converted that would be useful for an attack?
 
 ## Target
 
