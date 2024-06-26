@@ -12,7 +12,7 @@ In our PyRIT framework, proper exception handling is crucial for maintaining rob
 #### Specific Scenarios
 
 1. **Response is None, JSON Parsing Failure in Scorer, RateLimitError**
-   - **Action**: In the endpoint code (scoring, target, or converter) there should be a retry mechanism to attempt the operation a few times. For example, use the `@pyrit_retry` decorator
+   - **Action**: In the endpoint code (scoring, target, or converter) there should be a retry mechanism to attempt the operation a few times. For example, use the `@pyrit_target_retry` decorator
    - **If Still Failing**:
      - The endpoint raises the exception (it should be unhandled)
      - The top-level orchestrators can handle the exception as needed
