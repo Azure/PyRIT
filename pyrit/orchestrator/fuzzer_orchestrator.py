@@ -174,7 +174,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._minimum_reward = minimum_reward   # minimal reward after penalty
         self._non_leaf_nodeprobability = non_leaf_nodeprobability
         self._max_jailbreak = 1
-        #self._max_query = len(self._prompt_templates)  * 10 #* len(self._prompts.prompts)
+        #self._max_query = len(self._prompt_templates) * len(self._prompts.prompts) * 10
         self._max_query = 100
         self._current_query = 0
         self._current_jailbreak = 0
