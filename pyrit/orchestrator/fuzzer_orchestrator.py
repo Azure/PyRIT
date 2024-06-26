@@ -231,7 +231,6 @@ class FuzzerOrchestrator(Orchestrator):
             # 1. Select a seed from the list of the templates using the MCTS
             
             current_seed = await self._get_seed(prompt_templates=prompt_templates)
-            print(current_seed._template)
 
             #2. Apply seed converter to the selected template.
             try: 
@@ -242,7 +241,6 @@ class FuzzerOrchestrator(Orchestrator):
             target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"])
 
             target_template_node = PromptNode(template = target_seed_obj, parent= current_seed) # convert the target_template into a prompt_node to maintain the tree information
-            print('prompt_nnode converted template', target_template_node._parent)
 
             #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
             
@@ -278,7 +276,6 @@ class FuzzerOrchestrator(Orchestrator):
             )
 
             response_pieces = [response.request_pieces[0] for response in responses]
-            print('response_pieces',response_pieces)
             
             #5. Apply scorer on the response and based on the scorer return if jailbreak successful or not.
             #categoryscorer
@@ -293,10 +290,7 @@ class FuzzerOrchestrator(Orchestrator):
             
             batch_scored_response = await asyncio.gather(*scored_response)
 
-            print(batch_scored_response)
-
             score_values = [score[0].get_value() for score in batch_scored_response]
-            print('score_values', score_values)
  
             #6. Update the rewards for each of the node.
            # self._num_jailbreak = sum(score_values)
@@ -333,7 +327,6 @@ class FuzzerOrchestrator(Orchestrator):
             self._initial_prompts_nodes,
             key = self._best_UCT_score()
         )
-        print(current)
         self._mctc_select_path.append(current)
 
         while len(current._children) > 0: # while node is not a leaf 
@@ -395,9 +388,7 @@ class FuzzerOrchestrator(Orchestrator):
         """
         TEMPLATE_PLACEHOLDER = '{{ prompt }}' #check
 
-        print('template converter selected', self._template_converter)
         target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
-        print('converted value', target_seed_obj.output_text)
         if TEMPLATE_PLACEHOLDER not in target_seed_obj.output_text:
             raise EmptyResponseException(message="Prompt placeholder is empty.")
         return target_seed_obj
