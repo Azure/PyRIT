@@ -10,7 +10,6 @@ from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptDataType, Identifier
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
-from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +71,13 @@ class Orchestrator(abc.ABC, Identifier):
         Retrieves the memory associated with this orchestrator.
         """
         return self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id(self))
+
+    def get_score_memory(self):
+        """
+        Retrieves the scores of the PromptRequestPieces associated with this orchestrator.
+        These exist if a scorer is provided to the orchestrator.
+        """
+        return self._memory.get_scores_by_orchestrator_id(orchestrator_id=id(self))
 
     def get_identifier(self) -> dict[str, str]:
         orchestrator_dict = {}

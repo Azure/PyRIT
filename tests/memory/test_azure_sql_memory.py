@@ -11,11 +11,7 @@ import pytest
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import and_, func, inspect
-from sqlalchemy import String, DateTime, INTEGER
-from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER, NVARCHAR
-from sqlalchemy.sql.sqltypes import NullType
+from sqlalchemy import and_, func
 
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
@@ -23,7 +19,7 @@ from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
-from tests.mocks import get_azure_sql_memory, get_duckdb_memory
+from tests.mocks import get_azure_sql_memory
 from tests.mocks import get_sample_conversation_entries
 
 
@@ -49,7 +45,9 @@ def test_insert_entry(memory_interface):
         )
     )
 
-    memory_interface = AzureSQLMemory(connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server")
+    memory_interface = AzureSQLMemory(
+        connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server"
+    )
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
@@ -163,9 +161,7 @@ def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_ent
     session.query.reset_mock()
 
     # Query entries with a condition
-    memory_interface.query_entries(
-        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1"
-    )
+    memory_interface.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1")
 
     session.query.return_value.filter.assert_called_once_with(PromptMemoryEntry.conversation_id == "1")
 
@@ -267,18 +263,22 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
 
     orchestrator1_id = int(orchestrator1.get_identifier()["id"])
 
-    session_mock = UnifiedAlchemyMagicMock(data=[
-        (
-            [
-                mock.call.query(PromptMemoryEntry),
-                mock.call.filter(and_(
-                    func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
-                    func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, '$.id') == str(orchestrator1_id),
-                ))
-            ],
-            [entry for entry in entries if entry.orchestrator_identifier == orchestrator1.get_identifier()]
-        )
-    ])
+    session_mock = UnifiedAlchemyMagicMock(
+        data=[
+            (
+                [
+                    mock.call.query(PromptMemoryEntry),
+                    mock.call.filter(
+                        and_(
+                            func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
+                            func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == str(orchestrator1_id),
+                        )
+                    ),
+                ],
+                [entry for entry in entries if entry.orchestrator_identifier == orchestrator1.get_identifier()],
+            )
+        ]
+    )
     session_mock.__enter__.return_value = session_mock
     memory_interface.get_session.return_value = session_mock
 
@@ -293,7 +293,11 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
 
 
 @pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
-def test_add_score_get_score(memory_interface: AzureSQLMemory, sample_conversation_entries: list[PromptMemoryEntry], score_type: Literal['float_scale'] | Literal['true_false']):
+def test_add_score_get_score(
+    memory_interface: AzureSQLMemory,
+    sample_conversation_entries: list[PromptMemoryEntry],
+    score_type: Literal["float_scale"] | Literal["true_false"],
+):
     prompt_id = sample_conversation_entries[0].id
 
     memory_interface._insert_entries(entries=sample_conversation_entries)

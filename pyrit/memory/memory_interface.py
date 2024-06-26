@@ -107,14 +107,16 @@ class MemoryInterface(abc.ABC):
 
     def get_scores_by_orchestrator_id(self, *, orchestrator_id: int) -> list[Score]:
         """
-        Retrieves a list of Score objects associated with the PromptRequestPiece objects which have the specified orchestrator ID.
+        Retrieves a list of Score objects associated with the PromptRequestPiece objects
+        which have the specified orchestrator ID.
 
         Args:
             orchestrator_id (str): The id of the orchestrator.
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[Score]: A list of Score objects associated with the PromptRequestPiece objects which match the specified orchestrator ID.
+            list[Score]: A list of Score objects associated with the PromptRequestPiece objects
+                which match the specified orchestrator ID.
         """
 
         prompt_ids = self.get_prompt_ids_by_orchestrator(orchestrator_id=orchestrator_id)

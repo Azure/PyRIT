@@ -1,13 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import logging
 
 from typing import Optional
 
 from pyrit.memory import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptDataType, PromptRequestPiece
+from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
@@ -15,7 +14,7 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.score import Scorer, Score
+from pyrit.score import Scorer
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        scorer_list: Optional[list[Scorer]] = None,
+        scorers: Optional[list[Scorer]] = None,
         memory: MemoryInterface = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -49,7 +48,7 @@ class PromptSendingOrchestrator(Orchestrator):
         super().__init__(prompt_converters=prompt_converters, memory=memory, verbose=verbose)
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._scorer_list = scorer_list
+        self._scorers = scorers
 
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
@@ -94,22 +93,12 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-        if self._scorer_list:
+        if self._scorers:
             with ScoringOrchestrator() as scoring_orchestrator:
-                for scorer in self._scorer_list:
+                for scorer in self._scorers:
                     await scoring_orchestrator.score_prompts_by_orchestrator_id_async(
                         scorer=scorer,
                         orchestrator_ids=[self.get_identifier()["id"]],
                     )
 
-            # TODO: Maybe consider having this on the PromptRequestPiece object instead --> this could be in another story to correspond
-            # If we implement this then we won't need the score table in DB
-
         return responses
-
-    def get_score_memory(self):
-        """
-        Retrieves the scores of the PromptRequestPieces associated with this orchestrator.
-        These exist if a scorer is provided to the orchestrator.
-        """
-        return self._memory.get_scores_by_orchestrator_id(orchestrator_id=id(self))
