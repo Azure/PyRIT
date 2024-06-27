@@ -30,8 +30,8 @@ class SkeletonKeyOrchestrator(Orchestrator):
     If successful, the first prompt makes the target comply even with malicious follow-up prompts.
     In our experiments, using two separate prompts was significantly more effective than using a single combined prompt.
 
-    Learn more about the attack from Mark Russinovich's talk at Build 2024 at the link below:
-    (TimeStamp: 37:13) https://build.microsoft.com/en-US/sessions/d29a16d5-f9ea-4f5b-9adf-fae0bd688ff3
+    Learn more about attack at the link below:
+    https://www.microsoft.com/en-us/security/blog/2024/06/26/mitigating-skeleton-key-a-new-type-of-generative-ai-jailbreak-technique/
     """
 
     def __init__(

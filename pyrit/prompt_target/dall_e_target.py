@@ -8,7 +8,7 @@ from typing import Literal, Optional, Dict, Any
 from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
-from pyrit.exceptions import EmptyResponseException, pyrit_retry, handle_bad_request_exception
+from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
 from pyrit.prompt_target import AzureOpenAIChatTarget, PromptTarget
@@ -132,7 +132,7 @@ class DALLETarget(PromptTarget):
 
         return response_entry
 
-    @pyrit_retry
+    @pyrit_target_retry
     async def _generate_image_response_async(self, image_generation_args):
         """
         Asynchronously generates an image using the provided generation arguments.
