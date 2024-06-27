@@ -46,7 +46,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
     ) -> None:
         """
         Args:
-            skeleton_key_prompt (str, optional): The skeleton key prompt sent to the target, Default: skeleton_key.prompt
+            skeleton_key_prompt (str, optional): The skeleton key sent to the target, Default: skeleton_key.prompt
             prompt_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
