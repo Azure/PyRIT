@@ -137,7 +137,7 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         Returns:
             The attacker response.
         """
-        if not start_new_conversation or start_new_conversation:
+        if start_new_conversation:
             self._last_attacker_conversation_id = str(uuid.uuid4())
             attacker_system_prompt = self.attacker_prompt_template.apply_custom_metaprompt_parameters(
                 goal=self.attacker_objective, target_str=self.desired_target_response_prefix
