@@ -95,8 +95,9 @@ class MockScorer(Scorer):
 
     def __init__(self, *, memory: MemoryInterface = None) -> None:
         self._memory = memory
+        self.score_added = []
 
-    def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
@@ -107,9 +108,8 @@ class MockScorer(Scorer):
         Returns:
             list[Score]: A list of Score objects representing the results.
         """
-        self.validate()
+        self.validate(request_response)
 
-        scores = []
         score = Score(
             score_type="float_scale",
             score_value=str(1),
@@ -121,12 +121,14 @@ class MockScorer(Scorer):
             prompt_request_response_id=request_response.id,
         )
 
-        self._memory.add_scores_to_memory(scores=[score])
-        scores.append(score)
+        self.score_added.append(score)
 
-        return scores
+        return self.score_added
+    
+    def add_scores_to_memory(self) -> None:
+        self._memory.add_scores_to_memory(scores=self.score_added)
 
-    def validate(self):
+    def validate(self, request_response: PromptRequestPiece) -> None:
         """
         Validates the request_response piece to score. Because some scorers may require
         specific PromptRequestPiece types or values.
