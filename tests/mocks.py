@@ -1,18 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 import tempfile
 
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import uuid
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from sqlalchemy import inspect
 
-from pyrit.common import default_values
 from pyrit.memory import AzureSQLMemory, DuckDBMemory, MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
@@ -116,9 +114,11 @@ def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
 
 def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
     # Create a test Azure SQL Server DB
-    azure_sql_memory = AzureSQLMemory(connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server")
+    azure_sql_memory = AzureSQLMemory(
+        connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server"
+    )
 
-    with patch('pyrit.memory.AzureSQLMemory.get_session') as get_session_mock:
+    with patch("pyrit.memory.AzureSQLMemory.get_session") as get_session_mock:
         session_mock = UnifiedAlchemyMagicMock()
         session_mock.__enter__.return_value = session_mock
         get_session_mock.return_value = session_mock

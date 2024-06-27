@@ -47,7 +47,7 @@ message_list = [
 
 default_values.load_default_env()
 
-memory = AzureSQLMemory(connection_string=os.environ.get('AZURE_SQL_SERVER_CONNECTION_STRING'))
+memory = AzureSQLMemory(connection_string=os.environ.get("AZURE_SQL_SERVER_CONNECTION_STRING"))
 
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))

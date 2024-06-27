@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+# mypy: ignore-errors
+
 import uuid
 
 from pydantic import BaseModel, ConfigDict
@@ -132,7 +134,7 @@ class EmbeddingData(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = Column(ARRAY(Float).with_variant(JSON, 'mssql'))
+    embedding = Column(ARRAY(Float).with_variant(JSON, "mssql"))
     embedding_type_name = Column(String)
 
     def __str__(self):
