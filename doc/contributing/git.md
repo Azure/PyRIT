@@ -35,7 +35,7 @@ See more on [creating a pull request from a fork](https://docs.github.com/en/pul
 
 ## Pre-Commit Hooks
 
-Before merging your first pull request, you must run the pre-commit hooks. Once you have installed all of the package dependencies (including development dependencies), install the pre-commit hooks by running `pre-commit install`. This will set up several checks such as `flake8`, `pylint`, `mypy`, etc. to run on every commit for files that have changed.
+Before merging any pull request, you must run the pre-commit hooks. Once you have installed all of the package dependencies (including development dependencies), install the pre-commit hooks by running `pre-commit install`. This will set up several checks such as `flake8`, `pylint`, `mypy`, etc. to run on every commit for files that have changed.
 
 For intermediate commits, you can bypass running the pre-commit hooks by running `git commit --no-verify [...]`.
 
