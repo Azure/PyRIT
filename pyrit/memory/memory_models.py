@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+# mypy: ignore-errors
+
 import uuid
 
 from pydantic import BaseModel, ConfigDict
@@ -49,7 +51,7 @@ class PromptMemoryEntry(Base):
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id: uuid.UUID = Column(Uuid, nullable=False, primary_key=True)
+    id = Column(Uuid, nullable=False, primary_key=True)
     role = Column(String, nullable=False)
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
@@ -131,7 +133,7 @@ class EmbeddingData(Base):  # type: ignore
     __tablename__ = "EmbeddingData"
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
-    id: uuid.UUID = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
+    id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
     embedding = Column(ARRAY(Float).with_variant(JSON, "mssql"))
     embedding_type_name = Column(String)
 
@@ -148,7 +150,7 @@ class ScoreEntry(Base):  # type: ignore
     __tablename__ = "ScoreEntries"
     __table_args__ = {"extend_existing": True}
 
-    id: uuid.UUID = Column(Uuid(as_uuid=True), nullable=False, primary_key=True)
+    id = Column(Uuid(as_uuid=True), nullable=False, primary_key=True)
     score_value = Column(String, nullable=False)
     score_value_description = Column(String, nullable=True)
     score_type = Column(String, nullable=False)
@@ -156,9 +158,7 @@ class ScoreEntry(Base):  # type: ignore
     score_rationale = Column(String, nullable=True)
     score_metadata = Column(String, nullable=True)
     scorer_class_identifier = Column(JSON)
-    prompt_request_response_id: uuid.UUID = Column(
-        Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id")
-    )
+    prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     date_time = Column(DateTime, nullable=False)
 
     def __init__(self, *, entry: Score):
