@@ -225,8 +225,10 @@ class FuzzerOrchestrator(Orchestrator):
         # while not self.is_stop():
         if self._current_query >= self._max_query:
             logger.info(f"Maximum query limit reached.")
+            return
         elif self._current_jailbreak >= self._max_jailbreak:
             logger.info(f"Maximum number of jailbreaks reached.")
+            return
         else:
             # 1. Select a seed from the list of the templates using the MCTS
             
@@ -265,7 +267,8 @@ class FuzzerOrchestrator(Orchestrator):
             for request in requests:
                 request.validate()
 
-            responses = (   #list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses received for each prompt.
+            responses: list[PromptRequestResponse]
+            responses = (   
             await self._prompt_normalizer.send_prompt_batch_to_target_async(
                 requests=requests,
                 target=self._prompt_target,
