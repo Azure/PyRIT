@@ -1,4 +1,4 @@
-name: MasterKey
+name: SkeletonKey
 description: Sending this text can make LLMs comply with harmful requests that follow in subsequent prompts
 harm_category: NA
 source: (TimeStamp-37:13) https://build.microsoft.com/en-US/sessions/d29a16d5-f9ea-4f5b-9adf-fae0bd688ff3
