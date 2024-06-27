@@ -21,23 +21,23 @@ from colorama import Style, Fore
 logger = logging.getLogger(__name__)
 
 
-class MasterKeyOrchestrator(Orchestrator):
+class SkeletonKeyOrchestrator(Orchestrator):
     """
-    Creates an orchestrator that executes a master key jailbreak.
+    Creates an orchestrator that executes a skeleton key jailbreak.
 
-    The orchestrator sends an inital master key prompt to the target, and then follows
+    The orchestrator sends an inital skeleton key prompt to the target, and then follows
     up with a separate attack prompt.
     If successful, the first prompt makes the target comply even with malicious follow-up prompts.
     In our experiments, using two separate prompts was significantly more effective than using a single combined prompt.
 
-    Learn more about the attack from Mark Russinovich's talk at Build 2024 at the link below:
-    (TimeStamp: 37:13) https://build.microsoft.com/en-US/sessions/d29a16d5-f9ea-4f5b-9adf-fae0bd688ff3
+    Learn more about attack at the link below:
+    https://www.microsoft.com/en-us/security/blog/2024/06/26/mitigating-skeleton-key-a-new-type-of-generative-ai-jailbreak-technique/
     """
 
     def __init__(
         self,
         *,
-        master_key_prompt: Optional[str] = None,
+        skeleton_key_prompt: Optional[str] = None,
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: MemoryInterface = None,
@@ -46,7 +46,7 @@ class MasterKeyOrchestrator(Orchestrator):
     ) -> None:
         """
         Args:
-            master_key_prompt (str, optional): The master key prompt sent to the target. Defaults to master_key.prompt
+            skeleton_key_prompt (str, optional): The skeleton key sent to the target, Default: skeleton_key.prompt
             prompt_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
@@ -58,11 +58,11 @@ class MasterKeyOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
 
-        self._master_key_prompt = (
-            master_key_prompt
-            if master_key_prompt
+        self._skeleton_key_prompt = (
+            skeleton_key_prompt
+            if skeleton_key_prompt
             else PromptDataset.from_yaml_file(
-                Path(DATASETS_PATH) / "orchestrators" / "master_key" / "master_key.prompt"
+                Path(DATASETS_PATH) / "orchestrators" / "skeleton_key" / "skeleton_key.prompt"
             ).prompts[0]
         )
 
@@ -71,13 +71,13 @@ class MasterKeyOrchestrator(Orchestrator):
 
         self._batch_size = batch_size
 
-    async def send_master_key_with_prompt_async(
+    async def send_skeleton_key_with_prompt_async(
         self,
         *,
         prompt: str,
     ) -> PromptRequestResponse:
         """
-        Sends a master key, followed by the attack prompt to the target.
+        Sends a skeleton key, followed by the attack prompt to the target.
 
         Args
 
@@ -90,14 +90,14 @@ class MasterKeyOrchestrator(Orchestrator):
 
         conversation_id = str(uuid4())
 
-        target_master_prompt_obj = NormalizerRequestPiece(
+        target_skeleton_prompt_obj = NormalizerRequestPiece(
             request_converters=self._prompt_converters,
             prompt_data_type="text",
-            prompt_value=self._master_key_prompt,
+            prompt_value=self._skeleton_key_prompt,
         )
 
         await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=NormalizerRequest([target_master_prompt_obj]),
+            normalizer_request=NormalizerRequest([target_skeleton_prompt_obj]),
             target=self._prompt_target,
             conversation_id=conversation_id,
             labels=self._global_memory_labels,
@@ -118,13 +118,13 @@ class MasterKeyOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
         )
 
-    async def send_master_key_with_prompts_async(
+    async def send_skeleton_key_with_prompts_async(
         self,
         *,
         prompt_list: list[str],
     ) -> list[PromptRequestResponse]:
         """
-        Sends a master key and prompt to the target for each prompt in a list of prompts.
+        Sends a skeleton key and prompt to the target for each prompt in a list of prompts.
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
@@ -139,7 +139,7 @@ class MasterKeyOrchestrator(Orchestrator):
             tasks = []
             for prompt in prompts_batch:
                 tasks.append(
-                    self.send_master_key_with_prompt_async(
+                    self.send_skeleton_key_with_prompt_async(
                         prompt=prompt,
                     )
                 )
