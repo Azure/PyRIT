@@ -140,4 +140,5 @@ def test_orchestrator_get_score_memory(mock_target: MockPromptTarget, mock_score
     scores = orchestrator.get_score_memory()
     assert scores
     assert len(scores) == 1
+    assert scores[0].prompt_request_response_id == request.id
 
