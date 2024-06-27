@@ -9,9 +9,10 @@ from pyrit.memory import DuckDBMemory
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
+from pyrit.score import Score, Scorer
 
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
-from tests.mocks import MockPromptTarget
+from tests.mocks import MockPromptTarget, MockScorer
 
 
 @pytest.fixture
@@ -20,6 +21,10 @@ def mock_target() -> MockPromptTarget:
     file_memory = DuckDBMemory(db_path=":memory:")
     return MockPromptTarget(memory=file_memory)
 
+@pytest.fixture
+def mock_scorer() -> MockScorer:
+    fd, path = tempfile.mkstemp(suffix=".json.memory")
+    return MockScorer(memory=DuckDBMemory(db_path=":memory:"))
 
 @pytest.mark.asyncio
 async def test_send_prompt_no_converter(mock_target: MockPromptTarget):
@@ -116,3 +121,23 @@ def test_orchestrator_get_memory(mock_target: MockPromptTarget):
     entries = orchestrator.get_memory()
     assert entries
     assert len(entries) == 1
+
+def test_orchestrator_get_score_memory(mock_target: MockPromptTarget, mock_scorer: MockScorer):
+    orchestrator = PromptSendingOrchestrator(
+        prompt_target=mock_target,
+        scorers=[mock_scorer])
+    
+    request = PromptRequestPiece(
+        role="user",
+        original_value="test",
+        orchestrator_identifier=orchestrator.get_identifier(),
+    )
+
+    orchestrator._memory.add_request_pieces_to_memory(request_pieces=[request])
+
+    mock_scorer.score_async(request)
+    
+    scores = orchestrator.get_score_memory()
+    assert scores
+    assert len(scores) == 1
+

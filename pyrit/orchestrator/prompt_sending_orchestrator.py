@@ -40,7 +40,7 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
-            prompt_response_scorer (Scorer, optional): Scorer to use for each prompt request response, to be
+            scorers (list[Scorer], optional): List of scorers to use for each prompt request response, to be
                 scored immediately after recieving response. Default is None.
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.

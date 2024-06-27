@@ -16,6 +16,7 @@ from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
+from pyrit.score import Scorer, Score
 
 
 class MockHttpPostAsync(AbstractAsyncContextManager):
@@ -86,6 +87,52 @@ class MockPromptTarget(PromptChatTarget):
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
         Validates the provided prompt request response
+        """
+        pass
+
+
+class MockScorer(Scorer):
+
+    def __init__(self, *, memory: MemoryInterface = None) -> None:
+        self._memory = memory
+
+    def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+        """
+        Score the request_response, add the results to the database
+        and return a list of Score objects.
+
+        Args:
+            request_response (PromptRequestPiece): The request response to be scored.
+
+        Returns:
+            list[Score]: A list of Score objects representing the results.
+        """
+        self.validate()
+
+        scores = []
+        score = Score(
+            score_type="float_scale",
+            score_value=str(1),
+            score_value_description=None,
+            score_category="mock",
+            score_metadata=None,
+            score_rationale=None,
+            scorer_class_identifier=self.get_identifier(),
+            prompt_request_response_id=request_response.id,
+        )
+
+        self._memory.add_scores_to_memory(scores=[score])
+        scores.append(score)
+
+        return scores
+
+    def validate(self):
+        """
+        Validates the request_response piece to score. Because some scorers may require
+        specific PromptRequestPiece types or values.
+
+        Args:
+            request_response (PromptRequestPiece): The request response to be validated.
         """
         pass
 
