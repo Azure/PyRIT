@@ -32,3 +32,13 @@ remote:      https://github.com/GITHUB_USERNAME/PyRIT/pull/new/mybranch
 ```
 
 See more on [creating a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
+
+## Pre-Commit Hooks
+
+Before merging your first pull request, you must run the pre-commit hooks. Once you have installed all of the package dependencies (including development dependencies), install the pre-commit hooks by running `pre-commit install`. This will set up several checks such as `flake8`, `pylint`, `mypy`, etc. to run on every commit for files that have changed.
+
+For intermediate commits, you can bypass running the pre-commit hooks by running `git commit --no-verify [...]`.
+
+When you are ready to merge your PR, check all of the pre-commit checks for the entire repo by running `pre-commit run --all-files` from the PyRIT root directory.
+
+See more on the [pre-commit tool](https://pre-commit.com/).
