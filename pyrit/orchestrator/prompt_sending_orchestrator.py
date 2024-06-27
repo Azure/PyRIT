@@ -94,11 +94,14 @@ class PromptSendingOrchestrator(Orchestrator):
         )
 
         if self._scorers:
-            with ScoringOrchestrator() as scoring_orchestrator:
-                for scorer in self._scorers:
-                    await scoring_orchestrator.score_prompts_by_orchestrator_id_async(
-                        scorer=scorer,
-                        orchestrator_ids=[self.get_identifier()["id"]],
-                    )
+            await self._score_responses_async()
 
         return responses
+    
+    async def _score_responses_async(self):
+        with ScoringOrchestrator() as scoring_orchestrator:
+            for scorer in self._scorers:
+                await scoring_orchestrator.score_prompts_by_orchestrator_id_async(
+                    scorer=scorer,
+                    orchestrator_ids=[self.get_identifier()["id"]],
+                )
