@@ -1,24 +1,28 @@
-name: PoliCheck
+trigger: none
 
-on:
-  workflow_dispatch:
+pr: none
+
+pool:
+  vmImage: 'windows-latest'
 
 jobs:
-  PoliCheck:
-    runs-on: windows-latest
-    timeout-minutes: 120
+  - job: PoliCheck
+    timeoutInMinutes: 120
     steps:
-      - name: List files
-        run: |
-          for %%f in ( "$(Build.SourcesDirectory)\*" ) do @echo %%f
-      - name: Run PoliCheck
-        uses: actions/checkout@v2
-      - name: PoliCheck
-        run: |
-          PoliCheck.exe -t $(Build.SourcesDirectory)/ -r $(Build.SourcesDirectory)/artifacts/result/PoliCheck.xml -o tools/SecurityTools/PoliCheckFileExtensions.xml
-      - name: Save artifacts
-        if: success() || failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: artifacts
-          path: artifacts
+      - task: CmdLine@2
+        displayName: 'List files'
+        inputs:
+          script: |
+            for %%f in ("$(Build.SourcesDirectory)\*") do @echo %%f
+      - task: PoliCheck@2
+        displayName: Run PoliCheck
+        inputs:
+          targetArgument: $(Build.SourcesDirectory)/
+          result: $(Build.SourcesDirectory)/artifacts/result/PoliCheck.xml
+          optionsFTPATH: tools/SecurityTools/PoliCheckFileExtensions.xml
+      - task: PublishPipelineArtifact@1
+        displayName: Save artifacts
+        condition: succeededOrFailed()
+        inputs:
+          artifactName: artifacts
+          targetPath: artifacts
