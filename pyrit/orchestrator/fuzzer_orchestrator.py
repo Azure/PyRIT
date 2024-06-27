@@ -31,23 +31,13 @@ class CompletionState:
     def __init__(self, is_complete: bool):
         self.is_complete = is_complete
 
-#Class to maintain the tree information.
 #todo remove variables and exports that are not necessary
 class PromptNode:
     def __init__(self,
-                 #fuzzer: 'FuzzerOrchestrator',
-                 template: str,                #jailbreak template /prompt in GPTFuzzer
-                 # response: str = None,
-                 # results: 'list[int]' = None,
+                 template: str,                
                  parent: 'PromptNode' = None,
                  ):
-        #self._fuzzer: 'FuzzerOrchestrator' = fuzzer
         self._template: str = template
-        
-       # self._response: str = response
-       # self._results: 'list[int]' = results
-       
-        
 
         self._parent: 'PromptNode' = parent
         self._children: 'list[PromptNode]' = []
@@ -55,6 +45,13 @@ class PromptNode:
 
         self._index: int = None
         self._visited_num = 0
+    """ Class to maintain the tree information for each prompt template
+
+        Args: 
+
+        template: Prompt template. 
+        
+    """
 
     @property
     def index(self):
@@ -66,31 +63,15 @@ class PromptNode:
         if self._parent is not None:
             self._parent._children.append(self)
 
-
-    # @property
-    # def _num_jailbreak(self):
-    #     return sum(self._results)
-
-    # @property
-    # def _num_reject(self):
-    #     return len(self._results) - sum(self._results)
-
-    # @property
-    # def _num_query(self):
-    #     return len(self._results)
-
 class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
-
-    #DEFAULT_TEMPLATE_CONVERTER = [shorten_converter.ShortenConverter(), expand_converter.ExpandConverter()] 
-    
 
     def __init__(
         self,
         *,
-        prompts: list[str],   #questions in GPTFuzzer
+        prompts: list[str],  
         prompt_target: PromptTarget,
-        prompt_templates: list[str], # list of all the jailbreak prompts on which MCTS will be applied.
+        prompt_templates: list[str],
         prompt_converters: Optional[list[PromptConverter]] = None,
         template_converter:list[PromptConverter], # shorten/expand 
         scorer: Scorer,
@@ -146,9 +127,11 @@ class FuzzerOrchestrator(Orchestrator):
 
             frequency_weight: constant that balances between the seed with high reward and the seed that is selected fewer times.
 
-            Reward penalty: Reward penalty diminishes the reward for the current node and its ancestors when the path lengthens.
+            reward_penalty: Reward penalty diminishes the reward for the current node and its ancestors when the path lengthens.
 
-            Minimum reward. Minimal reward prevents the reward of the current node and its ancestors from being too small or negative.
+            minimum_reward: Minimal reward prevents the reward of the current node and its ancestors from being too small or negative.
+
+            non_leaf_nodeprobability: parameter which decides the likelihood of selecting a non-leaf node.
 
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
 
@@ -169,13 +152,12 @@ class FuzzerOrchestrator(Orchestrator):
         self._memory = self._memory
         self._prompt_templates = prompt_templates
         self._template_converter = template_converter
-        self._frequency_weight = frequency_weight  # balance between exploration and exploitation     
-        self._reward_penalty = reward_penalty  # penalty for level
-        self._minimum_reward = minimum_reward   # minimal reward after penalty
+        self._frequency_weight = frequency_weight     
+        self._reward_penalty = reward_penalty  
+        self._minimum_reward = minimum_reward  
         self._non_leaf_nodeprobability = non_leaf_nodeprobability
         self._max_jailbreak = 1
         self._max_query = len(self._prompt_templates) * len(self._prompts.prompts) * 10
-        #self._max_query = 100
         self._current_query = 0
         self._current_jailbreak = 0
         self._batch_size = batch_size
@@ -281,12 +263,8 @@ class FuzzerOrchestrator(Orchestrator):
             response_pieces = [response.request_pieces[0] for response in responses]
             
             #5. Apply scorer on the response and based on the scorer return if jailbreak successful or not.
-            #categoryscorer
-            #datasets/score/content_classifiers/content_classifier_system_prompt.yaml ?????? todo: can we use the same yaml file? refusal message ""I'm Sorry, I can't help you with that" can be expanded.
 
-            results = []
-
-            scored_response = [] #check
+            scored_response = [] 
             for response in response_pieces:
                 scored_response.append(
                     self._scorer.score_async(response))
@@ -361,7 +339,7 @@ class FuzzerOrchestrator(Orchestrator):
 
     def _update(self, prompt_nodes: 'PromptNode'): 
         """
-        Function to update the reward of all the nodes in the last chosen path. 
+        Updates the reward of all the nodes in the last chosen path. 
         """
         success_number = self._num_jailbreak #check 
 
