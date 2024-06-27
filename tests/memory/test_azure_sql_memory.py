@@ -12,7 +12,6 @@ import pytest
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from sqlalchemy import and_, func
-
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.models import PromptRequestPiece, Score
@@ -76,7 +75,7 @@ def test_insert_entries(memory_interface: AzureSQLMemory):
     ]
 
     # Now, get a new session to query the database and verify the entries were inserted
-    with memory_interface.get_session() as session:
+    with memory_interface.get_session() as session:  # type: ignore
         # Use the _insert_entries method to insert multiple entries into the database
         memory_interface._insert_entries(entries=entries)
         inserted_entries = session.query(PromptMemoryEntry).order_by(PromptMemoryEntry.conversation_id).all()
@@ -98,7 +97,7 @@ def test_insert_embedding_entry(memory_interface: AzureSQLMemory):
     memory_interface._insert_entry(conversation_entry)
 
     # Re-query the ConversationData entry within a new session to ensure it's attached
-    with memory_interface.get_session() as session:
+    with memory_interface.get_session() as session:  # type: ignore
         # Assuming uuid is the primary key and is set upon insertion
         reattached_conversation_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").one()
         uuid = reattached_conversation_entry.id
@@ -108,7 +107,7 @@ def test_insert_embedding_entry(memory_interface: AzureSQLMemory):
     memory_interface._insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
-    with memory_interface.get_session() as session:
+    with memory_interface.get_session() as session:  # type: ignore
         persisted_embedding_entry = session.query(EmbeddingData).filter_by(id=uuid).first()
         assert persisted_embedding_entry is not None
         assert persisted_embedding_entry.embedding == [1, 2, 3]
@@ -158,12 +157,12 @@ def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_ent
     assert len(queried_entries) == 3
 
     session = memory_interface.get_session()
-    session.query.reset_mock()
+    session.query.reset_mock()  # type: ignore
 
     # Query entries with a condition
     memory_interface.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1")
 
-    session.query.return_value.filter.assert_called_once_with(PromptMemoryEntry.conversation_id == "1")
+    session.query.return_value.filter.assert_called_once_with(PromptMemoryEntry.conversation_id == "1")  # type: ignore
 
 
 def test_get_all_memory(memory_interface: AzureSQLMemory, sample_conversation_entries: list[PromptMemoryEntry]):
@@ -183,7 +182,7 @@ def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
     target = TextTarget()
 
     # Start a session
-    with memory_interface.get_session() as session:
+    with memory_interface.get_session() as session:  # type: ignore
         # Create a ConversationData entry with all attributes filled
         entry = PromptMemoryEntry(
             entry=PromptRequestPiece(
@@ -280,7 +279,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
         ]
     )
     session_mock.__enter__.return_value = session_mock
-    memory_interface.get_session.return_value = session_mock
+    memory_interface.get_session.return_value = session_mock  # type: ignore
 
     # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
     retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator1_id)

@@ -1,18 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pytest
+from tests.mocks import get_memory_interface
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
+from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score import SelfAskMetaScorer, MetaScorerQuestionPaths
-
-from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
@@ -91,3 +91,58 @@ async def test_meta_scorer_adds_to_memory(scorer_meta_response: PromptRequestRes
     await scorer.score_text_async(text="string")
 
     memory.add_scores_to_memory.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_self_ask_scorer_bad_json_exception_retries():
+
+    chat_target = MagicMock()
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskMetaScorer(
+        chat_target=chat_target,
+        meta_scorer_question_path=MetaScorerQuestionPaths.META_JUDGE_PROMPT.value,
+        memory=memory,
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+
+    assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
+
+
+@pytest.mark.asyncio
+async def test_self_ask_meta_scorer_json_missing_key_exception_retries():
+
+    chat_target = MagicMock()
+
+    json_response = (
+        dedent(
+            """
+        {"value": "True", "description": "This is true", "badly_named_rationale": "rationale for true"}
+        """
+        )
+        .strip()
+        .replace("\n", " ")
+    )
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
+    )
+
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskMetaScorer(
+        chat_target=chat_target,
+        meta_scorer_question_path=MetaScorerQuestionPaths.META_JUDGE_PROMPT.value,
+        memory=memory,
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+
+    assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS

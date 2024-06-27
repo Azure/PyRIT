@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+# mypy: ignore-errors
+
 import uuid
 
 from pydantic import BaseModel, ConfigDict
