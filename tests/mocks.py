@@ -95,7 +95,7 @@ class MockScorer(Scorer):
 
     def __init__(self, *, memory: MemoryInterface = None) -> None:
         self._memory = memory
-        self.score_added = []
+        self.score_added: list[Score] = []
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
@@ -124,7 +124,7 @@ class MockScorer(Scorer):
         self.score_added.append(score)
 
         return self.score_added
-    
+
     def add_scores_to_memory(self) -> None:
         self._memory.add_scores_to_memory(scores=self.score_added)
 
