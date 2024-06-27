@@ -1,5 +1,5 @@
 name: SkeletonKey
-description: Sending this text can make LLMs comply with harmful requests that follow in subsequent prompts
+description: Sending this text can make models comply with harmful requests that follow in subsequent prompts
 harm_category: NA
 source: https://www.microsoft.com/en-us/security/blog/2024/06/26/mitigating-skeleton-key-a-new-type-of-generative-ai-jailbreak-technique/
 should_be_blocked: True
