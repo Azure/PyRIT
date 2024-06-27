@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import logging
-import struct
 
 from contextlib import closing
 from typing import Optional
@@ -21,6 +20,7 @@ from pyrit.models import Score
 
 logger = logging.getLogger(__name__)
 
+
 class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     """
     A class to manage conversation memory using Azure SQL Server as the backend database. It leverages SQLAlchemy Base
@@ -30,12 +30,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     and session management to perform database operations.
     """
 
-    def __init__(
-        self,
-        *,
-        connection_string: str,
-        verbose: bool = False
-    ):
+    def __init__(self, *, connection_string: str, verbose: bool = False):
         super(AzureSQLMemory, self).__init__()
 
         self._connection_string = connection_string
@@ -99,7 +94,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 PromptMemoryEntry,
                 conditions=and_(
                     func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
-                    func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, '$.id') == str(orchestrator_id),
+                    func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == str(orchestrator_id),
                 ),
             )
         except Exception as e:
