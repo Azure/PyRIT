@@ -10,7 +10,7 @@ jobs:
     timeoutInMinutes: 120
     steps:
       - task: CmdLine@2
-        displayName: 'List files'
+        displayName: List files
         inputs:
           script: |
             for %%f in ("$(Build.SourcesDirectory)\*") do @echo %%f
