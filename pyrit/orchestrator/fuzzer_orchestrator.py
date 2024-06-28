@@ -278,10 +278,10 @@ class FuzzerOrchestrator(Orchestrator):
             #6. Update the rewards for each of the node.
            # self._num_jailbreak = sum(score_values)
             self._num_jailbreak = score_values.count(True)
-            self._num_query = len(score_values)
+            num_executed_queries = len(score_values)
 
             self._current_jailbreak += self._num_jailbreak
-            self._current_query += self._num_query
+            self._current_query += num_executed_queries
 
             if self._num_jailbreak > 0: #successful jailbreak
                 self._prompt_nodes.append(target_template_node) # append the template to the initial template list.
