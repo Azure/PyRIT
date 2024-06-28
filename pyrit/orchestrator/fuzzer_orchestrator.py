@@ -352,12 +352,12 @@ class FuzzerOrchestrator(Orchestrator):
             self._rewards[prompt_node.index] += reward * \
                 max(self._minimum_reward, (1 - self._reward_penalty * last_chosen_node._level))
             
-    @pyrit_retry 
+    @pyrit_promptholder_retry
     async def _apply_template_converter(self,current_seed):
         """
         Asynchronously applies template converter.
 
-        Retries the function if it raises EmptyResponseException,
+        Retries the function if it raises MissingPromptHolderException,
         Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
         Args:
@@ -367,13 +367,13 @@ class FuzzerOrchestrator(Orchestrator):
             converted template with placeholder for prompt. 
 
         Raises:
-            EmptyResponseException: If the prompt placeholder is empty after exhausting the maximum number of retries.
+            MissingPromptHolderException: If the prompt placeholder is empty after exhausting the maximum number of retries.
         """
-        TEMPLATE_PLACEHOLDER = '{{ prompt }}' #check
+        TEMPLATE_PLACEHOLDER = '{{ prompt }}' 
 
         target_seed_obj = await self._template_converter.convert_async(prompt = current_seed)
         if TEMPLATE_PLACEHOLDER not in target_seed_obj.output_text:
-            raise EmptyResponseException(message="Prompt placeholder is empty.")
+            raise MissingPromptHolderException(message="Prompt placeholder is empty.")
         return target_seed_obj
 
 
