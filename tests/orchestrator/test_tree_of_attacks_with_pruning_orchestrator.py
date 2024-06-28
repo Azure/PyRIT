@@ -40,10 +40,13 @@ def scoring_target(memory) -> MockPromptTarget:
     return MockPromptTarget(memory=memory)
 
 
-# various value for width, branching factor, depth
+def get_single_line_string(input: str) -> str:
+    return input.replace("\n", "")
+
 # tests for exception types
-# with and without on-topic checking enabled (count calls to scorer target)
 # with and without converters
+# failures from target, continue on with algorithm
+# off-topic pruning
 
 def get_prompt_response_with_content(content: str) -> PromptRequestResponse:
     return PromptRequestResponse(
@@ -57,6 +60,7 @@ def get_prompt_response_with_content(content: str) -> PromptRequestResponse:
             )
         ]
     )
+
 
 def test_invalid_width():
     with pytest.raises(ValueError) as e:
@@ -106,23 +110,14 @@ def test_invalid_depth():
     assert e.match("The depth of the tree must be at least 1.")
 
 
-def _check_orchestrator_memory(memory, num_turns: int):
-    conversations = memory.get_all_prompt_pieces()
-    # one turn has system prompt for red team target, req/resp to red team target,
-    # req/resp to target,
-    # system prompt for scoring target,
-    # system prompt for on-topic checking target
-    expected_num_memories = (4 * num_turns) + 3
-
-    assert len(conversations) == expected_num_memories
-
-
 @pytest.mark.asyncio
+@pytest.mark.parametrize("on_topic_checking_enabled", [True, False])
 async def test_apply_strategy_single_turn_success(
     prompt_target: MockPromptTarget,
     red_teaming_target: MockPromptTarget,
     memory: MemoryInterface,
     scoring_target: MockPromptTarget,
+    on_topic_checking_enabled: bool,
 ):
     tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
         red_teaming_chat=red_teaming_target,
@@ -133,8 +128,8 @@ async def test_apply_strategy_single_turn_success(
         branching_factor=1,
         depth=1,
         conversation_objective="conversation objective",
-        on_topic_checking_enabled=True,
-        verbose=True
+        on_topic_checking_enabled=on_topic_checking_enabled,
+        verbose=False
     )
 
     with patch.object(tap_orchestrator._red_teaming_chat, "send_prompt_async") as mock_red_teaming_target:
@@ -143,12 +138,17 @@ async def test_apply_strategy_single_turn_success(
                 mock_red_teaming_target.return_value = get_prompt_response_with_content(
                     content='{"improvements": "First improvement response", "prompt": "First red teaming prompt"}',
                 )
-                mock_scoring_target.side_effect = [
-                    get_prompt_response_with_content(
-                        '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
+                mock_scoring_target_return_values = []
+                if on_topic_checking_enabled:
+                    mock_scoring_target_return_values.append(
+                        get_prompt_response_with_content(
+                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
+                    )
+                mock_scoring_target_return_values.append(
                     get_prompt_response_with_content(
                         '{"score_value": "5", "description": "Jailbreak", "rationale": "Rationale"}'),
-                ]
+                )
+                mock_scoring_target.side_effect = mock_scoring_target_return_values
                 expected_target_response = get_prompt_response_with_content("First target response")
                 mock_target.return_value = expected_target_response
 
@@ -165,17 +165,20 @@ async def test_apply_strategy_single_turn_success(
 
                 mock_red_teaming_target.assert_called_once()
                 mock_target.assert_called_once()
-                assert mock_scoring_target.call_count == 2
+                assert mock_scoring_target.call_count == 2 if on_topic_checking_enabled else 1
 
-                _check_orchestrator_memory(memory=tap_orchestrator._memory, num_turns=1)
+                # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
+                assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("on_topic_checking_enabled", [True, False])
 async def test_apply_strategy_max_depth_reached(
     prompt_target: MockPromptTarget,
     red_teaming_target: MockPromptTarget,
     memory: MemoryInterface,
     scoring_target: MockPromptTarget,
+    on_topic_checking_enabled: bool,
 ):
     tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
         red_teaming_chat=red_teaming_target,
@@ -186,8 +189,8 @@ async def test_apply_strategy_max_depth_reached(
         branching_factor=1,
         depth=1,
         conversation_objective="conversation objective",
-        on_topic_checking_enabled=True,
-        verbose=True
+        on_topic_checking_enabled=on_topic_checking_enabled,
+        verbose=False
     )
 
     with patch.object(tap_orchestrator._red_teaming_chat, "send_prompt_async") as mock_red_teaming_target:
@@ -196,12 +199,17 @@ async def test_apply_strategy_max_depth_reached(
                 mock_red_teaming_target.return_value = get_prompt_response_with_content(
                     content='{"improvements": "First improvement response", "prompt": "First red teaming prompt"}',
                 )
-                mock_scoring_target.side_effect = [
-                    get_prompt_response_with_content(
-                        '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
+                mock_scoring_target_return_values = []
+                if on_topic_checking_enabled:
+                    mock_scoring_target_return_values.append(
+                        get_prompt_response_with_content(
+                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
+                    )
+                mock_scoring_target_return_values.append(
                     get_prompt_response_with_content(
                         '{"score_value": "3", "description": "No jailbreak", "rationale": "Rationale"}'),
-                ]
+                )
+                mock_scoring_target.side_effect = mock_scoring_target_return_values
                 expected_target_response = get_prompt_response_with_content("First target response")
                 mock_target.return_value = expected_target_response
 
@@ -213,209 +221,226 @@ async def test_apply_strategy_max_depth_reached(
 
                 mock_red_teaming_target.assert_called_once()
                 mock_target.assert_called_once()
-                assert mock_scoring_target.call_count == 2
+                assert mock_scoring_target.call_count == 2 if on_topic_checking_enabled else 1
 
-                _check_orchestrator_memory(memory=tap_orchestrator._memory, num_turns=1)
-
+                # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
+                assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("attack_strategy_as_str", [True, False])
-async def test_send_fixed_prompt_then_generated_prompt(
-    prompt_target: PromptTarget,
-    simple_attack_strategy: AttackStrategy,
+@pytest.mark.parametrize("width, branching_factor", [(2, 1), (1, 2)])
+@pytest.mark.parametrize("on_topic_checking_enabled", [True, False])
+async def test_apply_strategy_single_turn_success_two_successes(
+    prompt_target: MockPromptTarget,
+    red_teaming_target: MockPromptTarget,
     memory: MemoryInterface,
-    attack_strategy_as_str: bool,
+    scoring_target: MockPromptTarget,
+    width: int,
+    branching_factor: int,
+    on_topic_checking_enabled: bool,
 ):
-    attack_strategy: Union[str | AttackStrategy] = (
-        str(simple_attack_strategy) if attack_strategy_as_str else simple_attack_strategy
-    )
-
-    scorer = MagicMock(Scorer)
-    scorer.scorer_type = "true_false"
-    red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat=chat_completion_engine,
+    tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
+        red_teaming_chat=red_teaming_target,
         memory=memory,
-        attack_strategy=attack_strategy,
-        initial_red_teaming_prompt="how can I help you?",
         prompt_target=prompt_target,
-        scorer=scorer,
+        scoring_target=scoring_target,
+        width=width,
+        branching_factor=branching_factor,
+        depth=1,
+        conversation_objective="conversation objective",
+        on_topic_checking_enabled=on_topic_checking_enabled,
+        verbose=False
     )
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_red_teaming_target:
-        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
-            fixed_input_prompt = "First prompt to target - set by user"
-            expected_target_responses = "First target response"
-            mock_target.return_value = expected_target_responses
-            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
-            assert target_response.converted_value == expected_target_responses
+    with patch.object(tap_orchestrator._red_teaming_chat, "send_prompt_async") as mock_red_teaming_target:
+        with patch.object(tap_orchestrator._scoring_target, "send_prompt_async") as mock_scoring_target:
+            with patch.object(tap_orchestrator._prompt_target, "send_prompt_async") as mock_target:
+                mock_red_teaming_target.side_effect = [
+                    get_prompt_response_with_content(
+                        content='{"improvements": "First branch first improvement response", "prompt": "First branch first red teaming prompt"}',
+                    ),
+                    get_prompt_response_with_content(
+                        content='{"improvements": "Second branch first improvement response", "prompt": "Second branch first red teaming prompt"}',
+                    ),
+                ]
+                mock_scoring_target_return_values = []
+                for _ in range(max(branching_factor, width)):
+                    if on_topic_checking_enabled:
+                        mock_scoring_target_return_values.append(
+                            get_prompt_response_with_content(
+                                '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
+                        )
+                    mock_scoring_target_return_values.append(
+                        get_prompt_response_with_content(
+                            '{"score_value": "5", "description": "Jailbreak", "rationale": "Rationale"}'),
+                    )
+                mock_scoring_target.side_effect = mock_scoring_target_return_values
+                expected_target_response_first_branch = get_prompt_response_with_content("First branch First target response")
+                expected_target_response_second_branch = get_prompt_response_with_content("Second branch First target response")
+                mock_target.side_effect = [
+                    expected_target_response_first_branch,
+                    expected_target_response_second_branch,
+                ]
+                result = await tap_orchestrator.apply_attack_strategy_async()
+                
+                assert len(tap_orchestrator._orchestrators) == 2
+                
+                assert result is not None
+                assert not result.pruned
+                assert result.completed
+                assert result.score == 1  # (5-1) / 4
+                assert result.orchestrator_id == tap_orchestrator._orchestrators[0].get_identifier()["id"]
+                assert result.prompt_target_conversation_id is not None
+                
+                assert mock_red_teaming_target.call_count == 2
+                assert mock_target.call_count == 2
+                assert mock_scoring_target.call_count == 4 if on_topic_checking_enabled else 2
 
-            _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
-
-            mock_red_teaming_target.assert_not_called()
-            mock_target.assert_called_once()
-
-            expected_generated_red_teaming_response = "red teaming chat response"
-            expected_target_response = "second chat response"
-
-            mock_red_teaming_target.return_value = expected_generated_red_teaming_response
-            mock_target.return_value = expected_target_response
-
-            target_response = await red_teaming_orchestrator.send_prompt_async()
-            assert target_response.converted_value == expected_target_response
-
-            _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
+                # Two orchestrators with the following each:
+                # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
+                assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 14 if on_topic_checking_enabled else 10
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("attack_strategy_as_str", [True, False])
-async def test_send_fixed_prompt_beyond_first_iteration_failure(
-    prompt_target: PromptTarget,
-    simple_attack_strategy: AttackStrategy,
+@pytest.mark.parametrize("depth", [1,2,3])
+@pytest.mark.parametrize("on_topic_checking_enabled", [True, False])
+async def test_apply_strategy_multiturn_failure(
+    prompt_target: MockPromptTarget,
+    red_teaming_target: MockPromptTarget,
     memory: MemoryInterface,
-    attack_strategy_as_str: bool,
+    scoring_target: MockPromptTarget,
+    depth: int,
+    on_topic_checking_enabled: bool,
 ):
-    attack_strategy: Union[str | AttackStrategy] = (
-        str(simple_attack_strategy) if attack_strategy_as_str else simple_attack_strategy
-    )
-
-    scorer = MagicMock(Scorer)
-    scorer.scorer_type = "true_false"
-    red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat=chat_completion_engine,
+    tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
+        red_teaming_chat=red_teaming_target,
         memory=memory,
-        attack_strategy=attack_strategy,
-        initial_red_teaming_prompt="how can I help you?",
         prompt_target=prompt_target,
-        scorer=scorer,
+        scoring_target=scoring_target,
+        width=1,
+        branching_factor=1,
+        depth=depth,
+        conversation_objective="conversation objective",
+        on_topic_checking_enabled=on_topic_checking_enabled,
+        verbose=False
     )
 
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_red_teaming_target:
-        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
-            fixed_input_prompt = "First prompt to target - set by user"
-            expected_target_response = "First target response"
-            mock_target.return_value = expected_target_response
-            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
-            assert target_response.converted_value == expected_target_response
-            _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
-
-            mock_red_teaming_target.assert_not_called()
-            mock_target.assert_called_once()
-
-            second_fixed_input_prompt = "Second prompt to target - sent by user"
-            expected_target_response = "Second target response"
-            mock_target.return_value = expected_target_response
-            with pytest.raises(ValueError):
-                target_response = await red_teaming_orchestrator.send_prompt_async(prompt=second_fixed_input_prompt)
-            mock_red_teaming_target.assert_not_called()
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("score", [True, False])
-@pytest.mark.parametrize("message_count", [0, 2, 4, 6, 10, 20, 100])
-async def test_is_conversation_complete_scoring(score, message_count):
-    mock_score = MagicMock(Score)
-    mock_score.score_value = score
-    mock_score.score_type = "true_false"
-    mock_score.get_value.return_value = score
-
-    mock_scorer = MagicMock(Scorer)
-    mock_scorer.scorer_type = "true_false"
-    mock_scorer.score_async = AsyncMock(return_value=[mock_score])
-
-    orchestrator = RedTeamingOrchestrator(
-        attack_strategy="some strategy",
-        red_teaming_chat=Mock(),
-        prompt_target=Mock(),
-        memory=Mock(),
-        scorer=mock_scorer,
-    )
-    # simulate back and forth between user and assistant
-    simulated_messages = [
-        PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user" if i % 2 == 0 else "assistant",
-                    original_value=f"Message #{i}",
-                    converted_value=f"Message #{i}",
-                    original_value_data_type="text",
-                    converted_value_data_type="text",
+    with patch.object(tap_orchestrator._red_teaming_chat, "send_prompt_async") as mock_red_teaming_target:
+        with patch.object(tap_orchestrator._scoring_target, "send_prompt_async") as mock_scoring_target:
+            with patch.object(tap_orchestrator._prompt_target, "send_prompt_async") as mock_target:
+                mock_red_teaming_target.side_effect = [
+                    get_prompt_response_with_content(
+                        content=f'{{"improvements": "First branch level {level} improvement response", '
+                                f'"prompt": "First branch level {level} red teaming prompt"}}',
+                    ) for level in range(depth)
+                ]
+                scorer_responses_for_one_turn = []
+                if on_topic_checking_enabled:
+                    scorer_responses_for_one_turn.append(
+                        get_prompt_response_with_content(
+                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
+                    )
+                scorer_responses_for_one_turn.append(
+                    get_prompt_response_with_content(
+                        '{"score_value": "3", "description": "No jailbreak", "rationale": "Rationale"}'),
                 )
-            ]
-        )
-        for i in range(message_count)
-    ]
-    orchestrator._memory.get_conversation = MagicMock(return_value=simulated_messages)
-    # conversation is complete if the last message is from the target
-    # and the score is True
-    actual_result = await orchestrator.check_conversation_complete_async()
-    is_failure = not bool(actual_result) or not actual_result.score_value
-    assert not is_failure == (len(simulated_messages) > 0 and score)
+                mock_scoring_target.side_effect = scorer_responses_for_one_turn * depth
+                mock_target.side_effect = [
+                    get_prompt_response_with_content(f"First branch level {level} target response")
+                    for level in range(depth)
+                ]
+                result = await tap_orchestrator.apply_attack_strategy_async()
+                
+                assert len(tap_orchestrator._orchestrators) == 1
+                
+                assert result is None
+                
+                assert mock_red_teaming_target.call_count == depth
+                assert mock_target.call_count == depth
+                assert mock_scoring_target.call_count == depth * (2 if on_topic_checking_enabled else 1)
+
+                # 4 conversation turns per depth level and 3 system prompts (but the red teaming system prompt doesn't get repeated),
+                # scoring prompts are not stored as of now
+                # TODO remove the following line
+                #print("\n\n".join([f"{p.conversation_id}: {get_single_line_string(p.converted_value)}" for p in tap_orchestrator._memory.get_all_prompt_pieces()]))
+                assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == (6 if on_topic_checking_enabled else 5) * depth + 1
 
 
 @pytest.mark.asyncio
-async def test_is_conversation_complete_scoring_non_bool():
-    mock_score = MagicMock(Score)
-    mock_score.score_type = "float_scale"
-    mock_score.score_value = 0.5
-
-    scorer = MagicMock(Scorer)
-    scorer.scorer_type = "true_false"
-    scorer.score_text_async = AsyncMock(return_value=[mock_score])
-
-    orchestrator = RedTeamingOrchestrator(
-        attack_strategy="some strategy",
-        red_teaming_chat=Mock(),
-        prompt_target=Mock(),
-        memory=Mock(),
-        scorer=scorer,
+@pytest.mark.parametrize("depth", [1,2,3])
+@pytest.mark.parametrize("on_topic_checking_enabled", [True, False])
+async def test_apply_strategy_multiturn_success_in_last_turn(
+    prompt_target: MockPromptTarget,
+    red_teaming_target: MockPromptTarget,
+    memory: MemoryInterface,
+    scoring_target: MockPromptTarget,
+    depth: int,
+    on_topic_checking_enabled: bool,
+):
+    tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
+        red_teaming_chat=red_teaming_target,
+        memory=memory,
+        prompt_target=prompt_target,
+        scoring_target=scoring_target,
+        width=1,
+        branching_factor=1,
+        depth=depth,
+        conversation_objective="conversation objective",
+        on_topic_checking_enabled=on_topic_checking_enabled,
+        verbose=False
     )
-    orchestrator._memory.get_conversation = MagicMock(
-        return_value=[
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="user",
-                        original_value="First message.",
-                        converted_value="First message.",
-                        original_value_data_type="text",
-                        converted_value_data_type="text",
-                    )
+
+    with patch.object(tap_orchestrator._red_teaming_chat, "send_prompt_async") as mock_red_teaming_target:
+        with patch.object(tap_orchestrator._scoring_target, "send_prompt_async") as mock_scoring_target:
+            with patch.object(tap_orchestrator._prompt_target, "send_prompt_async") as mock_target:
+                mock_red_teaming_target.side_effect = [
+                    get_prompt_response_with_content(
+                        content=f'{{"improvements": "First branch level {level} improvement response", '
+                                f'"prompt": "First branch level {level} red teaming prompt"}}',
+                    ) for level in range(depth)
                 ]
-            ),
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="assistant",
-                        original_value="Second message.",
-                        converted_value="Second message.",
-                        original_value_data_type="text",
-                        converted_value_data_type="text",
+                mock_scoring_target_return_values_except_last_iteration = []
+                if on_topic_checking_enabled:
+                    mock_scoring_target_return_values_except_last_iteration.append(
+                        get_prompt_response_with_content(
+                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
                     )
-                ]
-            ),
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="user",
-                        original_value="Third message.",
-                        converted_value="Third message.",
-                        original_value_data_type="text",
-                        converted_value_data_type="text",
+                mock_scoring_target_return_values_except_last_iteration.append(
+                    get_prompt_response_with_content(
+                        '{"score_value": "3", "description": "No jailbreak", "rationale": "Rationale"}'),
+                )
+                mock_scoring_target_return_values_last_iteration = []
+                if on_topic_checking_enabled:
+                    mock_scoring_target_return_values_last_iteration.append(
+                        get_prompt_response_with_content(
+                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
                     )
+                mock_scoring_target_return_values_last_iteration.append(
+                    get_prompt_response_with_content(
+                        '{"score_value": "5", "description": "Jailbreak", "rationale": "Rationale"}'),
+                )
+                mock_scoring_target.side_effect = \
+                    mock_scoring_target_return_values_except_last_iteration * (depth - 1) + \
+                        mock_scoring_target_return_values_last_iteration
+                mock_target.side_effect = [
+                    get_prompt_response_with_content(f"First branch level {level} target response")
+                    for level in range(depth)
                 ]
-            ),
-            PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="assistant",
-                        original_value="Fourth message.",
-                        converted_value="Fourth message.",
-                        original_value_data_type="text",
-                        converted_value_data_type="text",
-                    )
-                ]
-            ),
-        ]
-    )
-    with pytest.raises(ValueError):
-        await orchestrator.check_conversation_complete_async()
+                result = await tap_orchestrator.apply_attack_strategy_async()
+                
+                assert len(tap_orchestrator._orchestrators) == 1
+                
+                assert result is not None
+                assert not result.pruned
+                assert result.completed
+                assert result.score == 1  # (5-1) / 4
+                assert result.orchestrator_id == tap_orchestrator._orchestrators[0].get_identifier()["id"]
+                assert result.prompt_target_conversation_id is not None
+                
+                assert mock_red_teaming_target.call_count == depth
+                assert mock_target.call_count == depth
+                assert mock_scoring_target.call_count == depth * (2 if on_topic_checking_enabled else 1)
+
+                # 4 conversation turns per depth level and 3 system prompts (but the red teaming system prompt doesn't get repeated),
+                # scoring prompts are not stored as of now
+                #print("\n\n".join([f"{p.conversation_id}: {get_single_line_string(p.converted_value)}" for p in tap_orchestrator._memory.get_all_prompt_pieces()]))
+                assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == (6 if on_topic_checking_enabled else 5) * depth + 1
