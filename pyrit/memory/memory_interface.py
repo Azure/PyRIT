@@ -4,7 +4,7 @@
 import abc
 from pathlib import Path
 
-from typing import Optional
+from typing import MutableSequence, Optional, Sequence
 from uuid import uuid4
 
 from pyrit.common.path import RESULTS_PATH
@@ -45,19 +45,19 @@ class MemoryInterface(abc.ABC):
         self.memory_embedding = None
 
     @abc.abstractmethod
-    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
+    def get_all_prompt_pieces(self) -> Sequence[PromptRequestPiece]:
         """
         Loads all ConversationData from the memory storage handler.
         """
 
     @abc.abstractmethod
-    def get_all_embeddings(self) -> list[EmbeddingData]:
+    def get_all_embeddings(self) -> Sequence[EmbeddingData]:
         """
         Loads all EmbeddingData from the memory storage handler.
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> MutableSequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
@@ -69,7 +69,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -82,7 +82,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
         """
@@ -105,7 +105,7 @@ class MemoryInterface(abc.ABC):
         Gets a list of scores based on prompt_request_response_ids.
         """
 
-    def get_conversation(self, *, conversation_id: str) -> list[PromptRequestResponse]:
+    def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
         """
         Retrieves a list of PromptRequestResponse objects that have the specified conversation ID.
 
@@ -115,11 +115,11 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
         """
-        request_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        request_pieces: Sequence = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
     @abc.abstractmethod
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
 

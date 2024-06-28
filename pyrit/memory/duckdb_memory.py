@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from typing import Union, Optional
+from typing import MutableSequence, Union, Optional, Sequence
 import logging
 
 from sqlalchemy import create_engine, MetaData
@@ -80,21 +80,22 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
+    def get_all_prompt_pieces(self) -> Sequence[PromptRequestPiece]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
-        return [entry.get_prompt_request_piece() for entry in result]
+        entries = self.query_entries(PromptMemoryEntry)
+        result: Sequence[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+        return result
 
-    def get_all_embeddings(self) -> list[EmbeddingData]:
+    def get_all_embeddings(self) -> Sequence[EmbeddingData]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
         result = self.query_entries(EmbeddingData)
         return result
 
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> MutableSequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
@@ -105,14 +106,15 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
         """
         try:
-            return self.query_entries(
+            result: MutableSequence[PromptRequestPiece] = self.query_entries(
                 PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
-            )
+            )  # type: ignore
+            return result
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
 
@@ -133,7 +135,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -155,7 +157,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
@@ -250,7 +252,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
 
-    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
+    def query_entries(self, model, *, conditions: Optional = None) -> MutableSequence[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 
@@ -266,11 +268,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(model)
                 if conditions is not None:
                     query = query.filter(conditions)
-                return query.all()
+                return query.all()  # TODO: use generics to make types work
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
 
-    def update_entries(self, *, entries: list[Base], update_fields: dict) -> bool:  # type: ignore
+    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
 

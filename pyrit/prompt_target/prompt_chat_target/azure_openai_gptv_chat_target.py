@@ -3,6 +3,7 @@
 
 import logging
 import json
+from typing import MutableSequence
 
 from openai import AsyncAzureOpenAI
 from openai import BadRequestError
@@ -190,7 +191,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    def _build_chat_messages(self, prompt_req_res_entries: list[PromptRequestResponse]) -> list[ChatMessageListContent]:
+    def _build_chat_messages(
+        self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
+    ) -> list[ChatMessageListContent]:
         """
         Builds chat messages based on prompt request response entries.
 

@@ -3,6 +3,7 @@
 
 import asyncio
 import logging
+from typing import Sequence
 
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
@@ -60,7 +61,7 @@ class ScoringOrchestrator(Orchestrator):
         Scores prompts using the Scorer for prompts with the prompt_ids
         """
 
-        requests: list[PromptRequestPiece] = []
+        requests: Sequence[PromptRequestPiece] = []
         requests = self._memory.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
 
         return await self._score_prompts_batch_async(prompts=requests, scorer=scorer)
@@ -71,7 +72,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         return [response for response in request_responses if response.role == "assistant"]
 
-    async def _score_prompts_batch_async(self, prompts: list[PromptRequestPiece], scorer: Scorer) -> list[Score]:
+    async def _score_prompts_batch_async(self, prompts: Sequence[PromptRequestPiece], scorer: Scorer) -> list[Score]:
         results = []
 
         for prompts_batch in self._chunked_prompts(prompts, self._batch_size):

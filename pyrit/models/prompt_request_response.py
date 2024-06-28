@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import MutableSequence, Optional, Sequence
 
 from pyrit.models import PromptRequestPiece
 from pyrit.models.literals import PromptDataType, PromptResponseError
@@ -51,8 +51,8 @@ class PromptRequestResponse:
 
 
 def group_conversation_request_pieces_by_sequence(
-    request_pieces: list[PromptRequestPiece],
-) -> list[PromptRequestResponse]:
+    request_pieces: Sequence[PromptRequestPiece],
+) -> MutableSequence[PromptRequestResponse]:
     """
     Groups prompt request pieces from the same conversation into PromptRequestResponses.
 

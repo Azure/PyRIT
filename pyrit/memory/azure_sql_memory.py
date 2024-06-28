@@ -4,7 +4,7 @@
 import logging
 
 from contextlib import closing
-from typing import Optional
+from typing import MutableSequence, Optional, Sequence
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.engine.base import Engine
@@ -78,7 +78,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -96,14 +96,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                     func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
                     func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == str(orchestrator_id),
                 ),
-            )
+            )  # type: ignore
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
             )
             return []
 
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> MutableSequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
@@ -117,12 +117,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             return self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.conversation_id == conversation_id,
-            )
+            )  # type: ignore
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
@@ -157,7 +157,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
         return [entry.get_prompt_request_piece() for entry in result]
 
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
 
@@ -171,7 +171,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             return self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )
+            )  # type: ignore
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
@@ -239,7 +239,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(model)
                 if conditions is not None:
                     query = query.filter(conditions)
-                return query.all()
+                return query.all()  # TODO: use generics to make types work
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
 
