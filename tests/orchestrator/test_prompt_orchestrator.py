@@ -107,7 +107,7 @@ async def test_send_normalizer_request_scores_async(mock_target: MockPromptTarge
         orchestrator_identifier=orchestrator.get_identifier(),
     )
 
-    orchestrator._memory.get_prompt_request_piece_by_orchestrator_id = MagicMock( # type: ignore
+    orchestrator._memory.get_prompt_request_piece_by_orchestrator_id = MagicMock(  # type: ignore
         return_value=[response]
     )
 
