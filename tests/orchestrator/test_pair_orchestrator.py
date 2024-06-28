@@ -47,11 +47,11 @@ def orchestrator(memory_interface: MemoryInterface) -> PromptAutomaticIterativeR
 
 @pytest.mark.asyncio
 async def test_init(orchestrator):
-    assert orchestrator.target_text_model is not None
-    assert orchestrator.attacker_text_model is not None
-    assert orchestrator.judge_text_model is not None
-    assert orchestrator.attacker_objective == "attacker objective"
-    assert orchestrator.desired_target_response_prefix == "desired response"
+    assert orchestrator._target_text_model is not None
+    assert orchestrator._attacker_text_model is not None
+    assert orchestrator._judge_text_model is not None
+    assert orchestrator._attacker_objective == "attacker objective"
+    assert orchestrator._desired_target_response_prefix == "desired response"
 
 
 @pytest.mark.asyncio
