@@ -42,7 +42,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         headers: str = None,
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
-        api_version: str = "2023-08-01-preview",
+        api_version: str = "2024-02-01",
         max_tokens: int = 1024,
         temperature: float = 1.0,
         top_p: int = 1,
@@ -66,7 +66,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
-                "2023-08-01-preview".
+                "2024-02-01".
             headers (str, optional): Headers of the endpoint.
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.

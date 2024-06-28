@@ -14,6 +14,7 @@ from pyrit.prompt_converter.expand_converter import ExpandConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
+from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
 from pyrit.prompt_converter.random_capital_letters_converter import RandomCapitalLettersConverter
 from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
 from pyrit.prompt_converter.rot13_converter import ROT13Converter
@@ -32,32 +33,23 @@ __all__ = [
     "AddTextImageConverter",
     "AsciiArtConverter",
     "AtbashConverter",
-    "AtbashConverter",
-    "AtbashConverter",
-    "AzureSpeechTextToAudioConverter",
     "AzureSpeechTextToAudioConverter",
     "Base64Converter",
-    "CaesarConverter",
-    "CaesarConverter",
     "CaesarConverter",
     "CodeChameleonConverter",
     "ConverterResult",
     "ExpandConverter",
     "LeetspeakConverter",
     "MorseConverter",
-    "MorseConverter",
-    "MorseConverter",
     "NoiseConverter",
+    "PersuasionConverter",
     "PromptConverter",
     "RandomCapitalLettersConverter",
-    "RepeatTokenConverter",
-    "RepeatTokenConverter",
     "RepeatTokenConverter",
     "ROT13Converter",
     "SearchReplaceConverter",
     "ShortenConverter",
     "StringJoinConverter",
-    "SuffixAppendConverter",
     "SuffixAppendConverter",
     "ToneConverter",
     "TranslationConverter",
