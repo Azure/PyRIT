@@ -16,8 +16,8 @@ from pyrit.orchestrator.pair_orchestrator import PromptAutomaticIterativeRefinem
 __all__ = [
     "MasterKeyOrchestrator",
     "Orchestrator",
-    "PromptSendingOrchestrator",
     "PromptAutomaticIterativeRefinementOrchestrator",
+    "PromptSendingOrchestrator",
     "RedTeamingOrchestrator",
     "ScoringOrchestrator",
     "XPIATestOrchestrator",
