@@ -59,6 +59,12 @@ class InvalidJsonException(PyritException):
     def __init__(self, *, message: str = "Invalid JSON Response"):
         super().__init__(message=message)
 
+class MissingPromptHolderException(PyritException):
+    """Exception class for missing prompt holder errors."""
+
+    def __init__(self, status_code: int = 204, *, message: str = "No Content"):
+        super().__init__(status_code=status_code, message=message)
+
 
 def handle_bad_request_exception(response_text: str, request: PromptRequestPiece) -> PromptRequestResponse:
 
@@ -135,3 +141,26 @@ def remove_markdown_json(response_msg: str) -> str:
         response_msg = response_msg[8:-4]
 
     return response_msg
+
+
+def pyrit_promptholder_retry(func: Callable) -> Callable:
+    """
+    A decorator to apply retry logic with exponential backoff to a function.
+
+    Retries the function if it raises MissingPromptHolderException,
+    with a wait time between retries that follows an exponential backoff strategy.
+    Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+    Args:
+        func (Callable): The function to be decorated.
+
+    Returns:
+        Callable: The decorated function with retry logic applied.
+    """
+    return retry(
+        reraise=True,
+        retry=retry_if_exception_type(MissingPromptHolderException),
+        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+        after=after_log(logger, logging.INFO),
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+    )(func)
