@@ -16,7 +16,6 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.datasets import DatasetFetcher
 
 
 logger = logging.getLogger(__name__)
@@ -99,22 +98,7 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
     
-    
-    def fetch_many_shot_examples(self, source: str, source_type: str = 'repository') -> list[dict]:
-        """
-        Fetch many-shot examples from a specified source.
-
-        Args:
-            source (str): The source from which to fetch examples.
-            source_type (str): The type of source ('repository' or 'user'). Defaults to 'repository'.
-
-        Returns:
-            list[dict]: A list of examples.
-        """
-        dataset_fetcher = DatasetFetcher()
-        return dataset_fetcher.import_examples(source=source, source_type=source_type)
-    
-
+    # Proof of concept to verify response content, can be removed
     def print_conversation(self, responses: List[PromptRequestResponse]):
         """Prints the conversation between the prompt target and the user."""
         if not responses:
@@ -124,6 +108,5 @@ class PromptSendingOrchestrator(Orchestrator):
         for response in responses:
             for piece in response.request_pieces:
                 # Print the role, original value, and converted value assuming both are always present
-                print(f"{Style.BRIGHT}{Fore.RED}{piece.role} (Original): {piece.original_value}\n")
-                print(f"{Style.BRIGHT}{Fore.GREEN}{piece.role} (Converted): {piece.converted_value}\n") # Do we need to print the converted value?
+                print(f"{Style.BRIGHT}{Fore.GREEN}{piece.role} (Converted): {piece.converted_value}\n") 
     

@@ -1,1 +1,1 @@
-from .fetch_examples import DatasetFetcher
+from .fetch_examples import fetch_many_shot_jailbreaking_examples, fetch_examples

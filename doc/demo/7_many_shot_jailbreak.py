@@ -8,6 +8,7 @@ from pyrit.common import default_values
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common.path import DATASETS_PATH
 from pathlib import Path
+from pyrit.datasets.fetch_examples import fetch_many_shot_jailbreaking_examples
 
 # %%
 # Load environment variables
@@ -20,6 +21,7 @@ deployment_name = os.getenv("OPENAI_CHAT_DEPLOYMENT")
 endpoint = os.getenv("OPENAI_ENDPOINT")
 examples_source = os.getenv("EXAMPLES_SOURCE")
 template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
+
 
 # %%
 async def main():
@@ -37,8 +39,8 @@ async def main():
     print("Template loaded successfully.")
 
     # Import examples
-    source_type = 'repository' if examples_source.startswith('http') else 'user'
-    examples = orchestrator.fetch_many_shot_examples(examples_source, source_type)
+    source_type = 'repository' if examples_source.startswith('http') else 'file'
+    examples = fetch_many_shot_jailbreaking_examples(examples_source, source_type)
     print("Examples imported successfully.")
 
     # Use only the first 5 examples
@@ -56,7 +58,7 @@ async def main():
     print("Sending prompt to target...")
     response = await orchestrator.send_prompts_async(prompt_list=[filled_prompt])
 
-    # Print the conversation
+    # Proof of concept to verify response content, can be removed
     orchestrator.print_conversation(response)
 
 # %%
