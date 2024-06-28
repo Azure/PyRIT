@@ -9,11 +9,14 @@ import re
 from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, Optional, Type, TypeVar, Union
+from typing import Literal, Optional, Type, TypeVar, Union, List, Dict
 
 import yaml
+from jinja2 import Template
 from pydantic import BaseModel, ConfigDict
 from pyrit.models.chat_message import ChatMessage
+
+
 
 
 ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]
@@ -311,3 +314,25 @@ class EmbeddingResponse(BaseModel):
 
     def to_json(self) -> str:
         return self.model_dump_json()
+
+
+@dataclass
+class ManyShotTemplate(PromptTemplate):
+    @classmethod
+    def from_yaml_file(cls, file_path: str):
+        with open(file_path, 'r') as file:
+            content = yaml.safe_load(file) # Safely load YAML content to avoid arbitrary code execution
+        # Return an instance of the class with loaded parameters
+        return cls(
+            template=content['template'],
+            parameters=content['parameters']
+        )
+
+    def apply_parameters(self, prompt: str, examples: List[Dict[str, str]]) -> str:
+        # Create a Jinja2 template from the template string
+        jinja_template = Template(self.template)
+        
+        # Render the template with the provided prompt and examples
+        filled_template = jinja_template.render(prompt=prompt, examples=examples)
+        
+        return filled_template

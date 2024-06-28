@@ -3,7 +3,10 @@
 
 import logging
 
-from typing import Optional
+
+from typing import Optional, List
+from colorama import Style, Fore
+
 
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptDataType
@@ -13,6 +16,7 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
+
 
 logger = logging.getLogger(__name__)
 
@@ -93,3 +97,16 @@ class PromptSendingOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
+    
+    # Proof of concept to verify response content, can be removed
+    def print_conversation(self, responses: List[PromptRequestResponse]):
+        """Prints the conversation between the prompt target and the user."""
+        if not responses:
+            print("No conversation with the target")
+            return
+
+        for response in responses:
+            for piece in response.request_pieces:
+                # Print the role, original value, and converted value assuming both are always present
+                print(f"{Style.BRIGHT}{Fore.GREEN}{piece.role} (Converted): {piece.converted_value}\n") 
+    
