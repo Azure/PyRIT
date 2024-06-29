@@ -62,7 +62,7 @@ class HumanInTheLoopScorer(Scorer):
             if value < 0 or value > 1:
                 raise ValueError("Score value must be between 0 and 1 for float_scale scores")
 
-        score_category = input("Enter score category (e.g., 'hate' or 'violence'): ")
+        self._score_category = input("Enter score category (e.g., 'hate' or 'violence'): ")
         score_value_description = self._optional_input("Enter score value description (optional): ")
         score_rationale = self._optional_input("Enter score rationale (optional): ")
         score_metadata = self._optional_input("Enter score metadata (optional): ")
@@ -71,7 +71,7 @@ class HumanInTheLoopScorer(Scorer):
             score_value=score_value,
             score_value_description=score_value_description,
             score_type=score_type,  # type: ignore
-            score_category=score_category,
+            score_category=self._score_category,
             score_rationale=score_rationale,
             score_metadata=score_metadata,
             scorer_class_identifier=self.get_identifier(),
@@ -80,6 +80,13 @@ class HumanInTheLoopScorer(Scorer):
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
+    
+    def get_categories(self) -> list[str]:
+        return [self._score_category]
+    
+    def update_categories(self, categories: list[str]) -> Scorer:
+        self._score_category = categories[0]
+        return self
 
     def _optional_input(self, prompt):
         value = input(prompt)

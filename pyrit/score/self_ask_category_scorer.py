@@ -135,12 +135,13 @@ class SelfAskCategoryScorer(Scorer):
         try:
             response_json = response.request_pieces[0].converted_value
             parsed_response = json.loads(response_json)
+            self._score_category = parsed_response["category_name"]
             score_value = parsed_response["category_name"] != self._no_category_found_category
             score = Score(
                 score_value=str(score_value),
                 score_value_description=parsed_response["category_description"],
                 score_type=self.scorer_type,
-                score_category=parsed_response["category_name"],
+                score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
                 score_metadata=None,
@@ -154,6 +155,13 @@ class SelfAskCategoryScorer(Scorer):
             raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
 
         return score
+    
+    def get_categories(self) -> list[str]:
+        return [self._score_category]
+    
+    def update_categories(self, categories: list[str]) -> Scorer:
+        self._score_category = categories[0]
+        return self
 
     def validate(self, request_response: PromptRequestPiece):
         pass

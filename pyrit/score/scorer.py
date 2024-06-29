@@ -5,7 +5,7 @@ import abc
 from abc import abstractmethod
 
 from pyrit.models import PromptRequestPiece
-from pyrit.score import Score, ScoreType
+from pyrit.score import Score, ScoreType, Scorer
 
 
 class Scorer(abc.ABC):
@@ -14,6 +14,27 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+
+    @abstractmethod
+    def get_categories(self) -> list[str]:
+        """
+        Returns score category values.
+
+        Returns:
+            list[str]: List of all category values for scorer.
+        """
+
+    @abstractmethod
+    def update_categories(self, categories: list[str]) -> Scorer:
+        """
+        Updates the categories within the scorer to be the list of categories provided.
+
+        Args:
+            categories (list[str]): New list of categories for the Scorer.
+
+        Returns:
+            Scorer: Scorer with updated categories.
+        """
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:

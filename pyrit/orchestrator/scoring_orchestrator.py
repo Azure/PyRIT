@@ -53,6 +53,11 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
 
+        # only score prompts that do not already have a score for that score category
+        for request_piece in request_pieces:
+            if self._memory.has_score(request_piece, scorer):
+                request_pieces.remove(request_piece)
+
         return await self._score_prompts_batch_async(prompts=request_pieces, scorer=scorer)
 
     async def score_prompts_by_request_id_async(self, *, scorer: Scorer, prompt_ids: list[str]) -> list[Score]:

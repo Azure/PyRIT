@@ -122,5 +122,12 @@ class SelfAskObjectiveScorer(Scorer):
 
         return score
 
+    def get_categories(self) -> list[str]:
+        return [self._category]
+    
+    def update_categories(self, categories: list[str]) -> Scorer:
+        self._category = categories[0]
+        return self
+
     def validate(self, request_response: PromptRequestPiece):
         pass

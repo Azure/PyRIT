@@ -72,6 +72,13 @@ class AzureContentFilterScorer(Scorer):
             self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
         else:
             raise ValueError("Please provide the Azure Content Safety API key and endpoint")
+        
+    def get_categories(self) -> list[str]:
+        return self._harm_categories
+    
+    def update_categories(self, categories: list[str]) -> Scorer:
+        self._harm_categories = categories
+        return self
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
