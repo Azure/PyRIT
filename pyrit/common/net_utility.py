@@ -24,6 +24,7 @@ PostType = Literal["json", "data"]
 def make_request_and_raise_if_error(
     endpoint_uri: str,
     method: str,
+    params: dict[str, str] = None,
     request_body: dict[str, object] = None,
     headers: dict[str, str] = None,
     post_type: PostType = "json",
@@ -34,11 +35,18 @@ def make_request_and_raise_if_error(
     request_body = request_body or {}
 
     with get_httpx_client(debug=debug) as client:
+        # TODO: Use a match statement or something like that to simplify this
         if request_body:
-            if post_type == "json":
-                response = client.request(method=method, url=endpoint_uri, json=request_body, headers=headers)
+            if params:
+                if post_type == "json":
+                    response = client.request(method=method, params=params, url=endpoint_uri, json=request_body, headers=headers)
+                else:
+                    response = client.request(method=method, params=params, url=endpoint_uri, data=request_body, headers=headers)
             else:
-                response = client.request(method=method, url=endpoint_uri, data=request_body, headers=headers)
+                if post_type == "json":
+                    response = client.request(method=method, url=endpoint_uri, json=request_body, headers=headers)
+                else:
+                    response = client.request(method=method, url=endpoint_uri, data=request_body, headers=headers)
         else:
             response = client.request(method=method, url=endpoint_uri, headers=headers)
 
@@ -51,6 +59,7 @@ def make_request_and_raise_if_error(
 async def make_request_and_raise_if_error_async(
     endpoint_uri: str,
     method: str,
+    params: dict[str, str] = None,
     request_body: dict[str, object] = None,
     headers: dict[str, str] = None,
     post_type: PostType = "json",
@@ -60,15 +69,17 @@ async def make_request_and_raise_if_error_async(
     headers = headers or {}
     request_body = request_body or {}
 
+    params = params or {}
+
     async with get_httpx_client(debug=debug, use_async=True) as async_client:
         if request_body:
             if post_type == "json":
                 response = await async_client.request(
-                    method=method, url=endpoint_uri, json=request_body, headers=headers
+                    method=method, params=params, url=endpoint_uri, json=request_body, headers=headers
                 )
             else:
                 response = await async_client.request(
-                    method=method, url=endpoint_uri, data=request_body, headers=headers
+                    method=method, params=params, url=endpoint_uri, data=request_body, headers=headers
                 )
         else:
             response = await async_client.request(method=method, url=endpoint_uri, headers=headers)
