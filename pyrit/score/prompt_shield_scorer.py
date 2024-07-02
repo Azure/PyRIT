@@ -22,21 +22,8 @@ PromptShieldEntryKind = Literal["userPrompt", "document"]
 
 class PromptShieldScorer(Scorer):
     '''
-    TODO list
-    TODO: Implementation (Foreign Key Errors)
-    TODO: Local testing
-    TODO: Unit testing
-
-    (Thanks to Richard Lundeen for this idea!)
-    A scorer which returns a boolean value for detection by Prompt Shield.
-    Since there's one scorer entry per prompt entry:
-    (1 Scorer Entry == 1 PromptPiece == 1 HTTP Request to Prompt Shield)
-    The score applies to whichever field (userPrompt or document/s) was sent in the
-    PromptRequestPiece.
-
-    NOTE: The HTTP body as a JSON returns a boolean value, and the intent is for it
-    to be stored as a boolean value in the scoring table. If it can't, it will be
-    converted to a string literal.
+    A scorer that uses Prompt Shield as a target.
+    Combine this with a scoring template.
     '''
 
     ### ATTRIBUTES ###
@@ -67,10 +54,6 @@ class PromptShieldScorer(Scorer):
         '''
         self.validate(request_response=request_response)
 
-        # TODO: Fix this. The converted value should be the boolean for attack detection,
-        # while the original would be the JSON response from the HTTP body.
-
-        # body = request_response.converted_value
         body = request_response.original_value
 
         request = PromptRequestResponse(
@@ -86,14 +69,6 @@ class PromptShieldScorer(Scorer):
         )
 
         response = await self._target.send_prompt_async(prompt_request=request)
-
-        # TODO: Fix this. The converted value should be the boolean for attack detection,
-        # while the original would be the JSON response from the HTTP body.
-
-        # result = response.request_pieces[0].converted_value
-
-        # NOTE: This is a hacky workaround for the MVP. This needs to be fixed
-        # in the PromptShieldTarget.
 
         result = str(response.request_pieces[0].original_value).split('"attackDetected":')[-1].split("}]}")[0]
         

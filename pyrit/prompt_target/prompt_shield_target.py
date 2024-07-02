@@ -28,17 +28,6 @@ logger = logging.getLogger(__name__)
 PromptShieldEntryKind = Literal["userPrompt", "document"]
 
 class PromptShieldTarget(PromptTarget):
-    '''
-    Prompt Shield as a Target. This uses the same logic as the Prompt Shield Scorer.
-    TODO: Error catching. This includes checking for the most up-to-date API version for Prompt Shield,
-    which is passed as parameters (params) in the HTTP request.
-    TODO: Unit tests.
-    TODO: The current implementation makes you specify which field you want to use when creating the
-    target, since Prompt Shield has both a userPrompt and a document field.
-    This doesn't account for cases in which you want to split the input across the two fields.
-    I'm not sure how to implement this in orchestration, because every orchestrator has a slightly
-    different flow that might affect the field(s) usage differently.
-    '''
 
     ### ATTRIBUTES ###
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_ENDPOINT"
@@ -88,7 +77,6 @@ class PromptShieldTarget(PromptTarget):
         userPromptValue: str = ""
         documentsValue: List[str] = [""]
 
-        # match request.prompt_metadata:
         match self._field:
             case 'userPrompt':
                 userPromptValue = request.converted_value
