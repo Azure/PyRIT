@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import tempfile
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.memory import DuckDBMemory
@@ -11,7 +11,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
-from tests.mocks import MockPromptTarget
+from tests.mocks import MockPromptTarget, MockScorer
 
 
 @pytest.fixture
@@ -19,6 +19,12 @@ def mock_target() -> MockPromptTarget:
     fd, path = tempfile.mkstemp(suffix=".json.memory")
     file_memory = DuckDBMemory(db_path=":memory:")
     return MockPromptTarget(memory=file_memory)
+
+
+@pytest.fixture
+def mock_scorer() -> MockScorer:
+    fd, path = tempfile.mkstemp(suffix=".json.memory")
+    return MockScorer(memory=DuckDBMemory(db_path=":memory:"))
 
 
 @pytest.mark.asyncio
@@ -69,7 +75,7 @@ async def test_send_prompts_multiple_converters(mock_target: MockPromptTarget):
 
 
 @pytest.mark.asyncio
-async def test_send_normalizer_requests_async():
+async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
     orchestrator._prompt_normalizer = AsyncMock()
     orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(return_value=None)
@@ -86,6 +92,36 @@ async def test_send_normalizer_requests_async():
 
         await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
         assert orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.called
+
+
+@pytest.mark.asyncio
+async def test_send_normalizer_request_scores_async(mock_target: MockPromptTarget, mock_scorer: MockScorer):
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[mock_scorer])
+
+    orchestrator._prompt_normalizer = AsyncMock()
+    orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(return_value=None)
+
+    response = PromptRequestPiece(
+        role="assistant",
+        original_value="test response to score",
+        orchestrator_identifier=orchestrator.get_identifier(),
+    )
+
+    orchestrator._memory.get_prompt_request_piece_by_orchestrator_id = MagicMock(  # type: ignore
+        return_value=[response]
+    )
+
+    req = NormalizerRequestPiece(
+        request_converters=[],
+        prompt_data_type="text",
+        prompt_value="test request",
+    )
+
+    await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
+    assert orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.called
+
+    assert len(mock_scorer.score_added) == 1
+    assert mock_scorer.score_added[0].prompt_request_response_id == response.id
 
 
 def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
@@ -116,3 +152,24 @@ def test_orchestrator_get_memory(mock_target: MockPromptTarget):
     entries = orchestrator.get_memory()
     assert entries
     assert len(entries) == 1
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget, mock_scorer: MockScorer):
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[mock_scorer])
+
+    request = PromptRequestPiece(
+        role="user",
+        original_value="test",
+        orchestrator_identifier=orchestrator.get_identifier(),
+    )
+
+    orchestrator._memory.add_request_pieces_to_memory(request_pieces=[request])
+
+    await mock_scorer.score_async(request)
+    mock_scorer.add_scores_to_memory()
+
+    scores = orchestrator.get_score_memory()
+    assert scores
+    assert len(scores) == 1
+    assert scores[0].prompt_request_response_id == request.id

@@ -105,6 +105,23 @@ class MemoryInterface(abc.ABC):
         Gets a list of scores based on prompt_request_response_ids.
         """
 
+    def get_scores_by_orchestrator_id(self, *, orchestrator_id: int) -> list[Score]:
+        """
+        Retrieves a list of Score objects associated with the PromptRequestPiece objects
+        which have the specified orchestrator ID.
+
+        Args:
+            orchestrator_id (str): The id of the orchestrator.
+                Can be retrieved by calling orchestrator.get_identifier()["id"]
+
+        Returns:
+            list[Score]: A list of Score objects associated with the PromptRequestPiece objects
+                which match the specified orchestrator ID.
+        """
+
+        prompt_ids = self.get_prompt_ids_by_orchestrator(orchestrator_id=orchestrator_id)
+        return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
+
     def get_conversation(self, *, conversation_id: str) -> list[PromptRequestResponse]:
         """
         Retrieves a list of PromptRequestResponse objects that have the specified conversation ID.
@@ -143,6 +160,15 @@ class MemoryInterface(abc.ABC):
 
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
+
+    def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: int) -> list[str]:
+        prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+
+        prompt_ids = []
+        for piece in prompt_pieces:
+            prompt_ids.append(str(piece.id))
+
+        return prompt_ids
 
     def duplicate_conversation_for_new_orchestrator(
         self,

@@ -38,7 +38,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
         true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
-        self._category = true_false_question_contents["category"]
+        self._score_category = true_false_question_contents["category"]
         true_category = true_false_question_contents["true_description"]
         false_category = true_false_question_contents["false_description"]
 
@@ -107,7 +107,7 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_value=str(parsed_response["value"]),
                 score_value_description=parsed_response["description"],
                 score_type=self.scorer_type,
-                score_category=self._category,
+                score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
                 score_metadata=None,
