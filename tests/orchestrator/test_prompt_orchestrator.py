@@ -95,22 +95,33 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
 
 
 @pytest.mark.asyncio
-async def test_send_normalizer_request_scores_async(mock_target: MockPromptTarget, mock_scorer: MockScorer):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[mock_scorer])
+async def test_send_normalizer_request_scores_async(mock_target: MockPromptTarget):
+    # Set up mocks and return values
+    scorer = AsyncMock()
+    scorer._memory = MagicMock()
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
 
     orchestrator._prompt_normalizer = AsyncMock()
-    orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(return_value=None)
 
+    request = PromptRequestPiece(
+        role="user",
+        original_value="test request",
+        orchestrator_identifier=orchestrator.get_identifier())
     response = PromptRequestPiece(
         role="assistant",
         original_value="test response to score",
-        orchestrator_identifier=orchestrator.get_identifier(),
+        orchestrator_identifier=orchestrator.get_identifier())
+
+    request_pieces = [request, response]
+    orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
+        return_value=[piece.to_prompt_request_response() for piece in request_pieces]
     )
 
-    orchestrator._memory.get_prompt_request_piece_by_orchestrator_id = MagicMock(  # type: ignore
-        return_value=[response]
+    orchestrator._memory.get_prompt_request_pieces_by_id = MagicMock(  # type: ignore
+        return_value=request_pieces
     )
 
+    # Call directly into function to send normalizer request
     req = NormalizerRequestPiece(
         request_converters=[],
         prompt_data_type="text",
@@ -119,9 +130,26 @@ async def test_send_normalizer_request_scores_async(mock_target: MockPromptTarge
 
     await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
     assert orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.called
+    scorer.score_async.assert_called_once_with(request_response=response)
 
-    assert len(mock_scorer.score_added) == 1
-    assert mock_scorer.score_added[0].prompt_request_response_id == response.id
+    # TODO: ADD DESCRIPTION FOR WHAT YOU'RE TESTING AND CHANGING HERE
+    scorer.score_async.reset_mock()
+    response2 = PromptRequestPiece(
+        role="assistant",
+        original_value="test response to score 2",
+        orchestrator_identifier=orchestrator.get_identifier())
+    
+    request_pieces = [request, response2]
+    orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
+        return_value=[piece.to_prompt_request_response() for piece in request_pieces]
+    )
+    orchestrator._memory.get_prompt_request_pieces_by_id = MagicMock(  # type: ignore
+        return_value=request_pieces
+    )
+
+    await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
+    scorer.score_async.assert_called_once_with(request_response=response2)
+
 
 
 def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
