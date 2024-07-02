@@ -73,7 +73,6 @@ class AzureContentFilterScorer(Scorer):
         else:
             raise ValueError("Please provide the Azure Content Safety API key and endpoint")
 
-
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
         Args:

@@ -56,11 +56,7 @@ class ScoringOrchestrator(Orchestrator):
         return await self._score_prompts_batch_async(prompts=request_pieces, scorer=scorer)
 
     async def score_prompts_by_request_id_async(
-        self,
-        *,
-        scorer: Scorer,
-        prompt_ids: list[str],
-        responses_only: bool = False
+        self, *, scorer: Scorer, prompt_ids: list[str], responses_only: bool = False
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts with the prompt_ids

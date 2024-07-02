@@ -85,7 +85,7 @@ class PromptSendingOrchestrator(Orchestrator):
         for request in prompt_request_list:
             request.validate()
 
-        responses = await self._prompt_normalizer.send_prompt_batch_to_target_async(
+        responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._prompt_target,
             labels=self._global_memory_labels,
@@ -93,13 +93,13 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-        response_ids = []
-        for response in responses:
-            for piece in response.request_pieces:
-                response_ids.append(piece.id)
+        if responses:
+            response_ids = []
+            for response in responses:
+                response_ids.append(str(piece.id) for piece in response.request_pieces)
 
-        if self._scorers:
-            await self._score_responses_async(response_ids)
+            if self._scorers:
+                await self._score_responses_async(response_ids)
 
         return responses
 
