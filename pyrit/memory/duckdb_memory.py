@@ -80,22 +80,22 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def get_all_prompt_pieces(self) -> Sequence[PromptRequestPiece]:
+    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
         entries = self.query_entries(PromptMemoryEntry)
-        result: Sequence[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+        result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
         return result
 
-    def get_all_embeddings(self) -> Sequence[EmbeddingData]:
+    def get_all_embeddings(self) -> list[EmbeddingData]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self.query_entries(EmbeddingData)
+        result: list[EmbeddingData] = self.query_entries(EmbeddingData)
         return result
 
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> MutableSequence[PromptRequestPiece]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
@@ -106,7 +106,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
         """
         try:
-            result: MutableSequence[PromptRequestPiece] = self.query_entries(
+            result: list[PromptRequestPiece] = self.query_entries(
                 PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
             )  # type: ignore
             return result
@@ -114,7 +114,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
 
@@ -128,14 +128,14 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             return self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )
+            )  # type: ignore
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
             )
             return []
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> Sequence[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -147,10 +147,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
         """
         try:
-            return self.query_entries(
+            result: list[PromptRequestPiece] = self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == str(orchestrator_id),
-            )
+            )  # type: ignore
+            return result
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
@@ -252,7 +253,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
 
-    def query_entries(self, model, *, conditions: Optional = None) -> MutableSequence[Base]:  # type: ignore
+    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 

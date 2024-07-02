@@ -59,12 +59,12 @@ def group_conversation_request_pieces_by_sequence(
     This is done using the sequence number and conversation ID.
 
     Args:
-        request_pieces (list[PromptRequestPiece]): A list of PromptRequestPiece objects representing individual
+        request_pieces (Sequence[PromptRequestPiece]): A list of PromptRequestPiece objects representing individual
             request pieces.
 
     Returns:
-        list[PromptRequestResponse]: A list of PromptRequestResponse objects representing grouped request pieces.
-            this is ordered by the sequence number
+        MutableSequence[PromptRequestResponse]: A list of PromptRequestResponse objects representing grouped request
+            pieces. This is ordered by the sequence number
 
     Raises:
         ValueError: If the conversation ID of any request piece does not match the conversation ID of the first

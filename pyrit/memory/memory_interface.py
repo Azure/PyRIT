@@ -65,7 +65,7 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[PromptRequestPiece]: A list of chat memory entries with the specified conversation ID.
+            MutableSequence[PromptRequestPiece]: A list of chat memory entries with the specified conversation ID.
         """
 
     @abc.abstractmethod
@@ -78,7 +78,7 @@ class MemoryInterface(abc.ABC):
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
+            Sequence[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
     @abc.abstractmethod
@@ -113,9 +113,9 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
+            MutableSequence[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
         """
-        request_pieces: Sequence = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        request_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
     @abc.abstractmethod
@@ -127,7 +127,7 @@ class MemoryInterface(abc.ABC):
             prompt_ids (list[int]): The prompt IDs to match.
 
         Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
+            Sequence[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
 
     def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:

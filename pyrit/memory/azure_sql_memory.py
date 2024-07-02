@@ -4,7 +4,7 @@
 import logging
 
 from contextlib import closing
-from typing import MutableSequence, Optional, Sequence
+from typing import Optional, Sequence
 
 from sqlalchemy import create_engine, func, and_
 from sqlalchemy.engine.base import Engine
@@ -78,7 +78,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> Sequence[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -103,7 +103,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> MutableSequence[PromptRequestPiece]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
@@ -157,7 +157,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
         return [entry.get_prompt_request_piece() for entry in result]
 
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
 
