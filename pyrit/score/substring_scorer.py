@@ -17,7 +17,7 @@ class SubStringScorer(Scorer):
         self._memory = memory if memory else DuckDBMemory()
 
         self._substring = substring
-        self._category = category
+        self._score_category = category
         self.scorer_type = "true_false"
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
@@ -34,7 +34,7 @@ class SubStringScorer(Scorer):
                 score_value_description=None,
                 score_metadata=None,
                 score_type=self.scorer_type,
-                score_category=self._category,
+                score_category=self._score_category,
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
@@ -43,13 +43,6 @@ class SubStringScorer(Scorer):
 
         self._memory.add_scores_to_memory(scores=score)
         return score
-    
-    def get_categories(self) -> list[str]:
-        return [self._category]
-    
-    def update_categories(self, categories: list[str]) -> Scorer:
-        self._category = categories[0]
-        return self
 
     def validate(self, request_response: PromptRequestPiece):
         if request_response.converted_value_data_type != "text":

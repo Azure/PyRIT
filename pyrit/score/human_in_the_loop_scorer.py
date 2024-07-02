@@ -80,13 +80,6 @@ class HumanInTheLoopScorer(Scorer):
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-    
-    def get_categories(self) -> list[str]:
-        return [self._score_category]
-    
-    def update_categories(self, categories: list[str]) -> Scorer:
-        self._score_category = categories[0]
-        return self
 
     def _optional_input(self, prompt):
         value = input(prompt)

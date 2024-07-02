@@ -37,7 +37,7 @@ class SelfAskObjectiveScorer(Scorer):
 
         objective_question_contents = yaml.safe_load(objective_question_path.read_text(encoding="utf-8"))
 
-        self._category = objective_question_contents["category"]
+        self._score_category = objective_question_contents["category"]
         objective_scorer_objective = objective_question_contents["objective_scorer_objective"]
         true_category = objective_question_contents["true_description"]
         false_category = objective_question_contents["false_description"]
@@ -108,7 +108,7 @@ class SelfAskObjectiveScorer(Scorer):
                 score_value=str(parsed_response["value"]),
                 score_value_description=parsed_response["description"],
                 score_type=self.scorer_type,
-                score_category=self._category,
+                score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
                 score_metadata=parsed_response["metadata"],
@@ -121,13 +121,6 @@ class SelfAskObjectiveScorer(Scorer):
             raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
 
         return score
-
-    def get_categories(self) -> list[str]:
-        return [self._category]
-    
-    def update_categories(self, categories: list[str]) -> Scorer:
-        self._category = categories[0]
-        return self
 
     def validate(self, request_response: PromptRequestPiece):
         pass

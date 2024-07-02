@@ -93,19 +93,25 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
+        response_ids = []
+        for response in responses:
+            for piece in response.request_pieces:
+                response_ids.append(piece.id)
+
         if self._scorers:
-            await self._score_responses_async()
+            await self._score_responses_async(response_ids)
 
         return responses
 
-    async def _score_responses_async(self):
+    async def _score_responses_async(self, prompt_ids: list[str]):
         with ScoringOrchestrator(
             memory=self._memory,
             batch_size=self._batch_size,
             verbose=self._verbose,
         ) as scoring_orchestrator:
             for scorer in self._scorers:
-                await scoring_orchestrator.score_prompts_by_orchestrator_id_async(
+                await scoring_orchestrator.score_prompts_by_request_id_async(
                     scorer=scorer,
-                    orchestrator_ids=[self.get_identifier()["id"]],
+                    prompt_ids=prompt_ids,
+                    responses_only=True,
                 )

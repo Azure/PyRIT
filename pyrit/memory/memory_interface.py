@@ -19,7 +19,6 @@ from pyrit.models import (
 from pyrit.memory.memory_models import EmbeddingData
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.score import Scorer
 
 
 class MemoryInterface(abc.ABC):
@@ -105,34 +104,6 @@ class MemoryInterface(abc.ABC):
         """
         Gets a list of scores based on prompt_request_response_ids.
         """
-
-    def has_score(self, *, prompt_request_piece: PromptRequestPiece, scorer: Scorer) -> tuple[bool, Scorer]:
-        """
-        Checks if a prompt_request_piece has an existing score by the provided scorer.
-
-        Returns:
-            bool: True if a prompt_request_piece already has a score from the provided scorer, False if not.
-            Scorer: Object is the same as provided scorer if True, and modified with updated categories if False.
-                (e.g. for AzureContentFilterScorer, there can be multiple categories, such as Violence and Hate.
-                A PromptRequestPiece may have a score for Violence, but not for Hate. In this case, the boolean
-                value will be False and the Scorer will be the same as provided, with the Violence category removed.)
-        """
-
-        scores = self.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_request_piece.id])
-        categories = scorer.get_categories()
-
-        has_score = False
-        if len(scores) > 0:
-            for score in scores:
-                if score.scorer_class_identifier == scorer.get_identifier() and score.score_category in categories:
-                    categories.remove(score.score_category)
-
-            if len(categories) == 0: # all categories are covered that are expected by the scorer
-                has_score = True
-            else:
-                scorer = scorer.update_categories(categories)
-        
-        return (has_score, scorer)
 
     def get_scores_by_orchestrator_id(self, *, orchestrator_id: int) -> list[Score]:
         """
