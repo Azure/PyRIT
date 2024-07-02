@@ -7,7 +7,8 @@ from colorama import Fore, Style
 from dataclasses import dataclass
 import json
 import logging
-from typing import Optional, Union
+from treelib import Node, Tree
+from typing import Dict, Optional, Union
 from uuid import uuid4
 import re
 
@@ -25,7 +26,7 @@ from pyrit.score import SelfAskTrueFalseScorer, SelfAskLikertScorer
 logger = logging.getLogger(__name__)
 
 
-class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
+class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
     def __init__(
@@ -40,6 +41,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
         memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,
         verbose: bool = False,
+
     ) -> None:
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
 
@@ -134,25 +136,28 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
         # The prompt for the red teaming target needs to include the latest message from the prompt target.
         # A special case is the very first message, in which case there are no prior messages
         # so we can use the initial red teaming prompt
-        target_messages = self._memory.get_chat_messages_with_conversation_id(
+        target_messages = self._memory.get_conversation(
             conversation_id=self._prompt_target_conversation_id
         )
         
         logger.debug("Generating a prompt for the prompt target using the red teaming LLM.")
 
-        assistant_responses = [m for m in target_messages if m.role == "assistant"]
+        assistant_responses = [r for r in target_messages if r.request_pieces[0].role == "assistant"]
         if len(assistant_responses) > 0:
             target_response = assistant_responses[-1]
-            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[target_response.id])
+            target_response_piece = target_response.request_pieces[0]
+            print(f"target_response_piece.id: {target_response_piece.id}")
+            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[target_response_piece.id])
+            print(f"scores: {scores[0]}")
             if scores:
                 # Multiply normalized score by maximum score and add minimum score
                 score = scores[0].get_value()
             else:
                 score = "unavailable"
             prompt_text = self._red_teaming_prompt_template.apply_custom_metaprompt_parameters(
-                target_response=target_response.content,
+                target_response=target_response_piece.converted_value,
                 conversation_objective=self._conversation_objective,
-                score=score,
+                score=str(score),
             )
         else:  # If there are no assistant responses it's the first message.
             logger.debug(f"Using the specified initial red teaming prompt.")
@@ -193,7 +198,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
         except InvalidJsonException as e:
             logger.error(f"Failed to generate a prompt for the prompt target: {e}")
             logger.info("Pruning the branch since we can't proceed without red teaming prompt.")
-            return TAPBranchResult(
+            return TAPNodeResult(
                 pruned=True,
                 completed=False,
                 orchestrator_id=self.get_identifier()["id"],
@@ -207,7 +212,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
 
             # If the prompt is not on topic we prune the branch.
             if not on_topic_score.get_value():
-                return TAPBranchResult(
+                return TAPNodeResult(
                     pruned=True,
                     completed=False,
                     orchestrator_id=self.get_identifier()["id"],
@@ -219,7 +224,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
             prompt_value=prompt,
             prompt_data_type="text",
         )
-        response_text = (
+        response = (
             (
                 await self._prompt_normalizer.send_prompt_async(
                     normalizer_request=NormalizerRequest([target_prompt_obj]),
@@ -230,16 +235,15 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
                 )
             )
             .request_pieces[0]  
-            .converted_value
         )
 
         score: float = (
-            await self._scorer.score_text_async(
-                text=response_text,
+            await self._scorer.score_async(
+                request_response=response,
             )
         )[0].get_value()
 
-        return TAPBranchResult(
+        return TAPNodeResult(
             pruned=False,
             completed=True,
             score=score,
@@ -269,7 +273,7 @@ class _TreeOfAttacksWithPruningBranchOrchestrator(Orchestrator):
 
 
 @dataclass
-class TAPBranchResult():
+class TAPNodeResult():
     def __init__(
         self,
         *,
@@ -286,7 +290,7 @@ class TAPBranchResult():
         self.prompt_target_conversation_id = prompt_target_conversation_id
 
     def __str__(self) -> str:
-        return f"TAPBranchResult(pruned={self.pruned}, completed={self.completed}, score={self.score}, orchestrator_id={self.orchestrator_id}, prompt_target_conversation_id={self.prompt_target_conversation_id})"
+        return f"TAPNodeResult(pruned={self.pruned}, completed={self.completed}, score={self.score}, orchestrator_id={self.orchestrator_id}, prompt_target_conversation_id={self.prompt_target_conversation_id})"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -334,31 +338,21 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
         self._attack_branching_factor = branching_factor
 
         self._orchestrators = []
+        self._tree_visualization = Tree()
+        self._tree_visualization.create_node("Root", "root")
 
     async def apply_attack_strategy_async(self):
-        # Initialize branch orchestrators that execute a single branch of the attack
-        self._orchestrators = [
-            _TreeOfAttacksWithPruningBranchOrchestrator(
-                prompt_target=self._prompt_target, 
-                red_teaming_chat=self._red_teaming_chat,
-                scoring_target=self._scoring_target,
-                on_topic_checking_enabled=self._on_topic_checking_enabled,
-                conversation_objective=self._conversation_objective, 
-                prompt_converters=self._prompt_converters, 
-                memory=self._memory,
-                memory_labels=self._global_memory_labels, 
-                verbose=self._verbose
-            ) for _ in range(self._attack_width)
-        ]
-        
+        if self._orchestrators:
+            raise ValueError("The orchestrator cannot be reused. Please create a new instance of the orchestrator.")   
+  
         for iteration in range(1, self._attack_depth + 1):
             logger.info(f"Starting iteration number: {iteration}")
             results = []
-            cloned_orchestrators = []
-            for orchestrator in self._orchestrators:
-                for _ in range(self._attack_branching_factor - 1):
-                    # Branch orchestrator
-                    cloned_orchestrator = _TreeOfAttacksWithPruningBranchOrchestrator(
+
+            if iteration == 1:
+                # Initialize branch orchestrators that execute a single branch of the attack
+                self._orchestrators = [
+                    _TreeOfAttacksWithPruningNodeOrchestrator(
                         prompt_target=self._prompt_target, 
                         red_teaming_chat=self._red_teaming_chat,
                         scoring_target=self._scoring_target,
@@ -368,28 +362,55 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
                         memory=self._memory,
                         memory_labels=self._global_memory_labels, 
                         verbose=self._verbose
-                    )
+                    ) for _ in range(self._attack_width)
+                ]
+                for orchestrator in self._orchestrators:
+                    orchestrator_id = orchestrator.get_identifier()["id"]
+                    node_id = f"{orchestrator_id}_{iteration}"
+                    self._tree_visualization.create_node(f"Start", node_id, parent="root")
+            else:  # branch existing orchestrators
+                cloned_orchestrators = []
+                for orchestrator in self._orchestrators:
+                    parent_id = orchestrator.get_identifier()["id"] + f"_{iteration-1}"
+                    node_id = orchestrator.get_identifier()["id"] + f"_{iteration}"
+                    self._tree_visualization.create_node("TBD", node_id, parent=parent_id)
+                    for _ in range(self._attack_branching_factor - 1):
+                        cloned_orchestrator = _TreeOfAttacksWithPruningNodeOrchestrator(
+                            prompt_target=self._prompt_target, 
+                            red_teaming_chat=self._red_teaming_chat,
+                            scoring_target=self._scoring_target,
+                            on_topic_checking_enabled=self._on_topic_checking_enabled,
+                            conversation_objective=self._conversation_objective, 
+                            prompt_converters=self._prompt_converters, 
+                            memory=self._memory,
+                            memory_labels=self._global_memory_labels, 
+                            verbose=self._verbose
+                        )
+                        cloned_orchestrator_id = cloned_orchestrator.get_identifier()["id"]
+                        node_id = f"{cloned_orchestrator_id}_{iteration}"
+                        self._tree_visualization.create_node("TBD", node_id, parent=parent_id)
 
-                    # clone conversations with prompt_target and red_teaming_chat
-                    cloned_orchestrator._memory.duplicate_conversation_for_new_orchestrator(
-                        new_orchestrator_id=cloned_orchestrator.get_identifier()["id"],
-                        conversation_id=orchestrator._prompt_target_conversation_id,
-                        new_conversation_id=cloned_orchestrator._prompt_target_conversation_id)
+                        # clone conversations with prompt_target and red_teaming_chat
+                        cloned_orchestrator._memory.duplicate_conversation_for_new_orchestrator(
+                            new_orchestrator_id=cloned_orchestrator.get_identifier()["id"],
+                            conversation_id=orchestrator._prompt_target_conversation_id,
+                            new_conversation_id=cloned_orchestrator._prompt_target_conversation_id)
+                        
+                        cloned_orchestrator._memory.duplicate_conversation_for_new_orchestrator(
+                            new_orchestrator_id=cloned_orchestrator.get_identifier()["id"],
+                            conversation_id=orchestrator._red_teaming_chat_conversation_id,
+                            new_conversation_id=cloned_orchestrator._red_teaming_chat_conversation_id)
+                        cloned_orchestrators.append(cloned_orchestrator)
                     
-                    cloned_orchestrator._memory.duplicate_conversation_for_new_orchestrator(
-                        new_orchestrator_id=cloned_orchestrator.get_identifier()["id"],
-                        conversation_id=orchestrator._red_teaming_chat_conversation_id,
-                        new_conversation_id=cloned_orchestrator._red_teaming_chat_conversation_id)
-                    cloned_orchestrators.append(cloned_orchestrator)
-                
-            self._orchestrators.extend(cloned_orchestrators)
+                self._orchestrators.extend(cloned_orchestrators)
 
             n_orchestrators = len(self._orchestrators)
             for orchestrator_index, orchestrator in enumerate(self._orchestrators, start=1):
                 logger.info(f"Sending prompt for orchestrator {orchestrator_index}/{n_orchestrators}")
                 try:
                     # A single orchestrator failure shouldn't stop the entire tree.
-                    results.append(await orchestrator.send_prompt_async())
+                    node_result = await orchestrator.send_prompt_async()
+                    results.append(node_result)
                 except Exception as e:
                     import traceback
                     logger.error(f"Error: {e}\nStacktrace: {traceback.format_exc()}")
@@ -397,31 +418,53 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
                     import time
                     with open(f"error{str(int(time.time()))}.txt", "w") as f:
                         f.write(f"Error: {e}\nStacktrace: {traceback.format_exc()}")
-                   
+                finally:
+                    orchestrator_id = orchestrator.get_identifier()["id"]
+                    node_id = f"{orchestrator_id}_{iteration}"
+                    if node_result:
+                        self._tree_visualization[node_id].tag = get_result_string(node_result)
+                    else:
+                        self._tree_visualization[node_id].tag = "Pruned (error)"
+
             # Sort the results of completed, unpruned, scored branches by score
             completed_results = [result for result in results if result and result.completed and isinstance(result.score, float)]
-            completed_results.sort(key=lambda x: x.score, reverse=True) 
+            completed_results.sort(key=lambda x: x.score, reverse=True)
 
+            # Prune orchestrators that didn't complete
+            completed_orchestrator_ids = remaining_orchestrator_ids = [result.orchestrator_id for result in completed_results]
+            self._orchestrators = [
+                orchestrator for orchestrator in self._orchestrators
+                if orchestrator.get_identifier()["id"] in completed_orchestrator_ids
+            ]
+
+            # Prune orchestrators that exceed width (first in tree visualization, then in orchestrators list)
             if len(completed_results) > self._attack_width:
                 completed_results = completed_results[:self._attack_width]
-        
+            remaining_orchestrator_ids = [result.orchestrator_id for result in completed_results]
+            for orchestrator in self._orchestrators:
+                orchestrator_id = orchestrator.get_identifier()["id"]
+                if orchestrator_id not in remaining_orchestrator_ids:
+                    self._tree_visualization[f"{orchestrator_id}_{iteration}"].tag += " Pruned (width)"
+            self._orchestrators = [
+                orchestrator for orchestrator in self._orchestrators
+                if orchestrator.get_identifier()["id"] in remaining_orchestrator_ids
+            ]
+
             for result in completed_results:
                 # Check if the (floating point) score is (close enough to) 1.0 which indicates jailbreak.
                 if math.isclose(result.score, 1.0, abs_tol=1e-4):
                     logger.info("The conversation has been stopped because the response is jailbroken.")
                     return result
-            
-            # Prune orchestrators
-            logger.debug(f"Orchestrator results before pruning: {results}")
-            self._orchestrators = [
-                orchestrator for orchestrator in self._orchestrators
-                if orchestrator.get_identifier()["id"] in [result.orchestrator_id for result in completed_results]
-            ]
-            logger.debug(f"Orchestrator results after pruning: {completed_results}")
+
+            print(f"Tree after iteration {iteration}:")
+            print(self._tree_visualization)
+
+            if not self._orchestrators:
+                raise RuntimeError("All branches have been pruned.")
 
         logger.info("Could not achieve the conversation goal.")
 
-    def print_conversation(self, result: TAPBranchResult):
+    def print_conversation(self, result: TAPNodeResult):
         """Prints the conversation between the prompt target and the red teaming bot."""
         target_messages = self._memory._get_prompt_pieces_with_conversation_id(
             conversation_id=result.prompt_target_conversation_id
@@ -441,7 +484,15 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
             if scores and len(scores) > 0:
                 score = scores[0]
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
-            
+        
+        print(self._tree_visualization)
+        
 
-
-
+def get_result_string(result: TAPNodeResult) -> str:
+    if result.pruned:
+        return "Pruned (off-topic)"
+    if result.completed and result.score is None:
+        return "Pruned (no score available)"
+    # get score into human-readable format by adding min value and multiplying by (max-min)
+    unnormalized_score = round(1 + result.score * 4)
+    return f"Score: {unnormalized_score}/5"
