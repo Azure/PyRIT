@@ -108,7 +108,7 @@ class PromptShieldTarget(PromptTarget):
         data = response.content
 
         response_entry = construct_response_from_request(
-            request=request, response_text_pieces=[str(data)], response_type="text"
+            request=request, response_text_pieces=[data.decode('utf-8')], response_type="text"
         )
 
         return response_entry
