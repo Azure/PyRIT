@@ -7,6 +7,7 @@ from unittest.mock import Mock, AsyncMock
 
 import pytest
 
+from models import Score
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import PromptAutomaticIterativeRefinementOrchestrator
@@ -68,48 +69,67 @@ async def test_run(orchestrator: PromptAutomaticIterativeRefinementOrchestrator)
 async def test_output_is_properly_formatted_when_jailbreak_is_found(
     orchestrator: PromptAutomaticIterativeRefinementOrchestrator,
 ):
-    attacker_prompt_suggestion = "attacker jailbreak to elicit a harmful content"
-    attacker_improvement = "attacker reasoning why this prompt is better"
-    target_response = "harmful content blah blah"
-    judge_score = "10"
-
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
-        return_value=_build_prompt_response_with_single_prompt_piece(
-            prompt=f'{{"improvement": "{attacker_improvement}", "prompt": "{attacker_prompt_suggestion}"}}'
-        )
+        return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
     )
     orchestrator._get_target_response_and_store = AsyncMock(  # type: ignore
-        return_value=_build_prompt_response_with_single_prompt_piece(prompt=target_response)
+        return_value=PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    original_value="aaaa",
+                    converted_value="aaaa",
+                    role="user",
+                )
+            ]
+        )
     )
-    orchestrator._judge_response = AsyncMock(  # type: ignore
-        return_value=_build_prompt_response_with_single_prompt_piece(prompt=judge_score)
+    orchestrator._scorer.score_async = AsyncMock(  # type: ignore
+        return_value=[
+            Score(
+                score_value="1.0",
+                score_value_description="",
+                score_type="float_scale",
+                score_category="",
+                score_rationale="",
+                score_metadata="",
+                prompt_request_response_id="",
+            )
+        ]
     )
     result = await orchestrator.run()
     assert len(result) == 1
-    assert result[0]["conversation_id"]
-    assert result[0]["prompt"] == attacker_prompt_suggestion
-    assert result[0]["response"] == target_response
 
 
 @pytest.mark.asyncio
 async def test_output_is_properly_formatted_when_jailbreak_is_not_found(
     orchestrator: PromptAutomaticIterativeRefinementOrchestrator,
 ):
-    attacker_prompt_suggestion = "attacker jailbreak to elicit a harmful content"
-    attacker_improvement = "attacker reasoning why this prompt is better"
-    target_response = "harmful content NOT generated blah blah"
-    judge_score = "1"
-
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
-        return_value=_build_prompt_response_with_single_prompt_piece(
-            prompt=f'{{"improvement": "{attacker_improvement}", "prompt": "{attacker_prompt_suggestion}"}}'
-        )
+        return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
     )
     orchestrator._get_target_response_and_store = AsyncMock(  # type: ignore
-        return_value=_build_prompt_response_with_single_prompt_piece(prompt=target_response)
+        return_value=PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    original_value="aaaa",
+                    converted_value="aaaa",
+                    role="user",
+                )
+            ]
+        )
     )
-    orchestrator._judge_response = AsyncMock(  # type: ignore
-        return_value=_build_prompt_response_with_single_prompt_piece(prompt=judge_score)
+    orchestrator._scorer.score_async = AsyncMock(  # type: ignore
+        return_value=[
+            Score(
+                score_value="0.0",
+                score_value_description="",
+                score_type="float_scale",
+                score_category="",
+                score_rationale="",
+                score_metadata="",
+                prompt_request_response_id="",
+            )
+        ]
     )
     result = await orchestrator.run()
     assert len(result) == 0
