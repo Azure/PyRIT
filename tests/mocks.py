@@ -81,6 +81,7 @@ class MockPromptTarget(PromptChatTarget):
         return PromptRequestPiece(
             role="assistant",
             original_value="default",
+            conversation_id=prompt_request.request_pieces[0].conversation_id,
             orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
         ).to_prompt_request_response()
 
@@ -90,6 +91,7 @@ class MockPromptTarget(PromptChatTarget):
         return PromptRequestPiece(
             role="assistant",
             original_value="default",
+            conversation_id=prompt_request.request_pieces[0].conversation_id,
             orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
         ).to_prompt_request_response()
 
