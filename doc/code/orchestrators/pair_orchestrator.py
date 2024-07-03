@@ -1,7 +1,18 @@
-# type: ignore
-#!/usr/bin/env python
-# coding: utf-8
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
 
+# %% [markdown]
 # # PAIR Orchestrator
 #
 #
@@ -16,7 +27,7 @@
 #
 # The PromptAutomaticIterativeRefinementOrchestrator is initialized with the following parameters:
 # - `attacker`: An instance of OpenAIChatTarget which represents the attacker model.
-# - `conversation_objective`: The objective of the attacker model.
+# - `attacker_objective`: The objective of the attacker model.
 # - `target`: An instance of OpenAIChatTarget which represents the target model.
 # - `verbose`: A boolean value to control the verbosity of the orchestrator.
 # - `number_of_conversation_streams`: The number of conversation streams to explore.
@@ -32,11 +43,9 @@
 # The output of the `run()` method is a list of jailbreaks from the target model. If the `stop_on_first_success` parameter is set to `True`, the orchestrator will stop as soon as it gets one desired response from the target model, and this response will be the only item in the list. If `stop_on_first_success` is set to False, the list will contain all responses from the target model, up to the max_conversation_depth.
 #
 
-# In[1]:
-
-
-get_ipython().run_line_magic("load_ext", "autoreload")
-get_ipython().run_line_magic("autoreload", "2")
+# %%
+# %load_ext autoreload
+# %autoreload 2
 
 import os
 
@@ -65,26 +74,15 @@ pair_orchestrator = PromptAutomaticIterativeRefinementOrchestrator(
     desired_target_response_prefix="Sure, ",
 )
 
+# %%
+response = await pair_orchestrator.run()  # type: ignore
 
-# In[2]:
-
-
-response = await pair_orchestrator.run()
-
-
-# In[3]:
-
-
+# %%
 print(response)
 
-
-# In[6]:
-
-
+# %%
 pair_orchestrator.print(show_successful_only=True, show_orchestrator_instance_entries_only=True)
 
+# %%
 
-# In[ ]:
-
-
-# In[ ]:
+# %%
