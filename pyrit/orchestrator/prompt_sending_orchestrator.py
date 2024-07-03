@@ -93,13 +93,14 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-        if responses:
+        if self._scorers:
             response_ids = []
             for response in responses:
-                response_ids.append(str(piece.id) for piece in response.request_pieces)
+                for piece in response.request_pieces:
+                    id = str(piece.id)
+                    response_ids.append(id)
 
-            if self._scorers:
-                await self._score_responses_async(response_ids)
+            await self._score_responses_async(response_ids)
 
         return responses
 
