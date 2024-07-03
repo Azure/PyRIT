@@ -48,10 +48,7 @@ class PromptShieldScorer(Scorer):
         self._target: PromptShieldTarget = target
 
     async def score_async(self, request_response: PromptRequestPiece) -> List[Score]:
-        '''
-        NOTE: Use this as a debugging entry point
-        TODO: description
-        '''
+
         self.validate(request_response=request_response)
 
         body = request_response.original_value
