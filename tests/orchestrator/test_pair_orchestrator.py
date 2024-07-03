@@ -35,10 +35,10 @@ def orchestrator(memory_interface: MemoryInterface) -> PromptAutomaticIterativeR
     target = Mock()
     attacker = Mock()
     orchestrator = PromptAutomaticIterativeRefinementOrchestrator(
-        target=target,
+        prompt_target=target,
         desired_target_response_prefix="desired response",
-        attacker=attacker,
-        attacker_objective="attacker objective",
+        red_teaming_chat=attacker,
+        conversation_objective="attacker objective",
         memory=memory_interface,
     )
 

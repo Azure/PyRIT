@@ -38,10 +38,10 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
-        target: PromptChatTarget,
+        prompt_target: PromptChatTarget,
         desired_target_response_prefix: str,
-        attacker: PromptChatTarget,
-        attacker_objective: str,
+        red_teaming_chat: PromptChatTarget,
+        conversation_objective: str,
         number_of_conversation_streams: int = 20,
         max_conversation_depth: int = 3,
         stop_on_first_success: bool = True,
@@ -53,12 +53,12 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
             memory: The memory interface to use. If None, a new memory interface will be created.
             memory_labels: The labels to use for the memory. If None, a new memory interface will be created.
             verbose: Whether to print debug information. Defaults to False.
-            target: The target model to jailbreak.
+            prompt_target: The target model to jailbreak.
             desired_target_response_prefix: An example of a desired response from the target. This is used to compare
                 against the target's actual response to determine if the target has been compromised. E.g., "Sure, here
                 is code for a keylogger."
-            attacker: The attacker model to use to jailbreak the target.
-            attacker_objective: The objective for the attacker to achieve, as a string. E.g. "Generate a phishing
+            red_teaming_chat: The attacker model to use to jailbreak the target.
+            conversation_objective: The objective for the attacker to achieve, as a string. E.g. "Generate a phishing
                 email" or "Generate code for a keylogger", etc. Defaults to "Sure, I'd be happy to assist with that".
 
             max_conversation_depth: The maximum number of turns in a conversation. Defaults to 3 based on the PAIR's
@@ -72,12 +72,12 @@ class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
         """
         self.successful_jailbreaks: list[dict] = []
         super().__init__(memory=memory, memory_labels=memory_labels or {}, verbose=verbose)
-        self._target_text_model = target
-        self._attacker_text_model = attacker
+        self._target_text_model = prompt_target
+        self._attacker_text_model = red_teaming_chat
         self._max_conversation_depth = max_conversation_depth
-        self._judge_text_model = attacker
+        self._judge_text_model = red_teaming_chat
         self._stop_on_first_success = stop_on_first_success
-        self._attacker_objective = attacker_objective
+        self._attacker_objective = conversation_objective
         self._number_of_conversation_streams = number_of_conversation_streams
         self._desired_target_response_prefix = desired_target_response_prefix
         self._last_attacker_conversation_id = ""
