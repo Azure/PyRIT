@@ -16,6 +16,8 @@ from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.self_ask_meta_scorer import SelfAskMetaScorer, MetaScorerQuestionPaths
 from pyrit.score.self_ask_conversation_objective_scorer import SelfAskObjectiveScorer, ObjectiveQuestionPaths
 
+from pyrit.score.prompt_shield_scorer import PromptShieldScorer
+
 __all__ = [
     "Scorer",
     "SelfAskCategoryScorer",
@@ -32,4 +34,5 @@ __all__ = [
     "MetaScorerQuestionPaths",
     "SelfAskObjectiveScorer",
     "ObjectiveQuestionPaths",
+    "PromptShieldScorer",
 ]

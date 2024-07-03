@@ -1,26 +1,13 @@
-import requests
-import os
 import logging
-import uuid
-import duckdb
 
-from typing import Any, Coroutine, Literal, Union, List
+from typing import Literal, Union, List
 from pyrit.prompt_target import PromptTarget
-from pyrit.memory import MemoryInterface, DuckDBMemory
-
+from pyrit.memory import MemoryInterface
 from pyrit.common import default_values
 from pyrit.common import net_utility as nu
-
 from pyrit.models import (
-    data_serializer_factory, 
     construct_response_from_request,
     PromptRequestResponse, 
-    PromptRequestPiece,
-    Score
-)
-
-from pyrit.score import (
-    Scorer
 )
 
 logger = logging.getLogger(__name__)

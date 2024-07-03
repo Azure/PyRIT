@@ -35,7 +35,17 @@ def make_request_and_raise_if_error(
     request_body = request_body or {}
 
     with get_httpx_client(debug=debug) as client:
-        # TODO: Use a match statement or something like that to simplify this
+
+        # TODO: See if this works
+        # response = client.request(
+        #     method=method,
+        #     params=params if params else None,
+        #     url=endpoint_uri,
+        #     json=request_body if request_body and post_type == "json" else None,
+        #     data=request_body if request_body and post_type != "json" else None,
+        #     headers=headers
+        # )
+        
         if request_body:
             if params:
                 if post_type == "json":
