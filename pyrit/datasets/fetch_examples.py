@@ -2,6 +2,9 @@ import json
 import requests
 from typing import List, Dict
 import csv
+import pycountry
+from pyrit.models import PromptDataset
+import random
 
 
 def fetch_examples(source: str, source_type: str = 'repository', file_type: str = 'json') -> List[Dict[str, str]]:
@@ -11,7 +14,7 @@ def fetch_examples(source: str, source_type: str = 'repository', file_type: str 
         Args:
             source (str): The source from which to fetch examples.
             source_type (str): The type of source ('repository' or 'file'). Defaults to 'repository'.
-            file_type (str): The type of file ('json' or 'csv'). Defaults to 'json'.
+            file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'json'.
 
         Returns:
             List[Dict[str, str]]: A list of examples.
@@ -31,7 +34,15 @@ def fetch_examples(source: str, source_type: str = 'repository', file_type: str 
         # Fetch examples from an external repository (e.g., via an API call)
         response = requests.get(source)
         if response.status_code == 200:
-            examples = response.json()
+            if file_type == 'json':
+                examples = response.json()
+            elif file_type == 'csv':
+                reader = csv.DictReader(response.text.splitlines())
+                examples = [row for row in reader]
+            elif file_type == 'txt':
+                examples = [{'prompt': line} for line in response.text.splitlines()]
+            else:
+                raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
             print("Examples fetched from repository:")
         else:
             raise Exception(f"Failed to fetch examples from repository. Status code: {response.status_code}")
@@ -44,8 +55,10 @@ def fetch_examples(source: str, source_type: str = 'repository', file_type: str 
             with open(source, 'r') as file:
                 reader = csv.DictReader(file)
                 examples = [row for row in reader]
+        elif file_type == 'txt':
+                examples = [{'prompt': line} for line in response.text.splitlines()]
         else:
-            raise ValueError("Invalid file_type. Expected 'json' or 'csv'.")
+            raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
     else:
         raise ValueError("Invalid source_type. Expected 'repository' or 'file'.")
 
@@ -65,3 +78,47 @@ def fetch_many_shot_jailbreaking_examples(source: str, source_type: str = 'repos
         List[Dict[str, str]]: A list of many-shot jailbreaking examples.
     """
     return fetch_examples(source, source_type, file_type='json')
+
+
+def fetch_seclists_bias_testing_examples(source: str, source_type: str = 'repository', file_type: str = 'txt') -> PromptDataset:
+    """
+    Fetch SecLists AI LLM Bias Testing examples from a specified source and create a PromptDataset.
+
+    Args:
+        source (str): The source from which to fetch examples.
+        source_type (str): The type of source ('repository' or 'file'). Defaults to 'repository'.
+        file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'txt'.
+
+    Returns:
+        PromptDataset: A PromptDataset containing the examples with placeholders replaced.
+    """
+
+     # Define placeholder values generation functions using pycountry and random.choice
+    countries = list(pycountry.countries)
+    subdivisions = list(pycountry.subdivisions)
+    placeholder_values = {
+        "Country": lambda: random.choice(countries).name,
+        "Region": lambda: random.choice(subdivisions).name,
+        "Nationality": lambda: random.choice(countries).name, # Same as Country, the target LLM should be able to understand the context
+        "Gender": lambda: random.choice(["male", "female", "non-binary"]),
+        "Skin-Color": lambda: random.choice(["white", "black", "brown", "yellow"])
+    }
+
+    examples = fetch_examples(source, source_type, file_type)
+    
+    filled_examples = []
+    for example in examples:
+        prompt = example['prompt']
+        for placeholder, generator in placeholder_values.items():
+            prompt = prompt.replace(f"[{placeholder}]", generator())
+        filled_examples.append(prompt)
+
+    dataset = PromptDataset(
+        name="SecLists Bias Testing Examples",
+        description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
+        harm_category="bias_testing",
+        should_be_blocked=False,
+        prompts=filled_examples
+    )
+
+    return dataset

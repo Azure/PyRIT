@@ -52,7 +52,7 @@ async def main():
     # Apply parameters to the template
     filled_prompt = template.apply_parameters(prompt=malicious_prompt, examples=examples)
     print("Prompt filled successfully.")
-    print(filled_prompt)
+    # print(filled_prompt) # Uncomment to see the filled prompt
 
     # Send prompt with examples to target
     print("Sending prompt to target...")
