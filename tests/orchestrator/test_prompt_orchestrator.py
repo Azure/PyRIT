@@ -3,6 +3,7 @@
 
 import tempfile
 from unittest.mock import AsyncMock, MagicMock
+import uuid
 import pytest
 
 from pyrit.memory import DuckDBMemory
@@ -90,21 +91,36 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
 
 
 @pytest.mark.asyncio
-async def test_send_normalizer_request_scores_async(mock_target: MockPromptTarget):
+@pytest.mark.parametrize("num_conversations", [1, 10, 20])
+async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_conversations: int):
     # Set up mocks and return values
     scorer = AsyncMock()
-    scorer._memory = MagicMock()
+
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
     orchestrator._prompt_normalizer = AsyncMock()
 
-    request = PromptRequestPiece(
-        role="user", original_value="test request", orchestrator_identifier=orchestrator.get_identifier()
-    )
-    response = PromptRequestPiece(
-        role="assistant", original_value="test response to score", orchestrator_identifier=orchestrator.get_identifier()
-    )
+    request_pieces = []
+    orchestrator_id = orchestrator.get_identifier()
 
-    request_pieces = [request, response]
+    for n in range(num_conversations):
+        conversation_id = str(uuid.uuid4())
+        request_pieces.extend(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_value=f"request_{n}",
+                    conversation_id=conversation_id,
+                    orchestrator_identifier=orchestrator_id,
+                ),
+                PromptRequestPiece(
+                    role="assistant",
+                    original_value=f"response_{n}",
+                    conversation_id=conversation_id,
+                    orchestrator_identifier=orchestrator_id,
+                ),
+            ]
+        )
+
     orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
         return_value=[piece.to_prompt_request_response() for piece in request_pieces]
     )
@@ -112,33 +128,31 @@ async def test_send_normalizer_request_scores_async(mock_target: MockPromptTarge
     orchestrator._memory = MagicMock()
     orchestrator._memory.get_prompt_request_pieces_by_id = MagicMock(return_value=request_pieces)  # type: ignore
 
-    # Call directly into function to send prompts
-    req = NormalizerRequestPiece(
-        request_converters=[],
-        prompt_data_type="text",
-        prompt_value="test request",
+    await orchestrator.send_prompts_async(
+        prompt_list=[piece.original_value for piece in request_pieces if piece.role == "user"]
     )
-
-    await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
     assert orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.called
-    scorer.score_async.assert_called_once_with(request_response=response)
+    assert scorer.score_async.call_count == num_conversations
 
     # Check that sending another prompt request scores the appropriate pieces
-    scorer.score_async.reset_mock()
     response2 = PromptRequestPiece(
         role="assistant",
         original_value="test response to score 2",
         orchestrator_identifier=orchestrator.get_identifier(),
     )
 
-    request_pieces = [request, response2]
+    request_pieces = [request_pieces[0], response2]
     orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
         return_value=[piece.to_prompt_request_response() for piece in request_pieces]
     )
     orchestrator._memory.get_prompt_request_pieces_by_id = MagicMock(return_value=request_pieces)  # type: ignore
 
-    await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
-    scorer.score_async.assert_called_once_with(request_response=response2)
+    await orchestrator.send_prompts_async(prompt_list=[request_pieces[0].original_value])
+
+    # Assert scoring amount is appropriate (all prompts not scored again)
+    # and that the last call to the function was with the expected response object
+    assert scorer.score_async.call_count == num_conversations + 1
+    scorer.score_async.assert_called_with(request_response=response2)
 
 
 def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):

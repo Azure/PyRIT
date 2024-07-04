@@ -325,9 +325,7 @@ def test_export_conversation_by_orchestrator_id_file_created(
         assert file_path.exists()
 
 
-def test_get_prompt_ids_by_orchestrator(
-        memory: MemoryInterface,
-        sample_conversation_entries: list[PromptMemoryEntry]):
+def test_get_prompt_ids_by_orchestrator(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
     orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
 
     sample_conversation_ids = []
@@ -341,9 +339,7 @@ def test_get_prompt_ids_by_orchestrator(
         assert sample_conversation_ids == prompt_ids
 
 
-def test_get_scores_by_orchestrator_id(
-        memory: MemoryInterface,
-        sample_conversations: list[PromptRequestPiece]):
+def test_get_scores_by_orchestrator_id(memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
     # create list of scores that are associated with sample conversation entries
     # assert that that list of scores is the same as expected :-)
 
@@ -366,7 +362,8 @@ def test_get_scores_by_orchestrator_id(
 
     # Fetch the score we just added
     db_score = memory.get_scores_by_orchestrator_id(
-        orchestrator_id=sample_conversations[0].orchestrator_identifier["id"])
+        orchestrator_id=int(sample_conversations[0].orchestrator_identifier["id"])
+    )
 
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
