@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
@@ -40,6 +41,7 @@ __all__ = [
     "ConverterResult",
     "ExpandConverter",
     "LeetspeakConverter",
+    "LLMGenericTextConverter",
     "MorseConverter",
     "NoiseConverter",
     "PersuasionConverter",
