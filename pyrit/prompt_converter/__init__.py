@@ -23,6 +23,7 @@ from pyrit.prompt_converter.search_replace_converter import SearchReplaceConvert
 from pyrit.prompt_converter.shorten_converter import ShortenConverter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
+from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
@@ -53,6 +54,7 @@ __all__ = [
     "ShortenConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
+    "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
     "UnicodeConfusableConverter",

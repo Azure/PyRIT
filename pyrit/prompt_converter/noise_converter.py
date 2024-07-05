@@ -1,12 +1,11 @@
 import logging
 import textwrap
 from typing import Optional
-import uuid
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
-from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
+from pyrit.models import PromptTemplate
+from pyrit.prompt_converter import LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -31,8 +30,6 @@ class NoiseConverter(LLMGenericTextConverter):
             prompt_template (PromptTemplate, optional): The prompt template for the conversion.
 
         """
-        self.converter_target = converter_target
-
         # set to default strategy if not provided
         prompt_template = (
             prompt_template
