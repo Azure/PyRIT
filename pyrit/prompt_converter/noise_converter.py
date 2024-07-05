@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import logging
 import textwrap
 from typing import Optional
@@ -45,10 +48,9 @@ class NoiseConverter(LLMGenericTextConverter):
                 "bad auto-correct, or similar"
             )
 
-
         super().__init__(
             converter_target=converter_target,
             prompt_template=prompt_template,
             noise=noise,
-            number_errors=str(number_errors)
+            number_errors=str(number_errors),
         )

@@ -1,5 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import logging
-import uuid
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH

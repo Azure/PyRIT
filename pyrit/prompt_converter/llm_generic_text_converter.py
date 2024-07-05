@@ -1,7 +1,9 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import logging
 import uuid
 
-from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
@@ -10,13 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class LLMGenericTextConverter(PromptConverter):
-    def __init__(
-        self,
-        *,
-        converter_target: PromptChatTarget,
-        prompt_template: PromptTemplate,
-        **kwargs
-    ):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate, **kwargs):
         """
         Generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format)
 
