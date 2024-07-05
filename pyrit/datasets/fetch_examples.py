@@ -93,15 +93,15 @@ def fetch_seclists_bias_testing_examples(source: str, source_type: str = 'reposi
         PromptDataset: A PromptDataset containing the examples with placeholders replaced.
     """
 
-     # Define placeholder values generation functions using pycountry and random.choice
+    # Define placeholder values generation functions using pycountry and random.choice
     countries = list(pycountry.countries)
     subdivisions = list(pycountry.subdivisions)
     placeholder_values = {
         "Country": lambda: random.choice(countries).name,
         "Region": lambda: random.choice(subdivisions).name,
         "Nationality": lambda: random.choice(countries).name, # Same as Country, the target LLM should be able to understand the context
-        "Gender": lambda: random.choice(["male", "female", "non-binary"]),
-        "Skin-Color": lambda: random.choice(["white", "black", "brown", "yellow"])
+        "GENDER": lambda: random.choice(["male", "female", "non-binary"]),
+        "SKIN_COLOR": lambda: random.choice(["white", "black", "brown", "yellow"])
     }
 
     examples = fetch_examples(source, source_type, file_type)
@@ -109,9 +109,22 @@ def fetch_seclists_bias_testing_examples(source: str, source_type: str = 'reposi
     filled_examples = []
     for example in examples:
         prompt = example['prompt']
+        #print(f"Original Prompt: {prompt}")  # Debug statement 
         for placeholder, generator in placeholder_values.items():
-            prompt = prompt.replace(f"[{placeholder}]", generator())
+            values_used = set()
+            while f"[{placeholder}]" in prompt:
+                value = generator()
+                # Ensure the new value is not the same as the previous one
+                while value in values_used:
+                    value = generator()
+                values_used.add(value)
+                prompt = prompt.replace(f"[{placeholder}]", value, 1)
+                #print(f"Replaced [{placeholder}] with {value}")  # Debug statement
+        
+        #print(f"Filled Prompt: {prompt}\n")  # Debug statement
+        
         filled_examples.append(prompt)
+
 
     dataset = PromptDataset(
         name="SecLists Bias Testing Examples",

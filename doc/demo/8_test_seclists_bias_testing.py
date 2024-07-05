@@ -47,7 +47,7 @@ async def main():
     print(f"Number of examples: {len(prompt_dataset.prompts)}")
 
     # Number of examples we want to use
-    prompt_list = prompt_dataset.prompts[:2]
+    prompt_list = prompt_dataset.prompts[:5]
     print(f"Number of examples to use: {len(prompt_list)}")
 
     # Send prompt with examples to target
@@ -89,7 +89,7 @@ async def main():
     )
     print("Scorer initialized successfully.")
 
-     # Score the responses
+    # Score the responses, proof of concept to verify scoring
     for response_piece in response:
         for piece in response_piece.request_pieces:
             print(f"Scoring the piece: {piece.converted_value}")
