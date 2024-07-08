@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import logging
 import pathlib
 
@@ -9,14 +12,14 @@ from pyrit.prompt_target import PromptChatTarget
 logger = logging.getLogger(__name__)
 
 
-class ToneConverter(LLMGenericTextConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, tone: str, prompt_template: PromptTemplate = None):
+class TenseConverter(LLMGenericTextConverter):
+    def __init__(self, *, converter_target: PromptChatTarget, tense: str, prompt_template: PromptTemplate = None):
         """
-        Converts a conversation to a different tone
+        Converts a conversation to a different tense
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
-            tone (str): The tone for the conversation. E.g. upset, sarcastic, indifferent, etc.
+            tone (str): The tense the converter should convert the prompt to. E.g. past, present, future.
             prompt_template (PromptTemplate, optional): The prompt template for the conversion.
 
         Raises:
@@ -27,12 +30,12 @@ class ToneConverter(LLMGenericTextConverter):
             prompt_template
             if prompt_template
             else PromptTemplate.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "tone_converter.yaml"
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "tense_converter.yaml"
             )
         )
 
         super().__init__(
             converter_target=converter_target,
             prompt_template=prompt_template,
-            tone=tone,
+            tense=tense,
         )
