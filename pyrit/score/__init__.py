@@ -8,6 +8,7 @@ from pyrit.score.scorer import Scorer
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.self_ask_category_scorer import SelfAskCategoryScorer, ContentClassifierPaths
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
+from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer, ScalePaths
 from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
@@ -17,19 +18,21 @@ from pyrit.score.self_ask_meta_scorer import SelfAskMetaScorer, MetaScorerQuesti
 from pyrit.score.self_ask_conversation_objective_scorer import SelfAskObjectiveScorer, ObjectiveQuestionPaths
 
 __all__ = [
-    "Scorer",
-    "SelfAskCategoryScorer",
+    "AzureContentFilterScorer",
     "ContentClassifierPaths",
     "HumanInTheLoopScorer",
     "LikertScalePaths",
-    "SelfAskLikertScorer",
-    "SelfAskTrueFalseScorer",
-    "TrueFalseQuestionPaths",
     "MarkdownInjectionScorer",
-    "SubStringScorer",
-    "AzureContentFilterScorer",
-    "SelfAskMetaScorer",
     "MetaScorerQuestionPaths",
-    "SelfAskObjectiveScorer",
     "ObjectiveQuestionPaths",
+    "ScalePaths",
+    "Scorer",
+    "SelfAskCategoryScorer",
+    "SelfAskLikertScorer",
+    "SelfAskMetaScorer",
+    "SelfAskObjectiveScorer",
+    "SelfAskScaleScorer",
+    "SelfAskTrueFalseScorer",
+    "SubStringScorer",
+    "TrueFalseQuestionPaths",
 ]
