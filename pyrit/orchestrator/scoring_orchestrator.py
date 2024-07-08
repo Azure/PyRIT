@@ -55,13 +55,18 @@ class ScoringOrchestrator(Orchestrator):
 
         return await self._score_prompts_batch_async(prompts=request_pieces, scorer=scorer)
 
-    async def score_prompts_by_request_id_async(self, *, scorer: Scorer, prompt_ids: list[str]) -> list[Score]:
+    async def score_prompts_by_request_id_async(
+        self, *, scorer: Scorer, prompt_ids: list[str], responses_only: bool = False
+    ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts with the prompt_ids
         """
 
         requests: list[PromptRequestPiece] = []
         requests = self._memory.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
+
+        if responses_only:
+            requests = self._extract_responses_only(requests)
 
         return await self._score_prompts_batch_async(prompts=requests, scorer=scorer)
 

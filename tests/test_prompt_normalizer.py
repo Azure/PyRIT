@@ -71,7 +71,8 @@ async def test_send_prompt_async_multiple_converters(normalizer_piece: Normalize
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_no_response_adds_memory(normalizer_piece: NormalizerRequestPiece):
-    prompt_target = MockPromptTarget()
+    prompt_target = AsyncMock()
+    prompt_target.send_prompt_async = AsyncMock(return_value=None)
 
     memory = MagicMock()
 
