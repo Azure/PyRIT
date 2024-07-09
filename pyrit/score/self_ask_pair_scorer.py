@@ -24,7 +24,7 @@ class SelfAskPAIRScorer(Scorer):
         self._memory = memory if memory else DuckDBMemory()
         self._attack_objective = attack_objective
 
-        judge_system_prompt_template_path = DATASETS_PATH / "orchestrators" / "pair" / "judge_system_prompt.yaml"
+        judge_system_prompt_template_path = DATASETS_PATH / "score" / "likert_scales" / "judge_system_prompt.yaml"
         judge_prompt_template = PromptTemplate.from_yaml_file(judge_system_prompt_template_path)
         self._system_prompt = judge_prompt_template.apply_custom_metaprompt_parameters(goal=self._attack_objective)
         self._chat_target: PromptChatTarget = chat_target
