@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import io
 import json
 import uuid
 from typing import Generator
@@ -167,14 +166,11 @@ async def test_get_target_response_and_store(orchestrator: PairOrchestrator) -> 
     # Setup
     sample_text = "Test prompt"
     expected_response = PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(original_value=sample_text, converted_value=sample_text, role="user")
-        ]
+        request_pieces=[PromptRequestPiece(original_value=sample_text, converted_value=sample_text, role="user")]
     )
     expected_conversation_id = "12345678-1234-5678-1234-567812345678"
     with patch("uuid.uuid4", return_value=uuid.UUID(expected_conversation_id)):
-        orchestrator._prompt_normalizer.send_prompt_async = AsyncMock(return_value=expected_response)
-
+        orchestrator._prompt_normalizer.send_prompt_async = AsyncMock(return_value=expected_response)  # type: ignore
         response = await orchestrator._get_target_response_and_store(text=sample_text)
         assert response == expected_response
         orchestrator._prompt_normalizer.send_prompt_async.assert_called_with(
@@ -192,9 +188,9 @@ async def test_start_new_conversation():
         prompt_target=AsyncMock(),
         red_teaming_chat=AsyncMock(),
         conversation_objective="objective",
-        desired_target_response_prefix="prefix"
+        desired_target_response_prefix="prefix",
     )
-    with patch.object(orchestrator, '_prompt_normalizer') as mock_normalizer:
+    with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=PromptRequestResponse(request_pieces=[]))
         await orchestrator._get_attacker_response_and_store(target_response="response", start_new_conversation=True)
         assert orchestrator._last_attacker_conversation_id != ""
@@ -207,10 +203,10 @@ async def test_continue_conversation():
         prompt_target=AsyncMock(),
         red_teaming_chat=AsyncMock(),
         conversation_objective="objective",
-        desired_target_response_prefix="prefix"
+        desired_target_response_prefix="prefix",
     )
     orchestrator._last_attacker_conversation_id = "existing_id"
-    with patch.object(orchestrator, '_prompt_normalizer') as mock_normalizer:
+    with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=PromptRequestResponse(request_pieces=[]))
         await orchestrator._get_attacker_response_and_store(target_response="response", start_new_conversation=False)
         assert orchestrator._last_attacker_conversation_id == "existing_id"
@@ -224,11 +220,11 @@ async def test_attacker_response():
         prompt_target=AsyncMock(),
         red_teaming_chat=AsyncMock(),
         conversation_objective="objective",
-        desired_target_response_prefix="prefix"
+        desired_target_response_prefix="prefix",
     )
-    with patch.object(orchestrator, '_prompt_normalizer') as mock_normalizer:
+    with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=expected_response)
         response = await orchestrator._get_attacker_response_and_store(
-            target_response="response",
-            start_new_conversation=False)
+            target_response="response", start_new_conversation=False
+        )
         assert response == expected_response
