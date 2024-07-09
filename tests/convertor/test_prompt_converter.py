@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import MagicMock
 import pytest
 
 from pyrit.prompt_converter import (
@@ -11,13 +10,11 @@ from pyrit.prompt_converter import (
     CaesarConverter,
     LeetspeakConverter,
     MorseConverter,
-    NoiseConverter,
     RandomCapitalLettersConverter,
     ROT13Converter,
     SearchReplaceConverter,
     StringJoinConverter,
     SuffixAppendConverter,
-    ToneConverter,
     UnicodeSubstitutionConverter,
     UnicodeConfusableConverter,
 )
@@ -283,21 +280,3 @@ async def test_morse_converter_with_appended_description() -> None:
         "- . ... - / - . ... -\n"
     )
     assert output.output_type == "text"
-
-
-def test_tone_converter_sets_system_prompt() -> None:
-    target = MagicMock()
-    converter = ToneConverter(tone="formal", converter_target=target)
-    assert "formal" in converter.system_prompt
-
-
-def test_noise_converter_sets_system_prompt_default() -> None:
-    target = MagicMock()
-    converter = NoiseConverter(converter_target=target)
-    assert "Grammar error, Delete random letter" in converter.system_prompt
-
-
-def test_noise_converter_sets_system_prompt() -> None:
-    target = MagicMock()
-    converter = NoiseConverter(converter_target=target, noise="extra random periods")
-    assert "extra random periods" in converter.system_prompt
