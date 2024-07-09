@@ -3,9 +3,9 @@ import uuid
 import json
 
 from typing import Literal, Union, List
+
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.memory import MemoryInterface, DuckDBMemory
-
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.score import Scorer
 
