@@ -177,6 +177,41 @@ class MemoryInterface(abc.ABC):
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
 
+    def duplicate_conversation_excluding_last_turn(
+        self,
+        *,
+        new_orchestrator_id: str,
+        conversation_id: str,
+        new_conversation_id: Optional[str] = None,
+    ) -> None:
+        """
+        Duplicates a conversation from one orchestrator to another.
+
+        This can be useful when an attack strategy requires branching out from a particular point in the conversation.
+        One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
+        the memory. Instead, one needs to duplicate the conversation and continue with the new orchestrator ID.
+
+        Args:
+            new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
+            conversation_id (str): The conversation ID with existing conversations.
+            new_conversation_id (str): The new conversation ID to assign to the duplicated conversations.
+                If no new_conversation_id is provided, a new one will be generated.
+        """
+        new_conversation_id = new_conversation_id or str(uuid4())
+        if conversation_id == new_conversation_id:
+            raise ValueError("The new conversation ID must be different from the existing conversation ID.")
+        prompt_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        for piece in prompt_pieces:
+            piece.id = uuid4()
+            # if piece.orchestrator_identifier["id"] == new_orchestrator_id:
+            #     raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
+            piece.orchestrator_identifier["id"] = new_orchestrator_id
+            piece.conversation_id = new_conversation_id
+
+        self.add_request_pieces_to_memory(request_pieces=prompt_pieces[:-2])
+
+        return new_conversation_id
+
     def export_conversation_by_orchestrator_id(
         self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"
     ):
