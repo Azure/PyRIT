@@ -101,7 +101,12 @@ async def test_send_prompt_with_skeleton_key_session_id(mock_target: MockPromptT
 
     target_messages = orchestrator.get_memory()
 
-    assert target_messages[0].conversation_id == target_messages[1].conversation_id
+    skeleton_key_prompts = []
+    for message in target_messages:
+        if message.role == "user":
+            skeleton_key_prompts.append(message)
+
+    assert skeleton_key_prompts[0].conversation_id == skeleton_key_prompts[1].conversation_id
 
 
 # Test single prompt function with custom skeleton key prompt (no convertor)

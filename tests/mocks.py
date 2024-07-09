@@ -77,11 +77,23 @@ class MockPromptTarget(PromptChatTarget):
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
-        return None
+
+        return PromptRequestPiece(
+            role="assistant",
+            original_value="default",
+            conversation_id=prompt_request.request_pieces[0].conversation_id,
+            orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
+        ).to_prompt_request_response()
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
-        return None
+
+        return PromptRequestPiece(
+            role="assistant",
+            original_value="default",
+            conversation_id=prompt_request.request_pieces[0].conversation_id,
+            orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
+        ).to_prompt_request_response()
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
