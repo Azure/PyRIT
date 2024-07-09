@@ -1,18 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# mypy: ignore-errors
-
 import uuid
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Uuid
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
+from sqlalchemy.types import Uuid  # type: ignore
+from sqlalchemy.orm import DeclarativeBase  # type: ignore
+from sqlalchemy.orm import Mapped  # type: ignore
 
 from pyrit.models import PromptRequestPiece, Score
 
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 class PromptMemoryEntry(Base):
@@ -52,22 +54,26 @@ class PromptMemoryEntry(Base):
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid, nullable=False, primary_key=True)
-    role = Column(String, nullable=False)
+    role: Mapped[Literal["system", "user", "assistant"]] = Column(String, nullable=False)
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
-    labels = Column(JSON)
+    labels: Mapped[dict[str, str]] = Column(JSON)
     prompt_metadata = Column(String, nullable=True)
-    converter_identifiers = Column(JSON)
-    prompt_target_identifier = Column(JSON)
-    orchestrator_identifier = Column(JSON)
-    response_error = Column(String, nullable=True)
+    converter_identifiers: Mapped[dict[str, str]] = Column(JSON)
+    prompt_target_identifier: Mapped[dict[str, str]] = Column(JSON)
+    orchestrator_identifier: Mapped[dict[str, str]] = Column(JSON)
+    response_error: Mapped[Literal["blocked", "none", "processing", "unknown"]] = Column(String, nullable=True)
 
-    original_value_data_type = Column(String, nullable=False)
+    original_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = Column(
+        String, nullable=False
+    )
     original_value = Column(String, nullable=False)
     original_value_sha256 = Column(String)
 
-    converted_value_data_type = Column(String, nullable=False)
+    converted_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = Column(
+        String, nullable=False
+    )
     converted_value = Column(String)
     converted_value_sha256 = Column(String)
 
@@ -134,7 +140,7 @@ class EmbeddingData(Base):  # type: ignore
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = Column(ARRAY(Float).with_variant(JSON, "mssql"))
+    embedding = Column(ARRAY(Float).with_variant(JSON, "mssql"))  # type: ignore
     embedding_type_name = Column(String)
 
     def __str__(self):
@@ -153,11 +159,11 @@ class ScoreEntry(Base):  # type: ignore
     id = Column(Uuid(as_uuid=True), nullable=False, primary_key=True)
     score_value = Column(String, nullable=False)
     score_value_description = Column(String, nullable=True)
-    score_type = Column(String, nullable=False)
+    score_type: Mapped[Literal["true_false", "float_scale"]] = Column(String, nullable=False)
     score_category = Column(String, nullable=False)
     score_rationale = Column(String, nullable=True)
     score_metadata = Column(String, nullable=True)
-    scorer_class_identifier = Column(JSON)
+    scorer_class_identifier: Mapped[dict[str, str]] = Column(JSON)
     prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     date_time = Column(DateTime, nullable=False)
 

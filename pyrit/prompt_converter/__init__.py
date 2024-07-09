@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
@@ -22,6 +23,7 @@ from pyrit.prompt_converter.search_replace_converter import SearchReplaceConvert
 from pyrit.prompt_converter.shorten_converter import ShortenConverter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
+from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
@@ -40,6 +42,7 @@ __all__ = [
     "ConverterResult",
     "ExpandConverter",
     "LeetspeakConverter",
+    "LLMGenericTextConverter",
     "MorseConverter",
     "NoiseConverter",
     "PersuasionConverter",
@@ -51,6 +54,7 @@ __all__ = [
     "ShortenConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
+    "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
     "UnicodeConfusableConverter",
