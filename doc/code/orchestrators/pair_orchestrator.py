@@ -25,7 +25,7 @@
 #
 # ## Orchestrator Initialization
 #
-# The PromptAutomaticIterativeRefinementOrchestrator is initialized with the following parameters:
+# The PairOrchestrator is initialized with the following parameters:
 # - `attacker`: An instance of OpenAIChatTarget which represents the attacker model.
 # - `attacker_objective`: The objective of the attacker model.
 # - `target`: An instance of OpenAIChatTarget which represents the target model.
@@ -50,12 +50,12 @@
 import os
 
 from pyrit.common.default_values import load_default_env
-from pyrit.orchestrator.pair_orchestrator import PromptAutomaticIterativeRefinementOrchestrator
+from pyrit.orchestrator.pair_orchestrator import PairOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
 load_default_env()
 
-pair_orchestrator = PromptAutomaticIterativeRefinementOrchestrator(
+pair_orchestrator = PairOrchestrator(
     red_teaming_chat=OpenAIChatTarget(
         deployment_name="gpt-4o",
         endpoint="https://api.openai.com/v1",

@@ -10,7 +10,7 @@ import pytest
 from models import Score
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.orchestrator import PromptAutomaticIterativeRefinementOrchestrator
+from pyrit.orchestrator import PairOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from tests.mocks import get_memory_interface
 
@@ -32,10 +32,10 @@ def chat_completion_engine() -> AzureOpenAIChatTarget:
 
 
 @pytest.fixture
-def orchestrator(memory_interface: MemoryInterface) -> PromptAutomaticIterativeRefinementOrchestrator:
+def orchestrator(memory_interface: MemoryInterface) -> PairOrchestrator:
     target = Mock()
     attacker = Mock()
-    orchestrator = PromptAutomaticIterativeRefinementOrchestrator(
+    orchestrator = PairOrchestrator(
         prompt_target=target,
         desired_target_response_prefix="desired response",
         red_teaming_chat=attacker,
@@ -56,7 +56,7 @@ async def test_init(orchestrator):
 
 
 @pytest.mark.asyncio
-async def test_run(orchestrator: PromptAutomaticIterativeRefinementOrchestrator):
+async def test_run(orchestrator: PairOrchestrator):
     orchestrator._process_conversation_stream = AsyncMock(return_value=[])  # type: ignore
     orchestrator._should_stop = Mock(return_value=False)  # type: ignore
     result = await orchestrator.run()
@@ -67,7 +67,7 @@ async def test_run(orchestrator: PromptAutomaticIterativeRefinementOrchestrator)
 
 @pytest.mark.asyncio
 async def test_output_is_properly_formatted_when_jailbreak_is_found(
-    orchestrator: PromptAutomaticIterativeRefinementOrchestrator,
+    orchestrator: PairOrchestrator,
 ):
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
         return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
@@ -102,7 +102,7 @@ async def test_output_is_properly_formatted_when_jailbreak_is_found(
 
 @pytest.mark.asyncio
 async def test_output_is_properly_formatted_when_jailbreak_is_not_found(
-    orchestrator: PromptAutomaticIterativeRefinementOrchestrator,
+    orchestrator: PairOrchestrator,
 ):
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
         return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
@@ -137,7 +137,7 @@ async def test_output_is_properly_formatted_when_jailbreak_is_not_found(
 
 @pytest.mark.asyncio
 async def test_orchestrator_handles_invalid_json_response_form_llm_via(
-    orchestrator: PromptAutomaticIterativeRefinementOrchestrator,
+    orchestrator: PairOrchestrator,
 ):
     invalid_json_string = '{"improvement": "this is an invalid JSON that cannot be parsed via JSON.loads()"'
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
@@ -149,7 +149,7 @@ async def test_orchestrator_handles_invalid_json_response_form_llm_via(
 
 @pytest.mark.asyncio
 async def test_orchestrator_handles_valid_json_with_missing_params_response_form_llm_via(
-    orchestrator: PromptAutomaticIterativeRefinementOrchestrator,
+    orchestrator: PairOrchestrator,
 ):
     invalid_json_string = json.dumps({"key_a": "blah", "key_b": "blag"})
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore

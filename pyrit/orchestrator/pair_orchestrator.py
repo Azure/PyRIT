@@ -29,7 +29,7 @@ class PromptResponseData:
     conversation_id: str
 
 
-class PromptAutomaticIterativeRefinementOrchestrator(Orchestrator):
+class PairOrchestrator(Orchestrator):
     """
     This orchestrator implements the Prompt Automatic Iterative Refinement (PAIR) algorithm
 
