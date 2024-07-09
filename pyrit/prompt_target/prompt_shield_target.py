@@ -5,7 +5,7 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.common import default_values
 from pyrit.common import net_utility
-from pyrit.models import construct_response_from_request, PromptRequestResponse
+from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 
 logger = logging.getLogger(__name__)
 
@@ -88,11 +88,11 @@ class PromptShieldTarget(PromptTarget):
             'api-version': '2024-02-15-preview',
         }
 
-        userPrompt, docsList = self._input_parser(request.original_value)
+        parsed_prompt: dict = self._input_parser(request.original_value)
 
         body = {
-            'userPrompt': userPrompt,
-            'documents': docsList
+            'userPrompt': parsed_prompt['userPrompt'],
+            'documents': parsed_prompt['documents']
         }
 
         response = await net_utility.make_request_and_raise_if_error_async(
@@ -115,44 +115,41 @@ class PromptShieldTarget(PromptTarget):
 
     
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        if len(prompt_request.request_pieces) == 0:
+        request_pieces: PromptRequestPiece = prompt_request.request_pieces
+
+        if len(request_pieces) == 0:
             raise ValueError("This target requires at least one prompt request piece.")
-        if len(prompt_request.request_pieces) > 1:
+        if len(request_pieces) > 1:
             raise ValueError(
                     "Sorry, but requests with multiple entries are not supported. " \
                     "Please wrap each PromptRequestPiece in a PromptRequestResponse." \
                 )
-        if type(prompt_request.request_pieces[0].original_value) != str:
-            raise ValueError("The content of this request must be a string.")
+        if type(request_pieces[0].original_value_data_type) != 'text':
+            raise ValueError("The content of this request must be text.")
         
-    def _input_parser(self, input_str: str) -> tuple[str, list[str]]:
-        '''
+    def _input_parser(self, input_str: str) -> dict[str, list[str]]:
+        """
         Parses the input given to the target to extract the two fields sent to
-        Prompt Shield:
-        userPrompt: str
-        and
-        documents: list[str]
-        '''
+        Prompt Shield: userPrompt: str, and documents: list[str]
+        """
 
         match self._force_entry_kind:
             case 'userPrompt':
-                return (input_str, [""])
+                return input_str, [""]
             case 'documents':
-                return ("", [input_str])
+                return "", [input_str]
             case _:
                 # This can also be accomplished using regex, but Python is flexible.
-                userPrompt = ""
-                documents: list[str] = [""]
-                split = input_str.split("<document>")
+                user_prompt = ""
+                documents: list[str] = []
+                split_input = input_str.split("<document>")
 
-                for i in split:
-                    x = i.split("</document>")
+                for element in split_input:
+                    contents = element.split("</document>")
 
-                    if len(x) == 1:
-                        userPrompt += x[0]
+                    if len(contents) == 1:
+                        user_prompt += contents[0]
                     else:
-                        if documents == [""]:
-                            documents.pop()
-                        documents.append(x[0])
+                        documents.append(contents[0])
 
-                return (userPrompt, documents)
+                return {"userPrompt": user_prompt, "documents": documents if documents else [""]}
