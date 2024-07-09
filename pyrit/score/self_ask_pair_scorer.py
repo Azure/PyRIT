@@ -3,6 +3,7 @@
 
 import logging
 import uuid
+from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
@@ -17,14 +18,18 @@ class SelfAskPAIRScorer(Scorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    def __init__(self, chat_target: PromptChatTarget, attack_objective: str, memory: MemoryInterface = None) -> None:
+    def __init__(
+        self,
+        chat_target: PromptChatTarget,
+        attack_objective: str,
+        memory: MemoryInterface = None,
+        judge_system_prompt_template_path: Path = DATASETS_PATH / "score" / "likert_scales" / "judge_system_prompt.yaml"
+    ) -> None:
 
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()
         self._attack_objective = attack_objective
-
-        judge_system_prompt_template_path = DATASETS_PATH / "score" / "likert_scales" / "judge_system_prompt.yaml"
         judge_prompt_template = PromptTemplate.from_yaml_file(judge_system_prompt_template_path)
         self._system_prompt = judge_prompt_template.apply_custom_metaprompt_parameters(goal=self._attack_objective)
         self._chat_target: PromptChatTarget = chat_target
