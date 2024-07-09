@@ -6,9 +6,10 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
+from typing import cast
 
 from tqdm.auto import tqdm
-from typing import cast
+
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import pyrit_json_retry
 from pyrit.memory import MemoryInterface
@@ -316,8 +317,7 @@ class PairOrchestrator(Orchestrator):
         """
 
         conversation_pieces = self._memory.get_all_prompt_pieces()
-
-        filtered_pieces = self._filter_by_orchestrator_class(pieces=conversation_pieces)
+        filtered_pieces = self._filter_by_orchestrator_class(pieces=list(conversation_pieces))
         if show_orchestrator_instance_entries_only:
             filtered_pieces = self._filter_by_orchestrator_instance_identifier(pieces=filtered_pieces)
         if show_successful_only:

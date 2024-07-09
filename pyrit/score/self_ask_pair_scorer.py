@@ -23,7 +23,10 @@ class SelfAskPAIRScorer(Scorer):
         chat_target: PromptChatTarget,
         attack_objective: str,
         memory: MemoryInterface = None,
-        judge_system_prompt_template_path: Path = DATASETS_PATH / "score" / "likert_scales" / "judge_system_prompt.yaml"
+        judge_system_prompt_template_path: Path = DATASETS_PATH
+        / "score"
+        / "likert_scales"
+        / "judge_system_prompt.yaml",
     ) -> None:
 
         self.scorer_type = "float_scale"

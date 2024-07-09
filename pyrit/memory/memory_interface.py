@@ -5,7 +5,6 @@ import abc
 import copy
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence
-from uuid import uuid4
 
 from pyrit.common.default_values import generate_unique_uuid
 from pyrit.common.path import RESULTS_PATH
