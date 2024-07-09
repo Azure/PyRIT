@@ -6,13 +6,12 @@ import json
 import uuid
 from typing import Generator
 from unittest.mock import Mock, AsyncMock, ANY
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
-from models import Score
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestResponse, Score
 from pyrit.orchestrator import PairOrchestrator
 from pyrit.orchestrator.pair_orchestrator import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
