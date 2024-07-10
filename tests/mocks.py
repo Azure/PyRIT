@@ -5,11 +5,13 @@ import tempfile
 
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, Optional
+from unittest.mock import patch
 import uuid
 
+from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from sqlalchemy import inspect
 
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory import AzureSQLMemory, DuckDBMemory, MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
@@ -75,11 +77,23 @@ class MockPromptTarget(PromptChatTarget):
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
-        return None
+
+        return PromptRequestPiece(
+            role="assistant",
+            original_value="default",
+            conversation_id=prompt_request.request_pieces[0].conversation_id,
+            orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
+        ).to_prompt_request_response()
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
-        return None
+
+        return PromptRequestPiece(
+            role="assistant",
+            original_value="default",
+            conversation_id=prompt_request.request_pieces[0].conversation_id,
+            orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
+        ).to_prompt_request_response()
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
@@ -108,6 +122,24 @@ def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
 
     yield duckdb_memory
     duckdb_memory.dispose_engine()
+
+
+def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
+    # Create a test Azure SQL Server DB
+    azure_sql_memory = AzureSQLMemory(
+        connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server"
+    )
+
+    with patch("pyrit.memory.AzureSQLMemory.get_session") as get_session_mock:
+        session_mock = UnifiedAlchemyMagicMock()
+        session_mock.__enter__.return_value = session_mock
+        get_session_mock.return_value = session_mock
+
+        azure_sql_memory.disable_embedding()
+
+        yield azure_sql_memory
+
+    azure_sql_memory.dispose_engine()
 
 
 def get_image_request_piece() -> PromptRequestPiece:
