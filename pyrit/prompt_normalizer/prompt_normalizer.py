@@ -57,7 +57,6 @@ class PromptNormalizer(abc.ABC):
             orchestrator_identifier=orchestrator_identifier,
         )
 
-        self._memory.add_request_response_to_memory(request=request)
         response = None
 
         try:
@@ -65,17 +64,22 @@ class PromptNormalizer(abc.ABC):
         except Exception as ex:
             original_exception = ex
             try:
-                request = construct_response_from_request(
+                # Add sent request to memory before processing exception
+                self._memory.add_request_response_to_memory(request=request)
+                error_response = construct_response_from_request(
                     request=request.request_pieces[0],
                     response_text_pieces=[str(ex)],
                     response_type="error",
                     error="processing",
                 )
-                self._memory.add_request_response_to_memory(request=request)
+                self._memory.add_request_response_to_memory(request=error_response)
             except Exception as memory_ex:
                 print(f"Failed to add request response to memory: {memory_ex}")
             finally:
                 raise original_exception
+            
+        # No exception after sending prompt, add to memory
+        self._memory.add_request_response_to_memory(request=request)
 
         if response is None:
             return None
