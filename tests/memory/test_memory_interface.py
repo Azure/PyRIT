@@ -14,6 +14,7 @@ from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import PromptRequestPiece, PromptMemoryEntry
 from pyrit.models import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
+from pyrit.score import Score
 
 from tests.mocks import get_memory_interface, get_sample_conversations, get_sample_conversation_entries
 
@@ -322,3 +323,54 @@ def test_export_conversation_by_orchestrator_id_file_created(
 
         # Verify file was created
         assert file_path.exists()
+
+
+def test_get_prompt_ids_by_orchestrator(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
+    orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
+
+    sample_conversation_ids = []
+    for entry in sample_conversation_entries:
+        sample_conversation_ids.append(str(entry.get_prompt_request_piece().id))
+
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
+        mock_get.return_value = sample_conversation_entries
+        prompt_ids = memory.get_prompt_ids_by_orchestrator(orchestrator_id=int(orchestrator1_id))
+
+        assert sample_conversation_ids == prompt_ids
+
+
+def test_get_scores_by_orchestrator_id(memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
+    # create list of scores that are associated with sample conversation entries
+    # assert that that list of scores is the same as expected :-)
+
+    prompt_id = sample_conversations[0].id
+
+    memory.add_request_pieces_to_memory(request_pieces=sample_conversations)
+
+    score = Score(
+        score_value=str(0.8),
+        score_value_description="High score",
+        score_type="float_scale",
+        score_category="test",
+        score_rationale="Test score",
+        score_metadata="Test metadata",
+        scorer_class_identifier={"__type__": "TestScorer"},
+        prompt_request_response_id=prompt_id,
+    )
+
+    memory.add_scores_to_memory(scores=[score])
+
+    # Fetch the score we just added
+    db_score = memory.get_scores_by_orchestrator_id(
+        orchestrator_id=int(sample_conversations[0].orchestrator_identifier["id"])
+    )
+
+    assert len(db_score) == 1
+    assert db_score[0].score_value == score.score_value
+    assert db_score[0].score_value_description == score.score_value_description
+    assert db_score[0].score_type == score.score_type
+    assert db_score[0].score_category == score.score_category
+    assert db_score[0].score_rationale == score.score_rationale
+    assert db_score[0].score_metadata == score.score_metadata
+    assert db_score[0].scorer_class_identifier == score.scorer_class_identifier
+    assert db_score[0].prompt_request_response_id == score.prompt_request_response_id
