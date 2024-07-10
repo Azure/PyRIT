@@ -37,19 +37,19 @@ class PromptShieldTarget(PromptTarget):
     with the raw input (no parsing).
     """
 
-    ### ATTRIBUTES ###
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_ENDPOINT"
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_KEY"
     _endpoint: str
     _api_key: str
+    _api_version: str
     _force_entry_field: PromptShieldEntryField
 
-    ### METHODS ###
     def __init__(
             self,
             endpoint: str,
             api_key: str,
-            field: Optional[PromptShieldEntryFIeld] = None,
+            api_version: Optional[str] = '2024-02-15-preview',
+            field: Optional[PromptShieldEntryField] = None,
             memory: Union[MemoryInterface, None] = None
         ) -> None:
 
@@ -62,6 +62,8 @@ class PromptShieldTarget(PromptTarget):
         self._api_key = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
+
+        self._api_version = api_version
 
         self._force_entry_field: PromptShieldEntryField = field
 
@@ -85,7 +87,7 @@ class PromptShieldTarget(PromptTarget):
         }
 
         params = {
-            'api-version': '2024-02-15-preview',
+            'api-version': self._api_version,
         }
 
         parsed_prompt: dict = self._input_parser(request.original_value)
@@ -104,7 +106,7 @@ class PromptShieldTarget(PromptTarget):
         )
 
         # TODO: Type checking between net_utility and _validate_response
-        self._validate_response(response)
+        self._validate_response(response.content.decode('utf-8'))
 
         logger.info("Received a valid response from the prompt target")
 
@@ -122,8 +124,8 @@ class PromptShieldTarget(PromptTarget):
 
         if len(request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
-        if type(request_pieces[0].original_value_data_type) != 'text':
-            raise ValueError("This target only supports text prompt input.")
+        if request_pieces[0].original_value_data_type != 'text':
+            raise ValueError(f"This target only supports text prompt input. Got: {type(request_pieces[0].original_value_data_type)}")
         
     def _validate_response(self, response) -> None:
         response_json: dict = json.loads(response)
@@ -141,7 +143,7 @@ class PromptShieldTarget(PromptTarget):
         Prompt Shield: userPrompt: str, and documents: list[str]
         """
 
-        match self._force_entry_kind:
+        match self._force_entry_field:
             case 'userPrompt':
                 return input_str, [""]
             case 'documents':
