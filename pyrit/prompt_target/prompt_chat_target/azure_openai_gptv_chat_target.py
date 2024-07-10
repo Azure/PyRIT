@@ -4,6 +4,8 @@
 import logging
 import json
 
+from typing import Optional
+
 from openai import AsyncAzureOpenAI
 from openai import BadRequestError
 from openai.types.chat import ChatCompletion
@@ -16,6 +18,7 @@ from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
 from pyrit.models import data_serializer_factory, construct_response_from_request
+from pyrit.models.data_type_serializer import StorageIO
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -41,7 +44,8 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         api_key: str = None,
         headers: str = None,
         use_aad_auth: bool = False,
-        memory: MemoryInterface = None,
+        memory: Optional[MemoryInterface] = None,
+        storage_io: Optional[StorageIO] = None,  # TODO: What calls this?
         api_version: str = "2024-02-01",
         max_tokens: int = 1024,
         temperature: float = 1.0,
@@ -86,6 +90,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         self._top_p = top_p
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
+        self._storage_io = storage_io
 
         self._deployment_name = default_values.get_required_value(
             env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
@@ -184,7 +189,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
+        image_serializer = data_serializer_factory(
+            value=image_path, data_type="image_path", extension=ext, storage_io=self._storage_io
+        )
         base64_encoded_data = image_serializer.read_data_base64()
         # Construct the data URL, as per Azure OpenAI GPTV local image format
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image

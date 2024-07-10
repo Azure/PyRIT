@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageFont
 import textwrap
 from io import BytesIO
 
-from pyrit.models.data_type_serializer import data_serializer_factory
+from pyrit.models.data_type_serializer import StorageIO, data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
@@ -41,6 +41,7 @@ class AddTextImageConverter(PromptConverter):
         x_pos: Optional[int] = 10,
         y_pos: Optional[int] = 10,
         output_filename: Optional[str] = None,
+        storage_io: Optional[StorageIO] = None,  # TODO: What calls this?
     ):
         if not text_to_add:
             raise ValueError("Please provide valid text_to_add value")
@@ -54,6 +55,7 @@ class AddTextImageConverter(PromptConverter):
         self._x_pos = x_pos
         self._y_pos = y_pos
         self._output_name = output_filename
+        self._storage_io = storage_io
 
     def _load_font(self):
         """
@@ -122,7 +124,7 @@ class AddTextImageConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        img_serializer = data_serializer_factory(value=prompt, data_type="image_path")
+        img_serializer = data_serializer_factory(value=prompt, data_type="image_path", storage_io=self._storage_io)
 
         # Open the image
         original_img_bytes = img_serializer.read_data()

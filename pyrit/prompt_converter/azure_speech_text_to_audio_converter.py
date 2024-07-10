@@ -4,9 +4,9 @@ import logging
 import azure.cognitiveservices.speech as speechsdk
 import asyncio
 
-from typing import Literal
+from typing import Literal, Optional
 from pyrit.common import default_values
-from pyrit.models.data_type_serializer import data_serializer_factory
+from pyrit.models.data_type_serializer import StorageIO, data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -40,6 +40,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_language: str = "en_US",
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
+        storage_io: Optional[StorageIO] = None,  # TODO: What calls this?
     ) -> None:
 
         self._azure_speech_region: str = default_values.get_required_value(
@@ -53,6 +54,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._synthesis_language = synthesis_language
         self._synthesis_voice_name = synthesis_voice_name
         self._output_format = output_format
+        self._storage_io = storage_io
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
@@ -64,7 +66,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         if prompt.strip() == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
 
-        audio_serializer = data_serializer_factory(data_type="audio_path", extension=self._output_format)
+        audio_serializer = data_serializer_factory(
+            data_type="audio_path", extension=self._output_format, storage_io=self._storage_io
+        )
         audio_serializer_file = str(audio_serializer.get_data_filename().resolve())
 
         try:

@@ -2,8 +2,10 @@
 # Licensed under the MIT license.
 
 import abc
+from typing import Optional
 from pyrit.memory import MemoryInterface
 from pyrit.models import data_serializer_factory, PromptDataType
+from pyrit.models.data_type_serializer import StorageIO
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
 
@@ -18,6 +20,7 @@ class NormalizerRequestPiece(abc.ABC):
         prompt_value: str,
         prompt_data_type: PromptDataType,
         metadata: str = None,
+        storage_io: Optional[StorageIO] = None,  # TODO: What calls this?
     ) -> None:
         """
         Represents a piece of a normalizer request.
@@ -40,6 +43,7 @@ class NormalizerRequestPiece(abc.ABC):
         self.prompt_value = prompt_value
         self.prompt_data_type = prompt_data_type
         self.metadata = metadata
+        self.storage_io = storage_io
 
         self.validate()
 
@@ -59,7 +63,7 @@ class NormalizerRequestPiece(abc.ABC):
             raise ValueError("prompt_converters must be a PromptConverter List")
 
         # this validates the media exists, if needed
-        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_value)
+        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_value, storage_io=self.storage_io)
 
 
 class NormalizerRequest:
