@@ -3,11 +3,7 @@
 
 import logging
 
-# By Volkan
-from typing import Optional, List, Dict
-import requests
-import json
-# --- End By Volkan
+from typing import Optional
 
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptDataType
@@ -120,29 +116,3 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_ids=prompt_ids,
                     responses_only=True,
                 )
-
-        if self._scorers:
-            response_ids = []
-            for response in responses:
-                for piece in response.request_pieces:
-                    id = str(piece.id)
-                    response_ids.append(id)
-
-            await self._score_responses_async(response_ids)
-
-        return responses
-
-    async def _score_responses_async(self, prompt_ids: list[str]):
-        with ScoringOrchestrator(
-            memory=self._memory,
-            batch_size=self._batch_size,
-            verbose=self._verbose,
-        ) as scoring_orchestrator:
-            for scorer in self._scorers:
-                await scoring_orchestrator.score_prompts_by_request_id_async(
-                    scorer=scorer,
-                    prompt_ids=prompt_ids,
-                    responses_only=True,
-                )
-
-   
