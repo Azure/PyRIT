@@ -74,7 +74,7 @@ class PromptNormalizer(abc.ABC):
             )
 
             self._memory.add_request_response_to_memory(request=error_response)
-            raise ex
+            raise
 
         if response is None:
             return None
