@@ -19,7 +19,7 @@ from pyrit.common.path import SCALES_PATH
 
 
 class ScalePaths(enum.Enum):
-    TREE_OF_ATTACKS_WITH_PRUNING_SCALE = Path(SCALES_PATH, "tree_of_attacks_with_pruning.yaml").resolve()
+    TREE_OF_ATTACKS_WITH_PRUNING_SCALE = Path(SCALES_PATH, "tree_of_attacks_with_pruning_jailbreak.yaml").resolve()
 
 
 class SelfAskScaleScorer(Scorer):
@@ -45,41 +45,48 @@ class SelfAskScaleScorer(Scorer):
             raise ValueError("Only one of scale_path or scale should be provided.")
         if scale_path:
             scale = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
-        else:
-            for key in ["category", "minimum_value", "minimum_description", "maximum_value", "maximum_description", "step_description"]:
-                if key not in scale:
-                    raise ValueError(f"{key} must be provided in scale.")
+        
+        for key in ["category", "minimum_value", "minimum_description", "maximum_value", "maximum_description", "step_description", "examples"]:
+            if key not in scale:
+                raise ValueError(f"{key} must be provided in scale.")
 
-        if int(scale["minimum_value"]) >= int(scale["maximum_value"]):
+        self._minimum_value = int(scale["minimum_value"])
+        self._maximum_value = int(scale["maximum_value"])
+        if self._minimum_value >= self._maximum_value:
             raise ValueError("minimum_value must be less than maximum_value")
         
         self._score_category = scale["category"]
-        self._minimum_value = int(scale["minimum_value"])
-        self._maximum_value = int(scale["maximum_value"])
 
         scoring_instructions_template = PromptTemplate.from_yaml_file(SCALES_PATH / "scale_system_prompt.yaml")
+        system_prompt_kwargs = scale
+        if "examples" in scale:
+            system_prompt_kwargs["examples"] = "\n\n".join(
+                [
+                    f"Example {index}:\n"
+                    f"task: {example['task']}\n"
+                    f"response: {example['response']}\n"
+                    f"rationale: {example['rationale']}\n"
+                    f"score_value: {example['score_value']}"
+                    for index, example in enumerate(scale["examples"])
+                ]
+            )
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
-            category=self._score_category,
-            minimum_value=str(scale["minimum_value"]),
-            minimum_description=scale["minimum_description"],
-            maximum_value=str(scale["maximum_value"]),
-            maximum_description=scale["maximum_description"],
-            step_description=scale["step_description"]
+            **system_prompt_kwargs
         )
 
         self._chat_target: PromptChatTarget = chat_target
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, *, request_response: PromptRequestPiece, task: str) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            task (str): The task to be scored.
 
         Returns:
             list[Score]: The request_response scored.
-                         The category is configured from the likert_scale.
-                         The score_value is a value from [0,1] that is scaled from the likert scale.
+                         The score_value is a value from [0,1] that is scaled based on the scorer's scale.
         """
         self.validate(request_response)
 
@@ -91,11 +98,13 @@ class SelfAskScaleScorer(Scorer):
             orchestrator_identifier=None,
         )
 
+        scoring_prompt = f"task: {task}\nresponse: {request_response.converted_value}"
+
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
                     role="user",
-                    original_value=request_response.converted_value,
+                    original_value=scoring_prompt,
                     conversation_id=conversation_id,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
@@ -106,6 +115,29 @@ class SelfAskScaleScorer(Scorer):
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
+    
+    async def score_text_async(self, *, text: str, task: str) -> list[Score]:
+        """
+        Scores the given text based on the task using the chat target.
+
+        Args:
+            text (str): The text to be scored.
+            task (str): The task based on which the text should be scored.
+
+        Returns:
+            list[Score]: A list of Score objects representing the results.
+        """
+        request_piece = PromptRequestPiece(
+            role="user",
+            original_value=text,
+        )
+
+        request_piece.id = None
+        return await self.score_async(request_response=request_piece, task=task)
+    
+    async def score_image_async(self, *, image_path: str, task: str) -> list[Score]:
+        # Omitting image scoring for now since it's unclear how we could provide examples.
+        raise NotImplementedError("Image scoring is not supported for this scorer.")
 
     @pyrit_json_retry
     async def send_chat_target_async(self, request, request_response_id):
