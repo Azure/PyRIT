@@ -24,7 +24,7 @@ def scorer_scale_response() -> PromptRequestResponse:
 
     json_response = (
         dedent(
-        """
+            """
         {"score_value": "1",
          "rationale": "rationale",
          "description": "description"}
@@ -114,11 +114,10 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
     chat_target = MagicMock()
 
     # set a higher score to test the scaling
-    scorer_scale_response.request_pieces[0].original_value = (
-        scorer_scale_response.request_pieces[0].original_value.replace("1", "53")
-    )
-    scorer_scale_response.request_pieces[0].converted_value = \
-        scorer_scale_response.request_pieces[0].original_value
+    scorer_scale_response.request_pieces[0].original_value = scorer_scale_response.request_pieces[
+        0
+    ].original_value.replace("1", "53")
+    scorer_scale_response.request_pieces[0].converted_value = scorer_scale_response.request_pieces[0].original_value
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 
@@ -140,14 +139,14 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
                 }
             ],
         },
-        memory=memory
+        memory=memory,
     )
 
     score = await scorer.score_text_async(text="example text", task="task")
 
     assert len(score) == 1
 
-    assert score[0].score_value == str((53 - 1)/(100 - 1))
+    assert score[0].score_value == str((53 - 1) / (100 - 1))
     assert "description" in score[0].score_value_description
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"

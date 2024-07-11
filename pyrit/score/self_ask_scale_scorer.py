@@ -7,7 +7,7 @@ import yaml
 import enum
 
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 
 
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
@@ -29,11 +29,12 @@ class SelfAskScaleScorer(Scorer):
 
     def __init__(
         self,
-        *, 
+        *,
         chat_target: PromptChatTarget,
         scale_path: Optional[Path] = None,
         scale: Optional[Dict[str, Union[int, str]]] = None,
-        memory: MemoryInterface = None) -> None:
+        memory: MemoryInterface = None,
+    ) -> None:
 
         self.scorer_type = "float_scale"
 
@@ -45,8 +46,16 @@ class SelfAskScaleScorer(Scorer):
             raise ValueError("Only one of scale_path or scale should be provided.")
         if scale_path:
             scale = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
-        
-        for key in ["category", "minimum_value", "minimum_description", "maximum_value", "maximum_description", "step_description", "examples"]:
+
+        for key in [
+            "category",
+            "minimum_value",
+            "minimum_description",
+            "maximum_value",
+            "maximum_description",
+            "step_description",
+            "examples",
+        ]:
             if key not in scale:
                 raise ValueError(f"{key} must be provided in scale.")
 
@@ -54,7 +63,7 @@ class SelfAskScaleScorer(Scorer):
         self._maximum_value = int(scale["maximum_value"])
         if self._minimum_value >= self._maximum_value:
             raise ValueError("minimum_value must be less than maximum_value")
-        
+
         self._score_category = scale["category"]
 
         scoring_instructions_template = PromptTemplate.from_yaml_file(SCALES_PATH / "scale_system_prompt.yaml")
@@ -70,9 +79,7 @@ class SelfAskScaleScorer(Scorer):
                     for index, example in enumerate(scale["examples"])
                 ]
             )
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
-            **system_prompt_kwargs
-        )
+        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(**system_prompt_kwargs)
 
         self._chat_target: PromptChatTarget = chat_target
 
@@ -115,7 +122,7 @@ class SelfAskScaleScorer(Scorer):
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-    
+
     async def score_text_async(self, *, text: str, task: str) -> list[Score]:
         """
         Scores the given text based on the task using the chat target.
@@ -134,7 +141,7 @@ class SelfAskScaleScorer(Scorer):
 
         request_piece.id = None
         return await self.score_async(request_response=request_piece, task=task)
-    
+
     async def score_image_async(self, *, image_path: str, task: str) -> list[Score]:
         # Omitting image scoring for now since it's unclear how we could provide examples.
         raise NotImplementedError("Image scoring is not supported for this scorer.")
@@ -146,7 +153,9 @@ class SelfAskScaleScorer(Scorer):
         try:
             response_json = response.request_pieces[0].converted_value
             parsed_response = json.loads(response_json)
-            score_value = self.scale_value_float(float(parsed_response["score_value"]), self._minimum_value, self._maximum_value)
+            score_value = self.scale_value_float(
+                float(parsed_response["score_value"]), self._minimum_value, self._maximum_value
+            )
             score = Score(
                 score_value=str(score_value),
                 score_value_description=parsed_response["description"],
