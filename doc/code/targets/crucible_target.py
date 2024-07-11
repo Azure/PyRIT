@@ -15,9 +15,9 @@
 # %% [markdown]
 # # Crucible Targets
 #
-# The Defcon AI CTF challenges are a fun way to get into AI Red Teaming. We've added a Crucible target so you can make use of PyRIT. PyRIT certainly won't be able to solve all these challenges for you, but it can be used as a tool to help you solve the challenges for yourself (much like how PyRIT acts as a tool in real red team engagements!) 
+# The Defcon AI CTF challenges are a fun way to get into AI Red Teaming. We've added a Crucible target so you can make use of PyRIT. PyRIT certainly won't be able to solve all these challenges for you, but it can be used as a tool to help you solve the challenges yourself (much like how PyRIT acts as a tool in real red team engagements!).
 #
-# Below is an example of using `PromptSendingOrchestrator`, which allows use of all our converters. So for example, you could use this to make use of all the built-in jailbreaks, to base64 encode them, use variations, use different languages, etc.
+# Below is an example of using PromptSendingOrchestrator, which allows the use of all our converters. For example, you could use this to utilize all the built-in jailbreaks, base64 encode them, use variations, different languages, etc.
 
 # %%
 import logging
@@ -54,7 +54,7 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=converter
         print ("YESSSSSS FLAG FOUND")
 
 # %% [markdown]
-# You can also make use of orchestrators, for example, to use other LLMs to help you send prompts for the challenges. Crucible challenges are single turn, so some techniques like crescendo won't work, but you could also adapt other techniques like PAIR/TAP. Below is an example using `RedTeamingOrchestrator`.
+# You can also make use of orchestrators, for example, to use other LLMs to help you send prompts for the challenges. Crucible challenges are single-turn, so some techniques like `Crescendo` won't work, but you could adapt other techniques like PAIR/TAP. Below is an example using RedTeamingOrchestrator.
 
 # %%
 import textwrap
