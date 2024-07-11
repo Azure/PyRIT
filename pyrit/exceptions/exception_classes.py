@@ -61,10 +61,10 @@ class InvalidJsonException(PyritException):
 
 
 def handle_bad_request_exception(
-        response_text: str,
-        request: PromptRequestPiece,
-        is_content_filter = False,
-    ) -> PromptRequestResponse:
+    response_text: str,
+    request: PromptRequestPiece,
+    is_content_filter=False,
+) -> PromptRequestResponse:
 
     if "content_filter" in response_text or is_content_filter:
         # Handle bad request error when content filter system detects harmful content

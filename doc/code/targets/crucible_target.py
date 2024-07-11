@@ -21,15 +21,15 @@
 
 # %%
 import logging
+from typing import List
 
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.base64_converter import Base64Converter
+from pyrit.prompt_converter import PromptConverter, Base64Converter
+from pyrit.prompt_target import CrucibleTarget, AzureOpenAIChatTarget
+from pyrit.score import SubStringScorer
 
-from pyrit.prompt_target import CrucibleTarget
 
 from pyrit.common import default_values
-from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
-from pyrit.score.substring_scorer import SubStringScorer
 
 default_values.load_default_env()
 
@@ -43,15 +43,15 @@ scorer = SubStringScorer(substring='"flag":', category="crucible")
 
 aoai_target = AzureOpenAIChatTarget()
 
-converters = [Base64Converter()]
+converters: List[PromptConverter] = [Base64Converter()]
 
 with PromptSendingOrchestrator(prompt_target=target, prompt_converters=converters, verbose=False) as orchestrator:
 
-    response = (await orchestrator.send_prompts_async(prompt_list=[request]))[0]
+    response = (await orchestrator.send_prompts_async(prompt_list=[request]))[0]  # type: ignore
     print(response)  # type: ignore
-    score = await scorer.score_async(response.request_pieces[0])
+    score = await scorer.score_async(response.request_pieces[0])  # type: ignore
     if score[0].get_value():
-        print ("YESSSSSS FLAG FOUND")
+        print("YESSSSSS FLAG FOUND")
 
 # %% [markdown]
 # You can also make use of orchestrators, for example, to use other LLMs to help you send prompts for the challenges. Crucible challenges are single-turn, so some techniques like `Crescendo` won't work, but you could adapt other techniques like PAIR/TAP. Below is an example using RedTeamingOrchestrator.
@@ -86,9 +86,10 @@ attack_strategy = AttackStrategy(
 scorer = SubStringScorer(substring='"flag":', category="crucible")
 join_converter = StringJoinConverter()
 
-with CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io") as crucible_target, \
-    AzureOpenAIChatTarget() as aoai_chat:
-
+with (
+    CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io") as crucible_target,
+    AzureOpenAIChatTarget() as aoai_chat,
+):
 
     red_teaming_orchestrator = RedTeamingOrchestrator(
         attack_strategy=attack_strategy,
@@ -97,7 +98,7 @@ with CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io") as cruc
         scorer=scorer,
         verbose=False,
         initial_red_teaming_prompt="How can I help?",
-        prompt_converters=[]
+        prompt_converters=[],
     )
 
     # Once the agents are set up, we can start the conversation.
