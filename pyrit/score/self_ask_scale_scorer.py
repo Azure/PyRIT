@@ -7,7 +7,7 @@ import yaml
 import enum
 
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Optional
 
 
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
@@ -22,9 +22,67 @@ class ScalePaths(enum.Enum):
     TREE_OF_ATTACKS_WITH_PRUNING_SCALE = Path(SCALES_PATH, "tree_of_attacks_with_pruning_jailbreak.yaml").resolve()
 
 
+class ScaleExample:
+    def __init__(self, *, task: str, response: str, rationale: str, score_value: int) -> None:
+        self.task = task
+        self.response = response
+        self.rationale = rationale
+        self.score_value = score_value
+
+
+class Scale:
+    def __init__(
+        self,
+        *,
+        category: str,
+        minimum_value: int,
+        minimum_description: str,
+        maximum_value: int,
+        maximum_description: str,
+        step_description: str,
+        examples: list[ScaleExample],
+    ) -> None:
+        self.category = category
+        self.minimum_value = minimum_value
+        self.minimum_description = minimum_description
+        self.maximum_value = maximum_value
+        self.maximum_description = maximum_description
+        self.step_description = step_description
+        self.examples = examples
+
+        if self.minimum_value >= self.maximum_value:
+            raise ValueError("minimum_value must be less than maximum_value")
+
+        if not examples:
+            raise ValueError("examples must be provided")
+
+        if not all(isinstance(example, ScaleExample) for example in examples):
+            raise ValueError("All examples must be of type ScaleExample")
+
+    def to_dict(self) -> dict:
+        return {
+            "category": self.category,
+            "minimum_value": self.minimum_value,
+            "minimum_description": self.minimum_description,
+            "maximum_value": self.maximum_value,
+            "maximum_description": self.maximum_description,
+            "step_description": self.step_description,
+            "examples": "\n\n".join(
+                [
+                    f"Example {index}:\n"
+                    f"task: {example.task}\n"
+                    f"response: {example.response}\n"
+                    f"rationale: {example.rationale}\n"
+                    f"score_value: {example.score_value}"
+                    for index, example in enumerate(self.examples, start=1)
+                ]
+            ),
+        }
+
+
 class SelfAskScaleScorer(Scorer):
     """
-    A class that represents a "self-ask" score for text scoring for a likert scale.
+    A class that represents a "self-ask" score for text scoring for a customizable numeric scale.
     """
 
     def __init__(
@@ -32,7 +90,7 @@ class SelfAskScaleScorer(Scorer):
         *,
         chat_target: PromptChatTarget,
         scale_path: Optional[Path] = None,
-        scale: Optional[Dict[str, Union[int, str]]] = None,
+        scale: Optional[Scale] = None,
         memory: MemoryInterface = None,
     ) -> None:
 
@@ -45,45 +103,28 @@ class SelfAskScaleScorer(Scorer):
         if scale_path and scale:
             raise ValueError("Only one of scale_path or scale should be provided.")
         if scale_path:
-            scale = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
-
-        for key in [
-            "category",
-            "minimum_value",
-            "minimum_description",
-            "maximum_value",
-            "maximum_description",
-            "step_description",
-            "examples",
-        ]:
-            if key not in scale:
-                raise ValueError(f"{key} must be provided in scale.")
-
-        self._minimum_value = int(scale["minimum_value"])
-        self._maximum_value = int(scale["maximum_value"])
-        if self._minimum_value >= self._maximum_value:
-            raise ValueError("minimum_value must be less than maximum_value")
-
-        self._score_category = scale["category"]
+            scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
+            if "examples" in scale_args:
+                scale_args["examples"] = [
+                    ScaleExample(
+                        task=example["task"],
+                        response=example["response"],
+                        rationale=example["rationale"],
+                        score_value=example["score_value"],
+                    )
+                    for example in scale_args["examples"]
+                ]
+            self._scale = Scale(**scale_args)
+        else:
+            self._scale = scale
 
         scoring_instructions_template = PromptTemplate.from_yaml_file(SCALES_PATH / "scale_system_prompt.yaml")
-        system_prompt_kwargs = scale
-        if "examples" in scale:
-            system_prompt_kwargs["examples"] = "\n\n".join(
-                [
-                    f"Example {index}:\n"
-                    f"task: {example['task']}\n"
-                    f"response: {example['response']}\n"
-                    f"rationale: {example['rationale']}\n"
-                    f"score_value: {example['score_value']}"
-                    for index, example in enumerate(scale["examples"])
-                ]
-            )
+        system_prompt_kwargs = self._scale.to_dict()
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(**system_prompt_kwargs)
 
         self._chat_target: PromptChatTarget = chat_target
 
-    async def score_async(self, *, request_response: PromptRequestPiece, task: str) -> list[Score]:
+    async def score_async(self, *, request_response: PromptRequestPiece, task: str) -> list[Score]:  # type: ignore
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
@@ -123,7 +164,7 @@ class SelfAskScaleScorer(Scorer):
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
-    async def score_text_async(self, *, text: str, task: str) -> list[Score]:
+    async def score_text_async(self, *, text: str, task: str) -> list[Score]:  # type: ignore
         """
         Scores the given text based on the task using the chat target.
 
@@ -142,7 +183,7 @@ class SelfAskScaleScorer(Scorer):
         request_piece.id = None
         return await self.score_async(request_response=request_piece, task=task)
 
-    async def score_image_async(self, *, image_path: str, task: str) -> list[Score]:
+    async def score_image_async(self, *, image_path: str, task: str) -> list[Score]:  # type: ignore
         # Omitting image scoring for now since it's unclear how we could provide examples.
         raise NotImplementedError("Image scoring is not supported for this scorer.")
 
@@ -154,13 +195,13 @@ class SelfAskScaleScorer(Scorer):
             response_json = response.request_pieces[0].converted_value
             parsed_response = json.loads(response_json)
             score_value = self.scale_value_float(
-                float(parsed_response["score_value"]), self._minimum_value, self._maximum_value
+                float(parsed_response["score_value"]), self._scale.minimum_value, self._scale.maximum_value
             )
             score = Score(
                 score_value=str(score_value),
                 score_value_description=parsed_response["description"],
                 score_type=self.scorer_type,
-                score_category=self._score_category,
+                score_category=self._scale.category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
                 score_metadata=None,

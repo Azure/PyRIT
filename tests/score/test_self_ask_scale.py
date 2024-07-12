@@ -6,6 +6,7 @@ from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import yaml
 
 from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 from pyrit.exceptions.exception_classes import InvalidJsonException
@@ -14,7 +15,7 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.score import ScalePaths
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
-from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
+from pyrit.score.self_ask_scale_scorer import Scale, ScaleExample, SelfAskScaleScorer
 
 from tests.mocks import get_memory_interface
 
@@ -57,17 +58,83 @@ async def test_scale_scorer_set_system_prompt(scorer_scale_response: PromptReque
     chat_target.set_system_prompt.assert_called_once()
 
     # assert that the scale score was loaded into system prompt
-    assert scorer._score_category in scorer._system_prompt
+    assert str(scorer._scale.category) in scorer._system_prompt
 
 
-@pytest.mark.asyncio
-async def test_scale_scorer_must_have_category():
+def test_scale_scorer_invalid_scale_file_contents():
     chat_target = MagicMock()
-    with pytest.raises(ValueError, match="category"):
+    # When using a YAML with wrong keys the Scale constructor will raise an exception.
+    with pytest.raises(TypeError, match="unexpected keyword argument 'no_category_found'"):
         SelfAskScaleScorer(
             chat_target=chat_target,
             scale_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
         )
+
+
+@pytest.mark.parametrize(
+    "field_to_delete",
+    [
+        "category",
+        "minimum_value",
+        "maximum_value",
+        "examples",
+        "minimum_description",
+        "maximum_description",
+        "step_description",
+    ],
+)
+def test_scale_must_have_fields(field_to_delete):
+    scale_path = ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value
+    scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
+    scale_args["examples"] = [
+        ScaleExample(
+            task=example["task"],
+            response=example["response"],
+            rationale=example["rationale"],
+            score_value=example["score_value"],
+        )
+        for example in scale_args["examples"]
+    ]
+    del scale_args[field_to_delete]
+
+    with pytest.raises(TypeError, match=f"required keyword-only argument: '{field_to_delete}'"):
+        Scale(**scale_args)
+
+
+def test_scale_invalid_min_max():
+    scale_path = ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value
+    scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
+    scale_args["examples"] = [
+        ScaleExample(
+            task=example["task"],
+            response=example["response"],
+            rationale=example["rationale"],
+            score_value=example["score_value"],
+        )
+        for example in scale_args["examples"]
+    ]
+    scale_args["minimum_value"] = scale_args["maximum_value"] + 1
+
+    with pytest.raises(ValueError, match="minimum_value must be less than maximum_value"):
+        Scale(**scale_args)
+
+
+def test_scale_no_examples():
+    scale_path = ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value
+    scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
+    scale_args["examples"] = []
+
+    with pytest.raises(ValueError, match="examples must be provided"):
+        Scale(**scale_args)
+
+
+def test_scale_malformed_examples():
+    scale_path = ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value
+    scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
+    scale_args["examples"] = [{"wrong": "entry"}]
+
+    with pytest.raises(ValueError, match="All examples must be of type ScaleExample"):
+        Scale(**scale_args)
 
 
 @pytest.mark.asyncio
@@ -123,22 +190,22 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
-        scale={
-            "category": "jailbreak",
-            "minimum_value": 1,
-            "maximum_value": 100,
-            "minimum_description": "minimum_description",
-            "maximum_description": "maximum_description",
-            "step_description": "step_description",
-            "examples": [
-                {
-                    "task": "task",
-                    "response": "response",
-                    "rationale": "rationale",
-                    "score_value": 47,
-                }
+        scale=Scale(
+            category="jailbreak",
+            minimum_value=1,
+            maximum_value=100,
+            minimum_description="minimum_description",
+            maximum_description="maximum_description",
+            step_description="step_description",
+            examples=[
+                ScaleExample(
+                    task="task",
+                    response="response",
+                    rationale="rationale",
+                    score_value=47,
+                )
             ],
-        },
+        ),
         memory=memory,
     )
 
