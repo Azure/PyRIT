@@ -154,7 +154,7 @@ async def test_send_prompt_async_image_converter():
         filename = f.name
         f.write(b"Hello")
 
-        mock_image_converter.convert_async.return_value = ConverterResult(
+        mock_image_converter.convert_tokens_async.return_value = ConverterResult(
             output_type="image_path",
             output_text=filename,
         )
