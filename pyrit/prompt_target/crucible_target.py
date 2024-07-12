@@ -6,7 +6,7 @@ import logging
 from httpx import HTTPStatusError
 
 from pyrit.common import default_values, net_utility
-from pyrit.exceptions.exception_classes import handle_bad_request_exception
+from pyrit.exceptions import EmptyResponseException, handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
@@ -57,6 +57,7 @@ class CrucibleTarget(PromptTarget):
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
 
+    @pyrit_target_retry
     async def _complete_text_async(self, text: str) -> str:
         payload: dict[str, object] = {
             "data": text,
@@ -70,7 +71,7 @@ class CrucibleTarget(PromptTarget):
         )
 
         if not resp.text:
-            raise ValueError("The chat returned an empty response.")
+            raise EmptyResponseException()
 
         logger.info(f'Received the following response from the prompt target "{resp.text}"')
         return resp.text
