@@ -38,7 +38,7 @@ class Score:
 
     # This is the prompt_request_response_id that the score is scoring
     # Note a scorer can generate an additional request. This is NOT that, but
-    # the request associated with what we're scoring.
+    # the ID associated with what we're scoring.
     prompt_request_response_id: uuid.UUID | str
 
     # Timestamp of when the score was created

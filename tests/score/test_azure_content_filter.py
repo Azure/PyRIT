@@ -107,9 +107,9 @@ async def test_azure_content_filter_scorer_score():
 
 def test_azure_content_default_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar")
-    assert len(scorer._harm_categories) == 4
+    assert len(scorer._score_categories) == 4
 
 
 def test_azure_content_explicit_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    assert len(scorer._harm_categories) == 1
+    assert len(scorer._score_categories) == 1
