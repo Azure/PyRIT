@@ -15,7 +15,7 @@ import re
 import yaml
 
 from pyrit.common.path import DATASETS_PATH, SCALES_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
+from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.memory import MemoryInterface
 from pyrit.models.models import PromptTemplate
 from pyrit.orchestrator import Orchestrator
