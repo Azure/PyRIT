@@ -116,12 +116,10 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                 memory=self._memory,
             )
 
-        scorer_scale_path = Path(SCALES_PATH / "tree_of_attacks_with_pruning.yaml")
-        scorer_scale = yaml.safe_load(scorer_scale_path.read_text(encoding="utf-8"))
-        scorer_scale["maximum_description"] = scorer_scale["maximum_description"].replace("{task}", conversation_objective)
+        scorer_scale_path = Path(SCALES_PATH / "tree_of_attacks_with_pruning_jailbreak.yaml")
         self._scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
-            scale=scorer_scale,
+            scale_path=scorer_scale_path,
             memory=self._memory,
         )
         

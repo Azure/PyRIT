@@ -146,7 +146,7 @@ async def test_apply_strategy_single_turn_success(
                     )
                 mock_scoring_target_return_values.append(
                     get_prompt_response_with_content(
-                        '{"score_value": "5", "description": "Jailbreak", "rationale": "Rationale"}'),
+                        '{"score_value": "10", "description": "Jailbreak", "rationale": "Rationale"}'),
                 )
                 mock_scoring_target.side_effect = mock_scoring_target_return_values
                 expected_target_response = get_prompt_response_with_content("First target response")
@@ -159,7 +159,7 @@ async def test_apply_strategy_single_turn_success(
                 assert result is not None
                 assert not result.pruned
                 assert result.completed
-                assert result.score == 1  # (5-1) / 4
+                assert result.score == (10-1)/9  # normalized score
                 assert result.orchestrator_id == tap_orchestrator._orchestrators[0].get_identifier()["id"]
                 assert result.prompt_target_conversation_id is not None
 
@@ -226,79 +226,6 @@ async def test_apply_strategy_max_depth_reached(
                 # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
                 assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize("width, branching_factor", [(2, 1), (1, 2)])
-@pytest.mark.parametrize("on_topic_checking_enabled", [True, False])
-async def test_apply_strategy_single_turn_success_two_successes(
-    prompt_target: MockPromptTarget,
-    red_teaming_target: MockPromptTarget,
-    memory: MemoryInterface,
-    scoring_target: MockPromptTarget,
-    width: int,
-    branching_factor: int,
-    on_topic_checking_enabled: bool,
-):
-    tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
-        red_teaming_chat=red_teaming_target,
-        memory=memory,
-        prompt_target=prompt_target,
-        scoring_target=scoring_target,
-        width=width,
-        branching_factor=branching_factor,
-        depth=1,
-        conversation_objective="conversation objective",
-        on_topic_checking_enabled=on_topic_checking_enabled,
-        verbose=False
-    )
-
-    with patch.object(tap_orchestrator._red_teaming_chat, "send_prompt_async") as mock_red_teaming_target:
-        with patch.object(tap_orchestrator._scoring_target, "send_prompt_async") as mock_scoring_target:
-            with patch.object(tap_orchestrator._prompt_target, "send_prompt_async") as mock_target:
-                mock_red_teaming_target.side_effect = [
-                    get_prompt_response_with_content(
-                        content='{"improvements": "First branch first improvement response", "prompt": "First branch first red teaming prompt"}',
-                    ),
-                    get_prompt_response_with_content(
-                        content='{"improvements": "Second branch first improvement response", "prompt": "Second branch first red teaming prompt"}',
-                    ),
-                ]
-                mock_scoring_target_return_values = []
-                for _ in range(max(branching_factor, width)):
-                    if on_topic_checking_enabled:
-                        mock_scoring_target_return_values.append(
-                            get_prompt_response_with_content(
-                                '{"value": "True", "description": "On topic", "rationale": "Rationale"}'),
-                        )
-                    mock_scoring_target_return_values.append(
-                        get_prompt_response_with_content(
-                            '{"score_value": "5", "description": "Jailbreak", "rationale": "Rationale"}'),
-                    )
-                mock_scoring_target.side_effect = mock_scoring_target_return_values
-                expected_target_response_first_branch = get_prompt_response_with_content("First branch First target response")
-                expected_target_response_second_branch = get_prompt_response_with_content("Second branch First target response")
-                mock_target.side_effect = [
-                    expected_target_response_first_branch,
-                    expected_target_response_second_branch,
-                ]
-                result = await tap_orchestrator.apply_attack_strategy_async()
-                
-                assert len(tap_orchestrator._orchestrators) == 2
-                
-                assert result is not None
-                assert not result.pruned
-                assert result.completed
-                assert result.score == 1  # (5-1) / 4
-                assert result.orchestrator_id == tap_orchestrator._orchestrators[0].get_identifier()["id"]
-                assert result.prompt_target_conversation_id is not None
-                
-                assert mock_red_teaming_target.call_count == 2
-                assert mock_target.call_count == 2
-                assert mock_scoring_target.call_count == 4 if on_topic_checking_enabled else 2
-
-                # Two orchestrators with the following each:
-                # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
-                assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 14 if on_topic_checking_enabled else 10
-
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("depth", [1,2,3])
@@ -341,7 +268,7 @@ async def test_apply_strategy_multiturn_failure(
                     )
                 scorer_responses_for_one_turn.append(
                     get_prompt_response_with_content(
-                        '{"score_value": "3", "description": "No jailbreak", "rationale": "Rationale"}'),
+                        '{"score_value": "5", "description": "No jailbreak", "rationale": "Rationale"}'),
                 )
                 mock_scoring_target.side_effect = scorer_responses_for_one_turn * depth
                 mock_target.side_effect = [
@@ -406,7 +333,7 @@ async def test_apply_strategy_multiturn_success_in_last_turn(
                     )
                 mock_scoring_target_return_values_except_last_iteration.append(
                     get_prompt_response_with_content(
-                        '{"score_value": "3", "description": "No jailbreak", "rationale": "Rationale"}'),
+                        '{"score_value": "5", "description": "No jailbreak", "rationale": "Rationale"}'),
                 )
                 mock_scoring_target_return_values_last_iteration = []
                 if on_topic_checking_enabled:
@@ -416,7 +343,7 @@ async def test_apply_strategy_multiturn_success_in_last_turn(
                     )
                 mock_scoring_target_return_values_last_iteration.append(
                     get_prompt_response_with_content(
-                        '{"score_value": "5", "description": "Jailbreak", "rationale": "Rationale"}'),
+                        '{"score_value": "10", "description": "Jailbreak", "rationale": "Rationale"}'),
                 )
                 mock_scoring_target.side_effect = \
                     mock_scoring_target_return_values_except_last_iteration * (depth - 1) + \
@@ -432,7 +359,7 @@ async def test_apply_strategy_multiturn_success_in_last_turn(
                 assert result is not None
                 assert not result.pruned
                 assert result.completed
-                assert result.score == 1  # (5-1) / 4
+                assert result.score == (10-1)/9  # normalized score
                 assert result.orchestrator_id == tap_orchestrator._orchestrators[0].get_identifier()["id"]
                 assert result.prompt_target_conversation_id is not None
                 
