@@ -13,7 +13,7 @@ class AzureTextEmbedding(_TextEmbedding):
     DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_EMBEDDING_DEPLOYMENT"
 
     def __init__(
-        self, *, api_key: str = None, endpoint: str = None, deployment: str = None, api_version: str = "2023-05-15"
+        self, *, api_key: str = None, endpoint: str = None, deployment: str = None, api_version: str = "2024-02-01"
     ) -> None:
         """Generate embedding using the Azure API
 
@@ -22,7 +22,7 @@ class AzureTextEmbedding(_TextEmbedding):
             endpoint: The API base to use, sometimes referred to as the api_base. Defaults to environment variable.
             deployment: The engine to use, in AOAI referred to as deployment, in some APIs referred to as model.
                         Defaults to environment variable.
-            api_version: The API version to use. Defaults to "2023-05-15".
+            api_version: The API version to use. Defaults to "2024-02-01".
         """
 
         api_key = default_values.get_required_value(

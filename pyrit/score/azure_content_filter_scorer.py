@@ -57,9 +57,9 @@ class AzureContentFilterScorer(Scorer):
         super().__init__()
 
         if harm_categories:
-            self._harm_categories = [category.value for category in harm_categories]
+            self._score_categories = [category.value for category in harm_categories]
         else:
-            self._harm_categories = [category.value for category in TextCategory]
+            self._score_categories = [category.value for category in TextCategory]
 
         self._api_key = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
@@ -98,7 +98,7 @@ class AzureContentFilterScorer(Scorer):
         if request_response.converted_value_data_type == "text":
             text_request_options = AnalyzeTextOptions(
                 text=request_response.converted_value,
-                categories=self._harm_categories,
+                categories=self._score_categories,
                 output_type="EightSeverityLevels",
             )
             filter_result = self._azure_cf_client.analyze_text(text_request_options)  # type: ignore
@@ -107,7 +107,7 @@ class AzureContentFilterScorer(Scorer):
             base64_encoded_data = self._get_base64_image_data(request_response)
             image_data = ImageData(content=base64_encoded_data)
             image_request_options = AnalyzeImageOptions(
-                image=image_data, categories=self._harm_categories, output_type="EightSeverityLevels"
+                image=image_data, categories=self._score_categories, output_type="EightSeverityLevels"
             )
             filter_result = self._azure_cf_client.analyze_image(image_request_options)  # type: ignore
 

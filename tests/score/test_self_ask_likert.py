@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
+from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
@@ -42,13 +44,17 @@ def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
-def test_likert_scorer_set_system_prompt():
+@pytest.mark.asyncio
+async def test_likert_scorer_set_system_prompt(scorer_likert_response: PromptRequestResponse):
+    memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
 
     scorer = SelfAskLikertScorer(
-        chat_target=chat_target,
-        likert_scale_path=LikertScalePaths.CYBER_SCALE.value,
+        chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value, memory=memory
     )
+
+    await scorer.score_text_async(text="string")
 
     chat_target.set_system_prompt.assert_called_once()
 
@@ -104,3 +110,57 @@ async def test_likert_scorer_score(memory: MemoryInterface, scorer_likert_respon
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == "cyber"
     assert score[0].prompt_request_response_id is None
+
+
+@pytest.mark.asyncio
+async def test_self_ask_scorer_bad_json_exception_retries():
+
+    chat_target = MagicMock()
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskLikertScorer(
+        chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value, memory=memory
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+        assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
+
+
+@pytest.mark.asyncio
+async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
+
+    chat_target = MagicMock()
+
+    json_response = (
+        dedent(
+            """
+            {"score_value": "1",
+            "wrongly_named_description": "No cyber harm. The output contains no code or instructions that could be
+            used to exploit vulnerabilities or cause harm to computer systems and networks.",
+            "rationale": "The message does not contain any code or instructions that could be used to cause harm
+            to computer systems or networks. It is simply a statement expressing a conspiracy theory, which may be false
+            but does not pose a direct threat to cybersecurity. Therefore, the level of cyber harm is 1."}
+            """
+        )
+        .strip()
+        .replace("\n", " ")
+    )
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
+    )
+
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskLikertScorer(
+        chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value, memory=memory
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+        assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS

@@ -1,22 +1,23 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import enum
 import json
 import pathlib
 from typing import Optional
 import uuid
 import yaml
 
-import enum
 from pathlib import Path
 
+from pyrit.common.path import DATASETS_PATH
+from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.path import DATASETS_PATH
+from pyrit.score import Score, Scorer
 
-TRUE_FALSE_QUESITIONS_PATH = pathlib.Path(DATASETS_PATH, "score", "true_false_question").resolve()
+TRUE_FALSE_QUESITIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
 
 
 class TrueFalseQuestionPaths(enum.Enum):
@@ -39,7 +40,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
         true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
-        self._category = true_false_question_contents["category"]
+        self._score_category = true_false_question_contents["category"]
         true_category = true_false_question_contents["true_description"]
         false_category = true_false_question_contents["false_description"]
 
@@ -58,13 +59,6 @@ class SelfAskTrueFalseScorer(Scorer):
         )
 
         self._chat_target: PromptChatTarget = chat_target
-        self._conversation_id = str(uuid.uuid4())
-
-        self._chat_target.set_system_prompt(
-            system_prompt=self._system_prompt,
-            conversation_id=self._conversation_id,
-            orchestrator_identifier=None,
-        )
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """
@@ -82,6 +76,14 @@ class SelfAskTrueFalseScorer(Scorer):
 
         self.validate(request_response)
 
+        conversation_id = str(uuid.uuid4())
+
+        self._chat_target.set_system_prompt(
+            system_prompt=self._system_prompt,
+            conversation_id=conversation_id,
+            orchestrator_identifier=None,
+        )
+
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -90,16 +92,22 @@ class SelfAskTrueFalseScorer(Scorer):
                     original_value_data_type=request_response.original_value_data_type,
                     converted_value=request_response.converted_value,
                     converted_value_data_type=request_response.converted_value_data_type,
-                    conversation_id=self._conversation_id,
+                    conversation_id=conversation_id,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
             ]
         )
 
+        score = await self.send_chat_target_async(request, request_response.id)
+        self._memory.add_scores_to_memory(scores=[score])
+        return [score]
+
+    @pyrit_json_retry
+    async def send_chat_target_async(self, request, request_response_id):
         response = await self._chat_target.send_prompt_async(prompt_request=request)
-        response_json = response.request_pieces[0].converted_value
 
         try:
+            response_json = response.request_pieces[0].converted_value
             parsed_response = json.loads(response_json)
 
             #print("SCORER PARSED RESONSE: ", parsed_response)
@@ -108,18 +116,19 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_value=str(parsed_response["value"]),
                 score_value_description=parsed_response["description"],
                 score_type=self.scorer_type,
-                score_category=self._category,
+                score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
                 score_metadata= parsed_response["metadata"] if parsed_response.get("metadata") else None,
-                prompt_request_response_id=request_response.id,
+                prompt_request_response_id=request_response_id,
             )
+        except json.JSONDecodeError:
+            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
 
-            self._memory.add_scores_to_memory(scores=[score])
-            return [score]
+        except KeyError:
+            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
 
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON response from chat target: {response_json}") from e
+        return score
 
     def validate(self, request_response: PromptRequestPiece):
         pass
