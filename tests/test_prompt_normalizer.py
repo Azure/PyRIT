@@ -107,7 +107,7 @@ async def test_send_prompt_async_request_response_added_to_memory(normalizer_pie
         == memory.add_request_response_to_memory.call_args_list[1][1]["request"].request_pieces[0].original_value
     )
 
-    # TODO: Is there a way to check if the call to memory was made after the call to send_prompt_async?
+    assert memory.add_request_response_to_memory.call_args_list[1].called_after(prompt_target.send_prompt_async)
 
 
 @pytest.mark.asyncio

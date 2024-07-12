@@ -97,12 +97,12 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
     prompt_target = MockPromptTarget()
 
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
-    translation_converter.send_variation_prompt_async = AsyncMock(return_value={'Spanish': 'hola'})
+    translation_converter.send_variation_prompt_async = AsyncMock(return_value={"Spanish": "hola"})
 
     raised = False
     try:
         await translation_converter.convert_async(prompt="hello")
     except KeyError:
-        raised = True # There should be no KeyError
+        raised = True  # There should be no KeyError
 
-    assert raised == False
+    assert raised is False
