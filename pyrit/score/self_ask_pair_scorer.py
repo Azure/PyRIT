@@ -12,6 +12,8 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTempla
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
 
+logger = logging.getLogger(__name__)
+
 
 class SelfAskPAIRScorer(Scorer):
     """
@@ -48,54 +50,55 @@ class SelfAskPAIRScorer(Scorer):
         """
         self.validate(request_response)
 
-        conversation_id = str(uuid.uuid4())
-
-        self._chat_target.set_system_prompt(
-            system_prompt=self._system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
+        # Create a unique conversation ID for the scoring request. This is necessary because you can only set the
+        # system prompt once per conversation. If you use the request_response.conversation_id as the conversation_id,
+        # PromptChatTarget.set_system_prompt will raise an exception:
+        # "RuntimeError: Conversation already exists, system prompt needs to be set at the beginning"
+        tmp_conversation_id = str(uuid.uuid4())
+        self._chat_target.set_system_prompt(system_prompt=self._system_prompt, conversation_id=tmp_conversation_id)
+        logger.info(
+            f"Scoring text coming from conversation_id: {request_response.conversation_id} and id "
+            f"{request_response.id}. The text is scored temporary conversation id: {tmp_conversation_id}"
         )
-        logging.info(f"Conversation ID: {conversation_id}, Request Response: {request_response.converted_value}")
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
                     role="user",
                     original_value=request_response.converted_value,
-                    conversation_id=conversation_id,
+                    conversation_id=tmp_conversation_id,
                     prompt_target_identifier=self._chat_target.get_identifier(),
                 )
             ]
         )
-
-        score = await self.send_chat_target_async(request, request_response.id)
-        self._memory.add_scores_to_memory(scores=[score])
-        return [score]
-
-    @pyrit_json_retry
-    async def send_chat_target_async(self, request: PromptRequestResponse, request_response_id: str) -> Score:
-        response = await self._chat_target.send_prompt_async(prompt_request=request)
-        score_number = response.request_pieces[0].converted_value
-
-        try:
-            score_number_float = float(score_number)
-        except (ValueError, TypeError):
-            # Raising `InvalidJsonException` because it's the only error class the current @pyrit_json_retry decorator
-            # will catch and handle.
-            raise InvalidJsonException(message=f"Malformed response cannot be converted to integer: {score_number}")
-        # Normalize the score to a 0-1 scale. The PAIR Likert scale is 1-10.
-        normalized_score_value = self.scale_value_float(value=score_number_float, min_value=1.0, max_value=10.0)
+        new_response = await self.send_request_to_target_async(request=request)
+        score_number_as_float = float(new_response.request_pieces[0].converted_value)
         score = Score(
-            score_value=str(normalized_score_value),
+            # Normalize the score to a 0-1 scale. The PAIR Likert scale is 1-10.
+            score_value=str(self.scale_value_float(value=score_number_as_float, min_value=0.0, max_value=10.0)),
             score_value_description="PAIR Likert Scale Score. The scale is 1-10 scale but normalized to 0.0 to 1.0",
             score_type=self.scorer_type,
             score_category="PAIR",
             score_rationale="",
-            scorer_class_identifier=self.get_identifier(),
             score_metadata="",
-            prompt_request_response_id=request_response_id,
+            scorer_class_identifier=self.get_identifier(),
+            # Set the prompt_request_response_id to the new conversation_id so that it can be linked to the original
+            # conversation
+            prompt_request_response_id=request_response.id,
         )
+        self._memory.add_scores_to_memory(scores=[score])
+        return [score]
 
-        return score
+    @pyrit_json_retry
+    async def send_request_to_target_async(self, *, request: PromptRequestResponse) -> PromptRequestResponse:
+        response = await self._chat_target.send_prompt_async(prompt_request=request)
+        try:
+            score_number = response.request_pieces[0].converted_value
+            score_number_as_float = float(score_number)  # noqa: F841
+        except (ValueError, TypeError):
+            # Raising `InvalidJsonException` because it's the only error class the current @pyrit_json_retry decorator
+            # will catch and handle. Ideally, we it to catch and handle `ValueError` and `TypeError` as well.
+            raise InvalidJsonException(message=f"Malformed response cannot be converted to integer: {score_number}")
+        return response
 
     def validate(self, request_response: PromptRequestPiece):
         pass

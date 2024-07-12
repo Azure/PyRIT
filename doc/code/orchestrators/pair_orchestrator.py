@@ -25,7 +25,7 @@
 #
 # ## Orchestrator Initialization
 #
-# The PairOrchestrator is initialized with the following parameters:
+# The PromptAutomaticIterativeRefinementOrchestrator is initialized with the following parameters:
 # - `attacker`: An instance of OpenAIChatTarget which represents the attacker model.
 # - `attacker_objective`: The objective of the attacker model.
 # - `target`: An instance of OpenAIChatTarget which represents the target model.
@@ -68,21 +68,17 @@ pair_orchestrator = PairOrchestrator(
         api_key=os.getenv("OPENAI_API_KEY"),
     ),
     verbose=True,
-    number_of_conversation_streams=3,
-    max_conversation_depth=3,
+    number_of_conversation_streams=2,
+    max_conversation_depth=5,
     stop_on_first_success=True,
     desired_target_response_prefix="Sure, ",
+    scorer_sensitivity=0.5,
 )
 
 # %%
 response = await pair_orchestrator.run()  # type: ignore
 
 # %%
-print(response)
-
-# %%
-pair_orchestrator.print(show_successful_only=True, show_orchestrator_instance_entries_only=True)
-
-# %%
+pair_orchestrator.print(normalized_score_threshold=0.2)
 
 # %%
