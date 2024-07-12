@@ -236,6 +236,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         score: float = (
             await self._scorer.score_async(
                 request_response=response,
+                task=self._conversation_objective,
             )
         )[0].get_value()
 
@@ -251,10 +252,8 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         # The red teaming response should be in JSON format with two keys: "prompt" and "improvement".
         # We need to parse only "prompt" and return its value.
 
-        # TODO replace with strip_markdown from #247
         # If the JSON is valid in Markdown format, remove the Markdown formatting
-        if red_teaming_response[:8] == "```json\n" and red_teaming_response[-4:] == "\n```":
-            red_teaming_response = red_teaming_response[8:-4]
+        red_teaming_response = remove_markdown_json(red_teaming_response)
         try:
             red_teaming_response_dict = json.loads(red_teaming_response)
         except json.JSONDecodeError:
