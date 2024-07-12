@@ -229,7 +229,7 @@ class PromptNormalizer(abc.ABC):
         converted_prompt_type = prompt_data_type
 
         for converter in request_converters:
-            converter_output = await converter.convert_async(
+            converter_output = await converter.convert_tokens_async(
                 prompt=converted_prompt_value, input_type=converted_prompt_type
             )
             converted_prompt_value = converter_output.output_text
