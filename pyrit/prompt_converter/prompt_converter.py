@@ -51,12 +51,7 @@ class PromptConverter(abc.ABC, Identifier):
         pass
 
     async def convert_tokens_async(
-        self,
-        *,
-        prompt: str,
-        input_type: PromptDataType = "text",
-        start_token: str = "⟪",
-        end_token: str = "⟫"
+        self, *, prompt: str, input_type: PromptDataType = "text", start_token: str = "⟪", end_token: str = "⟫"
     ) -> ConverterResult:
         """
         Converts substrings within a prompt that are enclosed by specified start and end tokens. If there are no tokens
@@ -65,8 +60,10 @@ class PromptConverter(abc.ABC, Identifier):
         Args:
             prompt (str): The input prompt containing text to be converted.
             input_type (str): The type of input data. Defaults to "text".
-            start_token (str): The token indicating the start of a substring to be converted. Defaults to "⟪" which is relatively distinct.
-            end_token (str): The token indicating the end of a substring to be converted. Defaults to "⟫" which is relatively distinct.
+            start_token (str): The token indicating the start of a substring to be converted. Defaults to "⟪" which is
+                relatively distinct.
+            end_token (str): The token indicating the end of a substring to be converted. Defaults to "⟫" which is
+                relatively distinct.
 
         Returns:
             str: The prompt with specified substrings converted.
@@ -99,7 +96,6 @@ class PromptConverter(abc.ABC, Identifier):
     async def _replace_text_match(self, match):
         result = await self.convert_async(prompt=match, input_type="text")
         return result
-
 
     def get_identifier(self):
         public_attributes = {}

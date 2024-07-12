@@ -19,12 +19,13 @@ from pyrit.prompt_converter import (
     UnicodeConfusableConverter,
 )
 
+
 @pytest.mark.asyncio
 async def test_convert_tokens_two_tokens_async() -> None:
     converter = Base64Converter()
     prompt = "Base 64 encode this piece ⟪test⟫ and this ⟪test2⟫"
     output = await converter.convert_tokens_async(prompt=prompt, input_type="text")
-    assert output.output_text == 'Base 64 encode this piece dGVzdA== and this dGVzdDI='
+    assert output.output_text == "Base 64 encode this piece dGVzdA== and this dGVzdDI="
     assert output.output_type == "text"
 
 
@@ -33,8 +34,9 @@ async def test_convert_tokens_entire_string_async() -> None:
     converter = Base64Converter()
     prompt = "By default the whole string should be converted"
     output = await converter.convert_tokens_async(prompt=prompt, input_type="text")
-    assert output.output_text == 'QnkgZGVmYXVsdCB0aGUgd2hvbGUgc3RyaW5nIHNob3VsZCBiZSBjb252ZXJ0ZWQ='
+    assert output.output_text == "QnkgZGVmYXVsdCB0aGUgd2hvbGUgc3RyaW5nIHNob3VsZCBiZSBjb252ZXJ0ZWQ="
     assert output.output_type == "text"
+
 
 @pytest.mark.asyncio
 async def test_test_convert_tokens_raises_with_non_text_input_type():
@@ -42,6 +44,7 @@ async def test_test_convert_tokens_raises_with_non_text_input_type():
     converter = Base64Converter()
     with pytest.raises(ValueError, match="Input type must be text when start or end tokens are present."):
         await converter.convert_tokens_async(prompt=prompt, input_type="non-text")
+
 
 @pytest.mark.asyncio
 async def test_test_convert_tokens_raises_uneven_tokens():
