@@ -1,4 +1,4 @@
-import json 
+import json
 import random
 import logging
 import hashlib
@@ -22,7 +22,7 @@ def get_cache_file_name(source: str, file_type: str) -> str:
     """
     Generate a cache file name based on the source URL and file type.
     """
-    hash_source = hashlib.md5(source.encode('utf-8')).hexdigest()
+    hash_source = hashlib.md5(source.encode("utf-8")).hexdigest()
     return f"{hash_source}.{file_type}"
 
 
@@ -30,14 +30,14 @@ def read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
     """
     Read data from cache.
     """
-    with cache_file.open('r') as file:
-        if file_type == 'json':
+    with cache_file.open("r") as file:
+        if file_type == "json":
             return json.load(file)
-        elif file_type == 'csv':
+        elif file_type == "csv":
             reader = csv.DictReader(file)
             return [row for row in reader]
-        elif file_type == 'txt':
-            return [{'prompt': line.strip()} for line in file.readlines()]
+        elif file_type == "txt":
+            return [{"prompt": line.strip()} for line in file.readlines()]
         else:
             raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
 
@@ -47,15 +47,15 @@ def write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: str
     Write data to cache.
     """
     cache_file.parent.mkdir(parents=True, exist_ok=True)
-    with cache_file.open('w') as file:
-        if file_type == 'json':
+    with cache_file.open("w") as file:
+        if file_type == "json":
             json.dump(examples, file)
-        elif file_type == 'csv':
+        elif file_type == "csv":
             writer = csv.DictWriter(file, fieldnames=examples[0].keys())
             writer.writeheader()
             writer.writerows(examples)
-        elif file_type == 'txt':
-            file.write('\n'.join([ex['prompt'] for ex in examples]))
+        elif file_type == "txt":
+            file.write("\n".join([ex["prompt"] for ex in examples]))
 
 
 def fetch_from_repository(source: str, file_type: str) -> List[Dict[str, str]]:
@@ -64,36 +64,38 @@ def fetch_from_repository(source: str, file_type: str) -> List[Dict[str, str]]:
     """
     response = requests.get(source)
     if response.status_code == 200:
-        if file_type == 'json':
+        if file_type == "json":
             return response.json()
-        elif file_type == 'csv':
+        elif file_type == "csv":
             reader = csv.DictReader(response.text.splitlines())
             return [row for row in reader]
-        elif file_type == 'txt':
-            return [{'prompt': line} for line in response.text.splitlines()]
+        elif file_type == "txt":
+            return [{"prompt": line} for line in response.text.splitlines()]
         else:
             raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
     else:
-            raise Exception(f"Failed to fetch examples from repository. Status code: {response.status_code}")   
+        raise Exception(f"Failed to fetch examples from repository. Status code: {response.status_code}")
 
 
 def fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
     """
     Fetch examples from a local file.
     """
-    with open(source, 'r') as file:
-        if file_type == 'json':
+    with open(source, "r") as file:
+        if file_type == "json":
             return json.load(file)
-        elif file_type == 'csv':
+        elif file_type == "csv":
             reader = csv.DictReader(file)
             return [row for row in reader]
-        elif file_type == 'txt':
-            return [{'prompt': line.strip()} for line in file.readlines()]
+        elif file_type == "txt":
+            return [{"prompt": line.strip()} for line in file.readlines()]
         else:
             raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
 
 
-def fetch_examples(source: str, source_type: str = 'repository', file_type: str = 'json', cache: bool = True, data_home: str = None) -> List[Dict[str, str]]:
+def fetch_examples(
+    source: str, source_type: str = "repository", file_type: str = "json", cache: bool = True, data_home: str = None
+) -> List[Dict[str, str]]:
     """
     Fetch examples from a specified source with caching support.
 
@@ -125,26 +127,26 @@ def fetch_examples(source: str, source_type: str = 'repository', file_type: str 
         logger.info(f"Loading examples from cache: {cache_file}")
         return read_cache(cache_file, file_type)
 
-    if source_type == 'repository':
+    if source_type == "repository":
         examples = fetch_from_repository(source, file_type)
-    elif source_type == 'file':
+    elif source_type == "file":
         examples = fetch_from_file(source, file_type)
     else:
         raise ValueError("Invalid source_type. Expected 'repository' or 'file'.")
-    
+
     if cache:
         logger.info(f"Caching examples at: {cache_file}")
         write_cache(cache_file, examples, file_type)
     else:
-        with tempfile.NamedTemporaryFile(delete=True, mode='w', suffix=f".{file_type}") as temp_file:
-            if file_type == 'json':
+        with tempfile.NamedTemporaryFile(delete=True, mode="w", suffix=f".{file_type}") as temp_file:
+            if file_type == "json":
                 json.dump(examples, temp_file)
-            elif file_type == 'csv':
+            elif file_type == "csv":
                 writer = csv.DictWriter(temp_file, fieldnames=examples[0].keys())
                 writer.writeheader()
                 writer.writerows(examples)
-            elif file_type == 'txt':
-                temp_file.write('\n'.join([ex['prompt'] for ex in examples]))
+            elif file_type == "txt":
+                temp_file.write("\n".join([ex["prompt"] for ex in examples]))
             temp_file_path = temp_file.name
             logger.info(f"Examples stored in temporary file: {temp_file_path}")
 
@@ -159,17 +161,17 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
         List[Dict[str, str]]: A list of many-shot jailbreaking examples.
     """
 
-    source = 'https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/main/examples.json'
-    source_type = 'repository'
+    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/main/examples.json"
+    source_type = "repository"
 
-    return fetch_examples(source, source_type, file_type='json')
+    return fetch_examples(source, source_type, file_type="json")
 
 
 def fetch_seclists_bias_testing_examples(
-        source: str = 'https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/nationality_geographic_bias.txt', 
-        source_type: str = 'repository', 
-        file_type: str = 'txt'
-    ) -> PromptDataset:
+    source: str = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/nationality_geographic_bias.txt",
+    source_type: str = "repository",
+    file_type: str = "txt",
+) -> PromptDataset:
     """
     Fetch SecLists AI LLM Bias Testing examples from a specified source and create a PromptDataset.
 
@@ -191,17 +193,19 @@ def fetch_seclists_bias_testing_examples(
     placeholder_values = {
         "Country": lambda: random.choice(countries).name,
         "Region": lambda: random.choice(subdivisions).name,
-        "Nationality": lambda: random.choice(countries).name, # Same as Country, the target LLM should be able to understand the context
+        "Nationality": lambda: random.choice(
+            countries
+        ).name,  # Same as Country, the target LLM should be able to understand the context
         "GENDER": lambda: random.choice(["male", "female", "non-binary"]),
-        "SKIN_COLOR": lambda: random.choice(["white", "black", "brown", "yellow"])
+        "SKIN_COLOR": lambda: random.choice(["white", "black", "brown", "yellow"]),
     }
 
     examples = fetch_examples(source, source_type, file_type)
-    
+
     filled_examples = []
     for example in examples:
-        prompt = example['prompt']
-        logger.debug(f"Original Prompt: {prompt}")  
+        prompt = example["prompt"]
+        logger.debug(f"Original Prompt: {prompt}")
         for placeholder, generator in placeholder_values.items():
             values_used = set()
             while f"[{placeholder}]" in prompt:
@@ -211,10 +215,10 @@ def fetch_seclists_bias_testing_examples(
                     value = generator()
                 values_used.add(value)
                 prompt = prompt.replace(f"[{placeholder}]", value, 1)
-                logger.debug(f"Replaced [{placeholder}] with {value}") 
-        
-        logger.debug(f"Filled Prompt: {prompt}\n") 
-        
+                logger.debug(f"Replaced [{placeholder}] with {value}")
+
+        logger.debug(f"Filled Prompt: {prompt}\n")
+
         filled_examples.append(prompt)
 
     dataset = PromptDataset(
@@ -222,7 +226,7 @@ def fetch_seclists_bias_testing_examples(
         description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
         harm_category="bias_testing",
         should_be_blocked=False,
-        prompts=filled_examples
+        prompts=filled_examples,
     )
 
     return dataset
