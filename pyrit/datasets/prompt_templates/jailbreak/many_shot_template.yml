@@ -13,5 +13,3 @@ template: >
   {% endfor %}
 
   User: {{ prompt }}
-
-

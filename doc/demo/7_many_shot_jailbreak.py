@@ -35,12 +35,13 @@ template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_s
 # - Original: https://github.com/centerforaisafety/HarmBench
 # - Replicated: https://github.com/KutalVolkan/many-shot-jailbreaking-dataset
 
+
 # %%
 async def main():
     # Create orchestrator
     prompt_target = OpenAIChatTarget(api_key=openai_api_key, deployment_name=deployment_name, endpoint=endpoint)
 
-    # Set up the Bias Scorer with the same prompt target to ensure consistency
+    # Set up the Harm Scorer with the same prompt target to ensure consistency
     harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
 
     orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[harm_scorer])
