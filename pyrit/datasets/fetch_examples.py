@@ -117,11 +117,11 @@ def fetch_examples(
     """
 
     if not data_home:
-        data_home = Path().home() / ".pyrit"
+        data_home = Path().home() / ".pyrit"  # type: ignore
     else:
-        data_home = Path(data_home)
+        data_home = Path(data_home)  # type: ignore
 
-    cache_file = data_home / get_cache_file_name(source, file_type)
+    cache_file = data_home / get_cache_file_name(source, file_type)  # type: ignore
 
     if cache and cache_file.exists():
         logger.info(f"Loading examples from cache: {cache_file}")
@@ -168,7 +168,10 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
 
 
 def fetch_seclists_bias_testing_examples(
-    source: str = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/nationality_geographic_bias.txt",
+    source: str = (
+        "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/"
+        "nationality_geographic_bias.txt"
+    ),
     source_type: str = "repository",
     file_type: str = "txt",
 ) -> PromptDataset:
