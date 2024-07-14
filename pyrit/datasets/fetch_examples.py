@@ -1,11 +1,14 @@
-import json
-import random
-import logging
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+import csv
 import hashlib
+import json
+import logging
+import random
 import tempfile
 from pathlib import Path
-from typing import List, Dict
-import csv
+from typing import Dict, List
 
 import pycountry
 import requests

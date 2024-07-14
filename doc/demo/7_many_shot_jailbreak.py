@@ -1,15 +1,18 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 # %%
 # Import necessary packages
 import asyncio
-import os
 import logging
+import os
+from pathlib import Path
+
+from pyrit.common import default_values
+from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets.fetch_examples import fetch_many_shot_jailbreaking_examples
 from pyrit.models.models import ManyShotTemplate
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
-from pyrit.common import default_values
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.common.path import DATASETS_PATH
-from pathlib import Path
-from pyrit.datasets.fetch_examples import fetch_many_shot_jailbreaking_examples
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
 
 # %%
