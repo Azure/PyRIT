@@ -198,10 +198,14 @@ class MemoryInterface(abc.ABC):
         # There is a special case where the duplicated orchestrator already initialized the system prompt.
         # In that case, we don't again duplicate the system prompt.
         existing_prompt_pieces_in_new_conversation = self._get_prompt_pieces_with_conversation_id(
-            conversation_id=new_conversation_id)
+            conversation_id=new_conversation_id
+        )
         omit_system_prompt = False
         if existing_prompt_pieces_in_new_conversation:
-            if len(existing_prompt_pieces_in_new_conversation) == 1 and existing_prompt_pieces_in_new_conversation[0].role == "system":
+            if (
+                len(existing_prompt_pieces_in_new_conversation) == 1
+                and existing_prompt_pieces_in_new_conversation[0].role == "system"
+            ):
                 # only the system prompt exists, so we omit that and continue
                 omit_system_prompt = True
             else:

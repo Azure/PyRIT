@@ -91,8 +91,7 @@ def pyrit_target_retry(func: Callable) -> Callable:
     """
     return retry(
         reraise=True,
-        retry=retry_if_exception_type(RateLimitError)
-        | retry_if_exception_type(EmptyResponseException),
+        retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=after_log(logger, logging.INFO),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),

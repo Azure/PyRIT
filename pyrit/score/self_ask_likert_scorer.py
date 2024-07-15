@@ -37,11 +37,12 @@ class SelfAskLikertScorer(Scorer):
 
     def __init__(
         self,
-        *, 
+        *,
         chat_target: PromptChatTarget,
         likert_scale_path: Optional[Path] = None,
         likert_scale: Optional[Dict[str, Union[str, List[Dict[str, str]]]]] = None,
-        memory: MemoryInterface = None) -> None:
+        memory: MemoryInterface = None,
+    ) -> None:
 
         self.scorer_type = "float_scale"
 

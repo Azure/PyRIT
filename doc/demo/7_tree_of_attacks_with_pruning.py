@@ -35,7 +35,7 @@ with TreeOfAttacksWithPruningOrchestrator(
     prompt_target=prompt_target,
     red_teaming_chat=red_teaming_chat,
     scorer=scorer,
-    width=5, 
+    width=5,
     depth=5,
     branching_factor=3,
     conversation_goal=prompt,
