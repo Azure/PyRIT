@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from pyrit.models import ChatMessage, ChatMessagesDataset, ChatMessageListContent
 
 
