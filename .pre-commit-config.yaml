@@ -22,7 +22,8 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
-        exclude: doc/
+        additional_dependencies: ['flake8-copyright']
+        exclude: (doc/|.github/)
 
   - repo: local
     hooks:
