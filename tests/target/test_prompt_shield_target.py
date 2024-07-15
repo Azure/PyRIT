@@ -61,8 +61,8 @@ async def test_prompt_shield_validate_request_length(
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(
         ValueError, 
-        match="Sorry, but requests with multiple entries are not supported. " \
-              "Please wrap each PromptRequestPiece in a PromptRequestResponse." ):
+        match="This target only supports a single prompt request piece."
+        ):
         
         await promptshield_target.send_prompt_async(prompt_request=request)
 
@@ -84,13 +84,15 @@ async def test_prompt_shield_document_parsing(
 ):
     result = promptshield_target._input_parser(sample_delineated_prompt_as_str)
 
-    print("RESULT:")
-    print(result)
-    print("SAMPLE:")
-    print(sample_delineated_prompt_as_dict)
-
     assert result == sample_delineated_prompt_as_dict
 
-    
+@pytest.mark.asyncio
+async def test_prompt_shield_response_validation(
+    promptshield_target: PromptShieldTarget
+):
+    # This tests handling both an empty request and an empty response
+    promptshield_target._validate_response(
+        request_body=dict(), 
+        response_body=dict()
+    )
 
-# Add: empty field(s) (edge case)

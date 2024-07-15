@@ -105,15 +105,20 @@ class PromptShieldTarget(PromptTarget):
             request_body=body
         )
 
-        # TODO: Type checking between net_utility and _validate_response
-        self._validate_response(response.content.decode('utf-8'))
+        analysis = response.content.decode('utf-8')
+
+        self._validate_response(
+            request_body=body,
+            response_body=json.loads(analysis)
+        )
 
         logger.info("Received a valid response from the prompt target")
 
-        data = response.content
-
         response_entry = construct_response_from_request(
-            request=request, response_text_pieces=[data.decode('utf-8')], response_type="text"
+            request=request, 
+            response_text_pieces=[analysis], 
+            response_type="text",
+            prompt_metadata=request.prompt_metadata
         )
 
         return response_entry
@@ -127,15 +132,20 @@ class PromptShieldTarget(PromptTarget):
         if request_pieces[0].original_value_data_type != 'text':
             raise ValueError(f"This target only supports text prompt input. Got: {type(request_pieces[0].original_value_data_type)}")
         
-    def _validate_response(self, response) -> None:
-        response_json: dict = json.loads(response)
+    def _validate_response(self, request_body: dict, response_body: dict) -> None:
+        """
+        Ensures that every field sent to the Prompt Shield was analyzed.
+        """
 
-        lookup_user_prompt: str | None = response_json.get('userPromptAnalysis')
-        lookup_documents_list: str | None = response_json.get('documentsAnalysis')
+        user_prompt_sent: str | None = request_body.get('userPrompt')
+        documents_sent: list[str] | None = request_body.get('documents')
 
-        if not lookup_user_prompt or not lookup_documents_list:
-            raise ValueError("Error during parse of Prompt Shield response: one or more fields missing in body" \
-                             f"Found:\tuserPrompt: {lookup_user_prompt}\tdocuments: {lookup_documents_list}")
+        lookup_user_prompt: str | None = response_body.get('userPromptAnalysis')
+        lookup_documents: list[str] | None = response_body.get('documentsAnalysis')
+
+        if (user_prompt_sent and not lookup_user_prompt) or (documents_sent and not lookup_documents):
+            raise ValueError(f"Sent: userPrompt: {user_prompt_sent}, documents: {documents_sent} " \
+                             f"but received userPrompt: {lookup_user_prompt}, documents: {lookup_documents} from Prompt Shield.")
 
     def _input_parser(self, input_str: str) -> dict[str, list[str]]:
         """
@@ -145,9 +155,9 @@ class PromptShieldTarget(PromptTarget):
 
         match self._force_entry_field:
             case 'userPrompt':
-                return input_str, [""]
+                return {"userPrompt": input_str, "documents": []}
             case 'documents':
-                return "", [input_str]
+                return {"userPrompt": "", "documents": [input_str]}
             case _:
                 # This can also be accomplished using regex, but Python is flexible.
                 user_prompt = ""
@@ -162,4 +172,4 @@ class PromptShieldTarget(PromptTarget):
                     else:
                         documents.append(contents[0])
 
-                return {"userPrompt": user_prompt, "documents": documents if documents else [""]}
+                return {"userPrompt": user_prompt, "documents": documents if documents else []}

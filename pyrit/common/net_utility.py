@@ -34,12 +34,12 @@ def make_request_and_raise_if_error(
     headers = headers or {}
     request_body = request_body or {}
 
-    with get_httpx_client(debug=debug) as client:
+    params = params or {}
 
-        # TODO: See if this works
+    with get_httpx_client(debug=debug) as client:
         response = client.request(
             method=method,
-            params=params if params else None,
+            params=params,
             url=endpoint_uri,
             json=request_body if request_body and post_type == "json" else None,
             data=request_body if request_body and post_type != "json" else None,
@@ -68,17 +68,14 @@ async def make_request_and_raise_if_error_async(
     params = params or {}
 
     async with get_httpx_client(debug=debug, use_async=True) as async_client:
-        if request_body:
-            if post_type == "json":
-                response = await async_client.request(
-                    method=method, params=params, url=endpoint_uri, json=request_body, headers=headers
-                )
-            else:
-                response = await async_client.request(
-                    method=method, params=params, url=endpoint_uri, data=request_body, headers=headers
-                )
-        else:
-            response = await async_client.request(method=method, url=endpoint_uri, headers=headers)
+        response = await async_client.request(
+            method=method,
+            params=params,
+            url=endpoint_uri,
+            json=request_body if request_body and post_type == 'json' else None,
+            data=request_body if request_body and post_type != 'json' else None,
+            headers=headers
+        )
 
         response.raise_for_status()  # This will automatically raise an exception for 4xx and 5xx responses
 
