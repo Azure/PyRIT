@@ -48,7 +48,7 @@ class SelfAskTrueFalseScorer(Scorer):
             raise ValueError("Only one of true_false_question_path or true_false_question_contents should be provided.")
         if true_false_question_path:
             true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
-        
+
         for key in ["category", "true_description", "false_description"]:
             if key not in true_false_question_contents:
                 raise ValueError(f"{key} must be provided in true_false_question_contents.")

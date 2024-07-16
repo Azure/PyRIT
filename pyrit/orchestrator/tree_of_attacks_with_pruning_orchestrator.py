@@ -132,7 +132,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
             target_response = assistant_responses[-1]
             target_response_piece = target_response.request_pieces[0]
             print(f"target_response_piece.id: {target_response_piece.id}")
-            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[target_response_piece.id])
+            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(target_response_piece.id)])
             print(f"scores: {scores}")
             if scores:
                 score = scores[0].get_value()
@@ -217,7 +217,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         ).request_pieces[0]
         print(f"saving score with prompt_request_response_id: {response.id}")
 
-        score: float = (
+        score = (
             await self._scorer.score_async(
                 request_response=response,
                 task=self._conversation_objective,
@@ -241,13 +241,13 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         try:
             red_teaming_response_dict = json.loads(red_teaming_response)
         except json.JSONDecodeError:
-            logger.error("The response from the red teaming chat is not in JSON format.")
+            logger.error(f"The response from the red teaming chat is not in JSON format: {red_teaming_response}")
             raise InvalidJsonException(message="The response from the red teaming chat is not in JSON format.")
 
         try:
             return red_teaming_response_dict["prompt"]
         except KeyError:
-            logger.error("The response from the red teaming chat does not contain a prompt.")
+            logger.error(f"The response from the red teaming chat does not contain a prompt: {red_teaming_response}")
             raise InvalidJsonException(message="The response from the red teaming chat does not contain a prompt.")
 
 
@@ -323,7 +323,7 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
         self._attack_depth = depth
         self._attack_branching_factor = branching_factor
 
-        self._orchestrators = []
+        self._orchestrators: list[_TreeOfAttacksWithPruningNodeOrchestrator] = []
         self._tree_visualization = Tree()
         self._tree_visualization.create_node("Root", "root")
 
@@ -396,6 +396,7 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
             n_orchestrators = len(self._orchestrators)
             for orchestrator_index, orchestrator in enumerate(self._orchestrators, start=1):
                 logger.info(f"Sending prompt for orchestrator {orchestrator_index}/{n_orchestrators}")
+                node_result = None
                 try:
                     # A single orchestrator failure shouldn't stop the entire tree.
                     node_result = await orchestrator.send_prompt_async()
@@ -477,7 +478,7 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
 
-            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
             if scores and len(scores) > 0:
                 score = scores[0]
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
