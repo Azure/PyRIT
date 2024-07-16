@@ -1,13 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import math
-from pathlib import Path
-from colorama import Fore, Style
-from dataclasses import dataclass
 import json
 import logging
-from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
+import math
+from colorama import Fore, Style
+from dataclasses import dataclass
+from pathlib import Path
 from treelib import Tree
 from typing import Optional
 from uuid import uuid4
@@ -17,10 +16,10 @@ from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_
 from pyrit.memory import MemoryInterface
 from pyrit.models.models import PromptTemplate
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
-from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.score import SelfAskTrueFalseScorer, SelfAskScaleScorer
 
 logger = logging.getLogger(__name__)
 
@@ -253,20 +252,11 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
 
 @dataclass
 class TAPNodeResult:
-    def __init__(
-        self,
-        *,
-        pruned: bool,
-        completed: bool,
-        score: Optional[float] = None,
-        orchestrator_id: Optional[str] = None,
-        prompt_target_conversation_id: Optional[str] = None,
-    ):
-        self.pruned = pruned
-        self.completed = completed  # Completed means we completed the branch of execution
-        self.score = score
-        self.orchestrator_id = orchestrator_id
-        self.prompt_target_conversation_id = prompt_target_conversation_id
+    pruned: bool
+    completed: bool
+    score: Optional[float] = None
+    orchestrator_id: Optional[str] = None
+    prompt_target_conversation_id: Optional[str] = None
 
     def __str__(self) -> str:
         return (
