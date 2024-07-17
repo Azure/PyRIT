@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import enum
+import json
 import logging
 
 from pyrit.common import net_utility
@@ -92,6 +93,8 @@ class GandalfTarget(PromptTarget):
 
         if not resp.text:
             raise ValueError("The chat returned an empty response.")
+        
+        answer = json.loads(resp.text)["answer"]
 
-        logger.info(f'Received the following response from the prompt target "{resp.text}"')
-        return resp.text
+        logger.info(f'Received the following response from the prompt target "{answer}"')
+        return answer
