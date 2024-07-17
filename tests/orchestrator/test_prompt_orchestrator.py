@@ -217,7 +217,7 @@ async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget):
 
 @pytest.mark.parametrize("orchestrator_count", [10, 100])
 def test_orchestrator_unique_id(orchestrator_count: int):
-    orchestrator_ids = []
+    orchestrator_ids = set()
     duplicate_found = False
     for n in range(orchestrator_count):
         id = PromptSendingOrchestrator(prompt_target=MagicMock()).get_identifier()["id"]
@@ -226,6 +226,6 @@ def test_orchestrator_unique_id(orchestrator_count: int):
             duplicate_found = True
             break
 
-        orchestrator_ids.append(id)
+        orchestrator_ids.add(id)
 
     assert not duplicate_found
