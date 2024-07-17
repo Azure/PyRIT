@@ -5,15 +5,11 @@ import csv
 import hashlib
 import json
 import logging
-import random
 import tempfile
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-import pycountry
 import requests
-
-from pyrit.models import PromptDataset
 
 
 # Configure logging
@@ -21,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def get_cache_file_name(source: str, file_type: str) -> str:
+def _get_cache_file_name(source: str, file_type: str) -> str:
     """
     Generate a cache file name based on the source URL and file type.
     """
@@ -29,7 +25,7 @@ def get_cache_file_name(source: str, file_type: str) -> str:
     return f"{hash_source}.{file_type}"
 
 
-def read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
+def _read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
     """
     Read data from cache.
     """
@@ -45,7 +41,7 @@ def read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
             raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
 
 
-def write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: str):
+def _write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: str):
     """
     Write data to cache.
     """
@@ -61,7 +57,7 @@ def write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: str
             file.write("\n".join([ex["prompt"] for ex in examples]))
 
 
-def fetch_from_repository(source: str, file_type: str) -> List[Dict[str, str]]:
+def _fetch_from_repository(source: str, file_type: str) -> List[Dict[str, str]]:
     """
     Fetch examples from a repository.
     """
@@ -80,7 +76,7 @@ def fetch_from_repository(source: str, file_type: str) -> List[Dict[str, str]]:
         raise Exception(f"Failed to fetch examples from repository. Status code: {response.status_code}")
 
 
-def fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
+def _fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
     """
     Fetch examples from a local file.
     """
@@ -97,7 +93,11 @@ def fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
 
 
 def fetch_examples(
-    source: str, source_type: str = "repository", file_type: str = "json", cache: bool = True, data_home: str = None
+    source: str,
+    source_type: str = "repository",
+    file_type: str = "json",
+    cache: bool = True,
+    data_home: Optional[Path] = None,
 ) -> List[Dict[str, str]]:
     """
     Fetch examples from a specified source with caching support.
@@ -107,41 +107,41 @@ def fetch_examples(
         source_type (str): The type of source ('repository' or 'file'). Defaults to 'repository'.
         file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'json'.
         cache (bool): Whether to cache the fetched examples. Defaults to True.
-        data_home (str): Directory to store cached data. Defaults to None.
+        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
         List[Dict[str, str]]: A list of examples.
 
     Example usage:
         examples = fetch_examples(
-            source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/main/examples.json',
+            source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/59c652b/examples.json',
             source_type='repository'
         )
     """
 
     if not data_home:
-        data_home = Path().home() / ".pyrit"  # type: ignore
+        data_home = Path().home() / ".pyrit"
     else:
-        data_home = Path(data_home)  # type: ignore
+        data_home = Path(data_home)
 
-    cache_file = data_home / get_cache_file_name(source, file_type)  # type: ignore
+    cache_file = data_home / _get_cache_file_name(source, file_type)
 
     if cache and cache_file.exists():
         logger.info(f"Loading examples from cache: {cache_file}")
-        return read_cache(cache_file, file_type)
+        return _read_cache(cache_file, file_type)
 
     if source_type == "repository":
-        examples = fetch_from_repository(source, file_type)
+        examples = _fetch_from_repository(source, file_type)
     elif source_type == "file":
-        examples = fetch_from_file(source, file_type)
+        examples = _fetch_from_file(source, file_type)
     else:
         raise ValueError("Invalid source_type. Expected 'repository' or 'file'.")
 
     if cache:
         logger.info(f"Caching examples at: {cache_file}")
-        write_cache(cache_file, examples, file_type)
+        _write_cache(cache_file, examples, file_type)
     else:
-        with tempfile.NamedTemporaryFile(delete=True, mode="w", suffix=f".{file_type}") as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=f".{file_type}") as temp_file:
             if file_type == "json":
                 json.dump(examples, temp_file)
             elif file_type == "csv":
@@ -164,75 +164,7 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
         List[Dict[str, str]]: A list of many-shot jailbreaking examples.
     """
 
-    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/main/examples.json"
+    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/59c652b/examples.json"
     source_type = "repository"
 
     return fetch_examples(source, source_type, file_type="json")
-
-
-def fetch_seclists_bias_testing_examples(
-    source: str = (
-        "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/"
-        "nationality_geographic_bias.txt"
-    ),
-    source_type: str = "repository",
-    file_type: str = "txt",
-) -> PromptDataset:
-    """
-    Fetch SecLists AI LLM Bias Testing examples from a specified source and create a PromptDataset.
-
-    Args:
-        source (str): The source from which to fetch examples. Defaults to the SecLists repository.
-        source_type (str): The type of source ('repository' or 'file'). Defaults to 'repository'.
-        file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'txt'.
-
-    Returns:
-        PromptDataset: A PromptDataset containing the examples with placeholders replaced.
-
-    Reference:
-        Original repository: https://github.com/danielmiessler/SecLists/tree/master/Ai/LLM_Testing/Bias_Testing
-    """
-
-    # Define placeholder values generation functions using pycountry and random.choice
-    countries = list(pycountry.countries)
-    subdivisions = list(pycountry.subdivisions)
-    placeholder_values = {
-        "Country": lambda: random.choice(countries).name,
-        "Region": lambda: random.choice(subdivisions).name,
-        "Nationality": lambda: random.choice(
-            countries
-        ).name,  # Same as Country, the target LLM should be able to understand the context
-        "GENDER": lambda: random.choice(["male", "female", "non-binary"]),
-        "SKIN_COLOR": lambda: random.choice(["white", "black", "brown", "yellow"]),
-    }
-
-    examples = fetch_examples(source, source_type, file_type)
-
-    filled_examples = []
-    for example in examples:
-        prompt = example["prompt"]
-        logger.debug(f"Original Prompt: {prompt}")
-        for placeholder, generator in placeholder_values.items():
-            values_used = set()
-            while f"[{placeholder}]" in prompt:
-                value = generator()
-                # Ensure the new value is not the same as the previous one
-                while value in values_used:
-                    value = generator()
-                values_used.add(value)
-                prompt = prompt.replace(f"[{placeholder}]", value, 1)
-                logger.debug(f"Replaced [{placeholder}] with {value}")
-
-        logger.debug(f"Filled Prompt: {prompt}\n")
-
-        filled_examples.append(prompt)
-
-    dataset = PromptDataset(
-        name="SecLists Bias Testing Examples",
-        description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
-        harm_category="bias_testing",
-        should_be_blocked=False,
-        prompts=filled_examples,
-    )
-
-    return dataset
