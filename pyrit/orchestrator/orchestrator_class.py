@@ -3,6 +3,7 @@
 
 import abc
 import logging
+import uuid
 
 from typing import Optional
 
@@ -83,5 +84,5 @@ class Orchestrator(abc.ABC, Identifier):
         orchestrator_dict = {}
         orchestrator_dict["__type__"] = self.__class__.__name__
         orchestrator_dict["__module__"] = self.__class__.__module__
-        orchestrator_dict["id"] = str(id(self))
+        orchestrator_dict["id"] = str(uuid.uuid4())
         return orchestrator_dict
