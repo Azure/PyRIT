@@ -11,6 +11,7 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
+from pyrit.models.data_type_serializer import StorageIO
 from pyrit.prompt_target import AzureOpenAIChatTarget, PromptTarget
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,7 @@ class DALLETarget(PromptTarget):
         headers: Optional[dict[str, str]] = None,
         quality: Literal["standard", "hd"] = "standard",
         style: Literal["natural", "vivid"] = "natural",
+        storage_io: Optional[StorageIO] = None,  # TODO: What calls this?
     ):
 
         super().__init__(memory=memory)
@@ -89,6 +91,8 @@ class DALLETarget(PromptTarget):
             target_kwargs["api_key"] = api_key
         self._image_target = AzureOpenAIChatTarget(**target_kwargs)
 
+        self.storage_io = storage_io
+
     async def send_prompt_async(
         self,
         *,
@@ -118,7 +122,7 @@ class DALLETarget(PromptTarget):
 
         try:
             b64_data = await self._generate_image_response_async(image_generation_args)
-            data = data_serializer_factory(data_type="image_path")
+            data = data_serializer_factory(data_type="image_path", storage_io=self.storage_io)
             data.save_b64_image(data=b64_data)
             resp_text = data.value
             response_type: PromptDataType = "image_path"

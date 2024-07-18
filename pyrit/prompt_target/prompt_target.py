@@ -4,6 +4,8 @@
 import abc
 import logging
 
+from typing import Optional
+
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestResponse, Identifier
 
@@ -19,7 +21,7 @@ class PromptTarget(abc.ABC, Identifier):
     """
     supported_converters: list
 
-    def __init__(self, memory: MemoryInterface, verbose: bool = False) -> None:
+    def __init__(self, memory: Optional[MemoryInterface], verbose: bool = False) -> None:
         self._memory = memory if memory else DuckDBMemory()
         self._verbose = verbose
 

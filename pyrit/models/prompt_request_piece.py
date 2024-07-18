@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Literal, get_args
 from uuid import uuid4
 
 from pyrit.models import ChatMessage, data_serializer_factory, ChatMessageRole, PromptDataType, PromptResponseError
+from pyrit.models.data_type_serializer import StorageIO
 
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
@@ -62,6 +63,7 @@ class PromptRequestPiece(abc.ABC):
         converted_value_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
+        storage_io: Optional[StorageIO] = None,  # TODO: What calls this?
     ):
 
         self.id = id if id else uuid4()
@@ -87,6 +89,8 @@ class PromptRequestPiece(abc.ABC):
         self.orchestrator_identifier = orchestrator_identifier
         self.scorer_identifier = scorer_identifier
 
+        self.storage_io = storage_io
+
         self._original_value = original_value
 
         if original_value_data_type not in get_args(PromptDataType):
@@ -94,7 +98,9 @@ class PromptRequestPiece(abc.ABC):
 
         self.original_value_data_type = original_value_data_type
 
-        original_serializer = data_serializer_factory(data_type=original_value_data_type, value=original_value)
+        original_serializer = data_serializer_factory(
+            data_type=original_value_data_type, value=original_value, storage_io=storage_io
+        )
         self._original_value_sha256 = original_serializer.get_sha256()
 
         self._converted_value = converted_value
@@ -104,7 +110,9 @@ class PromptRequestPiece(abc.ABC):
 
         self.converted_value_data_type = converted_value_data_type
 
-        converted_serializer = data_serializer_factory(data_type=converted_value_data_type, value=converted_value)
+        converted_serializer = data_serializer_factory(
+            data_type=converted_value_data_type, value=converted_value, storage_io=storage_io
+        )
         self._converted_value_sha256 = converted_serializer.get_sha256()
 
         if response_error not in get_args(PromptResponseError):
@@ -120,7 +128,9 @@ class PromptRequestPiece(abc.ABC):
     @converted_value.setter
     def converted_value(self, value: str):
         self._converted_value = value
-        converted_serializer = data_serializer_factory(data_type=self.converted_value_data_type, value=value)
+        converted_serializer = data_serializer_factory(
+            data_type=self.converted_value_data_type, value=value, storage_io=self.storage_io
+        )
         self._converted_value_sha256 = converted_serializer.get_sha256()
 
     @property
@@ -134,7 +144,9 @@ class PromptRequestPiece(abc.ABC):
     @original_value.setter
     def original_value(self, value: str):
         self._original_value = value
-        original_serializer = data_serializer_factory(data_type=self.original_value_data_type, value=value)
+        original_serializer = data_serializer_factory(
+            data_type=self.original_value_data_type, value=value, storage_io=self.storage_io
+        )
         self._original_value_sha256 = original_serializer.get_sha256()
 
     @property

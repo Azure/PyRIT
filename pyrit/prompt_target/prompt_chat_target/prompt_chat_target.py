@@ -9,7 +9,7 @@ from pyrit.prompt_target import PromptTarget
 
 class PromptChatTarget(PromptTarget):
 
-    def __init__(self, *, memory: MemoryInterface) -> None:
+    def __init__(self, *, memory: Optional[MemoryInterface]) -> None:
         super().__init__(memory=memory)
 
     def set_system_prompt(

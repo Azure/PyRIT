@@ -7,34 +7,104 @@ import hashlib
 import os
 import time
 
+from typing import Union, Optional
+
 from pathlib import Path
 from mimetypes import guess_type
+
+from azure.storage import BlobServiceClient
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models import PromptDataType
 
 
-def data_serializer_factory(*, data_type: PromptDataType, value: str = None, extension: str = None):
+class StorageIO(abc.ABC):
+    @abc.abstractmethod
+    def read(self, path: Union[Path, str]) -> bytes: ...
+
+    @abc.abstractmethod
+    def write(self, path: Union[Path, str], data: bytes) -> None: ...
+
+    @abc.abstractmethod
+    def exists(self, path: Union[Path, str]) -> bool: ...
+
+    @abc.abstractmethod
+    def isfile(self, path: Union[Path, str]) -> bool: ...
+
+
+def data_serializer_factory(
+    *,
+    data_type: PromptDataType,
+    value: Optional[str] = None,
+    extension: Optional[str] = None,
+    storage_io: Optional[StorageIO] = None,
+):
+    if storage_io is None:
+        storage_io = DiskStorageIO()
+
     if value:
         if data_type == "text":
-            return TextDataTypeSerializer(prompt_text=value)
+            return TextDataTypeSerializer(prompt_text=value, storage_io=storage_io)
         elif data_type == "image_path":
-            return ImagePathDataTypeSerializer(prompt_text=value)
+            return ImagePathDataTypeSerializer(prompt_text=value, storage_io=storage_io)
         elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(prompt_text=value)
+            return AudioPathDataTypeSerializer(prompt_text=value, storage_io=storage_io)
         elif data_type == "error":
-            return ErrorDataTypeSerializer(prompt_text=value)
+            return ErrorDataTypeSerializer(prompt_text=value, storage_io=storage_io)
         elif data_type == "url":
-            return URLDataTypeSerializer(prompt_text=value)
+            return URLDataTypeSerializer(prompt_text=value, storage_io=storage_io)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
         if data_type == "image_path":
-            return ImagePathDataTypeSerializer(extension=extension)
+            return ImagePathDataTypeSerializer(extension=extension, storage_io=storage_io)
         elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(extension=extension)
+            return AudioPathDataTypeSerializer(extension=extension, storage_io=storage_io)
         else:
             raise ValueError(f"Data type {data_type} without prompt text not supported")
+
+
+class DiskStorageIO(StorageIO):
+    def read(self, path: Union[Path, str]) -> bytes:
+        with open(path, "rb") as file:
+            return file.read()
+
+    def write(self, path: Union[Path, str], data: bytes) -> None:
+        with open(path, "wb") as file:
+            file.write(data)
+
+    def exists(self, path: Union[Path, str]) -> bool:
+        return os.path.exists(path)
+
+    def isfile(self, path: Union[Path, str]) -> bool:
+        return os.path.isfile(path)
+
+
+class AzureStorageIO(StorageIO):
+    def __init__(self, azure_blob_service_client: BlobServiceClient, container_name: Optional[str]) -> None:
+        super().__init__()
+
+        self.azure_blob_service_client = azure_blob_service_client
+        self.container_name = container_name
+
+    def read(self, path: Path | str) -> bytes:
+        blob_client = self.azure_blob_service_client.get_blob_client(container=self.container_name, blob=path)
+        return blob_client.download_blob().readall()
+
+    def write(self, path: Union[Path, str], data: bytes) -> None:
+        container_client = self.azure_blob_service_client.get_container_client(container=self.container_name)
+        container_client.upload_blob(name=path, data=data, overwrite=True)
+
+    def exists(self, path: Path | str) -> bool:
+        container_client = self.azure_blob_service_client.get_container_client(container=self.container_name)
+        matched_blobs = container_client.list_blobs(name_starts_with=path)
+        return len(matched_blobs) > 0 and any(blob.name == str(path) for blob in matched_blobs)
+
+    def isfile(self, path: Path | str) -> bool:
+        container_client = self.azure_blob_service_client.get_container_client(container=self.container_name)
+        matched_blobs = container_client.list_blobs(name_starts_with=path)
+        # TODO: Does this logic really work?
+        return len(matched_blobs) > 1 and any(blob.name == str(path) for blob in matched_blobs)
 
 
 class DataTypeSerializer(abc.ABC):
@@ -48,8 +118,9 @@ class DataTypeSerializer(abc.ABC):
     value: str
     data_directory: Path
     file_extension: str
+    storage_io: StorageIO
 
-    _file_path: Path = None
+    _file_path: Optional[Path] = None
 
     @abc.abstractmethod
     def data_on_disk(self) -> bool:
@@ -63,10 +134,9 @@ class DataTypeSerializer(abc.ABC):
         Saves the data to disk.
         """
         self.value = str(self.get_data_filename())
-        with open(self.value, "wb") as file:
-            file.write(data)
+        self.storage_io.write(self.value, data)
 
-    def save_b64_image(self, data: str, output_filename: str = None) -> None:
+    def save_b64_image(self, data: str, output_filename: Optional[str] = None) -> None:
         """
         Saves the base64 encoded image to disk.
         Arguments:
@@ -77,9 +147,8 @@ class DataTypeSerializer(abc.ABC):
             self.value = output_filename
         else:
             self.value = str(self.get_data_filename())
-        with open(self.value, "wb") as file:
-            image_bytes = base64.b64decode(data)
-            file.write(image_bytes)
+        image_bytes = base64.b64decode(data)
+        self.storage_io.write(self.value, image_bytes)
 
     def read_data(self) -> bytes:
         """
@@ -91,8 +160,7 @@ class DataTypeSerializer(abc.ABC):
         if not self.value:
             raise RuntimeError("Prompt text not set")
 
-        with open(self.value, "rb") as file:
-            return file.read()
+        return self.storage_io.read(self.value)
 
     def read_data_base64(self) -> str:
         """
@@ -105,8 +173,7 @@ class DataTypeSerializer(abc.ABC):
         input_bytes: bytes
 
         if self.data_on_disk():
-            with open(self.value, "rb") as file:
-                input_bytes = file.read()
+            input_bytes = self.storage_io.read(self.value)
         else:
             input_bytes = self.value.encode("utf-8")
 
@@ -133,6 +200,7 @@ class DataTypeSerializer(abc.ABC):
         self._file_path = Path(self.data_directory, f"{ticks}.{self.file_extension}")
         return self._file_path
 
+    # TODO: fix where these are called
     @staticmethod
     def path_exists(file_path: str) -> bool:
         """
@@ -150,7 +218,7 @@ class DataTypeSerializer(abc.ABC):
         if DataTypeSerializer.path_exists(file_path):
             _, ext = os.path.splitext(file_path)
             return ext
-        return None
+        raise FileNotFoundError(f"No file found at the specified path: {file_path}")
 
     @staticmethod
     def get_mime_type(file_path: str) -> str | None:
@@ -164,42 +232,52 @@ class DataTypeSerializer(abc.ABC):
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str):
+    def __init__(self, *, prompt_text: str, storage_io: StorageIO):
         self.data_type = "text"
         self.value = prompt_text
+        self.storage_io = storage_io
 
     def data_on_disk(self) -> bool:
         return False
 
 
 class ErrorDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str):
+    def __init__(self, *, prompt_text: str, storage_io: StorageIO):
         self.data_type = "error"
         self.value = prompt_text
+        self.storage_io = storage_io
 
     def data_on_disk(self) -> bool:
         return False
 
 
 class URLDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str):
+    def __init__(self, *, prompt_text: str, storage_io: StorageIO):
         self.data_type = "url"
         self.value = prompt_text
+        self.storage_io = storage_io
 
     def data_on_disk(self) -> bool:
         return False
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str = None, extension: str = None):
+    def __init__(
+        self,
+        *,
+        storage_io: StorageIO,
+        prompt_text: Optional[str] = None,
+        extension: Optional[str] = None,
+    ):
         self.data_type = "image_path"
         self.data_directory = Path(RESULTS_PATH) / "dbdata" / "images"
         self.file_extension = extension if extension else "png"
+        self.storage_io = storage_io
 
         if prompt_text:
             self.value = prompt_text
 
-            if not os.path.isfile(self.value):
+            if not self.storage_io.isfile(self.value):
                 raise FileNotFoundError(f"File does not exist: {self.value}")
 
     def data_on_disk(self) -> bool:
@@ -207,15 +285,22 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
 
 
 class AudioPathDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str = None, extension: str = None):
+    def __init__(
+        self,
+        *,
+        storage_io: StorageIO,
+        prompt_text: Optional[str] = None,
+        extension: Optional[str] = None,
+    ):
         self.data_type = "audio_path"
         self.data_directory = Path(RESULTS_PATH) / "dbdata" / "audio"
         self.file_extension = extension if extension else "mp3"
+        self.storage_io = storage_io
 
         if prompt_text:
             self.value = prompt_text
 
-            if not os.path.isfile(self.value):
+            if not self.storage_io.isfile(self.value):
                 raise FileNotFoundError(f"File does not exist: {self.value}")
 
     def data_on_disk(self) -> bool:

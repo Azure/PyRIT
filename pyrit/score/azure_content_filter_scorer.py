@@ -1,11 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Optional
 from pyrit.score import Score, Scorer
 from pyrit.common import default_values
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece
-from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
+from pyrit.models.data_type_serializer import StorageIO, data_serializer_factory, DataTypeSerializer
 from pyrit.memory.memory_interface import MemoryInterface
 
 from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, TextCategory, ImageData
@@ -39,6 +40,7 @@ class AzureContentFilterScorer(Scorer):
         api_key: str = None,
         harm_categories: list[TextCategory] = None,
         memory: MemoryInterface = None,
+        storage_io: Optional[StorageIO] = None,
     ) -> None:
 
         self._memory = memory if memory else DuckDBMemory()
@@ -72,6 +74,8 @@ class AzureContentFilterScorer(Scorer):
             self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
         else:
             raise ValueError("Please provide the Azure Content Safety API key and endpoint")
+
+        self.storage_io = storage_io
 
     async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
@@ -137,7 +141,9 @@ class AzureContentFilterScorer(Scorer):
     def _get_base64_image_data(self, request_response: PromptRequestPiece):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
+        image_serializer = data_serializer_factory(
+            value=image_path, data_type="image_path", extension=ext, storage_io=self.storage_io
+        )
         base64_encoded_data = image_serializer.read_data_base64()
         return base64_encoded_data
 

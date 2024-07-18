@@ -2,12 +2,13 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal
+from typing import Literal, Optional
 
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import data_serializer_factory, construct_response_from_request
+from pyrit.models.data_type_serializer import StorageIO
 from pyrit.prompt_target import PromptTarget
 
 from pyrit.common import net_utility
@@ -38,6 +39,7 @@ class AzureTTSTarget(PromptTarget):
         language: str = "en",
         temperature: float = 0.0,
         api_version: str = "2024-03-01-preview",
+        storage_io: Optional[StorageIO] = None,  # TODO: What calls this?
     ) -> None:
 
         super().__init__(memory=memory)
@@ -61,6 +63,8 @@ class AzureTTSTarget(PromptTarget):
         self._api_key = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
+
+        self.storage_io = storage_io
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
@@ -92,7 +96,9 @@ class AzureTTSTarget(PromptTarget):
 
         logger.info("Received valid response from the prompt target")
 
-        audio_response = data_serializer_factory(data_type="audio_path", extension=self._response_format)
+        audio_response = data_serializer_factory(
+            data_type="audio_path", extension=self._response_format, storage_io=self.storage_io
+        )
 
         data = response.content
 
