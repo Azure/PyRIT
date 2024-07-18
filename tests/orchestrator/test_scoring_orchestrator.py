@@ -3,6 +3,7 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
+import uuid
 
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
@@ -39,7 +40,9 @@ async def test_score_prompts_by_orchestrator_only_responses(sample_conversations
     orchestrator = ScoringOrchestrator(memory=memory)
 
     with patch.object(orchestrator, "_score_prompts_batch_async", new_callable=AsyncMock) as mock_score:
-        await orchestrator.score_prompts_by_orchestrator_id_async(scorer=MagicMock(), orchestrator_ids=[123])
+        await orchestrator.score_prompts_by_orchestrator_id_async(
+            scorer=MagicMock(), orchestrator_ids=[str(uuid.uuid4())]
+        )
 
         mock_score.assert_called_once()
         _, called_kwargs = mock_score.call_args
@@ -57,7 +60,7 @@ async def test_score_prompts_by_orchestrator_includes_requests(sample_conversati
 
     with patch.object(orchestrator, "_score_prompts_batch_async", new_callable=AsyncMock) as mock_score:
         await orchestrator.score_prompts_by_orchestrator_id_async(
-            scorer=MagicMock(), orchestrator_ids=[123], responses_only=False
+            scorer=MagicMock(), orchestrator_ids=[str(uuid.uuid4())], responses_only=False
         )
 
         mock_score.assert_called_once()

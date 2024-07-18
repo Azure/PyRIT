@@ -40,7 +40,7 @@ class ScoringOrchestrator(Orchestrator):
         self,
         *,
         scorer: Scorer,
-        orchestrator_ids: list[int],
+        orchestrator_ids: list[str],
         responses_only: bool = True,
     ) -> list[Score]:
         """
@@ -49,7 +49,7 @@ class ScoringOrchestrator(Orchestrator):
 
         request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
-            request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=int(id)))
+            request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
 
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
