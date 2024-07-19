@@ -260,7 +260,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
         ),
     ]
 
-    orchestrator1_id = int(orchestrator1.get_identifier()["id"])
+    orchestrator1_id = orchestrator1.get_identifier()["id"]
 
     session_mock = UnifiedAlchemyMagicMock(
         data=[
@@ -270,7 +270,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
                     mock.call.filter(
                         and_(
                             func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
-                            func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == str(orchestrator1_id),
+                            func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == orchestrator1_id,
                         )
                     ),
                 ],
