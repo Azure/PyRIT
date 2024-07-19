@@ -13,6 +13,7 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import PromptTarget
+from pyrit.auth import AzureStorageAuth
 
 logger = logging.getLogger(__name__)
 
@@ -33,20 +34,17 @@ class AzureBlobStorageTarget(PromptTarget):
 
     Args:
         container_url (str): URL to the Azure Blob Storage Container.
-        sas_token (str): Blob SAS token required to authenticate blob operations.
         blob_content_type (SupportedContentType): Expected Content Type of the blob, chosen from the
             SupportedContentType enum. Set to PLAIN_TEXT by default.
         memory (str): MemoryInterface to use for the class. FileMemory by default.
     """
 
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"
-    SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_SAS_TOKEN"
 
     def __init__(
         self,
         *,
         container_url: str | None = None,
-        sas_token: str | None = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
         memory: MemoryInterface | None = None,
     ) -> None:
@@ -57,16 +55,17 @@ class AzureBlobStorageTarget(PromptTarget):
             env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
         )
 
-        self._sas_token: str = default_values.get_required_value(
-            env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
-        )
-
-        self._client_async = AsyncContainerClient.from_container_url(
-            container_url=self._container_url,
-            credential=self._sas_token,
-        )
+        self._client_async: AsyncContainerClient = None
 
         super().__init__(memory=memory)
+
+    async def _create_container_client_async(self):
+        """Creates Async ContainerClient for Azure Storage."""
+        sas_token = await AzureStorageAuth.get_sas_token(self._container_url)
+        self._client_async = AsyncContainerClient.from_container_url(
+            container_url=self._container_url,
+            credential=sas_token,
+        )
 
     async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:
         """
@@ -81,6 +80,9 @@ class AzureBlobStorageTarget(PromptTarget):
         content_settings = ContentSettings(content_type=f"{content_type}")
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
+        if not self._client_async:
+            await self._create_container_client_async()
+
         try:
             await self._client_async.upload_blob(
                 name=file_name,
@@ -89,7 +91,7 @@ class AzureBlobStorageTarget(PromptTarget):
                 overwrite=True,
             )
         except Exception as exc:
-            if type(exc) is ClientAuthenticationError:
+            if isinstance(exc, ClientAuthenticationError):
                 logger.exception(
                     msg="Authentication failed. Verify the container's existence in the Azure Storage Account and "
                     + "the validity of the provided SAS token."
