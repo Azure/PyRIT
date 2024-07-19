@@ -12,7 +12,7 @@ from pyrit.models.data_type_serializer import (
     ImagePathDataTypeSerializer,
     AudioPathDataTypeSerializer,
 )
-from pyrit.models.chat_message import ChatMessage, ChatMessageListContent
+from pyrit.models.chat_message import ChatMessage, ChatMessageListContent, ChatMessageListDictContent
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import (
     PromptRequestResponse,
@@ -29,6 +29,7 @@ __all__ = [
     "ChatMessage",
     "ChatMessageRole",
     "ChatMessageListContent",
+    "ChatMessageListDictContent",
     "construct_response_from_request",
     "DataTypeSerializer",
     "data_serializer_factory",
