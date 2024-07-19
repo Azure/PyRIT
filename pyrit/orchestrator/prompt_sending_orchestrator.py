@@ -30,6 +30,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
+        normalizer: Optional[PromptNormalizer] = None, #NOTE Added
         scorers: Optional[list[Scorer]] = None,
         memory: MemoryInterface = None,
         batch_size: int = 10,
@@ -47,7 +48,7 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         super().__init__(prompt_converters=prompt_converters, memory=memory, verbose=verbose)
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = normalizer if normalizer else PromptNormalizer(memory=self._memory)
         self._scorers = scorers
 
         self._prompt_target = prompt_target
@@ -56,11 +57,19 @@ class PromptSendingOrchestrator(Orchestrator):
         self._batch_size = batch_size
 
     async def send_prompts_async(
-        self, *, prompt_list: list[str], prompt_type: PromptDataType = "text"
+        self, 
+        *, 
+        prompt_list: list[str], 
+        prompt_type: PromptDataType = "text", 
+        metadata: str | None = None
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
         """
+
+        # This happens often when trying to send one prompt, but forgetting to wrap it in brackets.
+        if not isinstance(prompt_list, list):
+            raise ValueError(f"Please pass a list to send_prompts_async. Got: {type(prompt_list)}")
 
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
@@ -69,6 +78,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_text=prompt,
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
+                    metadata=metadata if metadata else None # NOTE added
                 )
             )
 
@@ -85,6 +95,8 @@ class PromptSendingOrchestrator(Orchestrator):
         for request in prompt_request_list:
             request.validate()
 
+        # Normalizer is responsible for storing the requests in memory
+        # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._prompt_target,
@@ -92,6 +104,9 @@ class PromptSendingOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
+
+        # These are the responses from the target
+        # print(responses[0].request_pieces)
 
         if self._scorers:
             response_ids = []
