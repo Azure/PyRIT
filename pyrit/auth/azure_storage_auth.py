@@ -5,19 +5,14 @@ import datetime
 from urllib.parse import urlparse
 
 from azure.identity.aio import DefaultAzureCredential
-from azure.storage.blob.aio import (
-    BlobServiceClient
-)
-from azure.storage.blob import (
-    ContainerSasPermissions,
-    UserDelegationKey,
-    generate_container_sas
-)
+from azure.storage.blob.aio import BlobServiceClient
+from azure.storage.blob import ContainerSasPermissions, UserDelegationKey, generate_container_sas
 
 
 class AzureStorageAuth:
     """
-    A utility class for Azure Storage authentication, providing methods to generate SAS tokens using user delegation keys.
+    A utility class for Azure Storage authentication, providing methods to generate SAS tokens
+    using user delegation keys.
 
     Methods:
         get_user_delegation_key(blob_service_client)
@@ -30,7 +25,8 @@ class AzureStorageAuth:
         Retrieves a user delegation key valid for one day.
 
         Args:
-            blob_service_client (BlobServiceClient): An instance of BlobServiceClient to interact with Azure Blob Storage.
+            blob_service_client (BlobServiceClient): An instance of BlobServiceClient to interact
+            with Azure Blob Storage.
 
         Returns:
             UserDelegationKey: A user delegation key valid for one day.
@@ -39,8 +35,7 @@ class AzureStorageAuth:
         delegation_key_expiry_time = delegation_key_start_time + datetime.timedelta(days=1)
 
         user_delegation_key = await blob_service_client.get_user_delegation_key(
-            key_start_time=delegation_key_start_time,
-            key_expiry_time=delegation_key_expiry_time
+            key_start_time=delegation_key_start_time, key_expiry_time=delegation_key_expiry_time
         )
 
         return user_delegation_key
@@ -57,19 +52,29 @@ class AzureStorageAuth:
             str: The generated SAS token.
         """
         if not container_url:
-            raise ValueError("Azure Storage Container URL is not provided. The correct format is 'https://storageaccountname.core.windows.net/containername'.")
+            raise ValueError(
+                "Azure Storage Container URL is not provided. The correct format \
+                is 'https://storageaccountname.core.windows.net/containername'."
+            )
 
         parsed_url = urlparse(container_url)
-        
+
         if not parsed_url.scheme or not parsed_url.netloc or not parsed_url.path:
-            raise ValueError("Invalid Azure Storage Container URL. The correct format is 'https://storageaccountname.core.windows.net/containername'.")
+            raise ValueError(
+                "Invalid Azure Storage Container URL. \
+                    The correct format is 'https://storageaccountname.core.windows.net/containername'."
+            )
 
         account_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        async with BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential()) as blob_service_client:
-            
-            user_delegation_key = await AzureStorageAuth.get_user_delegation_key(blob_service_client=blob_service_client)
-            container_name = parsed_url.path.lstrip('/')
-            storage_account_name = parsed_url.netloc.split('.')[0]
+        async with BlobServiceClient(
+            account_url=account_url, credential=DefaultAzureCredential()
+        ) as blob_service_client:
+
+            user_delegation_key = await AzureStorageAuth.get_user_delegation_key(
+                blob_service_client=blob_service_client
+            )
+            container_name = parsed_url.path.lstrip("/")
+            storage_account_name = parsed_url.netloc.split(".")[0]
 
             # Set start_time 5 minutes before the current time to account for any clock skew
             start_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5)
@@ -81,7 +86,7 @@ class AzureStorageAuth:
                 user_delegation_key=user_delegation_key,
                 permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True),
                 expiry=expiry_time,
-                start=start_time
+                start=start_time,
             )
 
         return sas_token
