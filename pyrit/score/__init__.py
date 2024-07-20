@@ -34,5 +34,5 @@ __all__ = [
     "SelfAskObjectiveScorer",
     "SelfAskTrueFalseScorer",
     "SubStringScorer",
-    "TrueFalseQuestionPaths"
+    "TrueFalseQuestionPaths",
 ]

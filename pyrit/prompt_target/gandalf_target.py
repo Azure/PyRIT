@@ -93,7 +93,7 @@ class GandalfTarget(PromptTarget):
 
         if not resp.text:
             raise ValueError("The chat returned an empty response.")
-        
+
         answer = json.loads(resp.text)["answer"]
 
         logger.info(f'Received the following response from the prompt target "{answer}"')
