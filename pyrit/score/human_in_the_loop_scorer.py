@@ -5,6 +5,7 @@ import asyncio
 import csv
 
 from pathlib import Path
+from typing import Optional
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import Scorer
@@ -41,8 +42,8 @@ class HumanInTheLoopScorer(Scorer):
         self._memory.add_scores_to_memory(scores=scores)
         return scores
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
-
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+        self.validate(request_response, task=task)
         await asyncio.sleep(0)
 
         print("Scoring the following:")
@@ -85,5 +86,6 @@ class HumanInTheLoopScorer(Scorer):
         value = input(prompt)
         return None if value == "" else value
 
-    def validate(self, request_response: PromptRequestPiece):
-        pass
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        if task:
+            raise ValueError("This scorer does not support tasks")

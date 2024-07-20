@@ -9,7 +9,6 @@ import enum
 from pathlib import Path
 from typing import Optional
 
-
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.score import Score, Scorer
@@ -124,7 +123,7 @@ class SelfAskScaleScorer(Scorer):
 
         self._chat_target: PromptChatTarget = chat_target
 
-    async def score_async(self, *, request_response: PromptRequestPiece, task: str) -> list[Score]:  # type: ignore
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
@@ -136,7 +135,7 @@ class SelfAskScaleScorer(Scorer):
             list[Score]: The request_response scored.
                          The score_value is a value from [0,1] that is scaled based on the scorer's scale.
         """
-        self.validate(request_response)
+        self.validate(request_response, task=task)
 
         conversation_id = str(uuid.uuid4())
 
@@ -159,12 +158,12 @@ class SelfAskScaleScorer(Scorer):
             ]
         )
 
-        score = await self.send_chat_target_async(request, request_response.id)
+        score = await self._send_chat_target_async(request, request_response.id)
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
-    async def score_text_async(self, *, text: str, task: str) -> list[Score]:  # type: ignore
+    async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:  # type: ignore
         """
         Scores the given text based on the task using the chat target.
 
@@ -183,12 +182,8 @@ class SelfAskScaleScorer(Scorer):
         request_piece.id = None
         return await self.score_async(request_response=request_piece, task=task)
 
-    async def score_image_async(self, *, image_path: str, task: str) -> list[Score]:  # type: ignore
-        # Omitting image scoring for now since it's unclear how we could provide examples.
-        raise NotImplementedError("Image scoring is not supported for this scorer.")
-
     @pyrit_json_retry
-    async def send_chat_target_async(self, request, request_response_id):
+    async def _send_chat_target_async(self, request, request_response_id):
         response = await self._chat_target.send_prompt_async(prompt_request=request)
 
         try:
@@ -215,5 +210,8 @@ class SelfAskScaleScorer(Scorer):
 
         return score
 
-    def validate(self, request_response: PromptRequestPiece):
-        pass
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        if request_response.original_value_data_type != "text":
+            raise ValueError("The original value data type must be text.")
+        if not task:
+            raise ValueError("Task must be provided.")

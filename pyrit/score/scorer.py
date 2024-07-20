@@ -3,6 +3,7 @@
 
 import abc
 from abc import abstractmethod
+from typing import Optional
 
 from pyrit.models import PromptRequestPiece
 from pyrit.score import Score, ScoreType
@@ -16,13 +17,14 @@ class Scorer(abc.ABC):
     scorer_type: ScoreType
 
     @abstractmethod
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the request_response, add the results to the database
         and return a list of Score objects.
 
         Args:
             request_response (PromptRequestPiece): The request response to be scored.
+            task (str): The task based on which the text should be scored.
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -30,22 +32,24 @@ class Scorer(abc.ABC):
         raise NotImplementedError("score_async method not implemented")
 
     @abstractmethod
-    def validate(self, request_response: PromptRequestPiece):
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         """
         Validates the request_response piece to score. Because some scorers may require
         specific PromptRequestPiece types or values.
 
         Args:
             request_response (PromptRequestPiece): The request response to be validated.
+            task (str): The task based on which the text should be scored.
         """
         raise NotImplementedError("score_async method not implemented")
 
-    async def score_text_async(self, text: str) -> list[Score]:
+    async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given text using the chat target.
 
         Args:
             text (str): The text to be scored.
+            task (str): The task based on which the text should be scored.
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -56,14 +60,15 @@ class Scorer(abc.ABC):
         )
 
         request_piece.id = None
-        return await self.score_async(request_piece)
+        return await self.score_async(request_piece, task=task)
 
-    async def score_image_async(self, image_path: str) -> list[Score]:
+    async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given image using the chat target.
 
         Args:
             text (str): The image to be scored.
+            task (str): The task based on which the text should be scored.
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -77,7 +82,7 @@ class Scorer(abc.ABC):
         )
 
         request_piece.id = None
-        return await self.score_async(request_piece)
+        return await self.score_async(request_piece, task=task)
 
     def scale_value_float(self, value: float, min_value: float, max_value: float) -> float:
         """
