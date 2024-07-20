@@ -114,7 +114,7 @@ def fetch_examples(
 
     Example usage:
         examples = fetch_examples(
-            source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/59c652b/examples.json',
+            source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json,
             source_type='repository'
         )
     """
@@ -164,7 +164,7 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
         List[Dict[str, str]]: A list of many-shot jailbreaking examples.
     """
 
-    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/59c652b/examples.json"
+    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json"
     source_type = "repository"
 
     return fetch_examples(source, source_type, file_type="json")

@@ -16,21 +16,22 @@ from pyrit.datasets.fetch_examples import (
 )
 
 
+# Define constants for SOURCE_URL URL and file type
+SOURCE_URL = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json"
+FILE_TYPE = "json"
+
+
 def test_cache_path_creation():
-    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/59c652b/examples.json"
-    file_type = "json"
-    cache_file_name = _get_cache_file_name(source, file_type)
-    expected_hash = md5(source.encode("utf-8")).hexdigest()
+    cache_file_name = _get_cache_file_name(SOURCE_URL, FILE_TYPE)
+    expected_hash = md5(SOURCE_URL.encode("utf-8")).hexdigest()
     assert cache_file_name == f"{expected_hash}.json"
 
 
 def test_fetch_from_repository():
-    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/59c652b/examples.json"
-    file_type = "json"
-    response = requests.get(source)
+    response = requests.get(SOURCE_URL)
     assert response.status_code == 200
     examples = response.json()
-    fetched_examples = _fetch_from_repository(source, file_type)
+    fetched_examples = _fetch_from_repository(SOURCE_URL, FILE_TYPE)
     assert examples == fetched_examples
 
 
@@ -55,9 +56,6 @@ def test_write_cache():
 
 
 def test_fetch_examples_with_cache():
-    source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/59c652b/examples.json"
-    file_type = "json"
-
     # Clear cache before running test
     data_home = Path().home() / ".pyrit_test"
     if data_home.exists():
@@ -67,20 +65,20 @@ def test_fetch_examples_with_cache():
 
     # Fetch examples without cache
     examples = fetch_examples(
-        source, source_type="repository", file_type=file_type, cache=False, data_home=str(data_home)
+        SOURCE_URL, source_type="repository", file_type=FILE_TYPE, cache=False, data_home=str(data_home)
     )
     assert isinstance(examples, list) and len(examples) > 0  # Check if we got some data
 
     # Fetch examples with cache enabled
     examples_cached = fetch_examples(
-        source, source_type="repository", file_type=file_type, cache=True, data_home=str(data_home)
+        SOURCE_URL, source_type="repository", file_type=FILE_TYPE, cache=True, data_home=str(data_home)
     )
     assert examples_cached == examples  # Should match the previous fetched examples
 
     # Mock the _fetch_from_repository function to ensure it is not called again
     with patch("pyrit.datasets.fetch_examples._fetch_from_repository", MagicMock(return_value=examples)) as mock_fetch:
         examples_cached_again = fetch_examples(
-            source, source_type="repository", file_type=file_type, cache=True, data_home=str(data_home)
+            SOURCE_URL, source_type="repository", file_type=FILE_TYPE, cache=True, data_home=str(data_home)
         )
         assert examples_cached_again == examples  # Should match the previous fetched examples
         mock_fetch.assert_not_called()  # Ensure the GET request was not called again
