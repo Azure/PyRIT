@@ -1,9 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
 # %%
 # Import necessary packages
-import asyncio
-import logging
 import os
 from pathlib import Path
 
@@ -15,10 +14,6 @@ from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestr
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
 
-# %%
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # %%
 # Load environment variables
@@ -29,7 +24,6 @@ default_values.load_default_env()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 deployment_name = os.getenv("OPENAI_CHAT_DEPLOYMENT")
 endpoint = os.getenv("OPENAI_ENDPOINT")
-examples_source = os.getenv("EXAMPLES_SOURCE")
 template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
 
 # %%
@@ -82,6 +76,3 @@ async def main():
 
 
 # %%
-# Run the main function
-if __name__ == "__main__":
-    asyncio.run(main())
