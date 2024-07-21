@@ -3,6 +3,7 @@
 
 # %%
 # Import necessary packages
+import asyncio
 import os
 from pathlib import Path
 
@@ -31,6 +32,18 @@ template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_s
 # The dataset sources can be found at:
 # - Original: https://github.com/centerforaisafety/HarmBench
 # - Replicated: https://github.com/KutalVolkan/many-shot-jailbreaking-dataset
+
+
+# %%
+def print_conversation(memory, score_memory):
+    for entry in memory:
+        for score_entry in score_memory:
+            if entry.id == score_entry.prompt_request_response_id:
+                print(
+                    f"Output scored: {entry.converted_value}\n"
+                    f"Score category: {score_entry.score_category}\n"
+                    f"Score value: {score_entry.get_value()}\n\n"
+                )
 
 
 # %%
@@ -64,15 +77,9 @@ async def main():
     memory = orchestrator.get_memory()
     score_memory = orchestrator.get_score_memory()
 
-    for entry in memory:
-        for score_entry in score_memory:
-            # each score result correlates to a prompt entry's request response id
-            if entry.id == score_entry.prompt_request_response_id:
-                print(
-                    f"Output scored: {entry.converted_value}\n"
-                    f"Score category: {score_entry.score_category}\n"
-                    f"Score value: {score_entry.get_value()}\n\n"
-                )
+    print_conversation(memory, score_memory)
 
 
 # %%
+if __name__ == "__main__":
+    asyncio.run(main())
