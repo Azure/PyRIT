@@ -130,7 +130,7 @@ class SelfAskCategoryScorer(Scorer):
         return [score]
 
     @pyrit_json_retry
-    async def _send_chat_target_async(self, request, request_response_id):
+    async def _send_chat_target_async(self, request: PromptRequestResponse, request_response_id: uuid.UUID) -> Score:
         response = await self._chat_target.send_prompt_async(prompt_request=request)
 
         try:
