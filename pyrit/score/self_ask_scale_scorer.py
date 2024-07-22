@@ -163,25 +163,6 @@ class SelfAskScaleScorer(Scorer):
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
-    async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:  # type: ignore
-        """
-        Scores the given text based on the task using the chat target.
-
-        Args:
-            text (str): The text to be scored.
-            task (str): The task based on which the text should be scored.
-
-        Returns:
-            list[Score]: A list of Score objects representing the results.
-        """
-        request_piece = PromptRequestPiece(
-            role="user",
-            original_value=text,
-        )
-
-        request_piece.id = None
-        return await self.score_async(request_response=request_piece, task=task)
-
     @pyrit_json_retry
     async def _send_chat_target_async(self, request, request_response_id):
         response = await self._chat_target.send_prompt_async(prompt_request=request)
@@ -193,7 +174,7 @@ class SelfAskScaleScorer(Scorer):
                 float(parsed_response["score_value"]), self._scale.minimum_value, self._scale.maximum_value
             )
             score = Score(
-                score_value=str(score_value),
+                score_value=score_value,
                 score_value_description=parsed_response["description"],
                 score_type=self.scorer_type,
                 score_category=self._scale.category,

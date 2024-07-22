@@ -45,7 +45,7 @@ class Scorer(abc.ABC):
 
     async def score_text_async(self, text: str, *, task: Optional[str] = None) -> list[Score]:
         """
-        Scores the given text using the chat target.
+        Scores the given text based on the task using the chat target.
 
         Args:
             text (str): The text to be scored.
