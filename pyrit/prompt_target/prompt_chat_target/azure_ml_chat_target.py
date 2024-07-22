@@ -2,9 +2,12 @@
 # Licensed under the MIT license.
 
 import logging
+from httpx import HTTPStatusError
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
+from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException
+from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestResponse
 from pyrit.models import construct_response_from_request
@@ -77,19 +80,27 @@ class AzureMLChatTarget(PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        resp_text = await self._complete_chat_async(
-            messages=messages,
-            temperature=self._temperature,
-            top_p=self._top_p,
-            repetition_penalty=self._repetition_penalty,
-        )
+        try:
+            resp_text = await self._complete_chat_async(
+                messages=messages,
+                temperature=self._temperature,
+                top_p=self._top_p,
+                repetition_penalty=self._repetition_penalty,
+            )
+
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
+        except HTTPStatusError as bre:
+            if bre.response.status_code == 400:
+                response_entry = handle_bad_request_exception(response_text=bre.response.text, request=request, is_content_filter=True)
 
         if not resp_text:
-            raise ValueError("The chat returned an empty response.")
+            raise EmptyResponseException(message="The chat returned an empty response.")
 
         logger.info(f'Received the following response from the prompt target "{resp_text}"')
-        return construct_response_from_request(request=request, response_text_pieces=[resp_text])
+        return response_entry
 
+
+    @pyrit_target_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
@@ -125,6 +136,7 @@ class AzureMLChatTarget(PromptChatTarget):
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
+
         return response.json()["output"]
 
     def _construct_http_body(
