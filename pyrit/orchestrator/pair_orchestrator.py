@@ -8,9 +8,8 @@ from typing import Optional
 
 from tqdm.auto import tqdm
 
-from exceptions import InvalidJsonException
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions import pyrit_json_retry
+from pyrit.exceptions import pyrit_json_retry, InvalidJsonException
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptTemplate, PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.orchestrator import Orchestrator
