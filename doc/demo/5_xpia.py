@@ -77,12 +77,10 @@ Now start summarizing:
 
 # %%
 
-from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 
 from pyrit.prompt_target import AzureBlobStorageTarget
 from pyrit.score import SubStringScorer
 from pyrit.orchestrator import XPIATestOrchestrator
-from pyrit.auth import AzureStorageAuth
 
 abs_target = AzureBlobStorageTarget(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 
@@ -99,14 +97,12 @@ with XPIATestOrchestrator(
     score = await xpia_orchestrator.execute_async()  # type: ignore
     print(score)
 
-# clean up storage container
-container_url = os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL")
-sas_token = await AzureStorageAuth.get_sas_token(container_url)  # type: ignore
-storage_client = AsyncContainerClient.from_container_url(
-    container_url=container_url,
-    credential=sas_token,
-)
-async for blob in storage_client.list_blobs():  # type: ignore
-    await storage_client.get_blob_client(blob=blob.name).delete_blob()  # type: ignore
+# %% [markdown]
+# Clean up storage container
 
 # %%
+from xpia_helpers import AzureStoragePlugin
+import os
+
+azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
+await azure_storage_plugin.delete_blobs_async()  # type: ignore

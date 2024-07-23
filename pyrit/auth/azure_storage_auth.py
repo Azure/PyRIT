@@ -53,40 +53,44 @@ class AzureStorageAuth:
         """
         if not container_url:
             raise ValueError(
-                "Azure Storage Container URL is not provided. The correct format \
-                is 'https://storageaccountname.core.windows.net/containername'."
+                "Azure Storage Container URL is not provided. The correct format "
+                "is 'https://storageaccountname.core.windows.net/containername'."
             )
 
         parsed_url = urlparse(container_url)
 
         if not parsed_url.scheme or not parsed_url.netloc or not parsed_url.path:
             raise ValueError(
-                "Invalid Azure Storage Container URL. \
-                    The correct format is 'https://storageaccountname.core.windows.net/containername'."
+                "Invalid Azure Storage Container URL."
+                " The correct format is 'https://storageaccountname.core.windows.net/containername'."
             )
 
         account_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        async with BlobServiceClient(
-            account_url=account_url, credential=DefaultAzureCredential()
-        ) as blob_service_client:
 
-            user_delegation_key = await AzureStorageAuth.get_user_delegation_key(
-                blob_service_client=blob_service_client
-            )
-            container_name = parsed_url.path.lstrip("/")
-            storage_account_name = parsed_url.netloc.split(".")[0]
+        credential = DefaultAzureCredential()
 
-            # Set start_time 5 minutes before the current time to account for any clock skew
-            start_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5)
-            expiry_time = start_time + datetime.timedelta(days=1)
+        try:
+            async with BlobServiceClient(account_url=account_url, credential=credential) as blob_service_client:
 
-            sas_token = generate_container_sas(
-                account_name=storage_account_name,
-                container_name=container_name,
-                user_delegation_key=user_delegation_key,
-                permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True),
-                expiry=expiry_time,
-                start=start_time,
-            )
+                user_delegation_key = await AzureStorageAuth.get_user_delegation_key(
+                    blob_service_client=blob_service_client
+                )
+                container_name = parsed_url.path.lstrip("/")
+                storage_account_name = parsed_url.netloc.split(".")[0]
+
+                # Set start_time 5 minutes before the current time to account for any clock skew
+                start_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5)
+                expiry_time = start_time + datetime.timedelta(days=1)
+
+                sas_token = generate_container_sas(
+                    account_name=storage_account_name,
+                    container_name=container_name,
+                    user_delegation_key=user_delegation_key,
+                    permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True),
+                    expiry=expiry_time,
+                    start=start_time,
+                )
+        finally:
+            await credential.close()
 
         return sas_token

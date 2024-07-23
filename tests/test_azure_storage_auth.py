@@ -77,8 +77,8 @@ async def test_get_sas_token_no_url():
     # Test with no container URL
     with pytest.raises(
         ValueError,
-        match="Azure Storage Container URL is not provided. \
-            The correct format is 'https://storageaccountname.core.windows.net/containername'.",
+        match="Azure Storage Container URL is not provided."
+        " The correct format is 'https://storageaccountname.core.windows.net/containername'.",
     ):
         await AzureStorageAuth.get_sas_token("")
 
@@ -89,8 +89,8 @@ async def test_get_sas_token_invalid_url_scheme():
     invalid_url = "mockaccount.blob.core.windows.net/mockcontainer"
     with pytest.raises(
         ValueError,
-        match="Invalid Azure Storage Container URL. \
-            The correct format is 'https://storageaccountname.core.windows.net/containername'.",
+        match="Invalid Azure Storage Container URL."
+        " The correct format is 'https://storageaccountname.core.windows.net/containername'.",
     ):
         await AzureStorageAuth.get_sas_token(invalid_url)
 
@@ -101,8 +101,8 @@ async def test_get_sas_token_invalid_url_netloc():
     invalid_url = "https:///mockcontainer"
     with pytest.raises(
         ValueError,
-        match="Invalid Azure Storage Container URL. \
-            The correct format is 'https://storageaccountname.core.windows.net/containername'.",
+        match="Invalid Azure Storage Container URL."
+        " The correct format is 'https://storageaccountname.core.windows.net/containername'.",
     ):
         await AzureStorageAuth.get_sas_token(invalid_url)
 
@@ -113,7 +113,7 @@ async def test_get_sas_token_invalid_url_path():
     invalid_url = "https://storageaccountname.core.windows.net"
     with pytest.raises(
         ValueError,
-        match="Invalid Azure Storage Container URL. \
-            The correct format is 'https://storageaccountname.core.windows.net/containername'.",
+        match="Invalid Azure Storage Container URL."
+        " The correct format is 'https://storageaccountname.core.windows.net/containername'.",
     ):
         await AzureStorageAuth.get_sas_token(invalid_url)

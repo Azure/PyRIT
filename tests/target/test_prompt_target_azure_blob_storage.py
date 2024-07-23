@@ -30,6 +30,7 @@ def sample_entries() -> list[PromptRequestPiece]:
 def azure_blob_storage_target(memory_interface: MemoryInterface):
     return AzureBlobStorageTarget(
         container_url="https://test.blob.core.windows.net/test",
+        sas_token="valid_sas_token",
         memory=memory_interface,
     )
 
@@ -37,14 +38,17 @@ def azure_blob_storage_target(memory_interface: MemoryInterface):
 def test_initialization_with_required_parameters(azure_blob_storage_target: AzureBlobStorageTarget):
     assert azure_blob_storage_target._container_url == "https://test.blob.core.windows.net/test"
     assert azure_blob_storage_target._client_async is None
+    assert azure_blob_storage_target._sas_token == "valid_sas_token"
 
 
 def test_initialization_with_required_parameters_from_env():
     os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = (
         "https://test.blob.core.windows.net/test"
     )
+    os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
     abs_target = AzureBlobStorageTarget()
     assert abs_target._container_url == os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
+    assert abs_target._sas_token is None
 
 
 @patch.dict(

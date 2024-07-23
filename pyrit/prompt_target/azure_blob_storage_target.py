@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
+from typing import Optional
 
 from azure.core.exceptions import ClientAuthenticationError
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
@@ -34,17 +35,21 @@ class AzureBlobStorageTarget(PromptTarget):
 
     Args:
         container_url (str): URL to the Azure Blob Storage Container.
+        sas_token (optional[str]): Optional Blob SAS token needed to authenticate blob operations. If not provided, a
+            delegation SAS token will be created using Entra ID authentication.
         blob_content_type (SupportedContentType): Expected Content Type of the blob, chosen from the
             SupportedContentType enum. Set to PLAIN_TEXT by default.
         memory (str): MemoryInterface to use for the class. FileMemory by default.
     """
 
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"
+    SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_SAS_TOKEN"
 
     def __init__(
         self,
         *,
         container_url: str | None = None,
+        sas_token: Optional[str] = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
         memory: MemoryInterface | None = None,
     ) -> None:
@@ -55,13 +60,24 @@ class AzureBlobStorageTarget(PromptTarget):
             env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
         )
 
+        self._sas_token = sas_token
         self._client_async: AsyncContainerClient = None
 
         super().__init__(memory=memory)
 
     async def _create_container_client_async(self):
-        """Creates Async ContainerClient for Azure Storage."""
-        sas_token = await AzureStorageAuth.get_sas_token(self._container_url)
+        """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
+        AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
+        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
+        try:
+            sas_token: str = default_values.get_required_value(
+                env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=self._sas_token
+            )
+            logger.info("Using SAS token from environment variable or passed parameter.")
+        except ValueError:
+            logger.info("SAS token not provided. Creating a delegation SAS token using Entra ID authentication.")
+            sas_token = await AzureStorageAuth.get_sas_token(self._container_url)
+
         self._client_async = AsyncContainerClient.from_container_url(
             container_url=self._container_url,
             credential=sas_token,
@@ -93,8 +109,10 @@ class AzureBlobStorageTarget(PromptTarget):
         except Exception as exc:
             if isinstance(exc, ClientAuthenticationError):
                 logger.exception(
-                    msg="Authentication failed. Verify the container's existence in the Azure Storage Account and "
-                    + "the validity of the provided SAS token."
+                    msg="Authentication failed. Please check that the container existence in the "
+                    + "Azure Storage Account and ensure the validity of the provided SAS token. If you "
+                    + "haven't set the SAS token as an environment variable use `az login` to "
+                    + "enable delegation-based SAS authentication to connect to the storage account"
                 )
                 raise
             else:
