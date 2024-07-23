@@ -50,8 +50,10 @@
 import os
 
 from pyrit.common.default_values import load_default_env
+from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator.pair_orchestrator import PairOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 
 load_default_env()
 
@@ -68,17 +70,22 @@ pair_orchestrator = PairOrchestrator(
         api_key=os.getenv("OPENAI_API_KEY"),
     ),
     verbose=True,
-    number_of_conversation_streams=2,
-    max_conversation_depth=5,
+    number_of_conversation_streams=1,
+    max_conversation_depth=3,
     stop_on_first_success=True,
     desired_target_response_prefix="Sure, ",
+    scorer=SelfAskScaleScorer(
+        chat_target=OpenAIChatTarget(
+            deployment_name="gpt-4o", endpoint="https://api.openai.com/v1", api_key=os.getenv("OPENAI_API_KEY")
+        ),
+        scale_path=DATASETS_PATH / "score" / "scales" / "tree_of_attacks_with_pruning_jailbreak.yaml",
+    ),
     scorer_sensitivity=0.5,
 )
+
 
 # %%
 response = await pair_orchestrator.run()  # type: ignore
 
 # %%
-pair_orchestrator.print(normalized_score_threshold=0.2)
-
-# %%
+pair_orchestrator.print(normalized_score_threshold=0.8)
