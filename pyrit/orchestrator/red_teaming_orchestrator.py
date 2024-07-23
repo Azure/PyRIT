@@ -218,6 +218,8 @@ class RedTeamingOrchestrator(Orchestrator):
 
     def print_conversation(self):
         """Prints the conversation between the prompt target and the red teaming bot."""
+        import json
+
         target_messages = self._memory._get_prompt_pieces_with_conversation_id(
             conversation_id=self._prompt_target_conversation_id
         )
@@ -235,7 +237,7 @@ class RedTeamingOrchestrator(Orchestrator):
             if message.role == "user":
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
-                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                print(f"{Style.NORMAL}{Fore.GREEN}{message.role}: {json.loads(message.converted_value)['answer']}")
                 self._display_response(message)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
