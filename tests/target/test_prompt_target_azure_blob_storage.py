@@ -5,7 +5,8 @@ import os
 from typing import Generator
 import pytest
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
+from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
@@ -36,45 +37,30 @@ def azure_blob_storage_target(memory_interface: MemoryInterface):
 
 def test_initialization_with_required_parameters(azure_blob_storage_target: AzureBlobStorageTarget):
     assert azure_blob_storage_target._container_url == "https://test.blob.core.windows.net/test"
+    assert azure_blob_storage_target._client_async is None
     assert azure_blob_storage_target._sas_token == "valid_sas_token"
-    assert azure_blob_storage_target._client_async is not None
 
 
 def test_initialization_with_required_parameters_from_env():
-    os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
     os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = (
         "https://test.blob.core.windows.net/test"
     )
+    os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
     abs_target = AzureBlobStorageTarget()
     assert abs_target._container_url == os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
-    assert abs_target._sas_token == os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE]
+    assert abs_target._sas_token is None
 
 
 @patch.dict(
     "os.environ",
     {
-        AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE: "",
-        AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: "https://test.blob.core.windows.net/test",
-    },
-)
-def test_initialization_with_no_sas_token_raises():
-    with pytest.raises(ValueError):
-        AzureBlobStorageTarget(
-            container_url=os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
-        )
-
-
-@patch.dict(
-    "os.environ",
-    {
-        AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE: "valid_sas_token",
         AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: "",
     },
 )
 def test_initialization_with_no_container_url_raises():
     os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
-        AzureBlobStorageTarget(sas_token=os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE])
+        AzureBlobStorageTarget()
 
 
 @patch("azure.storage.blob.aio.ContainerClient.upload_blob")
@@ -117,21 +103,27 @@ async def test_azure_blob_storage_validate_prev_convs(
         await azure_blob_storage_target.send_prompt_async(prompt_request=request)
 
 
-@patch("azure.storage.blob.aio.ContainerClient.upload_blob")
 @pytest.mark.asyncio
+@patch.object(AsyncContainerClient, "upload_blob", new_callable=AsyncMock)
+@patch.object(AzureBlobStorageTarget, "_create_container_client_async", new_callable=AsyncMock)
 async def test_send_prompt_async(
-    mock_upload_async, azure_blob_storage_target: AzureBlobStorageTarget, sample_entries: list[PromptRequestPiece]
+    mock_create_client,
+    mock_upload_blob,
+    azure_blob_storage_target: AzureBlobStorageTarget,
+    sample_entries: list[PromptRequestPiece],
 ):
-    mock_upload_async.return_value = None
+    mock_upload_blob.return_value = None
+    azure_blob_storage_target._client_async = AsyncContainerClient.from_container_url(
+        container_url=azure_blob_storage_target._container_url, credential="mocked_sas_token"
+    )
+
     request_piece = sample_entries[0]
-    request_piece.converted_value = __name__
+    request_piece.converted_value = "Test content"
     request = PromptRequestResponse([request_piece])
 
     response = await azure_blob_storage_target.send_prompt_async(prompt_request=request)
-
     assert response
-
     blob_url = response.request_pieces[0].converted_value
-
-    assert blob_url.__contains__(azure_blob_storage_target._container_url)
-    assert blob_url.__contains__(".txt")
+    assert azure_blob_storage_target._container_url in blob_url
+    assert blob_url.endswith(".txt")
+    mock_upload_blob.assert_awaited_once()
