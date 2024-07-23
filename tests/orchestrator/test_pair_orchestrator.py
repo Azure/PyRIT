@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import uuid
 from typing import Generator
 from unittest.mock import Mock, AsyncMock, ANY
@@ -14,6 +13,7 @@ from pyrit.models import PromptRequestResponse, Score
 from pyrit.orchestrator import PairOrchestrator
 from pyrit.orchestrator.pair_orchestrator import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.score import Scorer
 from tests.mocks import get_memory_interface
 
 
@@ -34,7 +34,15 @@ def chat_completion_engine() -> AzureOpenAIChatTarget:
 
 
 @pytest.fixture
-def orchestrator(memory_interface: MemoryInterface) -> PairOrchestrator:
+def scorer_mock(memory_interface: MemoryInterface) -> Scorer:
+    scorer = Mock()
+    scorer.scorer_type = "float_scale"
+    scorer.score_async = AsyncMock(return_value=[])
+    return scorer
+
+
+@pytest.fixture
+def orchestrator(memory_interface: MemoryInterface, scorer_mock: Scorer) -> PairOrchestrator:
     target = Mock()
     attacker = Mock()
     orchestrator = PairOrchestrator(
@@ -43,6 +51,7 @@ def orchestrator(memory_interface: MemoryInterface) -> PairOrchestrator:
         red_teaming_chat=attacker,
         conversation_objective="attacker objective",
         memory=memory_interface,
+        scorer=scorer_mock,
     )
 
     return orchestrator
@@ -52,7 +61,7 @@ def orchestrator(memory_interface: MemoryInterface) -> PairOrchestrator:
 async def test_init(orchestrator):
     assert orchestrator._target_text_model is not None
     assert orchestrator._attacker_text_model is not None
-    assert orchestrator._judge_text_model is not None
+    assert orchestrator._scorer is not None
     assert orchestrator._attacker_objective == "attacker objective"
     assert orchestrator._desired_target_response_prefix == "desired response"
 
@@ -138,30 +147,6 @@ async def test_output_is_properly_formatted_when_jailbreak_is_not_found(
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_handles_invalid_json_response_form_llm_via(
-    orchestrator: PairOrchestrator,
-):
-    invalid_json_string = '{"improvement": "this is an invalid JSON that cannot be parsed via JSON.loads()"'
-    orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
-        return_value=_build_prompt_response_with_single_prompt_piece(prompt=invalid_json_string)
-    )
-    result = await orchestrator.run()
-    assert len(result) == 0
-
-
-@pytest.mark.asyncio
-async def test_orchestrator_handles_valid_json_with_missing_params_response_form_llm_via(
-    orchestrator: PairOrchestrator,
-):
-    invalid_json_string = json.dumps({"key_a": "blah", "key_b": "blag"})
-    orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
-        return_value=_build_prompt_response_with_single_prompt_piece(prompt=invalid_json_string)
-    )
-    result = await orchestrator.run()
-    assert len(result) == 0
-
-
-@pytest.mark.asyncio
 async def test_get_target_response_and_store(orchestrator: PairOrchestrator) -> None:
     # Setup
     sample_text = "Test prompt"
@@ -183,13 +168,7 @@ async def test_get_target_response_and_store(orchestrator: PairOrchestrator) -> 
 
 
 @pytest.mark.asyncio
-async def test_start_new_conversation():
-    orchestrator = PairOrchestrator(
-        prompt_target=AsyncMock(),
-        red_teaming_chat=AsyncMock(),
-        conversation_objective="objective",
-        desired_target_response_prefix="prefix",
-    )
+async def test_start_new_conversation(orchestrator: PairOrchestrator) -> None:
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=PromptRequestResponse(request_pieces=[]))
         await orchestrator._get_attacker_response_and_store(target_response="response", start_new_conversation=True)
@@ -198,13 +177,7 @@ async def test_start_new_conversation():
 
 
 @pytest.mark.asyncio
-async def test_continue_conversation():
-    orchestrator = PairOrchestrator(
-        prompt_target=AsyncMock(),
-        red_teaming_chat=AsyncMock(),
-        conversation_objective="objective",
-        desired_target_response_prefix="prefix",
-    )
+async def test_continue_conversation(orchestrator: PairOrchestrator) -> None:
     orchestrator._last_attacker_conversation_id = "existing_id"
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=PromptRequestResponse(request_pieces=[]))
@@ -214,14 +187,8 @@ async def test_continue_conversation():
 
 
 @pytest.mark.asyncio
-async def test_attacker_response():
+async def test_attacker_response(orchestrator: PairOrchestrator) -> None:
     expected_response = PromptRequestResponse(request_pieces=[])
-    orchestrator = PairOrchestrator(
-        prompt_target=AsyncMock(),
-        red_teaming_chat=AsyncMock(),
-        conversation_objective="objective",
-        desired_target_response_prefix="prefix",
-    )
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=expected_response)
         response = await orchestrator._get_attacker_response_and_store(

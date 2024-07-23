@@ -46,7 +46,7 @@ class PairOrchestrator(Orchestrator):
         number_of_conversation_streams: int = 20,
         max_conversation_depth: int = 3,
         stop_on_first_success: bool = True,
-        scorer: Scorer = None,
+        scorer: Scorer,
         scorer_sensitivity: float = 1.0,
         prompt_converters: Optional[list[PromptConverter]] = None,
         single_turn_jailbreak_only: bool = True,
@@ -95,7 +95,7 @@ class PairOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._single_turn_jailbreak_only = single_turn_jailbreak_only
         self._scorer_sensitivity = scorer_sensitivity
-        self._scorer: Scorer = scorer
+        self._scorer = scorer
         self._desired_target_response_prefix = desired_target_response_prefix
 
         # Load the prompt templates for the attacker
@@ -213,8 +213,9 @@ class PairOrchestrator(Orchestrator):
             )
             try:
                 attacker_prompt_suggestion = self._parse_attacker_response(response=attacker_response)
-            except (json.JSONDecodeError, KeyError):
+            except InvalidJsonException:
                 # If the attacker response is not JSON serializable, continue to the next turn.
+                # The @pyrit_json_retry decorator masks the base exception as InvalidJsonException
                 continue
             if self._single_turn_jailbreak_only:
                 # Create a new conversation ID for each turn
