@@ -3,6 +3,7 @@
 
 import json
 import pathlib
+from typing import Optional
 import uuid
 import yaml
 
@@ -51,12 +52,13 @@ class SelfAskMetaScorer(Scorer):
 
         self._chat_target: PromptChatTarget = chat_target
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
 
         Returns:
             list[Score]: The request_response scored.
@@ -65,7 +67,7 @@ class SelfAskMetaScorer(Scorer):
                          metadata can be configured to provide additional information.
         """
 
-        self.validate(request_response)
+        self.validate(request_response, task=task)
 
         conversation_id = str(uuid.uuid4())
 
@@ -115,6 +117,8 @@ class SelfAskMetaScorer(Scorer):
 
         return score
 
-    def validate(self, request_response: PromptRequestPiece):
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.converted_value_data_type != "text":
             raise ValueError("Self-ask meta scorer only supports text data type")
+        if task:
+            raise ValueError("Self-ask meta scorer does not support task")

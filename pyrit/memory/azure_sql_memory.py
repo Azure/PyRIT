@@ -78,7 +78,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -94,7 +94,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 PromptMemoryEntry,
                 conditions=and_(
                     func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
-                    func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == str(orchestrator_id),
+                    func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == orchestrator_id,
                 ),
             )  # type: ignore
         except Exception as e:

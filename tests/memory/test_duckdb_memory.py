@@ -425,7 +425,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: DuckDBMemory):
 
     memory_interface._insert_entries(entries=entries)
 
-    orchestrator1_id = int(orchestrator1.get_identifier()["id"])
+    orchestrator1_id = orchestrator1.get_identifier()["id"]
 
     # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
     retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator1_id)
@@ -433,7 +433,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: DuckDBMemory):
     # Verify that the retrieved entries match the expected normalizer_id
     assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
     for retrieved_entry in retrieved_entries:
-        assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
+        assert retrieved_entry.orchestrator_identifier["id"] == orchestrator1_id
         assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
 
 

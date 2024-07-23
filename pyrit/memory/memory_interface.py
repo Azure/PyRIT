@@ -68,7 +68,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> Sequence[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -104,7 +104,7 @@ class MemoryInterface(abc.ABC):
         Gets a list of scores based on prompt_request_response_ids.
         """
 
-    def get_scores_by_orchestrator_id(self, *, orchestrator_id: int) -> list[Score]:
+    def get_scores_by_orchestrator_id(self, *, orchestrator_id: str) -> list[Score]:
         """
         Retrieves a list of Score objects associated with the PromptRequestPiece objects
         which have the specified orchestrator ID.
@@ -146,12 +146,12 @@ class MemoryInterface(abc.ABC):
             Sequence[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
 
-    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
         Args:
-            orchestrator_id (int): The orchestrator ID to match.
+            orchestrator_id (str): The orchestrator ID to match.
 
         Returns:
             list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
@@ -160,7 +160,7 @@ class MemoryInterface(abc.ABC):
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
-    def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: int) -> list[str]:
+    def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: str) -> list[str]:
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
 
         prompt_ids = []
@@ -203,7 +203,7 @@ class MemoryInterface(abc.ABC):
         return new_conversation_id
 
     def export_conversation_by_orchestrator_id(
-        self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"
+        self, *, orchestrator_id: str, file_path: Path = None, export_type: str = "json"
     ):
         """
         Exports conversation data with the given orchestrator ID to a specified file.
