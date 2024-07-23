@@ -7,7 +7,7 @@ import yaml
 
 import enum
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
@@ -90,12 +90,13 @@ class SelfAskCategoryScorer(Scorer):
 
         return category_descriptions
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece to score.
+            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
 
         Returns:
             list[Score]: The request_response scored.
@@ -103,7 +104,7 @@ class SelfAskCategoryScorer(Scorer):
                          The score_value is True in all cases unless no category fits. In which case,
                          the score value is false and the _false_category is used.
         """
-        self.validate(request_response)
+        self.validate(request_response, task=task)
 
         conversation_id = str(uuid.uuid4())
 
@@ -124,12 +125,12 @@ class SelfAskCategoryScorer(Scorer):
             ]
         )
 
-        score = await self.send_chat_target_async(request, request_response.id)
+        score = await self._send_chat_target_async(request, request_response.id)
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     @pyrit_json_retry
-    async def send_chat_target_async(self, request, request_response_id):
+    async def _send_chat_target_async(self, request: PromptRequestResponse, request_response_id: uuid.UUID) -> Score:
         response = await self._chat_target.send_prompt_async(prompt_request=request)
 
         try:
@@ -156,5 +157,6 @@ class SelfAskCategoryScorer(Scorer):
 
         return score
 
-    def validate(self, request_response: PromptRequestPiece):
-        pass
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        if task:
+            raise ValueError("This scorer does not support tasks")
