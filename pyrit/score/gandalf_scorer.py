@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from textwrap import dedent
+from typing import Optional
 
 import requests
 from openai import BadRequestError
@@ -83,11 +84,12 @@ class GandalfScorer(Scorer):
             return ""
         return response_text
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Scores the text based on the password found in the text.
 
         Args:
-            text: The text to be scored.
+            text (str): The text to be scored.
+            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
 
         Returns:
             The score is the password if found in text, else empty.
@@ -151,5 +153,8 @@ class GandalfScorer(Scorer):
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
-    def validate(self, request_response: PromptRequestPiece):
-        return request_response.converted_value_data_type == "text"
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        if task:
+            raise ValueError("This scorer does not support tasks")
+        if request_response.converted_value_data_type != "text":
+            raise ValueError("Gandalf scorer only supports text data type")

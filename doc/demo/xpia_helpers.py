@@ -3,12 +3,7 @@
 
 from typing import Any, Optional
 
-from pyrit.common import default_values
-from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_response import construct_response_from_request
-from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
-
-from azure.storage.blob import ContainerClient
+from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 import logging
 from openai import AsyncAzureOpenAI
 from semantic_kernel.kernel import Kernel
@@ -19,6 +14,11 @@ from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import
 from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
 
+from pyrit.auth import AzureStorageAuth
+from pyrit.common import default_values
+from pyrit.models import PromptRequestResponse
+from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 
@@ -167,34 +167,64 @@ class AzureStoragePlugin:
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"
     SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_SAS_TOKEN"
 
-    def __init__(
-        self,
-        *,
-        container_url: str | None = None,
-        sas_token: str | None = None,
-    ) -> None:
+    def __init__(self, *, container_url: str | None = None, sas_token: Optional[str] = None) -> None:
+
         self._container_url: str = default_values.get_required_value(
             env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
         )
+        self._sas_token = sas_token
+        self._storage_client: AsyncContainerClient = None
 
-        self._sas_token: str = default_values.get_required_value(
-            env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
-        )
-
-        self._storage_client = ContainerClient.from_container_url(
+    async def _create_container_client_async(self):
+        """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
+        AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
+        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
+        try:
+            sas_token: str = default_values.get_required_value(
+                env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=self._sas_token
+            )
+            logger.info("Using SAS token from environment variable or passed parameter.")
+        except ValueError:
+            logger.info("SAS token not provided. Creating a delegation SAS token using Entra ID authentication.")
+            sas_token = await AzureStorageAuth.get_sas_token(self._container_url)
+        self._storage_client = AsyncContainerClient.from_container_url(
             container_url=self._container_url,
-            credential=self._sas_token,
+            credential=sas_token,
         )
 
     @kernel_function(
-        description="Retrieves blob from Azure storage",
-        name="download",
+        description="Retrieves blobs from Azure storage asynchronously",
+        name="download_async",
     )
-    def download(self) -> str:
+    async def download_async(self) -> str:
+        if not self._storage_client:
+            await self._create_container_client_async()
+
         all_blobs = ""
-        for blob in self._storage_client.list_blobs():
-            logger.info(f"Downloading Azure storage blob {blob.name}")
-            all_blobs += f"\n\nBlob: {blob.name}\n"
-            all_blobs += self._storage_client.get_blob_client(blob=blob.name).download_blob().readall().decode("utf-8")
+        async with self._storage_client as client:
+            async for blob in client.list_blobs():
+                logger.info(f"Downloading Azure storage blob {blob.name}")
+                blob_client = client.get_blob_client(blob=blob.name)
+                blob_data = await blob_client.download_blob()
+                blob_content = await blob_data.readall()
+                all_blobs += f"\n\nBlob: {blob.name}\n"
+                all_blobs += blob_content.decode("utf-8")
         logger.info(f"Azure storage download result: {all_blobs}")
         return all_blobs
+
+    async def delete_blobs_async(self):
+        """
+        (Async) Deletes all blobs in the storage container.
+        """
+        if not self._storage_client:
+            await self._create_container_client_async()
+        logger.info("Deleting all blobs in the container.")
+        try:
+            async with self._storage_client as client:
+                async for blob in client.list_blobs():
+                    print("blob name is given as", blob.name)
+                    await client.get_blob_client(blob=blob.name).delete_blob()
+                    logger.info(f"Deleted blob: {blob.name}")
+        except Exception as ex:
+            logger.exception(msg=f"An error occurred while deleting blobs: {ex}")
+            raise
