@@ -1,18 +1,24 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import csv
 import hashlib
-import json
-import random
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional
+import io
+from typing import Dict, List, Optional, Literal
 
-import pycountry
 import requests
 
-from pyrit.models import PromptDataset
+from pyrit.common.json_helper import read_json, write_json
+from pyrit.common.csv_helper import read_csv, write_csv
+from pyrit.common.txt_helper import read_txt, write_txt
+
+
+FILE_TYPE_HANDLERS = {
+    "json": {"read": read_json, "write": write_json},
+    "csv": {"read": read_csv, "write": write_csv},
+    "txt": {"read": read_txt, "write": write_txt},
+}
 
 
 def _get_cache_file_name(source: str, file_type: str) -> str:
@@ -28,13 +34,8 @@ def _read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
     Read data from cache.
     """
     with cache_file.open("r") as file:
-        if file_type == "json":
-            return json.load(file)
-        elif file_type == "csv":
-            reader = csv.DictReader(file)
-            return [row for row in reader]
-        elif file_type == "txt":
-            return [{"prompt": line.strip()} for line in file.readlines()]
+        if file_type in FILE_TYPE_HANDLERS:
+            return FILE_TYPE_HANDLERS[file_type]["read"](file)
         else:
             raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
 
@@ -45,33 +46,27 @@ def _write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: st
     """
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     with cache_file.open("w") as file:
-        if file_type == "json":
-            json.dump(examples, file)
-        elif file_type == "csv":
-            writer = csv.DictWriter(file, fieldnames=examples[0].keys())
-            writer.writeheader()
-            writer.writerows(examples)
-        elif file_type == "txt":
-            file.write("\n".join([ex["prompt"] for ex in examples]))
+        if file_type in FILE_TYPE_HANDLERS:
+            FILE_TYPE_HANDLERS[file_type]["write"](file, examples)
+        else:
+            raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
 
 
-def _fetch_from_repository(source: str, file_type: str) -> List[Dict[str, str]]:
+def _fetch_from_public_url(source: str, file_type: str) -> List[Dict[str, str]]:
     """
     Fetch examples from a repository.
     """
     response = requests.get(source)
     if response.status_code == 200:
-        if file_type == "json":
-            return response.json()
-        elif file_type == "csv":
-            reader = csv.DictReader(response.text.splitlines())
-            return [row for row in reader]
-        elif file_type == "txt":
-            return [{"prompt": line} for line in response.text.splitlines()]
+        if file_type in FILE_TYPE_HANDLERS:
+            if file_type == "json":
+                return FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text))
+            else:
+                return FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines())))
         else:
             raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
     else:
-        raise Exception(f"Failed to fetch examples from repository. Status code: {response.status_code}")
+        raise Exception(f"Failed to fetch examples from public URL. Status code: {response.status_code}")
 
 
 def _fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
@@ -79,21 +74,15 @@ def _fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
     Fetch examples from a local file.
     """
     with open(source, "r") as file:
-        if file_type == "json":
-            return json.load(file)
-        elif file_type == "csv":
-            reader = csv.DictReader(file)
-            return [row for row in reader]
-        elif file_type == "txt":
-            return [{"prompt": line.strip()} for line in file.readlines()]
+        if file_type in FILE_TYPE_HANDLERS:
+            return FILE_TYPE_HANDLERS[file_type]["read"](file)
         else:
             raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
 
 
 def fetch_examples(
     source: str,
-    source_type: str = "repository",
-    file_type: str = "json",
+    source_type: Literal["public_url", "file"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
 ) -> List[Dict[str, str]]:
@@ -102,7 +91,7 @@ def fetch_examples(
 
     Args:
         source (str): The source from which to fetch examples.
-        source_type (str): The type of source ('repository' or 'file'). Defaults to 'repository'.
+        source_type (Literal["public_url", "file"]): The type of source ('public_url' or 'file'). Defaults to 'public_url'.
         file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'json'.
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
@@ -113,12 +102,16 @@ def fetch_examples(
     Example usage:
         examples = fetch_examples(
             source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json',
-            source_type='repository'
+            source_type='public_url'
         )
     """
 
+    file_type = source.split(".")[-1]
+    if file_type not in FILE_TYPE_HANDLERS:
+        raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
+
     if not data_home:
-        data_home = Path().home() / ".pyrit"
+        data_home = Path().home() / ".pyrit" / "datasets"
     else:
         data_home = Path(data_home)
 
@@ -127,25 +120,16 @@ def fetch_examples(
     if cache and cache_file.exists():
         return _read_cache(cache_file, file_type)
 
-    if source_type == "repository":
-        examples = _fetch_from_repository(source, file_type)
+    if source_type == "public_url":
+        examples = _fetch_from_public_url(source, file_type)
     elif source_type == "file":
         examples = _fetch_from_file(source, file_type)
-    else:
-        raise ValueError("Invalid source_type. Expected 'repository' or 'file'.")
 
     if cache:
         _write_cache(cache_file, examples, file_type)
     else:
         with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=f".{file_type}") as temp_file:
-            if file_type == "json":
-                json.dump(examples, temp_file)
-            elif file_type == "csv":
-                writer = csv.DictWriter(temp_file, fieldnames=examples[0].keys())
-                writer.writeheader()
-                writer.writerows(examples)
-            elif file_type == "txt":
-                temp_file.write("\n".join([ex["prompt"] for ex in examples]))
+            FILE_TYPE_HANDLERS[file_type]["write"](temp_file, examples)
 
     return examples
 
@@ -159,67 +143,6 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
     """
 
     source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json"
-    source_type = "repository"
+    source_type = "public_url"
 
-    return fetch_examples(source, source_type, file_type="json")
-
-
-def fetch_seclists_bias_testing_examples(
-    source: str = (
-        "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/"
-        "nationality_geographic_bias.txt"
-    ),
-    source_type: str = "repository",
-    file_type: str = "txt",
-) -> PromptDataset:
-    """
-    Fetch SecLists AI LLM Bias Testing examples from a specified source and create a PromptDataset.
-    Args:
-        source (str): The source from which to fetch examples. Defaults to the SecLists repository.
-        source_type (str): The type of source ('repository' or 'file'). Defaults to 'repository'.
-        file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'txt'.
-    Returns:
-        PromptDataset: A PromptDataset containing the examples with placeholders replaced.
-    Reference:
-        Original repository: https://github.com/danielmiessler/SecLists/tree/master/Ai/LLM_Testing/Bias_Testing
-    """
-
-    # Define placeholder values generation functions using pycountry and random.choice
-    countries = list(pycountry.countries)
-    subdivisions = list(pycountry.subdivisions)
-    placeholder_values = {
-        "Country": lambda: random.choice(countries).name,
-        "Region": lambda: random.choice(subdivisions).name,
-        "Nationality": lambda: random.choice(
-            countries
-        ).name,  # Same as Country, the target LLM should be able to understand the context
-        "GENDER": lambda: random.choice(["male", "female", "non-binary"]),
-        "SKIN_COLOR": lambda: random.choice(["white", "black", "brown", "yellow"]),
-    }
-
-    examples = fetch_examples(source, source_type, file_type)
-
-    filled_examples = []
-    for example in examples:
-        prompt = example["prompt"]
-        for placeholder, generator in placeholder_values.items():
-            values_used = set()
-            while f"[{placeholder}]" in prompt:
-                value = generator()
-                # Ensure the new value is not the same as the previous one
-                while value in values_used:
-                    value = generator()
-                values_used.add(value)
-                prompt = prompt.replace(f"[{placeholder}]", value, 1)
-
-        filled_examples.append(prompt)
-
-    dataset = PromptDataset(
-        name="SecLists Bias Testing Examples",
-        description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
-        harm_category="bias_testing",
-        should_be_blocked=False,
-        prompts=filled_examples,
-    )
-
-    return dataset
+    return fetch_examples(source, source_type)

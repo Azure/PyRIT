@@ -3,7 +3,6 @@
 
 # %%
 # Import necessary packages
-import asyncio
 import os
 from pathlib import Path
 
@@ -12,7 +11,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets.fetch_examples import fetch_many_shot_jailbreaking_examples
 from pyrit.models.models import ManyShotTemplate
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
 
 
@@ -21,10 +20,11 @@ from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScaleP
 default_values.load_default_env()
 
 # %%
-# Retrieve environment variables
-openai_api_key = os.getenv("OPENAI_API_KEY")
-deployment_name = os.getenv("OPENAI_CHAT_DEPLOYMENT")
-endpoint = os.getenv("OPENAI_ENDPOINT")
+prompt_target = AzureOpenAIChatTarget(
+    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
+)
 template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
 
 # %%
@@ -48,9 +48,6 @@ def print_conversation(memory, score_memory):
 
 # %%
 async def main():
-    # Create orchestrator
-    prompt_target = OpenAIChatTarget(api_key=openai_api_key, deployment_name=deployment_name, endpoint=endpoint)
-
     # Set up the Harm Scorer with the same prompt target to ensure consistency
     harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
 
@@ -81,5 +78,3 @@ async def main():
 
 
 # %%
-if __name__ == "__main__":
-    asyncio.run(main())
