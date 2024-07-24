@@ -51,13 +51,13 @@ import os
 
 from pyrit.common.default_values import load_default_env
 from pyrit.common.path import DATASETS_PATH
-from pyrit.orchestrator.pair_orchestrator import PairOrchestrator
+from pyrit.orchestrator.pair_orchestrator import PAIROrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 
 load_default_env()
 
-pair_orchestrator = PairOrchestrator(
+pair_orchestrator = PAIROrchestrator(
     red_teaming_chat=AzureOpenAIChatTarget(
         deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
         endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),

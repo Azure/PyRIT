@@ -10,7 +10,7 @@ import pytest
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, Score
-from pyrit.orchestrator import PairOrchestrator
+from pyrit.orchestrator import PAIROrchestrator
 from pyrit.orchestrator.pair_orchestrator import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.score import Scorer
@@ -42,18 +42,20 @@ def scorer_mock(memory_interface: MemoryInterface) -> Scorer:
 
 
 @pytest.fixture
-def orchestrator(memory_interface: MemoryInterface, scorer_mock: Scorer) -> PairOrchestrator:
+def orchestrator(memory_interface: MemoryInterface, scorer_mock: Scorer) -> PAIROrchestrator:
     target = Mock()
     attacker = Mock()
-    orchestrator = PairOrchestrator(
+    orchestrator = PAIROrchestrator(
         prompt_target=target,
         desired_target_response_prefix="desired response",
         red_teaming_chat=attacker,
         conversation_objective="attacker objective",
         memory=memory_interface,
         scorer=scorer_mock,
+        stop_on_first_success=True,
+        number_of_conversation_streams=3,
+        max_conversation_depth=5,
     )
-
     return orchestrator
 
 
@@ -67,18 +69,20 @@ async def test_init(orchestrator):
 
 
 @pytest.mark.asyncio
-async def test_run(orchestrator: PairOrchestrator):
+async def test_run(orchestrator: PAIROrchestrator):
+    NUM_CONVERSATIONS_STREAMS = 3
+    orchestrator._number_of_conversation_streams = NUM_CONVERSATIONS_STREAMS
     orchestrator._process_conversation_stream = AsyncMock(return_value=[])  # type: ignore
     orchestrator._should_stop = Mock(return_value=False)  # type: ignore
     result = await orchestrator.run()
     assert result == []
-    orchestrator._process_conversation_stream.assert_called()
-    orchestrator._should_stop.assert_called()
+    orchestrator._process_conversation_stream.call_count == NUM_CONVERSATIONS_STREAMS
+    orchestrator._should_stop.call_count == NUM_CONVERSATIONS_STREAMS
 
 
 @pytest.mark.asyncio
 async def test_output_is_properly_formatted_when_jailbreak_is_found(
-    orchestrator: PairOrchestrator,
+    orchestrator: PAIROrchestrator,
 ):
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
         return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
@@ -112,8 +116,46 @@ async def test_output_is_properly_formatted_when_jailbreak_is_found(
 
 
 @pytest.mark.asyncio
+async def test_output_is_properly_formatted_when_jailbreak_is_found_multiple_streams(
+    orchestrator: PAIROrchestrator,
+):
+    NUM_CONVERSATION_STREAMS = 20
+    orchestrator._number_of_conversation_streams = NUM_CONVERSATION_STREAMS
+    orchestrator._stop_on_first_success = False
+    orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
+        return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
+    )
+    orchestrator._get_target_response_and_store = AsyncMock(  # type: ignore
+        return_value=PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    original_value="aaaa",
+                    converted_value="aaaa",
+                    role="user",
+                )
+            ]
+        )
+    )
+    orchestrator._scorer.score_async = AsyncMock(  # type: ignore
+        return_value=[
+            Score(
+                score_value="1.0",
+                score_value_description="",
+                score_type="float_scale",
+                score_category="",
+                score_rationale="",
+                score_metadata="",
+                prompt_request_response_id="",
+            )
+        ]
+    )
+    result = await orchestrator.run()
+    assert len(result) == NUM_CONVERSATION_STREAMS
+
+
+@pytest.mark.asyncio
 async def test_output_is_properly_formatted_when_jailbreak_is_not_found(
-    orchestrator: PairOrchestrator,
+    orchestrator: PAIROrchestrator,
 ):
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
         return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
@@ -147,7 +189,50 @@ async def test_output_is_properly_formatted_when_jailbreak_is_not_found(
 
 
 @pytest.mark.asyncio
-async def test_get_target_response_and_store(orchestrator: PairOrchestrator) -> None:
+async def test_correct_number_of_streams_executes(
+    orchestrator: PAIROrchestrator,
+):
+
+    MAX_CONVERSATION_DEPTH = 5
+    MAX_CONVERSTAION_STRAEMS = 10
+    orchestrator._number_of_conversation_streams = MAX_CONVERSTAION_STRAEMS
+    orchestrator._max_conversation_depth = MAX_CONVERSATION_DEPTH
+    orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
+        return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
+    )
+    orchestrator._get_target_response_and_store = AsyncMock(  # type: ignore
+        return_value=PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    original_value="aaaa",
+                    converted_value="aaaa",
+                    role="user",
+                )
+            ]
+        )
+    )
+    orchestrator._scorer.score_async = AsyncMock(  # type: ignore
+        return_value=[
+            Score(
+                score_value="0.0",
+                score_value_description="",
+                score_type="float_scale",
+                score_category="",
+                score_rationale="",
+                score_metadata="",
+                prompt_request_response_id="",
+            )
+        ]
+    )
+    result = await orchestrator.run()
+    assert len(result) == 0
+    assert orchestrator._scorer.score_async.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSTAION_STRAEMS
+    assert orchestrator._get_attacker_response_and_store.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSTAION_STRAEMS
+    assert orchestrator._get_target_response_and_store.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSTAION_STRAEMS
+
+
+@pytest.mark.asyncio
+async def test_get_target_response_and_store(orchestrator: PAIROrchestrator) -> None:
     # Setup
     sample_text = "Test prompt"
     expected_response = PromptRequestResponse(
@@ -168,7 +253,7 @@ async def test_get_target_response_and_store(orchestrator: PairOrchestrator) -> 
 
 
 @pytest.mark.asyncio
-async def test_start_new_conversation(orchestrator: PairOrchestrator) -> None:
+async def test_start_new_conversation(orchestrator: PAIROrchestrator) -> None:
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=PromptRequestResponse(request_pieces=[]))
         await orchestrator._get_attacker_response_and_store(target_response="response", start_new_conversation=True)
@@ -177,7 +262,7 @@ async def test_start_new_conversation(orchestrator: PairOrchestrator) -> None:
 
 
 @pytest.mark.asyncio
-async def test_continue_conversation(orchestrator: PairOrchestrator) -> None:
+async def test_continue_conversation(orchestrator: PAIROrchestrator) -> None:
     orchestrator._last_attacker_conversation_id = "existing_id"
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=PromptRequestResponse(request_pieces=[]))
@@ -187,7 +272,7 @@ async def test_continue_conversation(orchestrator: PairOrchestrator) -> None:
 
 
 @pytest.mark.asyncio
-async def test_attacker_response(orchestrator: PairOrchestrator) -> None:
+async def test_attacker_response(orchestrator: PAIROrchestrator) -> None:
     expected_response = PromptRequestResponse(request_pieces=[])
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=expected_response)

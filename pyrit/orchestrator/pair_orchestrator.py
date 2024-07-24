@@ -21,7 +21,7 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-class PairOrchestrator(Orchestrator):
+class PAIROrchestrator(Orchestrator):
     """
     This orchestrator implements the Prompt Automatic Iterative Refinement (PAIR) algorithm
 

@@ -11,12 +11,12 @@ from pyrit.orchestrator.xpia_orchestrator import (
     XPIAOrchestrator,
     XPIAManualProcessingOrchestrator,
 )
-from pyrit.orchestrator.pair_orchestrator import PairOrchestrator
+from pyrit.orchestrator.pair_orchestrator import PAIROrchestrator
 
 __all__ = [
     "SkeletonKeyOrchestrator",
     "Orchestrator",
-    "PairOrchestrator",
+    "PAIROrchestrator",
     "PromptSendingOrchestrator",
     "RedTeamingOrchestrator",
     "ScoringOrchestrator",
