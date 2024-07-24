@@ -3,10 +3,11 @@
 
 import logging
 from httpx import HTTPStatusError
+import json
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
-from pyrit.exceptions import EmptyResponseException, BadRequestException, RateLimitException
+from pyrit.exceptions import EmptyResponseException, RateLimitException
 from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestResponse
@@ -88,15 +89,20 @@ class AzureMLChatTarget(PromptChatTarget):
                 repetition_penalty=self._repetition_penalty,
             )
 
+            if not resp_text:
+                raise EmptyResponseException(message="The chat returned an empty response.")
+
             response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
-        except HTTPStatusError as bre:
-            if bre.response.status_code == 400:
-                response_entry = handle_bad_request_exception(response_text=bre.response.text, request=request, is_content_filter=True)
+        except HTTPStatusError as hse:
+            if hse.response.status_code == 400:
+                # Handle Bad Request
+                response_entry = handle_bad_request_exception(response_text=hse.response.text, request=request)
+            elif hse.response.status_code == 429:
+                raise RateLimitException()
+            else:
+                raise hse
 
-        if not resp_text:
-            raise EmptyResponseException(message="The chat returned an empty response.")
-
-        logger.info(f'Received the following response from the prompt target "{resp_text}"')
+        logger.info(f'Received the following response from the prompt target "{response_entry.request_pieces[0].converted_value}"')
         return response_entry
 
 
@@ -130,7 +136,11 @@ class AzureMLChatTarget(PromptChatTarget):
         Returns:
             str: The generated response message.
         """
-        headers = self._get_headers()
+        try:
+            headers = self._get_headers()
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding JSON: {e}")
+
         payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
 
         response = await net_utility.make_request_and_raise_if_error_async(
