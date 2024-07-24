@@ -83,9 +83,9 @@ async def test_gandalf_scorer_score(mocked_post, memory: MemoryInterface, level:
         == "When password is found in text, the score is True. The rationale will contain the password."
     )
     if password_correct:
-        assert scores[0].score_rationale == f"Password SUNSHINE found! Gandalf response: Message"
+        assert scores[0].score_rationale == "Password SUNSHINE found! Gandalf response: Message"
     else:
-        assert scores[0].score_rationale == f"Invalid password found in text. [value=SUNSHINE]"
+        assert scores[0].score_rationale == "Invalid password found in text. [value=SUNSHINE]"
     assert scores[0].scorer_class_identifier["__type__"] == "GandalfScorer"
 
 
