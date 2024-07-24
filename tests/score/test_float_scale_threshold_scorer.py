@@ -1,19 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from json import JSONDecodeError
-from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import uuid
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
-from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score import LikertScalePaths, Score, SelfAskLikertScorer, FloatScaleThresholdScorer
+from pyrit.score import Score, FloatScaleThresholdScorer
 
 from tests.mocks import get_memory_interface
 
@@ -30,18 +25,18 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
     memory = MagicMock(MemoryInterface)
 
     scorer = AsyncMock()
-    scorer._scorer_type = "float_scale"
+    scorer.scorer_type = "float_scale"
     scorer.score_async = AsyncMock(
         return_value=[
             Score(
-                score_value=score_value,
+                score_value=str(score_value),
                 score_type="float_scale",
                 score_category="mock category",
                 score_rationale="A mock rationale",
                 score_metadata=None,
                 prompt_request_response_id=uuid.uuid4(),
                 score_value_description="A mock description",
-                id=uuid.uuid4()
+                id=uuid.uuid4(),
             )
         ]
     )
@@ -49,7 +44,7 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
     float_scale_threshold_scorer = FloatScaleThresholdScorer(memory=memory, scorer=scorer, threshold=threshold)
 
     binary_score = (await float_scale_threshold_scorer.score_text_async(text="mock example"))[0]
-    assert binary_score.score_value == (score_value >= threshold)
+    assert binary_score.score_value == str(score_value >= threshold)
     assert binary_score.score_type == "true_false"
     assert binary_score.score_value_description == "A mock description"
 
