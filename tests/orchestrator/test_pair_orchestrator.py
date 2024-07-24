@@ -62,7 +62,7 @@ async def test_init(orchestrator):
     assert orchestrator._target_text_model is not None
     assert orchestrator._attacker_text_model is not None
     assert orchestrator._scorer is not None
-    assert orchestrator._attacker_objective == "attacker objective"
+    assert orchestrator._conversation_objective == "attacker objective"
     assert orchestrator._desired_target_response_prefix == "desired response"
 
 

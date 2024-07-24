@@ -26,9 +26,9 @@
 # ## Orchestrator Initialization
 #
 # The PromptAutomaticIterativeRefinementOrchestrator is initialized with the following parameters:
-# - `attacker`: An instance of OpenAIChatTarget which represents the attacker model.
-# - `attacker_objective`: The objective of the attacker model.
-# - `target`: An instance of OpenAIChatTarget which represents the target model.
+# - `red_teaming_chat`: An instance of OpenAIChatTarget which represents the attacker model.
+# - `conversation_objective`: The objective of the attacker model.
+# - `prompt_target`: An instance of OpenAIChatTarget which represents the target model.
 # - `verbose`: A boolean value to control the verbosity of the orchestrator.
 # - `number_of_conversation_streams`: The number of conversation streams to explore.
 # - `max_conversation_depth`: The maximum depth of the conversation.

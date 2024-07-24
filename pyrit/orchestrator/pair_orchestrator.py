@@ -89,7 +89,7 @@ class PairOrchestrator(Orchestrator):
         self._attacker_text_model = red_teaming_chat
         self._max_conversation_depth = max_conversation_depth
         self._stop_on_first_success = stop_on_first_success
-        self._attacker_objective = conversation_objective
+        self._conversation_objective = conversation_objective
         self._number_of_conversation_streams = number_of_conversation_streams
         self._last_attacker_conversation_id = ""
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
@@ -128,7 +128,7 @@ class PairOrchestrator(Orchestrator):
         if start_new_conversation:
             self._last_attacker_conversation_id = str(uuid.uuid4())
             attacker_system_prompt = self._attacker_prompt_template.apply_custom_metaprompt_parameters(
-                goal=self._attacker_objective, target_str=self._desired_target_response_prefix
+                goal=self._conversation_objective, target_str=self._desired_target_response_prefix
             )
             self._attacker_text_model.set_system_prompt(
                 system_prompt=attacker_system_prompt, conversation_id=self._last_attacker_conversation_id
@@ -227,7 +227,7 @@ class PairOrchestrator(Orchestrator):
             # This is called JUDGE in the paper
             score = (
                 await self._scorer.score_async(
-                    request_response=target_response.request_pieces[0], task=self._attacker_objective
+                    request_response=target_response.request_pieces[0], task=self._conversation_objective
                 )
             )[0]
             if self._is_jailbreak_successful(score=score):
