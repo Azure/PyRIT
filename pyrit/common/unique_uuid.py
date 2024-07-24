@@ -6,7 +6,7 @@ import uuid
 
 def generate_unique_uuid(*, existing_uuids: list[str | uuid.UUID]) -> uuid.UUID:
     """Generate a new string UUID-4 avoiding collisions
-    
+
     Args:
         existing_uuids: Existing UUIDs or strings to be avoided
     Returns:
