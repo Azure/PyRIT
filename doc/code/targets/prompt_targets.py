@@ -56,7 +56,8 @@ with AzureOpenAIChatTarget(use_aad_auth=False) as azure_openai_chat_target:
 #
 # _Note:_ to run this section of the demo you need to setup your `.env` file to properly authenticate to an Azure Storage Blob Container.
 # See the section within [.env_example](https://github.com/Azure/PyRIT/blob/main/.env_example) if not sure where to find values for each of these variables.
-# **Please ensure that your container URL points to an existing container and that your SAS key is valid.**
+# This target uses delegation SAS-based authentication. Please run the AZ CLI command to authenticate with Azure using `az login --use-device-code` or `az login`.
+# For more details, https://learn.microsoft.com/en-us/rest/api/storageservices/create-user-delegation-sas
 
 # %%
 import os
@@ -74,9 +75,6 @@ request = PromptRequestPiece(
     original_value=jailbreak_prompt,
 ).to_prompt_request_response()
 
-with AzureBlobStorageTarget(
-    container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"),
-    sas_token=os.environ.get("AZURE_STORAGE_ACCOUNT_SAS_TOKEN"),
-) as abs_prompt_target:
+with AzureBlobStorageTarget(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL")) as abs_prompt_target:
 
     print(await abs_prompt_target.send_prompt_async(prompt_request=request))  # type: ignore

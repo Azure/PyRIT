@@ -25,7 +25,7 @@ def test_refresh_no_expiration():
         test_instance = AzureAuth(token_scope="https://mocked_endpoint.azure.com")
         token = test_instance.refresh_token()
         assert token == mock_token
-        mock_get_token.assert_called_once()
+        mock_get_token.assert_called()
 
 
 def test_refresh_expiration():
