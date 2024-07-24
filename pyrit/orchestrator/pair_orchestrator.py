@@ -241,7 +241,7 @@ class PAIROrchestrator(Orchestrator):
         Determines if a jailbreak attempt was successful based on the scorer's response (the paper calls is "judge").
         """
         score_value = float(score.score_value)
-        return float(score_value) >= 0.8
+        return float(score_value) >= self._scorer_sensitivity
 
     async def run(self) -> list[PromptRequestResponse]:
         """
