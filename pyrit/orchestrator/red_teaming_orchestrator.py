@@ -1,9 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import logging
 from typing import Optional, Union, Dict, Any
 from uuid import uuid4
+
 from PIL import Image
 from colorama import Fore, Style
 
@@ -11,9 +13,9 @@ from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer, Score
 
 logger = logging.getLogger(__name__)
@@ -218,8 +220,6 @@ class RedTeamingOrchestrator(Orchestrator):
 
     def print_conversation(self):
         """Prints the conversation between the prompt target and the red teaming bot."""
-        import json
-
         target_messages = self._memory._get_prompt_pieces_with_conversation_id(
             conversation_id=self._prompt_target_conversation_id
         )
