@@ -5,11 +5,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from httpx import HTTPStatusError
 import os
-from openai import BadRequestError, RateLimitError
+from openai import RateLimitError
 import pytest
 
 from pyrit.common import constants
-from pyrit.exceptions import BadRequestException, EmptyResponseException, RateLimitException
+from pyrit.exceptions import EmptyResponseException, RateLimitException
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import AzureMLChatTarget
 from pyrit.models import ChatMessage

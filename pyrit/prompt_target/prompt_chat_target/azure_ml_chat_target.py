@@ -102,9 +102,11 @@ class AzureMLChatTarget(PromptChatTarget):
             else:
                 raise hse
 
-        logger.info(f'Received the following response from the prompt target "{response_entry.request_pieces[0].converted_value}"')
+        logger.info(
+            "Received the following response from the prompt target"
+            + f"{response_entry.request_pieces[0].converted_value}"
+        )
         return response_entry
-
 
     @pyrit_target_retry
     async def _complete_chat_async(
