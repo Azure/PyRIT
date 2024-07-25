@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from textwrap import dedent
 
 import json
 import logging
@@ -58,6 +59,13 @@ class VariationConverter(PromptConverter):
             conversation_id=conversation_id,
             orchestrator_identifier=None,
         )
+
+        prompt = dedent(f"Create {self.number_variations} variation of the seed prompt given by the user between the begin and end tags"
+            "=== begin ==="
+            f"{prompt}"
+            "=== end ==="
+        )
+
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
