@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -81,8 +81,9 @@ with RedTeamingOrchestrator(
     use_score_as_feedback=True,
     verbose=True,
 ) as orchestrator:
-    score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
+    score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
     orchestrator.print_conversation()
+
 
 
 # %%
