@@ -21,9 +21,9 @@ default_values.load_default_env()
 
 # %%
 prompt_target = AzureOpenAIChatTarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
 )
 template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
 

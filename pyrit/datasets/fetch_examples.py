@@ -2,19 +2,24 @@
 # Licensed under the MIT license.
 
 import hashlib
+import io
 import tempfile
 from pathlib import Path
-import io
-from typing import Dict, List, Optional, Literal
 
 import requests
 
-from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.csv_helper import read_csv, write_csv
+from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.txt_helper import read_txt, write_txt
 
+from typing import Callable, Dict, List, Optional, Literal, TextIO
 
-FILE_TYPE_HANDLERS = {
+
+# Define the type for the file handlers
+FileHandlerRead = Callable[[TextIO], List[Dict[str, str]]]
+FileHandlerWrite = Callable[[TextIO, List[Dict[str, str]]], None]
+
+FILE_TYPE_HANDLERS: Dict[str, Dict[str, Callable]] = {
     "json": {"read": read_json, "write": write_json},
     "csv": {"read": read_csv, "write": write_csv},
     "txt": {"read": read_txt, "write": write_txt},
@@ -62,7 +67,9 @@ def _fetch_from_public_url(source: str, file_type: str) -> List[Dict[str, str]]:
             if file_type == "json":
                 return FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text))
             else:
-                return FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines())))
+                return FILE_TYPE_HANDLERS[file_type]["read"](
+                    io.StringIO("\n".join(response.text.splitlines()))
+                )  # noqa: E501
         else:
             raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
     else:
@@ -143,6 +150,6 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
     """
 
     source = "https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json"
-    source_type = "public_url"
+    source_type: Literal["public_url"] = "public_url"
 
     return fetch_examples(source, source_type)
