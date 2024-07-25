@@ -138,11 +138,7 @@ class AzureMLChatTarget(PromptChatTarget):
         Returns:
             str: The generated response message.
         """
-        try:
-            headers = self._get_headers()
-        except json.JSONDecodeError as e:
-            logger.error(f"Error decoding JSON: {e}")
-
+        headers = self._get_headers()
         payload = self._construct_http_body(messages, max_tokens, temperature, top_p, repetition_penalty)
 
         response = await net_utility.make_request_and_raise_if_error_async(
