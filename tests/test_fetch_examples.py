@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from unittest.mock import mock_open, patch, MagicMock
 from pathlib import Path
 from hashlib import md5
