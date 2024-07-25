@@ -16,4 +16,4 @@ per-file-ignores =
     ./pyrit/score/gpt_classifier.py:E501,W291
 
 copyright-check = True
-copyright-regexp = # Copyright \(c\) [\w\s<>@.]+\n# Licensed under the MIT license.
+copyright-regexp = # Copyright \(c\) Microsoft Corporation.\n# Licensed under the MIT license.
