@@ -5,11 +5,10 @@ import abc
 import copy
 from pathlib import Path
 
-from typing import MutableSequence, Optional, Sequence
+from typing import MutableSequence, Sequence
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
-from pyrit.common.unique_uuid import generate_unique_uuid
 from pyrit.models import (
     ChatMessage,
     PromptRequestResponse,
@@ -172,9 +171,7 @@ class MemoryInterface(abc.ABC):
 
         return prompt_ids
 
-    def duplicate_conversation_for_new_orchestrator(
-        self, *, new_orchestrator_id: str, conversation_id: str
-    ) -> str:
+    def duplicate_conversation_for_new_orchestrator(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
         """
         Duplicates a conversation from one orchestrator to another.
 
@@ -192,7 +189,7 @@ class MemoryInterface(abc.ABC):
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
         prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
         for piece in prompt_pieces:
-            piece.id = str(uuid.uuid4())
+            piece.id = uuid.uuid4()
             if piece.orchestrator_identifier["id"] == new_orchestrator_id:
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
             piece.orchestrator_identifier["id"] = new_orchestrator_id
