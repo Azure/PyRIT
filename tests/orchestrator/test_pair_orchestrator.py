@@ -61,8 +61,8 @@ def orchestrator(memory_interface: MemoryInterface, scorer_mock: Scorer) -> PAIR
 
 @pytest.mark.asyncio
 async def test_init(orchestrator):
-    assert orchestrator._target_text_model is not None
-    assert orchestrator._attacker_text_model is not None
+    assert orchestrator._prompt_target is not None
+    assert orchestrator._adversarial_target is not None
     assert orchestrator._scorer is not None
     assert orchestrator._conversation_objective == "attacker objective"
     assert orchestrator._desired_target_response_prefix == "desired response"
@@ -245,7 +245,7 @@ async def test_get_target_response_and_store(orchestrator: PAIROrchestrator) -> 
         assert response == expected_response
         orchestrator._prompt_normalizer.send_prompt_async.assert_called_with(
             normalizer_request=ANY,  # Use ANY from unittest.mock to ignore specific instance comparison
-            target=orchestrator._target_text_model,
+            target=orchestrator._prompt_target,
             conversation_id=expected_conversation_id,
             labels=orchestrator._global_memory_labels,
             orchestrator_identifier=orchestrator.get_identifier(),

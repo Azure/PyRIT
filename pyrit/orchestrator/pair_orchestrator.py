@@ -85,8 +85,8 @@ class PAIROrchestrator(Orchestrator):
         )
 
         self.successful_jailbreaks: list[PromptRequestResponse] = []
-        self._target_text_model = prompt_target
-        self._attacker_text_model = red_teaming_chat
+        self._prompt_target = prompt_target
+        self._adversarial_target = red_teaming_chat
         self._max_conversation_depth = max_conversation_depth
         self._stop_on_first_success = stop_on_first_success
         self._conversation_objective = conversation_objective
@@ -130,7 +130,7 @@ class PAIROrchestrator(Orchestrator):
             attacker_system_prompt = self._attacker_prompt_template.apply_custom_metaprompt_parameters(
                 goal=self._conversation_objective, target_str=self._desired_target_response_prefix
             )
-            self._attacker_text_model.set_system_prompt(
+            self._adversarial_target.set_system_prompt(
                 system_prompt=attacker_system_prompt, conversation_id=self._last_attacker_conversation_id
             )
         # Send a new request to the attacker
@@ -144,7 +144,7 @@ class PAIROrchestrator(Orchestrator):
                     )
                 ]
             ),
-            target=self._target_text_model,
+            target=self._prompt_target,
             conversation_id=self._last_attacker_conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
@@ -173,7 +173,7 @@ class PAIROrchestrator(Orchestrator):
                     )
                 ]
             ),
-            target=self._target_text_model,
+            target=self._prompt_target,
             conversation_id=curr_conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
