@@ -27,13 +27,13 @@ This is the least defined component, because attacks can get *complicated*. They
 
 Orchestrators should contain all the logic for different types of attacks. For example, PAIR, tree of attack, or crescendo should be implemented primarily as orchestrators.
 
-Ways to contribute: Check out our [orchestrator docs](./orchestrators/orchestrator.ipynb) and [orchestrator code](../../pyrit/orchestrator/). There are hundreds of attacks outlined in research papers. A lot of these can be orchestrators. If you find an attack that doesn't fit the orchestrator model please tell us since we want to try to make it easier to orchestrate these. Are there scenarios you can write orchestrators for?
+Ways to contribute: Check out our [orchestrator docs](./orchestrators/) and [orchestrator code](../../pyrit/orchestrator/). There are hundreds of attacks outlined in research papers. A lot of these can be orchestrators. If you find an attack that doesn't fit the orchestrator model please tell us since we want to try to make it easier to orchestrate these. Are there scenarios you can write orchestrators for?
 
 ## Converters
 
 Converters are a powerful component that converts prompts to something else. They can be stacked and combined. They can be as varied as translating a text prompt into a Word document, rephrasing a prompt in 100 different ways, or adding a text overlay to an image.
 
-Ways to contribute: Check out our [converter docs](./converters/1_converters.ipynb) [demos](../demo/4_using_prompt_converters.ipynb) and [code](../../pyrit/prompt_converter/). Are there ways prompts can be converted that would be useful for an attack?
+Ways to contribute: Check out our [converter docs](./converters/). Are there ways prompts can be converted that would be useful for an attack?
 
 ## Target
 
@@ -43,7 +43,7 @@ This is often an LLM, but it doesn't have to be. For Cross-Domain Prompt Injecti
 
 One orchestrator can have many Prompt Targets (and in fact, converters and Scoring Engine can also use Prompt Targets to convert/score the prompt).
 
-Ways to contribute: Check out our [target docs](./targets/prompt_targets.ipynb) and [code](../../pyrit/prompt_target/). Are there models you want to use at any stage or for different attacks?
+Ways to contribute: Check out our [target docs](./targets/). Are there models you want to use at any stage or for different attacks?
 
 
 ## Scoring Engine
@@ -71,3 +71,7 @@ Sometimes, if a scenario requires specific data, we may need to modify the archi
 ## Notebooks
 
 For all their power, Orchestrators should still be generic. A lot of our front-end code and operators use Notebooks to interact with PyRIT. This is fantastic, but most new logic should not be notebooks. Notebooks should mostly be used for attack setup and documentation. For example, configuring the components and putting them together is a good use of a notebook, but new logic for an attack should be moved to one or more components.
+
+## What Next?
+
+To drill into the functionality
