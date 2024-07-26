@@ -60,7 +60,9 @@ class VariationConverter(PromptConverter):
             orchestrator_identifier=None,
         )
 
-        prompt = dedent(f"Create {self.number_variations} variation of the seed prompt given by the user between the begin and end tags"
+        prompt = dedent(
+            f"Create {self.number_variations} variation of the seed prompt given by the user between the "
+            "begin and end tags"
             "=== begin ==="
             f"{prompt}"
             "=== end ==="

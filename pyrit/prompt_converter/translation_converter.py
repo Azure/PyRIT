@@ -72,8 +72,8 @@ class TranslationConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-
-        prompt = dedent(f"Translate the following text between the begin and end tags to {self.language}"
+        prompt = dedent(
+            f"Translate the following text between the begin and end tags to {self.language}"
             "=== begin ==="
             f"{prompt}"
             "=== end ==="
