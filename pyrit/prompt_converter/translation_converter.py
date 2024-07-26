@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from textwrap import dedent
+
 import json
 import logging
 import uuid
@@ -70,6 +72,13 @@ class TranslationConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
+        prompt = dedent(
+            f"Translate the following text between the begin and end tags to {self.language}"
+            "=== begin ==="
+            f"{prompt}"
+            "=== end ==="
+        )
+
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -86,7 +95,7 @@ class TranslationConverter(PromptConverter):
             ]
         )
 
-        response = await self.send_variation_prompt_async(request)
+        response = await self.send_translation_prompt_async(request)
         translation = None
         for key in response.keys():
             if key.lower() == self.language:
@@ -95,7 +104,7 @@ class TranslationConverter(PromptConverter):
         return ConverterResult(output_text=translation, output_type="text")
 
     @pyrit_json_retry
-    async def send_variation_prompt_async(self, request):
+    async def send_translation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
         response_msg = response.request_pieces[0].converted_value
