@@ -173,7 +173,7 @@ class MemoryInterface(abc.ABC):
         return prompt_ids
 
     def duplicate_conversation_for_new_orchestrator(
-        self, *, new_orchestrator_id: str, conversation_id: str, prompt_piece_metadata: Optional[str] = None
+        self, *, new_orchestrator_id: str, conversation_id: str
     ) -> str:
         """
         Duplicates a conversation from one orchestrator to another.
@@ -185,7 +185,6 @@ class MemoryInterface(abc.ABC):
         Args:
             new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
             conversation_id (str): The conversation ID with existing conversations.
-            prompt_piece_metadata (str): Metadata to add to each cloned prompt piece.
         Returns:
             The uuid for the new conversation.
         """
@@ -198,7 +197,6 @@ class MemoryInterface(abc.ABC):
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
             piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
-            piece.prompt_metadata = prompt_piece_metadata
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
         return new_conversation_id
