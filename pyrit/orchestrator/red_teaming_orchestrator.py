@@ -1,11 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import logging
 from typing import Optional, Union, Dict, Any
 from uuid import uuid4
-
 from PIL import Image
 from colorama import Fore, Style
 
@@ -13,9 +11,9 @@ from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer, Score
 
 logger = logging.getLogger(__name__)
@@ -237,7 +235,7 @@ class RedTeamingOrchestrator(Orchestrator):
             if message.role == "user":
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
-                print(f"{Style.NORMAL}{Fore.GREEN}{message.role}: {json.loads(message.converted_value)['answer']}")
+                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
                 self._display_response(message)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
