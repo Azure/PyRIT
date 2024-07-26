@@ -97,7 +97,7 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
     prompt_target = MockPromptTarget()
 
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
-    translation_converter.send_variation_prompt_async = AsyncMock(return_value={"Spanish": "hola"})
+    translation_converter.send_translation_prompt_async = AsyncMock(return_value={"Spanish": "hola"})
 
     raised = False
     try:
