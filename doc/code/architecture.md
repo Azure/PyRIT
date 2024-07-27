@@ -71,7 +71,3 @@ Sometimes, if a scenario requires specific data, we may need to modify the archi
 ## Notebooks
 
 For all their power, Orchestrators should still be generic. A lot of our front-end code and operators use Notebooks to interact with PyRIT. This is fantastic, but most new logic should not be notebooks. Notebooks should mostly be used for attack setup and documentation. For example, configuring the components and putting them together is a good use of a notebook, but new logic for an attack should be moved to one or more components.
-
-## What Next?
-
-To drill into the functionality
