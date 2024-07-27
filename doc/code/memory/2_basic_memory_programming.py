@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: pyrit-311
+# ---
+
 # %% [markdown]
 # ## Basic Memory Programming Usage
 #
@@ -8,6 +23,7 @@
 # Licensed under the MIT license.
 
 from uuid import uuid4
+from pyrit import memory
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 

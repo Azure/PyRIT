@@ -14,18 +14,16 @@
 # ---
 
 # %% [markdown]
-# ## Azure SQL Server Memory Usage
+# ## Basic Memory Programming Usage
 #
-# The `pyrit.memory` module provides functionality via Azure SQL Server to keep track of the conversation history, scoring, data, and more. You can use memory to read and write data. Here is an example that retrieves a normalized conversation:
+# The `pyrit.memory` module provides functionality to keep track of the conversation history, scoring, data, and more. You can use memory to read and write data. Here is an example that retrieves a normalized conversation:
 
 # %%
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from uuid import uuid4
-from pyrit.common import default_values
-from pyrit.memory.azure_sql_memory import AzureSQLMemory
+from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
 
@@ -45,9 +43,7 @@ message_list = [
     ),
 ]
 
-default_values.load_default_env()
-
-memory = AzureSQLMemory(connection_string=os.environ.get("AZURE_SQL_SERVER_CONNECTION_STRING"))
+memory = DuckDBMemory()
 
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
