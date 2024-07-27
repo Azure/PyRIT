@@ -318,8 +318,29 @@ class EmbeddingResponse(BaseModel):
 class ManyShotTemplate(PromptTemplate):
     @classmethod
     def from_yaml_file(cls, file_path: Path) -> ManyShotTemplate:
-        with open(file_path, "r") as file:
-            content = yaml.safe_load(file)  # Safely load YAML content to avoid arbitrary code execution
+        """
+        Creates an instance of ManyShotTemplate from a YAML file.
+
+        Args:
+            file_path (Path): Path to the YAML file.
+
+        Returns:
+            ManyShotTemplate: An instance of the class with the YAML content.
+        """
+        try:
+            with open(file_path, "r") as file:
+                content = yaml.safe_load(file)  # Safely load YAML content to avoid arbitrary code execution
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                "Invalid dataset file path detected. Please verify that the file is present at the specified "
+                f"location: {file_path}."
+            )
+        except yaml.YAMLError as e:
+            raise ValueError(f"Error parsing YAML file: {e}")
+
+        if "template" not in content or "parameters" not in content:
+            raise ValueError("YAML file must contain 'template' and 'parameters' keys.")
+
         # Return an instance of the class with loaded parameters
         return cls(template=content["template"], parameters=content["parameters"])
 

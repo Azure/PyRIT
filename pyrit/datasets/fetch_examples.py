@@ -10,7 +10,7 @@ import requests
 
 from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
-from pyrit.common.txt_helper import read_txt, write_txt
+from pyrit.common.text_helper import read_txt, write_txt
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
@@ -42,7 +42,8 @@ def _read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
         if file_type in FILE_TYPE_HANDLERS:
             return FILE_TYPE_HANDLERS[file_type]["read"](file)
         else:
-            raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
+            valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+            raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
 
 def _write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: str):
@@ -54,7 +55,8 @@ def _write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: st
         if file_type in FILE_TYPE_HANDLERS:
             FILE_TYPE_HANDLERS[file_type]["write"](file, examples)
         else:
-            raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
+            valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+            raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
 
 def _fetch_from_public_url(source: str, file_type: str) -> List[Dict[str, str]]:
@@ -71,7 +73,8 @@ def _fetch_from_public_url(source: str, file_type: str) -> List[Dict[str, str]]:
                     io.StringIO("\n".join(response.text.splitlines()))
                 )  # noqa: E501
         else:
-            raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
+            valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+            raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
     else:
         raise Exception(f"Failed to fetch examples from public URL. Status code: {response.status_code}")
 
@@ -84,7 +87,8 @@ def _fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
         if file_type in FILE_TYPE_HANDLERS:
             return FILE_TYPE_HANDLERS[file_type]["read"](file)
         else:
-            raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
+            valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+            raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
 
 def fetch_examples(
@@ -98,7 +102,7 @@ def fetch_examples(
 
     Args:
         source (str): The source from which to fetch examples.
-        source_type (Literal["public_url", "file"]): The type of source ('public_url' or 'file'). Defaults to 'public_url'.
+        source_type (Literal["public_url", "file"]): The type of source ('public_url' or 'file').
         file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'json'.
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.

@@ -27,6 +27,7 @@ SOURCE_URLS = {
 
 
 FILE_TYPES = ["json", "csv", "txt"]
+UNSUPPORTED_FILE_TYPES = ["xml", "pdf", "docx"]  # Unsupported file types for testing
 
 
 @pytest.mark.parametrize("file_type,url", [(ft, SOURCE_URLS[ft]) for ft in FILE_TYPES])
@@ -102,6 +103,44 @@ def test_write_cache(file_type, examples):
         mock_file.assert_called_once_with("w")
         # Verify that write was called at least once
         mock_file().write.assert_called()
+
+
+@pytest.mark.parametrize("file_type", UNSUPPORTED_FILE_TYPES)
+def test_fetch_from_public_url_unsupported(file_type):
+    """
+    Test fetching data from a public URL for unsupported file types.
+    """
+    url = f"https://example.com/examples.{file_type}"
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = "example content"
+
+    with patch("requests.get", return_value=mock_response):
+        with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, csv, txt."):
+            _fetch_from_public_url(url, file_type)
+
+
+@pytest.mark.parametrize("file_type", UNSUPPORTED_FILE_TYPES)
+def test_read_cache_unsupported(file_type):
+    """
+    Test reading data from a cache file for unsupported file types.
+    """
+    cache_file = Path(f"cache_file.{file_type}")
+
+    with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, csv, txt."):
+        _read_cache(cache_file, file_type)
+
+
+@pytest.mark.parametrize("file_type", UNSUPPORTED_FILE_TYPES)
+def test_write_cache_unsupported(file_type):
+    """
+    Test writing data to a cache file for unsupported file types.
+    """
+    cache_file = Path(f"cache_file.{file_type}")
+    examples = [{"prompt": "example"}]
+
+    with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, csv, txt."):
+        _write_cache(cache_file, examples, file_type)
 
 
 def test_fetch_examples_with_cache():
