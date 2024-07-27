@@ -2,10 +2,11 @@
 # Licensed under the MIT license.
 
 import abc
+import copy
 from pathlib import Path
 
-from typing import MutableSequence, Optional, Sequence
-from uuid import uuid4
+from typing import MutableSequence, Sequence
+import uuid
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models import (
@@ -170,13 +171,7 @@ class MemoryInterface(abc.ABC):
 
         return prompt_ids
 
-    def duplicate_conversation_for_new_orchestrator(
-        self,
-        *,
-        new_orchestrator_id: str,
-        conversation_id: str,
-        new_conversation_id: Optional[str] = None,
-    ) -> None:
+    def duplicate_conversation_for_new_orchestrator(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
         """
         Duplicates a conversation from one orchestrator to another.
 
@@ -187,21 +182,21 @@ class MemoryInterface(abc.ABC):
         Args:
             new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
             conversation_id (str): The conversation ID with existing conversations.
-            new_conversation_id (str): The new conversation ID to assign to the duplicated conversations.
-                If no new_conversation_id is provided, a new one will be generated.
+        Returns:
+            The uuid for the new conversation.
         """
-        new_conversation_id = new_conversation_id or str(uuid4())
-        if conversation_id == new_conversation_id:
-            raise ValueError("The new conversation ID must be different from the existing conversation ID.")
-        prompt_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        new_conversation_id = str(uuid.uuid4())
+        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
+        prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
         for piece in prompt_pieces:
-            piece.id = uuid4()
+            piece.id = uuid.uuid4()
             if piece.orchestrator_identifier["id"] == new_orchestrator_id:
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
             piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+        return new_conversation_id
 
     def export_conversation_by_orchestrator_id(
         self, *, orchestrator_id: str, file_path: Path = None, export_type: str = "json"
