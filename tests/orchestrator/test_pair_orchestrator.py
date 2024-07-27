@@ -59,6 +59,15 @@ def orchestrator(memory_interface: MemoryInterface, scorer_mock: Scorer) -> PAIR
     return orchestrator
 
 
+@pytest.fixture
+def correctly_formatted_response_piece() -> PromptRequestPiece:
+    return PromptRequestPiece(
+        original_value='{"prompt": "prompt", "improvement": "improvement"}',
+        converted_value='{"prompt": "prompt", "improvement": "improvement"}',
+        role="user",
+    )
+
+
 @pytest.mark.asyncio
 async def test_init(orchestrator):
     assert orchestrator._prompt_target is not None
@@ -194,8 +203,8 @@ async def test_correct_number_of_streams_executes(
 ):
 
     MAX_CONVERSATION_DEPTH = 5
-    MAX_CONVERSTAION_STRAEMS = 10
-    orchestrator._number_of_conversation_streams = MAX_CONVERSTAION_STRAEMS
+    MAX_CONVERSATION_STREAMS = 10
+    orchestrator._number_of_conversation_streams = MAX_CONVERSATION_STREAMS
     orchestrator._max_conversation_depth = MAX_CONVERSATION_DEPTH
     orchestrator._get_attacker_response_and_store = AsyncMock(  # type: ignore
         return_value=_build_prompt_response_with_single_prompt_piece(prompt='{"improvement": "aaaa", "prompt": "bbb"}')
@@ -226,9 +235,9 @@ async def test_correct_number_of_streams_executes(
     )
     result = await orchestrator.run()
     assert len(result) == 0
-    assert orchestrator._scorer.score_async.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSTAION_STRAEMS
-    assert orchestrator._get_attacker_response_and_store.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSTAION_STRAEMS
-    assert orchestrator._get_target_response_and_store.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSTAION_STRAEMS
+    assert orchestrator._scorer.score_async.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSATION_STREAMS
+    assert orchestrator._get_attacker_response_and_store.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSATION_STREAMS
+    assert orchestrator._get_target_response_and_store.call_count == MAX_CONVERSATION_DEPTH * MAX_CONVERSATION_STREAMS
 
 
 @pytest.mark.asyncio
@@ -253,30 +262,40 @@ async def test_get_target_response_and_store(orchestrator: PAIROrchestrator) -> 
 
 
 @pytest.mark.asyncio
-async def test_start_new_conversation(orchestrator: PAIROrchestrator) -> None:
+async def test_start_new_conversation(
+    orchestrator: PAIROrchestrator, correctly_formatted_response_piece: PromptRequestPiece
+) -> None:
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
-        mock_normalizer.send_prompt_async = AsyncMock(return_value=PromptRequestResponse(request_pieces=[]))
+        mock_normalizer.send_prompt_async = AsyncMock(
+            return_value=PromptRequestResponse(request_pieces=[correctly_formatted_response_piece])
+        )
         await orchestrator._get_attacker_response_and_store(target_response="response", start_new_conversation=True)
         assert orchestrator._last_attacker_conversation_id != ""
         mock_normalizer.send_prompt_async.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_continue_conversation(orchestrator: PAIROrchestrator) -> None:
+async def test_continue_conversation(
+    orchestrator: PAIROrchestrator, correctly_formatted_response_piece: PromptRequestPiece
+) -> None:
     orchestrator._last_attacker_conversation_id = "existing_id"
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
-        mock_normalizer.send_prompt_async = AsyncMock(return_value=PromptRequestResponse(request_pieces=[]))
+        mock_normalizer.send_prompt_async = AsyncMock(
+            return_value=PromptRequestResponse(request_pieces=[correctly_formatted_response_piece])
+        )
         await orchestrator._get_attacker_response_and_store(target_response="response", start_new_conversation=False)
         assert orchestrator._last_attacker_conversation_id == "existing_id"
         mock_normalizer.send_prompt_async.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_attacker_response(orchestrator: PAIROrchestrator) -> None:
-    expected_response = PromptRequestResponse(request_pieces=[])
+async def test_attacker_response(
+    orchestrator: PAIROrchestrator, correctly_formatted_response_piece: PromptRequestPiece
+) -> None:
+    expected_response = PromptRequestResponse(request_pieces=[correctly_formatted_response_piece])
     with patch.object(orchestrator, "_prompt_normalizer") as mock_normalizer:
         mock_normalizer.send_prompt_async = AsyncMock(return_value=expected_response)
         response = await orchestrator._get_attacker_response_and_store(
             target_response="response", start_new_conversation=False
         )
-        assert response == expected_response
+        assert response == "prompt"

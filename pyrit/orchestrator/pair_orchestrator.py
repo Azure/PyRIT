@@ -73,10 +73,13 @@ class PAIROrchestrator(Orchestrator):
                 If False, the algorithm will continue to run until all conversation streams are exhausted possibly
                 finding multiple successful jailbreaks.
             scorer (Score, optional): The scorer to use for scoring the target's response.
-            scorer_sensitivity (float, optional): The sensitivity of the scorer. The higher the value suggests that the
-                jailbreak is more successful and aligns more with the attacker's objective. The lower the value suggests
-                that the jailbreak is less successful and aligns more with the target's objective. Defaults to 1.0.
-                (or 10/10 in the scale of the PAIR paper).
+            scorer_sensitivity (float, optional): The sensitivity of the scorer.
+                This value indicates the scorer's tolerance for scores below the maximum score value.
+                Note that the sensitivity refers to the normalized score (value-min)/(max-min).
+                For example, for a scoring scale 1-10, the scores map as follows:
+                1 -> 0.0, 2 -> 0.11, 3 -> 0.22, ..., 10 -> 1.0.
+                A sensitivity of 0.7 would consider a score of 7 or above as a successful jailbreak.
+                Defaults to 1.0 which is equivalent to 10/10 in the scale of the PAIR paper.
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                 the order they are provided. The default PAIR implementation does not use any converters.
         """
@@ -112,9 +115,10 @@ class PAIROrchestrator(Orchestrator):
         if self._scorer.scorer_type != "float_scale":
             raise ValueError("PAIR orchestrator requires a scorer with a 'float_scale' scorer_type")
 
+    @pyrit_json_retry
     async def _get_attacker_response_and_store(
         self, *, target_response: str, start_new_conversation: bool = False
-    ) -> PromptRequestResponse:
+    ) -> str:
         """
         Generates an attacker response based on the target response.
 
@@ -149,7 +153,7 @@ class PAIROrchestrator(Orchestrator):
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
-        return attacker_response
+        return self._parse_attacker_response(response=attacker_response)
 
     async def _get_target_response_and_store(
         self, *, text: str, conversation_id: Optional[str] = None
@@ -180,7 +184,6 @@ class PAIROrchestrator(Orchestrator):
         )
         return target_response
 
-    @pyrit_json_retry
     def _parse_attacker_response(self, *, response: PromptRequestResponse) -> str:
         try:
             json_response = json.loads(response.request_pieces[0].converted_value)
@@ -208,15 +211,13 @@ class PAIROrchestrator(Orchestrator):
         t = tqdm(range(self._max_conversation_depth), disable=not self._verbose, leave=False, desc="Conversation depth")
         conversation_id = str(uuid.uuid4())
         for depth in t:
-            attacker_response = await self._get_attacker_response_and_store(
-                target_response=prompt_to_improve_upon, start_new_conversation=depth == 0
-            )
             try:
-                attacker_prompt_suggestion = self._parse_attacker_response(response=attacker_response)
+                attacker_prompt_suggestion = await self._get_attacker_response_and_store(
+                    target_response=prompt_to_improve_upon, start_new_conversation=(depth == 0)
+                )
             except InvalidJsonException:
-                # If the attacker response is not JSON serializable, continue to the next turn.
-                # The @pyrit_json_retry decorator masks the base exception as InvalidJsonException
-                continue
+                logger.warn("Invalid JSON response from attacker despite retries.")
+                break
             if self._single_turn_jailbreak_only:
                 # Create a new conversation ID for each turn
                 conversation_id = str(uuid.uuid4())
@@ -285,6 +286,8 @@ class PAIROrchestrator(Orchestrator):
         filtered_pieces = self._memory.get_prompt_request_pieces_by_id(
             prompt_ids=[str(s.prompt_request_response_id) for s in scores_above_threshold]
         )
+        if not filtered_pieces:
+            print("No conversations with scores above the score threshold found.")
         grouped_pieces = self._group_by_conversation_id(pieces=list(filtered_pieces))
         # Prints conversation
         for idx, (conversation_id, pieces) in enumerate(grouped_pieces.items(), start=1):
