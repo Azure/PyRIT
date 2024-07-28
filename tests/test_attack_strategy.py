@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
-import pathlib
 import pytest
+
+from pyrit.common.path import DATASETS_PATH
 from pyrit.models import AttackStrategy
 
 
@@ -14,9 +14,7 @@ def test_attack_strategy_strings():
 
 
 def test_attack_strategy_from_file():
-    strategy_path = (
-        pathlib.Path(os.getcwd()) / "pyrit" / "datasets" / "orchestrators" / "red_teaming" / "text_generation.yaml"
-    )
+    strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml"
     with open(strategy_path, "r") as strategy_file:
         strategy = strategy_file.read()
         string_before_template = "template: |\n  "
