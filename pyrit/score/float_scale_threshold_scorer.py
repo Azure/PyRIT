@@ -46,7 +46,7 @@ class FloatScaleThresholdScorer(Scorer):
             if score_value == self._threshold:
                 comparison_symbol = "="
             score.score_rationale = (
-                f"Normalized scale score: {score.get_value()} {comparison_symbol} threshold {self._threshold}\n"
+                f"Normalized scale score: {score_value} {comparison_symbol} threshold {self._threshold}\n"
                 f"Rationale for scale score: {score.score_rationale}"
             )
             score.score_type = self.scorer_type
