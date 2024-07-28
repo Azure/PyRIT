@@ -127,8 +127,14 @@ def test_read_cache_unsupported(file_type):
     """
     cache_file = Path(f"cache_file.{file_type}")
 
+    # Ensure the file exists before testing
+    cache_file.touch()
+
     with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, csv, txt."):
         _read_cache(cache_file, file_type)
+
+    # Cleanup the created file after the test
+    cache_file.unlink()
 
 
 @pytest.mark.parametrize("file_type", UNSUPPORTED_FILE_TYPES)
