@@ -37,7 +37,18 @@ class FloatScaleThresholdScorer(Scorer):
         """
         scores = await self._scorer.score_async(request_response, task=task)
         for score in scores:
-            score.score_value = str(score.get_value() >= self._threshold)
+            score_value = score.get_value()
+            score.score_value = str(score_value >= self._threshold)
+            if score_value > self._threshold:
+                comparison_symbol = ">"
+            if score_value < self._threshold:
+                comparison_symbol = "<"
+            if score_value == self._threshold:
+                comparison_symbol = "="
+            score.score_rationale = (
+                f"Normalized scale score: {score.get_value()} {comparison_symbol} threshold {self._threshold}\n"
+                f"Rationale for scale score: {score.score_rationale}"
+            )
             score.score_type = self.scorer_type
             score.id = uuid.uuid4()
         self._memory.add_scores_to_memory(scores=scores)
