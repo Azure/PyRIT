@@ -10,7 +10,7 @@ from pyrit.score.scorer import Scorer
 
 
 class FloatScaleThresholdScorer(Scorer):
-    """A scorer that leverages a scale scorer and applies a threshold to the score."""
+    """A scorer that leverages a float_scale scorer and applies a threshold to the score to make it a true_false scorer."""
 
     def __init__(self, *, memory: MemoryInterface, scorer: Scorer, threshold: float) -> None:
         self._scorer = scorer
