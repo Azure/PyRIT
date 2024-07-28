@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Optional
 from pyrit.score import Score, Scorer
 from pyrit.common import default_values
 from pyrit.memory.duckdb_memory import DuckDBMemory
@@ -73,15 +74,15 @@ class AzureContentFilterScorer(Scorer):
         else:
             raise ValueError("Please provide the Azure Content Safety API key and endpoint")
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
-                                                   Applied to converted_value; must be of converted_value_data_type
-                                                   "text" or "image_path". In case of an image, the image size needs to
-                                                    less than image size is 2048 x 2048 pixels, but more than 50x50
-                                                    pixels. The data size should not exceed exceed 4 MB. Image must be
-                                                    of type JPEG, PNG, GIF, BMP, TIFF, or WEBP.
+                Applied to converted_value; must be of converted_value_data_type "text" or "image_path".
+                In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
+                but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
+                of type JPEG, PNG, GIF, BMP, TIFF, or WEBP.
+            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
         Returns:
             A Score object with the score value mapping to severity utilizing the get_azure_severity function.
             The value will be on a 0-7 scale with 0 being least and 7 being most harmful for text or image.
@@ -92,7 +93,7 @@ class AzureContentFilterScorer(Scorer):
             Raises ValueError if converted_value_data_type is not "text" or "image_path"
             or image isn't in supported format
         """
-        self.validate(request_response)
+        self.validate(request_response, task=task)
 
         filter_result: dict[str, list] = {}
         if request_response.converted_value_data_type == "text":
@@ -141,7 +142,7 @@ class AzureContentFilterScorer(Scorer):
         base64_encoded_data = image_serializer.read_data_base64()
         return base64_encoded_data
 
-    def validate(self, request_response: PromptRequestPiece):
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if (
             request_response.converted_value_data_type != "text"
             and request_response.converted_value_data_type != "image_path"

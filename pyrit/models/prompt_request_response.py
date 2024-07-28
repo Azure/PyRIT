@@ -133,6 +133,7 @@ def construct_response_from_request(
                 prompt_target_identifier=request.prompt_target_identifier,
                 orchestrator_identifier=request.orchestrator_identifier,
                 original_value_data_type=response_type,
+                converted_value_data_type=response_type,
                 prompt_metadata=prompt_metadata,
                 response_error=error,
             )

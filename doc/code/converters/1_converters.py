@@ -40,14 +40,9 @@ default_values.load_default_env()
 prompt = "tell me how to cut down a tree"
 
 
-print(await ROT13Converter().convert_async(prompt=prompt))  # type: ignore
-print(await AsciiArtConverter().convert_async(prompt=prompt))  # type: ignore
-print(await RandomCapitalLettersConverter().convert_async(prompt=prompt))  # type: ignore
-
-# With percentage of capital letters
-print(await RandomCapitalLettersConverter(percentage=25.0).convert_async(prompt=prompt))  # type: ignore
-
-print(await AsciiArtConverter().convert_async(prompt=prompt))  # type: ignore
+print(await ROT13Converter().convert_tokens_async(prompt=prompt))  # type: ignore
+print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(prompt=prompt))  # type: ignore
+print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 
 # %% [markdown]
 # ### Where do Converters fit?

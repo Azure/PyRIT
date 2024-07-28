@@ -3,7 +3,7 @@
 
 import os
 import tempfile
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.models import PromptDataType
@@ -84,6 +84,68 @@ async def test_send_prompt_async_no_response_adds_memory(normalizer_piece: Norma
 
 
 @pytest.mark.asyncio
+async def test_send_prompt_async_request_response_added_to_memory(normalizer_piece: NormalizerRequestPiece):
+    prompt_target = AsyncMock()
+
+    response = PromptRequestPiece(role="assistant", original_value="test_response").to_prompt_request_response()
+
+    prompt_target.send_prompt_async = AsyncMock(return_value=response)
+    memory = MagicMock()
+    normalizer = PromptNormalizer(memory=memory)
+
+    await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([normalizer_piece]), target=prompt_target)
+
+    assert memory.add_request_response_to_memory.call_count == 2
+
+    # Validate that first request is added to memory, then response is added to memory
+    assert (
+        normalizer_piece.prompt_value
+        == memory.add_request_response_to_memory.call_args_list[0][1]["request"].request_pieces[0].original_value
+    )
+    assert (
+        "test_response"
+        == memory.add_request_response_to_memory.call_args_list[1][1]["request"].request_pieces[0].original_value
+    )
+
+    assert memory.add_request_response_to_memory.call_args_list[1].called_after(prompt_target.send_prompt_async)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_exception(normalizer_piece: NormalizerRequestPiece):
+    prompt_target = AsyncMock()
+    prompt_target.send_prompt_async = AsyncMock(side_effect=ValueError("test_exception"))
+
+    memory = MagicMock()
+
+    normalizer = PromptNormalizer(memory=memory)
+    await normalizer._build_prompt_request_response(request=NormalizerRequest([normalizer_piece]), target=prompt_target)
+
+    with patch("pyrit.models.construct_response_from_request") as mock_construct:
+        mock_construct.return_value = "test"
+
+        try:
+            await normalizer.send_prompt_async(
+                normalizer_request=NormalizerRequest([normalizer_piece]), target=prompt_target
+            )
+        except ValueError:
+            assert memory.add_request_response_to_memory.call_count == 2
+
+            # Validate that first request is added to memory, then exception is added to memory
+            assert (
+                normalizer_piece.prompt_value
+                == memory.add_request_response_to_memory.call_args_list[0][1]["request"]
+                .request_pieces[0]
+                .original_value
+            )
+            assert (
+                "test_exception"
+                == memory.add_request_response_to_memory.call_args_list[1][1]["request"]
+                .request_pieces[0]
+                .original_value
+            )
+
+
+@pytest.mark.asyncio
 async def test_send_prompt_async_adds_memory_twice(
     normalizer_piece: NormalizerRequestPiece, response: PromptRequestResponse
 ):
@@ -154,7 +216,7 @@ async def test_send_prompt_async_image_converter():
         filename = f.name
         f.write(b"Hello")
 
-        mock_image_converter.convert_async.return_value = ConverterResult(
+        mock_image_converter.convert_tokens_async.return_value = ConverterResult(
             output_type="image_path",
             output_text=filename,
         )
