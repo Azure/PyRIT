@@ -133,7 +133,7 @@ class SelfAskLikertScorer(Scorer):
             parsed_response = json.loads(response_json)
             score_value = self.scale_value_float(float(parsed_response["score_value"]), 1, 5)
             score = Score(
-                score_value=score_value,
+                score_value=str(score_value),
                 score_value_description=parsed_response["description"],
                 score_type=self.scorer_type,
                 score_category=self._score_category,
