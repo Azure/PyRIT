@@ -43,7 +43,7 @@
 # ## Write prompts yourself
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
-# the classes from the [PromptChatTarget](./code/targets/prompt_targets.ipynb) module (e.g.,
+# the classes from the [PromptChatTarget](./code/targets/) module (e.g.,
 # AzureOpenAIChatTarget for Azure OpenAI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
 # packages (e.g., the [openai](https://github.com/openai/openai-python) Python package). When using `PromptChatTarget` and `PromptTarget` classes, always employ them within a "with" context manager to ensure automatic and safe release of database connections after use as shown below.
 
@@ -188,7 +188,7 @@ with RedTeamingOrchestrator(
 # for example, `pyrit/datasets/orchestrators/red_teaming/text_generation.yaml`).
 #
 # PyRIT also offers various integration choices for the red teaming orchestrators, including
-# [Azure ML managed online endpoints](../doc/code/targets/azure_ml_chat.ipynb),
+# [Azure ML managed online endpoints](../doc/code/targets/4_non_open_ai_chat_targets.ipynb),
 # and Azure OpenAI models (as shown above).
 #
 # ## Output scoring

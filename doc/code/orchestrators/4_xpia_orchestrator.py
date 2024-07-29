@@ -20,8 +20,6 @@
 #
 # XPIAs occur when an attacker takes over a user's session with an AI by embedding their own instructions in a piece of content that the AI system is processing. In this demo, the entire flow is handled by the `XPIATestOrchestrator`. It starts with the attacker uploading a file to the Azure Blob Storage container, which contains the jailbreak prompt. We assume that the attacker is aware that the victim has an AI system summarizing uploaded files. Note that this can be interchanged with other attack setups, e.g., sending an email knowing that an LLM summarizes the contents, or uploading a resume to an applicant tracking system knowing that an LLM is analyzing it for suitability for the role. The summarization prompt triggers the XPIA by making the LLM process the jailbreak. Notably, the LLM may still be able to prevent being compromised depending on its metaprompt or other content filters.
 #
-# Before starting, confirm that you have the [correct version of PyRIT installed](../setup/install_pyrit.md).
-#
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
 # %%

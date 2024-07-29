@@ -1,6 +1,6 @@
 # Recommended Docs Reading Order
 
-Most of our documentation is located within the `doc` directory. There is no single way to read the documentation, and it's perfectly fine to jump around. However, here is a recommended reading order. Note that in many sections there are numbered documentation pages. If there is no number attached, it is supplemental.
+Most of our documentation is located within the `doc` directory. There is no single way to read the documentation, and it's perfectly fine to jump around. However, here is a recommended reading order. Note that in many sections there are numbered documentation pages. If there is no number attached, it is supplemental and the recommended reading order would be to skip it on a first pass.
 
 1. [How to Guide](./how_to_guide.ipynb): This provides an overview of the PyRIT framework.
 2. **Installation**: Before diving in, it's useful to have a working version so you can follow along.

@@ -15,24 +15,25 @@
 # %% [markdown]
 # # Creating Custom Targets
 #
-# Often, to use PyRIT, you need to create custom targets so it can interact with the system you're testing. This demo shows how to use PyRIT to connect with custom endpoints; in this case, "testing" AI challenges [Gandalf](https://gandalf.lakera.ai/) and [Crucible](https://crucible.dreadnode.io/).
+# Often, to use PyRIT, you need to create custom targets so it can interact with the system you're testing. [Gandalf](https://gandalf.lakera.ai/) and [Crucible](https://crucible.dreadnode.io/) are both platforms designed as playgrounds that emulate AI applications. This demo shows how to use PyRIT to connect with these endpoints. If you're testing your own custom endpoint, a good start is often to build a target, and then you will be able to interact with it similar to this demo.
 #
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 #
 # ### Gandalf Target
 #
-# There are two targets in this demo. The first is a Gandalf target, which is similar to a real-world application you might be using PyRIT to test. The code for this can be found [here](../../../pyrit/prompt_target/gandalf_target.py) and is similar to the code you would use to connect PyRIT to a real-world custom endpoint.
-#
-# The second target used in this demo is attacker infrastructure deployed on Azure OpenAI. This is used to help the attacker generate prompts to bypass Gandalf protections.
+# Gandalf is similar to a real-world application you might be using PyRIT to test. The code for PyRIT's Gandalf target can be found [here](../../../pyrit/prompt_target/gandalf_target.py) and is similar to the code you would use to connect PyRIT to a real-world custom endpoint.
 #
 # > Your goal is to make Gandalf reveal the secret password for each level.
 # > However, Gandalf will level up each time you guess the password and will try harder not to give it away. Can you beat level 7?
 # > (There is a bonus level 8)
 # > https://gandalf.lakera.ai/
 #
-# Gandalf contains 7 different levels. In this demo, we will show how to automatically bypass the first couple. It uses the [RedTeamingOrchestrator](../orchestrators/3_red_teaming_orchestrator.ipynb) as a strategy to solve these challenges.
+#
+# Gandalf contains 7 different levels. In this demo, we will show how to automatically bypass (at least) the first couple. It uses the [RedTeamingOrchestrator](../orchestrators/3_red_teaming_orchestrator.ipynb) as a strategy to solve these challenges.
 #
 # Each level gets progressively more difficult. Before continuing, it may be beneficial to manually try the Gandalf challenges to get a feel for how they are solved.
+#
+# In this demo below we also use a standard `AzureOpenAI` target as an "AI Red Team Bot". This is attacker infrastructure, and is used to help the attacker generate prompts to bypass Gandalf protections.
 #
 # <img src="../../../assets/gandalf-demo-setup.png" alt="gandalf-demo-setup.png" height="400"/>
 #
@@ -96,7 +97,7 @@ with RedTeamingOrchestrator(
 # %% [markdown]
 # ### Crucible Target
 #
-# The Defcon AI CTF challenges are a fun way to get into AI Red Teaming. We've added a Crucible target so you can make use of PyRIT. PyRIT certainly won't be able to solve all these challenges for you, but it can be used as a tool to help you solve the challenges yourself (much like how PyRIT acts as a tool in real red team engagements!).
+# The Defcon AI CTF challenges are a fun way to get into AI Red Teaming. Similar to Gandalf, we've added a Crucible target so you can make use of PyRIT. PyRIT certainly won't be able to solve all these challenges for you, but it can be used as a tool to help you solve the challenges yourself (much like how PyRIT acts as a tool in real red team engagements!).
 #
 # Below is an example of using PromptSendingOrchestrator, which allows the use of all our converters. For example, you could use this to utilize all the built-in jailbreaks, base64 encode them, use variations, different languages, etc.
 
@@ -185,3 +186,6 @@ with CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io") as cruc
     # In reality you probably want to use more than one turn.
     await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=1)  # type: ignore
     red_teaming_orchestrator.print_conversation()
+
+# %% [markdown]
+# Check out the code for the Crucible target [here](../../../pyrit/prompt_target/crucible_target.py).

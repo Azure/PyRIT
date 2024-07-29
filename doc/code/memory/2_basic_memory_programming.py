@@ -23,7 +23,6 @@
 # Licensed under the MIT license.
 
 from uuid import uuid4
-from pyrit import memory
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 

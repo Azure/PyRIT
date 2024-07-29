@@ -51,12 +51,12 @@ default_values.load_default_env()
 azure_ml_chat_target = AzureMLChatTarget()
 
 with PromptSendingOrchestrator(prompt_target=azure_ml_chat_target) as orchestrator:
-    response = await orchestrator.send_prompts_async(prompt_list=["Hello world!"])
+    response = await orchestrator.send_prompts_async(prompt_list=["Hello world!"])  # type: ignore
     print(response[0])
 
 # %% [markdown]
 #
 # You can then use this cell anywhere you would use a `PromptTarget` object.
-# For example, you can create a red teaming orchestrator and use this instead of the `AzureOpenAI` target and do the entire [Gandalf Demo](./3_gandalf_target.ipynb) but use this AML model.
+# For example, you can create a red teaming orchestrator and use this instead of the `AzureOpenAI` target and do the [Gandalf or Crucible Demos](./3_custom_targets.ipynb) but use this AML model.
 #
 # This is also shown in the [Red Teaming Orchestrator](../orchestrators/3_red_teaming_orchestrator.ipynb) documentation.

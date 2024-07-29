@@ -49,5 +49,5 @@ default_values.load_default_env()
 target = AzureOpenAIChatTarget(use_aad_auth=False)
 
 with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
-    response = await orchestrator.send_prompts_async(prompt_list=[jailbreak_prompt])
+    response = await orchestrator.send_prompts_async(prompt_list=[jailbreak_prompt])  # type: ignore
     print(response[0])

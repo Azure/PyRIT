@@ -61,7 +61,7 @@ with PromptSendingOrchestrator(prompt_target=img_prompt_target) as orchestrator:
     image_location = response[0].request_pieces[0].converted_value
 
     # You can use the following to show the image
-    #if image_location != "content blocked":
+    # if image_location != "content blocked":
     #    im = Image.open(image_location)
     #    im.show()
 
@@ -150,7 +150,6 @@ for piece_data in data:
 
     normalizer_request = NormalizerRequest(request_pieces)
     normalizer_requests.append(normalizer_request)
-
 
 
 with PromptSendingOrchestrator(prompt_target=azure_openai_gptv_chat_target) as orchestrator:

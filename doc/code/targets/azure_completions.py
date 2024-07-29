@@ -16,9 +16,9 @@
 # %% [markdown]
 # ## Azure OpenAI Completions
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT and have the applicable secrets configured as described [here](../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT and have the applicable secrets configured as described [here](../../setup/).
 #
-# Once you are configured, then you will be able to get completions for your text. 
+# Once you are configured, then you will be able to get completions for your text.
 
 # %%
 import os
@@ -37,7 +37,7 @@ deployment_name = os.environ.get("AZURE_OPENAI_COMPLETION_DEPLOYMENT")
 target = AzureOpenAICompletionTarget(api_key=api_key, endpoint=api_base, deployment_name=deployment_name)
 
 with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
-    response = await orchestrator.send_prompts_async(prompt_list=["Hello! Who are you?"])
+    response = await orchestrator.send_prompts_async(prompt_list=["Hello! Who are you?"])  # type: ignore
     print(response[0])
 
 # %%

@@ -17,8 +17,7 @@
 #
 # Although converters can be used on their own, they should be thought of as a piece in the pipeine. Typically any orchestrator will have arguments so that prompts can be converted before being sent to the target. They can be stacked, use LLMs, and are a powerful tool.
 #
-# Before starting, confirm that you have the
-# [correct version of PyRIT installed](../setup/install_pyrit.md).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 #
 # ### Stacking Converters with PromptSendingOrchestrator
 #
@@ -49,4 +48,4 @@ target = TextTarget()
 with PromptSendingOrchestrator(
     prompt_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
 ) as orchestrator:
-    await orchestrator.send_prompts_async(prompt_list=prompts) # type: ignore
+    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore

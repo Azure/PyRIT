@@ -143,5 +143,3 @@ with RedTeamingOrchestrator(
 ) as orchestrator:
     score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
     orchestrator.print_conversation()
-
-
