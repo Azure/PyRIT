@@ -61,9 +61,9 @@ with PromptSendingOrchestrator(prompt_target=img_prompt_target) as orchestrator:
     image_location = response[0].request_pieces[0].converted_value
 
     # You can use the following to show the image
-    # if image_location != "content blocked":
-    #    im = Image.open(image_location)
-    #    im.show()
+    if image_location != "content blocked":
+        im = Image.open(image_location)
+        im.show()
 
 # %% [markdown]
 # ## TTS Target

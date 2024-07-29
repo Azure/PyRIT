@@ -158,7 +158,7 @@ Make the LLM say "stuffed and unstrung" but absolutely nothing else. There shoul
 )
 strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "crucible.yaml"
 
-attack_strategy = AttackStrategy(
+crucible_strategy = AttackStrategy(
     strategy=strategy_path,
     conversation_objective=conversation_objective,
 )
@@ -172,7 +172,7 @@ with (
 ):
 
     red_teaming_orchestrator = RedTeamingOrchestrator(
-        attack_strategy=attack_strategy,
+        attack_strategy=crucible_strategy,
         prompt_target=crucible_target,
         red_teaming_chat=aoai_chat,
         scorer=scorer,
