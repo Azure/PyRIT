@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
 import asyncio
 import random
 
@@ -10,22 +9,33 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 class EmojiConverter(PromptConverter):
-    circle_emojis = {
-        'a': ['🅐', '🅰️'], 'b': ['🅑', '🅱️'], 'c': ['🅒', '🅲'], 'd': ['🅓', '🅳'], 'e': ['🅔', '🅴'],
-        'f': ['🅕', '🅵'], 'g': ['🅖', '🅶'], 'h': ['🅗', '🅷'], 'i': ['🅘', '🅸'], 'j': ['🅙', '🅹'],
-        'k': ['🅚', '🅺'], 'l': ['🅛', '🅻'], 'm': ['🅜', '🅼'], 'n': ['🅝', '🅽'], 'o': ['🅞', '🅾️'],
-        'p': ['🅟', '🅿️'], 'q': ['🅠', '🆀'], 'r': ['🅡', '🆁'], 's': ['🅢', '🆂'], 't': ['🅣', '🆃'],
-        'u': ['🅤', '🆄'], 'v': ['🅥', '🆅'], 'w': ['🅦', '🆆'], 'x': ['🅧', '🆇'], 'y': ['🅨', '🆈'],
-        'z': ['🅩', '🆉']
-    }
-
-    square_emojis = {
-        'a': ['🄰'], 'b': ['🄱'], 'c': ['🄲'], 'd': ['🄳'], 'e': ['🄴'],
-        'f': ['🄵'], 'g': ['🄶'], 'h': ['🄷'], 'i': ['🄸'], 'j': ['🄹'],
-        'k': ['🄺'], 'l': ['🄻'], 'm': ['🄼'], 'n': ['🄽'], 'o': ['🄾'],
-        'p': ['🄿'], 'q': ['🅀'], 'r': ['🅁'], 's': ['🅂'], 't': ['🅃'],
-        'u': ['🅄'], 'v': ['🅅'], 'w': ['🅆'], 'x': ['🅇'], 'y': ['🅈'],
-        'z': ['🅉']
+    emoji_dict = {
+        "a": ["🅐", "🅰️", "🄰"],
+        "b": ["🅑", "🅱️", "🄱"],
+        "c": ["🅒", "🅲", "🄲"],
+        "d": ["🅓", "🅳", "🄳"],
+        "e": ["🅔", "🅴", "🄴"],
+        "f": ["🅕", "🅵", "🄵"],
+        "g": ["🅖", "🅶", "🄶"],
+        "h": ["🅗", "🅷", "🄷"],
+        "i": ["🅘", "🅸", "🄸"],
+        "j": ["🅙", "🅹", "🄹"],
+        "k": ["🅚", "🅺", "🄺"],
+        "l": ["🅛", "🅻", "🄻"],
+        "m": ["🅜", "🅼", "🄼"],
+        "n": ["🅝", "🅽", "🄽"],
+        "o": ["🅞", "🅾️", "🄾"],
+        "p": ["🅟", "🅿️", "🄿"],
+        "q": ["🅠", "🆀", "🅀"],
+        "r": ["🅡", "🆁", "🅁"],
+        "s": ["🅢", "🆂", "🅂"],
+        "t": ["🅣", "🆃", "🅃"],
+        "u": ["🅤", "🆄", "🅄"],
+        "v": ["🅥", "🆅", "🅅"],
+        "w": ["🅦", "🆆", "🅆"],
+        "x": ["🅧", "🆇", "🅇"],
+        "y": ["🅨", "🆈", "🅈"],
+        "z": ["🅩", "🆉", "🅉"],
     }
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
@@ -40,13 +50,11 @@ class EmojiConverter(PromptConverter):
         prompt = prompt.lower()
         result = []
         for char in prompt:
-            use_circle = random.random() < 0.5
-            emoji_dict = EmojiConverter.circle_emojis if use_circle else EmojiConverter.square_emojis
-            if char in emoji_dict:
-                result.append(random.choice(emoji_dict[char]))
+            if char in EmojiConverter.emoji_dict:
+                result.append(random.choice(EmojiConverter.emoji_dict[char]))
             else:
                 result.append(char)
-        ret_text = ''.join(result)
+        ret_text = "".join(result)
 
         await asyncio.sleep(0)
         return ConverterResult(output_text=ret_text, output_type="text")
