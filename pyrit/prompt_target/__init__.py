@@ -34,5 +34,4 @@ __all__ = [
     "PromptTarget",
     "TextTarget",
     "OllamaChatTarget",
-    "CrescendoLLM"
 ]

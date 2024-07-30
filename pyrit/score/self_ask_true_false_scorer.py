@@ -115,8 +115,6 @@ class SelfAskTrueFalseScorer(Scorer):
             response_json = response.request_pieces[0].converted_value
             parsed_response = json.loads(response_json)
 
-            #print("SCORER PARSED RESONSE: ", parsed_response)
-            
             score = Score(
                 score_value=str(parsed_response["value"]),
                 score_value_description=parsed_response["description"],
