@@ -135,7 +135,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -149,7 +149,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         try:
             result: list[PromptRequestPiece] = self.query_entries(
                 PromptMemoryEntry,
-                conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == str(orchestrator_id),
+                conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id,
             )  # type: ignore
             return result
         except Exception as e:

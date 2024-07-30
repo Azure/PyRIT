@@ -2,10 +2,11 @@
 # Licensed under the MIT license.
 
 import abc
+import copy
 from pathlib import Path
 
-from typing import MutableSequence, Optional, Sequence
-from uuid import uuid4
+from typing import MutableSequence, Sequence
+import uuid
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models import (
@@ -69,7 +70,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> Sequence[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -105,7 +106,7 @@ class MemoryInterface(abc.ABC):
         Gets a list of scores based on prompt_request_response_ids.
         """
 
-    def get_scores_by_orchestrator_id(self, *, orchestrator_id: int) -> list[Score]:
+    def get_scores_by_orchestrator_id(self, *, orchestrator_id: str) -> list[Score]:
         """
         Retrieves a list of Score objects associated with the PromptRequestPiece objects
         which have the specified orchestrator ID.
@@ -147,12 +148,12 @@ class MemoryInterface(abc.ABC):
             Sequence[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
 
-    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
         Args:
-            orchestrator_id (int): The orchestrator ID to match.
+            orchestrator_id (str): The orchestrator ID to match.
 
         Returns:
             list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
@@ -161,7 +162,7 @@ class MemoryInterface(abc.ABC):
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
-    def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: int) -> list[str]:
+    def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: str) -> list[str]:
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
 
         prompt_ids = []
@@ -170,13 +171,7 @@ class MemoryInterface(abc.ABC):
 
         return prompt_ids
 
-    def duplicate_conversation_for_new_orchestrator(
-        self,
-        *,
-        new_orchestrator_id: str,
-        conversation_id: str,
-        new_conversation_id: Optional[str] = None,
-    ) -> None:
+    def duplicate_conversation_for_new_orchestrator(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
         """
         Duplicates a conversation from one orchestrator to another.
 
@@ -187,24 +182,24 @@ class MemoryInterface(abc.ABC):
         Args:
             new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
             conversation_id (str): The conversation ID with existing conversations.
-            new_conversation_id (str): The new conversation ID to assign to the duplicated conversations.
-                If no new_conversation_id is provided, a new one will be generated.
+        Returns:
+            The uuid for the new conversation.
         """
-        new_conversation_id = new_conversation_id or str(uuid4())
-        if conversation_id == new_conversation_id:
-            raise ValueError("The new conversation ID must be different from the existing conversation ID.")
-        prompt_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        new_conversation_id = str(uuid.uuid4())
+        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
+        prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
         for piece in prompt_pieces:
-            piece.id = uuid4()
+            piece.id = uuid.uuid4()
             if piece.orchestrator_identifier["id"] == new_orchestrator_id:
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
             piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+        return new_conversation_id
 
     def export_conversation_by_orchestrator_id(
-        self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"
+        self, *, orchestrator_id: str, file_path: Path = None, export_type: str = "json"
     ):
         """
         Exports conversation data with the given orchestrator ID to a specified file.

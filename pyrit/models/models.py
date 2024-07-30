@@ -246,7 +246,7 @@ class PromptTemplate(YamlLoadable):
                     f"No parameters matched, they might be missing in the template. "
                     f'[expected="{self.parameters}", actual="{kwargs}"]'
                 )
-            final_prompt = re.sub(pattern=regex, string=final_prompt, repl=value)
+            final_prompt = re.sub(pattern=regex, string=final_prompt, repl=str(value))
         return final_prompt
 
 
