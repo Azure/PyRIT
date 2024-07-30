@@ -31,7 +31,12 @@ class SelfAskTrueFalseScorer(Scorer):
     """A class that represents a self-ask true/false for scoring."""
 
     def __init__(
-        self, *, chat_target: PromptChatTarget, true_false_question_path: Path, memory: MemoryInterface = None
+        self,
+        *,
+        chat_target: PromptChatTarget,
+        true_false_question_path: Path,
+        true_false_system_prompt_path: Optional[Path] = None,
+        memory: MemoryInterface = None,
     ) -> None:
         self.scorer_type = "true_false"
 
@@ -45,9 +50,13 @@ class SelfAskTrueFalseScorer(Scorer):
 
         metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(
-            TRUE_FALSE_QUESITIONS_PATH / "true_false_system_prompt.yaml"
+        self.true_false_system_prompt_path = (
+            true_false_system_prompt_path
+            if true_false_system_prompt_path
+            else TRUE_FALSE_QUESITIONS_PATH / "true_false_system_prompt.yaml"
         )
+
+        scoring_instructions_template = PromptTemplate.from_yaml_file(true_false_system_prompt_path)
 
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
             true_description=true_category, false_description=false_category, metadata=metadata
@@ -112,7 +121,7 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=None,
+                score_metadata=parsed_response["metadata"] if parsed_response.get("metadata") else None,
                 prompt_request_response_id=request_response_id,
             )
         except json.JSONDecodeError:

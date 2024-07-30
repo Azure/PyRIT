@@ -4,8 +4,7 @@
 import abc
 import copy
 from pathlib import Path
-
-from typing import MutableSequence, Sequence
+from typing import MutableSequence, Optional, Sequence
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
@@ -196,6 +195,42 @@ class MemoryInterface(abc.ABC):
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+
+    def duplicate_conversation_excluding_last_turn(
+        self,
+        *,
+        new_orchestrator_id: str,
+        conversation_id: str,
+        new_conversation_id: Optional[str] = None,
+    ) -> str:
+        """
+        Duplicate a conversation, excluding the last turn.
+
+        This can be useful when an attack strategy requires back tracking the last prompt/response pair.
+
+        Args:
+            new_orchestrator_id (str): The ID of the new orchestrator.
+            conversation_id (str): The ID of the conversation to duplicate.
+            new_conversation_id (Optional[str], optional): The ID of the new conversation.
+
+        Returns:
+            str: The ID of the new conversation.
+
+        Raises:
+            ValueError: If the new conversation ID is the same as the existing conversation ID.
+
+        """
+        new_conversation_id = new_conversation_id or str(uuid.uuid4())
+        if conversation_id == new_conversation_id:
+            raise ValueError("The new conversation ID must be different from the existing conversation ID.")
+        prompt_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        for piece in prompt_pieces:
+            piece.id = uuid.uuid4()
+            piece.orchestrator_identifier["id"] = new_orchestrator_id
+            piece.conversation_id = new_conversation_id
+
+        self.add_request_pieces_to_memory(request_pieces=prompt_pieces[:-2])
+
         return new_conversation_id
 
     def export_conversation_by_orchestrator_id(
