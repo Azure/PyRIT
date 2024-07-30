@@ -61,5 +61,5 @@ template: |
     ]
   }
 
-  Remember, to include metadata if instucted; only return the JSON object.
+  Remember, to include metadata if instructed; only return the JSON object.
   Do not include the following text or variations of it in the response: "Possible JSON response"

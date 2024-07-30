@@ -3,7 +3,6 @@
 
 import enum
 import json
-import pathlib
 from typing import Optional
 import uuid
 import yaml
@@ -32,7 +31,12 @@ class SelfAskTrueFalseScorer(Scorer):
     """A class that represents a self-ask true/false for scoring."""
 
     def __init__(
-        self, *, chat_target: PromptChatTarget, true_false_question_path: Path, true_false_system_prompt_path: Optional[Path] = None, memory: MemoryInterface = None
+        self,
+        *,
+        chat_target: PromptChatTarget,
+        true_false_question_path: Path,
+        true_false_system_prompt_path: Optional[Path] = None,
+        memory: MemoryInterface = None,
     ) -> None:
         self.scorer_type = "true_false"
 
@@ -60,12 +64,13 @@ class SelfAskTrueFalseScorer(Scorer):
 
         self._chat_target: PromptChatTarget = chat_target
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
 
         Returns:
             list[Score]: The request_response scored.
@@ -74,7 +79,7 @@ class SelfAskTrueFalseScorer(Scorer):
                          metadata can be configured to provide additional information.
         """
 
-        self.validate(request_response)
+        self.validate(request_response, task=task)
 
         conversation_id = str(uuid.uuid4())
 
@@ -98,12 +103,12 @@ class SelfAskTrueFalseScorer(Scorer):
             ]
         )
 
-        score = await self.send_chat_target_async(request, request_response.id)
+        score = await self._send_chat_target_async(request, request_response.id)
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     @pyrit_json_retry
-    async def send_chat_target_async(self, request, request_response_id):
+    async def _send_chat_target_async(self, request, request_response_id):
         response = await self._chat_target.send_prompt_async(prompt_request=request)
 
         try:
@@ -119,7 +124,7 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata= parsed_response["metadata"] if parsed_response.get("metadata") else None,
+                score_metadata=parsed_response["metadata"] if parsed_response.get("metadata") else None,
                 prompt_request_response_id=request_response_id,
             )
         except json.JSONDecodeError:
@@ -130,5 +135,6 @@ class SelfAskTrueFalseScorer(Scorer):
 
         return score
 
-    def validate(self, request_response: PromptRequestPiece):
-        pass
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        if task:
+            raise ValueError("This scorer does not support tasks")

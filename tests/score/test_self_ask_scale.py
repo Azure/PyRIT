@@ -168,6 +168,7 @@ async def test_scale_scorer_score(memory: MemoryInterface, scorer_scale_response
     assert len(score) == 1
 
     assert score[0].score_value == "0.0"
+    assert score[0].get_value() == 0
     assert "description" in score[0].score_value_description
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"
@@ -213,7 +214,9 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
 
     assert len(score) == 1
 
-    assert score[0].score_value == str((53 - 1) / (100 - 1))
+    expected_score_value = (53 - 1) / (100 - 1)
+    assert score[0].score_value == str(expected_score_value)
+    assert score[0].get_value() == expected_score_value
     assert "description" in score[0].score_value_description
     assert "rationale" in score[0].score_rationale
     assert score[0].score_type == "float_scale"

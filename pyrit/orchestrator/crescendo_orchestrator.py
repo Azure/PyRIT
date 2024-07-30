@@ -7,11 +7,12 @@ from pathlib import Path
 from typing import Optional, Tuple
 from uuid import uuid4
 
+from colorama import Fore, Style
+
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import (
     BadRequestException,
     InvalidJsonException,
-    PyritException,
     pyrit_json_retry,
 )
 from pyrit.models.models import PromptTemplate
@@ -29,7 +30,7 @@ class CrescendoOrchestrator(Orchestrator):
     """
     The `CrescendoOrchestrator` class represents an orchestrator that executes the Crescendo attack.
 
-    The Crescendo Attack is a multi-turn startegy that is based on progressively guiding the model to generate
+    The Crescendo Attack is a multi-turn strategy that is based on progressively guiding the model to generate
     harmful content in small benign steps. The attack exploits the model's recency bias, tendency to follow patterns,
     and its trust in the text it has generated itself.
 
@@ -152,7 +153,7 @@ class CrescendoOrchestrator(Orchestrator):
 
             if is_refusal:
 
-                logger.info("\nResponse Rejected, performing Back Tracking Step...\n")
+                logger.info("\nResponse Rejected, performing back tracking Step...\n")
 
                 self._prompt_target_conversation_id = await self._backtrack_memory(
                     conversation_id=self._prompt_target_conversation_id
@@ -170,7 +171,7 @@ class CrescendoOrchestrator(Orchestrator):
                 eval_flag = False
                 eval_score = None
 
-                logger.info(f"QUESTION BACKTRAKED Count: {backtrack_count}")
+                logger.info(f"Question Backtrack Count: {backtrack_count}")
                 if backtrack_count < max_backtracks:
                     round_num -= 1
 
@@ -199,11 +200,16 @@ class CrescendoOrchestrator(Orchestrator):
 
             logger.info("Jailbreak Unsuccessful, continuing to next round")
 
-        logger.info(f"\nFINAL RESUTLS, TOTAL ROUNDS: {round_num}, TOTAL BACKTRACKS {backtrack_count}:\n")
-        logger.info("\nPROPMT_TARGET MEMORY: ")
-        self.print_target_memory(conversation_id=self._prompt_target_conversation_id)
-        logger.info("\n\nRED_TEAMING_CHAT MEMORY: ")
-        self.print_target_memory(conversation_id=self._red_teaming_chat_conversation_id)
+        if eval_flag:
+            print("The crescendo orchestrator has achieved the objective.")
+        else:
+            print("The crescendo orchestrator has not achieved the objective.")
+
+        logger.info(f"\nFINAL RESULTS, TOTAL ROUNDS: {round_num}, TOTAL BACKTRACKS {backtrack_count}:\n")
+        logger.info("\nPROMPT_TARGET MEMORY: ")
+        self._print_target_memory(conversation_id=self._prompt_target_conversation_id)
+        logger.info("\nRED_TEAMING_CHAT MEMORY: ")
+        self._print_target_memory(conversation_id=self._red_teaming_chat_conversation_id)
 
         return eval_score
 
@@ -213,7 +219,6 @@ class CrescendoOrchestrator(Orchestrator):
         *,
         round_num: int,
         eval_score: Optional[int] = None,
-        success_flag: Optional[bool] = None,
         last_response: Optional[str] = None,
     ) -> str:
         # Checks if this is the first turn with the red teaming chat and sets the system prompt if it is
@@ -264,7 +269,6 @@ class CrescendoOrchestrator(Orchestrator):
             parsed_output = json.loads(response_text)
             for key in expected_output:
                 if key not in parsed_output:
-                    print("\n\nJSON DECODE ERROR THROWN\n\n")
                     self._red_teaming_chat_conversation_id = await self._backtrack_memory(
                         conversation_id=self._red_teaming_chat_conversation_id
                     )
@@ -275,14 +279,12 @@ class CrescendoOrchestrator(Orchestrator):
             attack_prompt = parsed_output["generated_question"]
 
         except json.JSONDecodeError:
-            print("\n\nJSON DECODE ERROR THROWN\n\n")
             self._red_teaming_chat_conversation_id = await self._backtrack_memory(
                 conversation_id=self._red_teaming_chat_conversation_id
             )
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_text}")
 
         if len(parsed_output.keys()) != len(expected_output):
-            print("\n\nJSON DECODE ERROR THROWN\n\n")
             self._red_teaming_chat_conversation_id = await self._backtrack_memory(
                 conversation_id=self._red_teaming_chat_conversation_id
             )
@@ -310,13 +312,11 @@ class CrescendoOrchestrator(Orchestrator):
             ).request_pieces[0]
             last_response = response_text.converted_value
 
-        except (PyritException, BadRequestException) as e:
-            if isinstance(e, PyritException) and e.status_code == 500:
-                last_response = "Error: Content filter was triggered"
-            elif isinstance(e, BadRequestException):
+        except BadRequestException as e:
+            if isinstance(e, BadRequestException):
                 last_response = (
-                    "The response was filtered due to the prompt triggering Azure OpenAI's"
-                    " content management policy. Please modify your prompt and retry. "
+                    "Error: Content filter was triggered. The response was filtered due to the prompt triggering"
+                    " Azure OpenAI's content management policy. Please modify your prompt and retry. "
                 )
             else:
                 print("An error occurred:", str(e))
@@ -325,11 +325,11 @@ class CrescendoOrchestrator(Orchestrator):
 
     async def _backtrack_memory(self, *, conversation_id: str) -> str:
         # Duplicates the conversation excluding the last turn, given a conversation ID.
-        new_converastion_id = self._memory.duplicate_conversation_excluding_last_turn(
+        new_conversation_id = self._memory.duplicate_conversation_excluding_last_turn(
             new_orchestrator_id=self.get_identifier(),
             conversation_id=conversation_id,
         )
-        return new_converastion_id
+        return new_conversation_id
 
     async def _get_refusal_score_async(self, attack_prompt: str, last_response: str) -> Tuple[bool, str]:
         # Sends the attack prompt and last response to the refusal scorer and returns the refusal score
@@ -343,7 +343,7 @@ class CrescendoOrchestrator(Orchestrator):
         return is_refusal, refusal_rationale
 
     async def _get_eval_score_async(self, last_response: str) -> Score:
-        # Sends the conversatoin objective and last response to the eval scorer and returns the eval score
+        # Sends the conversation objective and last response to the eval scorer and returns the eval score
         eval_input = {
             "conversation_objective": self._conversation_objective,
             "response_to_evaluate_input": last_response,
@@ -351,16 +351,24 @@ class CrescendoOrchestrator(Orchestrator):
         eval_input = json.dumps(eval_input)
 
         eval_score = (await self.eval_judge_true_false_scorer.score_text_async(text=eval_input))[0]
-        # eval_flag = bool(eval_score.get_value())
-        # eval_percentage = (
-        #     int(eval_score.score_metadata)
-        #     if ((eval_score.score_metadata != "") and (eval_score.score_metadata != None))
-        #     else 0
-        # )
 
         return eval_score
 
-    def print_target_memory(self, *, conversation_id: str) -> None:
+    def print_prompt_target_memory(self) -> None:
+        """
+        Prints the prompt target memory.
+        "User" messages are printed in red, and "Assistant" messages are printed in blue.
+        """
+        target_messages = self._memory._get_prompt_pieces_with_conversation_id(
+            conversation_id=self._prompt_target_conversation_id
+        )
+        for message in target_messages:
+            if message.role == "user":
+                print(f"{Style.BRIGHT}{Fore.RED}{message.role}: {message.converted_value}\n")
+            else:
+                print(f"{Style.NORMAL}{Fore.BLUE}{message.role}: {message.converted_value}\n")
+
+    def _print_target_memory(self, *, conversation_id: str) -> None:
         """
         Prints the target memory for a given conversation ID.
 
@@ -369,4 +377,4 @@ class CrescendoOrchestrator(Orchestrator):
         """
         target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
         for message in target_messages:
-            print(f"{message.role}: {message.converted_value}\n")
+            logger.info(f"{message.role}: {message.converted_value}\n")

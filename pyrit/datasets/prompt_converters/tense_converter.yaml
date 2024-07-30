@@ -1,9 +1,9 @@
 name: tense_converter
 description: |
-  A general strategy for changing the tense of an instruction
+  A general strategy for changing the tense of an instruction based on "Does Refusal Training in LLMs Generalize to the Past Tense?" by Maksym Andriushchenko and Nicolas Flammarion.
 harm_category: NA
 author: AI Red Team
-source: https://x.com/maksym_andr/status/1806381940083175886?s=46
+source: https://arxiv.org/abs/2407.11969
 should_be_blocked: false
 parameters:
   - tense

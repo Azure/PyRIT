@@ -1,7 +1,24 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: pyrit-311
+# ---
+
 # %% [markdown]
 # ### Classification Scoring
 #
 # In this example, we set up a `SelfAskCategoryScorer` and use it to determine whether there is harmful content in a response. This is a special type of true/false scorer that returns a score that matches the classification (or a false result is it doesn't fit in any classification). It does this by asking an LLM whether a response matches a criteria.
+#
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
 # %%
 from pyrit.common import default_values

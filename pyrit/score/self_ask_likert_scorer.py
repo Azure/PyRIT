@@ -7,7 +7,7 @@ import yaml
 import enum
 
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
@@ -85,19 +85,20 @@ class SelfAskLikertScorer(Scorer):
 
         return likert_scale_description
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
 
         Returns:
             list[Score]: The request_response scored.
                          The category is configured from the likert_scale.
                          The score_value is a value from [0,1] that is scaled from the likert scale.
         """
-        self.validate(request_response)
+        self.validate(request_response, task=task)
 
         conversation_id = str(uuid.uuid4())
 
@@ -118,13 +119,13 @@ class SelfAskLikertScorer(Scorer):
             ]
         )
 
-        score = await self.send_chat_target_async(request, request_response.id)
+        score = await self._send_chat_target_async(request, request_response.id)
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     @pyrit_json_retry
-    async def send_chat_target_async(self, request, request_response_id):
+    async def _send_chat_target_async(self, request, request_response_id):
         response = await self._chat_target.send_prompt_async(prompt_request=request)
 
         try:
@@ -149,5 +150,6 @@ class SelfAskLikertScorer(Scorer):
 
         return score
 
-    def validate(self, request_response: PromptRequestPiece):
-        pass
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        if task:
+            raise ValueError("This scorer does not support tasks")

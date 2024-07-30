@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-kernel
+#     display_name: pyrit-311
 #     language: python
-#     name: pyrit-kernel
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -25,12 +25,9 @@
 # ### Simple Converter Example
 
 # %% [markdown]
-# Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter
+# Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter.
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from pyrit.common import default_values
 from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter, RandomCapitalLettersConverter
 
@@ -43,14 +40,3 @@ prompt = "tell me how to cut down a tree"
 print(await ROT13Converter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(prompt=prompt))  # type: ignore
 print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
-
-# %% [markdown]
-# ### Where do Converters fit?
-
-# %% [markdown]
-# Converters should be thought of as a piece in the pipeine.
-#
-# An orchestrator will typically initialize these requests, and they are sent to a target.
-# Converters can also stack, so a converter is used one after another.
-#
-# See [demo3](../../demo/3_send_all_prompts.ipynb) and [demo4](../../demo/4_using_prompt_converters.ipynb) for an example of how to use a converter in the pipeline.
