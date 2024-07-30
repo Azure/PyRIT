@@ -2,12 +2,13 @@
 # Licensed under the MIT license.
 
 import asyncio
+from aioconsole import ainput
 import concurrent.futures
 import logging
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Awaitable
 from uuid import uuid4
-from pyrit.score import Scorer
 
+from pyrit.score import Scorer
 from pyrit.memory import MemoryInterface
 from pyrit.score import Score
 from pyrit.orchestrator import Orchestrator
@@ -26,7 +27,7 @@ class XPIAOrchestrator(Orchestrator):
         *,
         attack_content: str,
         attack_setup_target: PromptTarget,
-        processing_callback: Callable[[], str],
+        processing_callback: Callable[[], Awaitable[str]],
         scorer: Optional[Scorer] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
@@ -95,7 +96,7 @@ class XPIAOrchestrator(Orchestrator):
 
         logger.info(f'Received the following response from the prompt target "{response}"')
 
-        processing_response = self._processing_callback()
+        processing_response = await self._processing_callback()
 
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
@@ -215,7 +216,7 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
             attack_content=attack_content,
             attack_setup_target=attack_setup_target,
             scorer=scorer,
-            processing_callback=self._input,
+            processing_callback=self._input_async,
             prompt_converters=prompt_converters,
             memory=memory,
             memory_labels=memory_labels,
@@ -223,5 +224,5 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
             attack_setup_target_conversation_id=attack_setup_target_conversation_id,
         )
 
-    def _input(self):
-        return input("Please trigger the processing target's execution and paste the output here: ")
+    async def _input_async(self):
+        return await ainput("Please trigger the processing target's execution and paste the output here: ")
