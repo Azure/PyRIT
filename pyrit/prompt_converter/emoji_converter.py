@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import random
 
 from pyrit.models import PromptDataType
@@ -56,7 +55,6 @@ class EmojiConverter(PromptConverter):
                 result.append(char)
         ret_text = "".join(result)
 
-        await asyncio.sleep(0)
         return ConverterResult(output_text=ret_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

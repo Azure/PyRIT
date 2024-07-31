@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 import logging
 import azure.cognitiveservices.speech as speechsdk
-import asyncio
 
 from typing import Literal
 from pyrit.common import default_values
@@ -102,5 +101,4 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         except Exception as e:
             logger.error("Failed to convert prompt to audio: %s", str(e))
             raise
-        await asyncio.sleep(0)
         return ConverterResult(output_text=audio_serializer_file, output_type="audio_path")
