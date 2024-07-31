@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import re
-import asyncio
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -79,7 +78,6 @@ class RepeatTokenConverter(PromptConverter):
             raise ValueError("Input type not supported")
         prompt_parts = self.insert(prompt)
 
-        await asyncio.sleep(0)
         return ConverterResult(
             output_text=f"{prompt_parts[0]}{self.token_to_repeat * self.times_to_repeat}{prompt_parts[1]}",
             output_type="text",
