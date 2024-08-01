@@ -1,10 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from collections import defaultdict
+from colorama import Fore, Style
 import logging
 
 from typing import Optional
 
+from pyrit.common.display_response import display_response
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptDataType
 from pyrit.models.prompt_request_response import PromptRequestResponse
@@ -116,3 +119,32 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_ids=prompt_ids,
                     responses_only=True,
                 )
+
+    def print_conversations(self):
+        """Prints the conversation between the prompt target and the red teaming bot."""
+        all_messages = self.get_memory()
+
+        # group by conversation ID
+        messages_by_conversation_id = defaultdict(list)
+        for message in all_messages:
+            messages_by_conversation_id[message.conversation_id].append(message)
+
+        for conversation_id in messages_by_conversation_id:
+            messages_by_conversation_id[conversation_id].sort(key=lambda x: x.sequence)
+
+            print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {conversation_id}")
+
+            if not messages_by_conversation_id[conversation_id]:
+                print("No conversation with the target")
+                continue
+
+            for message in messages_by_conversation_id[conversation_id]:
+                if message.role == "user":
+                    print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+                else:
+                    print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                    display_response(message)
+
+                scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+                for score in scores:
+                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
