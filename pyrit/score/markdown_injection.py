@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import re
 from typing import Optional
 
@@ -36,7 +35,6 @@ class MarkdownInjectionScorer(Scorer):
         # !\[.*?\]\((.*?)\) - This is for the inline image format in Markdown, which is ![alt_text](url).
         # !\[.*?\]\[(.*?)\] - This is for the reference-style image format in Markdown, which is
         #   ![alt_text][image_reference].
-        await asyncio.sleep(0)
 
         self.validate(request_response, task=task)
         text = request_response.converted_value
