@@ -1,9 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
-import asyncio
-
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
@@ -21,7 +18,6 @@ class UnicodeSubstitutionConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         ret_text = "".join(chr(self.startValue + ord(ch)) for ch in prompt)
-        await asyncio.sleep(0)
         return ConverterResult(output_text=ret_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

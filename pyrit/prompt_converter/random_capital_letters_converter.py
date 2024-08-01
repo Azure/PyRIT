@@ -3,7 +3,6 @@
 
 import random
 import logging
-import asyncio
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -72,5 +71,4 @@ class RandomCapitalLettersConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         output = self.string_to_upper_case_by_percentage(self.percentage, prompt)
-        await asyncio.sleep(0)
         return ConverterResult(output_text=output, output_type="text")

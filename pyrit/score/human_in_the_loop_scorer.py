@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import csv
 
 from pathlib import Path
@@ -44,7 +43,6 @@ class HumanInTheLoopScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         self.validate(request_response, task=task)
-        await asyncio.sleep(0)
 
         print("Scoring the following:")
         print(request_response)

@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-python311-clean
+#     language: python
+#     name: pyrit-python311-clean
+# ---
+
 # %% [markdown]
 # # PAIR Orchestrator
 #
@@ -7,6 +22,8 @@
 # This attack was first described in the paper _Chao, Patrick, et al. "Jailbreaking black box large language models in twenty queries." arXiv preprint arXiv:2310.08419 (2023)_. The PAIR authors also provided a reference implementation in https://github.com/patrickrchao/JailbreakingLLMs.
 #
 # This notebook demonstrates how to use the PyRIT's PAIR implementation.
+#
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 #
 #
 # ## Orchestrator Initialization

@@ -3,7 +3,6 @@
 
 import logging
 import base64
-import asyncio
 import string
 from typing import Optional
 
@@ -137,7 +136,6 @@ class AddTextImageConverter(PromptConverter):
         updated_img.save(image_bytes, format=image_type)
         image_str = base64.b64encode(image_bytes.getvalue())
         img_serializer.save_b64_image(data=image_str, output_filename=self._output_name)
-        await asyncio.sleep(0)
         return ConverterResult(output_text=img_serializer.value, output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

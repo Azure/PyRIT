@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import csv
 import json
 from pathlib import Path
@@ -30,7 +29,6 @@ class TextTarget(PromptTarget):
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)
-        await asyncio.sleep(0)
 
         self._text_stream.write(f"{str(prompt_request)}\n")
         self._text_stream.flush()
