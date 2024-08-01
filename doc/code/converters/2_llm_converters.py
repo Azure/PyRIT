@@ -15,7 +15,7 @@
 # %% [markdown]
 # # Converters with LLMs
 #
-# Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally prefered.
+# Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally preffered.
 
 # %%
 import pathlib

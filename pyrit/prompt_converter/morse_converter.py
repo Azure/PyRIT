@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import pathlib
 
 from pyrit.models import PromptDataType
@@ -49,7 +48,6 @@ class MorseConverter(PromptConverter):
             )
         else:
             output_text = self._morse(prompt)
-        await asyncio.sleep(0)
         return ConverterResult(output_text=output_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

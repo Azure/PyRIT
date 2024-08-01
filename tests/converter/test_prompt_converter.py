@@ -8,6 +8,7 @@ from pyrit.prompt_converter import (
     AtbashConverter,
     Base64Converter,
     CaesarConverter,
+    EmojiConverter,
     LeetspeakConverter,
     MorseConverter,
     RandomCapitalLettersConverter,
@@ -314,3 +315,11 @@ async def test_morse_converter_with_appended_description() -> None:
         "- . ... - / - . ... -\n"
     )
     assert output.output_type == "text"
+
+
+@pytest.mark.asyncio
+async def test_emoji_converter() -> None:
+    converter = EmojiConverter()
+    output = await converter.convert_async(prompt="Hello world I should be converted", input_type="text")
+    assert output.output_type == "text"
+    assert output.output_text[0] in ["🄷", "🅗", "🅷"]

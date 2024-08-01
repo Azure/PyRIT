@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 from typing import Optional
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
@@ -22,8 +21,6 @@ class SubStringScorer(Scorer):
         self.scorer_type = "true_false"
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-
-        await asyncio.sleep(0)
 
         self.validate(request_response, task=task)
 
