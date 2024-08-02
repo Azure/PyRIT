@@ -1,7 +1,22 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: pyrit-311
+# ---
+
 # %% [markdown]
 # ### True False Scoring
 #
-# In the simplest case a scorer can answer a question. There can be many types of true false scorers. The following example uses a `SelfAskTrueFalseScorer` to see if prompt injection was successful. It does this by asking an LLM whether a response matches a criteria. This type of scorer is really useful in orchestrators that have to make decisions based on responses.
+# In the simplest case a scorer can answer a question. There can be many types of true false scorers. The following example uses a `SelfAskTrueFalseScorer` to see if prompt injection was successful. This type of scorer is really useful in orchestrators that have to make decisions based on responses.
 
 # %%
 # Copyright (c) Microsoft Corporation.

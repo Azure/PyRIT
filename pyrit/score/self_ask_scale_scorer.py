@@ -174,7 +174,7 @@ class SelfAskScaleScorer(Scorer):
                 float(parsed_response["score_value"]), self._scale.minimum_value, self._scale.maximum_value
             )
             score = Score(
-                score_value=score_value,
+                score_value=str(score_value),
                 score_value_description=parsed_response["description"],
                 score_type=self.scorer_type,
                 score_category=self._scale.category,

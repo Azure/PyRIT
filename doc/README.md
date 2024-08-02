@@ -1,14 +1,18 @@
-# Documentation Structure
+# Recommended Docs Reading Order
 
-Most of our documentation is located within the `doc` directory:
+Most of our documentation is located within the `doc` directory. There is no single way to read the documentation, and it's perfectly fine to jump around. However, here is a recommended reading order. Note that in many sections there are numbered documentation pages. If there is no number attached, it is supplemental and the recommended reading order would be to skip it on a first pass.
 
-- [About PyRIT](./about_pyrit.md) includes high-level information about PyRIT.
-- [How to Guide](./how_to_guide.ipynb) to provide an overview of the PyRIT framework.
+1. [How to Guide](./how_to_guide.ipynb): This provides an overview of the PyRIT framework.
+2. **Installation**: Before diving in, it's useful to have a working version so you can follow along.
+  - [Setup](./setup/): Includes help setting up PyRIT and related resources for users.
+  - [Contributing](./contributing/): Contains information for people contributing to the project.
+3. [Architecture](./code/architecture.md): This section provides a high-level overview of all the components. Understanding any single component is difficult without some knowledge of the others.
+4. [Orchestrators](./code/orchestrators/): These are the top-level components of PyRIT. Reviewing their usage can help users understand where all components fit.
+5. [Targets](./code/targets/): These are the endpoints that PyRIT sends prompts to. Nearly any scenario where PyRIT is used will need targets. This section dives into what targets are available and how to use them.
+6. [Converters](./code/converters/): These transform prompts from one format to another. This is one of the most powerful capabilities within PyRIT.
+7. [Scorers](./code/scoring/): These are how PyRIT makes decisions and records output.
+8. [Memory](./code/memory/): This is how PyRIT components communicate about the state of things.
 
+Miscellaneous Extra Docs:
 
-- [Code](./code/) includes concise examples that exercise a single code concept.
-- [Contributing](./contributing) includes information for people contributing to the project.
-- [Demos](./demo) include end-to-end scenarios.
-- [Deployment](./deployment/) includes code to download, deploy, and score open-source models (such as those from Hugging Face) on Azure.
-- [FAQs](./faqs.md)
-- [Setup](./setup/) includes any help setting PyRIT and related resources up.
+- [Deployment](./deployment/): Includes code to download, deploy, and score open-source models (such as those from Hugging Face) on Azure.
