@@ -2,11 +2,14 @@
 # Licensed under the MIT license.
 
 import logging
+import struct
 
 from contextlib import closing
 from typing import Optional, Sequence
 
-from sqlalchemy import create_engine, func, and_
+from azure.identity import DefaultAzureCredential
+
+from sqlalchemy import create_engine, func, and_, event
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
@@ -30,6 +33,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     and session management to perform database operations.
     """
 
+    SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
+    TOKEN_URL = "https://database.windows.net/"  # The token URL for any Azure SQL database
+
     def __init__(self, *, connection_string: str, verbose: bool = False):
         super(AzureSQLMemory, self).__init__()
 
@@ -37,8 +43,15 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         self.engine = self._create_engine(has_echo=verbose)
 
+        self._auth_token = self._create_azure_token()
+        self._enable_azure_authorization()
+
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
+
+    def _create_auth_token(self) -> str:
+        azure_credentials = DefaultAzureCredential()
+        return azure_credentials.get_token(self.TOKEN_URL)
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
         """Creates the SQLAlchemy engine for Azure SQL Server.
@@ -58,6 +71,20 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except SQLAlchemyError as e:
             logger.exception(f"Error creating the engine for the database: {e}")
             raise
+
+    def _enable_azure_authorization(self) -> None:
+        @event.listens_for(self.engine, "do_connect")
+        def provide_token(_dialect, _conn_rec, cargs, cparams):
+            # remove the "Trusted_Connection" parameter that SQLAlchemy adds
+            cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
+
+            # encode the token
+            azure_token = self._auth_token.token
+            azure_token_bytes = azure_token.encode("utf-16-le")
+            packed_azure_token = struct.pack(f"<I{len(azure_token_bytes)}s", len(azure_token_bytes), azure_token_bytes)
+
+            # add the encoded token
+            cparams["attrs_before"] = {self.SQL_COPT_SS_ACCESS_TOKEN: packed_azure_token}
 
     def _create_tables_if_not_exist(self):
         """
