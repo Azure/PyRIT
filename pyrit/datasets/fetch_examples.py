@@ -11,6 +11,7 @@ import requests
 from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.text_helper import read_txt, write_txt
+from pyrit.common.path import RESULTS_PATH
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
@@ -119,10 +120,11 @@ def fetch_examples(
 
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
-        raise ValueError("Invalid file_type. Expected 'json', 'csv', or 'txt'.")
+        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
     if not data_home:
-        data_home = Path().home() / ".pyrit" / "datasets"
+        data_home = RESULTS_PATH / "datasets"
     else:
         data_home = Path(data_home)
 

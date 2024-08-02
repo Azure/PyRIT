@@ -31,6 +31,7 @@ from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScaleP
 # Load environment variables
 default_values.load_default_env()
 
+
 # %%
 prompt_target = AzureOpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
@@ -39,23 +40,12 @@ prompt_target = AzureOpenAIChatTarget(
 )
 template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
 
+
 # %%
 # Note:
 # The dataset sources can be found at:
 # - Original: https://github.com/centerforaisafety/HarmBench
 # - Replicated: https://github.com/KutalVolkan/many-shot-jailbreaking-dataset
-
-
-# %%
-def print_conversation(memory, score_memory):
-    for entry in memory:
-        for score_entry in score_memory:
-            if entry.id == score_entry.prompt_request_response_id:
-                print(
-                    f"Output scored: {entry.converted_value}\n"
-                    f"Score category: {score_entry.score_category}\n"
-                    f"Score value: {score_entry.get_value()}\n\n"
-                )
 
 
 # %%
@@ -82,10 +72,8 @@ filled_prompt = template.apply_parameters(prompt=malicious_prompt, examples=exam
 # Send prompt with examples to target
 await orchestrator.send_prompts_async(prompt_list=[filled_prompt])  # type: ignore
 
-memory = orchestrator.get_memory()
-score_memory = orchestrator.get_score_memory()
-
-print_conversation(memory, score_memory)
+# Use the orchestrator's method to print conversations
+orchestrator.print_conversations()
 
 
 # %%
