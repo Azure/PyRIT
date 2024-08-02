@@ -9,7 +9,10 @@ template: >
 
   {% for example in examples %}
   User: {{ example.user }}
+
   Assistant: {{ example.assistant }}
+
+
   {% endfor %}
 
   User: {{ prompt }}
