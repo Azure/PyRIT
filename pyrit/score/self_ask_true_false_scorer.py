@@ -3,7 +3,7 @@
 
 import enum
 import json
-from typing import Optional
+from typing import Dict, Optional
 import uuid
 import yaml
 
