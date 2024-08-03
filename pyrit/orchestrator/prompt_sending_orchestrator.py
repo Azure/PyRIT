@@ -35,6 +35,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
         memory: MemoryInterface = None,
+        memory_labels: Optional[dict[str, str]] = {},
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
@@ -44,11 +45,17 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
             scorers (list[Scorer], optional): List of scorers to use for each prompt request response, to be
-                scored immediately after recieving response. Default is None.
+                scored immediately after receiving response. Default is None.
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant RAI category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
         """
-        super().__init__(prompt_converters=prompt_converters, memory=memory, verbose=verbose)
+        super().__init__(
+            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+        )
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._scorers = scorers
@@ -59,11 +66,26 @@ class PromptSendingOrchestrator(Orchestrator):
         self._batch_size = batch_size
 
     async def send_prompts_async(
-        self, *, prompt_list: list[str], prompt_type: PromptDataType = "text"
+        self,
+        *,
+        prompt_list: list[str],
+        prompt_type: PromptDataType = "text",
+        memory_labels: Optional[dict[str, str]] = {},
     ) -> list[PromptRequestResponse]:
         """
-        Sends the prompts to the prompt target.
+        Sends the prompts to the prompt target, updating global memory labels with any new labels provided by the user.
+
+        Args:
+            prompt_list (list[str]): The list of prompts to be sent.
+            prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
+            memory_labels (dict[str, str], optional): A free-form dictionary of labels to apply to the prompts.
+            These labels will be merged with the instance's global memory labels. Defaults to an empty dictionary.
+
+        Returns:
+            list[PromptRequestResponse]: The responses from sending the prompts.
         """
+        if memory_labels:
+            self._global_memory_labels.update(memory_labels)
 
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:

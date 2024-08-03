@@ -41,6 +41,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: MemoryInterface = None,
+        memory_labels: Optional[dict[str, str]] = {},
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
@@ -51,10 +52,16 @@ class SkeletonKeyOrchestrator(Orchestrator):
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant RAI category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
             verbose (bool, optional): If set to True, verbose output will be enabled. Defaults to False.
         """
-        super().__init__(prompt_converters=prompt_converters, memory=memory, verbose=verbose)
+        super().__init__(
+            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+        )
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
 

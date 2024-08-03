@@ -37,7 +37,7 @@ class RedTeamingOrchestrator(Orchestrator):
         scorer: Scorer,
         use_score_as_feedback: bool = False,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: Optional[dict[str, str]] = None,
+        memory_labels: Optional[dict[str, str]] = {},
         verbose: bool = False,
     ) -> None:
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
@@ -60,7 +60,10 @@ class RedTeamingOrchestrator(Orchestrator):
                 to satisfy the objective that is specified in the attack_strategy.
             use_score_as_feedback: Whether to use the score as feedback to the red teaming chat.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
-            memory_labels: The labels to use for the memory. This is useful to identify the messages in the memory.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant RAI category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
             verbose: Whether to print debug information.
         """
 
