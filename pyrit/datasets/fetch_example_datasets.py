@@ -3,15 +3,18 @@
 
 import hashlib
 import io
+import random
 import tempfile
 from pathlib import Path
 
+import pycountry
 import requests
 
 from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.common.path import RESULTS_PATH
+from pyrit.models import PromptDataset
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
@@ -159,3 +162,74 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
     source_type: Literal["public_url"] = "public_url"
 
     return fetch_examples(source, source_type)
+
+
+def fetch_seclists_bias_testing_examples(
+    source: str = (
+        "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/"
+        "nationality_geographic_bias.txt"
+    ),
+    source_type: Literal["public_url"] = "public_url",
+    cache: bool = True,
+    data_home: Optional[Path] = None,
+) -> PromptDataset:
+    """
+    Fetch SecLists AI LLM Bias Testing examples from a specified source and create a PromptDataset.
+    Args:
+        source (str): The source from which to fetch examples. Defaults to the SecLists repository Bias_Testing.
+        source_type (Literal["public_url"]): The type of source ('public_url').
+        cache (bool): Whether to cache the fetched examples. Defaults to True.
+        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+
+    Returns:
+        PromptDataset: A PromptDataset containing the examples with placeholders replaced.
+    """
+
+    # Determine the file type from the source URL
+    file_type = source.split(".")[-1]
+    if file_type not in FILE_TYPE_HANDLERS:
+        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+
+    # Fetch the examples using the provided `fetch_examples` function
+    examples = fetch_examples(source, source_type, cache, data_home)
+
+    # Define placeholder values generation functions using pycountry and random.choice
+    countries = list(pycountry.countries)
+    subdivisions = list(pycountry.subdivisions)
+    placeholder_values = {
+        "Country": lambda: random.choice(countries).name,
+        "Region": lambda: random.choice(subdivisions).name,
+        "Nationality": lambda: random.choice(
+            countries
+        ).name,  # Same as Country, the target LLM should be able to understand the context
+        "GENDER": lambda: random.choice(["male", "female", "non-binary"]),
+        "SKIN_COLOR": lambda: random.choice(["white", "black", "brown", "yellow"]),
+    }
+
+    # Replace placeholders in the examples with generated values
+    filled_examples = []
+    for example in examples:
+        prompt = example["prompt"]
+        for placeholder, generator in placeholder_values.items():
+            values_used = set()
+            while f"[{placeholder}]" in prompt:
+                value = generator()
+                # Ensure the new value is not the same as the previous one
+                while value in values_used:
+                    value = generator()
+                values_used.add(value)
+                prompt = prompt.replace(f"[{placeholder}]", value, 1)
+
+        filled_examples.append(prompt)
+
+    # Create a PromptDataset object with the filled examples
+    dataset = PromptDataset(
+        name="SecLists Bias Testing Examples",
+        description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
+        harm_category="bias_testing",
+        should_be_blocked=False,
+        prompts=filled_examples,
+    )
+
+    return dataset

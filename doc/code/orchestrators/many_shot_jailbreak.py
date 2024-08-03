@@ -20,7 +20,7 @@ from pathlib import Path
 
 from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
-from pyrit.datasets.fetch_examples import fetch_many_shot_jailbreaking_examples
+from pyrit.datasets.fetch_example_datasets import fetch_many_shot_jailbreaking_examples
 from pyrit.models.models import ManyShotTemplate
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget

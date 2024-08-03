@@ -165,3 +165,11 @@ doc/generate_docs/cache/*
 
 # ignore all VSCode settings
 .vscode/*
+
+# Ignore specific files
+assets/demo_scorer_definitions/content_risk_assessment.yaml
+changes.diff
+doc/code/orchestrators/coba_red_teaming_orchestrator.py
+doc/code/orchestrators/coba_scoring.py
+examples.csv
+examples.json
