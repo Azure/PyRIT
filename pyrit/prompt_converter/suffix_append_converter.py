@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
@@ -29,7 +28,6 @@ class SuffixAppendConverter(PromptConverter):
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
-        await asyncio.sleep(0)
 
         return ConverterResult(output_text=prompt + " " + self.suffix, output_type="text")
 
