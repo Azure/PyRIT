@@ -13,7 +13,7 @@
 #     name: python3
 # ---
 
-# # Crescendo Orhcestrator
+# # Crescendo Orchestrator
 #
 # This demo showcases the use of the `CrescendoOrchestrator` in PyRIT.
 #
