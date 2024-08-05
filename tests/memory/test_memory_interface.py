@@ -128,10 +128,71 @@ def test_duplicate_memory(memory: MemoryInterface):
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_2]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
-    if new_conversation_id1:
-        assert len([p for p in all_pieces if p.conversation_id == new_conversation_id1]) == 2
-    if new_conversation_id2:
-        assert len([p for p in all_pieces if p.conversation_id == new_conversation_id2]) == 2
+    assert len([p for p in all_pieces if p.conversation_id == new_conversation_id1]) == 2
+    assert len([p for p in all_pieces if p.conversation_id == new_conversation_id2]) == 2
+
+def test_duplicate_conversation_excluding_last_turn(memory: MemoryInterface):
+    orchestrator1 = Orchestrator()
+    orchestrator2 = Orchestrator()
+    conversation_id_1 = "11111"
+    conversation_id_2 = "22222"
+    pieces = [
+        PromptRequestPiece(
+            role="user",
+            original_value="original prompt text",
+            conversation_id=conversation_id_1,
+            sequence=0,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+        PromptRequestPiece(
+            role="assistant",
+            original_value="original prompt text",
+            conversation_id=conversation_id_1,
+            sequence=1,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            sequence=2,
+            conversation_id=conversation_id_1,
+            orchestrator_identifier=orchestrator2.get_identifier(),
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            conversation_id=conversation_id_2,
+            sequence=2,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+        PromptRequestPiece(
+            role="assistant",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            conversation_id=conversation_id_2,
+            sequence=3,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+    ]
+    memory.add_request_pieces_to_memory(request_pieces=pieces)
+    assert len(memory.get_all_prompt_pieces()) == 5
+    orchestrator3 = Orchestrator()
+
+    new_conversation_id1 = memory.duplicate_conversation_excluding_last_turn(
+        new_orchestrator_id=orchestrator3.get_identifier()["id"],
+        conversation_id=conversation_id_1,
+    )
+
+    all_memory = memory.get_all_prompt_pieces()
+    assert len(all_memory) == 7
+
+    duplicate_conversation = memory._get_prompt_pieces_with_conversation_id(conversation_id_1)
+    assert len(duplicate_conversation) == 2
+
+    for piece in duplicate_conversation:
+        assert piece.sequence < 2
 
 
 def test_duplicate_memory_orchestrator_id_collision(memory: MemoryInterface):

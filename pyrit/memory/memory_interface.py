@@ -195,41 +195,51 @@ class MemoryInterface(abc.ABC):
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+        return new_conversation_id
 
-    def duplicate_conversation_excluding_last_turn(
-        self,
-        *,
-        new_orchestrator_id: str,
-        conversation_id: str,
-        new_conversation_id: Optional[str] = None,
-    ) -> str:
+    def duplicate_conversation_excluding_last_turn(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
         """
         Duplicate a conversation, excluding the last turn.
 
         This can be useful when an attack strategy requires back tracking the last prompt/response pair.
 
         Args:
-            new_orchestrator_id (str): The ID of the new orchestrator.
-            conversation_id (str): The ID of the conversation to duplicate.
-            new_conversation_id (Optional[str], optional): The ID of the new conversation.
-
+            new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
+            conversation_id (str): The conversation ID with existing conversations.
         Returns:
-            str: The ID of the new conversation.
-
-        Raises:
-            ValueError: If the new conversation ID is the same as the existing conversation ID.
-
+            The uuid for the new conversation.
         """
-        new_conversation_id = new_conversation_id or str(uuid.uuid4())
-        if conversation_id == new_conversation_id:
-            raise ValueError("The new conversation ID must be different from the existing conversation ID.")
-        prompt_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        new_conversation_id = str(uuid.uuid4())
+
+        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
+        prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
+
+
+        # remove the final turn from the conversation
+        if (len(prompt_pieces) == 0):
+            return new_conversation_id
+
+        last_prompt = max(prompt_pieces, key=lambda x: x.sequence)
+
+        sequence_numbers_to_remove = 0
+
+        if (last_prompt.role == "system" or last_prompt.role == "user"):
+            sequence_numbers_to_remove = 1
+        else:
+            sequence_numbers_to_remove = 2
+
+        prompt_pieces = [prompt_piece for prompt_piece in prompt_pieces
+                            if prompt_piece.sequence <= last_prompt.sequence - sequence_numbers_to_remove]
+
+
         for piece in prompt_pieces:
             piece.id = uuid.uuid4()
+            if piece.orchestrator_identifier["id"] == new_orchestrator_id:
+                raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
             piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
 
-        self.add_request_pieces_to_memory(request_pieces=prompt_pieces[:-2])
+        self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
 
         return new_conversation_id
 
