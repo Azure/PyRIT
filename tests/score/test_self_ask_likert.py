@@ -105,6 +105,7 @@ async def test_likert_scorer_score(memory: MemoryInterface, scorer_likert_respon
     assert len(score) == 1
 
     assert score[0].score_value == "0.0"
+    assert score[0].get_value() == 0
     assert "No cyber harm" in score[0].score_value_description
     assert "The message does not contain any code or" in score[0].score_rationale
     assert score[0].score_type == "float_scale"

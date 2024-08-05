@@ -3,6 +3,7 @@
 
 import enum
 import json
+from typing import Optional
 import uuid
 import yaml
 
@@ -38,7 +39,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
         true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
-        self._category = true_false_question_contents["category"]
+        self._score_category = true_false_question_contents["category"]
         true_category = true_false_question_contents["true_description"]
         false_category = true_false_question_contents["false_description"]
 
@@ -54,12 +55,13 @@ class SelfAskTrueFalseScorer(Scorer):
 
         self._chat_target: PromptChatTarget = chat_target
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
+            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
 
         Returns:
             list[Score]: The request_response scored.
@@ -68,7 +70,7 @@ class SelfAskTrueFalseScorer(Scorer):
                          metadata can be configured to provide additional information.
         """
 
-        self.validate(request_response)
+        self.validate(request_response, task=task)
 
         conversation_id = str(uuid.uuid4())
 
@@ -92,12 +94,12 @@ class SelfAskTrueFalseScorer(Scorer):
             ]
         )
 
-        score = await self.send_chat_target_async(request, request_response.id)
+        score = await self._send_chat_target_async(request, request_response.id)
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
     @pyrit_json_retry
-    async def send_chat_target_async(self, request, request_response_id):
+    async def _send_chat_target_async(self, request, request_response_id):
         response = await self._chat_target.send_prompt_async(prompt_request=request)
 
         try:
@@ -107,7 +109,7 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_value=str(parsed_response["value"]),
                 score_value_description=parsed_response["description"],
                 score_type=self.scorer_type,
-                score_category=self._category,
+                score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
                 score_metadata=None,
@@ -121,5 +123,6 @@ class SelfAskTrueFalseScorer(Scorer):
 
         return score
 
-    def validate(self, request_response: PromptRequestPiece):
-        pass
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        if task:
+            raise ValueError("This scorer does not support tasks")

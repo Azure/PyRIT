@@ -15,7 +15,7 @@
 # %% [markdown]
 # # Converters with LLMs
 #
-# Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally prefered.
+# Some converters use external infrastructure like attacker LLMs. `VariationConverter` is a converter that does this. However, converters like this are significantly slower to run than some simple converters, so if there is a static way to do a task, that is generally preffered.
 
 # %%
 import pathlib
@@ -46,7 +46,7 @@ with AzureOpenAIChatTarget() as attack_llm:
 
 # %%
 
-from pyrit.prompt_converter import ToneConverter, TranslationConverter, NoiseConverter
+from pyrit.prompt_converter import ToneConverter, TranslationConverter, NoiseConverter, TenseConverter
 from pyrit.prompt_target import AzureOpenAIChatTarget
 from pyrit.common.path import DATASETS_PATH
 
@@ -67,3 +67,6 @@ with AzureOpenAIChatTarget() as attack_llm:
 
     language_converter = TranslationConverter(converter_target=attack_llm, language="fr")
     print(f"french translation: {await language_converter.convert_async(prompt=prompt)}")  # type: ignore
+
+    tense_converter = TenseConverter(converter_target=attack_llm, tense="far future")
+    print(f"future tense: {await tense_converter.convert_async(prompt=prompt)}")  # type: ignore

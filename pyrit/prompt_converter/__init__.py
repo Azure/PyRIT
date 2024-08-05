@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
@@ -10,6 +11,7 @@ from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpe
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
+from pyrit.prompt_converter.emoji_converter import EmojiConverter
 from pyrit.prompt_converter.expand_converter import ExpandConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
@@ -22,6 +24,7 @@ from pyrit.prompt_converter.search_replace_converter import SearchReplaceConvert
 from pyrit.prompt_converter.shorten_converter import ShortenConverter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
+from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
@@ -38,8 +41,10 @@ __all__ = [
     "CaesarConverter",
     "CodeChameleonConverter",
     "ConverterResult",
+    "EmojiConverter",
     "ExpandConverter",
     "LeetspeakConverter",
+    "LLMGenericTextConverter",
     "MorseConverter",
     "NoiseConverter",
     "PersuasionConverter",
@@ -51,6 +56,7 @@ __all__ = [
     "ShortenConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
+    "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
     "UnicodeConfusableConverter",

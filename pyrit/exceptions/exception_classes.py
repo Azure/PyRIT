@@ -66,9 +66,13 @@ class MissingPromptHolderException(PyritException):
         super().__init__(status_code=status_code, message=message)
 
 
-def handle_bad_request_exception(response_text: str, request: PromptRequestPiece) -> PromptRequestResponse:
+def handle_bad_request_exception(
+    response_text: str,
+    request: PromptRequestPiece,
+    is_content_filter=False,
+) -> PromptRequestResponse:
 
-    if "content_filter" in response_text:
+    if "content_filter" in response_text or is_content_filter:
         # Handle bad request error when content filter system detects harmful content
         bad_request_exception = BadRequestException(400, message=response_text)
         resp_text = bad_request_exception.process_exception()

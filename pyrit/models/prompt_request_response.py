@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import MutableSequence, Optional, Sequence
 
 from pyrit.models import PromptRequestPiece
 from pyrit.models.literals import PromptDataType, PromptResponseError
@@ -51,20 +51,20 @@ class PromptRequestResponse:
 
 
 def group_conversation_request_pieces_by_sequence(
-    request_pieces: list[PromptRequestPiece],
-) -> list[PromptRequestResponse]:
+    request_pieces: Sequence[PromptRequestPiece],
+) -> MutableSequence[PromptRequestResponse]:
     """
     Groups prompt request pieces from the same conversation into PromptRequestResponses.
 
     This is done using the sequence number and conversation ID.
 
     Args:
-        request_pieces (list[PromptRequestPiece]): A list of PromptRequestPiece objects representing individual
+        request_pieces (Sequence[PromptRequestPiece]): A list of PromptRequestPiece objects representing individual
             request pieces.
 
     Returns:
-        list[PromptRequestResponse]: A list of PromptRequestResponse objects representing grouped request pieces.
-            this is ordered by the sequence number
+        MutableSequence[PromptRequestResponse]: A list of PromptRequestResponse objects representing grouped request
+            pieces. This is ordered by the sequence number
 
     Raises:
         ValueError: If the conversation ID of any request piece does not match the conversation ID of the first
@@ -133,6 +133,7 @@ def construct_response_from_request(
                 prompt_target_identifier=request.prompt_target_identifier,
                 orchestrator_identifier=request.orchestrator_identifier,
                 original_value_data_type=response_type,
+                converted_value_data_type=response_type,
                 prompt_metadata=prompt_metadata,
                 response_error=error,
             )

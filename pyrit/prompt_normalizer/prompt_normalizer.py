@@ -57,25 +57,24 @@ class PromptNormalizer(abc.ABC):
             orchestrator_identifier=orchestrator_identifier,
         )
 
-        self._memory.add_request_response_to_memory(request=request)
         response = None
 
         try:
             response = await target.send_prompt_async(prompt_request=request)
+            self._memory.add_request_response_to_memory(request=request)
         except Exception as ex:
-            original_exception = ex
-            try:
-                request = construct_response_from_request(
-                    request=request.request_pieces[0],
-                    response_text_pieces=[str(ex)],
-                    response_type="error",
-                    error="processing",
-                )
-                self._memory.add_request_response_to_memory(request=request)
-            except Exception as memory_ex:
-                print(f"Failed to add request response to memory: {memory_ex}")
-            finally:
-                raise original_exception
+            # Ensure request to memory before processing exception
+            self._memory.add_request_response_to_memory(request=request)
+
+            error_response = construct_response_from_request(
+                request=request.request_pieces[0],
+                response_text_pieces=[str(ex)],
+                response_type="error",
+                error="processing",
+            )
+
+            self._memory.add_request_response_to_memory(request=error_response)
+            raise
 
         if response is None:
             return None
@@ -230,7 +229,7 @@ class PromptNormalizer(abc.ABC):
         converted_prompt_type = prompt_data_type
 
         for converter in request_converters:
-            converter_output = await converter.convert_async(
+            converter_output = await converter.convert_tokens_async(
                 prompt=converted_prompt_value, input_type=converted_prompt_type
             )
             converted_prompt_value = converter_output.output_text

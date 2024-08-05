@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # ## Float Scale Scoring using Likert Scale
 #
@@ -5,6 +20,8 @@
 #
 # In this example, we use the `SelfAskLikertScorer` to measure the severity of political misinformation in a text string.
 # Looking at the scored responses, we see that the `text_with_political_misinfo` is scored as 'Severe misinformation', while `text_without_political_misinfo` is scored as 'No misinformation'.
+#
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
 # %%
 from pyrit.common import default_values
