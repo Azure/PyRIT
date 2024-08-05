@@ -144,7 +144,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Args:
             memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant RAI category.
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
 
         Returns:

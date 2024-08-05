@@ -49,7 +49,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             memory (MemoryInterface, optional): The memory interface to be used. Defaults to None.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant RAI category.
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
             evaluation_prompt (str, optional): The evaluation prompt to be used. Defaults to None.
             verbose (bool, optional): Whether to print verbose output. Defaults to False.
