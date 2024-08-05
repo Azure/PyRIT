@@ -74,16 +74,17 @@ class MockPromptTarget(PromptChatTarget):
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt
-        self._memory.add_request_response_to_memory(
-            request=PromptRequestPiece(
-                role="system",
-                original_value=system_prompt,
-                converted_value=system_prompt,
-                conversation_id=conversation_id,
-                orchestrator_identifier=orchestrator_identifier,
-                labels=labels,
-            ).to_prompt_request_response()
-        )
+        if self._memory:
+            self._memory.add_request_response_to_memory(
+                request=PromptRequestPiece(
+                    role="system",
+                    original_value=system_prompt,
+                    converted_value=system_prompt,
+                    conversation_id=conversation_id,
+                    orchestrator_identifier=orchestrator_identifier,
+                    labels=labels,
+                ).to_prompt_request_response()
+            )
 
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
