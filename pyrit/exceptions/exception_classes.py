@@ -147,7 +147,7 @@ def remove_markdown_json(response_msg: str) -> str:
     return response_msg
 
 
-def pyrit_promptholder_retry(func: Callable) -> Callable:
+def pyrit_placeholder_retry(func: Callable) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
