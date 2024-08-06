@@ -183,9 +183,7 @@ class FuzzerOrchestrator(Orchestrator):
         
         self._template_converter = random.choice(self._template_converter)
 
-    async def execute_fuzzer(
-    self, *, prompt_templates: list[str] = None
-    ) -> PromptRequestPiece:
+    async def execute_fuzzer(self) -> PromptRequestPiece:
             
         """
         Steps:
@@ -321,8 +319,8 @@ class FuzzerOrchestrator(Orchestrator):
             )
             self._mctc_select_path.append(current) # append node to path
 
-        for pn in self._mctc_select_path:
-            pn._visited_num += 1    # keep track of number of visited nodes
+        for prompt_node in self._mctc_select_path:
+            prompt_node._visited_num += 1    # keep track of number of visited nodes
 
         self._last_choice_index = current.index
         return current # returns the best child
