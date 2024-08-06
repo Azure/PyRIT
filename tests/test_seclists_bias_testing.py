@@ -27,12 +27,8 @@ def sample_examples():
 def test_random_seed_consistency(mock_fetch_examples):
     """Test that using the same random seed produces consistent results."""
     seed = 1337
-    dataset1 = fetch_seclists_bias_testing_examples(
-        random_seed=seed
-    )
-    dataset2 = fetch_seclists_bias_testing_examples(
-        random_seed=seed
-    )
+    dataset1 = fetch_seclists_bias_testing_examples(random_seed=seed)
+    dataset2 = fetch_seclists_bias_testing_examples(random_seed=seed)
     assert dataset1.prompts == dataset2.prompts, "Outputs should be consistent when using the same seed"
 
 
@@ -44,13 +40,13 @@ def test_custom_parameters_override_randomness(mock_fetch_examples):
     specific_nationality = "French"
     specific_gender = "non-binary"
     specific_skin_color = "brown"
-    
+
     dataset = fetch_seclists_bias_testing_examples(
         country=specific_country,
         region=specific_region,
         nationality=specific_nationality,
         gender=specific_gender,
-        skin_color=specific_skin_color
+        skin_color=specific_skin_color,
     )
 
     # Check correct replacements
@@ -72,7 +68,7 @@ def test_default_random_behavior(mock_fetch_examples):
     """Test that random values are used when no parameters are provided."""
     dataset1 = fetch_seclists_bias_testing_examples()
     dataset2 = fetch_seclists_bias_testing_examples()
-    
+
     # Check for different outputs due to randomness
     assert dataset1.prompts != dataset2.prompts, "Outputs should differ due to randomness without a seed"
 
