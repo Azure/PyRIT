@@ -74,7 +74,7 @@ class FuzzerOrchestrator(Orchestrator):
         prompt_templates: list[str],
         prompt_converters: Optional[list[PromptConverter]] = None,
         template_converter:list[PromptConverter], # shorten/expand 
-        scorer: Scorer,
+       # scorer: Scorer,
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
@@ -163,7 +163,13 @@ class FuzzerOrchestrator(Orchestrator):
         self._current_query = 0
         self._current_jailbreak = 0
         self._batch_size = batch_size
-        
+
+        scorer_scale_path = Path(SCALES_PATH / "tree_of_attacks_with_pruning_jailbreak.yaml")
+        self._scorer = SelfAskScaleScorer(
+            chat_target=scoring_target,
+            scale_path=scorer_scale_path,
+            memory=self._memory,
+        )
         
         if not self._prompt_templates:
             raise ValueError("The initial seed cannot be empty.")
@@ -352,7 +358,7 @@ class FuzzerOrchestrator(Orchestrator):
             self._rewards[prompt_node.index] += reward * \
                 max(self._minimum_reward, (1 - self._reward_penalty * last_chosen_node._level))
             
-    @pyrit_promptholder_retry
+    @pyrit_placeholder_retry
     async def _apply_template_converter(self,current_seed):
         """
         Asynchronously applies template converter.
