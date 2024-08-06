@@ -11,7 +11,6 @@ from colorama import Fore, Style
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import (
-    BadRequestException,
     InvalidJsonException,
     pyrit_json_retry,
 )
@@ -35,7 +34,7 @@ class CrescendoOrchestrator(Orchestrator):
     and its trust in the text it has generated itself.
 
     You can learn more about the Crescendo attack at the link below:
-    https://crescendo-the-multiturn-jailbreak.github.io//
+    https://crescendo-the-multiturn-jailbreak.github.io/
 
 
     Args:
@@ -65,7 +64,7 @@ class CrescendoOrchestrator(Orchestrator):
         self._system_prompt_path = (
             system_prompt_path
             if system_prompt_path
-            else Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1_with_examples.yaml"
+            else Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1.yaml"
         )
         self._system_prompt_template = PromptTemplate.from_yaml_file(self._system_prompt_path)
         self._system_prompt = self._system_prompt_template.apply_custom_metaprompt_parameters(
@@ -207,9 +206,9 @@ class CrescendoOrchestrator(Orchestrator):
 
         logger.info(f"\nFINAL RESULTS, TOTAL ROUNDS: {round_num}, TOTAL BACKTRACKS {backtrack_count}:\n")
         logger.info("\nPROMPT_TARGET MEMORY: ")
-        self._print_target_memory(conversation_id=self._prompt_target_conversation_id)
+        self._log_target_memory(conversation_id=self._prompt_target_conversation_id)
         logger.info("\nRED_TEAMING_CHAT MEMORY: ")
-        self._print_target_memory(conversation_id=self._red_teaming_chat_conversation_id)
+        self._log_target_memory(conversation_id=self._red_teaming_chat_conversation_id)
 
         return eval_score
 
@@ -300,27 +299,17 @@ class CrescendoOrchestrator(Orchestrator):
 
     async def _send_prompt_async(self, *, attack_prompt: str) -> str:
         # Sends the attack prompt to the prompt target and returns the response
-        try:
-            response_text = (
-                await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=self._create_normalizer_request(prompt_text=attack_prompt),
-                    target=self._prompt_target,
-                    conversation_id=self._prompt_target_conversation_id,
-                    orchestrator_identifier=self.get_identifier(),
-                    labels=self._global_memory_labels,
-                )
-            ).request_pieces[0]
-            last_response = response_text.converted_value
+        response_text = (
+            await self._prompt_normalizer.send_prompt_async(
+                normalizer_request=self._create_normalizer_request(prompt_text=attack_prompt),
+                target=self._prompt_target,
+                conversation_id=self._prompt_target_conversation_id,
+                orchestrator_identifier=self.get_identifier(),
+                labels=self._global_memory_labels,
+            )
+        ).request_pieces[0]
 
-        except BadRequestException as e:
-            if isinstance(e, BadRequestException):
-                last_response = (
-                    "Error: Content filter was triggered. The response was filtered due to the prompt triggering"
-                    " Azure OpenAI's content management policy. Please modify your prompt and retry. "
-                )
-            else:
-                print("An error occurred:", str(e))
-
+        last_response = response_text.converted_value
         return last_response
 
     async def _backtrack_memory(self, *, conversation_id: str) -> str:
@@ -354,7 +343,7 @@ class CrescendoOrchestrator(Orchestrator):
 
         return eval_score
 
-    def print_prompt_target_memory(self) -> None:
+    def print_conversation(self) -> None:
         """
         Prints the prompt target memory.
         "User" messages are printed in red, and "Assistant" messages are printed in blue.
@@ -368,7 +357,13 @@ class CrescendoOrchestrator(Orchestrator):
             else:
                 print(f"{Style.NORMAL}{Fore.BLUE}{message.role}: {message.converted_value}\n")
 
-    def _print_target_memory(self, *, conversation_id: str) -> None:
+            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+            if scores and len(scores) > 0:
+                score = scores[0]
+                print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
+
+
+    def _log_target_memory(self, *, conversation_id: str) -> None:
         """
         Prints the target memory for a given conversation ID.
 

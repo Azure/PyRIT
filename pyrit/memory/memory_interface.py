@@ -199,7 +199,8 @@ class MemoryInterface(abc.ABC):
 
     def duplicate_conversation_excluding_last_turn(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
         """
-        Duplicate a conversation, excluding the last turn.
+        Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
+        user request (e.g. if there is half a turn, it just removes that half).
 
         This can be useful when an attack strategy requires back tracking the last prompt/response pair.
 
@@ -230,7 +231,6 @@ class MemoryInterface(abc.ABC):
 
         prompt_pieces = [prompt_piece for prompt_piece in prompt_pieces
                             if prompt_piece.sequence <= last_prompt.sequence - sequence_numbers_to_remove]
-
 
         for piece in prompt_pieces:
             piece.id = uuid.uuid4()

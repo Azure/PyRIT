@@ -122,7 +122,7 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=parsed_response["metadata"] if parsed_response.get("metadata") else None,
+                score_metadata=parsed_response.get("metadata"),
                 prompt_request_response_id=request_response_id,
             )
         except json.JSONDecodeError:
