@@ -3,7 +3,7 @@
 
 import enum
 import json
-from typing import Optional
+from typing import Dict, Optional
 import uuid
 import yaml
 
@@ -16,15 +16,15 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTempla
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Score, Scorer
 
-TRUE_FALSE_QUESITIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
+TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
 
 
 class TrueFalseQuestionPaths(enum.Enum):
-    CURRENT_EVENTS = Path(TRUE_FALSE_QUESITIONS_PATH, "current_events.yaml").resolve()
-    GROUNDED = Path(TRUE_FALSE_QUESITIONS_PATH, "grounded.yaml").resolve()
-    PROMPT_INJECTION = Path(TRUE_FALSE_QUESITIONS_PATH, "prompt_injection.yaml").resolve()
-    QUESTION_ANSWERING = Path(TRUE_FALSE_QUESITIONS_PATH, "question_answering.yaml").resolve()
-    GANDALF = Path(TRUE_FALSE_QUESITIONS_PATH, "gandalf.yaml").resolve()
+    CURRENT_EVENTS = Path(TRUE_FALSE_QUESTIONS_PATH, "current_events.yaml").resolve()
+    GROUNDED = Path(TRUE_FALSE_QUESTIONS_PATH, "grounded.yaml").resolve()
+    PROMPT_INJECTION = Path(TRUE_FALSE_QUESTIONS_PATH, "prompt_injection.yaml").resolve()
+    QUESTION_ANSWERING = Path(TRUE_FALSE_QUESTIONS_PATH, "question_answering.yaml").resolve()
+    GANDALF = Path(TRUE_FALSE_QUESTIONS_PATH, "gandalf.yaml").resolve()
 
 
 class SelfAskTrueFalseScorer(Scorer):
@@ -34,7 +34,8 @@ class SelfAskTrueFalseScorer(Scorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        true_false_question_path: Path,
+        true_false_question_path: Optional[Path] = None,
+        true_false_question_contents: Optional[Dict[str, str]] = None,
         true_false_system_prompt_path: Optional[Path] = None,
         memory: MemoryInterface = None,
     ) -> None:
@@ -42,7 +43,16 @@ class SelfAskTrueFalseScorer(Scorer):
 
         self._memory = memory if memory else DuckDBMemory()
 
-        true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
+        if not true_false_question_path and not true_false_question_contents:
+            raise ValueError("Either true_false_question_path or true_false_question_contents must be provided.")
+        if true_false_question_path and true_false_question_contents:
+            raise ValueError("Only one of true_false_question_path or true_false_question_contents should be provided.")
+        if true_false_question_path:
+            true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
+
+        for key in ["category", "true_description", "false_description"]:
+            if key not in true_false_question_contents:
+                raise ValueError(f"{key} must be provided in true_false_question_contents.")
 
         self._score_category = true_false_question_contents["category"]
         true_category = true_false_question_contents["true_description"]
@@ -50,10 +60,10 @@ class SelfAskTrueFalseScorer(Scorer):
 
         metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
 
-        self.true_false_system_prompt_path = (
+        true_false_system_prompt_path = (
             true_false_system_prompt_path
             if true_false_system_prompt_path
-            else TRUE_FALSE_QUESITIONS_PATH / "true_false_system_prompt.yaml"
+            else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
 
         scoring_instructions_template = PromptTemplate.from_yaml_file(true_false_system_prompt_path)

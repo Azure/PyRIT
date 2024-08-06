@@ -8,6 +8,7 @@ from pyrit.prompt_converter import (
     AtbashConverter,
     Base64Converter,
     CaesarConverter,
+    CharacterSpaceConverter,
     EmojiConverter,
     LeetspeakConverter,
     MorseConverter,
@@ -323,3 +324,27 @@ async def test_emoji_converter() -> None:
     output = await converter.convert_async(prompt="Hello world I should be converted", input_type="text")
     assert output.output_type == "text"
     assert output.output_text[0] in ["🄷", "🅗", "🅷"]
+
+
+@pytest.mark.asyncio
+async def test_character_space_converter_basic() -> None:
+    converter = CharacterSpaceConverter()
+    output = await converter.convert_async(prompt="Hello world", input_type="text")
+    assert output.output_type == "text"
+    assert output.output_text == "H e l l o   w o r l d"
+
+
+@pytest.mark.asyncio
+async def test_character_space_converter_empty_prompt() -> None:
+    converter = CharacterSpaceConverter()
+    output = await converter.convert_async(prompt="", input_type="text")
+    assert output.output_type == "text"
+    assert output.output_text == ""
+
+
+@pytest.mark.asyncio
+async def test_character_space_converter_punctuation() -> None:
+    converter = CharacterSpaceConverter()
+    output = await converter.convert_async(prompt="Hello, world! How's everything?", input_type="text")
+    assert output.output_type == "text"
+    assert output.output_text == "H e l l o    w o r l d    H o w  s   e v e r y t h i n g "

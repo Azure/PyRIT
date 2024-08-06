@@ -222,15 +222,15 @@ class MemoryInterface(abc.ABC):
 
         last_prompt = max(prompt_pieces, key=lambda x: x.sequence)
 
-        sequence_numbers_to_remove = 0
+        length_of_sequence_to_remove = 0
 
         if (last_prompt.role == "system" or last_prompt.role == "user"):
-            sequence_numbers_to_remove = 1
+            length_of_sequence_to_remove = 1
         else:
-            sequence_numbers_to_remove = 2
+            length_of_sequence_to_remove = 2
 
         prompt_pieces = [prompt_piece for prompt_piece in prompt_pieces
-                            if prompt_piece.sequence <= last_prompt.sequence - sequence_numbers_to_remove]
+                            if prompt_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove]
 
         for piece in prompt_pieces:
             piece.id = uuid.uuid4()
