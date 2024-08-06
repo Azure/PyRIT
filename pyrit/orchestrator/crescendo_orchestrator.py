@@ -315,15 +315,15 @@ class CrescendoOrchestrator(Orchestrator):
     async def _backtrack_memory(self, *, conversation_id: str) -> str:
         # Duplicates the conversation excluding the last turn, given a conversation ID.
         new_conversation_id = self._memory.duplicate_conversation_excluding_last_turn(
-            new_orchestrator_id=self.get_identifier(),
+            new_orchestrator_id=self.get_identifier()["id"],
             conversation_id=conversation_id,
         )
         return new_conversation_id
 
     async def _get_refusal_score_async(self, attack_prompt: str, last_response: str) -> Tuple[bool, str]:
         # Sends the attack prompt and last response to the refusal scorer and returns the refusal score
-        refusal_input = {"conversation_objective": attack_prompt, "response_to_evaluate_input": last_response}
-        refusal_input = json.dumps(refusal_input)
+        refusal_input_dict = {"conversation_objective": attack_prompt, "response_to_evaluate_input": last_response}
+        refusal_input = str(json.dumps(refusal_input_dict))
 
         refusal_score = (await self.refusal_scorer.score_text_async(refusal_input))[0]
         is_refusal = bool(refusal_score.get_value())
@@ -333,11 +333,11 @@ class CrescendoOrchestrator(Orchestrator):
 
     async def _get_eval_score_async(self, last_response: str) -> Score:
         # Sends the conversation objective and last response to the eval scorer and returns the eval score
-        eval_input = {
+        eval_input_dict = {
             "conversation_objective": self._conversation_objective,
             "response_to_evaluate_input": last_response,
         }
-        eval_input = json.dumps(eval_input)
+        eval_input = str(json.dumps(eval_input_dict))
 
         eval_score = (await self.eval_judge_true_false_scorer.score_text_async(text=eval_input))[0]
 
@@ -357,7 +357,7 @@ class CrescendoOrchestrator(Orchestrator):
             else:
                 print(f"{Style.NORMAL}{Fore.BLUE}{message.role}: {message.converted_value}\n")
 
-            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
             if scores and len(scores) > 0:
                 score = scores[0]
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")

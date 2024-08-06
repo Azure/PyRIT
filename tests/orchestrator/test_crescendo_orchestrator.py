@@ -6,7 +6,7 @@ import pytest
 import tempfile
 from tests.mocks import MockPromptTarget
 import random
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
@@ -198,22 +198,28 @@ async def test_apply_crescendo_attack(mock_target: MockPromptTarget, rounds: int
 async def test_max_backtracks_occurred(
     orchestrator: CrescendoOrchestrator, true_eval_score: Score, did_refuse_score: Score, rounds: int
 ):
-    for round in range(1, rounds + 1):
-        orchestrator._get_attack_prompt = AsyncMock(return_value="attack_prompt")
-        orchestrator._send_prompt_async = AsyncMock(return_value="last_response")
-        orchestrator._backtrack_memory = AsyncMock(return_value="new_conversation_id")
 
-        orchestrator.refusal_scorer.score_text_async = AsyncMock(return_value=[did_refuse_score])
-        orchestrator.eval_judge_true_false_scorer.score_text_async = AsyncMock(return_value=[true_eval_score])
+    for round_num in range(1, rounds + 1):
+        with (
+            patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
+            patch.object(orchestrator, "_send_prompt_async", AsyncMock(return_value="last_response")),
+            patch.object(
+                orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
+            ) as mock_backtrack_memory,
+            patch.object(orchestrator.refusal_scorer, "score_text_async", AsyncMock(return_value=[did_refuse_score])),
+            patch.object(
+                orchestrator.eval_judge_true_false_scorer, "score_text_async", AsyncMock(return_value=[true_eval_score])
+            ) as mock_eval_judge,
+        ):
 
-        max_rounds = round
-        max_backtracks = random.randint(1, 10)
+            max_rounds = round_num
+            max_backtracks = random.randint(1, 10)
 
-        await orchestrator.apply_crescendo_attack_async(max_rounds=max_rounds, max_backtracks=max_backtracks)
+            await orchestrator.apply_crescendo_attack_async(max_rounds=max_rounds, max_backtracks=max_backtracks)
 
-    assert orchestrator._backtrack_memory.call_count == int(max_rounds + max_backtracks - 1)
-    assert orchestrator._prompt_target_conversation_id == "new_conversation_id"
-    assert orchestrator.eval_judge_true_false_scorer.score_text_async.call_count == 0
+            assert mock_backtrack_memory.call_count == (max_rounds + max_backtracks - 1)
+            assert orchestrator._prompt_target_conversation_id == "new_conversation_id"
+            assert mock_eval_judge.call_count == 0
 
 
 @pytest.mark.asyncio
@@ -221,40 +227,50 @@ async def test_max_backtracks_occurred(
 async def test_no_backtracks_occurred(
     orchestrator: CrescendoOrchestrator, true_eval_score: Score, did_not_refuse_score: Score, rounds: int
 ):
-    for round in range(1, rounds + 1):
-        orchestrator._get_attack_prompt = AsyncMock(return_value="attack_prompt")
-        orchestrator._send_prompt_async = AsyncMock(return_value="last_response")
-        orchestrator._backtrack_memory = AsyncMock(return_value="new_conversation_id")
+    for round_num in range(1, rounds + 1):
+        with (
+            patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
+            patch.object(orchestrator, "_send_prompt_async", AsyncMock(return_value="last_response")),
+            patch.object(
+                orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
+            ) as mock_backtrack_memory,
+            patch.object(
+                orchestrator.refusal_scorer, "score_text_async", AsyncMock(return_value=[did_not_refuse_score])
+            ),
+            patch.object(
+                orchestrator.eval_judge_true_false_scorer, "score_text_async", AsyncMock(return_value=[true_eval_score])
+            ) as mock_eval_judge,
+        ):
 
-        orchestrator.refusal_scorer.score_text_async = AsyncMock(return_value=[did_not_refuse_score])
-        orchestrator.eval_judge_true_false_scorer.score_text_async = AsyncMock(return_value=[true_eval_score])
+            max_rounds = round_num
+            max_backtracks = random.randint(1, 10)
 
-        max_rounds = round
-        max_backtracks = random.randint(1, 10)
+            await orchestrator.apply_crescendo_attack_async(max_rounds=max_rounds, max_backtracks=max_backtracks)
 
-        await orchestrator.apply_crescendo_attack_async(max_rounds=max_rounds, max_backtracks=max_backtracks)
-
-    assert orchestrator._backtrack_memory.call_count == 0
-    assert orchestrator._prompt_target_conversation_id != "new_conversation_id"
-    assert orchestrator.eval_judge_true_false_scorer.score_text_async.call_count == max_rounds
+            assert mock_backtrack_memory.call_count == 0
+            assert orchestrator._prompt_target_conversation_id != "new_conversation_id"
+            assert mock_eval_judge.call_count == max_rounds
 
 
 @pytest.mark.asyncio
 async def test_value_error_exceptions(
     orchestrator: CrescendoOrchestrator, true_eval_score: Score, did_refuse_score: Score
 ):
-    orchestrator._get_attack_prompt = AsyncMock(return_value="attack_prompt")
-    orchestrator._send_prompt_async = AsyncMock(return_value="last_response")
-    orchestrator._backtrack_memory = AsyncMock(return_value="new_conversation_id")
+    with (
+        patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
+        patch.object(orchestrator, "_send_prompt_async", AsyncMock(return_value="last_response")),
+        patch.object(orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")),
+        patch.object(orchestrator.refusal_scorer, "score_text_async", AsyncMock(return_value=[did_refuse_score])),
+        patch.object(
+            orchestrator.eval_judge_true_false_scorer, "score_text_async", AsyncMock(return_value=[true_eval_score])
+        ),
+    ):
 
-    orchestrator.refusal_scorer.score_text_async = AsyncMock(return_value=[did_refuse_score])
-    orchestrator.eval_judge_true_false_scorer.score_text_async = AsyncMock(return_value=[true_eval_score])
+        with pytest.raises(ValueError):
+            await orchestrator.apply_crescendo_attack_async(max_rounds=10, max_backtracks=0)
 
-    with pytest.raises(ValueError):
-        await orchestrator.apply_crescendo_attack_async(max_rounds=10, max_backtracks=0)
-
-    with pytest.raises(ValueError):
-        await orchestrator.apply_crescendo_attack_async(max_rounds=0, max_backtracks=10)
+        with pytest.raises(ValueError):
+            await orchestrator.apply_crescendo_attack_async(max_rounds=0, max_backtracks=10)
 
 
 @pytest.mark.asyncio
@@ -300,10 +316,15 @@ async def test_invalid_json_exceptions(orchestrator: CrescendoOrchestrator, red_
         ]
     )
 
-    orchestrator._backtrack_memory = AsyncMock(return_value="new_conversation_id")
-    orchestrator._prompt_normalizer = AsyncMock()
-    orchestrator._prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
+    with (
+        patch.object(
+            orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
+        ) as mock_backtrack_memory,
+        patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer,
+    ):
 
-    with pytest.raises(InvalidJsonException):
-        await orchestrator._get_attack_prompt(round_num=1, eval_score=None, last_response=None)
-        assert orchestrator._backtrack_memory.call_count == 1
+        mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
+
+        with pytest.raises(InvalidJsonException):
+            await orchestrator._get_attack_prompt(round_num=1, eval_score=None, last_response=None)
+            assert mock_backtrack_memory.call_count == 1
