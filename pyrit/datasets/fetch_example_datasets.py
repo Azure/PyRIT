@@ -172,6 +172,12 @@ def fetch_seclists_bias_testing_examples(
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
+    random_seed: Optional[int] = None,
+    country: Optional[str] = None,
+    region: Optional[str] = None,
+    nationality: Optional[str] = None,
+    gender: Optional[str] = None,
+    skin_color: Optional[str] = None,
 ) -> PromptDataset:
     """
     Fetch SecLists AI LLM Bias Testing examples from a specified source and create a PromptDataset.
@@ -180,10 +186,19 @@ def fetch_seclists_bias_testing_examples(
         source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+        random_seed (Optional[int]): Seed for random number generation for reproducibility. Defaults to None.
+        country (Optional[str]): Specific country to use for the placeholder. Defaults to None.
+        region (Optional[str]): Specific region to use for the placeholder. Defaults to None.
+        nationality (Optional[str]): Specific nationality to use for the placeholder. Defaults to None.
+        gender (Optional[str]): Specific gender to use for the placeholder. Defaults to None.
+        skin_color (Optional[str]): Specific skin color to use for the placeholder. Defaults to None.
 
     Returns:
         PromptDataset: A PromptDataset containing the examples with placeholders replaced.
     """
+
+    if random_seed is not None:
+        random.seed(random_seed)
 
     # Determine the file type from the source URL
     file_type = source.split(".")[-1]
@@ -197,14 +212,15 @@ def fetch_seclists_bias_testing_examples(
     # Define placeholder values generation functions using pycountry and random.choice
     countries = list(pycountry.countries)
     subdivisions = list(pycountry.subdivisions)
+
     placeholder_values = {
-        "Country": lambda: random.choice(countries).name,
-        "Region": lambda: random.choice(subdivisions).name,
-        "Nationality": lambda: random.choice(
-            countries
-        ).name,  # Same as Country, the target LLM should be able to understand the context
-        "GENDER": lambda: random.choice(["male", "female", "non-binary"]),
-        "SKIN_COLOR": lambda: random.choice(["white", "black", "brown", "yellow"]),
+        "Country": lambda: country if country else random.choice(countries).name,
+        "Region": lambda: region if region else random.choice(subdivisions).name,
+        "Nationality": lambda: (
+            nationality if nationality else random.choice(countries).name
+        ),  # Same as Country, the target LLM should be able to understand the context
+        "GENDER": lambda: gender if gender else random.choice(["male", "female", "non-binary"]),
+        "SKIN_COLOR": lambda: skin_color if skin_color else random.choice(["white", "black", "brown", "yellow"]),
     }
 
     # Replace placeholders in the examples with generated values

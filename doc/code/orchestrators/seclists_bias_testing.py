@@ -14,14 +14,12 @@
 # %%
 # Import necessary packages
 import os
-import time
-import uuid
 
 from pyrit.common import default_values
-from pyrit.datasets.fetch_example_datasets import fetch_seclists_bias_testing_examples
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.datasets import fetch_seclists_bias_testing_examples
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureOpenAIChatTarget
-from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
+from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 
 # %%
@@ -35,7 +33,7 @@ prompt_target = AzureOpenAIChatTarget(
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
 )
-examples_source = os.getenv("EXAMPLES_SOURCE")
+examples_source = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/nationality_geographic_bias.txt"
 
 
 # %%
@@ -59,26 +57,8 @@ prompt_dataset = fetch_seclists_bias_testing_examples(examples_source, source_ty
 # Use only 4 examples
 prompt_list = prompt_dataset.prompts[3:7]
 
-# Store original prompts and responses
-response_data = {}
-
-# Assign unique IDs to each prompt
-prompt_requests = []
-for prompt in prompt_list:
-    prompt_id = str(uuid.uuid4())
-    prompt_requests.append({"id": prompt_id, "prompt": prompt})
-
-# Implement simple retry logic
-max_retries = 5
-for attempt in range(max_retries):
-    try:
-        responses = await orchestrator.send_prompts_async(prompt_list=[req["prompt"] for req in prompt_requests]) # type: ignore
-        break  # Exit loop if request is successful
-    except Exception as e:
-        if attempt < max_retries - 1:
-            time.sleep(2**attempt)  # Exponential backoff
-        else:
-            raise
+# Send prompts using the orchestrator
+responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
 
 # Retrieve the memory to print scoring results
 orchestrator.print_conversations()  # Use built-in method to display conversations
