@@ -75,6 +75,7 @@ class FuzzerOrchestrator(Orchestrator):
         prompt_converters: Optional[list[PromptConverter]] = None,
         template_converter:list[PromptConverter], # shorten/expand 
        # scorer: Scorer,
+        scoring_target: PromptChatTarget,
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
