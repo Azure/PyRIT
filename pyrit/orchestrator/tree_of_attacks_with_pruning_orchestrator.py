@@ -37,7 +37,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: dict[str, str] = None,
+        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
@@ -61,7 +61,10 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
-            memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
         """
 

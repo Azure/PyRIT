@@ -162,6 +162,22 @@ class MemoryInterface(abc.ABC):
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
+    def get_prompt_request_piece_by_memory_labels(
+        self, *, memory_labels: dict[str, str] = {}
+    ) -> list[PromptRequestPiece]:
+        """
+        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
+        """
+
     def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: str) -> list[str]:
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
 
