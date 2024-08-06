@@ -79,8 +79,8 @@ class FuzzerOrchestrator(Orchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         frequency_weight=0.5, reward_penalty=0.1, minimum_reward=0.2,
-        non_leaf_nodeprobability =0.1,
-        random.seed(0),
+        non_leaf_node_probability =0.1,
+        random_seed = None,
         batch_size: int = 10,
     ) -> None:
 
@@ -133,7 +133,7 @@ class FuzzerOrchestrator(Orchestrator):
 
             non_leaf_nodeprobability: parameter which decides the likelihood of selecting a non-leaf node.
 
-            random.seed(0): Used to save the state of a random function. 
+            random_seed: Used to save the state of a random function. 
 
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
 
