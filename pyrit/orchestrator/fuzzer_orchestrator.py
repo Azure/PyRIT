@@ -213,8 +213,10 @@ class FuzzerOrchestrator(Orchestrator):
             return
         else:
             # 1. Select a seed from the list of the templates using the MCTS
-            
+            TEMPLATE_PLACEHOLDER = '{{ prompt }}' 
             current_seed = await self._get_seed(prompt_templates=prompt_templates)
+            if TEMPLATE_PLACEHOLDER not in current_seed:
+                raise MissingPromptHolderException(message="Prompt placeholder is empty.")
 
             #2. Apply seed converter to the selected template.
             try: 
