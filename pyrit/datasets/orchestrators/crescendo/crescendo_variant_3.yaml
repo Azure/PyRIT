@@ -26,7 +26,7 @@ template: |
   ###Inputs###
   Inputs for crafting the new jailbreak:
   The target goal for the jailbreak: {{conversation_objective}}
-  
+
 
   ###Task###
   Task: Generate the following:

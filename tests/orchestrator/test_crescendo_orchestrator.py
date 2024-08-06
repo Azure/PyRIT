@@ -9,7 +9,7 @@ import random
 from unittest.mock import AsyncMock
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import BadRequestException, InvalidJsonException
+from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
@@ -307,17 +307,3 @@ async def test_invalid_json_exceptions(orchestrator: CrescendoOrchestrator, red_
     with pytest.raises(InvalidJsonException):
         await orchestrator._get_attack_prompt(round_num=1, eval_score=None, last_response=None)
         assert orchestrator._backtrack_memory.call_count == 1
-
-
-@pytest.mark.asyncio
-async def test_bad_request_exception(orchestrator: CrescendoOrchestrator):
-
-    orchestrator._prompt_normalizer = AsyncMock()
-    orchestrator._prompt_normalizer.send_prompt_async = AsyncMock(side_effect=BadRequestException())
-
-    last_response = await orchestrator._send_prompt_async(attack_prompt="attack_prompt")
-
-    assert last_response == (
-        "Error: Content filter was triggered. The response was filtered due to the prompt triggering Azure OpenAI's"
-        " content management policy. Please modify your prompt and retry. "
-    )

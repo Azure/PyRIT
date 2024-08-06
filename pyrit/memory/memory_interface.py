@@ -4,7 +4,7 @@
 import abc
 import copy
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence
+from typing import MutableSequence, Sequence
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
@@ -215,22 +215,24 @@ class MemoryInterface(abc.ABC):
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
         prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
 
-
         # remove the final turn from the conversation
-        if (len(prompt_pieces) == 0):
+        if len(prompt_pieces) == 0:
             return new_conversation_id
 
         last_prompt = max(prompt_pieces, key=lambda x: x.sequence)
 
         length_of_sequence_to_remove = 0
 
-        if (last_prompt.role == "system" or last_prompt.role == "user"):
+        if last_prompt.role == "system" or last_prompt.role == "user":
             length_of_sequence_to_remove = 1
         else:
             length_of_sequence_to_remove = 2
 
-        prompt_pieces = [prompt_piece for prompt_piece in prompt_pieces
-                            if prompt_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove]
+        prompt_pieces = [
+            prompt_piece
+            for prompt_piece in prompt_pieces
+            if prompt_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
+        ]
 
         for piece in prompt_pieces:
             piece.id = uuid.uuid4()

@@ -40,7 +40,7 @@ with CrescendoOrchestrator(
     conversation_objective=conversation_objective,
     prompt_target=prompt_target,
     red_teaming_chat=red_teaming_chat,
-    scoring_target=scorer
+    scoring_target=scorer,
 ) as orchestrator:
 
     # For five turns this can take a couple minutes depending on LLM latency

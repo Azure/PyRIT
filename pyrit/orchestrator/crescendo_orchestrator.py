@@ -362,7 +362,6 @@ class CrescendoOrchestrator(Orchestrator):
                 score = scores[0]
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
-
     def _log_target_memory(self, *, conversation_id: str) -> None:
         """
         Prints the target memory for a given conversation ID.

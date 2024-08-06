@@ -131,6 +131,7 @@ def test_duplicate_memory(memory: MemoryInterface):
     assert len([p for p in all_pieces if p.conversation_id == new_conversation_id1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == new_conversation_id2]) == 2
 
+
 def test_duplicate_conversation_excluding_last_turn(memory: MemoryInterface):
     orchestrator1 = Orchestrator()
     orchestrator2 = Orchestrator()
@@ -188,7 +189,7 @@ def test_duplicate_conversation_excluding_last_turn(memory: MemoryInterface):
     all_memory = memory.get_all_prompt_pieces()
     assert len(all_memory) == 7
 
-    duplicate_conversation = memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id_1)
+    duplicate_conversation = memory._get_prompt_pieces_with_conversation_id(conversation_id=new_conversation_id1)
     assert len(duplicate_conversation) == 2
 
     for piece in duplicate_conversation:
