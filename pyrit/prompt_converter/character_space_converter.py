@@ -17,7 +17,7 @@ class CharacterSpaceConverter(PromptConverter):
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
-        converted_text = re.sub('[!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~]', '', ' '.join(prompt))
+        converted_text = re.sub("[!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~]", "", " ".join(prompt))
         return ConverterResult(output_text=converted_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
