@@ -125,7 +125,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: Optional[dict[str, str]] = {},
+        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         attack_setup_target_conversation_id: Optional[str] = None,
     ) -> None:
@@ -149,7 +149,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
             attack_setup_target_conversation_id: The conversation ID to use for the prompt target.
                 If not provided, a new one will be generated.

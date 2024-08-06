@@ -35,7 +35,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
         memory: MemoryInterface = None,
-        memory_labels: Optional[dict[str, str]] = {},
+        memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
@@ -50,7 +50,7 @@ class PromptSendingOrchestrator(Orchestrator):
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
         """
         super().__init__(
@@ -70,7 +70,7 @@ class PromptSendingOrchestrator(Orchestrator):
         *,
         prompt_list: list[str],
         prompt_type: PromptDataType = "text",
-        memory_labels: Optional[dict[str, str]] = {},
+        memory_labels: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target, updating global memory labels with any new labels provided by the user.
@@ -79,7 +79,7 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt_list (list[str]): The list of prompts to be sent.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], optional): A free-form dictionary of labels to apply to the prompts.
-            These labels will be merged with the instance's global memory labels. Defaults to an empty dictionary.
+            These labels will be merged with the instance's global memory labels. Defaults to None.
 
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.

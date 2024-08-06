@@ -37,7 +37,7 @@ class RedTeamingOrchestrator(Orchestrator):
         scorer: Scorer,
         use_score_as_feedback: bool = False,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: Optional[dict[str, str]] = {},
+        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
@@ -63,7 +63,7 @@ class RedTeamingOrchestrator(Orchestrator):
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
         """
 

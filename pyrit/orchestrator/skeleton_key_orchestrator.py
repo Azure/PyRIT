@@ -41,7 +41,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: MemoryInterface = None,
-        memory_labels: Optional[dict[str, str]] = {},
+        memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
@@ -55,7 +55,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
             verbose (bool, optional): If set to True, verbose output will be enabled. Defaults to False.
         """

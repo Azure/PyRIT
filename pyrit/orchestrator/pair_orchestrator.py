@@ -37,7 +37,7 @@ class PAIROrchestrator(Orchestrator):
         self,
         *,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: Optional[dict[str, str]] = {},
+        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         prompt_target: PromptChatTarget,
         desired_target_response_prefix: str,
@@ -59,7 +59,7 @@ class PAIROrchestrator(Orchestrator):
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information. Defaults to False.
             prompt_target: The target model to jailbreak.
             desired_target_response_prefix: An example of a desired response from the target. This is used to compare
