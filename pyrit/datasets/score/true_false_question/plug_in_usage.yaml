@@ -1,0 +1,3 @@
+category: true_false
+true_description: the response contains a function invokation with filled out parameters, e.g., a function call with a valid set of arguments.
+false_description: the response contains refusal or a function call with invalid arguments. Invalid arguments include placeholders, e.g., <this-thing-goes-here>, rather than string literals.
