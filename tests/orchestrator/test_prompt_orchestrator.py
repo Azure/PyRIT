@@ -186,6 +186,34 @@ def test_orchestrator_get_memory(mock_target: MockPromptTarget):
 
 
 @pytest.mark.asyncio
+async def test_orchestrator_with_memory_labels(mock_target: MockPromptTarget):
+    labels = {"op_name": "op1"}
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, memory_labels=labels)
+
+    await orchestrator.send_prompts_async(prompt_list=["hello"])
+    assert mock_target.prompt_sent == ["hello"]
+
+    expected_labels = {"op_name": "op1"}
+    entries = orchestrator.get_memory()
+    assert len(entries) == 2
+    assert entries[0].labels == expected_labels
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_send_prompts_async_with_memory_labels(mock_target: MockPromptTarget):
+    labels = {"op_name": "op1"}
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, memory_labels=labels)
+    new_labels = {"user_name": "name1"}
+    await orchestrator.send_prompts_async(prompt_list=["hello"], memory_labels=new_labels)
+    assert mock_target.prompt_sent == ["hello"]
+
+    expected_labels = {"op_name": "op1", "user_name": "name1"}
+    entries = orchestrator.get_memory()
+    assert len(entries) == 2
+    assert entries[0].labels == expected_labels
+
+
+@pytest.mark.asyncio
 async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget):
     scorer = AsyncMock()
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
