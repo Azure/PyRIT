@@ -36,14 +36,14 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
 
 # Once the prompts are in the database (which again, is often automatic) we can use `ScoringOrchestrator` to score them with whatever scorers we want. It works in parallel with batches.
 
-# In[2]:
+# In[4]:
 
 
 # pylint: disable=W0611
 
 from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import ScoringOrchestrator
-from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskCategoryScorer,
@@ -73,17 +73,19 @@ with ScoringOrchestrator() as scoring_orchestrator:
         print(f"{score} : {prompt_text}")
 
 
-# %% [markdown]
 # # Scoring Using Memory Labels
-
+# 
 # This allows users to score prompts based on the memory labels passed by the user.
 
-# %%
+# In[5]:
+
+
 # pylint: disable=W0611
 import uuid
 
 from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import ScoringOrchestrator
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.score import AzureContentFilterScorer
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.common import default_values
@@ -107,7 +109,7 @@ with PromptSendingOrchestrator(prompt_target=prompt_target, memory_labels=memory
 # The scorer is interchangeable with other scorers
 scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
-# scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
+# scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
 
 # Scoring prompt responses based on user provided memory labels
 with ScoringOrchestrator() as scoring_orchestrator:
@@ -122,3 +124,4 @@ with ScoringOrchestrator() as scoring_orchestrator:
             0
         ].original_value
         print(f"{score} : {prompt_text}")
+

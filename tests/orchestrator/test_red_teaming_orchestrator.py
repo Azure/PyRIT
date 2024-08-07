@@ -183,7 +183,7 @@ async def test_send_fixed_prompt_then_generated_prompt(
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_fixed_prompt_memory_labels(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChatTarget,
+    chat_completion_engine: AzureOpenAITextChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
