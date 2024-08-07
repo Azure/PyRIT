@@ -36,6 +36,7 @@ class SelfAskTrueFalseScorer(Scorer):
         chat_target: PromptChatTarget,
         true_false_question_path: Optional[Path] = None,
         true_false_question_contents: Optional[Dict[str, str]] = None,
+        true_false_system_prompt_path: Optional[Path] = None,
         memory: MemoryInterface = None,
     ) -> None:
         self.scorer_type = "true_false"
@@ -59,9 +60,13 @@ class SelfAskTrueFalseScorer(Scorer):
 
         metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(
-            TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
+        true_false_system_prompt_path = (
+            true_false_system_prompt_path
+            if true_false_system_prompt_path
+            else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
+
+        scoring_instructions_template = PromptTemplate.from_yaml_file(true_false_system_prompt_path)
 
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
             true_description=true_category, false_description=false_category, metadata=metadata
@@ -119,6 +124,7 @@ class SelfAskTrueFalseScorer(Scorer):
         try:
             response_json = response.request_pieces[0].converted_value
             parsed_response = json.loads(response_json)
+
             score = Score(
                 score_value=str(parsed_response["value"]),
                 score_value_description=parsed_response["description"],
@@ -126,7 +132,7 @@ class SelfAskTrueFalseScorer(Scorer):
                 score_category=self._score_category,
                 score_rationale=parsed_response["rationale"],
                 scorer_class_identifier=self.get_identifier(),
-                score_metadata=None,
+                score_metadata=parsed_response.get("metadata"),
                 prompt_request_response_id=request_response_id,
             )
         except json.JSONDecodeError:
