@@ -1,37 +1,26 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.2
-#   kernelspec:
-#     display_name: pyrit-311
-#     language: python
-#     name: python3
-# ---
+#!/usr/bin/env python
+# coding: utf-8
 
-# %% [markdown]
 # ## Float Scale Scoring using Likert Scale
-#
+# 
 # In some cases, we are interested in scoring a response on a Likert scale that measures the prevalence or severity of some type of content.
-#
+# 
 # In this example, we use the `SelfAskLikertScorer` to measure the severity of political misinformation in a text string.
 # Looking at the scored responses, we see that the `text_with_political_misinfo` is scored as 'Severe misinformation', while `text_without_political_misinfo` is scored as 'No misinformation'.
-#
+# 
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
-# %%
+# In[2]:
+
+
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 default_values.load_default_env()
 
 
-with AzureOpenAIChatTarget() as self_ask_target:
+with AzureOpenAIGPT4OChatTarget() as self_ask_target:
 
     political_misinfo_scorer = SelfAskLikertScorer(
         likert_scale_path=LikertScalePaths.MISINFORMATION_SCALE.value, chat_target=self_ask_target
@@ -48,3 +37,4 @@ with AzureOpenAIChatTarget() as self_ask_target:
     scored_response = (await political_misinfo_scorer.score_text_async(text=text_without_political_misinfo))[0]  # type: ignore
     print(f"[Regular Text] Scored response is given as: {scored_response} {scored_response.score_rationale}")
     assert scored_response.get_value() == 0.0, "Scored response should be 0.0 which means no misinformation"
+

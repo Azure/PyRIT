@@ -1,31 +1,20 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.2
-#   kernelspec:
-#     display_name: pyrit-311
-#     language: python
-#     name: python3
-# ---
+#!/usr/bin/env python
+# coding: utf-8
 
-# %% [markdown]
 # # Scoring Orchestrator
-#
+# 
 # Although orchestrators are commonly thought of as implementing an attack strategy, they can also have completely different uses. This section illustrates one such use case, where the orchestrator is built to help with scoring prompts that have been sent using PyRIT. It works by:
-#
+# 
 # 1. Getting the `PromptRequestPiece`s into the database. This is done automatically when using any targets (e.g., running any of the demos). Even if you manually entered the prompts outside of PyRIT, you can import them using `TextTarget`s or CSVs as described [here](../memory/4_manually_working_with_memory.md).
 # 2. Scoring all prompts in the database that meet any criteria.
-#
+# 
 # The following example demonstrates this by manually entering prompts into the database and then scoring them.
-#
+# 
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
-# %%
+# In[1]:
+
+
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 from pyrit.common import default_values
@@ -45,15 +34,16 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
     prompt_sending_orchestrator_id = int(send_all_prompts_orchestrator.get_identifier()["id"])
 
 
-# %% [markdown]
 # Once the prompts are in the database (which again, is often automatic) we can use `ScoringOrchestrator` to score them with whatever scorers we want. It works in parallel with batches.
 
-# %%
+# In[2]:
+
+
 # pylint: disable=W0611
 
 from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import ScoringOrchestrator
-from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
+from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIGPT4OChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskCategoryScorer,
@@ -67,7 +57,7 @@ id = prompt_sending_orchestrator_id
 # The scorer is interchangeable with other scorers
 scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
-# scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
+# scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
 
 with ScoringOrchestrator() as scoring_orchestrator:
     scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
@@ -81,3 +71,4 @@ with ScoringOrchestrator() as scoring_orchestrator:
             0
         ].original_value
         print(f"{score} : {prompt_text}")
+

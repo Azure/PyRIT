@@ -9,7 +9,7 @@ from typing import Dict, Generator, List, Union
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 from pyrit.memory import MemoryInterface
-from pyrit.prompt_target import PromptTarget, AzureOpenAIChatTarget
+from pyrit.prompt_target import PromptTarget, AzureOpenAITextChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.models import AttackStrategy
 from pyrit.score import Score, Scorer
@@ -24,13 +24,13 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAIChatTarget:
-    return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine() -> AzureOpenAITextChatTarget:
+    return AzureOpenAITextChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
-def prompt_target(memory_interface) -> AzureOpenAIChatTarget:
-    return AzureOpenAIChatTarget(
+def prompt_target(memory_interface) -> AzureOpenAITextChatTarget:
+    return AzureOpenAITextChatTarget(
         deployment_name="test",
         endpoint="test",
         api_key="test",
@@ -88,7 +88,7 @@ def _check_two_conversation_ids(conversations):
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_prompt_twice(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChatTarget,
+    chat_completion_engine: AzureOpenAITextChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
@@ -134,7 +134,7 @@ async def test_send_prompt_twice(
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_fixed_prompt_then_generated_prompt(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChatTarget,
+    chat_completion_engine: AzureOpenAITextChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
@@ -183,7 +183,7 @@ async def test_send_fixed_prompt_then_generated_prompt(
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_fixed_prompt_beyond_first_iteration_failure(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChatTarget,
+    chat_completion_engine: AzureOpenAITextChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
