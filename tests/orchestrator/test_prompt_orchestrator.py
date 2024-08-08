@@ -214,6 +214,32 @@ async def test_orchestrator_send_prompts_async_with_memory_labels(mock_target: M
 
 
 @pytest.mark.asyncio
+async def test_orchestrator_send_prompts_async_with_memory_labels_collision(mock_target: MockPromptTarget):
+    labels = {"op_name": "op1"}
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, memory_labels=labels)
+    new_labels = {"op_name": "op2"}
+    await orchestrator.send_prompts_async(prompt_list=["hello"], memory_labels=new_labels)
+    assert mock_target.prompt_sent == ["hello"]
+
+    expected_labels = {"op_name": "op2"}
+    entries = orchestrator.get_memory()
+    assert len(entries) == 2
+    assert entries[0].labels == expected_labels
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_conversation(mock_target: MockPromptTarget):
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    await orchestrator.send_prompt_async(prompt="hello", conversation_id="123456")
+    await orchestrator.send_prompt_async(prompt="hello2", conversation_id="123456")
+
+    entries = orchestrator._memory.get_conversation(conversation_id="123456")
+    assert len(entries) == 4
+    assert entries[0].request_pieces[0].original_value == "hello"
+    assert entries[2].request_pieces[0].original_value == "hello2"
+
+
+@pytest.mark.asyncio
 async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget):
     scorer = AsyncMock()
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
