@@ -30,9 +30,9 @@ repos:
       name: Check Links in Python and md Files
       entry: python ./.github/check_links.py
       language: python
-      files: ^doc/.*\.(py|md)$
+      files: ^.*\.(py|md)$
       additional_dependencies: ['requests']
-      exclude: (release_process.md|git.md|^doc/deployment/)
+      exclude: (release_process.md|git.md|^doc/deployment/|tests)
 
   - repo: https://github.com/pycqa/pylint
     rev: v3.0.3

@@ -3,7 +3,7 @@ import sys
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-URL_PATTERN = re.compile(r'https?://[^\s)"]+')
+URL_PATTERN = re.compile(r'https?://[^\s)"]+(?<!\.)')
 
 
 def extract_urls(file_path):
@@ -13,6 +13,13 @@ def extract_urls(file_path):
 
 
 def check_url(url):
+    if "http://localhost:" in url:
+        return url, True
+    if url in [
+        "https://cognitiveservices.azure.com/.default",
+        "https://gandalf.lakera.ai/api/send-message"
+    ]:
+        return url, True
     try:
         response = requests.head(url, allow_redirects=True, timeout=5)
         if response.status_code >= 400:
