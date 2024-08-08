@@ -38,7 +38,7 @@ Microsoft Learn has a
 Check out our [docs](https://github.com/Azure/PyRIT/blob/main/doc/README.md) for more information
 on how to [install PyRIT](https://github.com/Azure/PyRIT/blob/main/doc/setup/install_pyrit.md),
 our [How to Guide](https://github.com/Azure/PyRIT/blob/main/doc/how_to_guide.ipynb),
-and more, as well as our [demos](https://github.com/Azure/PyRIT/tree/main/doc/demo) folder.
+and more, as well as our [demos](https://github.com/Azure/PyRIT/tree/main/doc/code).
 
 ## Trademarks
 
