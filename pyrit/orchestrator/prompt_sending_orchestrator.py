@@ -79,7 +79,7 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt_list (list[str]): The list of prompts to be sent.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
-            prompts.
+                prompts.
             These labels will be merged with the instance's global memory labels. Defaults to None.
 
         Returns:
@@ -116,7 +116,7 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt (list[str]): The prompt to be sent.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], optional): A free-form dictionary of extra labels to apply to the prompts.
-            These labels will be merged with the instance's global memory labels. Defaults to None.
+                These labels will be merged with the instance's global memory labels. Defaults to None.
             conversation_id (str, optional): The conversation ID to use for multi-turn conversation. Defaults to None.
 
         Returns:
