@@ -34,7 +34,7 @@ def data_serializer_factory(*, data_type: PromptDataType, value: str = None, ext
         elif data_type == "audio_path":
             return AudioPathDataTypeSerializer(extension=extension)
         elif data_type == "error":
-            value = ""
+            return ErrorDataTypeSerializer(prompt_text="")
         else:
             raise ValueError(f"Data type {data_type} without prompt text not supported")
 
