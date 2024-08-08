@@ -2,15 +2,15 @@
 # coding: utf-8
 
 # # PromptSendingOrchestrator
-# 
+#
 # This demo is about when you have a list of prompts you want to try against a target. It includes the ways you can send the prompts,
 # how you can modify the prompts, and how you can view results. Before starting, import the necessary libraries.
-# 
+#
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
-# 
+#
 # The first example is as simple as it gets.
 
-# In[7]:
+# In[2]:
 
 
 import uuid
@@ -33,15 +33,18 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 
     await orchestrator.send_prompts_async(prompt_list=all_prompts)  # type: ignore
 
-    orchestrator.print_conversations()
+    memory = orchestrator.get_memory()
+
+    for entry in memory:
+        print(entry)
 
 
 # ### Adding Converters
-# 
+#
 # Additionally, we can make it more interesting by initializing the orchestrator with different types of prompt converters.
 # This variation takes the original example, but converts the text to base64 before sending it to the target.
 
-# In[8]:
+# In[3]:
 
 
 import pathlib
@@ -66,14 +69,17 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
     # this is run in a Jupyter notebook, so we can use await
     await orchestrator.send_prompts_async(prompt_list=prompts.prompts)  # type: ignore
 
-    orchestrator.print_conversations()
+    memory = orchestrator.get_memory()
+
+    for entry in memory:
+        print(entry)
 
 
 # ### Multi-Modal
-# 
+#
 # The targets sent do not have to be text prompts. You can also use multi-modal prompts. The below example takes a list of paths to local images, and sends that list of images to the target.
 
-# In[9]:
+# In[4]:
 
 
 import pathlib
@@ -95,18 +101,22 @@ with PromptSendingOrchestrator(prompt_target=text_target) as orchestrator:
 
     await orchestrator.send_prompts_async(prompt_list=[str(image_path)], prompt_type="image_path")  # type: ignore
 
-    orchestrator.print_conversations()
+    memory = orchestrator.get_memory()
+
+    for entry in memory:
+        print(entry)
 
 
 # ### Automatic Scoring
-# 
+#
 # The `PromptSendingOrchestrator` also has built-in support to score prompt responses in parallel.
 # This example shows how to pass in a list of scorers to the orchestrator.
 
-# In[10]:
+# In[5]:
 
 
 from azure.ai.contentsafety.models import TextCategory
+
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
@@ -131,5 +141,13 @@ with PromptSendingOrchestrator(
 
     await orchestrator.send_prompts_async(prompt_list=all_prompts)  # type: ignore
 
-    orchestrator.print_conversations()
+    memory = orchestrator.get_memory()
+    score_memory = orchestrator.get_score_memory()
 
+    for entry in memory:
+        for score_entry in score_memory:
+            # each score result correlates to a prompt entry's request response id
+            if entry.id == score_entry.prompt_request_response_id:
+                print(
+                    f"Output scored: {entry.converted_value}\nScore category: {score_entry.score_category}\nScore value: {score_entry.get_value()}\n\n"
+                )
