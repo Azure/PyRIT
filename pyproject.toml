@@ -46,10 +46,12 @@ dependencies = [
     "confusables==1.2.0",
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
+    "fschat==0.2.36",
     "jsonpickle>=3.0.4",
     "jupyter>=1.0.0",
     "ipykernel>=6.29.4",
     "logzero>=1.7.0",
+    "ml-collections==0.1.1",
     "numpy>=1.26.4",
     "onnxruntime>=1.14.1",
     "onnx>=1.16.0",
@@ -85,6 +87,9 @@ dev = [
     "respx>=0.20.2",
     "semantic-kernel==0.9.4b1",
     "types-PyYAML>=6.0.12.9",
+]
+torch = [
+    "torch>=2.3.0"
 ]
 
 [tool.pytest.ini_options]
