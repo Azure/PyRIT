@@ -24,14 +24,13 @@ def resolve_relative_url(base_path, url):
 
 
 def check_url(url):
-    if "http://localhost:" in url or \
-            url in [
-                "https://cognitiveservices.azure.com/.default",
-                "https://gandalf.lakera.ai/api/send-message"
-            ] or \
-            os.path.isfile(url) or \
-            os.path.isdir(url) or \
-            url.startswith("mailto:"):
+    if (
+        "http://localhost:" in url
+        or url in ["https://cognitiveservices.azure.com/.default", "https://gandalf.lakera.ai/api/send-message"]
+        or os.path.isfile(url)
+        or os.path.isdir(url)
+        or url.startswith("mailto:")
+    ):
         return url, True
     try:
         response = requests.head(url, allow_redirects=True, timeout=5)
