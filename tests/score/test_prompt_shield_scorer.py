@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import Mock
 from tests.mocks import get_sample_conversations
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece
 from pyrit.score import PromptShieldScorer
 
 @pytest.fixture
@@ -14,12 +14,12 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 @pytest.fixture
 def sample_response_json_str() -> str:
-    return "{'userPromptAnalysis':{'attackDetected':false},'documentsAnalysis':[{'attackDetected':true}]}"
+    return "{\"userPromptAnalysis\":{\"attackDetected\":false},\"documentsAnalysis\":[{\"attackDetected\":true}]}"
 
 @pytest.fixture
 def promptshield_scorer() -> PromptShieldScorer:
     return PromptShieldScorer(
-        target=Mock()
+        prompt_shield_target=Mock()
     )
 
 @pytest.fixture
@@ -32,11 +32,10 @@ def sample_delineated_prompt_as_str() -> str:
     '''
     return sample
 
-@pytest.mark.asyncio
 def test_prompt_shield_scorer_parsing(
     promptshield_scorer: PromptShieldScorer,
     sample_response_json_str: str
 ):
-    assert promptshield_scorer._parse_response_to_boolean_list(
+    assert any(promptshield_scorer._parse_response_to_boolean_list(
         sample_response_json_str
-    ) == True
+    )) == True
