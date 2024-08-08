@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: pyrit-311
+# ---
+
 # %% [markdown]
 # # PyRIT Framework How to Guide
 #
@@ -23,12 +38,12 @@
 # history with a built-in memory which we discuss below.
 #
 # Before starting, confirm that you have the
-# [correct version of PyRIT installed](../setup/install_pyrit.md).
+# [correct version of PyRIT installed](./setup/install_pyrit.md).
 #
 # ## Write prompts yourself
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
-# the classes from the [PromptChatTarget](./code/targets/prompt_targets.ipynb) module (e.g.,
+# the classes from the [PromptChatTarget](./code/targets/) module (e.g.,
 # AzureOpenAIChatTarget for Azure OpenAI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
 # packages (e.g., the [openai](https://github.com/openai/openai-python) Python package). When using `PromptChatTarget` and `PromptTarget` classes, always employ them within a "with" context manager to ensure automatic and safe release of database connections after use as shown below.
 
@@ -173,7 +188,7 @@ with RedTeamingOrchestrator(
 # for example, `pyrit/datasets/orchestrators/red_teaming/text_generation.yaml`).
 #
 # PyRIT also offers various integration choices for the red teaming orchestrators, including
-# [Azure ML managed online endpoints](../doc/code/targets/azure_ml_chat.ipynb),
+# [Azure ML managed online endpoints](../doc/code/targets/4_non_open_ai_chat_targets.ipynb),
 # and Azure OpenAI models (as shown above).
 #
 # ## Output scoring

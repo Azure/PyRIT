@@ -2,12 +2,13 @@
 # Licensed under the MIT license.
 
 import asyncio
+from aioconsole import ainput
 import concurrent.futures
 import logging
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Awaitable
 from uuid import uuid4
-from pyrit.score import Scorer
 
+from pyrit.score import Scorer
 from pyrit.memory import MemoryInterface
 from pyrit.score import Score
 from pyrit.orchestrator import Orchestrator
@@ -26,11 +27,11 @@ class XPIAOrchestrator(Orchestrator):
         *,
         attack_content: str,
         attack_setup_target: PromptTarget,
-        processing_callback: Callable[[], str],
+        processing_callback: Callable[[], Awaitable[str]],
         scorer: Optional[Scorer] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: dict[str, str] = None,
+        memory_labels: dict[str, str] = {},
         verbose: bool = False,
         attack_setup_target_conversation_id: Optional[str] = None,
     ) -> None:
@@ -51,7 +52,10 @@ class XPIAOrchestrator(Orchestrator):
                 If no scorer is provided the orchestrator will skip scoring.
             prompt_converters: The converters to apply to the attack content before sending it to the prompt target.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
-            memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
             verbose: Whether to print debug information.
             attack_setup_target_conversation_id: The conversation ID to use for the prompt target.
                 If not provided, a new one will be generated.
@@ -95,7 +99,7 @@ class XPIAOrchestrator(Orchestrator):
 
         logger.info(f'Received the following response from the prompt target "{response}"')
 
-        processing_response = self._processing_callback()
+        processing_response = await self._processing_callback()
 
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
@@ -103,7 +107,6 @@ class XPIAOrchestrator(Orchestrator):
             logger.info("No scorer provided, skipping scoring")
             return None
 
-        # TODO make async
         pool = concurrent.futures.ThreadPoolExecutor()
         score = pool.submit(asyncio.run, self._scorer.score_text_async(processing_response)).result()[0]
 
@@ -122,7 +125,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: dict[str, str] = None,
+        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         attack_setup_target_conversation_id: Optional[str] = None,
     ) -> None:
@@ -143,7 +146,10 @@ class XPIATestOrchestrator(XPIAOrchestrator):
             scorer: The scorer to use to score the processing response.
             prompt_converters: The converters to apply to the attack content before sending it to the prompt target.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
-            memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
             attack_setup_target_conversation_id: The conversation ID to use for the prompt target.
                 If not provided, a new one will be generated.
@@ -188,7 +194,7 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
         scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: dict[str, str] = None,
+        memory_labels: Optional[dict[str, str]] = {},
         verbose: bool = False,
         attack_setup_target_conversation_id: Optional[str] = None,
     ) -> None:
@@ -215,7 +221,7 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
             attack_content=attack_content,
             attack_setup_target=attack_setup_target,
             scorer=scorer,
-            processing_callback=self._input,
+            processing_callback=self._input_async,
             prompt_converters=prompt_converters,
             memory=memory,
             memory_labels=memory_labels,
@@ -223,5 +229,5 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
             attack_setup_target_conversation_id=attack_setup_target_conversation_id,
         )
 
-    def _input(self):
-        return input("Please trigger the processing target's execution and paste the output here: ")
+    async def _input_async(self):
+        return await ainput("Please trigger the processing target's execution and paste the output here: ")

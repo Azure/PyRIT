@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import string
-import asyncio
 import pathlib
 
 from pyrit.models import PromptDataType
@@ -57,7 +56,6 @@ class CaesarConverter(PromptConverter):
             )
         else:
             output_text = self._caesar(prompt)
-        await asyncio.sleep(0)
         return ConverterResult(output_text=output_text, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

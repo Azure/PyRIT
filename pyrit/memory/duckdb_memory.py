@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from typing import Union, Optional
+from typing import MutableSequence, Union, Optional, Sequence
 import logging
 
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -84,14 +84,15 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
-        return [entry.get_prompt_request_piece() for entry in result]
+        entries = self.query_entries(PromptMemoryEntry)
+        result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+        return result
 
     def get_all_embeddings(self) -> list[EmbeddingData]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self.query_entries(EmbeddingData)
+        result: list[EmbeddingData] = self.query_entries(EmbeddingData)
         return result
 
     def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
@@ -105,9 +106,10 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
         """
         try:
-            return self.query_entries(
+            result: list[PromptRequestPiece] = self.query_entries(
                 PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
-            )
+            )  # type: ignore
+            return result
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
@@ -126,14 +128,42 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             return self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )
+            )  # type: ignore
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
             )
             return []
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def get_prompt_request_piece_by_memory_labels(
+        self, *, memory_labels: dict[str, str] = {}
+    ) -> list[PromptRequestPiece]:
+        """
+        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
+        """
+        try:
+            conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
+            query_condition = and_(*conditions)
+            result: list[PromptRequestPiece] = self.query_entries(
+                PromptMemoryEntry, conditions=query_condition
+            )  # type: ignore
+            return result
+        except Exception as e:
+            logger.exception(
+                f"Unexpected error: Failed to retrieve ConversationData with memory labels {memory_labels}. {e}"
+            )
+            return []
+
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -145,17 +175,18 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
         """
         try:
-            return self.query_entries(
+            result: list[PromptRequestPiece] = self.query_entries(
                 PromptMemoryEntry,
-                conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == str(orchestrator_id),
-            )
+                conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id,
+            )  # type: ignore
+            return result
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
             )
             return []
 
-    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
@@ -270,7 +301,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
 
-    def update_entries(self, *, entries: list[Base], update_fields: dict) -> bool:  # type: ignore
+    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
 

@@ -12,7 +12,7 @@ from openai.types.chat import ChatCompletion
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.exceptions import EmptyResponseException, PyritException
-from pyrit.exceptions import pyrit_retry, handle_bad_request_exception
+from pyrit.exceptions import pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.models import construct_response_from_request
@@ -76,7 +76,7 @@ class OpenAIChatInterface(PromptChatTarget):
         response_message = response.choices[0].message.content
         return response_message
 
-    @pyrit_retry
+    @pyrit_target_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
@@ -153,7 +153,7 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         api_key: str = None,
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
-        api_version: str = "2023-08-01-preview",
+        api_version: str = "2024-02-01",
         max_tokens: int = 1024,
         temperature: float = 1.0,
         top_p: int = 1,
@@ -179,7 +179,7 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
-                "2023-08-01-preview".
+                "2024-02-01".
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the

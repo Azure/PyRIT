@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.2.2.dev0"
+version = "0.3.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -30,9 +30,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.10, <3.12"
+requires-python = ">=3.10, <3.13"
 dependencies = [
+    "aioconsole>=0.7.1",
     "appdirs>=1.4.0",
     "art==6.1.0",
     "azure-cognitiveservices-speech>=1.36.0",
@@ -53,6 +55,7 @@ dependencies = [
     "onnx>=1.16.0",
     "openai>=1.23.2",
     "pydantic>=2.7.1",
+    "pyodbc>=5.1.0",
     "python-dotenv>=1.0.1",
     "scikit-learn>=1.4.2",
     "SQLAlchemy==2.0.28",
@@ -60,7 +63,9 @@ dependencies = [
     "termcolor>=2.4.0",
     "tenacity>=8.2.3",
     "tokenizers>=0.19.1",
+    "tqdm>=4.66.2",
     "transformers>=4.40.0",
+    "treelib>=1.7.0",
     "types-requests>=2.31.0.20240406",
 ]
 
@@ -71,6 +76,7 @@ dev = [
     "flake8-copyright>=0.2.4",
     "jupytext>=1.16.1",
     "mypy>=1.9.0",
+    "mock-alchemy>=0.2.6",
     "pillow>=10.3.0",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",

@@ -3,6 +3,7 @@
 
 import logging
 import json
+from typing import MutableSequence
 
 from openai import AsyncAzureOpenAI
 from openai import BadRequestError
@@ -12,7 +13,7 @@ from openai.types.chat import ChatCompletion
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.exceptions import PyritException, EmptyResponseException
-from pyrit.exceptions import handle_bad_request_exception, pyrit_retry
+from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
 from pyrit.models import data_serializer_factory, construct_response_from_request
@@ -42,7 +43,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         headers: str = None,
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
-        api_version: str = "2023-08-01-preview",
+        api_version: str = "2024-02-01",
         max_tokens: int = 1024,
         temperature: float = 1.0,
         top_p: int = 1,
@@ -66,7 +67,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
-                "2023-08-01-preview".
+                "2024-02-01".
             headers (str, optional): Headers of the endpoint.
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.
@@ -190,7 +191,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    def _build_chat_messages(self, prompt_req_res_entries: list[PromptRequestResponse]) -> list[ChatMessageListContent]:
+    def _build_chat_messages(
+        self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
+    ) -> list[ChatMessageListContent]:
         """
         Builds chat messages based on prompt request response entries.
 
@@ -242,7 +245,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         response_message = response.choices[0].message.content
         return response_message
 
-    @pyrit_retry
+    @pyrit_target_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessageListContent],
