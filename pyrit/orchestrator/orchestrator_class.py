@@ -24,7 +24,7 @@ class Orchestrator(abc.ABC, Identifier):
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: dict[str, str] = {},
+        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []

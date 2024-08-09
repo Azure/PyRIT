@@ -11,8 +11,6 @@ from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.self_ask_category_scorer import SelfAskCategoryScorer, ContentClassifierPaths
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
-from pyrit.score.self_ask_meta_scorer import SelfAskMetaScorer, MetaScorerQuestionPaths
-from pyrit.score.self_ask_conversation_objective_scorer import SelfAskObjectiveScorer, ObjectiveQuestionPaths
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer, ScalePaths
 from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 from pyrit.score.substring_scorer import SubStringScorer
@@ -34,8 +32,6 @@ __all__ = [
     "Scorer",
     "SelfAskCategoryScorer",
     "SelfAskLikertScorer",
-    "SelfAskMetaScorer",
-    "SelfAskObjectiveScorer",
     "SelfAskScaleScorer",
     "SelfAskTrueFalseScorer",
     "SubStringScorer",

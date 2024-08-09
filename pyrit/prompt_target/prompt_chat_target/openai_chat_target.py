@@ -174,7 +174,7 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
             use_aad_auth (bool, optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
-                https://cognitiveservices.azure.com/.default. Please run `az login` locally
+                https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.

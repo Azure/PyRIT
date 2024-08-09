@@ -4,7 +4,6 @@
 import abc
 import copy
 from pathlib import Path
-
 from typing import MutableSequence, Sequence
 import uuid
 
@@ -162,6 +161,22 @@ class MemoryInterface(abc.ABC):
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
+    def get_prompt_request_piece_by_memory_labels(
+        self, *, memory_labels: dict[str, str] = {}
+    ) -> list[PromptRequestPiece]:
+        """
+        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
+        """
+
     def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: str) -> list[str]:
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
 
@@ -196,6 +211,54 @@ class MemoryInterface(abc.ABC):
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+        return new_conversation_id
+
+    def duplicate_conversation_excluding_last_turn(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
+        """
+        Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
+        user request (e.g. if there is half a turn, it just removes that half).
+
+        This can be useful when an attack strategy requires back tracking the last prompt/response pair.
+
+        Args:
+            new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
+            conversation_id (str): The conversation ID with existing conversations.
+        Returns:
+            The uuid for the new conversation.
+        """
+        new_conversation_id = str(uuid.uuid4())
+
+        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
+        prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
+
+        # remove the final turn from the conversation
+        if len(prompt_pieces) == 0:
+            return new_conversation_id
+
+        last_prompt = max(prompt_pieces, key=lambda x: x.sequence)
+
+        length_of_sequence_to_remove = 0
+
+        if last_prompt.role == "system" or last_prompt.role == "user":
+            length_of_sequence_to_remove = 1
+        else:
+            length_of_sequence_to_remove = 2
+
+        prompt_pieces = [
+            prompt_piece
+            for prompt_piece in prompt_pieces
+            if prompt_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
+        ]
+
+        for piece in prompt_pieces:
+            piece.id = uuid.uuid4()
+            if piece.orchestrator_identifier["id"] == new_orchestrator_id:
+                raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
+            piece.orchestrator_identifier["id"] = new_orchestrator_id
+            piece.conversation_id = new_conversation_id
+
+        self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+
         return new_conversation_id
 
     def export_conversation_by_orchestrator_id(

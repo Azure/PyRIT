@@ -22,7 +22,7 @@ def text_to_prompt_response(
     Convert a text response to a proper PromptResponse object.
 
     This is a wrapper around the OpenAI text completion object so that our code conforms to their API response.
-    See https://platform.openai.com/docs/guides/completion/introduction for more info
+    See https://platform.openai.com/docs/guides/completions for more info
 
     Args:
         text: The text contained in the response

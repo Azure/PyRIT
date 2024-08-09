@@ -65,6 +65,7 @@ dependencies = [
     "tokenizers>=0.19.1",
     "tqdm>=4.66.2",
     "transformers>=4.40.0",
+    "treelib>=1.7.0",
     "types-requests>=2.31.0.20240406",
 ]
 
