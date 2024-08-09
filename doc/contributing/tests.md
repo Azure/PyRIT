@@ -76,6 +76,6 @@ Here are contributor guidelines:
 - This is *not* a replacement for unit tests. Coverage is not needed here.
 - This code often connects to various endpoints so it may not be easy to run (not all contributors will have everything deployed). However, it is an expectation that maintainers have all documented infrastructure available and configured.
   - Contributors: if your notebook updates a `.py` file or how it works specifically, rerun it as ` jupytext --execute --to notebook  ./doc/affected_file.py`
-  - Maintainers (bonus if contributors do this also): If there are big changes, re-generate all notebooks by using [run_jupytext.ps1](../generate_docs/run_jupytext.ps1).
+  - Maintainers (bonus if contributors do this also): If there are big changes, re-generate all notebooks by using [pct_to_ipynb.ps1](../generate_docs/pct_to_ipynb.ps1). Because this executes against real systems, it can detect many issues.
 - Some contributors use jupytext to generate `.py` files from `.ipynb` files. This is also acceptable.
 - Please do not re-commit updated generated `.ipynb` files with slight changes if nothing has changed in the source

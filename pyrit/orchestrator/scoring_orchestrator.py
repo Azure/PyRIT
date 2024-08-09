@@ -40,7 +40,7 @@ class ScoringOrchestrator(Orchestrator):
         self,
         *,
         scorer: Scorer,
-        orchestrator_ids: list[int],
+        orchestrator_ids: list[str],
         responses_only: bool = True,
     ) -> list[Score]:
         """
@@ -49,7 +49,30 @@ class ScoringOrchestrator(Orchestrator):
 
         request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
-            request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=int(id)))
+            request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
+        if responses_only:
+            request_pieces = self._extract_responses_only(request_pieces)
+
+        return await self._score_prompts_batch_async(prompts=request_pieces, scorer=scorer)
+
+    async def score_prompts_by_memory_labels_async(
+        self,
+        *,
+        scorer: Scorer,
+        memory_labels: dict[str, str] = {},
+        responses_only: bool = True,
+    ) -> list[Score]:
+        """
+        Scores prompts using the Scorer for prompts based on the memory labels.
+        """
+        if not memory_labels:
+            raise ValueError("Invalid memory_labels: Please provide valid memory labels.")
+
+        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_piece_by_memory_labels(
+            memory_labels=memory_labels
+        )
+        if not request_pieces:
+            raise ValueError("No entries match the provided memory labels. Please check your memory labels.")
 
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)

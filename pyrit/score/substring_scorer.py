@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
+from typing import Optional
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
@@ -20,11 +20,9 @@ class SubStringScorer(Scorer):
         self._score_category = category
         self.scorer_type = "true_false"
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
 
-        await asyncio.sleep(0)
-
-        self.validate(request_response)
+        self.validate(request_response, task=task)
 
         expected_output_substring_present = self._substring in request_response.converted_value
 
@@ -44,6 +42,8 @@ class SubStringScorer(Scorer):
         self._memory.add_scores_to_memory(scores=score)
         return score
 
-    def validate(self, request_response: PromptRequestPiece):
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.converted_value_data_type != "text":
             raise ValueError("Expected text data type")
+        if task:
+            raise ValueError("This scorer does not support tasks")

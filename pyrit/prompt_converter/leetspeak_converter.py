@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import random
-import asyncio
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -40,7 +39,6 @@ class LeetspeakConverter(PromptConverter):
                 converted_prompt.append(random.choice(self.leet_substitutions.get(char.lower(), char)))
             else:
                 converted_prompt.append(char)
-        await asyncio.sleep(0)
         return ConverterResult(output_text="".join(converted_prompt), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

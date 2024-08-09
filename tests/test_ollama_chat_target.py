@@ -1,4 +1,4 @@
-# Copyright (c) Adriano Maia <adriano@drstrange.wtf>
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 import os

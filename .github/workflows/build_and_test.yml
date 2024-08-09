@@ -23,7 +23,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python: ["3.10", "3.11"]
+        python: ["3.10", "3.11", "3.12"]
         package_name: ["pyrit"]
     runs-on: ${{ matrix.os }}
     # EnricoMi/publish-unit-test-result-action@v2 requires the following permissions
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
         with:
-          python-version: ${{ inputs.python }}
+          python-version: ${{ matrix.python }}
       - name: Install setuptools and pip
         run: pip install --upgrade setuptools pip
       - name: Install PyRIT with pip
