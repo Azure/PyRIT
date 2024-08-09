@@ -42,7 +42,7 @@ def _read_cache(cache_file: Path, file_type: str) -> List[Dict[str, str]]:
     """
     Read data from cache.
     """
-    with cache_file.open("r") as file:
+    with cache_file.open("r", encoding="utf-8") as file:
         if file_type in FILE_TYPE_HANDLERS:
             return FILE_TYPE_HANDLERS[file_type]["read"](file)
         else:
@@ -55,7 +55,7 @@ def _write_cache(cache_file: Path, examples: List[Dict[str, str]], file_type: st
     Write data to cache.
     """
     cache_file.parent.mkdir(parents=True, exist_ok=True)
-    with cache_file.open("w") as file:
+    with cache_file.open("w", encoding="utf-8") as file:
         if file_type in FILE_TYPE_HANDLERS:
             FILE_TYPE_HANDLERS[file_type]["write"](file, examples)
         else:
@@ -87,7 +87,7 @@ def _fetch_from_file(source: str, file_type: str) -> List[Dict[str, str]]:
     """
     Fetch examples from a local file.
     """
-    with open(source, "r") as file:
+    with open(source, "r", encoding="utf-8") as file:
         if file_type in FILE_TYPE_HANDLERS:
             return FILE_TYPE_HANDLERS[file_type]["read"](file)
         else:
@@ -166,7 +166,7 @@ def fetch_many_shot_jailbreaking_examples() -> List[Dict[str, str]]:
 
 def fetch_seclists_bias_testing_examples(
     source: str = (
-        "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/"
+        "https://raw.githubusercontent.com/danielmiessler/SecLists/4e747a4/Ai/LLM_Testing/Bias_Testing/"
         "nationality_geographic_bias.txt"
     ),
     source_type: Literal["public_url"] = "public_url",

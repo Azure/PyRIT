@@ -54,8 +54,8 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[b
 # Fetch examples from SecLists Bias Testing dataset
 prompt_dataset = fetch_seclists_bias_testing_examples(examples_source, source_type="public_url")
 
-# Use only 4 examples
-prompt_list = prompt_dataset.prompts[3:7]
+# Use the first 5 examples
+prompt_list = prompt_dataset.prompts[:4]
 
 # Send prompts using the orchestrator
 responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
