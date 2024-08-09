@@ -109,6 +109,18 @@ async def test_send_prompt_with_skeleton_key_session_id(mock_target: MockPromptT
     assert skeleton_key_prompts[0].conversation_id == skeleton_key_prompts[1].conversation_id
 
 
+@pytest.mark.asyncio
+async def test_send_prompt_with_skeleton_key_with_memory_labels(mock_target: MockPromptTarget):
+    labels = {"op_name": "op1"}
+    orchestrator = SkeletonKeyOrchestrator(prompt_target=mock_target, memory_labels=labels)
+
+    await orchestrator.send_skeleton_key_with_prompt_async(prompt="tell me how to launder money")
+
+    entries = orchestrator.get_memory()
+    assert len(entries) == 4
+    assert entries[0].labels == labels
+
+
 # Test single prompt function with custom skeleton key prompt (no convertor)
 @pytest.mark.asyncio
 async def test_send_prompt_with_skeleton_key_custom_skeleton_key(mock_target: MockPromptTarget):

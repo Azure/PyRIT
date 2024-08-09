@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import MutableSequence, Union, Optional, Sequence
 import logging
 
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -132,6 +132,34 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
+            )
+            return []
+
+    def get_prompt_request_piece_by_memory_labels(
+        self, *, memory_labels: dict[str, str] = {}
+    ) -> list[PromptRequestPiece]:
+        """
+        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
+        """
+        try:
+            conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
+            query_condition = and_(*conditions)
+            result: list[PromptRequestPiece] = self.query_entries(
+                PromptMemoryEntry, conditions=query_condition
+            )  # type: ignore
+            return result
+        except Exception as e:
+            logger.exception(
+                f"Unexpected error: Failed to retrieve ConversationData with memory labels {memory_labels}. {e}"
             )
             return []
 
