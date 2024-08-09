@@ -1,6 +1,19 @@
-#!/usr/bin/env python
-# coding: utf-8
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
 
+# %% [markdown]
 # # PromptSendingOrchestrator
 #
 # This demo is about when you have a list of prompts you want to try against a target. It includes the ways you can send the prompts,
@@ -10,9 +23,7 @@
 #
 # The first example is as simple as it gets.
 
-# In[2]:
-
-
+# %%
 import uuid
 
 from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
@@ -39,14 +50,13 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
         print(entry)
 
 
+# %% [markdown]
 # ### Adding Converters
 #
 # Additionally, we can make it more interesting by initializing the orchestrator with different types of prompt converters.
 # This variation takes the original example, but converts the text to base64 before sending it to the target.
 
-# In[3]:
-
-
+# %%
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
@@ -74,14 +84,12 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
     for entry in memory:
         print(entry)
 
-
+# %% [markdown]
 # ### Multi-Modal
 #
 # The targets sent do not have to be text prompts. You can also use multi-modal prompts. The below example takes a list of paths to local images, and sends that list of images to the target.
 
-# In[4]:
-
-
+# %%
 import pathlib
 
 from pyrit.prompt_target import TextTarget
@@ -106,15 +114,13 @@ with PromptSendingOrchestrator(prompt_target=text_target) as orchestrator:
     for entry in memory:
         print(entry)
 
-
+# %% [markdown]
 # ### Automatic Scoring
 #
 # The `PromptSendingOrchestrator` also has built-in support to score prompt responses in parallel.
 # This example shows how to pass in a list of scorers to the orchestrator.
 
-# In[5]:
-
-
+# %%
 from azure.ai.contentsafety.models import TextCategory
 
 from pyrit.common import default_values

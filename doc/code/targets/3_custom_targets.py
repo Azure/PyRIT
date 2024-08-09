@@ -1,6 +1,18 @@
-#!/usr/bin/env python
-# coding: utf-8
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
 
+# %% [markdown]
 # # Creating Custom Targets
 #
 # Often, to use PyRIT, you need to create custom targets so it can interact with the system you're testing. [Gandalf](https://gandalf.lakera.ai/) and [Crucible](https://crucible.dreadnode.io/) are both platforms designed as playgrounds that emulate AI applications. This demo shows how to use PyRIT to connect with these endpoints. If you're testing your own custom endpoint, a good start is often to build a target, and then you will be able to interact with it similar to this demo.
@@ -34,9 +46,7 @@
 #
 # <img src="../../../assets/gandalf-home-level-1.png" alt="gandalf-home-level-1.png" height="400"/>
 
-# In[2]:
-
-
+# %%
 import os
 import textwrap
 
@@ -82,15 +92,14 @@ with RedTeamingOrchestrator(
     red_teaming_orchestrator.print_conversation()
 
 
+# %% [markdown]
 # ### Crucible Target
 #
 # The Defcon AI CTF challenges are a fun way to get into AI Red Teaming. Similar to Gandalf, we've added a Crucible target so you can make use of PyRIT. PyRIT certainly won't be able to solve all these challenges for you, but it can be used as a tool to help you solve the challenges yourself (much like how PyRIT acts as a tool in real red team engagements!).
 #
 # Below is an example of using PromptSendingOrchestrator, which allows the use of all our converters. For example, you could use this to utilize all the built-in jailbreaks, base64 encode them, use variations, different languages, etc.
 
-# In[1]:
-
-
+# %%
 import logging
 from typing import List
 
@@ -124,12 +133,10 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=converter
     if score[0].get_value():
         print("YESSSSSS FLAG FOUND")
 
-
+# %% [markdown]
 # You can also make use of orchestrators, for example, to use other LLMs to help you send prompts for the challenges. Crucible challenges are single-turn, so some techniques like `Crescendo` won't work, but you could adapt other techniques like PAIR/TAP. Below is an example using RedTeamingOrchestrator (similar to the Gandalf example).
 
-# In[3]:
-
-
+# %%
 import textwrap
 
 from pyrit.common.path import DATASETS_PATH
@@ -179,5 +186,5 @@ with (
     await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=1)  # type: ignore
     red_teaming_orchestrator.print_conversation()
 
-
+# %% [markdown]
 # Check out the code for the Crucible target [here](../../../pyrit/prompt_target/crucible_target.py).

@@ -1,7 +1,7 @@
 # %% [markdown]
 # ## AzureOpenAIGPTVChatTarget
 #
-# 
+#
 # This demo showcases the capabilities of `AzureOpenAIGPTVChatTarget` for generating text based on multimodal inputs, including both text and image input using `PromptSendingOrchestrator`. In this case, we're simply asking the GPT-V target to describe this picture:
 #
 # <img src="../../../assets/pyrit_architecture.png" />

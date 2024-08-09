@@ -1,11 +1,22 @@
-#!/usr/bin/env python
-# coding: utf-8
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
 
+# %% [markdown]
 # # Tree of attacks with pruning
 
-# In[1]:
-
-
+# %%
 from pyrit.prompt_target import AzureMLChatTarget
 from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
 from pyrit.prompt_target import AzureOpenAITextChatTarget
@@ -34,4 +45,3 @@ with TreeOfAttacksWithPruningOrchestrator(
     result = await tree_of_attacks_with_pruning_orchestrator.apply_attack_strategy_async()  # type: ignore
     if result:
         tree_of_attacks_with_pruning_orchestrator.print_conversation(result=result)
-

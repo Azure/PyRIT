@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -212,4 +212,3 @@ with PromptSendingOrchestrator(prompt_target=azure_openai_gpt4o_chat_target) as 
 
     for entry in memory:
         print(entry)
-

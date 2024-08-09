@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Azure OpenAI GPT4-o Target 
+# # Azure OpenAI GPT4-o Target
 #
 # In this demo, we show an example of the `AzureOpenAIGPT4OChatTarget`, one of the latest Azure OpenAI models with multimodal capabilities. Internally, this is one of our most-used chat targets for our own infrastructure.
 #
@@ -52,5 +52,3 @@ target = AzureOpenAIGPT4OChatTarget(use_aad_auth=False)
 with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[jailbreak_prompt])  # type: ignore
     print(response[0])
-
-

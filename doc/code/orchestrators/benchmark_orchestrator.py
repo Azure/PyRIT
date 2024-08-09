@@ -1,11 +1,21 @@
-#!/usr/bin/env python
-# coding: utf-8
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
+# ---
 
+# %% [markdown]
 # ## Benchmark Orchestrator
 
-# In[3]:
-
-
+# %%
 from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
@@ -71,10 +81,7 @@ benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
 
 await benchmark_orchestrator.evaluate()  # type: ignore
 
-
-# In[2]:
-
-
+# %%
 correct_count = 0
 total_count = 0
 
@@ -86,4 +93,3 @@ for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator._scorer
     correct_count += 1 if answer.is_correct else 0
 
 print(f"Correct count: {correct_count}/{len(benchmark_orchestrator._scorer.evaluation_results)}")
-
