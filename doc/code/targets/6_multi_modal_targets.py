@@ -106,7 +106,6 @@ with PromptSendingOrchestrator(
 # This notebook demonstrates how to use the Azure OpenAI GPT4-o target to accept multimodal input (text+image) and generate text output using `PromptRequestResponse`.
 
 # %%
-# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 
