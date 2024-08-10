@@ -65,10 +65,10 @@ class PromptSendingOrchestrator(Orchestrator):
         self._batch_size = batch_size
 
     async def send_prompts_async(
-        self, 
-        *, 
-        prompt_list: list[str], 
-        prompt_type: PromptDataType = "text", 
+        self,
+        *,
+        prompt_list: list[str],
+        prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
         metadata: Optional[str] = None
     ) -> list[PromptRequestResponse]:
@@ -87,10 +87,8 @@ class PromptSendingOrchestrator(Orchestrator):
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
 
-        # This happens often when trying to send one prompt, but forgetting to wrap it in brackets.
-        if not isinstance(prompt_list, list):
-            logger.warning(f"Warning: passed {type(prompt_list)} to PromptSendingOrchestrator." \
-                           "Did you mean to pass a list?")
+        if isinstance(prompt_list, str):
+            prompt_list = [prompt_list]
 
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
