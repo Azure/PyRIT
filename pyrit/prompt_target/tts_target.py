@@ -2,9 +2,12 @@
 # Licensed under the MIT license.
 
 import logging
+from httpx import HTTPStatusError
 from typing import Literal
 
 from pyrit.common import default_values
+from pyrit.exceptions import EmptyResponseException, RateLimitException
+from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import data_serializer_factory, construct_response_from_request
@@ -62,6 +65,7 @@ class AzureTTSTarget(PromptTarget):
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
+    @pyrit_target_retry
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
@@ -81,14 +85,29 @@ class AzureTTSTarget(PromptTarget):
             "api-key": self._api_key,
         }
 
-        # Note the openai client doesn't work here, potentially due to a mismatch
-        response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/"
-            f"audio/speech?api-version={self._api_version}",
-            method="POST",
-            headers=headers,
-            request_body=body,
-        )
+        response_entry = None
+        try:
+            # Note the openai client doesn't work here, potentially due to a mismatch
+            response = await net_utility.make_request_and_raise_if_error_async(
+                endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/"
+                f"audio/speech?api-version={self._api_version}",
+                method="POST",
+                headers=headers,
+                request_body=body,
+            )
+
+            # TODO: Is this a good way to check that the conversion did not work? If there is no audio file, this is when we have empty response.
+            # if not response.text:
+            #     raise EmptyResponseException(message="The chat returned an empty response.")
+
+        except HTTPStatusError as hse:
+            if hse.response.status_code == 400:
+                # Handle Bad Request
+                response_entry = handle_bad_request_exception(response_text=hse.response.text, request=request)
+            elif hse.response.status_code == 429:
+                raise RateLimitException()
+            else:
+                raise hse
 
         logger.info("Received valid response from the prompt target")
 
@@ -98,9 +117,10 @@ class AzureTTSTarget(PromptTarget):
 
         audio_response.save_data(data=data)
 
-        response_entry = construct_response_from_request(
-            request=request, response_text_pieces=[audio_response.value], response_type="audio_path"
-        )
+        if not response_entry:
+            response_entry = construct_response_from_request(
+                request=request, response_text_pieces=[audio_response.value], response_type="audio_path"
+            )
 
         return response_entry
 
