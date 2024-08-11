@@ -101,7 +101,7 @@ def test_write_cache(file_type, examples):
     with patch("pathlib.Path.open", mock_file):
         _write_cache(cache_file, examples, file_type)
         # Verify that the open function was called
-        mock_file.assert_called_once_with("w")
+        mock_file.assert_called_once_with("w", encoding="utf-8")
         # Verify that write was called at least once
         mock_file().write.assert_called()
 
