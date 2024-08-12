@@ -6,8 +6,8 @@ from httpx import HTTPStatusError
 from typing import Literal
 
 from pyrit.common import default_values
-from pyrit.exceptions import EmptyResponseException, RateLimitException
-from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
+from pyrit.exceptions import RateLimitException
+from pyrit.exceptions import handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import data_serializer_factory, construct_response_from_request
@@ -65,7 +65,6 @@ class AzureTTSTarget(PromptTarget):
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
-    @pyrit_target_retry
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
@@ -95,11 +94,6 @@ class AzureTTSTarget(PromptTarget):
                 headers=headers,
                 request_body=body,
             )
-
-            # TODO: Is this a good way to check that the conversion did not work? If there is no audio file, this is when we have empty response.
-            # if not response.text:
-            #     raise EmptyResponseException(message="The chat returned an empty response.")
-
         except HTTPStatusError as hse:
             if hse.response.status_code == 400:
                 # Handle Bad Request
