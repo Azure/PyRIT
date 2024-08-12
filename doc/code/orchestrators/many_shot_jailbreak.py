@@ -22,12 +22,6 @@
 #
 # For more details, you can reference the [Many-Shot Jailbreaking Research by Anthropic](https://www.anthropic.com/research/many-shot-jailbreaking).
 
-
-# %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
-
 # %%
 # Import necessary packages
 import os

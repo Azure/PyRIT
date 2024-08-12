@@ -25,9 +25,6 @@
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 import os
 from PIL import Image
 

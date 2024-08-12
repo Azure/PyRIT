@@ -23,9 +23,6 @@
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 import pathlib
 
 from pyrit.models import PromptTemplate

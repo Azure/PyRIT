@@ -19,9 +19,6 @@
 # Similar to the [Azure OpenAI Completions](../targets/azure_completions.ipynb) endpoint, PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from pprint import pprint
 
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
