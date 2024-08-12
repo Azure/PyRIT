@@ -41,9 +41,9 @@ async def make_request_and_raise_if_error_async(
             method=method,
             params=params,
             url=endpoint_uri,
-            json=request_body if request_body and post_type == 'json' else None,
-            data=request_body if request_body and post_type != 'json' else None,
-            headers=headers
+            json=request_body if request_body and post_type == "json" else None,
+            data=request_body if request_body and post_type != "json" else None,
+            headers=headers,
         )
 
         response.raise_for_status()  # This will automatically raise an exception for 4xx and 5xx responses

@@ -57,6 +57,7 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
         )
 
+        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._scorers = scorers
 
         self._prompt_target = prompt_target
@@ -70,7 +71,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_list: list[str],
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[str] = None
+        metadata: Optional[str] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
@@ -97,7 +98,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_text=prompt,
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
-                    metadata=metadata if metadata else None # NOTE added
+                    metadata=metadata if metadata else None,  # NOTE added
                 )
             )
 
