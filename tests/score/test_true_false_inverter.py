@@ -27,15 +27,14 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_inverter_scorer_validate(image_request_piece: PromptRequestPiece):
-    sub_scorer = SubStringScorer(substring="test", category="new_category")
+async def test_inverter_scorer_validate(image_request_piece: PromptRequestPiece, memory: MemoryInterface):
+    sub_scorer = SubStringScorer(substring="test", category="new_category", memory=memory)
     scorer = TrueFalseInverterScorer(memory=memory, scorer=sub_scorer, threshold=0.5)
 
     with pytest.raises(ValueError, match="Expected text data type"):
         await scorer.score_async(image_request_piece)
 
     os.remove(image_request_piece.converted_value)
-
 
 
 @pytest.mark.asyncio

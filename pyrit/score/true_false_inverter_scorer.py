@@ -34,7 +34,7 @@ class TrueFalseInverterScorer(Scorer):
         """
         scores = await self._scorer.score_async(request_response, task=task)
         for score in scores:
-            score.score_value = not score.get_value()
+            score.score_value = str(True) if not score.get_value() else str(False)
             score.score_value_description = "Inverted score: " + str(score.score_value_description)
             score.score_rationale = f"Inverted score: {score.score_value}\n{score.score_rationale}"
 
