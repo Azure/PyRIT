@@ -112,4 +112,5 @@ class Scorer(abc.ABC):
         identifier = {}
         identifier["__type__"] = self.__class__.__name__
         identifier["__module__"] = self.__class__.__module__
+        identifier["sub_identifier"] = None
         return identifier
