@@ -54,7 +54,7 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[b
 # Fetch examples from XSTest Bias Testing dataset
 prompt_dataset = fetch_xstest_examples(examples_source, source_type="public_url")
 
-# Use the first 5 examples
+# Use the first 4 examples
 prompt_list = prompt_dataset.prompts[:4]
 
 # Send prompts using the orchestrator

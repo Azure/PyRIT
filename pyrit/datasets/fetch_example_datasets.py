@@ -268,6 +268,10 @@ def fetch_xstest_examples(
 
     Returns:
         PromptDataset: A PromptDataset containing the examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://github.com/paul-rottger/exaggerated-safety
     """
 
     # Determine the file type from the source URL
