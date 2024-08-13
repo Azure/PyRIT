@@ -26,7 +26,12 @@ def resolve_relative_url(base_path, url):
 def check_url(url):
     if (
         "http://localhost:" in url
-        or url in ["https://cognitiveservices.azure.com/.default", "https://gandalf.lakera.ai/api/send-message", "https://code.visualstudio.com/Download"]
+        or url
+        in [
+            "https://cognitiveservices.azure.com/.default",
+            "https://gandalf.lakera.ai/api/send-message",
+            "https://code.visualstudio.com/Download",
+        ]
         or os.path.isfile(url)
         or os.path.isdir(url)
         or url.startswith("mailto:")
