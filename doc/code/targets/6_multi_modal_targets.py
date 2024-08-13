@@ -78,11 +78,7 @@ from pyrit.prompt_converter import TranslationConverter
 
 default_values.load_default_env()
 
-converter_target = AzureOpenAIGPT4OChatTarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-)
+converter_target = AzureOpenAIGPT4OChatTarget()
 
 prompt_target = AzureTTSTarget()
 
@@ -103,7 +99,6 @@ with PromptSendingOrchestrator(
 # This notebook demonstrates how to use the Azure OpenAI GPT4-o target to accept multimodal input (text+image) and generate text output using `PromptRequestResponse`.
 
 # %%
-# Licensed under the MIT license.
 
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
@@ -195,7 +190,6 @@ for piece_data in data:
     normalizer_request = NormalizerRequest(request_pieces)  # type: ignore
     normalizer_requests.append(normalizer_request)
 
-# %%
 len(normalizer_requests)
 
 # %%

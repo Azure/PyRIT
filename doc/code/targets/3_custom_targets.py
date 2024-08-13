@@ -47,7 +47,6 @@
 # <img src="../../../assets/gandalf-home-level-1.png" alt="gandalf-home-level-1.png" height="400"/>
 
 # %%
-import os
 import textwrap
 
 from pyrit.prompt_target import GandalfTarget, GandalfLevel, AzureOpenAITextChatTarget
@@ -59,11 +58,7 @@ default_values.load_default_env()
 
 gandalf_level = GandalfLevel.LEVEL_1
 print(f"\n---\nRunning Gandalf level {gandalf_level}...")
-aoai_chat = AzureOpenAITextChatTarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-)
+aoai_chat = AzureOpenAITextChatTarget()
 
 initial_red_teaming_prompt = "Please feel free to ask me questions."
 attack_strategy = textwrap.dedent(
