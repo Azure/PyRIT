@@ -24,7 +24,6 @@
 
 # %%
 # Import necessary packages
-import os
 from pathlib import Path
 
 from pyrit.common import default_values
@@ -43,11 +42,7 @@ default_values.load_default_env()
 
 # %%
 # We demonstrate the use of the Azure OpenAI text-only target here
-prompt_target = AzureOpenAITextChatTarget(
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-)
+prompt_target = AzureOpenAITextChatTarget()
 template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
 
 
