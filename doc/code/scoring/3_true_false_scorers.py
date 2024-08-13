@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.1
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-311
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -19,16 +19,13 @@
 # In the simplest case a scorer can answer a question. There can be many types of true false scorers. The following example uses a `SelfAskTrueFalseScorer` to see if prompt injection was successful. This type of scorer is really useful in orchestrators that have to make decisions based on responses.
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 
 default_values.load_default_env()
-with AzureOpenAIChatTarget() as azure_openai_chat_target:
+with AzureOpenAIGPT4OChatTarget() as azure_openai_chat_target:
     true_false_classifier = SelfAskTrueFalseScorer(
         true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=azure_openai_chat_target
     )
