@@ -161,10 +161,11 @@ class AzureOpenAITextChatTarget(OpenAIChatInterface):
         presence_penalty: float = 0.5,
     ) -> None:
         """
-        Class that initializes an Azure OpenAI chat target. This class facilitates text as input and output (i.e. not multimodal).
-        deployment_name can be modified to use different text-only models.
+        Class that initializes an Azure OpenAI chat target. This class facilitates text as input and output
+        (i.e. not multimodal). deployment_name can be modified to use different text-only models.
 
-        Read more about the various models here https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
+        Read more about the various models here:
+        https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
 
         Note that this is different from the Azure OpenAI completion target.
 
