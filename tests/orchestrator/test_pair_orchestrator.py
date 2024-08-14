@@ -12,7 +12,7 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, Score
 from pyrit.orchestrator import PAIROrchestrator
 from pyrit.orchestrator.pair_orchestrator import PromptRequestPiece
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.score import Scorer
 from tests.mocks import get_memory_interface
 
@@ -29,8 +29,8 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAIChatTarget:
-    return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine() -> AzureOpenAITextChatTarget:
+    return AzureOpenAITextChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture

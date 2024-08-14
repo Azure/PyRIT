@@ -140,7 +140,7 @@ class OpenAIChatInterface(PromptChatTarget):
             raise ValueError("This target only supports text prompt input.")
 
 
-class AzureOpenAIChatTarget(OpenAIChatInterface):
+class AzureOpenAITextChatTarget(OpenAIChatInterface):
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_KEY"
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_ENDPOINT"
     DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_OPENAI_CHAT_DEPLOYMENT"
@@ -161,7 +161,11 @@ class AzureOpenAIChatTarget(OpenAIChatInterface):
         presence_penalty: float = 0.5,
     ) -> None:
         """
-        Class that initializes an Azure OpenAI chat target.
+        Class that initializes an Azure OpenAI chat target. This class facilitates text as input and output
+        (i.e. not multimodal). deployment_name can be modified to use different text-only models.
+
+        Read more about the various models here:
+        https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
 
         Note that this is different from the Azure OpenAI completion target.
 

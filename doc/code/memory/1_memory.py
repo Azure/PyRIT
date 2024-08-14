@@ -21,9 +21,6 @@
 # The schema is found in `memory_models.py` and can be programatically viewed as follows
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from pyrit.memory import DuckDBMemory
 
 memory = DuckDBMemory()

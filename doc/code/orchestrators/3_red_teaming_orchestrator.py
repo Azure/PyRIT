@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -35,7 +35,7 @@ from pathlib import Path
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import AzureMLChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.chat_message_normalizer import GenericSystemSquash
 from pyrit.common import default_values
 from pyrit.models import AttackStrategy
@@ -54,17 +54,13 @@ attack_strategy = AttackStrategy(
     conversation_objective=conversation_objective,
 )
 
-# The red_teaming_chat is the used to generate prompts that are sent to the target.
+# The red_teaming_chat is used to generate prompts that are sent to the target.
 # In this case, it's a deployed AML endpoint called mistralai-mixtral-8x7b-instru-2
 # but it can be any supported target.
 # mixtral disallows system prompts, so we include a chat_message_normalizer to squash them:
 red_teaming_chat = AzureMLChatTarget(chat_message_normalizer=GenericSystemSquash())
 
-prompt_target = AzureOpenAIChatTarget(
-    deployment_name="defense-gpt35",
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-)
+prompt_target = AzureOpenAIGPT4OChatTarget()
 
 scorer = SelfAskTrueFalseScorer(
     chat_target=red_teaming_chat,
@@ -106,7 +102,7 @@ from pyrit.models.models import AttackStrategy
 from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIChatTarget, DALLETarget, AzureOpenAIGPTVChatTarget
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget, DALLETarget, AzureOpenAIGPTVChatTarget
 
 
 logging.basicConfig(level=logging.WARNING)
@@ -118,7 +114,7 @@ img_prompt_target = DALLETarget(
     endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
     api_key=os.environ.get("AZURE_DALLE_API_KEY"),
 )
-red_teaming_llm = AzureOpenAIChatTarget()
+red_teaming_llm = AzureOpenAIGPT4OChatTarget()
 scoring_target = AzureOpenAIGPTVChatTarget()
 
 scorer = SelfAskTrueFalseScorer(

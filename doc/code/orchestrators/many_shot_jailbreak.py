@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # Many-Shot Jailbreaking
 #
@@ -7,23 +22,16 @@
 #
 # For more details, you can reference the [Many-Shot Jailbreaking Research by Anthropic](https://www.anthropic.com/research/many-shot-jailbreaking).
 
-
-# %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
-
 # %%
 # Import necessary packages
-import os
 from pathlib import Path
 
 from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
-from pyrit.datasets.fetch_examples import fetch_many_shot_jailbreaking_examples
+from pyrit.datasets import fetch_many_shot_jailbreaking_examples
 from pyrit.models.models import ManyShotTemplate
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
 
 
@@ -33,11 +41,8 @@ default_values.load_default_env()
 
 
 # %%
-prompt_target = AzureOpenAIChatTarget(
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-)
+# We demonstrate the use of the Azure OpenAI text-only target here
+prompt_target = AzureOpenAITextChatTarget()
 template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
 
 

@@ -15,6 +15,7 @@ from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScaleP
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer, ScalePaths
 from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 from pyrit.score.substring_scorer import SubStringScorer
+from pyrit.score.true_false_inverter_scorer import TrueFalseInverterScorer
 
 
 __all__ = [
@@ -37,5 +38,6 @@ __all__ = [
     "SelfAskScaleScorer",
     "SelfAskTrueFalseScorer",
     "SubStringScorer",
+    "TrueFalseInverterScorer",
     "TrueFalseQuestionPaths",
 ]
