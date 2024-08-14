@@ -41,7 +41,7 @@ def sample_delineated_prompt_as_dict() -> dict:
 
 
 @pytest.fixture
-def sample_conversation_piece() -> PromptRequestPiece:
+def sample_conversation_piece(sample_delineated_prompt_as_str: str) -> PromptRequestPiece:
     prp = PromptRequestPiece(role="user", original_value=sample_delineated_prompt_as_str)
     return prp
 

@@ -89,7 +89,7 @@ class PromptShieldScorer(Scorer):
         user_detections = []
         document_detections = []
 
-        user_prompt_attack : dict[str,bool] = response_json.get("userPromptAnalysis", False)
+        user_prompt_attack: dict[str, bool] = response_json.get("userPromptAnalysis", False)
         documents_attack: list[dict] = response_json.get("documentsAnalysis", False)
 
         if not user_prompt_attack:
@@ -111,4 +111,3 @@ class PromptShieldScorer(Scorer):
             )
         if request_response.converted_value_data_type != "text":
             raise ValueError("Expected text data type")
-
