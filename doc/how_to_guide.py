@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.1
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-311
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -44,7 +44,7 @@
 #
 # The first way of using PyRIT is to write prompts yourself. These can be sent to any LLM endpoint with
 # the classes from the [PromptChatTarget](./code/targets/) module (e.g.,
-# AzureOpenAIChatTarget for Azure OpenAI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
+# AzureOpenAITextChatTarget for Azure OpenAI as below, AzureMLChatTarget for Azure ML, etc.) or by using other
 # packages (e.g., the [openai](https://github.com/openai/openai-python) Python package). When using `PromptChatTarget` and `PromptTarget` classes, always employ them within a "with" context manager to ensure automatic and safe release of database connections after use as shown below.
 
 # %%
@@ -54,12 +54,13 @@ from pathlib import Path
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 default_values.load_default_env()
 
-with AzureOpenAIChatTarget(
+# Note: parameters are not required here. They are added here to show how they can be used.
+with AzureOpenAITextChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
@@ -131,7 +132,7 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 
 from textwrap import dedent
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget, AzureOpenAIGPT4OChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 
 
@@ -146,20 +147,21 @@ When the conversation objective is reached, type <|done|> to end the conversatio
 )
 
 # red_teaming_llm could be any LLM endpoint. Here it is Azure OpenAI for illustrative purposes.
-red_teaming_llm = AzureOpenAIChatTarget(
+red_teaming_llm = AzureOpenAITextChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
-target_llm = AzureOpenAIChatTarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
+# We use Azure OpenAI GPT4-o here as an example target LLM endpoint.
+target_llm = AzureOpenAIGPT4OChatTarget(
+    deployment_name=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_DEPLOYMENT"),
+    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_KEY"),
 )
 
 scorer = SelfAskTrueFalseScorer(
-    true_false_question_path=Path("demo/scorer_definitions/offensive_comment_classifier.yaml"),
+    true_false_question_path=Path("../assets/demo_scorer_definitions/offensive_comment_classifier.yaml"),
     chat_target=red_teaming_llm,
 )
 

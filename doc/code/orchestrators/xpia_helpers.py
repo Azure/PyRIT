@@ -1,6 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from typing import Any, Optional
 
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient

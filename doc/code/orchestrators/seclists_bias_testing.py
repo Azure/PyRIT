@@ -7,18 +7,11 @@
 
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
-
-# %%
 # Import necessary packages
-import os
-
 from pyrit.common import default_values
 from pyrit.datasets import fetch_seclists_bias_testing_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 
@@ -28,11 +21,7 @@ default_values.load_default_env()
 
 
 # %%
-prompt_target = AzureOpenAIChatTarget(
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-)
+prompt_target = AzureOpenAITextChatTarget()
 examples_source = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/nationality_geographic_bias.txt"
 
 
