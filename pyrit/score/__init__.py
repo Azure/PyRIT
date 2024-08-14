@@ -9,6 +9,7 @@ from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.gandalf_scorer import GandalfScorer
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
+from pyrit.score.prompt_shield_scorer import PromptShieldScorer
 from pyrit.score.self_ask_category_scorer import SelfAskCategoryScorer, ContentClassifierPaths
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer, ScalePaths
@@ -27,6 +28,7 @@ __all__ = [
     "MarkdownInjectionScorer",
     "MetaScorerQuestionPaths",
     "ObjectiveQuestionPaths",
+    "PromptShieldScorer",
     "ScalePaths",
     "Score",
     "ScoreType",

@@ -24,6 +24,7 @@ PostType = Literal["json", "data"]
 async def make_request_and_raise_if_error_async(
     endpoint_uri: str,
     method: str,
+    params: dict[str, str] = None,
     request_body: dict[str, object] = None,
     headers: dict[str, str] = None,
     post_type: PostType = "json",
@@ -33,18 +34,17 @@ async def make_request_and_raise_if_error_async(
     headers = headers or {}
     request_body = request_body or {}
 
+    params = params or {}
+
     async with get_httpx_client(debug=debug, use_async=True) as async_client:
-        if request_body:
-            if post_type == "json":
-                response = await async_client.request(
-                    method=method, url=endpoint_uri, json=request_body, headers=headers
-                )
-            else:
-                response = await async_client.request(
-                    method=method, url=endpoint_uri, data=request_body, headers=headers
-                )
-        else:
-            response = await async_client.request(method=method, url=endpoint_uri, headers=headers)
+        response = await async_client.request(
+            method=method,
+            params=params,
+            url=endpoint_uri,
+            json=request_body if request_body and post_type == "json" else None,
+            data=request_body if request_body and post_type != "json" else None,
+            headers=headers,
+        )
 
         response.raise_for_status()  # This will automatically raise an exception for 4xx and 5xx responses
 

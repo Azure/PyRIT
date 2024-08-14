@@ -249,3 +249,54 @@ def fetch_seclists_bias_testing_examples(
     )
 
     return dataset
+
+
+def fetch_xstest_examples(
+    source: str = "https://raw.githubusercontent.com/paul-rottger/exaggerated-safety/a3bb396/xstest_v2_prompts.csv",
+    source_type: Literal["public_url"] = "public_url",
+    cache: bool = True,
+    data_home: Optional[Path] = None,
+) -> PromptDataset:
+    """
+    Fetch XSTest examples and create a PromptDataset.
+
+    Args:
+        source (str): The source from which to fetch examples. Defaults to the exaggerated-safety repository.
+        source_type (Literal["public_url"]): The type of source ('public_url').
+        cache (bool): Whether to cache the fetched examples. Defaults to True.
+        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+
+    Returns:
+        PromptDataset: A PromptDataset containing the examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://github.com/paul-rottger/exaggerated-safety
+    """
+
+    # Determine the file type from the source URL
+    file_type = source.split(".")[-1]
+    if file_type not in FILE_TYPE_HANDLERS:
+        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+
+    # Fetch the examples using the provided `fetch_examples` function
+    examples = fetch_examples(source, source_type, cache, data_home)
+
+    # Extract prompts, harm categories, and other relevant data from the fetched examples
+    prompts = [example["prompt"] for example in examples]
+    harm_categories = [example["note"] for example in examples]
+
+    # Join all categories into a single comma-separated string
+    harm_category_str = ", ".join(filter(None, harm_categories))
+
+    # Create a PromptDataset object with the fetched examples
+    dataset = PromptDataset(
+        name="XSTest Examples",
+        description="A dataset of XSTest examples containing various categories such as violence, drugs, etc.",
+        harm_category=harm_category_str,
+        should_be_blocked=False,
+        prompts=prompts,
+    )
+
+    return dataset
