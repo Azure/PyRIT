@@ -89,8 +89,8 @@ class PromptShieldScorer(Scorer):
         user_detections = []
         document_detections = []
 
-        user_prompt_attack: bool = response_json.get("userPromptAnalysis", False)
-        documents_attack: bool = response_json.get("documentsAnalysis", False)
+        user_prompt_attack : dict[str,bool] = response_json.get("userPromptAnalysis", False)
+        documents_attack: list[dict] = response_json.get("documentsAnalysis", False)
 
         if not user_prompt_attack:
             user_detections = [False]
@@ -104,10 +104,11 @@ class PromptShieldScorer(Scorer):
 
         return user_detections + document_detections
 
-    def validate(self, request_response: Any) -> None:
+    def validate(self, request_response: Any, task: Optional[str] = None) -> None:
         if not isinstance(request_response, PromptRequestPiece) and not isinstance(request_response, PromptMemoryEntry):
             raise ValueError(
                 f"Scorer expected PromptRequestPiece: Got {type(request_response)} with contents {request_response}"
             )
         if request_response.converted_value_data_type != "text":
             raise ValueError("Expected text data type")
+
