@@ -24,19 +24,16 @@ class PromptShieldScorer(Scorer):
     _conversation_id: str
     _memory: Union[MemoryInterface, None]
     _prompt_shield_target: PromptShieldTarget
-    _invert_output: bool
 
     def __init__(
         self,
         prompt_shield_target: PromptShieldTarget,
         memory: Union[MemoryInterface, None] = None,
-        invert_output: bool = False,
     ) -> None:
 
         self.scorer_type = "true_false"
         self._memory = memory if memory else DuckDBMemory()
         self._prompt_shield_target: PromptShieldTarget = prompt_shield_target
-        self._invert_output = invert_output
 
     async def score_async(
         self, request_response: PromptRequestPiece | PromptMemoryEntry, *, task: Optional[str] = None
@@ -66,10 +63,6 @@ class PromptShieldScorer(Scorer):
 
         # Whether or not any of the documents or userPrompt got flagged as an attack
         result: bool = any(self._parse_response_to_boolean_list(response))
-
-        # If we want to return true when an attack *wasn't* detected, we pass this parameter in.
-        if self._invert_output:
-            result = not result
 
         score = Score(
             score_type="true_false",
