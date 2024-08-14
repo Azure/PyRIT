@@ -71,6 +71,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_list: list[str],
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
+        metadata: Optional[str] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
@@ -81,10 +82,14 @@ class PromptSendingOrchestrator(Orchestrator):
             memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
                 prompts.
             These labels will be merged with the instance's global memory labels. Defaults to None.
+            metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
 
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
+
+        if isinstance(prompt_list, str):
+            prompt_list = [prompt_list]
 
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
@@ -93,6 +98,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_text=prompt,
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
+                    metadata=metadata if metadata else None,  # NOTE added
                 )
             )
 
@@ -149,6 +155,8 @@ class PromptSendingOrchestrator(Orchestrator):
         for request in prompt_request_list:
             request.validate()
 
+        # Normalizer is responsible for storing the requests in memory
+        # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._prompt_target,
@@ -156,6 +164,9 @@ class PromptSendingOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
+
+        # These are the responses from the target
+        # print(responses[0].request_pieces)
 
         if self._scorers:
             response_ids = []
