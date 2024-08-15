@@ -8,6 +8,7 @@ from contextlib import closing
 from typing import Optional, Sequence
 
 from azure.identity import DefaultAzureCredential
+from azure.core.credentials import AccessToken
 
 from sqlalchemy import create_engine, func, and_, event
 from sqlalchemy.engine.base import Engine
@@ -43,13 +44,13 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         self.engine = self._create_engine(has_echo=verbose)
 
-        self._auth_token = self._create_azure_token()
+        self._auth_token = self._create_auth_token()
         self._enable_azure_authorization()
 
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
 
-    def _create_auth_token(self) -> str:
+    def _create_auth_token(self) -> AccessToken:
         azure_credentials = DefaultAzureCredential()
         return azure_credentials.get_token(self.TOKEN_URL)
 
