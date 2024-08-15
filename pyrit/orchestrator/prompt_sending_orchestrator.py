@@ -69,7 +69,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         *,
         prompt_list: list[str],
-        request_delay: int = 0,
+        request_delay: Optional[int] = None,
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
         metadata: Optional[str] = None,
@@ -150,7 +150,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         *,
         prompt_request_list: list[NormalizerRequest],
-        request_delay: int = 0,
+        request_delay: Optional[int] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """

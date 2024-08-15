@@ -96,7 +96,8 @@ class PromptNormalizer(abc.ABC):
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None):
 
-        await asyncio.sleep(request_delay)
+        if request_delay:
+            await asyncio.sleep(request_delay)
         self.send_prompt_async(
             normalizer_request=prompt,
             target=target,
@@ -108,7 +109,7 @@ class PromptNormalizer(abc.ABC):
         self,
         *,
         requests: list[NormalizerRequest],
-        request_delay: int = 0,
+        request_delay: Optional[int] = None,
         target: PromptTarget,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
@@ -137,9 +138,6 @@ class PromptNormalizer(abc.ABC):
         for prompts_batch in self._chunked_prompts(requests, batch_size):
             tasks = []
             for prompt in prompts_batch:
-                if request_delay > 0:
-                    await asyncio.sleep(request_delay)
-
                 tasks.append(
                     self.delayed_send(
                         request_delay=request_delay,
