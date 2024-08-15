@@ -69,6 +69,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         *,
         prompt_list: list[str],
+        request_delay: int = 0,
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
@@ -77,6 +78,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
+            request_delay (int): If provided, the requests sent to the target will be delayed by the specified number of seconds.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
                 prompts.
@@ -98,6 +100,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
+            request_delay=request_delay,
             memory_labels=memory_labels,
         )
 
@@ -141,6 +144,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self,
         *,
         prompt_request_list: list[NormalizerRequest],
+        request_delay: int = 0,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
@@ -151,6 +155,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
+            delay=request_delay,
             target=self._prompt_target,
             labels=self._combine_with_global_memory_labels(memory_labels),
             orchestrator_identifier=self.get_identifier(),

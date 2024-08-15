@@ -246,13 +246,17 @@ async def test_prompt_normalizer_send_prompt_batch_async(normalizer_piece: Norma
     prompt_target = MockPromptTarget()
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
-    request = [NormalizerRequest([normalizer_piece])]
+    requests = [NormalizerRequest([normalizer_piece]), NormalizerRequest([normalizer_piece]), NormalizerRequest([normalizer_piece])]
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    await normalizer.send_prompt_batch_to_target_async(requests=request, target=prompt_target)
+    results = await normalizer.send_prompt_batch_to_target_async(requests=requests, request_delay=1, target=prompt_target)
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
+    assert results.count == 3
+    # TODO: Add checks to see if sleep was called
+    # TODO: Fix the unit test failures (more prompts sent than checked for)
+    # TODO: Check to see if the changes introduced are in the right direction, maybe check with TTS target in the orchestrator
 
 
 @pytest.mark.asyncio

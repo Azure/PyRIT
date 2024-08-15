@@ -86,11 +86,29 @@ class PromptNormalizer(abc.ABC):
         self._memory.add_request_response_to_memory(request=response)
 
         return response
+    
+    async def delayed_send(
+        self,
+        *,
+        request_delay: int,
+        prompt: NormalizerRequest,
+        target: PromptTarget,
+        labels: Optional[dict[str, str]] = None,
+        orchestrator_identifier: Optional[dict[str, str]] = None):
+
+        await asyncio.sleep(request_delay)
+        self.send_prompt_async(
+            normalizer_request=prompt,
+            target=target,
+            labels=labels,
+            orchestrator_identifier=orchestrator_identifier,
+        )
 
     async def send_prompt_batch_to_target_async(
         self,
         *,
         requests: list[NormalizerRequest],
+        request_delay: int = 0,
         target: PromptTarget,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
@@ -102,6 +120,7 @@ class PromptNormalizer(abc.ABC):
         Args:
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects representing the prompts to
                 be sent.
+            request_delay (int): If provided, the requests sent to the target will be delayed by the specified number of seconds.
             target (PromptTarget): The target to which the prompts should be sent.
             labels (dict[str, str], optional): Additional labels to be included with the prompts. Defaults to None
             orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
@@ -118,12 +137,16 @@ class PromptNormalizer(abc.ABC):
         for prompts_batch in self._chunked_prompts(requests, batch_size):
             tasks = []
             for prompt in prompts_batch:
+                if request_delay > 0:
+                    await asyncio.sleep(request_delay)
+
                 tasks.append(
-                    self.send_prompt_async(
-                        normalizer_request=prompt,
+                    self.delayed_send(
+                        request_delay=request_delay,
+                        prompt=prompt,
                         target=target,
                         labels=labels,
-                        orchestrator_identifier=orchestrator_identifier,
+                        orchestrator_identifier=orchestrator_identifier
                     )
                 )
 
