@@ -25,6 +25,7 @@ def test_add_image_text_converter_initialization(image_text_converter_sample_ima
         font_size=20,
         x_pos=10,
         y_pos=10,
+        output_filename="sample_conv_image.png",
     )
     assert converter._img_to_add == "test.png"
     assert converter._font_name == "arial.ttf"
@@ -34,6 +35,7 @@ def test_add_image_text_converter_initialization(image_text_converter_sample_ima
     assert converter._y_pos == 10
     assert converter._font is not None
     assert type(converter._font) is ImageFont.FreeTypeFont
+    assert converter._output_name == "sample_conv_image.png"
     os.remove("test.png")
 
 
@@ -97,7 +99,7 @@ async def test_add_image_text_converter_convert_async(image_text_converter_sampl
     converter = AddImageTextConverter(
         img_to_add=image_text_converter_sample_image, output_filename="sample_conv_image.png"
     )
-    converted_image = await converter.convert_async(prompt="Sample Text 2!", input_type="text")
+    converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
     assert converted_image
     assert converted_image.output_text == "sample_conv_image.png"
     assert converted_image.output_type == "image_path"
