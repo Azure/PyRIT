@@ -242,21 +242,27 @@ async def test_send_prompt_async_image_converter():
 
 
 @pytest.mark.asyncio
-async def test_prompt_normalizer_send_prompt_batch_async(normalizer_piece: NormalizerRequestPiece):
+@pytest.mark.parametrize("request_delay", [None, 1])
+async def test_prompt_normalizer_send_prompt_batch_async(
+    normalizer_piece: NormalizerRequestPiece,
+    request_delay: int
+    ):
     prompt_target = MockPromptTarget()
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
-    requests = [NormalizerRequest([normalizer_piece])]
+    request = [NormalizerRequest([normalizer_piece]), NormalizerRequest([normalizer_piece])]
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    results = await normalizer.send_prompt_batch_to_target_async(requests=requests, target=prompt_target)
+    with patch("asyncio.sleep") as mock_sleep:
+        results = await normalizer.send_prompt_batch_to_target_async(requests=request, target=prompt_target, request_delay=request_delay)
 
-    assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
-    assert results.count == 1
-    # TODO: Add checks to see if sleep was called
-    # TODO: Fix the unit test failures (more prompts sent than checked for)
-    # TODO: Check to see if the changes introduced are in the right direction, maybe check with TTS target in the orchestrator
+        assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_=", "S_G_V_s_b_G_8_="]
+        assert len(results) == len(request)
+
+        if request_delay:
+            assert mock_sleep.call_count == len(request)
+            mock_sleep.assert_called_with(request_delay)
 
 
 @pytest.mark.asyncio

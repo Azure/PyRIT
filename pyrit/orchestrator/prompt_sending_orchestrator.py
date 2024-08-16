@@ -163,7 +163,7 @@ class PromptSendingOrchestrator(Orchestrator):
         # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
-            delay=request_delay,
+            request_delay=request_delay,
             target=self._prompt_target,
             labels=self._combine_with_global_memory_labels(memory_labels),
             orchestrator_identifier=self.get_identifier(),
