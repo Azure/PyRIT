@@ -60,7 +60,9 @@ original_user_prompts = [prompt.original_value for prompt in prompts if prompt.r
 # we can now send them to a new target, using different converters
 text_target = TextTarget()
 
-with PromptSendingOrchestrator(prompt_target=text_target, memory_labels=memory_labels, prompt_converters=[Base64Converter()]) as orchestrator:
+with PromptSendingOrchestrator(
+    prompt_target=text_target, memory_labels=memory_labels, prompt_converters=[Base64Converter()]
+) as orchestrator:
     await orchestrator.send_prompts_async(prompt_list=original_user_prompts)  # type: ignore
 
 memory.dispose_engine()

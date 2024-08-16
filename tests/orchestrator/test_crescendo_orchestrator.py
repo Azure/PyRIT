@@ -1,6 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+# flake8: noqa
+
+import os
+
+# This limits retries and speeds up execution
+# note this needs to be set before libraries that use them are imported
+os.environ["RETRY_MAX_NUM_ATTEMPTS"] = "1"
+os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
+os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
+
 from pathlib import Path
 import pytest
 import tempfile
@@ -315,7 +325,6 @@ async def test_invalid_json_exceptions(orchestrator: CrescendoOrchestrator, red_
             PromptRequestPiece(converted_value=red_team_response, role="assistant", original_value=red_team_response)
         ]
     )
-
     with (
         patch.object(
             orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
