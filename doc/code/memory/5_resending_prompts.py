@@ -58,11 +58,9 @@ prompts = memory.get_prompt_request_piece_by_memory_labels(memory_labels={"promp
 original_user_prompts = [prompt.original_value for prompt in prompts if prompt.role == "user"]
 
 # we can now send them to a new target, using different converters
-target = TextTarget()
+text_target = TextTarget()
 
-with PromptSendingOrchestrator(
-    prompt_target=target, memory_labels=memory_labels, prompt_converters=[Base64Converter()]
-) as orchestrator:
+with PromptSendingOrchestrator(prompt_target=text_target, memory_labels=memory_labels, prompt_converters=[Base64Converter()]) as orchestrator:
     await orchestrator.send_prompts_async(prompt_list=original_user_prompts)  # type: ignore
 
 memory.dispose_engine()
