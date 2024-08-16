@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os.path
 import logging
 import base64
 import string
@@ -46,8 +45,6 @@ class AddImageTextConverter(PromptConverter):
     ):
         if not img_to_add:
             raise ValueError("Please provide valid image path")
-        if not os.path.exists(img_to_add):
-            raise FileNotFoundError("The specified image file does not exist")
         if not font_name.endswith(".ttf"):
             raise ValueError("The specified font must be a TrueType font with a .ttf extension")
         self._img_to_add = img_to_add

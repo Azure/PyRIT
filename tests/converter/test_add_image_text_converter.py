@@ -52,11 +52,6 @@ def test_add_image_text_converter_null_img_to_add():
         AddImageTextConverter(img_to_add="", font_name="arial.ttf")
 
 
-def test_add_image_text_converter_invalid_file_path():
-    with pytest.raises(FileNotFoundError):
-        AddImageTextConverter(img_to_add="nonexistent_image.png", font_name="arial.ttf")
-
-
 def test_add_image_text_converter_fallback_to_default_font(image_text_converter_sample_image, caplog):
     AddImageTextConverter(
         img_to_add=image_text_converter_sample_image,
@@ -92,6 +87,13 @@ async def test_add_image_text_converter_invalid_input_text(image_text_converter_
     with pytest.raises(ValueError):
         assert await converter.convert_async(prompt="", input_type="text")  # type: ignore
     os.remove("test.png")
+
+
+@pytest.mark.asyncio
+async def test_add_image_text_converter_invalid_file_path():
+    converter = AddImageTextConverter(img_to_add="nonexistent_image.png", font_name="arial.ttf")
+    with pytest.raises(FileNotFoundError):
+        assert await converter.convert_async(prompt="Sample Text!", input_type="text")  # type: ignore
 
 
 @pytest.mark.asyncio
