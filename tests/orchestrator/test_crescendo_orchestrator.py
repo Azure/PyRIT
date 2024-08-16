@@ -3,13 +3,7 @@
 
 # flake8: noqa
 
-import os
-
-# This limits retries and speeds up execution
-# note this needs to be set before libraries that use them are imported
-os.environ["RETRY_MAX_NUM_ATTEMPTS"] = "1"
-os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
-os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
+import tests.set_test_constants  # noqa: F401  # pylint: disable=unused-import
 
 from pathlib import Path
 import pytest
