@@ -106,7 +106,8 @@ class PromptNormalizer(abc.ABC):
         Args:
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects representing the prompts to
                 be sent.
-            request_delay (int): If provided, the requests sent to the target will be delayed by the specified number of seconds.
+            request_delay (int): If provided, the requests sent to the target will be delayed by the specified
+                number of seconds.
             target (PromptTarget): The target to which the prompts should be sent.
             labels (dict[str, str], optional): Additional labels to be included with the prompts. Defaults to None
             orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending

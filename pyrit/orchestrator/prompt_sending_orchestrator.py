@@ -79,7 +79,8 @@ class PromptSendingOrchestrator(Orchestrator):
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
-            request_delay (int): If provided, the requests sent to the target will be delayed by the specified number of seconds.
+            request_delay (int): If provided, the requests sent to the target will be delayed by the specified
+                number of seconds.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
                 prompts.

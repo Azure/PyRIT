@@ -243,10 +243,7 @@ async def test_send_prompt_async_image_converter():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("request_delay", [None, 1])
-async def test_prompt_normalizer_send_prompt_batch_async(
-    normalizer_piece: NormalizerRequestPiece,
-    request_delay: int
-    ):
+async def test_prompt_normalizer_send_prompt_batch_async(normalizer_piece: NormalizerRequestPiece, request_delay: int):
     prompt_target = MockPromptTarget()
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
@@ -255,7 +252,9 @@ async def test_prompt_normalizer_send_prompt_batch_async(
     normalizer = PromptNormalizer(memory=MagicMock())
 
     with patch("asyncio.sleep") as mock_sleep:
-        results = await normalizer.send_prompt_batch_to_target_async(requests=request, target=prompt_target, request_delay=request_delay)
+        results = await normalizer.send_prompt_batch_to_target_async(
+            requests=request, target=prompt_target, request_delay=request_delay
+        )
 
         assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
         assert len(results) == len(request)
