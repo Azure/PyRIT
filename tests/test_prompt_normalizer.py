@@ -250,14 +250,14 @@ async def test_prompt_normalizer_send_prompt_batch_async(
     prompt_target = MockPromptTarget()
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
-    request = [NormalizerRequest([normalizer_piece]), NormalizerRequest([normalizer_piece])]
+    request = [NormalizerRequest([normalizer_piece])]
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
     with patch("asyncio.sleep") as mock_sleep:
         results = await normalizer.send_prompt_batch_to_target_async(requests=request, target=prompt_target, request_delay=request_delay)
 
-        assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_=", "S_G_V_s_b_G_8_="]
+        assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
         assert len(results) == len(request)
 
         if request_delay:

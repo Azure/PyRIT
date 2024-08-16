@@ -144,7 +144,7 @@ class PromptNormalizer(abc.ABC):
                         normalizer_request=prompt,
                         target=target,
                         labels=labels,
-                        orchestrator_identifier=orchestrator_identifier
+                        orchestrator_identifier=orchestrator_identifier,
                     )
                 )
 
