@@ -32,6 +32,7 @@ class PromptNormalizer(abc.ABC):
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
+        request_delay: Optional[int] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -47,6 +48,8 @@ class PromptNormalizer(abc.ABC):
         Returns:
             PromptRequestResponse: The response received from the target.
         """
+        if request_delay:
+            await asyncio.sleep(request_delay)
 
         request = await self._build_prompt_request_response(
             request=normalizer_request,
@@ -86,24 +89,6 @@ class PromptNormalizer(abc.ABC):
         self._memory.add_request_response_to_memory(request=response)
 
         return response
-    
-    async def delayed_send(
-        self,
-        *,
-        request_delay: int,
-        normalizer_request: NormalizerRequest,
-        target: PromptTarget,
-        labels: Optional[dict[str, str]] = None,
-        orchestrator_identifier: Optional[dict[str, str]] = None):
-
-        if request_delay:
-            await asyncio.sleep(request_delay)
-        await self.send_prompt_async(
-            normalizer_request=normalizer_request,
-            target=target,
-            labels=labels,
-            orchestrator_identifier=orchestrator_identifier,
-        )
 
     async def send_prompt_batch_to_target_async(
         self,
@@ -139,7 +124,7 @@ class PromptNormalizer(abc.ABC):
             tasks = []
             for prompt in prompts_batch:
                 tasks.append(
-                    self.delayed_send(
+                    self.send_prompt_async(
                         request_delay=request_delay,
                         normalizer_request=prompt,
                         target=target,
