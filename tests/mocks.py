@@ -1,6 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+# flake8: noqa
+
+import tests.set_test_constants  # noqa: F401  # pylint: disable=unused-import
+
 import tempfile
 
 from contextlib import AbstractAsyncContextManager

@@ -1,6 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+# flake8: noqa
+
+import tests.set_test_constants  # noqa: F401  # pylint: disable=unused-import
+
 from unittest.mock import patch, MagicMock, AsyncMock
 import uuid
 import os
@@ -13,7 +17,6 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import DALLETarget
 from tests.mocks import get_sample_conversations
-from pyrit.common import constants
 
 
 @pytest.fixture
@@ -78,7 +81,6 @@ async def test_send_prompt_async_empty_response(
     # make b64_json value empty to test retries when empty response was returned
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": ""}]}'
     setattr(dalle_target._image_target._async_client.images, "generate", AsyncMock(return_value=mock_return))
-    constants.RETRY_MAX_NUM_ATTEMPTS = 5
 
     with pytest.raises(EmptyResponseException) as e:
         await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
@@ -101,7 +103,7 @@ async def test_send_prompt_async_rate_limit_exception(
 
     with pytest.raises(RateLimitError):
         await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
-        assert mock_image_resp_async.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
+        assert mock_image_resp_async.call_count == os.getenv("MAX_RETRY_ATTEMPTS")
 
 
 @pytest.mark.asyncio

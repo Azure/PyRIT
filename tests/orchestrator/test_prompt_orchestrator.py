@@ -16,7 +16,7 @@ from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, Normal
 from tests.mocks import MockPromptTarget
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def mock_target() -> MockPromptTarget:
     fd, path = tempfile.mkstemp(suffix=".json.memory")
     file_memory = DuckDBMemory(db_path=":memory:")

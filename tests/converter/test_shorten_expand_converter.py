@@ -1,11 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+# flake8: noqa
+
+import tests.set_test_constants  # noqa: F401  # pylint: disable=unused-import
+
+import os
 import pytest
 from tests.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, patch
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
@@ -55,7 +59,7 @@ async def test_shorten_converter_send_prompt_async_bad_json_exception_retries(co
 
         with pytest.raises(InvalidJsonException):
             await prompt_shorten.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
+            assert mock_create.call_count == os.getenv("MAX_RETRY_ATTEMPTS")
 
 
 def test_prompt_expand_init_templates_not_null():
@@ -98,4 +102,4 @@ async def test_expand_converter_send_prompt_async_bad_json_exception_retries(con
 
         with pytest.raises(InvalidJsonException):
             await prompt_expand.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
+            assert mock_create.call_count == os.getenv("MAX_RETRY_ATTEMPTS")
