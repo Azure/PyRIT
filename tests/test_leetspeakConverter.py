@@ -5,6 +5,7 @@ import asyncio
 import pytest
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 
+
 # Test for deterministic mode
 @pytest.mark.parametrize(
     "input_text,expected_output",
@@ -57,11 +58,14 @@ def test_leetspeak_non_deterministic(input_text):
         "C": ["(", "[", "<", "{"],
         "G": ["9"],
         "I": ["1", "!"],
-        "Z": ["2"]
+        "Z": ["2"],
     }
-    
+
     # Check that each character in the output is a valid substitution
-    assert all(char in valid_chars.get(original_char, [original_char]) for original_char, char in zip(input_text, result.output_text))
+    assert all(
+        char in valid_chars.get(original_char, [original_char])
+        for original_char, char in zip(input_text, result.output_text)
+    )
 
 
 # Test for custom substitutions
