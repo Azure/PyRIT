@@ -13,11 +13,14 @@ class LeetspeakConverter(PromptConverter):
     def __init__(self, deterministic: bool = False, custom_substitutions: dict = None) -> None:
         """
         Initialize the converter with optional deterministic mode and custom substitutions.
-        
-        :param deterministic: If True, use the first substitution for each character.
-        :param custom_substitutions: A dictionary of custom substitutions to override the defaults.
+
+        Args:
+        deterministic (bool): If True, use the first substitution for each character.
+                              If False, randomly choose a substitution for each character.
+        custom_substitutions (dict, optional): A dictionary of custom substitutions to override
+                                               the defaults.
         """
-        default_substitutions  = {
+        default_substitutions = {
             "a": ["4", "@", "/\\", "@", "^", "/-\\"],
             "b": ["8", "6", "13", "|3", "/3", "!3"],
             "c": ["(", "[", "<", "{"],
@@ -38,25 +41,30 @@ class LeetspeakConverter(PromptConverter):
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Convert the given prompt to leetspeak.
-        
-        :param prompt: The text to convert.
-        :param input_type: The type of input data.
-        :return: A ConverterResult containing the leetspeak version of the prompt.
+
+        Args:
+            prompt (str): The text to convert.
+            input_type (PromptDataType): The type of input data.
+
+        Returns:
+            ConverterResult: A ConverterResult containing the leetspeak version of the prompt.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
         converted_prompt = []
         for char in prompt:
-            if self.deterministic:
-                # Use the first substitution for deterministic mode
-                converted_prompt.append(self.leet_substitutions.get(char.lower(), [char])[0])
+            lower_char = char.lower()
+            if lower_char in self.leet_substitutions:
+                if self.deterministic:
+                    # Use the first substitution for deterministic mode
+                    converted_prompt.append(self.leet_substitutions[lower_char][0])
+                else:
+                    # Randomly select a substitution for each character
+                    converted_prompt.append(random.choice(self.leet_substitutions[lower_char]))
             else:
-                # Randomly select a substitution for each character
-                converted_prompt.append(random.choice(self.leet_substitutions.get(char.lower(), char)))
-        else:
-            converted_prompt.append(char)
-
+                # If character not in substitutions, keep it as is
+                converted_prompt.append(char)
 
         return ConverterResult(output_text="".join(converted_prompt), output_type="text")
 
