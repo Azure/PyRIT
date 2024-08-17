@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
@@ -8,7 +9,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import yaml
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
@@ -240,7 +240,7 @@ async def test_self_ask_scorer_bad_json_exception_retries():
 
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async(text="this has no bullying", task="task")
-        assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
+        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -275,4 +275,4 @@ async def test_self_ask_scale_scorer_json_missing_key_exception_retries():
 
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async(text="this has no bullying", task="task")
-        assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
+        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))

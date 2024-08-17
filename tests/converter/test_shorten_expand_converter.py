@@ -1,10 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# flake8: noqa
-
-import tests.set_test_constants  # noqa: F401  # pylint: disable=unused-import
-
 import os
 import pytest
 from tests.mocks import MockPromptTarget
@@ -102,4 +98,5 @@ async def test_expand_converter_send_prompt_async_bad_json_exception_retries(con
 
         with pytest.raises(InvalidJsonException):
             await prompt_expand.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == os.getenv("MAX_RETRY_ATTEMPTS")
+            assert int(os.getenv("MAX_RETRY_ATTEMPTS")) == 2
+            assert mock_create.call_count == int(os.getenv("MAX_RETRY_ATTEMPTS"))

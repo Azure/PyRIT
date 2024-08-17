@@ -1,10 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# flake8: noqa
-
-import tests.set_test_constants  # noqa: F401  # pylint: disable=unused-import
-
 from unittest.mock import patch, MagicMock, AsyncMock
 import uuid
 import os
