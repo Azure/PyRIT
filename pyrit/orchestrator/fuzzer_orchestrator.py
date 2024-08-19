@@ -360,7 +360,7 @@ class FuzzerOrchestrator(Orchestrator):
         last_chosen_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
             reward = success_number / (len(self._prompts)
-                                 * 1) # len(prompt_nodes))
+                                 * 1) # len(prompt_nodes)) the output from the template converter will always be a single template. 
             self._rewards[prompt_node.index] += reward * \
                 max(self._minimum_reward, (1 - self._reward_penalty * last_chosen_node._level))
             
