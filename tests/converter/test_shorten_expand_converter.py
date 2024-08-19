@@ -55,7 +55,7 @@ async def test_shorten_converter_send_prompt_async_bad_json_exception_retries(co
 
         with pytest.raises(InvalidJsonException):
             await prompt_shorten.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == os.getenv("MAX_RETRY_ATTEMPTS")
+            assert mock_create.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 def test_prompt_expand_init_templates_not_null():
@@ -98,5 +98,5 @@ async def test_expand_converter_send_prompt_async_bad_json_exception_retries(con
 
         with pytest.raises(InvalidJsonException):
             await prompt_expand.convert_async(prompt="testing", input_type="text")
-            assert int(os.getenv("MAX_RETRY_ATTEMPTS")) == 2
-            assert mock_create.call_count == int(os.getenv("MAX_RETRY_ATTEMPTS"))
+            assert int(os.getenv("RETRY_MAX_NUM_ATTEMPTS")) == 2
+            assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))

@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from tests.mocks import get_sample_conversations
+
 import os
 import pytest
 
@@ -15,8 +17,6 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import OpenAIChatInterface
 from pyrit.prompt_target import AzureOpenAITextChatTarget, OpenAIChatTarget
-from tests.mocks import get_sample_conversations
-
 
 @pytest.fixture
 def sample_conversations() -> list[PromptRequestPiece]:
@@ -228,7 +228,7 @@ async def test_send_prompt_async_empty_response_retries(
         azure_chat_target._memory = MagicMock(MemoryInterface)
         with pytest.raises(EmptyResponseException):
             await azure_chat_target.send_prompt_async(prompt_request=prompt_req_resp)
-        assert mock_create.call_count == os.getenv("MAX_RETRY_ATTEMPTS", 2)
+        assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -245,7 +245,7 @@ async def test_send_prompt_async_rate_limit_exception_retries(azure_chat_target:
 
     with pytest.raises(RateLimitError):
         await azure_chat_target.send_prompt_async(prompt_request=prompt_request)
-        assert mock_complete_chat_async.call_count == os.getenv("MAX_RETRY_ATTEMPTS", 2)
+        assert mock_complete_chat_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio

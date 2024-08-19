@@ -99,7 +99,7 @@ async def test_send_prompt_async_rate_limit_exception(
 
     with pytest.raises(RateLimitError):
         await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
-        assert mock_image_resp_async.call_count == os.getenv("MAX_RETRY_ATTEMPTS")
+        assert mock_image_resp_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 @pytest.mark.asyncio

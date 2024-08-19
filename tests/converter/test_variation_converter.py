@@ -56,4 +56,4 @@ async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
         with pytest.raises(InvalidJsonException):
             await prompt_variation.convert_async(prompt="testing", input_type="text")
 
-        assert mock_create.call_count == os.getenv("MAX_RETRY_ATTEMPTS", 2)
+        assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
