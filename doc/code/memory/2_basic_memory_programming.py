@@ -10,7 +10,7 @@
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
-#     name: pyrit-311
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -47,7 +47,7 @@ memory.add_request_response_to_memory(request=PromptRequestResponse([message_lis
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
 
 
-entries = memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+entries = memory.get_conversation(conversation_id=conversation_id)
 
 for entry in entries:
     print(entry)

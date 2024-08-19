@@ -1,6 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+# flake8: noqa
+
+import tests.set_test_constants  # noqa: F401  # pylint: disable=unused-import
+
 from pathlib import Path
 import pytest
 import tempfile
@@ -315,7 +319,6 @@ async def test_invalid_json_exceptions(orchestrator: CrescendoOrchestrator, red_
             PromptRequestPiece(converted_value=red_team_response, role="assistant", original_value=red_team_response)
         ]
     )
-
     with (
         patch.object(
             orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
