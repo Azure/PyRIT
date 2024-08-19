@@ -8,6 +8,9 @@ from pyrit.models import PromptDataset, PromptTemplate
 
 
 class DatabaseConnector:
+    def __init__(self, memory: MemoryInterface):
+        self.memory = memory
+
     def fetch_prompt_templates(
         self, *,
         id: Optional[UUID] = None,
