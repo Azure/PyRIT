@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import uuid
 
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 
 from tests.mocks import get_sample_conversations

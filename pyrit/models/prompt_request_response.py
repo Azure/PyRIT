@@ -4,7 +4,7 @@
 from typing import MutableSequence, Optional, Sequence
 
 from pyrit.models import PromptRequestPiece
-from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.models import PromptDataType, PromptResponseError
 
 
 class PromptRequestResponse:

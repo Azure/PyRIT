@@ -7,7 +7,7 @@ import uuid
 import pytest
 
 from pyrit.memory import DuckDBMemory
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.score import Score
