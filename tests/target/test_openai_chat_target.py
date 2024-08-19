@@ -18,6 +18,7 @@ from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import OpenAIChatInterface
 from pyrit.prompt_target import AzureOpenAITextChatTarget, OpenAIChatTarget
 
+
 @pytest.fixture
 def sample_conversations() -> list[PromptRequestPiece]:
     return get_sample_conversations()
