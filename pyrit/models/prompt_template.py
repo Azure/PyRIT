@@ -1,7 +1,11 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+import re
 import yaml
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Union
+from typing import Dict, List, Union
 from jinja2 import Template
 
 from pyrit.models import YamlLoadable
@@ -57,11 +61,12 @@ class AttackStrategy:
     def __str__(self):
         """Returns a string representation of the attack strategy."""
         return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
-    
+
+
 @dataclass
 class ManyShotTemplate(PromptTemplate):
     @classmethod
-    def from_yaml_file(cls, file_path: Path) -> ManyShotTemplate:
+    def from_yaml_file(cls, file_path: Path):
         """
         Creates an instance of ManyShotTemplate from a YAML file.
 

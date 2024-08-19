@@ -1,14 +1,13 @@
-from abc import abstractmethod
-import abc
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+from __future__ import annotations
+
+from abc import abstractmethod, ABC
 from hashlib import sha256
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict
-from __future__ import annotations
 
-import abc
-from abc import abstractmethod
-
-from pyrit.models import EmbeddingResponse
 
 class EmbeddingUsageInformation(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -60,7 +59,7 @@ class EmbeddingResponse(BaseModel):
         return self.model_dump_json()
 
 
-class EmbeddingSupport(abc.ABC):
+class EmbeddingSupport(ABC):
     @abstractmethod
     def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
         """Generate text embedding
