@@ -4,6 +4,7 @@
 from abc import ABC
 import json
 import logging
+import os
 from openai import RateLimitError
 from tenacity import after_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 from typing import Callable
@@ -93,12 +94,17 @@ def pyrit_target_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
+
+    retry_max_num_attempts = int(os.environ.get("RETRY_MAX_NUM_ATTEMPTS", RETRY_MAX_NUM_ATTEMPTS))
+    retry_wait_min_seconds = int(os.environ.get("RETRY_WAIT_MIN_SECONDS", RETRY_WAIT_MIN_SECONDS))
+    retry_wait_max_seconds = int(os.environ.get("RETRY_WAIT_MAX_SECONDS", RETRY_WAIT_MAX_SECONDS))
+
     return retry(
         reraise=True,
         retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
-        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+        wait=wait_random_exponential(min=retry_wait_min_seconds, max=retry_wait_max_seconds),
         after=after_log(logger, logging.INFO),
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+        stop=stop_after_attempt(retry_max_num_attempts),
     )(func)
 
 
@@ -116,12 +122,16 @@ def pyrit_json_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
+    retry_max_num_attempts = int(os.environ.get("RETRY_MAX_NUM_ATTEMPTS", RETRY_MAX_NUM_ATTEMPTS))
+    retry_wait_min_seconds = int(os.environ.get("RETRY_WAIT_MIN_SECONDS", RETRY_WAIT_MIN_SECONDS))
+    retry_wait_max_seconds = int(os.environ.get("RETRY_WAIT_MAX_SECONDS", RETRY_WAIT_MAX_SECONDS))
+
     return retry(
         reraise=True,
         retry=retry_if_exception_type(InvalidJsonException),
-        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
+        wait=wait_random_exponential(min=retry_wait_min_seconds, max=retry_wait_max_seconds),
         after=after_log(logger, logging.INFO),
-        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+        stop=stop_after_attempt(retry_max_num_attempts),
     )(func)
 
 

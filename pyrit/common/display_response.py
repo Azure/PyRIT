@@ -4,7 +4,7 @@
 import logging
 from PIL import Image
 from pyrit.common.notebook_utils import is_in_ipython_session
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 
 
 logger = logging.getLogger(__name__)

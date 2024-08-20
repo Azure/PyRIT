@@ -15,8 +15,8 @@ from openai import BadRequestError, RateLimitError
 from pyrit.exceptions.exception_classes import EmptyResponseException
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import AzureOpenAIGPTVChatTarget
 from pyrit.models import ChatMessageListContent
 from pyrit.common import constants

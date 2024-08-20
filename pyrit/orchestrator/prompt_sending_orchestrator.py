@@ -9,8 +9,8 @@ from typing import Optional
 
 from pyrit.common.display_response import display_response
 from pyrit.memory import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptDataType
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptDataType
+from pyrit.models import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
