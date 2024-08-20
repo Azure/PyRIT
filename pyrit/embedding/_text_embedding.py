@@ -7,8 +7,7 @@ from typing import Union
 import tenacity
 from openai import AzureOpenAI, OpenAI
 
-from pyrit.interfaces import EmbeddingSupport
-from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation
+from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingUsageInformation, EmbeddingSupport
 
 
 class _TextEmbedding(EmbeddingSupport, abc.ABC):

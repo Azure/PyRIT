@@ -11,8 +11,8 @@ from openai.types.chat.chat_completion import Choice
 
 from pyrit.exceptions.exception_classes import EmptyResponseException
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import OpenAIChatInterface
 from pyrit.prompt_target import AzureOpenAITextChatTarget, OpenAIChatTarget
 from pyrit.common import constants

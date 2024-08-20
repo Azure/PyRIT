@@ -98,7 +98,7 @@ import os
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models.models import AttackStrategy
+from pyrit.models import AttackStrategy
 from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values

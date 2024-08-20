@@ -55,7 +55,7 @@ from pathlib import Path
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import AzureOpenAITextChatTarget
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 
 default_values.load_default_env()
 

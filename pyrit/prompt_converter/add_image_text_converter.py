@@ -10,8 +10,8 @@ from PIL import Image, ImageDraw, ImageFont
 import textwrap
 from io import BytesIO
 
-from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.models import data_serializer_factory
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 logger = logging.getLogger(__name__)

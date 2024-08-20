@@ -9,7 +9,7 @@ import pytest
 from openai import BadRequestError, RateLimitError
 
 from pyrit.exceptions.exception_classes import EmptyResponseException
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import DALLETarget
 from tests.mocks import get_sample_conversations
