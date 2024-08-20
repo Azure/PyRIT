@@ -2,8 +2,10 @@
 # Licensed under the MIT license.
 
 import os
+from typing import Optional
 from pyrit.embedding import AzureTextEmbedding
-from pyrit.models import EmbeddingData, PromptRequestPiece, EmbeddingSupport
+from pyrit.models import PromptRequestPiece, EmbeddingSupport
+from pyrit.memory.memory_models import EmbeddingData
 
 
 class MemoryEmbedding:
@@ -14,7 +16,7 @@ class MemoryEmbedding:
         embedding_model (EmbeddingSupport): An instance of a class that supports embedding generation.
     """
 
-    def __init__(self, *, embedding_model: EmbeddingSupport):
+    def __init__(self, *, embedding_model: Optional[EmbeddingSupport]):
         if embedding_model is None:
             raise ValueError("embedding_model must be set.")
         self.embedding_model = embedding_model
@@ -42,7 +44,7 @@ class MemoryEmbedding:
         raise ValueError("Only text data is supported for embedding.")
 
 
-def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -> MemoryEmbedding | None:
+def default_memory_embedding_factory(embedding_model: Optional[EmbeddingSupport] = None) -> MemoryEmbedding | None:
     if embedding_model:
         return MemoryEmbedding(embedding_model=embedding_model)
 
