@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# import tests.set_test_constants
 import tempfile
 
 from contextlib import AbstractAsyncContextManager
