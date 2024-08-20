@@ -30,7 +30,6 @@ from pyrit.models.prompt_response import PromptResponse
 from pyrit.models.prompt_template import PromptTemplate, AttackStrategy, ManyShotTemplate
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType
-from pyrit.models.yaml_loadable import YamlLoadable
 
 
 __all__ = [
@@ -67,5 +66,4 @@ __all__ = [
     "Score",
     "ScoreType",
     "TextDataTypeSerializer",
-    "YamlLoadable",
 ]

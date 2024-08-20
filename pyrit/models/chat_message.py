@@ -4,7 +4,7 @@
 from typing import Optional, Any
 from pydantic import BaseModel, ConfigDict
 
-from pyrit.models import ChatMessageRole
+from pyrit.models.literals import ChatMessageRole
 
 
 ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]

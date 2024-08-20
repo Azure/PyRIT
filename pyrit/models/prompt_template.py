@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Union
 from jinja2 import Template
 
-from pyrit.models import YamlLoadable
+from pyrit.common.yaml_loadable import YamlLoadable
 
 
 @dataclass

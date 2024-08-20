@@ -3,8 +3,7 @@
 
 import os
 from pyrit.embedding import AzureTextEmbedding
-from pyrit.interfaces import EmbeddingSupport
-from pyrit.memory.memory_models import EmbeddingData, PromptRequestPiece
+from pyrit.models import EmbeddingData, PromptRequestPiece, EmbeddingSupport
 
 
 class MemoryEmbedding:

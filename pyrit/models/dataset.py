@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass, field
 
-from pyrit.models import YamlLoadable
+from pyrit.common.yaml_loadable import YamlLoadable
 
 
 @dataclass

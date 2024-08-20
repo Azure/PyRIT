@@ -8,8 +8,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Literal, get_args
 from uuid import uuid4
 
-from pyrit.models import ChatMessage, data_serializer_factory, ChatMessageRole, PromptDataType, PromptResponseError
-
+from pyrit.models.chat_message import ChatMessage, ChatMessageRole
+from pyrit.models.data_type_serializer import data_serializer_factory
+from pyrit.models.literals import PromptDataType, PromptResponseError
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
@@ -145,7 +146,7 @@ class PromptRequestPiece(abc.ABC):
         return ChatMessage(role=self.role, content=self.converted_value)
 
     def to_prompt_request_response(self) -> "PromptRequestResponse":  # type: ignore # noqa F821
-        from pyrit.models import PromptRequestResponse
+        from pyrit.models.prompt_request_response import PromptRequestResponse
 
         return PromptRequestResponse([self])  # noqa F821
 
