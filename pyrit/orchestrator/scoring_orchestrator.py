@@ -109,13 +109,15 @@ class ScoringOrchestrator(Orchestrator):
         return [response for response in request_responses if response.role == "assistant"]
 
     async def _score_with_delay(
-        self, *, request_delay: Optional[float] = None, scorer: Scorer, prompt: PromptRequestPiece
-    ):
+        self, *, request_delay: Optional[float], scorer: Scorer, prompt: PromptRequestPiece
+    ) -> list[Score]:
 
-        await scorer.score_async(request_response=prompt)
+        scores = await scorer.score_async(request_response=prompt)
 
         if request_delay:
             await asyncio.sleep(request_delay)
+
+        return scores
 
     async def _score_prompts_batch_async(self, prompts: Sequence[PromptRequestPiece], scorer: Scorer) -> list[Score]:
         results = []

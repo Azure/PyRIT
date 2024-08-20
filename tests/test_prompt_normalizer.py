@@ -253,7 +253,7 @@ async def test_prompt_normalizer_send_prompt_batch_async_request_delay(
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
 
     requests = []
-    for x in range(num_requests):
+    for _ in range(num_requests):
         requests.append(NormalizerRequest([normalizer_piece]))
 
     normalizer = PromptNormalizer(memory=MagicMock())
