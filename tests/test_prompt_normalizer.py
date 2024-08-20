@@ -3,6 +3,7 @@
 
 import os
 import tempfile
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
@@ -243,25 +244,52 @@ async def test_send_prompt_async_image_converter():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("request_delay", [None, 1])
-async def test_prompt_normalizer_send_prompt_batch_async(normalizer_piece: NormalizerRequestPiece, request_delay: int):
+@pytest.mark.parametrize("num_requests", [1, 10])
+async def test_prompt_normalizer_send_prompt_batch_async_request_delay(
+    normalizer_piece: NormalizerRequestPiece, request_delay: float, num_requests: int
+):
     prompt_target = MockPromptTarget()
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
-    request = [NormalizerRequest([normalizer_piece])]
+
+    requests = []
+    for x in range(num_requests):
+        requests.append(NormalizerRequest([normalizer_piece]))
 
     normalizer = PromptNormalizer(memory=MagicMock())
 
     with patch("asyncio.sleep") as mock_sleep:
         results = await normalizer.send_prompt_batch_to_target_async(
-            requests=request, target=prompt_target, request_delay=request_delay
+            requests=requests, target=prompt_target, request_delay=request_delay
         )
 
-        assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
-        assert len(results) == len(request)
+        assert "S_G_V_s_b_G_8_=" in prompt_target.prompt_sent
+        assert len(results) == len(requests)
 
         if request_delay:
-            assert mock_sleep.call_count == len(request)
+            assert mock_sleep.call_count == len(requests)
             mock_sleep.assert_called_with(request_delay)
+
+
+@pytest.mark.asyncio
+async def test_prompt_normalizer_send_prompt_async_request_delay(
+    normalizer_piece: NormalizerRequestPiece, num_requests: int
+):
+    prompt_target = MockPromptTarget()
+    request = NormalizerRequest([normalizer_piece])
+    normalizer = PromptNormalizer(memory=MagicMock())
+    request_delay = 1
+
+    start = time.time()
+    await normalizer.send_prompt_async(
+        normalizer_request=request,
+        target=prompt_target,
+        request_delay=request_delay,
+    )
+    end = time.time()
+
+    elapsed_time = end - start
+    assert elapsed_time > request_delay
 
 
 @pytest.mark.asyncio

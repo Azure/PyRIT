@@ -32,7 +32,7 @@ class PromptNormalizer(abc.ABC):
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
-        request_delay: Optional[int] = None,
+        request_delay: Optional[float] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -44,12 +44,12 @@ class PromptNormalizer(abc.ABC):
             sequence (int, optional): The sequence number. Defaults to -1.
             labels (dict[str, str], optional): Additional labels for the request. Defaults to None.
             orchestrator_identifier (dict[str, str], optional): The orchestrator identifier. Defaults to None.
+            request_delay (float, optional): If provided, the request sent to the target will be delayed by
+                the specified number of seconds. Defaults to None.
 
         Returns:
             PromptRequestResponse: The response received from the target.
         """
-        if request_delay:
-            await asyncio.sleep(request_delay)
 
         request = await self._build_prompt_request_response(
             request=normalizer_request,
@@ -88,13 +88,16 @@ class PromptNormalizer(abc.ABC):
 
         self._memory.add_request_response_to_memory(request=response)
 
+        if request_delay:
+            await asyncio.sleep(request_delay)
+
         return response
 
     async def send_prompt_batch_to_target_async(
         self,
         *,
         requests: list[NormalizerRequest],
-        request_delay: Optional[int] = None,
+        request_delay: Optional[float] = None,
         target: PromptTarget,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
@@ -106,13 +109,16 @@ class PromptNormalizer(abc.ABC):
         Args:
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects representing the prompts to
                 be sent.
-            request_delay (int): If provided, the requests sent to the target will be delayed by the specified
-                number of seconds.
+            request_delay (float, optional): If provided, the requests sent to the target will be delayed by
+                the specified number of seconds. Batch size will also be set to 1 to ensure delay is respected.
+                Defaults to None.
             target (PromptTarget): The target to which the prompts should be sent.
             labels (dict[str, str], optional): Additional labels to be included with the prompts. Defaults to None
             orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
                 the prompts. Defaults to None.
-            batch_size (int, optional): The size of each batch of prompts. Defaults to 10.
+            batch_size (int, optional): The size of each batch of prompts. Defaults to 10 (if request_delay is None).
+                Otherwise, if request_delay is provided, batch_size is overwritten to be 1 to ensure the delay
+                is respected.
 
         Returns:
             list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses
@@ -121,16 +127,19 @@ class PromptNormalizer(abc.ABC):
 
         results = []
 
+        if request_delay:
+            batch_size = 1
+
         for prompts_batch in self._chunked_prompts(requests, batch_size):
             tasks = []
             for prompt in prompts_batch:
                 tasks.append(
                     self.send_prompt_async(
-                        request_delay=request_delay,
                         normalizer_request=prompt,
                         target=target,
                         labels=labels,
                         orchestrator_identifier=orchestrator_identifier,
+                        request_delay=request_delay,
                     )
                 )
 

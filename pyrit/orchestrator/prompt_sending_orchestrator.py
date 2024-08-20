@@ -38,6 +38,7 @@ class PromptSendingOrchestrator(Orchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
+        request_delay: Optional[float] = None,
     ) -> None:
         """
         Args:
@@ -52,6 +53,8 @@ class PromptSendingOrchestrator(Orchestrator):
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+            request_delay (float): If provided, the requests sent to the target will be delayed by the specified
+                number of seconds. Batch size will also be set to 1 to ensure delay is respected. Defaults to None.
         """
         super().__init__(
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
@@ -63,13 +66,16 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
 
+        if request_delay:
+            batch_size = 1
+
+        self._request_delay = request_delay
         self._batch_size = batch_size
 
     async def send_prompts_async(
         self,
         *,
         prompt_list: list[str],
-        request_delay: Optional[int] = None,
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
         metadata: Optional[str] = None,
@@ -79,8 +85,6 @@ class PromptSendingOrchestrator(Orchestrator):
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
-            request_delay (int): If provided, the requests sent to the target will be delayed by the specified
-                number of seconds.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
                 prompts.
@@ -107,7 +111,6 @@ class PromptSendingOrchestrator(Orchestrator):
 
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
-            request_delay=request_delay,
             memory_labels=memory_labels,
         )
 
@@ -145,13 +148,13 @@ class PromptSendingOrchestrator(Orchestrator):
             conversation_id=conversation_id,
             labels=self._combine_with_global_memory_labels(memory_labels),
             orchestrator_identifier=self.get_identifier(),
+            request_delay=self._request_delay,
         )
 
     async def send_normalizer_requests_async(
         self,
         *,
         prompt_request_list: list[NormalizerRequest],
-        request_delay: Optional[int] = None,
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
@@ -164,7 +167,7 @@ class PromptSendingOrchestrator(Orchestrator):
         # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
-            request_delay=request_delay,
+            request_delay=self._request_delay,
             target=self._prompt_target,
             labels=self._combine_with_global_memory_labels(memory_labels),
             orchestrator_identifier=self.get_identifier(),
