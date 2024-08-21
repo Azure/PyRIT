@@ -184,7 +184,8 @@ class FuzzerOrchestrator(Orchestrator):
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
 
-        self._prompt_nodes: 'list[PromptNode]' = [ #convert each template into a node and maintain the node information parent,child etc
+        #convert each template into a node and maintain the node information parent,child etc
+        self._prompt_nodes: 'list[PromptNode]' = [ 
             PromptNode(prompt) for prompt in prompt_templates 
         ]
 
@@ -238,7 +239,8 @@ class FuzzerOrchestrator(Orchestrator):
                 
             target_template = PromptTemplate(target_seed_obj.output_text,parameters = ["prompt"])
 
-            target_template_node = PromptNode(template = target_seed_obj, parent= current_seed) # convert the target_template into a prompt_node to maintain the tree information
+            # convert the target_template into a prompt_node to maintain the tree information
+            target_template_node = PromptNode(template = target_seed_obj, parent= current_seed) 
 
             #3. Append prompt converted template with prompt. Apply each of the prompts (questions) to the template. 
             
@@ -297,11 +299,12 @@ class FuzzerOrchestrator(Orchestrator):
 
             new_nodes = []
             if self._num_jailbreak > 0: #successful jailbreak
-                self._prompt_nodes.append(target_template_node) # append the template to the initial template list.
+                # append the template to the initial template list.
+                self._prompt_nodes.append(target_template_node) 
                 new_nodes.append(target_template_node)
-                
-            
-            self._update(target_template_node) #update the rewards for the target_node
+                 
+            #update the rewards for the target_node
+            self._update(target_template_node) 
 
 
     # async def _get_seed(self, prompt_templates) -> PromptNode:
@@ -314,10 +317,12 @@ class FuzzerOrchestrator(Orchestrator):
     def _select(self) -> PromptNode:
         self._step = 0 # to keep track of the steps or the count
         self._last_choice_index = None
-        self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
+        # keeps track of the path that has been currently selected
+        self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore 
         self._rewards = []
         self._step += 1
-        if len(self._prompt_nodes) > len(self._rewards): # if the length of list of templates greater than rewards list (when new nodes added because of successful jailbreak) assign 0 as initial reward. 
+        # if the length of list of templates greater than rewards list (when new nodes added because of successful jailbreak) assign 0 as initial reward.
+        if len(self._prompt_nodes) > len(self._rewards):  
             self._rewards.extend(
                 [0 for _ in range(len(self._prompt_nodes) - len(self._rewards))])
 
@@ -327,20 +332,25 @@ class FuzzerOrchestrator(Orchestrator):
         )
         self._mctc_select_path.append(current)
 
-        while len(current._children) > 0: # while node is not a leaf 
+        # while node is not a leaf
+        while len(current._children) > 0:  
             if np.random.rand() < self._non_leaf_nodeprobability:
                 break
-            current = max(   #compute the bestUCT score
+            #compute the bestUCT score
+            current = max(  
                 current._children,
                 key= self._best_UCT_score()
             )
-            self._mctc_select_path.append(current) # append node to path
+            # append node to path
+            self._mctc_select_path.append(current) 
 
         for prompt_node in self._mctc_select_path:
-            prompt_node._visited_num += 1    # keep track of number of visited nodes
+            # keep track of number of visited nodes
+            prompt_node._visited_num += 1    
 
         self._last_choice_index = current.index
-        return current # returns the best child
+        # returns the best child
+        return current 
 
     def _best_UCT_score(self):
         
@@ -362,8 +372,9 @@ class FuzzerOrchestrator(Orchestrator):
 
         last_chosen_node = self._prompt_nodes[self._last_choice_index]
         for prompt_node in reversed(self._mctc_select_path):
+            #the output from the template converter will always be a single template so the length of prompt_nodes will be 1.
             reward = success_number / (len(self._prompts)
-                                 * 1) # len(prompt_nodes)) the output from the template converter will always be a single template so the length of prompt_nodes will be 1. 
+                                 * 1) # len(prompt_nodes))  
             self._rewards[prompt_node.index] += reward * \
                 max(self._minimum_reward, (1 - self._reward_penalty * last_chosen_node._level))
             
