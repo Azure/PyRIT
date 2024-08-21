@@ -50,7 +50,7 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
 
 # %%
 # pylint: disable=W0611
-
+import time
 from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
@@ -70,9 +70,13 @@ scorer = AzureContentFilterScorer()
 # scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
 
 with ScoringOrchestrator() as scoring_orchestrator:
+    start = time.time()
     scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[id], responses_only=False
     )
+    end = time.time()
+
+    print(f"Elapsed time for operation: {end-start}")
 
     memory = DuckDBMemory()
 
@@ -81,6 +85,37 @@ with ScoringOrchestrator() as scoring_orchestrator:
             0
         ].original_value
         print(f"{score} : {prompt_text}")
+# %% [markdown]
+# ### Adding a Delay Between Prompts
+#
+# It is possible to specify a `request_delay` with the ScoringOrchestrator as well. This will introduce a delay of some seconds
+# in between each request sent by the orchestrator to the target. This is useful in scenarios where Rate Limit Exceptions exist,
+# and a target an only take a limited number of requests per minute.
+#
+# Since requests are typically sent in batches, in order to ensure the delay is respected, `batch_size` must be set to 1.
+# %%
+import time
+from pyrit.memory import DuckDBMemory
+from pyrit.orchestrator import ScoringOrchestrator
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.score import AzureContentFilterScorer
+
+# we need the id from the previous run to score all prompts from the orchestrator
+id = prompt_sending_orchestrator_id
+
+# The scorer is interchangeable with other scorers
+scorer = AzureContentFilterScorer()
+request_delay = 1
+
+with ScoringOrchestrator(batch_size=1, request_delay=request_delay) as scoring_orchestrator:
+    start = time.time()
+    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
+        scorer=scorer, orchestrator_ids=[id], responses_only=False
+    )
+    end = time.time()
+
+    print(f"Elapsed time for operation, with request delay is: {end-start}")
+    assert (end - start) > (request_delay * len(prompts_to_score))
 
 
 # %% [markdown]

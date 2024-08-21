@@ -272,9 +272,7 @@ async def test_prompt_normalizer_send_prompt_batch_async_request_delay(
 
 
 @pytest.mark.asyncio
-async def test_prompt_normalizer_send_prompt_async_request_delay(
-    normalizer_piece: NormalizerRequestPiece, num_requests: int
-):
+async def test_prompt_normalizer_send_prompt_async_request_delay(normalizer_piece: NormalizerRequestPiece):
     prompt_target = MockPromptTarget()
     request = NormalizerRequest([normalizer_piece])
     normalizer = PromptNormalizer(memory=MagicMock())

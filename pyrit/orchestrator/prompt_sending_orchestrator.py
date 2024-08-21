@@ -53,8 +53,9 @@ class PromptSendingOrchestrator(Orchestrator):
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
-            request_delay (float, optional): If provided, the requests sent to the target will be delayed by the specified
-                number of seconds. Batch size will also be set to 1 to ensure delay is respected. Defaults to None.
+            request_delay (float, optional): If provided, the requests sent to the target will be delayed by the
+                specified number of seconds. Batch size will also be set to 1 to ensure delay is respected. Defaults
+                to None.
         """
         super().__init__(
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
