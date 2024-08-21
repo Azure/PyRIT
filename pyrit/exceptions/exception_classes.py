@@ -9,9 +9,11 @@ from openai import RateLimitError
 from tenacity import after_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 from typing import Callable
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 
+RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 5))
+RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 1))
+RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 60))
 
 logger = logging.getLogger(__name__)
 
@@ -94,17 +96,14 @@ def pyrit_target_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-
-    retry_max_num_attempts = int(os.environ.get("RETRY_MAX_NUM_ATTEMPTS", RETRY_MAX_NUM_ATTEMPTS))
-    retry_wait_min_seconds = int(os.environ.get("RETRY_WAIT_MIN_SECONDS", RETRY_WAIT_MIN_SECONDS))
-    retry_wait_max_seconds = int(os.environ.get("RETRY_WAIT_MAX_SECONDS", RETRY_WAIT_MAX_SECONDS))
+    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
 
     return retry(
         reraise=True,
         retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
-        wait=wait_random_exponential(min=retry_wait_min_seconds, max=retry_wait_max_seconds),
+        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=after_log(logger, logging.INFO),
-        stop=stop_after_attempt(retry_max_num_attempts),
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
 
 
@@ -122,16 +121,14 @@ def pyrit_json_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
-    retry_max_num_attempts = int(os.environ.get("RETRY_MAX_NUM_ATTEMPTS", RETRY_MAX_NUM_ATTEMPTS))
-    retry_wait_min_seconds = int(os.environ.get("RETRY_WAIT_MIN_SECONDS", RETRY_WAIT_MIN_SECONDS))
-    retry_wait_max_seconds = int(os.environ.get("RETRY_WAIT_MAX_SECONDS", RETRY_WAIT_MAX_SECONDS))
+    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
 
     return retry(
         reraise=True,
         retry=retry_if_exception_type(InvalidJsonException),
-        wait=wait_random_exponential(min=retry_wait_min_seconds, max=retry_wait_max_seconds),
+        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=after_log(logger, logging.INFO),
-        stop=stop_after_attempt(retry_max_num_attempts),
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
 
 

@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import pytest
 from tests.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, patch
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
@@ -59,7 +59,7 @@ async def test_translation_converter_send_prompt_async_bad_json_exception_retrie
 
         with pytest.raises(InvalidJsonException):
             await prompt_variation.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
+            assert mock_create.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 @pytest.mark.asyncio
@@ -89,7 +89,7 @@ async def test_translation_converter_send_prompt_async_json_bad_format_retries()
 
         with pytest.raises(InvalidJsonException):
             await prompt_variation.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
+            assert mock_create.call_count == os.get_env("RETRY_MAX_NUM_ATTEMPTS")
 
 
 @pytest.mark.asyncio
