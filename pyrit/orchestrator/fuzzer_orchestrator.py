@@ -226,7 +226,7 @@ class FuzzerOrchestrator(Orchestrator):
         else:
             # 1. Select a seed from the list of the templates using the MCTS
             TEMPLATE_PLACEHOLDER = '{{ prompt }}' 
-            current_seed = await self._get_seed(prompt_templates=prompt_templates)
+            current_seed = await self._select(prompt_templates=prompt_templates)
             if TEMPLATE_PLACEHOLDER not in current_seed:
                 raise MissingPromptHolderException(message="Prompt placeholder is empty.")
 
@@ -304,17 +304,18 @@ class FuzzerOrchestrator(Orchestrator):
             self._update(target_template_node) #update the rewards for the target_node
 
 
-    async def _get_seed(self, prompt_templates) -> PromptNode:
+    # async def _get_seed(self, prompt_templates) -> PromptNode:
+        
+            
+
+    #     seed = self._select()
+    #     return seed
+
+    def _select(self) -> PromptNode:
         self._step = 0 # to keep track of the steps or the count
         self._last_choice_index = None
         self._mctc_select_path: 'list[PromptNode]' = [] # type: ignore # keeps track of the path that has been currently selected
         self._rewards = []
-            
-
-        seed = self._select()
-        return seed
-
-    def _select(self) -> PromptNode:
         self._step += 1
         if len(self._prompt_nodes) > len(self._rewards): # if the length of list of templates greater than rewards list (when new nodes added because of successful jailbreak) assign 0 as initial reward. 
             self._rewards.extend(
