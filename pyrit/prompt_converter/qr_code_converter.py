@@ -1,8 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import base64
-from io import BytesIO
-import qrcode
+
+import segno
 from typing import Optional
 
 from pyrit.models import PromptDataType
@@ -13,34 +12,60 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 class QRCodeConverter(PromptConverter):
     """Converts a text string to a QR code image.
     Args:
-        version (int, optional): integer from 1 to 40 that controls the size of the QR Code
-        (the smallest, version 1, is a 21x21 matrix). Set to None and use the fit parameter
-        when making the code to determine size automatically. Defaults to None.
-        fit (bool, optional): automatically determine the size of the QR code. Defaults to True.
-        box_size (int, optional): controls how many pixels each "box" of the QR code is. Defaults to 10.
-        border (optional, int): controls how many boxes thick the border should be. Defaults to 4.
-        back_color (optional, tuple): sets background color of QR code, using RGB values.
-        Defaults to white: (255, 255, 255).
-        fill_color (optional, tuple): sets fill color of QR code, using RGB values. Defaults to black: (0, 0, 0).
-        output_filename (optional, str): filename to store QR code. If not provided a unique UUID will be used.
+        scale (int, optional): scaling factor that determines the width/height in pixels of each
+            black/white square ("module") in the QR code. Defaults to 3.
+        border (optional, int): controls how many modules thick the border should be.
+            Defaults to recommended value of 4.
+        dark_color (optional, tuple): sets color of dark modules, using RGB values.
+            Defaults to black: (0, 0, 0).
+        light_color (optional, tuple): sets color of light modules, using RGB values.
+            Defaults to white: (255, 255, 255).
+        data_dark_color (optional, tuple): sets color of dark data modules (the modules that actually
+            stores the data), using RGB values. Defaults to dark_color.
+        data_light_color (optional, tuple): sets color of light data modules, using RGB values.
+            Defaults to light_color.
+        finder_dark_color (optional, tuple): sets dark module color of finder patterns (squares located in
+            three corners), using RGB values.
+        finder_light_color (optional, tuple): sets light module color of finder patterns, using RGB values.
+        border_color (optional, tuple): sets color of border, using RGB values. Defaults to light_color.
+        output_filename (optional, str): filename to store QR code (must end in .png). If not provided,
+            a unique UUID will be used.
     """
 
     def __init__(
         self,
-        version: Optional[int] = None,
-        fit: Optional[bool] = True,
-        box_size: Optional[int] = 10,
+        scale: Optional[int] = 3,
         border: Optional[int] = 4,
-        back_color: Optional[tuple[int, int, int]] = (255, 255, 255),
-        fill_color: Optional[tuple[int, int, int]] = (0, 0, 0),
+        dark_color: Optional[tuple] = (0, 0, 0),
+        light_color: Optional[tuple] = (255, 255, 255),
+        data_dark_color: Optional[tuple] = None,
+        data_light_color: Optional[tuple] = None,
+        finder_dark_color: Optional[tuple] = None,
+        finder_light_color: Optional[tuple] = None,
+        border_color: Optional[tuple] = None,
         output_filename: Optional[str] = None,
     ):
-        self._version = version
-        self._fit = fit
-        self._box_size = box_size
+        if output_filename and not output_filename.endswith(".png"):
+            raise ValueError("Output filename must end in .png")
+        self._scale = scale
         self._border = border
-        self._back_color = back_color
-        self._fill_color = fill_color
+        self._dark_color = dark_color
+        self._light_color = light_color
+        if not data_dark_color:
+            data_dark_color = dark_color
+        self._data_dark_color = data_dark_color
+        if not data_light_color:
+            data_light_color = light_color
+        self._data_light_color = data_light_color
+        if not finder_dark_color:
+            finder_dark_color = dark_color
+        self._finder_dark_color = finder_dark_color
+        if not finder_light_color:
+            finder_light_color = light_color
+        self._finder_light_color = finder_light_color
+        if not border_color:
+            border_color = light_color
+        self._border_color = border_color
         self._output_filename = output_filename
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
@@ -55,23 +80,31 @@ class QRCodeConverter(PromptConverter):
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
-        if not prompt:
+        if prompt.strip() == "":
             raise ValueError("Please provide valid text value")
-
-        # Instantiate a QRCode object to adjust details
-        qr = qrcode.QRCode(version=self._version, box_size=self._box_size, border=self._border)
-        # Add the data to the QRCode instance
-        qr.add_data(prompt)
-        # Compile data into QR code array
-        qr.make(fit=self._fit)
-        # Convert QR code array to image with specified fill and background colors
-        qr_image = qr.make_image(fill_color=self._fill_color, back_color=self._back_color)
-        image_bytes = BytesIO()
-        qr_image.save(image_bytes, format="png")
-        image_str = base64.b64encode(image_bytes.getvalue())
         img_serializer = data_serializer_factory(data_type="image_path")
-        img_serializer.save_b64_image(data=image_str, output_filename=self._output_filename)
-        return ConverterResult(output_text=img_serializer.value, output_type="image_path")
+        if not self._output_filename:
+            # Generate random filename if not provided
+            img_serializer_file = img_serializer.get_data_filename().resolve()
+        else:
+            img_serializer_file = self._output_filename
+
+        # Create QRCode object
+        qr = segno.make_qr(prompt)
+        # Save QRCode as image with specified parameters
+        qr.save(
+            img_serializer_file,
+            scale=self._scale,
+            border=self._border,
+            dark=self._dark_color,
+            light=self._light_color,
+            data_dark=self._data_dark_color,
+            data_light=self._data_light_color,
+            finder_dark=self._finder_dark_color,
+            finder_light=self._finder_light_color,
+            quiet_zone=self._border_color,
+        )
+        return ConverterResult(output_text=img_serializer_file, output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

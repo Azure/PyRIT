@@ -59,7 +59,7 @@ dependencies = [
     "pyodbc>=5.1.0",
     "pycountry>=24.6.1",
     "python-dotenv>=1.0.1",
-    "qrcode>=7.4.2",
+    "segno>=1.6.1",
     "scikit-learn>=1.4.2",
     "SQLAlchemy==2.0.28",
     "sqlalchemy-stubs==0.4",
