@@ -22,6 +22,7 @@ from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.models import PromptTemplate
 from typing import Callable
 from pyrit.prompt_converter import shorten_converter,expand_converter
+from pyrit.prompt_target import PromptTarget, PromptChatTarget
 
 from pyrit.exceptions import EmptyResponseException, pyrit_retry
 
