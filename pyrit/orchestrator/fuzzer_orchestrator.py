@@ -184,6 +184,9 @@ class FuzzerOrchestrator(Orchestrator):
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
 
+        if self._batch_size == 0:
+            raise ValueError(f"Batch size must be atleast 1.")
+
         #convert each template into a node and maintain the node information parent,child etc
         self._prompt_nodes: 'list[PromptNode]' = [ 
             PromptNode(prompt) for prompt in prompt_templates 
