@@ -5,7 +5,7 @@ import re
 from typing import Optional
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.score import Score
 from pyrit.score.scorer import Scorer
 

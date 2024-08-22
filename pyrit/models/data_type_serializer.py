@@ -11,7 +11,7 @@ from pathlib import Path
 from mimetypes import guess_type
 
 from pyrit.common.path import RESULTS_PATH
-from pyrit.models import PromptDataType
+from pyrit.models.literals import PromptDataType
 
 
 def data_serializer_factory(*, data_type: PromptDataType, value: str = None, extension: str = None):

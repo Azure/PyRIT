@@ -4,13 +4,16 @@
 from abc import ABC
 import json
 import logging
+import os
 from openai import RateLimitError
 from tenacity import after_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 from typing import Callable
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 
+RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 5))
+RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 1))
+RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 60))
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +102,8 @@ def pyrit_target_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
+    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+
     return retry(
         reraise=True,
         retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
@@ -122,6 +127,8 @@ def pyrit_json_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
+    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+
     return retry(
         reraise=True,
         retry=retry_if_exception_type(InvalidJsonException),

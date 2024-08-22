@@ -29,8 +29,6 @@
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
 import os
 from pyrit.score import AzureContentFilterScorer
 from pyrit.common import default_values

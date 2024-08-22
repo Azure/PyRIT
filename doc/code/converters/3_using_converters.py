@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -29,7 +29,7 @@
 # %%
 
 from pyrit.common import default_values
-from pyrit.prompt_target import TextTarget, AzureOpenAIChatTarget
+from pyrit.prompt_target import TextTarget, AzureOpenAIGPT4OChatTarget
 from pyrit.prompt_converter import VariationConverter, StringJoinConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
 
@@ -38,8 +38,8 @@ default_values.load_default_env()
 
 prompts = ["tell me how to cut down a tree"]
 
-# converter target to send prompt to; In this case configured to an Azure OpenAI Chat model
-converter_target = AzureOpenAIChatTarget()
+# converter target to send prompt to; in this case configured to the Azure OpenAI GPT-4o Chat model
+converter_target = AzureOpenAIGPT4OChatTarget()
 prompt_variation_converter = VariationConverter(converter_target=converter_target)
 
 

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -25,13 +25,13 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 default_values.load_default_env()
 
 
-with AzureOpenAIChatTarget() as self_ask_target:
+with AzureOpenAIGPT4OChatTarget() as self_ask_target:
 
     political_misinfo_scorer = SelfAskLikertScorer(
         likert_scale_path=LikertScalePaths.MISINFORMATION_SCALE.value, chat_target=self_ask_target

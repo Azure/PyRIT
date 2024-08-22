@@ -14,7 +14,7 @@ from uuid import uuid4
 from pyrit.common.path import DATASETS_PATH, SCALES_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.memory import MemoryInterface
-from pyrit.models.models import PromptTemplate
+from pyrit.models import PromptTemplate
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest

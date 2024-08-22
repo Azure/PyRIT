@@ -6,7 +6,7 @@ from pyrit.score import Score, Scorer
 from pyrit.common import default_values
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece
-from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
+from pyrit.models import data_serializer_factory, DataTypeSerializer
 from pyrit.memory.memory_interface import MemoryInterface
 
 from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, TextCategory, ImageData

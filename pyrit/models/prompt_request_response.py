@@ -3,7 +3,7 @@
 
 from typing import MutableSequence, Optional, Sequence
 
-from pyrit.models import PromptRequestPiece
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.literals import PromptDataType, PromptResponseError
 
 

@@ -26,9 +26,6 @@
 #
 # Below is an example that converts a list of chat messages to chatml format and back.
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 
