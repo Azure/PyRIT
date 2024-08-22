@@ -16,6 +16,10 @@ class Scorer(abc.ABC):
 
     scorer_type: ScoreType
 
+    # TODO: Consider writing a score_batch_async function calls into the normalizer to get a centralized approach
+    # NOTE: Scorers with target base will check the base, but the ones that don't use targets don't batch by default
+    # NOTE: ASK ROMAN TMO ABOUT MOVING FROM ORCHESTRATOR
+
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """

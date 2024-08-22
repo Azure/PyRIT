@@ -10,6 +10,9 @@ from pyrit.models import PromptRequestResponse, Identifier
 logger = logging.getLogger(__name__)
 
 
+# TODO: Create function to be used as decorator for send_prompt_async
+
+
 class PromptTarget(abc.ABC, Identifier):
     _memory: MemoryInterface
 

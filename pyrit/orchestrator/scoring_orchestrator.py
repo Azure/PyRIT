@@ -9,7 +9,6 @@ from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
@@ -36,10 +35,6 @@ class ScoringOrchestrator(Orchestrator):
                 ensure delay is respected. Defaults to None.
         """
         super().__init__(memory=memory, verbose=verbose)
-
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        if request_delay:
-            batch_size = 1
 
         self._batch_size = batch_size
         self._request_delay = request_delay
