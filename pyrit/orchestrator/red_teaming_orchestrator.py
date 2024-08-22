@@ -159,7 +159,6 @@ class RedTeamingOrchestrator(Orchestrator):
         *,
         prompt: Optional[str] = None,
         feedback: Optional[str] = None,
-        request_delay: Optional[float] = None,
     ) -> PromptRequestPiece:
         """
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
@@ -176,8 +175,6 @@ class RedTeamingOrchestrator(Orchestrator):
                 For text-to-image applications, for example, there is no immediate text output
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
-            request_delay (float, optional): If provided, the requests sent to the target will be
-                delayed by the specified number of seconds. Defaults to None.
         """
         target_messages = self._memory.get_chat_messages_with_conversation_id(
             conversation_id=self._prompt_target_conversation_id
@@ -205,7 +202,6 @@ class RedTeamingOrchestrator(Orchestrator):
                 conversation_id=self._prompt_target_conversation_id,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self.get_identifier(),
-                request_delay=request_delay,
             )
         ).request_pieces[0]
 

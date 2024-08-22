@@ -3,7 +3,7 @@
 
 import asyncio
 import logging
-from typing import Sequence, Optional
+from typing import Sequence
 
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class ScoringOrchestrator(Orchestrator):
     """
-    This orchestrator scores prompts in a parallizable and convenient way.
+    This orchestrator scores prompts in a parallelizable and convenient way.
     """
 
     def __init__(
@@ -24,20 +24,18 @@ class ScoringOrchestrator(Orchestrator):
         memory: MemoryInterface = None,
         batch_size: int = 10,
         verbose: bool = False,
-        request_delay: Optional[float] = None,
     ) -> None:
         """
         Args:
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
-            request_delay (float, optional): If provided, the requests sent to the target will be
-                delayed by the specified number of seconds. Batch size will also be set to 1 to
-                ensure delay is respected. Defaults to None.
         """
+        # TODO: Move scorer parameter into the constructor and away from the other functions?
+        # TODO: Validate for batch size stuff here if request_delay on scorer is non-None?
+
         super().__init__(memory=memory, verbose=verbose)
 
         self._batch_size = batch_size
-        self._request_delay = request_delay
 
     async def score_prompts_by_orchestrator_id_async(
         self,
@@ -103,24 +101,13 @@ class ScoringOrchestrator(Orchestrator):
         """
         return [response for response in request_responses if response.role == "assistant"]
 
-    async def _score_with_delay(
-        self, *, request_delay: Optional[float], scorer: Scorer, prompt: PromptRequestPiece
-    ) -> list[Score]:
-
-        scores = await scorer.score_async(request_response=prompt)
-
-        if request_delay:
-            await asyncio.sleep(request_delay)
-
-        return scores
-
     async def _score_prompts_batch_async(self, prompts: Sequence[PromptRequestPiece], scorer: Scorer) -> list[Score]:
         results = []
 
         for prompts_batch in self._chunked_prompts(prompts, self._batch_size):
             tasks = []
             for prompt in prompts_batch:
-                tasks.append(self._score_with_delay(request_delay=self._request_delay, scorer=scorer, prompt=prompt))
+                tasks.append(scorer.score_async(request_response=prompt))
 
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)

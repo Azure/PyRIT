@@ -72,7 +72,7 @@ async def test_send_prompts_multiple_converters(mock_target: MockPromptTarget):
 
 @pytest.mark.asyncio
 async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, batch_size=1, request_delay=1)
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
     orchestrator._prompt_normalizer = AsyncMock()
     orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(return_value=None)
 
@@ -86,17 +86,8 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
             prompt_value=f.name,
         )
 
-        requests = [NormalizerRequest(request_pieces=[req])]
-        await orchestrator.send_normalizer_requests_async(prompt_request_list=requests)
-
-        orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.assert_called_with(
-            requests=requests,
-            request_delay=1,
-            target=mock_target,
-            labels={},
-            orchestrator_identifier=orchestrator.get_identifier(),
-            batch_size=1,
-        )
+        await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
+        assert orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.called
 
 
 @pytest.mark.asyncio

@@ -38,7 +38,6 @@ class PromptSendingOrchestrator(Orchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
-        request_delay: Optional[float] = None,
     ) -> None:
         """
         Args:
@@ -53,9 +52,6 @@ class PromptSendingOrchestrator(Orchestrator):
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
-            request_delay (float, optional): If provided, the requests sent to the target will be delayed by the
-                specified number of seconds. Batch size will also be set to 1 to ensure delay is respected. Defaults
-                to None.
         """
         super().__init__(
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
@@ -67,8 +63,9 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
 
-        self._request_delay = request_delay
         self._batch_size = batch_size
+
+        # TODO: CHECK TARGET FOR REQUEST DELAY and if non-None and batch size > 1 throw exception?
 
     async def send_prompts_async(
         self,
@@ -146,7 +143,6 @@ class PromptSendingOrchestrator(Orchestrator):
             conversation_id=conversation_id,
             labels=self._combine_with_global_memory_labels(memory_labels),
             orchestrator_identifier=self.get_identifier(),
-            request_delay=self._request_delay,
         )
 
     async def send_normalizer_requests_async(
@@ -165,7 +161,6 @@ class PromptSendingOrchestrator(Orchestrator):
         # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
-            request_delay=self._request_delay,
             target=self._prompt_target,
             labels=self._combine_with_global_memory_labels(memory_labels),
             orchestrator_identifier=self.get_identifier(),
