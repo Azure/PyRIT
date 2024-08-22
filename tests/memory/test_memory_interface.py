@@ -196,6 +196,56 @@ def test_duplicate_conversation_excluding_last_turn(memory: MemoryInterface):
         assert piece.sequence < 2
 
 
+def test_duplicate_conversation_excluding_last_turn_same_orchestrator(memory: MemoryInterface):
+    orchestrator1 = Orchestrator()
+    conversation_id_1 = "11111"
+    pieces = [
+        PromptRequestPiece(
+            role="user",
+            original_value="original prompt text",
+            conversation_id=conversation_id_1,
+            sequence=0,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+        PromptRequestPiece(
+            role="assistant",
+            original_value="original prompt text",
+            conversation_id=conversation_id_1,
+            sequence=1,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="original prompt text",
+            conversation_id=conversation_id_1,
+            sequence=2,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+        PromptRequestPiece(
+            role="assistant",
+            original_value="original prompt text",
+            conversation_id=conversation_id_1,
+            sequence=3,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+        ),
+    ]
+    memory.add_request_pieces_to_memory(request_pieces=pieces)
+    assert len(memory.get_all_prompt_pieces()) == 4
+
+    new_conversation_id1 = memory.duplicate_conversation_excluding_last_turn(
+        conversation_id=conversation_id_1,
+    )
+
+    all_memory = memory.get_all_prompt_pieces()
+    assert len(all_memory) == 6
+
+    duplicate_conversation = memory._get_prompt_pieces_with_conversation_id(conversation_id=new_conversation_id1)
+    assert len(duplicate_conversation) == 2
+
+    for piece in duplicate_conversation:
+        assert piece.sequence < 2
+
+
 def test_duplicate_memory_orchestrator_id_collision(memory: MemoryInterface):
     orchestrator1 = Orchestrator()
     conversation_id = "11111"

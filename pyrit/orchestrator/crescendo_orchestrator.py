@@ -13,6 +13,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import (
     InvalidJsonException,
     pyrit_json_retry,
+    remove_markdown_json,
 )
 from pyrit.models import PromptTemplate
 from pyrit.models import Score
@@ -262,6 +263,7 @@ class CrescendoOrchestrator(Orchestrator):
             .request_pieces[0]
             .converted_value
         )
+        response_text = remove_markdown_json(response_text)
 
         expected_output = ["generated_question", "rationale_behind_jailbreak", "last_response_summary"]
         try:

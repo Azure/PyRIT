@@ -9,7 +9,7 @@ import uuid
 
 import pytest
 
-from pyrit.common import constants, net_utility
+from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import AzureTTSTarget
@@ -172,4 +172,4 @@ async def test_tts_send_prompt_async_rate_limit_exception_retries(
 
     with pytest.raises(RateLimitError):
         await tts_target.send_prompt_async(prompt_request=request)
-        assert mock_response_async.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
+        assert mock_response_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
