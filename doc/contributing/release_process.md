@@ -85,7 +85,7 @@ This should print
 
 ### 5. Test built package
 
-This step is crucial to ensure that the new package works out of the box we need to test it.
+This step is crucial to ensure that the new package works out of the box.
 Create a new conda environment with `conda create -n release-test-vx.y.z python=3.11 -y`
 and install the built wheel file `pip install dist/pyrit-x.y.z-py3-none-any.whl`.
 
