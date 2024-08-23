@@ -437,6 +437,94 @@ def test_get_memories_with_orchestrator_id(memory_interface: DuckDBMemory):
         assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
 
 
+def test_get_memories_with_memory_labels(memory_interface: DuckDBMemory):
+    orchestrator1 = Orchestrator()
+    labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="123",
+                role="user",
+                original_value="Hello 1",
+                converted_value="Hello 1",
+                orchestrator_identifier=orchestrator1.get_identifier(),
+                labels=labels,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="456",
+                role="assistant",
+                original_value="Hello 2",
+                converted_value="Hello 2",
+                orchestrator_identifier=orchestrator1.get_identifier(),
+                labels=labels,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="789",
+                role="user",
+                original_value="Hello 3",
+                converted_value="Hello 1",
+                orchestrator_identifier=orchestrator1.get_identifier(),
+            )
+        ),
+    ]
+
+    memory_interface._insert_entries(entries=entries)
+
+    retrieved_entries = memory_interface.get_prompt_request_piece_by_memory_labels(memory_labels=labels)
+
+    assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
+    for retrieved_entry in retrieved_entries:
+        assert "op_name" in retrieved_entry.labels
+        assert "user_name" in retrieved_entry.labels
+        assert "harm_category" in retrieved_entry.labels
+
+
+def test_get_memories_with_zero_memory_labels(memory_interface: DuckDBMemory):
+    orchestrator1 = Orchestrator()
+    labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="123",
+                role="user",
+                original_value="Hello 1",
+                converted_value="Hello 1",
+                orchestrator_identifier=orchestrator1.get_identifier(),
+                labels=labels,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="456",
+                role="assistant",
+                original_value="Hello 2",
+                converted_value="Hello 2",
+                orchestrator_identifier=orchestrator1.get_identifier(),
+                labels=labels,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="789",
+                role="user",
+                original_value="Hello 3",
+                converted_value="Hello 1",
+                orchestrator_identifier=orchestrator1.get_identifier(),
+            )
+        ),
+    ]
+
+    memory_interface._insert_entries(entries=entries)
+    labels = {"nonexistent_key": "nonexiststent_value"}
+    retrieved_entries = memory_interface.get_prompt_request_piece_by_memory_labels(memory_labels=labels)
+
+    assert len(retrieved_entries) == 0  # zero entries found since invalid memory labels passed
+
+
 def test_update_entries_by_conversation_id(memory_interface, sample_conversation_entries):
     # Define a specific conversation_id to update
     specific_conversation_id = "update_test_id"

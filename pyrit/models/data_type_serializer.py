@@ -11,7 +11,7 @@ from pathlib import Path
 from mimetypes import guess_type
 
 from pyrit.common.path import RESULTS_PATH
-from pyrit.models import PromptDataType
+from pyrit.models.literals import PromptDataType
 
 
 def data_serializer_factory(*, data_type: PromptDataType, value: str = None, extension: str = None):
@@ -33,6 +33,8 @@ def data_serializer_factory(*, data_type: PromptDataType, value: str = None, ext
             return ImagePathDataTypeSerializer(extension=extension)
         elif data_type == "audio_path":
             return AudioPathDataTypeSerializer(extension=extension)
+        elif data_type == "error":
+            return ErrorDataTypeSerializer(prompt_text="")
         else:
             raise ValueError(f"Data type {data_type} without prompt text not supported")
 

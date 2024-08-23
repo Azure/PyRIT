@@ -3,7 +3,6 @@
 
 import textwrap
 import inspect
-import asyncio
 import pathlib
 import re
 from typing import Callable, Optional
@@ -106,7 +105,6 @@ class CodeChameleonConverter(PromptConverter):
             decrypt_function=self.decrypt_function, encoded_prompt=encoded_prompt
         )
 
-        await asyncio.sleep(0)
         return ConverterResult(output_text=formatted_prompt, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

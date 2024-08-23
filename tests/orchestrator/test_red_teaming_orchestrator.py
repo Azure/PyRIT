@@ -9,7 +9,7 @@ from typing import Dict, Generator, List, Union
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 from pyrit.memory import MemoryInterface
-from pyrit.prompt_target import PromptTarget, AzureOpenAIChatTarget
+from pyrit.prompt_target import PromptTarget, AzureOpenAITextChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.models import AttackStrategy
 from pyrit.score import Score, Scorer
@@ -24,13 +24,13 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAIChatTarget:
-    return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine() -> AzureOpenAITextChatTarget:
+    return AzureOpenAITextChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
-def prompt_target(memory_interface) -> AzureOpenAIChatTarget:
-    return AzureOpenAIChatTarget(
+def prompt_target(memory_interface) -> AzureOpenAITextChatTarget:
+    return AzureOpenAITextChatTarget(
         deployment_name="test",
         endpoint="test",
         api_key="test",
@@ -88,7 +88,7 @@ def _check_two_conversation_ids(conversations):
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_prompt_twice(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChatTarget,
+    chat_completion_engine: AzureOpenAITextChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
@@ -134,7 +134,7 @@ async def test_send_prompt_twice(
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_fixed_prompt_then_generated_prompt(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChatTarget,
+    chat_completion_engine: AzureOpenAITextChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,
@@ -181,9 +181,44 @@ async def test_send_fixed_prompt_then_generated_prompt(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
+async def test_send_fixed_prompt_memory_labels(
+    prompt_target: PromptTarget,
+    chat_completion_engine: AzureOpenAITextChatTarget,
+    simple_attack_strategy: AttackStrategy,
+    memory_interface: MemoryInterface,
+    attack_strategy_as_str: bool,
+):
+    attack_strategy: Union[str | AttackStrategy] = (
+        str(simple_attack_strategy) if attack_strategy_as_str else simple_attack_strategy
+    )
+
+    scorer = MagicMock(Scorer)
+    scorer.scorer_type = "true_false"
+    labels = {"op_name": "op1", "user_name": "name1"}
+    red_teaming_orchestrator = RedTeamingOrchestrator(
+        red_teaming_chat=chat_completion_engine,
+        memory=memory_interface,
+        memory_labels=labels,
+        attack_strategy=attack_strategy,
+        initial_red_teaming_prompt="how can I help you?",
+        prompt_target=prompt_target,
+        scorer=scorer,
+    )
+
+    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as _:
+        with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
+            fixed_input_prompt = "First prompt to target - set by user"
+            expected_target_responses = "First target response"
+            mock_target.return_value = expected_target_responses
+            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
+            assert target_response.labels == labels
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_fixed_prompt_beyond_first_iteration_failure(
     prompt_target: PromptTarget,
-    chat_completion_engine: AzureOpenAIChatTarget,
+    chat_completion_engine: AzureOpenAITextChatTarget,
     simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
     attack_strategy_as_str: bool,

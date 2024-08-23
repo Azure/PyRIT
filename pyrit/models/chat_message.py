@@ -4,7 +4,10 @@
 from typing import Optional, Any
 from pydantic import BaseModel, ConfigDict
 
-from pyrit.models import ChatMessageRole
+from pyrit.models.literals import ChatMessageRole
+
+
+ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]
 
 
 class ToolCall(BaseModel):
@@ -39,3 +42,20 @@ class ChatMessageListDictContent(BaseModel):
     name: Optional[str] = None
     tool_calls: Optional[list[ToolCall]] = None
     tool_call_id: Optional[str] = None
+
+
+class ChatMessagesDataset(BaseModel):
+    """
+    Represents a dataset of chat messages.
+
+    Attributes:
+        model_config (ConfigDict): The model configuration.
+        name (str): The name of the dataset.
+        description (str): The description of the dataset.
+        list_of_chat_messages (list[list[ChatMessage]]): A list of chat messages.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    name: str
+    description: str
+    list_of_chat_messages: list[list[ChatMessage]]

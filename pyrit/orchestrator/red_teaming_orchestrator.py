@@ -4,10 +4,9 @@
 import logging
 from typing import Optional, Union, Dict, Any
 from uuid import uuid4
-from PIL import Image
 from colorama import Fore, Style
 
-from pyrit.common.notebook_utils import is_in_ipython_session
+from pyrit.common.display_response import display_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
@@ -61,7 +60,10 @@ class RedTeamingOrchestrator(Orchestrator):
                 to satisfy the objective that is specified in the attack_strategy.
             use_score_as_feedback: Whether to use the score as feedback to the red teaming chat.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
-            memory_labels: The labels to use for the memory. This is useful to identify the messages in the memory.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
         """
 
@@ -152,20 +154,6 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return score
 
-    def _display_response(self, response_piece: PromptRequestPiece) -> None:
-        # If running in notebook environment, display the image.
-        if (
-            response_piece.response_error == "none"
-            and response_piece.converted_value_data_type == "image_path"
-            and is_in_ipython_session()
-        ):
-            with open(response_piece.converted_value, "rb") as f:
-                img = Image.open(f)
-                # Jupyter built-in display function only works in notebooks.
-                display(img)  # type: ignore # noqa: F821
-        if response_piece.response_error == "blocked":
-            logger.info("---\nContent blocked, cannot show a response.\n---")
-
     async def send_prompt_async(
         self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False
     ) -> PromptRequestPiece:
@@ -236,7 +224,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                self._display_response(message)
+                display_response(message)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
             if scores and len(scores) > 0:
