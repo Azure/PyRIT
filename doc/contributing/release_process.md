@@ -33,7 +33,7 @@ that happened since the last release will influence the new version number.
 
 ### 2. Update __init__.py and pyproject.toml
 
-Set the version in `pyproject.toml` and `pyrit/__init__.py` to match the version specified in step 1.
+Set the version in `pyproject.toml` and `pyrit/__init__.py` to the version established in step 1.
 
 ### Update README.md
 
