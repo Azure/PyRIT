@@ -25,7 +25,6 @@ def test_add_image_text_converter_initialization(image_text_converter_sample_ima
         font_size=20,
         x_pos=10,
         y_pos=10,
-        output_filename="sample_conv_image.png",
     )
     assert converter._img_to_add == "test.png"
     assert converter._font_name == "arial.ttf"
@@ -35,7 +34,6 @@ def test_add_image_text_converter_initialization(image_text_converter_sample_ima
     assert converter._y_pos == 10
     assert converter._font is not None
     assert type(converter._font) is ImageFont.FreeTypeFont
-    assert converter._output_name == "sample_conv_image.png"
     os.remove("test.png")
 
 
@@ -98,12 +96,10 @@ async def test_add_image_text_converter_invalid_file_path():
 
 @pytest.mark.asyncio
 async def test_add_image_text_converter_convert_async(image_text_converter_sample_image) -> None:
-    converter = AddImageTextConverter(
-        img_to_add=image_text_converter_sample_image, output_filename="sample_conv_image.png"
-    )
+    converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
     converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
     assert converted_image
-    assert converted_image.output_text == "sample_conv_image.png"
+    assert converted_image.output_text
     assert converted_image.output_type == "image_path"
     assert os.path.exists(converted_image.output_text)
     os.remove(converted_image.output_text)
