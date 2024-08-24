@@ -10,7 +10,7 @@ from typing import IO
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
 
 
 class TextTarget(PromptTarget):
@@ -26,6 +26,7 @@ class TextTarget(PromptTarget):
         super().__init__(memory=memory)
         self._text_stream = text_stream
 
+    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)

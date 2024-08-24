@@ -2,10 +2,12 @@
 # Licensed under the MIT license.
 
 import abc
+import asyncio
 from abc import abstractmethod
-from typing import Optional
+from typing import Optional, Sequence
 
 from pyrit.models import PromptRequestPiece
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Score, ScoreType
 
 
@@ -16,9 +18,8 @@ class Scorer(abc.ABC):
 
     scorer_type: ScoreType
 
-    # TODO: Consider writing a score_batch_async function calls into the normalizer to get a centralized approach
-    # NOTE: Scorers with target base will check the base, but the ones that don't use targets don't batch by default
-    # NOTE: ASK ROMAN TMO ABOUT MOVING FROM ORCHESTRATOR
+    def __init__(self, *, target: PromptChatTarget = None) -> None:
+        self._prompt_chat_target = target
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
@@ -65,6 +66,31 @@ class Scorer(abc.ABC):
 
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
+
+    def _chunked_prompts(self, prompts, size):
+        for i in range(0, len(prompts), size):
+            yield prompts[i : i + size]
+
+    async def score_prompts_batch_async(
+        self, prompts: Sequence[PromptRequestPiece], batch_size: int = 10
+    ) -> list[Score]:
+        results = []
+
+        if self._prompt_chat_target and self._prompt_chat_target._requests_per_minute and batch_size != 1:
+            raise ValueError(
+                "Batch size must be configured to 1 for the target requests per minute value to" + "be respected."
+            )
+
+        for prompts_batch in self._chunked_prompts(prompts, batch_size):
+            tasks = []
+            for prompt in prompts_batch:
+                tasks.append(self.score_async(request_response=prompt))
+
+            batch_results = await asyncio.gather(*tasks)
+            results.extend(batch_results)
+
+        # results is a list[list[str]] and needs to be flattened
+        return [score for sublist in results for score in sublist]
 
     async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
         """

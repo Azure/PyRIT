@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import logging
 from typing import Sequence
 
@@ -21,6 +20,7 @@ class ScoringOrchestrator(Orchestrator):
 
     def __init__(
         self,
+        scorer: Scorer,
         memory: MemoryInterface = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -30,17 +30,14 @@ class ScoringOrchestrator(Orchestrator):
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
         """
-        # TODO: Move scorer parameter into the constructor and away from the other functions?
-        # TODO: Validate for batch size stuff here if request_delay on scorer is non-None?
-
         super().__init__(memory=memory, verbose=verbose)
 
+        self._scorer = scorer
         self._batch_size = batch_size
 
     async def score_prompts_by_orchestrator_id_async(
         self,
         *,
-        scorer: Scorer,
         orchestrator_ids: list[str],
         responses_only: bool = True,
     ) -> list[Score]:
@@ -54,12 +51,11 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
 
-        return await self._score_prompts_batch_async(prompts=request_pieces, scorer=scorer)
+        return await self._scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
 
     async def score_prompts_by_memory_labels_async(
         self,
         *,
-        scorer: Scorer,
         memory_labels: dict[str, str] = {},
         responses_only: bool = True,
     ) -> list[Score]:
@@ -78,10 +74,10 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
 
-        return await self._score_prompts_batch_async(prompts=request_pieces, scorer=scorer)
+        return await self._scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
 
     async def score_prompts_by_request_id_async(
-        self, *, scorer: Scorer, prompt_ids: list[str], responses_only: bool = False
+        self, *, prompt_ids: list[str], responses_only: bool = False
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts with the prompt_ids
@@ -93,28 +89,10 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             requests = self._extract_responses_only(requests)
 
-        return await self._score_prompts_batch_async(prompts=requests, scorer=scorer)
+        return await self._scorer.score_prompts_batch_async(prompts=requests, batch_size=self._batch_size)
 
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
         """
         Extracts the responses from the list of PromptRequestResponse objects.
         """
         return [response for response in request_responses if response.role == "assistant"]
-
-    async def _score_prompts_batch_async(self, prompts: Sequence[PromptRequestPiece], scorer: Scorer) -> list[Score]:
-        results = []
-
-        for prompts_batch in self._chunked_prompts(prompts, self._batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(scorer.score_async(request_response=prompt))
-
-            batch_results = await asyncio.gather(*tasks)
-            results.extend(batch_results)
-
-        # results is a list[list[str]] and needs to be flattened
-        return [score for sublist in results for score in sublist]
-
-    def _chunked_prompts(self, prompts, size):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]

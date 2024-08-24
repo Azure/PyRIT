@@ -65,8 +65,6 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._batch_size = batch_size
 
-        # TODO: CHECK TARGET FOR REQUEST DELAY and if non-None and batch size > 1 throw exception?
-
     async def send_prompts_async(
         self,
         *,

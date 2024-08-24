@@ -11,7 +11,7 @@ from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, set_max_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,7 @@ class AzureMLChatTarget(PromptChatTarget):
         self._top_p = top_p
         self._repetition_penalty = repetition_penalty
 
+    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)

@@ -3,14 +3,13 @@
 
 import abc
 import logging
+from typing import Optional
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestResponse, Identifier
 
+
 logger = logging.getLogger(__name__)
-
-
-# TODO: Create function to be used as decorator for send_prompt_async
 
 
 class PromptTarget(abc.ABC, Identifier):
@@ -22,9 +21,10 @@ class PromptTarget(abc.ABC, Identifier):
     """
     supported_converters: list
 
-    def __init__(self, memory: MemoryInterface, verbose: bool = False) -> None:
+    def __init__(self, memory: MemoryInterface, verbose: bool = False, rpm: Optional[int] = None) -> None:
         self._memory = memory if memory else DuckDBMemory()
         self._verbose = verbose
+        self._requests_per_minute = rpm
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)

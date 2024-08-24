@@ -8,7 +8,7 @@ from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, set_max_requests_per_minute
 
 
 logger = logging.getLogger(__name__)
@@ -37,6 +37,7 @@ class OllamaChatTarget(PromptChatTarget):
         )
         self.chat_message_normalizer = chat_message_normalizer
 
+    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)

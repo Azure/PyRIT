@@ -16,7 +16,7 @@ from pyrit.exceptions import pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, set_max_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
+    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]

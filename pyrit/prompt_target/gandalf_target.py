@@ -9,7 +9,7 @@ from pyrit.common import net_utility
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ class GandalfTarget(PromptTarget):
         self._endpoint = "https://gandalf.lakera.ai/api/send-message"
         self._defender = level.value
 
+    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]

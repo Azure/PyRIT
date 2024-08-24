@@ -17,7 +17,7 @@ from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
 from pyrit.models import data_serializer_factory, construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, set_max_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +127,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
             )
 
+    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 

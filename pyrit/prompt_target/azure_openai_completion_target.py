@@ -11,7 +11,7 @@ from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptResponse
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
-from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +102,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 azure_endpoint=endpoint,
             )
 
+    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.

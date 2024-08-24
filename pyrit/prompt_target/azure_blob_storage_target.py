@@ -13,7 +13,7 @@ from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models.prompt_request_response import construct_response_from_request
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
 from pyrit.auth import AzureStorageAuth
 
 logger = logging.getLogger(__name__)
@@ -119,6 +119,7 @@ class AzureBlobStorageTarget(PromptTarget):
                 logger.exception(msg=f"An unexpected error occurred: {exc}")
                 raise
 
+    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob

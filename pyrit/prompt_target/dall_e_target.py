@@ -11,7 +11,7 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
-from pyrit.prompt_target import AzureOpenAITextChatTarget, PromptTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget, PromptTarget, set_max_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,7 @@ class DALLETarget(PromptTarget):
             target_kwargs["api_key"] = api_key
         self._image_target = AzureOpenAITextChatTarget(**target_kwargs)
 
+    @set_max_requests_per_minute
     async def send_prompt_async(
         self,
         *,

@@ -39,6 +39,7 @@ class SelfAskTrueFalseScorer(Scorer):
         true_false_system_prompt_path: Optional[Path] = None,
         memory: MemoryInterface = None,
     ) -> None:
+        super().__init__(target=chat_target)
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
@@ -72,8 +73,6 @@ class SelfAskTrueFalseScorer(Scorer):
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
-        self._chat_target: PromptChatTarget = chat_target
-
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
@@ -93,7 +92,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
         conversation_id = str(uuid.uuid4())
 
-        self._chat_target.set_system_prompt(
+        self._prompt_chat_target.set_system_prompt(
             system_prompt=self._system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
@@ -108,7 +107,7 @@ class SelfAskTrueFalseScorer(Scorer):
                     converted_value=request_response.converted_value,
                     converted_value_data_type=request_response.converted_value_data_type,
                     conversation_id=conversation_id,
-                    prompt_target_identifier=self._chat_target.get_identifier(),
+                    prompt_target_identifier=self._prompt_chat_target.get_identifier(),
                 )
             ]
         )
@@ -119,7 +118,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
     @pyrit_json_retry
     async def _send_chat_target_async(self, request, request_response_id):
-        response = await self._chat_target.send_prompt_async(prompt_request=request)
+        response = await self._prompt_chat_target.send_prompt_async(prompt_request=request)
 
         try:
             response_json = response.request_pieces[0].converted_value

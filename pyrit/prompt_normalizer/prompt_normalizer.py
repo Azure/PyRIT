@@ -3,7 +3,6 @@
 
 import abc
 import asyncio
-
 from typing import Optional
 from uuid import uuid4
 
@@ -32,7 +31,6 @@ class PromptNormalizer(abc.ABC):
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
-        request_delay: Optional[float] = None,
     ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
@@ -44,8 +42,6 @@ class PromptNormalizer(abc.ABC):
             sequence (int, optional): The sequence number. Defaults to -1.
             labels (dict[str, str], optional): Additional labels for the request. Defaults to None.
             orchestrator_identifier (dict[str, str], optional): The orchestrator identifier. Defaults to None.
-            request_delay (float, optional): If provided, the request sent to the target will be delayed by
-                the specified number of seconds. Defaults to None.
 
         Returns:
             PromptRequestResponse: The response received from the target.
@@ -88,16 +84,12 @@ class PromptNormalizer(abc.ABC):
 
         self._memory.add_request_response_to_memory(request=response)
 
-        if request_delay:
-            await asyncio.sleep(request_delay)
-
         return response
 
     async def send_prompt_batch_to_target_async(
         self,
         *,
         requests: list[NormalizerRequest],
-        request_delay: Optional[float] = None,
         target: PromptTarget,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
@@ -109,9 +101,6 @@ class PromptNormalizer(abc.ABC):
         Args:
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects representing the prompts to
                 be sent.
-            request_delay (float, optional): If provided, the requests sent to the target will be delayed by
-                the specified number of seconds. Batch size will also be set to 1 to ensure delay is respected.
-                Defaults to None.
             target (PromptTarget): The target to which the prompts should be sent.
             labels (dict[str, str], optional): Additional labels to be included with the prompts. Defaults to None
             orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
@@ -127,8 +116,10 @@ class PromptNormalizer(abc.ABC):
 
         results = []
 
-        if request_delay:
-            batch_size = 1
+        if target._requests_per_minute and batch_size != 1:
+            raise ValueError(
+                "Batch size must be configured to 1 for the target requests per minute value to" + "be respected."
+            )
 
         for prompts_batch in self._chunked_prompts(requests, batch_size):
             tasks = []
@@ -139,7 +130,6 @@ class PromptNormalizer(abc.ABC):
                         target=target,
                         labels=labels,
                         orchestrator_identifier=orchestrator_identifier,
-                        request_delay=request_delay,
                     )
                 )
 
