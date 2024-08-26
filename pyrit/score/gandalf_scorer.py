@@ -116,6 +116,7 @@ class GandalfScorer(Scorer):
                 score_metadata=None,
                 prompt_request_response_id=request_response.id,
                 scorer_class_identifier=self.get_identifier(),
+                task=task,
             )
         else:
             # Step 2. Check for correct password via API
@@ -140,6 +141,7 @@ class GandalfScorer(Scorer):
                     score_metadata=None,
                     prompt_request_response_id=request_response.id,
                     scorer_class_identifier=self.get_identifier(),
+                    task=task,
                 )
             else:
                 score = Score(
@@ -151,6 +153,7 @@ class GandalfScorer(Scorer):
                     score_metadata=None,
                     prompt_request_response_id=request_response.id,
                     scorer_class_identifier=self.get_identifier(),
+                    task=task,
                 )
 
         self._memory.add_scores_to_memory(scores=[score])

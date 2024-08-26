@@ -46,7 +46,7 @@ class SelfAskLikertScorer(Scorer):
         if likert_scale["category"]:
             self._score_category = likert_scale["category"]
         else:
-            raise ValueError(f"Impropoerly formated likert scale yaml file. Missing category in {likert_scale_path}.")
+            raise ValueError(f"Improperly formatted likert scale yaml file. Missing category in {likert_scale_path}.")
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
@@ -120,7 +120,7 @@ class SelfAskLikertScorer(Scorer):
         )
 
         score = await self._send_chat_target_async(request, request_response.id)
-
+        score.task = task
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 

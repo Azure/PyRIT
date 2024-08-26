@@ -129,6 +129,7 @@ class AzureContentFilterScorer(Scorer):
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
+                task=task,
             )
             self._memory.add_scores_to_memory(scores=[score])
             scores.append(score)

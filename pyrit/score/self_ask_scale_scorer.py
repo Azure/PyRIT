@@ -159,7 +159,7 @@ class SelfAskScaleScorer(Scorer):
         )
 
         score = await self._send_chat_target_async(request, request_response.id)
-
+        score.task = task
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 

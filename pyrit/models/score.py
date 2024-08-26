@@ -44,6 +44,9 @@ class Score:
     # Timestamp of when the score was created
     timestamp: datetime
 
+    # The task based on which the text was scored
+    task: str
+
     def __init__(
         self,
         *,
@@ -57,6 +60,7 @@ class Score:
         scorer_class_identifier: Dict[str, str] = None,
         prompt_request_response_id: str | uuid.UUID,
         date_time: Optional[datetime] = datetime.now(),
+        task: Optional[str] = None,
     ):
         self.id = id if id else uuid.uuid4()
 
@@ -75,6 +79,7 @@ class Score:
         self.scorer_class_identifier = scorer_class_identifier
         self.prompt_request_response_id = prompt_request_response_id
         self.date_time = date_time
+        self.task = task
 
     def get_value(self):
         """
