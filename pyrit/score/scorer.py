@@ -7,7 +7,7 @@ from abc import abstractmethod
 from typing import Optional, Sequence
 
 from pyrit.models import PromptRequestPiece
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Score, ScoreType
 
 
@@ -18,8 +18,9 @@ class Scorer(abc.ABC):
 
     scorer_type: ScoreType
 
-    def __init__(self, *, target: PromptChatTarget = None) -> None:
-        self._prompt_chat_target = target
+    def __init__(self, *, chat_target: PromptChatTarget = None, target: PromptTarget = None) -> None:
+        self._prompt_chat_target = chat_target
+        self._prompt_target = target
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:

@@ -5,7 +5,7 @@ import logging
 import json
 from typing import Any, Literal, Union, Optional
 
-from pyrit.prompt_target import PromptChatTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
 from pyrit.memory import MemoryInterface
 from pyrit.common import default_values
 from pyrit.common import net_utility
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 PromptShieldEntryField = Literal[None, "userPrompt", "documents"]
 
 
-class PromptShieldTarget(PromptChatTarget):
+class PromptShieldTarget(PromptTarget):
     """
     PromptShield is an endpoint which detects the presence of a jailbreak. It does
     NOT detect the presence of a content harm.

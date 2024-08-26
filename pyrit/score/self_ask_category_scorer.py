@@ -44,7 +44,7 @@ class SelfAskCategoryScorer(Scorer):
             chat_target (PromptChatTarget): The chat target to interact with.
             content_classifier (Path): The path to the classifier file.
         """
-        super().__init__(target=chat_target)
+        super().__init__(chat_target=chat_target)
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()

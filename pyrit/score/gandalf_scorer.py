@@ -20,7 +20,7 @@ class GandalfScorer(Scorer):
     def __init__(
         self, level: GandalfLevel, chat_target: PromptChatTarget = None, memory: MemoryInterface = None
     ) -> None:
-        super().__init__(target=chat_target)
+        super().__init__(chat_target=chat_target)
 
         self._defender = level.value
         self._endpoint = "https://gandalf.lakera.ai/api/guess-password"

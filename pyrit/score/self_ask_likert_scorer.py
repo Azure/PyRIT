@@ -36,7 +36,7 @@ class SelfAskLikertScorer(Scorer):
     """
 
     def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path, memory: MemoryInterface = None) -> None:
-        super().__init__(target=chat_target)
+        super().__init__(chat_target=chat_target)
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()

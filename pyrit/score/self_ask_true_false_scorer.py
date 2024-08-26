@@ -39,7 +39,7 @@ class SelfAskTrueFalseScorer(Scorer):
         true_false_system_prompt_path: Optional[Path] = None,
         memory: MemoryInterface = None,
     ) -> None:
-        super().__init__(target=chat_target)
+        super().__init__(chat_target=chat_target)
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()

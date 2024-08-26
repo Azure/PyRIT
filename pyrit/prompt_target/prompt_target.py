@@ -21,10 +21,12 @@ class PromptTarget(abc.ABC, Identifier):
     """
     supported_converters: list
 
-    def __init__(self, memory: MemoryInterface, verbose: bool = False, rpm: Optional[int] = None) -> None:
+    def __init__(
+        self, memory: MemoryInterface, verbose: bool = False, requests_per_minute: Optional[int] = None
+    ) -> None:
         self._memory = memory if memory else DuckDBMemory()
         self._verbose = verbose
-        self._requests_per_minute = rpm
+        self._requests_per_minute = requests_per_minute
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)

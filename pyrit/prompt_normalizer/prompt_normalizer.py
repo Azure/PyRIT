@@ -118,7 +118,7 @@ class PromptNormalizer(abc.ABC):
 
         if target._requests_per_minute and batch_size != 1:
             raise ValueError(
-                "Batch size must be configured to 1 for the target requests per minute value to" + "be respected."
+                "Batch size must be configured to 1 for the target requests per minute value to" + " be respected."
             )
 
         for prompts_batch in self._chunked_prompts(requests, batch_size):

@@ -92,7 +92,7 @@ class SelfAskScaleScorer(Scorer):
         scale: Optional[Scale] = None,
         memory: MemoryInterface = None,
     ) -> None:
-        super().__init__(target=chat_target)
+        super().__init__(chat_target=chat_target)
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()

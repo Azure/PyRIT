@@ -60,9 +60,10 @@ class MockHttpPostSync:
 class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
-    def __init__(self, id=None, memory=None) -> None:
+    def __init__(self, id=None, memory=None, rpm=None) -> None:
         self.id = id
         self.prompt_sent = []
+        self._requests_per_minute = rpm
         self._memory = memory
 
     def set_system_prompt(

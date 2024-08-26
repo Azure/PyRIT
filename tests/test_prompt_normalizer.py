@@ -3,7 +3,6 @@
 
 import os
 import tempfile
-import time
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
@@ -243,51 +242,34 @@ async def test_send_prompt_async_image_converter():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("request_delay", [None, 1])
-@pytest.mark.parametrize("num_requests", [1, 10])
-async def test_prompt_normalizer_send_prompt_batch_async_request_delay(
-    normalizer_piece: NormalizerRequestPiece, request_delay: float, num_requests: int
+@pytest.mark.parametrize("requests_per_minute", [None, 10])
+@pytest.mark.parametrize("batch_size", [1, 10])
+async def test_prompt_normalizer_send_prompt_batch_async_throws(
+    normalizer_piece: NormalizerRequestPiece,
+    requests_per_minute: int,
+    batch_size: int,
 ):
-    prompt_target = MockPromptTarget()
+    prompt_target = MockPromptTarget(rpm=requests_per_minute)
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
-
-    requests = []
-    for _ in range(num_requests):
-        requests.append(NormalizerRequest([normalizer_piece]))
-
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    with patch("asyncio.sleep") as mock_sleep:
+    if requests_per_minute and batch_size != 1:
+        with pytest.raises(ValueError):
+            results = await normalizer.send_prompt_batch_to_target_async(
+                requests=[NormalizerRequest([normalizer_piece])],
+                target=prompt_target,
+                batch_size=batch_size,
+            )
+    else:
         results = await normalizer.send_prompt_batch_to_target_async(
-            requests=requests, target=prompt_target, request_delay=request_delay
+            requests=[NormalizerRequest([normalizer_piece])],
+            target=prompt_target,
+            batch_size=batch_size,
         )
 
         assert "S_G_V_s_b_G_8_=" in prompt_target.prompt_sent
-        assert len(results) == len(requests)
-
-        if request_delay:
-            assert mock_sleep.call_count == len(requests)
-            mock_sleep.assert_called_with(request_delay)
-
-
-@pytest.mark.asyncio
-async def test_prompt_normalizer_send_prompt_async_request_delay(normalizer_piece: NormalizerRequestPiece):
-    prompt_target = MockPromptTarget()
-    request = NormalizerRequest([normalizer_piece])
-    normalizer = PromptNormalizer(memory=MagicMock())
-    request_delay = 1
-
-    start = time.time()
-    await normalizer.send_prompt_async(
-        normalizer_request=request,
-        target=prompt_target,
-        request_delay=request_delay,
-    )
-    end = time.time()
-
-    elapsed_time = end - start
-    assert elapsed_time > request_delay
+        assert len(results) == 1
 
 
 @pytest.mark.asyncio

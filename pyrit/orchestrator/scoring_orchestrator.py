@@ -20,7 +20,6 @@ class ScoringOrchestrator(Orchestrator):
 
     def __init__(
         self,
-        scorer: Scorer,
         memory: MemoryInterface = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -32,12 +31,12 @@ class ScoringOrchestrator(Orchestrator):
         """
         super().__init__(memory=memory, verbose=verbose)
 
-        self._scorer = scorer
         self._batch_size = batch_size
 
     async def score_prompts_by_orchestrator_id_async(
         self,
         *,
+        scorer: Scorer,
         orchestrator_ids: list[str],
         responses_only: bool = True,
     ) -> list[Score]:
@@ -51,11 +50,12 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
 
-        return await self._scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
 
     async def score_prompts_by_memory_labels_async(
         self,
         *,
+        scorer: Scorer,
         memory_labels: dict[str, str] = {},
         responses_only: bool = True,
     ) -> list[Score]:
@@ -74,10 +74,10 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
 
-        return await self._scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
 
     async def score_prompts_by_request_id_async(
-        self, *, prompt_ids: list[str], responses_only: bool = False
+        self, *, scorer: Scorer, prompt_ids: list[str], responses_only: bool = False
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts with the prompt_ids
@@ -89,7 +89,7 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             requests = self._extract_responses_only(requests)
 
-        return await self._scorer.score_prompts_batch_async(prompts=requests, batch_size=self._batch_size)
+        return await scorer.score_prompts_batch_async(prompts=requests, batch_size=self._batch_size)
 
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
         """
