@@ -4,7 +4,7 @@
 import abc
 import copy
 from pathlib import Path
-from typing import MutableSequence, Sequence
+from typing import MutableSequence, Optional, Sequence
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
@@ -213,7 +213,9 @@ class MemoryInterface(abc.ABC):
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
         return new_conversation_id
 
-    def duplicate_conversation_excluding_last_turn(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
+    def duplicate_conversation_excluding_last_turn(
+        self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None
+    ) -> str:
         """
         Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
         user request (e.g. if there is half a turn, it just removes that half).
@@ -221,8 +223,9 @@ class MemoryInterface(abc.ABC):
         This can be useful when an attack strategy requires back tracking the last prompt/response pair.
 
         Args:
-            new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
             conversation_id (str): The conversation ID with existing conversations.
+            new_orchestrator_id (str, optional): The new orchestrator ID to assign to the duplicated conversations.
+                If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
         """
@@ -252,9 +255,8 @@ class MemoryInterface(abc.ABC):
 
         for piece in prompt_pieces:
             piece.id = uuid.uuid4()
-            if piece.orchestrator_identifier["id"] == new_orchestrator_id:
-                raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
-            piece.orchestrator_identifier["id"] = new_orchestrator_id
+            if new_orchestrator_id:
+                piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)

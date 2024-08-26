@@ -28,6 +28,7 @@ class LikertScalePaths(enum.Enum):
     PHISHING_SCALE = Path(LIKERT_SCALES_PATH, "phishing.yaml").resolve()
     SEXUAL_SCALE = Path(LIKERT_SCALES_PATH, "sexual.yaml").resolve()
     VIOLENCE_SCALE = Path(LIKERT_SCALES_PATH, "violence.yaml").resolve()
+    DECEPTION_SCALE = Path(LIKERT_SCALES_PATH, "deception.yaml").resolve()
 
 
 class SelfAskLikertScorer(Scorer):
