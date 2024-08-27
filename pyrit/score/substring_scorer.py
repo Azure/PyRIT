@@ -36,6 +36,7 @@ class SubStringScorer(Scorer):
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
+                task=task,
             )
         ]
 

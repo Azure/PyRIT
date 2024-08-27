@@ -34,6 +34,7 @@ class HumanInTheLoopScorer(Scorer):
                     score_metadata=row.get("score_metadata", None),
                     scorer_class_identifier=self.get_identifier(),
                     prompt_request_response_id=row["prompt_request_response_id"],
+                    task=row.get("task", None),
                 )
                 scores.append(score)
 
@@ -75,6 +76,7 @@ class HumanInTheLoopScorer(Scorer):
             score_metadata=score_metadata,
             scorer_class_identifier=self.get_identifier(),
             prompt_request_response_id=request_response.id,
+            task=task,
         )
 
         self._memory.add_scores_to_memory(scores=[score])
