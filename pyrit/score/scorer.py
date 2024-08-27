@@ -24,7 +24,7 @@ class Scorer(abc.ABC):
 
         Args:
             request_response (PromptRequestPiece): The request response to be scored.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -39,7 +39,7 @@ class Scorer(abc.ABC):
 
         Args:
             request_response (PromptRequestPiece): The request response to be validated.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
         """
         raise NotImplementedError("score_async method not implemented")
 
@@ -49,7 +49,7 @@ class Scorer(abc.ABC):
 
         Args:
             text (str): The text to be scored.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -68,7 +68,7 @@ class Scorer(abc.ABC):
 
         Args:
             text (str): The image to be scored.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: A list of Score objects representing the results.

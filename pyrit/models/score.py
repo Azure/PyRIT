@@ -44,7 +44,7 @@ class Score:
     # Timestamp of when the score was created
     timestamp: datetime
 
-    # The original objective that the attacker model aimed to achieve
+    # The task based on which the text is scored (the original attacker model's objective).
     task: str
 
     def __init__(

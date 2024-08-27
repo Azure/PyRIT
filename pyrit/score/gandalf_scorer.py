@@ -92,7 +92,8 @@ class GandalfScorer(Scorer):
 
         Args:
             text (str): The text to be scored.
-            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+                Currently not supported for this scorer.
 
         Returns:
             The score is the password if found in text, else empty.

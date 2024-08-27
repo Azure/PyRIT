@@ -92,7 +92,8 @@ class SelfAskLikertScorer(Scorer):
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
-            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+                Currently not supported for this scorer.
 
         Returns:
             list[Score]: The request_response scored.
