@@ -6,6 +6,7 @@ import asyncio
 from abc import abstractmethod
 from typing import Optional, Sequence
 
+from pyrit.common.batch_helper import chunk_prompts
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Score, ScoreType
@@ -21,6 +22,11 @@ class Scorer(abc.ABC):
     def __init__(self, *, chat_target: PromptChatTarget = None, target: PromptTarget = None) -> None:
         self._prompt_chat_target = chat_target
         self._prompt_target = target
+
+        if chat_target and target:
+            raise ValueError(
+                f"Scorer can only have one target, either of type {type(PromptChatTarget)} or {type(PromptTarget)}"
+            )
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
@@ -68,21 +74,18 @@ class Scorer(abc.ABC):
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
 
-    def _chunked_prompts(self, prompts, size):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]
-
     async def score_prompts_batch_async(
         self, prompts: Sequence[PromptRequestPiece], batch_size: int = 10
     ) -> list[Score]:
         results = []
 
-        if self._prompt_chat_target and self._prompt_chat_target._requests_per_minute and batch_size != 1:
-            raise ValueError(
-                "Batch size must be configured to 1 for the target requests per minute value to" + "be respected."
-            )
+        exc_message = "Batch size must be configured to 1 for the target requests per minute value to be respected."
+        if self._prompt_target and self._prompt_target._requests_per_minute and batch_size != 1:
+            raise ValueError(exc_message)
+        elif self._prompt_chat_target and self._prompt_chat_target._requests_per_minute and batch_size != 1:
+            raise ValueError(exc_message)
 
-        for prompts_batch in self._chunked_prompts(prompts, batch_size):
+        for prompts_batch in chunk_prompts(prompts, batch_size):
             tasks = []
             for prompt in prompts_batch:
                 tasks.append(self.score_async(request_response=prompt))

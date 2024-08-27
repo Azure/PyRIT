@@ -51,13 +51,13 @@ class PromptShieldScorer(Scorer):
                     original_value=body,
                     prompt_metadata=request_response.prompt_metadata,
                     conversation_id=self._conversation_id,
-                    prompt_target_identifier=self._prompt_chat_target.get_identifier(),
+                    prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
             ]
         )
 
         # The body of the Prompt Shield response
-        target_response = await self._prompt_chat_target.send_prompt_async(prompt_request=request)
+        target_response = await self._prompt_target.send_prompt_async(prompt_request=request)
 
         response: str = target_response.request_pieces[0].converted_value
 

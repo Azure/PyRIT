@@ -55,13 +55,13 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
         print(entry)
 
 # %% [markdown]
-# ### Adding A Delay Between Prompts
+# ### Introducing Rate Limit (RPM) Threshold
 #
-# This variation takes the original example, but introduces a delay of some seconds in between each request sent by the orchestrator.
-# Adding a request delay is useful in scenarios where Rate Limit Exceptions exist, and a target can only take a limited number of
-# requests per minute.
+# Some targets have a specific Rate Limit (Requests Per Minute) they can handle. In order to abide by this limitation
+# and avoid exceptions, you can configure `requests_per_minute` on the target before using it with an orchestrator.
 #
-# Since requests are typically sent in batches, in order to ensure the delay is respected, `batch_size` must be set to 1.
+# **Note**: `batch_size` should be 1 to properly use the RPM provided.
+
 
 # %%
 import time
@@ -73,7 +73,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 
 
 default_values.load_default_env()
-requests_per_minute = 3
+requests_per_minute = 20
 
 target = AzureOpenAIGPT4OChatTarget(requests_per_minute=requests_per_minute)
 

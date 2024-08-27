@@ -9,6 +9,7 @@ from typing import Optional
 from uuid import uuid4
 
 
+from pyrit.common.batch_helper import chunk_prompts
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
@@ -142,7 +143,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
         """
 
         responses = []
-        for prompts_batch in self._chunked_prompts(prompt_list, self._batch_size):
+        for prompts_batch in chunk_prompts(prompt_list, self._batch_size):
             tasks = []
             for prompt in prompts_batch:
                 tasks.append(
@@ -155,10 +156,6 @@ class SkeletonKeyOrchestrator(Orchestrator):
             responses.extend(batch_results)
 
         return responses
-
-    def _chunked_prompts(self, prompts: list[str], size: int):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]
 
     def print_conversation(self) -> None:
         """Prints all the conversations that have occured with the prompt target."""

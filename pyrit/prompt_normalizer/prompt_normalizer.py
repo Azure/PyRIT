@@ -6,6 +6,7 @@ import asyncio
 from typing import Optional
 from uuid import uuid4
 
+from pyrit.common.batch_helper import chunk_prompts
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
@@ -118,10 +119,10 @@ class PromptNormalizer(abc.ABC):
 
         if target._requests_per_minute and batch_size != 1:
             raise ValueError(
-                "Batch size must be configured to 1 for the target requests per minute value to" + " be respected."
+                "Batch size must be configured to 1 for the target requests per minute value to be respected."
             )
 
-        for prompts_batch in self._chunked_prompts(requests, batch_size):
+        for prompts_batch in chunk_prompts(requests, batch_size):
             tasks = []
             for prompt in prompts_batch:
                 tasks.append(
@@ -160,10 +161,6 @@ class PromptNormalizer(abc.ABC):
                     )
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
-
-    def _chunked_prompts(self, prompts, size):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]
 
     async def _build_prompt_request_response(
         self,
