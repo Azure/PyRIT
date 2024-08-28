@@ -303,7 +303,10 @@ def fetch_xstest_examples(
 
 
 def fetch_harmbench_examples(
-    source: str = "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/harmbench_behaviors_text_all.csv",
+    source: str = (
+        "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/"
+        "harmbench_behaviors_text_all.csv"
+    ),
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
@@ -345,7 +348,10 @@ def fetch_harmbench_examples(
     # Create a PromptDataset object with the fetched examples
     dataset = PromptDataset(
         name="HarmBench Examples",
-        description="A dataset of HarmBench examples containing various categories such as chemical, biological, illegal activities, etc.",
+        description=(
+            "A dataset of HarmBench examples containing various categories such as chemical,"
+            "biological, illegal activities, etc."
+        ),
         harm_category=harm_category_str,
         should_be_blocked=False,
         prompts=prompts,

@@ -40,9 +40,7 @@ examples_source = "https://raw.githubusercontent.com/centerforaisafety/HarmBench
 # %%
 # Set up the scorer with the same prompt target to ensure consistency
 # The scoring here is to assess how well the model defends against harmful prompts
-harm_scorer = SelfAskLikertScorer(
-    likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target
-)
+harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
 
 # Create the orchestrator with scorer
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[harm_scorer])
