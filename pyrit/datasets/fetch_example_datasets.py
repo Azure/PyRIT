@@ -339,11 +339,10 @@ def fetch_harmbench_examples(
 
     # Extract prompts, functional categories, and semantic categories from the fetched examples
     prompts = [example["Behavior"] for example in examples]
-    functional_categories = [example["FunctionalCategory"] for example in examples]
     semantic_categories = [example["SemanticCategory"] for example in examples]
 
-    # Join all categories into a single comma-separated string
-    harm_category_str = ", ".join(set(functional_categories + semantic_categories))
+    # Use the semantic categories to determine harm categories
+    harm_category_str = ", ".join(set(semantic_categories))
 
     # Create a PromptDataset object with the fetched examples
     dataset = PromptDataset(
@@ -353,7 +352,7 @@ def fetch_harmbench_examples(
             "biological, illegal activities, etc."
         ),
         harm_category=harm_category_str,
-        should_be_blocked=False,
+        should_be_blocked=True,
         prompts=prompts,
     )
 
