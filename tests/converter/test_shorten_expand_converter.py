@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import pytest
 from tests.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, patch
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_converter import (
     ExpandConverter,
     ShortenConverter,
@@ -55,7 +55,7 @@ async def test_shorten_converter_send_prompt_async_bad_json_exception_retries(co
 
         with pytest.raises(InvalidJsonException):
             await prompt_shorten.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
+            assert mock_create.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 def test_prompt_expand_init_templates_not_null():
@@ -98,4 +98,5 @@ async def test_expand_converter_send_prompt_async_bad_json_exception_retries(con
 
         with pytest.raises(InvalidJsonException):
             await prompt_expand.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
+            assert int(os.getenv("RETRY_MAX_NUM_ATTEMPTS")) == 2
+            assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))

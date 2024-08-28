@@ -3,7 +3,7 @@
 
 import pytest
 from pathlib import Path
-from pyrit.models.models import ManyShotTemplate
+from pyrit.models import ManyShotTemplate
 from pyrit.common.path import DATASETS_PATH
 
 

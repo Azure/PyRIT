@@ -8,7 +8,6 @@ import os
 from openai import RateLimitError
 import pytest
 
-from pyrit.common import constants
 from pyrit.exceptions import EmptyResponseException, RateLimitException
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import AzureMLChatTarget
@@ -232,7 +231,7 @@ async def test_send_prompt_async_rate_limit_exception_retries(aml_online_chat: A
 
     with pytest.raises(RateLimitError):
         await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
-        assert mock_complete_chat_async.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
+        assert mock_complete_chat_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
 
 
 @pytest.mark.asyncio
@@ -250,4 +249,4 @@ async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureML
 
     with pytest.raises(EmptyResponseException):
         await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
-        assert mock_complete_chat_async.call_count == constants.RETRY_MAX_NUM_ATTEMPTS
+        assert mock_complete_chat_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")

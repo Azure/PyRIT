@@ -29,7 +29,7 @@ from pathlib import Path
 from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_examples
-from pyrit.models.models import ManyShotTemplate
+from pyrit.models import ManyShotTemplate
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths

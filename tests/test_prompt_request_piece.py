@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 from unittest.mock import MagicMock
 from pyrit.models import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse, group_conversation_request_pieces_by_sequence
+from pyrit.models import PromptRequestResponse, group_conversation_request_pieces_by_sequence
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 from tests.mocks import MockPromptTarget

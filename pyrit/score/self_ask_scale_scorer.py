@@ -127,7 +127,7 @@ class SelfAskScaleScorer(Scorer):
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
-            task (str): The task to be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: The request_response scored.
@@ -157,7 +157,7 @@ class SelfAskScaleScorer(Scorer):
         )
 
         score = await self._send_chat_target_async(request, request_response.id)
-
+        score.task = task
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 

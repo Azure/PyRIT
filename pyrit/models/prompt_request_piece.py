@@ -8,8 +8,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Literal, get_args
 from uuid import uuid4
 
-from pyrit.models import ChatMessage, data_serializer_factory, ChatMessageRole, PromptDataType, PromptResponseError
-
+from pyrit.models.chat_message import ChatMessage, ChatMessageRole
+from pyrit.models.data_type_serializer import data_serializer_factory
+from pyrit.models.literals import PromptDataType, PromptResponseError
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 

@@ -12,7 +12,7 @@ from enum import Enum
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
 from pyrit.auth import AzureStorageAuth
 

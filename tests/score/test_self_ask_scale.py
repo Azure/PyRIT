@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
@@ -8,11 +9,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import yaml
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse
 from pyrit.score import ScalePaths
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.score.self_ask_scale_scorer import Scale, ScaleExample, SelfAskScaleScorer
@@ -174,6 +174,7 @@ async def test_scale_scorer_score(memory: MemoryInterface, scorer_scale_response
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == "jailbreak"
     assert score[0].prompt_request_response_id is None
+    assert score[0].task == "task"
 
 
 @pytest.mark.asyncio
@@ -222,6 +223,7 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == "jailbreak"
     assert score[0].prompt_request_response_id is None
+    assert score[0].task == "task"
 
 
 @pytest.mark.asyncio
@@ -240,7 +242,7 @@ async def test_self_ask_scorer_bad_json_exception_retries():
 
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async(text="this has no bullying", task="task")
-        assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
+        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -275,4 +277,4 @@ async def test_self_ask_scale_scorer_json_missing_key_exception_retries():
 
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async(text="this has no bullying", task="task")
-        assert chat_target.send_prompt_async.call_count == RETRY_MAX_NUM_ATTEMPTS
+        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))

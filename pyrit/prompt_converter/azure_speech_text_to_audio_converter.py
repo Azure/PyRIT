@@ -5,8 +5,8 @@ import azure.cognitiveservices.speech as speechsdk
 
 from typing import Literal
 from pyrit.common import default_values
-from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.models import data_serializer_factory
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)

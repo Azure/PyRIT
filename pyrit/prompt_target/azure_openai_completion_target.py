@@ -10,7 +10,7 @@ from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credenti
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptResponse
-from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
+from pyrit.models import PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
 
 logger = logging.getLogger(__name__)

@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.models import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest, PromptNormalizer
 from pyrit.prompt_converter import PromptConverter, ConverterResult

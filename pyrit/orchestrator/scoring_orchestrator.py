@@ -5,8 +5,8 @@ import logging
 from typing import Sequence
 
 from pyrit.memory import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.score import Score
+from pyrit.models import PromptRequestPiece
+from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.score.scorer import Scorer
 
