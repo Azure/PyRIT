@@ -39,6 +39,9 @@ class DALLETarget(PromptTarget):
         headers (dict, optional): Headers of the endpoint.
         quality (str, optional): picture quality. Defaults to standard
         style (str, optional): image style. Defaults to natural
+        requests_per_minute (int, optional): Number of requests the target can handle per
+            minute before hitting a rate limit. The number of requests sent to the target
+            will be capped at the value provided.
     """
 
     def __init__(
@@ -56,9 +59,10 @@ class DALLETarget(PromptTarget):
         headers: Optional[dict[str, str]] = None,
         quality: Literal["standard", "hd"] = "standard",
         style: Literal["natural", "vivid"] = "natural",
+        requests_per_minute: Optional[int] = None,
     ):
 
-        super().__init__(memory=memory)
+        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
 
         # make sure number of images and headers are allowed by Dall-e version
         self.dalle_version = dalle_version

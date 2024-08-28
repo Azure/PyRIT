@@ -55,9 +55,10 @@ class PromptShieldTarget(PromptTarget):
         api_version: Optional[str] = "2024-02-15-preview",
         field: Optional[PromptShieldEntryField] = None,
         memory: Union[MemoryInterface, None] = None,
+        requests_per_minute: Optional[int] = None,
     ) -> None:
 
-        super().__init__(memory=memory)
+        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
 
         self._endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint

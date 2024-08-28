@@ -3,7 +3,7 @@
 
 import logging
 import json
-from typing import MutableSequence
+from typing import MutableSequence, Optional
 
 from openai import AsyncAzureOpenAI
 from openai import BadRequestError
@@ -49,6 +49,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         top_p: int = 1,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
+        requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Class that initializes an Azure Open AI GPTV chat target
@@ -79,8 +80,11 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.5.
+            requests_per_minute (int, optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory)
+        PromptChatTarget.__init__(self, memory=memory, requests_per_minute=requests_per_minute)
 
         self._max_tokens = max_tokens
         self._temperature = temperature

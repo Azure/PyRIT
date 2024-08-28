@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-def chunk_prompts(prompts: list[str], size: int):
+
+def chunk_prompts(prompts, size: int):
     """
     Helper function utilized during prompt batching to chunk based off of size.
 

@@ -3,6 +3,7 @@
 
 import logging
 from httpx import HTTPStatusError
+from typing import Optional
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
@@ -32,6 +33,7 @@ class AzureMLChatTarget(PromptChatTarget):
         temperature: float = 1.0,
         top_p: int = 1,
         repetition_penalty: float = 1.2,
+        requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Initializes an instance of the AzureMLChatTarget class.
@@ -53,8 +55,11 @@ class AzureMLChatTarget(PromptChatTarget):
                 Defaults to 1.
             repetition_penalty (float, optional): The repetition penalty for generating diverse responses.
                 Defaults to 1.2.
+            requests_per_minute (int, optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory)
+        PromptChatTarget.__init__(self, memory=memory, requests_per_minute=requests_per_minute)
 
         self.endpoint_uri: str = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri

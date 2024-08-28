@@ -4,9 +4,10 @@
 import enum
 import json
 import logging
+from typing import Optional
 
 from pyrit.common import net_utility
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
@@ -35,8 +36,9 @@ class GandalfTarget(PromptTarget):
         *,
         level: GandalfLevel,
         memory: MemoryInterface = None,
+        requests_per_minute: Optional[int] = None,
     ) -> None:
-        self._memory = memory if memory else DuckDBMemory()
+        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
 
         self._endpoint = "https://gandalf.lakera.ai/api/send-message"
         self._defender = level.value

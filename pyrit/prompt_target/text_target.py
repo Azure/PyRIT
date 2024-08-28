@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import sys
 
-from typing import IO
+from typing import IO, Optional
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
@@ -22,8 +22,14 @@ class TextTarget(PromptTarget):
     but enter them manually.
     """
 
-    def __init__(self, *, text_stream: IO[str] = sys.stdout, memory: MemoryInterface = None) -> None:
-        super().__init__(memory=memory)
+    def __init__(
+        self,
+        *,
+        text_stream: IO[str] = sys.stdout,
+        memory: MemoryInterface = None,
+        requests_per_minute: Optional[int] = None,
+    ) -> None:
+        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
         self._text_stream = text_stream
 
     @set_max_requests_per_minute

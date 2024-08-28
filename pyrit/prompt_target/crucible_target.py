@@ -4,10 +4,11 @@
 import logging
 
 from httpx import HTTPStatusError
+from typing import Optional
 
 from pyrit.common import default_values, net_utility
 from pyrit.exceptions import EmptyResponseException, handle_bad_request_exception, pyrit_target_retry
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
@@ -25,8 +26,9 @@ class CrucibleTarget(PromptTarget):
         endpoint: str,
         api_key: str = None,
         memory: MemoryInterface = None,
+        requests_per_minute: Optional[int] = None,
     ) -> None:
-        self._memory = memory if memory else DuckDBMemory()
+        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
 
         self._endpoint = endpoint
         self._api_key: str = default_values.get_required_value(

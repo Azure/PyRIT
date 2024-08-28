@@ -3,7 +3,7 @@
 
 import logging
 import json
-from typing import MutableSequence
+from typing import MutableSequence, Optional
 
 from openai import AsyncAzureOpenAI
 from openai import BadRequestError
@@ -50,7 +50,7 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
         top_p: int = 1,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
-        requests_per_minute: int = None,
+        requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Class that initializes an Azure Open AI GPT-o chat target

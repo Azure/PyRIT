@@ -3,7 +3,7 @@
 
 import logging
 from httpx import HTTPStatusError
-from typing import Literal
+from typing import Literal, Optional
 
 from pyrit.common import default_values
 from pyrit.exceptions import RateLimitException
@@ -41,9 +41,10 @@ class AzureTTSTarget(PromptTarget):
         language: str = "en",
         temperature: float = 0.0,
         api_version: str = "2024-03-01-preview",
+        requests_per_minute: Optional[int] = None,
     ) -> None:
 
-        super().__init__(memory=memory)
+        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
 
         self._voice = voice
         self._model = model
