@@ -92,7 +92,8 @@ class GandalfScorer(Scorer):
 
         Args:
             text (str): The text to be scored.
-            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+                Currently not supported for this scorer.
 
         Returns:
             The score is the password if found in text, else empty.
@@ -116,6 +117,7 @@ class GandalfScorer(Scorer):
                 score_metadata=None,
                 prompt_request_response_id=request_response.id,
                 scorer_class_identifier=self.get_identifier(),
+                task=task,
             )
         else:
             # Step 2. Check for correct password via API
@@ -140,6 +142,7 @@ class GandalfScorer(Scorer):
                     score_metadata=None,
                     prompt_request_response_id=request_response.id,
                     scorer_class_identifier=self.get_identifier(),
+                    task=task,
                 )
             else:
                 score = Score(
@@ -151,6 +154,7 @@ class GandalfScorer(Scorer):
                     score_metadata=None,
                     prompt_request_response_id=request_response.id,
                     scorer_class_identifier=self.get_identifier(),
+                    task=task,
                 )
 
         self._memory.add_scores_to_memory(scores=[score])

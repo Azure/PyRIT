@@ -166,6 +166,7 @@ class ScoreEntry(Base):  # type: ignore
     scorer_class_identifier: Mapped[dict[str, str]] = Column(JSON)
     prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     date_time = Column(DateTime, nullable=False)
+    task = Column(String, nullable=True)
 
     def __init__(self, *, entry: Score):
         self.id = entry.id
@@ -178,6 +179,7 @@ class ScoreEntry(Base):  # type: ignore
         self.scorer_class_identifier = entry.scorer_class_identifier
         self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
         self.date_time = entry.date_time
+        self.task = entry.task
 
     def get_score(self) -> Score:
         return Score(
@@ -191,6 +193,7 @@ class ScoreEntry(Base):  # type: ignore
             scorer_class_identifier=self.scorer_class_identifier,
             prompt_request_response_id=self.prompt_request_response_id,
             date_time=self.date_time,
+            task=self.task,
         )
 
 
