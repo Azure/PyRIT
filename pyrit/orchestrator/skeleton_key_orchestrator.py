@@ -143,6 +143,12 @@ class SkeletonKeyOrchestrator(Orchestrator):
         """
 
         responses = []
+
+        if self._prompt_target._requests_per_minute and self._batch_size != 1:
+            raise ValueError(
+                "Batch size must be configured to 1 for the target requests per minute value to be respected."
+            )
+
         for prompts_batch in chunk_prompts(prompt_list, self._batch_size):
             tasks = []
             for prompt in prompts_batch:

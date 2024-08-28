@@ -106,9 +106,7 @@ class PromptNormalizer(abc.ABC):
             labels (dict[str, str], optional): Additional labels to be included with the prompts. Defaults to None
             orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
                 the prompts. Defaults to None.
-            batch_size (int, optional): The size of each batch of prompts. Defaults to 10 (if request_delay is None).
-                Otherwise, if request_delay is provided, batch_size is overwritten to be 1 to ensure the delay
-                is respected.
+            batch_size (int, optional): The size of each batch of prompts. Defaults to 10.
 
         Returns:
             list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses
