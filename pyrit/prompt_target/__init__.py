@@ -16,7 +16,7 @@ from pyrit.prompt_target.dall_e_target import DALLETarget
 from pyrit.prompt_target.prompt_chat_target.ollama_chat_target import OllamaChatTarget
 from pyrit.prompt_target.azure_openai_completion_target import AzureOpenAICompletionTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
-
+from pyrit.prompt_target.http_target import HTTP_Target
 
 __all__ = [
     "AzureBlobStorageTarget",
@@ -30,6 +30,7 @@ __all__ = [
     "GandalfTarget",
     "GandalfLevel",
     "DALLETarget",
+    "HTTP_Target",
     "OpenAIChatTarget",
     "PromptChatTarget",
     "PromptShieldTarget",
