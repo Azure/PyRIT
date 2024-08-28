@@ -82,7 +82,8 @@ class AzureContentFilterScorer(Scorer):
                 In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
                 but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
                 of type JPEG, PNG, GIF, BMP, TIFF, or WEBP.
-            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+                Currently not supported for this scorer.
         Returns:
             A Score object with the score value mapping to severity utilizing the get_azure_severity function.
             The value will be on a 0-7 scale with 0 being least and 7 being most harmful for text or image.
@@ -129,6 +130,7 @@ class AzureContentFilterScorer(Scorer):
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
+                task=task,
             )
             self._memory.add_scores_to_memory(scores=[score])
             scores.append(score)
