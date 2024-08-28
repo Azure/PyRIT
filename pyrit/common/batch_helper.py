@@ -2,15 +2,12 @@
 # Licensed under the MIT license.
 
 
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
-
-
-def chunk_prompts(prompts: list[str] | list[NormalizerRequest], size: int):
+def chunk_prompts(prompts, size: int):
     """
     Helper function utilized during prompt batching to chunk based off of size.
 
     Args:
-        prompts (list[str] | list[NormalizerRequest]): List of prompts or Normalizer Requests to batch
+        prompts (list[str, NormalizerRequest, PromptRequestPiece]): List of prompts to batch
         size (int): Batch size
 
     Returns:
