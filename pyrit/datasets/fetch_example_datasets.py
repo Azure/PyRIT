@@ -333,16 +333,30 @@ def fetch_harmbench_examples(
     if file_type not in FILE_TYPE_HANDLERS:
         valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+    
+    #Required keys to validate each example
+    required_keys = {"Behavior", "SemanticCategory"}
+
+    # Initialize containers for prompts and semantic categories
+    prompts = []
+    semantic_categories = set()
 
     # Fetch the examples using the provided `fetch_examples` function
     examples = fetch_examples(source, source_type, cache, data_home)
 
-    # Extract prompts, functional categories, and semantic categories from the fetched examples
-    prompts = [example["Behavior"] for example in examples]
-    semantic_categories = [example["SemanticCategory"] for example in examples]
+    # Validate each example and extract data
+    for example in examples:
+        # Check for missing keys in the example
+        missing_keys = required_keys - example.keys()
+        if missing_keys:
+            raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
+        
+        # Extract and append the data to respective containers
+        prompts.append(example["Behavior"])
+        semantic_categories.add(example["SemanticCategory"])
 
-    # Use the semantic categories to determine harm categories
-    harm_category_str = ", ".join(set(semantic_categories))
+        # Use the semantic categories to determine harm categories
+        harm_category_str = ", ".join(set(semantic_categories))
 
     # Create a PromptDataset object with the fetched examples
     dataset = PromptDataset(
