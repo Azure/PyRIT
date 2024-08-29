@@ -9,6 +9,7 @@ from pyrit.exceptions.exception_classes import PyritException
 from pyrit.exceptions.exception_classes import pyrit_target_retry
 from pyrit.exceptions.exception_classes import pyrit_json_retry
 from pyrit.exceptions.exception_classes import RateLimitException
+from pyrit.exceptions.exception_classes import MissingPromptHolderException
 
 
 __all__ = [
@@ -20,4 +21,6 @@ __all__ = [
     "pyrit_json_retry",
     "pyrit_target_retry",
     "RateLimitException",
+    "MissingPromptHolderException",
+    "pyrit_placeholder_retry",
 ]
