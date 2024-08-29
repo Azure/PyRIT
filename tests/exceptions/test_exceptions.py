@@ -64,3 +64,14 @@ def test_empty_response_exception_process_exception(caplog):
         result = ex.process_exception()
     assert json.loads(result) == {"status_code": 204, "message": "No Content"}
     assert "EmptyResponseException encountered: Status Code: 204, Message: No Content" in caplog.text
+
+
+def test_empty_promptholder_exception(caplog):
+    ex = MissingPromptHolderException()
+    with caplog.at_level(logging.ERROR):
+        result = ex.process_exception()
+    assert json.loads(result) == {"status_code": 204, "message": "No Content"}
+    assert (
+        "MissingPromptHolderException encountered: Status Code: 204, Message: Missing Prompt Holder Exception"
+        in caplog.text
+    )
