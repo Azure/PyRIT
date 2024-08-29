@@ -28,7 +28,7 @@ async def test_score_prompts_by_request_id_async(sample_conversations: list[Prom
         category="test",
         memory=memory,
     )
-    scorer.score_async = AsyncMock()
+    scorer.score_async = AsyncMock() # type: ignore
 
     orchestrator = ScoringOrchestrator(memory=memory)
 
@@ -46,9 +46,7 @@ async def test_score_prompts_by_orchestrator_only_responses(sample_conversations
     scorer = MagicMock()
 
     with patch.object(scorer, "score_prompts_batch_async", new_callable=AsyncMock) as mock_score:
-        await orchestrator.score_prompts_by_orchestrator_id_async(
-            scorer=scorer, orchestrator_ids=[str(uuid.uuid4())]
-        )
+        await orchestrator.score_prompts_by_orchestrator_id_async(scorer=scorer, orchestrator_ids=[str(uuid.uuid4())])
 
         mock_score.assert_called_once()
         _, called_kwargs = mock_score.call_args

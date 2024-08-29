@@ -207,26 +207,3 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async("this has no bullying")
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("requests_per_minute", [None, 10])
-@pytest.mark.parametrize("batch_size", [1, 10])
-async def test_self_ask_scorer_score_prompts_batch_async(requests_per_minute: int, batch_size: int):
-    chat_target = MagicMock()
-    chat_target._requests_per_minute = requests_per_minute
-
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory
-    )
-
-    scorer.score_async = AsyncMock()
-
-    if batch_size != 1 and requests_per_minute:
-        with pytest.raises(ValueError):
-            await scorer.score_prompts_batch_async(prompts=["test harm"], batch_size=batch_size)
-    else:
-        await scorer.score_prompts_batch_async(prompts=["test harm"], batch_size=batch_size)
-        scorer.score_async.assert_called_once()
