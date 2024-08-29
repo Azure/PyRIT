@@ -333,8 +333,8 @@ def fetch_harmbench_examples(
     if file_type not in FILE_TYPE_HANDLERS:
         valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
-    
-    #Required keys to validate each example
+
+    # Required keys to validate each example
     required_keys = {"Behavior", "SemanticCategory"}
 
     # Initialize containers for prompts and semantic categories
@@ -350,7 +350,7 @@ def fetch_harmbench_examples(
         missing_keys = required_keys - example.keys()
         if missing_keys:
             raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
-        
+
         # Extract and append the data to respective containers
         prompts.append(example["Behavior"])
         semantic_categories.add(example["SemanticCategory"])
