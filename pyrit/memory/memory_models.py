@@ -2,9 +2,10 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import Literal
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
+from pyrit.models import PromptDataType, Prompt
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
 from sqlalchemy.types import Uuid  # type: ignore
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
@@ -207,3 +208,83 @@ class EmbeddingMessageWithSimilarity(BaseModel):
     uuid: uuid.UUID
     metric: str
     score: float = 0.0
+
+
+class PromptEntry(Base):
+    """
+    Represents the raw prompt or prompt template data as found in open datasets.
+
+    Note: This is different from the PromptMemoryEntry which is the processed prompt data.
+    Prompt merely reflects basic prompts before plugging into orchestrators,
+    running through models with corresponding attack strategies, and applying converters.
+    PromptMemoryEntry captures the processed prompt data before and after the above steps. 
+
+    Attributes:
+        __tablename__ (str): The name of the database table.
+        __table_args__ (dict): Additional arguments for the database table.
+        id (Uuid): The unique identifier for the memory entry.
+        value (str): The value of the prompt.
+        data_type (PromptDataType): The data type of the prompt.
+        dataset_name (str): The name of the dataset the prompt belongs to.
+        harm_categories (List[str]): The harm categories associated with the prompt.
+        description (str): The description of the prompt.
+        author (str): The author of the prompt.
+        group (str): The group of the prompt.
+        source (str): The source of the prompt.
+        date_added (DateTime): The date the prompt was added.
+        added_by (str): The user who added the prompt.
+        metadata (dict[str, str]): The metadata associated with the prompt.
+
+    Methods:
+        __str__(): Returns a string representation of the memory entry.
+    """    
+    __tablename__ = "Prompts"
+    __table_args__ = {"extend_existing": True}
+    id = Column(Uuid, nullable=False, primary_key=True)
+    value = Column(String, nullable=False)
+    data_type: Mapped[PromptDataType] = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    dataset_name = Column(String, nullable=True)
+    harm_categories: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+    description = Column(String, nullable=True)
+    authors: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+    groups: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+    source = Column(str, nullable=True)
+    date_added = Column(DateTime, nullable=False)
+    added_by = Column(String, nullable=False)
+    metadata: Mapped[dict[str, str]] = Column(JSON, nullable=True)
+    parameters: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+
+    def __init__(self, *, entry: Prompt):
+        self.id = entry.id
+        self.value = entry.value
+        self.data_type = entry.data_type
+        self.name = entry.name
+        self.dataset_name = entry.dataset_name
+        self.harm_categories = entry.harm_categories
+        self.description = entry.description
+        self.authors = entry.authors
+        self.groups = entry.groups
+        self.source = entry.source
+        self.date_added = entry.date_added
+        self.added_by = entry.added_by
+        self.metadata = entry.metadata
+        self.parameters = entry.parameters
+    
+    def get_prompt(self) -> Prompt:
+        return Prompt(
+            id=self.id,
+            value=self.value,
+            data_type=self.data_type,
+            name=self.name,
+            dataset_name=self.dataset_name,
+            harm_categories=self.harm_categories,
+            description=self.description,
+            authors=self.authors,
+            groups=self.groups,
+            source=self.source,
+            date_added=self.date_added,
+            added_by=self.added_by,
+            metadata=self.metadata,
+            parameters=self.parameters,
+        )

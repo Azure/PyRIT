@@ -1,0 +1,65 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List, Optional, Union
+import uuid
+
+from pyrit.common.yaml_loadable import YamlLoadable
+from pyrit.models.literals import PromptDataType
+
+
+@dataclass
+class Prompt(YamlLoadable):
+    id: Optional[Union[uuid.UUID, str]]
+    value: str
+    data_type: PromptDataType
+    name: Optional[str]
+    dataset_name: Optional[str]
+    harm_categories: Optional[List[str]]
+    description: Optional[str]
+    authors: Optional[List[str]]
+    groups: Optional[List[str]]
+    source: Optional[str]
+    date_added: Optional[datetime]
+    added_by: Optional[str]
+    metadata: Optional[Dict[str, str]]
+    parameters: Optional[List[str]]
+
+    def __init__(
+        self,
+        *,
+        id: Optional[uuid.UUID] = None,
+        value: str,
+        data_type: PromptDataType,
+        name: Optional[str] = None,
+        dataset_name: Optional[str] = None,
+        harm_categories: Optional[List[str]] = None,
+        description: Optional[str] = None,
+        authors: Optional[List[str]] = None,
+        groups: Optional[List[str]] = None,
+        source: Optional[str] = None,
+        date_added: Optional[datetime] = datetime.now(),
+        added_by: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
+        parameters: Optional[List[str]] = None,
+    ):
+        self.id = id if id else uuid.uuid4()
+        self.value = value
+        self.data_type = data_type
+        self.name = name
+        self.dataset_name = dataset_name
+        self.harm_categories = harm_categories or []
+        self.description = description
+        self.authors = authors or []
+        self.groups = groups or []
+        self.source = source
+        self.date_added = date_added
+        self.added_by = added_by
+        self.metadata = metadata or {}
+        self.parameters = parameters or []
+
+
+class PromptDataset(YamlLoadable):
+    prompts: List[Prompt]
