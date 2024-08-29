@@ -13,6 +13,7 @@ class TrueFalseInverterScorer(Scorer):
     """A scorer that inverts a true false score."""
 
     def __init__(self, *, memory: MemoryInterface, scorer: Scorer, threshold: float) -> None:
+        super().__init__()
         self._scorer = scorer
         self._threshold = threshold
         self._memory = memory

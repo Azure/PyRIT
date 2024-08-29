@@ -13,6 +13,7 @@ from pyrit.score.scorer import Scorer
 class MarkdownInjectionScorer(Scorer):
 
     def __init__(self, memory: MemoryInterface = None):
+        super().__init__()
         self._category = "security"
         self.scorer_type = "true_false"
         self._memory = memory if memory else DuckDBMemory()

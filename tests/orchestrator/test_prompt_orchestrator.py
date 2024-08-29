@@ -10,7 +10,7 @@ from pyrit.memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.score import Score
+from pyrit.score import Score, SubStringScorer
 
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 from tests.mocks import MockPromptTarget
@@ -94,7 +94,13 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
 @pytest.mark.parametrize("num_conversations", [1, 10, 20])
 async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_conversations: int):
     # Set up mocks and return values
-    scorer = AsyncMock()
+    scorer = SubStringScorer(
+        substring="test",
+        category="test",
+        memory=mock_target._memory,
+    )
+
+    scorer.score_async = AsyncMock()
 
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
     orchestrator._prompt_normalizer = AsyncMock()

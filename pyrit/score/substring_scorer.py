@@ -14,6 +14,7 @@ class SubStringScorer(Scorer):
     """
 
     def __init__(self, *, substring: str, category: str = None, memory: MemoryInterface = None) -> None:
+        super().__init__()
         self._memory = memory if memory else DuckDBMemory()
 
         self._substring = substring
