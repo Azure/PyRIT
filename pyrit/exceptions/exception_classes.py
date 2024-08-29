@@ -168,6 +168,9 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
     Returns:
         Callable: The decorated function with retry logic applied.
     """
+
+    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+    
     return retry(
         reraise=True,
         retry=retry_if_exception_type(MissingPromptHolderException),
