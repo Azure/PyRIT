@@ -417,78 +417,9 @@ async def test_select(simple_prompts: PromptDataset,probability:int):
                 assert node.index == 0
         
         if probability == 0.5:
-            fuzzer_orchestrator._rewards =[1,2,3,4,5]
             current_func = fuzzer_orchestrator._select()
             path_mcts = fuzzer_orchestrator._mcts_selected_path
             expected = [0,4]
             for ind,node in enumerate(path_mcts):
                 assert node.index == expected[ind] 
                 
-
-
-            
-                #assert current == fuzzer_orchestrator._prompt_nodes[2]
-            
-        # if probability == 0.5:
-        #     assert fuzzer_orchestrator._mcts_selected_path == [fuzzer_orchestrator._prompt_nodes[2], fuzzer_orchestrator._prompt_nodes[3]]
-        
-# @pytest.mark.asyncio
-# @pytest.mark.parametrize("probability", [0,0.5])
-# async def test_select_test(simple_prompts: PromptDataset,probability:int):
-#     prompt_template1 = PromptTemplate.from_yaml_file(
-#     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml")
-    
-#     prompt_template2 = PromptTemplate.from_yaml_file(
-#     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aim.yaml") 
-    
-
-    # prompt_templates = [prompt_template1.template,prompt_template2.template]
-    
-    
-    # # set the children of each parent
-    # prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget)
-    # prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget)
-    # template_converters = [prompt_shorten_converter,prompt_expand_converter]
-    # fuzzer_orchestrator = FuzzerOrchestrator(
-    #             prompts = simple_prompts.prompts,
-    #             prompt_templates = prompt_templates,
-    #             prompt_target = MockPromptTarget,
-    #             template_converter = template_converters,
-    #             scoring_target = MagicMock(),
-    #             frequency_weight = 0.5,
-    #             reward_penalty = 0.1,
-    #             minimum_reward = 0.2,
-    #             non_leaf_node_probability = 0.1,
-    #             random_seed = None, 
-    #             batch_size = 10,
-    # )
-
-    # fuzzer_orchestrator._prompt_nodes[1]._parent = [fuzzer_orchestrator._prompt_nodes[0]]
-    # fuzzer_orchestrator._prompt_nodes[3]._parent = [fuzzer_orchestrator._prompt_nodes[2]]
-    # fuzzer_orchestrator._prompt_nodes[4]._parent = [fuzzer_orchestrator._prompt_nodes[2]]
-    # fuzzer_orchestrator._prompt_nodes[0]._children = [fuzzer_orchestrator._prompt_nodes[1]]
-    # fuzzer_orchestrator._prompt_nodes[2]._children = [fuzzer_orchestrator._prompt_nodes[4]]
-    # fuzzer_orchestrator._prompt_nodes[2]._children = [fuzzer_orchestrator._prompt_nodes[3]]
-    # fuzzer_orchestrator._step =2
-    # fuzzer_orchestrator._rewards =[1,3]
-    # prompt_node = fuzzer_orchestrator._prompt_nodes
-    #fuzzer_orchestrator._best_UCT_score = [1.0,2.0,3.0,4.0]
-    #assert len(prompt_node) == len(fuzzer_orchestrator._rewards)
-    # for index, node in enumerate(prompt_node):
-    #     fuzzer_orchestrator._rewards = [1,3]
-    #     fuzzer_orchestrator.index = node.index
-    #     fuzzer_orchestrator._step= 2
-    #     UCT_score_func = fuzzer_orchestrator._best_UCT_score()
-    #     UCT_score = UCT_score_func(node)
-    #     print(float(round(UCT_score,2)))
-        # current = max(prompt_node, key=fuzzer_orchestrator._best_UCT_score())
-        # print('current',current.index)
-        # current_func = fuzzer_orchestrator._select()
-        # print('select',current_func.index)
-        # path_mcts = fuzzer_orchestrator._mcts_selected_path
-        # for node in path_mcts:
-        #     print(node.index)
-
-
-
-
