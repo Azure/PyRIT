@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 class AzureSpeechAudioToTextConverter(PromptConverter):
     """
-    The AzureSpeechTextToAudio takes a prompt and generates a wave file.
-    https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
+    The AzureSpeechAudioTextConverter takes a .wav file and transcribes it into text.
+    https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
     Args:
         azure_speech_region (str): The name of the Azure region.
         azure_speech_key (str): The API key for accessing the service.
@@ -91,7 +91,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         audio_config = speechsdk.audio.AudioConfig(filename=audio_file)
         # Instantiate a speech recognizer object
         speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
-        # Create an mpty list to store recognized text
+        # Create an empty list to store recognized text
         transcribed_text = []
         done = False
 
@@ -122,7 +122,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
                 if cancellation_details.reason == speechsdk.CancellationReason.Error:
                     logger.error("Error details: {}".format(cancellation_details.error_details))
                 elif cancellation_details.reason == speechsdk.CancellationReason.EndOfStream:
-                    logging.info("End of audio stream")
+                    logging.info("End of audio stream detected.")
 
         # Connect callbacks to the events fired by the speech recognizer
         speech_recognizer.recognized.connect(transcript_cb)
