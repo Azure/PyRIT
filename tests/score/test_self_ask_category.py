@@ -14,7 +14,6 @@ from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
-from pyrit.score import Score
 
 from tests.mocks import get_memory_interface
 
@@ -213,7 +212,9 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("requests_per_minute", [None, 10])
 @pytest.mark.parametrize("batch_size", [1, 10])
-async def test_score_prompts_batch_async(requests_per_minute: int, batch_size: int, scorer_category_response_false: PromptRequestResponse):
+async def test_score_prompts_batch_async(
+    requests_per_minute: int, batch_size: int, scorer_category_response_false: PromptRequestResponse
+):
     chat_target = AsyncMock()
     chat_target._requests_per_minute = requests_per_minute
 

@@ -28,7 +28,7 @@ async def test_score_prompts_by_request_id_async(sample_conversations: list[Prom
         category="test",
         memory=memory,
     )
-    scorer.score_async = AsyncMock() # type: ignore
+    scorer.score_async = AsyncMock()  # type: ignore
 
     orchestrator = ScoringOrchestrator(memory=memory)
 

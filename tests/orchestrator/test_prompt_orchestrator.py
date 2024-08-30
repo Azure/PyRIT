@@ -100,7 +100,7 @@ async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_c
         memory=mock_target._memory,
     )
 
-    scorer.score_async = AsyncMock() # type: ignore
+    scorer.score_async = AsyncMock()  # type: ignore
 
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
     orchestrator._prompt_normalizer = AsyncMock()
