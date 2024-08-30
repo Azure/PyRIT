@@ -7,13 +7,14 @@ import pytest
 
 from textwrap import dedent
 from typing import Generator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
+from pyrit.score import Score
 
 from tests.mocks import get_memory_interface
 
@@ -207,3 +208,28 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async("this has no bullying")
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("requests_per_minute", [None, 10])
+@pytest.mark.parametrize("batch_size", [1, 10])
+async def test_score_prompts_batch_async(requests_per_minute: int, batch_size: int, scorer_category_response_false: PromptRequestResponse):
+    chat_target = AsyncMock()
+    chat_target._requests_per_minute = requests_per_minute
+
+    scorer = SelfAskCategoryScorer(
+        chat_target=chat_target,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        memory=MagicMock(),
+    )
+
+    prompt = PromptRequestPiece(role="assistant", original_value="test")
+    prompt2 = PromptRequestPiece(role="assistant", original_value="test 2")
+
+    with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
+        if batch_size != 1 and requests_per_minute:
+            with pytest.raises(ValueError):
+                await scorer.score_prompts_batch_async(prompts=[prompt], batch_size=batch_size)
+        else:
+            results = await scorer.score_prompts_batch_async(prompts=[prompt, prompt2], batch_size=batch_size)
+            assert len(results) == 2

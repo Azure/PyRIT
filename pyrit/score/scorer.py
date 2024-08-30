@@ -93,7 +93,7 @@ class Scorer(abc.ABC):
             batch_results = await asyncio.gather(*tasks)
             results.extend(batch_results)
 
-        # results is a list[list[str]] and needs to be flattened
+        # results is a list[list[Score]] and needs to be flattened
         return [score for sublist in results for score in sublist]
 
     async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
