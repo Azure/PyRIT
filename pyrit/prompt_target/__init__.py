@@ -16,6 +16,7 @@ from pyrit.prompt_target.dall_e_target import DALLETarget
 from pyrit.prompt_target.prompt_chat_target.ollama_chat_target import OllamaChatTarget
 from pyrit.prompt_target.azure_openai_completion_target import AzureOpenAICompletionTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
+from pyrit.prompt_target.hugging_face_chat_target import HuggingFaceChatTarget
 
 
 __all__ = [
@@ -30,6 +31,7 @@ __all__ = [
     "GandalfTarget",
     "GandalfLevel",
     "DALLETarget",
+    "HuggingFaceChatTarget",
     "OpenAIChatTarget",
     "PromptChatTarget",
     "PromptShieldTarget",
