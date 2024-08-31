@@ -2,14 +2,13 @@
 # Licensed under the MIT license.
 
 import logging
-import asyncio
 from pathlib import Path
 
 from typing import Optional
 from uuid import uuid4
 
 
-from pyrit.common.batch_helper import chunk_prompts
+from pyrit.common.batch_helper import batch_task_async
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
@@ -142,26 +141,13 @@ class SkeletonKeyOrchestrator(Orchestrator):
             list[PromptRequestResponse]: The responses from the prompt target.
         """
 
-        responses = []
-
-        if self._prompt_target._requests_per_minute and self._batch_size != 1:
-            raise ValueError(
-                "Batch size must be configured to 1 for the target requests per minute value to be respected."
-            )
-
-        for prompts_batch in chunk_prompts(prompt_list, self._batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(
-                    self.send_skeleton_key_with_prompt_async(
-                        prompt=prompt,
-                    )
-                )
-
-            batch_results = await asyncio.gather(*tasks)
-            responses.extend(batch_results)
-
-        return responses
+        return await batch_task_async(
+            task=self.send_skeleton_key_with_prompt_async,
+            task_argument="prompt",
+            prompt_target=self._prompt_target,
+            batch_size=self._batch_size,
+            items_to_batch=prompt_list,
+        )
 
     def print_conversation(self) -> None:
         """Prints all the conversations that have occured with the prompt target."""

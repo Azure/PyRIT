@@ -61,10 +61,9 @@ class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
     def __init__(self, id=None, memory=None, rpm=None) -> None:
+        super().__init__(memory=memory, requests_per_minute=rpm)
         self.id = id
         self.prompt_sent = []
-        self._requests_per_minute = rpm
-        self._memory = memory
 
     def set_system_prompt(
         self,

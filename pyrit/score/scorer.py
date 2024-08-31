@@ -2,11 +2,10 @@
 # Licensed under the MIT license.
 
 import abc
-import asyncio
 from abc import abstractmethod
 from typing import Optional, Sequence
 
-from pyrit.common.batch_helper import chunk_prompts
+from pyrit.common.batch_helper import batch_task_async
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Score, ScoreType
@@ -77,21 +76,13 @@ class Scorer(abc.ABC):
     async def score_prompts_batch_async(
         self, prompts: Sequence[PromptRequestPiece], batch_size: int = 10
     ) -> list[Score]:
-        results = []
-
-        exc_message = "Batch size must be configured to 1 for the target requests per minute value to be respected."
-        if self._prompt_target and self._prompt_target._requests_per_minute and batch_size != 1:
-            raise ValueError(exc_message)
-        elif self._prompt_chat_target and self._prompt_chat_target._requests_per_minute and batch_size != 1:
-            raise ValueError(exc_message)
-
-        for prompts_batch in chunk_prompts(prompts, batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(self.score_async(request_response=prompt))
-
-            batch_results = await asyncio.gather(*tasks)
-            results.extend(batch_results)
+        results = await batch_task_async(
+            task=self.score_async,
+            task_argument="request_response",
+            prompt_target=self._prompt_target if self._prompt_target else self._prompt_chat_target,
+            batch_size=batch_size,
+            items_to_batch=prompts,
+        )
 
         # results is a list[list[Score]] and needs to be flattened
         return [score for sublist in results for score in sublist]

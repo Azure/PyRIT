@@ -2,11 +2,10 @@
 # Licensed under the MIT license.
 
 import abc
-import asyncio
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common.batch_helper import chunk_prompts
+from pyrit.common.batch_helper import batch_task_async
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
@@ -113,29 +112,16 @@ class PromptNormalizer(abc.ABC):
                 received for each prompt.
         """
 
-        results = []
-
-        if target._requests_per_minute and batch_size != 1:
-            raise ValueError(
-                "Batch size must be configured to 1 for the target requests per minute value to be respected."
-            )
-
-        for prompts_batch in chunk_prompts(requests, batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(
-                    self.send_prompt_async(
-                        normalizer_request=prompt,
-                        target=target,
-                        labels=labels,
-                        orchestrator_identifier=orchestrator_identifier,
-                    )
-                )
-
-            batch_results = await asyncio.gather(*tasks)
-            results.extend(batch_results)
-
-        return results
+        return await batch_task_async(
+            prompt_target=target,
+            batch_size=batch_size,
+            items_to_batch=requests,
+            task=self.send_prompt_async,
+            task_argument="normalizer_request",
+            target=target,
+            labels=labels,
+            orchestrator_identifier=orchestrator_identifier,
+        )
 
     async def convert_response_values(
         self,
