@@ -12,7 +12,7 @@ import os
 from pyrit.common import default_values
 from pyrit.datasets import fetch_harmbench_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import AzureOpenAITextChatTarget
+from pyrit.prompt_target import TextTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 
@@ -23,11 +23,7 @@ default_values.load_default_env()
 
 # %%
 # Set up the Azure OpenAI prompt target
-prompt_target = AzureOpenAITextChatTarget(
-    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
-    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
-    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-)
+prompt_target = TextTarget()
 examples_source = "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/harmbench_behaviors_text_all.csv"
 
 
@@ -48,13 +44,22 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[h
 # Fetch examples from HarmBench dataset
 prompt_dataset = fetch_harmbench_examples(examples_source, source_type="public_url")
 
-# Use the first 4 examples for red teaming
-prompt_list = prompt_dataset.prompts[:4]
-
 # Send prompts using the orchestrator and capture responses
-responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+try:
+    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+except Exception as e:
+    print(f"An error occurred while sending prompts: {e}")
+    responses = []
 
-# Print the conversations to analyze how the LLM handled the harmful prompts
-orchestrator.print_conversations()  # Use built-in method to display conversations
+# Ensure we handle the responses correctly
+if responses:
+    # Access memory after sending prompts
+    memory = orchestrator.get_memory()
+    
+    for entry in memory:
+        print(entry)
+else:
+    print("No valid responses were received from the orchestrator.")
+
 
 # %%
