@@ -65,18 +65,7 @@ class PromptNode:
         self._rewards:int = 0 
         if self._parent is not None:
             self._parent._children.append(self)
-          
-    # @property
-    # def index(self):
-    #     return self._index
-
-    # @index.setter
-    # def index(self, index: int):
-    #     self._index = index
-    #     if self._parent is not None:
-    #         self._parent._children.append(self)
         
-
 class FuzzerOrchestrator(Orchestrator):
     _memory: MemoryInterface
 
@@ -162,13 +151,8 @@ class FuzzerOrchestrator(Orchestrator):
         )
 
         self._prompt_target = prompt_target
-        #self._achieved_objective = False
         self._prompts = prompts
 
-        #self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        #self._prompt_target._memory = self._memory
-        #self._prompt_target_conversation_id = str(uuid4())
-        #self._memory = self._memory
         self._prompt_templates = prompt_templates
         self._template_converter = template_converter
         self._frequency_weight = frequency_weight
@@ -189,7 +173,6 @@ class FuzzerOrchestrator(Orchestrator):
         self._step = 0  # to keep track of the steps or the count
         # keeps track of the path that has been currently selected
         self._mcts_selected_path: list[PromptNode] = []  # type: ignore
-       # self._last_choice_index = None
         global TEMPLATE_PLACEHOLDER 
         TEMPLATE_PLACEHOLDER = "{{ prompt }}"
 
@@ -224,9 +207,6 @@ class FuzzerOrchestrator(Orchestrator):
         self._prompt_nodes: list[PromptNode] = [PromptNode(prompt) for prompt in prompt_templates]
 
         self._initial_prompts_nodes = self._prompt_nodes.copy()
-
-        # for i, prompt_node in enumerate(self._prompt_nodes):
-        #     prompt_node.index = i
 
     async def execute_fuzzer(self) -> PromptRequestPiece:
         """
@@ -346,9 +326,6 @@ class FuzzerOrchestrator(Orchestrator):
             This method selects the template from the list of templates using the MCTS algorithm.
         """
         self._step += 1
-        # if the length of list of templates greater than rewards list (when new nodes added because of successful jailbreak) assign 0 as initial reward.
-        #if len(self._prompt_nodes) > len(self._rewards):
-        #self._rewards.extend([0 for _ in range(len(self._prompt_nodes) - len(self._rewards))])
 
         current = max(self._initial_prompts_nodes, key=self._best_UCT_score())  # initial path
         self._mcts_selected_path.append(current)
