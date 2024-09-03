@@ -52,7 +52,6 @@ class GandalfCommon(PromptTarget):
         self._defender = level.value
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        breakpoint()
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
