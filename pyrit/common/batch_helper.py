@@ -39,7 +39,7 @@ def _validate_rate_limit_parameters(prompt_target: PromptTarget, batch_size: int
 
 
 async def batch_task_async(
-    prompt_target: PromptTarget, batch_size: int, items_to_batch, task: Callable, task_argument: str, **task_kwargs
+    *, prompt_target: PromptTarget, batch_size: int, items_to_batch, task: Callable, task_argument: str, **task_kwargs
 ):
     """
     Performs provided task in batches and validates parameters using helpers.

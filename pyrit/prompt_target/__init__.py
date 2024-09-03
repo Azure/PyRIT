@@ -35,7 +35,7 @@ __all__ = [
     "PromptChatTarget",
     "PromptShieldTarget",
     "PromptTarget",
+    "set_max_requests_per_minute",
     "TextTarget",
     "OllamaChatTarget",
-    "set_max_requests_per_minute",
 ]
