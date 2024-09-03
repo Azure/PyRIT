@@ -16,6 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
+from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_models import EmbeddingData, Base, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
@@ -36,11 +37,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
     SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
     TOKEN_URL = "https://database.windows.net/"  # The token URL for any Azure SQL database
+    AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
 
-    def __init__(self, *, connection_string: str, verbose: bool = False):
+    def __init__(self, *, connection_string: Optional[str] = None, verbose: bool = False):
         super(AzureSQLMemory, self).__init__()
 
-        self._connection_string = connection_string
+        self._connection_string = default_values.get_required_value(
+            env_var_name=self.AZURE_SQL_DB_CONNECTION_STRING, passed_value=connection_string
+        )
 
         self.engine = self._create_engine(has_echo=verbose)
 
@@ -74,6 +78,18 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             raise
 
     def _enable_azure_authorization(self) -> None:
+        """
+        The following is necessary because of how SQLAlchemy and PyODBC handle connection creation. In PyODBC, the
+        token is passed outside the connection string in the `connect()` method. Since SQLAlchemy lazy-loads
+        its connections, we need to set this as a separate argument to the `connect()` method. In SQLALchemy
+        we do this by hooking into the `do_connect` event, which is fired when a connection is created.
+
+        For further details, see:
+        * <https://docs.sqlalchemy.org/en/20/dialects/mssql.html#connecting-to-databases-with-access-tokens>
+        * <https://learn.microsoft.com/en-us/azure/azure-sql/database/azure-sql-python-quickstart
+          #add-code-to-connect-to-azure-sql-database>
+        """
+
         @event.listens_for(self.engine, "do_connect")
         def provide_token(_dialect, _conn_rec, cargs, cparams):
             # remove the "Trusted_Connection" parameter that SQLAlchemy adds
