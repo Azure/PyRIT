@@ -1,10 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# flake8: noqa
-
-import tests.set_test_constants  # noqa: F401  # pylint: disable=unused-import
-
 from pathlib import Path
 import pytest
 import tempfile
@@ -16,7 +12,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestResponse
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.score import Score
 

@@ -4,7 +4,7 @@
 from typing import Optional
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.score import Score, Scorer
 
 
@@ -36,6 +36,7 @@ class SubStringScorer(Scorer):
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
+                task=task,
             )
         ]
 

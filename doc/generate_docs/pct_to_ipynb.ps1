@@ -3,7 +3,10 @@
 
 param (
     [Parameter(Position=0,mandatory=$true)]
-    [string]$runId
+    [string]$runId,
+
+    [Parameter(Position=1,mandatory=$false)]
+    [string]$kernelName = "pyrit-kernel"
 )
 
 $scriptDir = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
@@ -36,7 +39,7 @@ foreach ($file in $files) {
     Write-Host "Processing $file"
 
     $stderr = $null
-    $result = jupytext --execute --to notebook $file.FullName 2>&1
+    $result = jupytext --execute --set-kernel $kernelName --to notebook $file.FullName 2>&1
 
     $stderr = $result | Where-Object {
         $_ -is [System.Management.Automation.ErrorRecord] -and

@@ -27,7 +27,7 @@ class TrueFalseInverterScorer(Scorer):
 
         Args:
             request_response (PromptRequestPiece): The piece to score.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: The scores.

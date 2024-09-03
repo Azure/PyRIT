@@ -7,7 +7,7 @@ import uuid
 import pytest
 
 from pyrit.memory import DuckDBMemory
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.score import Score
@@ -16,7 +16,7 @@ from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, Normal
 from tests.mocks import MockPromptTarget
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def mock_target() -> MockPromptTarget:
     fd, path = tempfile.mkstemp(suffix=".json.memory")
     file_memory = DuckDBMemory(db_path=":memory:")

@@ -8,7 +8,7 @@ from typing import Generator
 import pytest
 
 from pyrit.memory import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import TextTarget
 

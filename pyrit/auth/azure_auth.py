@@ -13,7 +13,7 @@ from azure.identity import DefaultAzureCredential
 from azure.identity import get_bearer_token_provider
 
 from pyrit.auth.auth_config import AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE, REFRESH_TOKEN_BEFORE_MSEC
-from pyrit.interfaces import Authenticator
+from pyrit.auth.authenticator import Authenticator
 
 
 logger = logging.getLogger(__name__)
