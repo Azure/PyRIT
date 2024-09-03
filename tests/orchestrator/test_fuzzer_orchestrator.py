@@ -39,7 +39,6 @@ def scoring_target(memory) -> MockPromptTarget:
 def simple_prompts() -> PromptDataset:
     '''sample prompts'''
     return  PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt") 
-#parametize the test case on the prompts. 
 
 @pytest.fixture
 def simple_templateconverter():
@@ -60,9 +59,7 @@ def simple_prompt_templates():
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aligned.yaml")
     prompt_template4 = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "axies.yaml")
-    # prompt_template5 = PromptTemplate.from_yaml_file(
-    # pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "balakula.yaml")
-    
+   
     prompt_templates = [prompt_template1.template,prompt_template2.template,prompt_template3.template,prompt_template4.template]
 
     return prompt_templates
@@ -89,9 +86,6 @@ async def test_execute_fuzzer(rounds:int, simple_prompts:PromptDataset, simple_p
     prompt_node = fuzzer_orchestrator._prompt_nodes
     fuzzer_orchestrator._scorer = MagicMock()
 
-    #prompt_normalizer,requests to target , mock the score
-    #
-    #prompt = 'test'
     true_score = Score(
                     score_value="True", 
                     score_value_description="",
@@ -126,8 +120,6 @@ async def test_execute_fuzzer(rounds:int, simple_prompts:PromptDataset, simple_p
             side_effect =[[false_score] * (rounds-1) * len(simple_prompts.prompts) + [true_score] * len(simple_prompts.prompts) ] #score2, score2,score2, score2,score1
             )
 
-
-#test empty list of prompt templates
 def test_prompt_templates(simple_prompts:PromptDataset):
     with pytest.raises(ValueError) as e:
         FuzzerOrchestrator(
@@ -141,9 +133,6 @@ def test_prompt_templates(simple_prompts:PromptDataset):
         )
     assert e.match("The initial seed cannot be empty.")
 
-
-
-#test invalid batch size 
 def test_invalid_batchsize(simple_prompts:PromptDataset,simple_prompt_templates:list):
     prompt_templates = [PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml")]
@@ -160,10 +149,7 @@ def test_invalid_batchsize(simple_prompts:PromptDataset,simple_prompt_templates:
         )
     assert e.match("Batch size must be at least 1.")
 
-#test empty list of prompts
 def test_prompts(simple_prompt_templates: list):
-    # prompt_templates = [PromptTemplate.from_yaml_file(
-    # pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml")]
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget)
     prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget)
     template_converters = [prompt_shorten_converter,prompt_expand_converter]
@@ -179,10 +165,7 @@ def test_prompts(simple_prompt_templates: list):
         )
     assert e.match("The initial prompts cannot be empty")
 
-#test empty list of template converter
 def test_template_converter(simple_prompts:PromptDataset,simple_prompt_templates:list):
-    # prompt_templates = [PromptTemplate.from_yaml_file(
-    # pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml")]
     with pytest.raises(ValueError) as e:
         FuzzerOrchestrator(
             prompts = simple_prompts.prompts,
@@ -195,10 +178,7 @@ def test_template_converter(simple_prompts:PromptDataset,simple_prompt_templates
         )
     assert e.match("Template converter cannot be empty")
 
-#test case for max query
 def test_max_query(simple_prompts:PromptDataset,simple_prompt_templates:list):
-    # prompt_templates = [PromptTemplate.from_yaml_file(
-    # pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml")]
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget)
     prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget)
     template_converters = [prompt_shorten_converter,prompt_expand_converter]
@@ -216,7 +196,6 @@ def test_max_query(simple_prompts:PromptDataset,simple_prompt_templates:list):
     fuzzer_orchestrator._current_query = 125
     assert fuzzer_orchestrator._current_query >= fuzzer_orchestrator._query_limit
     
-#test case apply_template_converter
 @pytest.mark.asyncio
 async def test_apply_template_converter():
     prompt_template = PromptTemplate.from_yaml_file(
@@ -238,19 +217,15 @@ async def test_apply_template_converter():
         target = await fuzzer_orchestrator._apply_template_converter(prompt_template)
         assert target
         
-#testcase apply template converter missing placeholder
 @pytest.mark.asyncio
-async def test_apply_template_converter_empty_placeholder():
-    # prompt_template = PromptTemplate.from_yaml_file(
-    # pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml")
-    prompt_template = PromptTemplate.from_yaml_file(
-    pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "scorer_prompt.yaml")
+async def test_apply_template_converter_empty_placeholder(simple_prompts:PromptDataset):
+    prompt_template = ['Write a wikipedia article on . Start the article with "Title:".']
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget)
     prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget)
     template_converters = [prompt_shorten_converter,prompt_expand_converter]
     #template_placeholder = '{{prompt}}'
     fuzzer_orchestrator = FuzzerOrchestrator(
-                prompts = simple_prompts,
+                prompts = simple_prompts.prompts,
                 prompt_templates = prompt_template,
                 prompt_target = MockPromptTarget,
                 template_converter = template_converters,
@@ -265,7 +240,6 @@ async def test_apply_template_converter_empty_placeholder():
         await fuzzer_orchestrator._apply_template_converter(prompt_template)
     assert str(e.value) == "Status Code: 204, Message: Prompt placeholder is empty"
 
-#test case for best UCT
 @pytest.mark.asyncio
 async def test_best_UCT(simple_prompts:PromptDataset,simple_prompt_templates:list):
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget)
