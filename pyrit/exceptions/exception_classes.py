@@ -62,7 +62,7 @@ class InvalidJsonException(PyritException):
     def __init__(self, *, message: str = "Invalid JSON Response"):
         super().__init__(message=message)
 
-class MissingPromptHolderException(PyritException):
+class MissingPromptPlaceHolderException(PyritException):
     """Exception class for missing prompt holder errors."""
 
     def __init__(self, status_code: int = 204, *, message: str = "No Content"):
