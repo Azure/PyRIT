@@ -174,6 +174,7 @@ async def test_scale_scorer_score(memory: MemoryInterface, scorer_scale_response
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == "jailbreak"
     assert score[0].prompt_request_response_id is None
+    assert score[0].task == "task"
 
 
 @pytest.mark.asyncio
@@ -222,6 +223,7 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == "jailbreak"
     assert score[0].prompt_request_response_id is None
+    assert score[0].task == "task"
 
 
 @pytest.mark.asyncio
