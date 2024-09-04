@@ -73,11 +73,11 @@ class OllamaChatTarget(PromptChatTarget):
         self,
         messages: list[ChatMessage],
     ) -> dict:
-        squased_messages = self.chat_message_normalizer.normalize(messages)
-        messages_dict = [message.model_dump(exclude_none=True) for message in squased_messages]
+        squashed_messages = self.chat_message_normalizer.normalize(messages)
+        messages_list = [message.model_dump(exclude_none=True) for message in squashed_messages]
         data = {
             "model": self.model_name,
-            "messages": messages_dict,
+            "messages": messages_list,
             "stream": False,
         }
         return data
