@@ -31,13 +31,13 @@ Once all of the above steps are completed, you can connect to an Azure SQL Serve
 import os
 
 from pyrit.common import default_values
-from pyrit.memory import AzureSQLServer
+from pyrit.memory import AzureSQLMemory
 
 default_values.load_default_env()
 
 conn_str = os.environ.get('AZURE_SQL_SERVER_CONNECTION_STRING')
 
-azure_memory = AzureSQLServer(connection_string=conn_str)
+azure_memory = AzureSQLMemory(connection_string=conn_str)
 ```
 
-Once you have created an instance of `AzureSQLServer`, the code will ensure that your Azure SQL Server database is properly configured with the appropriate tables.
+Once you have created an instance of `AzureSQLMemory`, the code will ensure that your Azure SQL Server database is properly configured with the appropriate tables.

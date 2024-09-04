@@ -10,10 +10,11 @@ import uuid
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models import (
     ChatMessage,
-    PromptRequestResponse,
-    Score,
-    PromptRequestPiece,
     group_conversation_request_pieces_by_sequence,
+    Prompt,
+    PromptRequestResponse,
+    PromptRequestPiece,
+    Score,
 )
 
 from pyrit.memory.memory_models import EmbeddingData
@@ -371,3 +372,16 @@ class MemoryInterface(abc.ABC):
             file_path = RESULTS_PATH / file_name
 
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
+    @abc.abstractmethod
+    def add_prompts_to_memory(self, *, prompts: list[Prompt]) -> None:
+        """
+        Inserts a list of scores into the memory storage.
+        """
+    
+    @abc.abstractmethod
+    def get_prompt_dataset_names(self) -> list[str]:
+        """
+        Returns a list of all prompt dataset names in the memory storage.
+        """
+        

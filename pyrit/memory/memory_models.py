@@ -249,10 +249,10 @@ class PromptEntry(Base):
     description = Column(String, nullable=True)
     authors: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
     groups: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
-    source = Column(str, nullable=True)
+    source = Column(String, nullable=True)
     date_added = Column(DateTime, nullable=False)
     added_by = Column(String, nullable=False)
-    metadata: Mapped[dict[str, str]] = Column(JSON, nullable=True)
+    prompt_metadata: Mapped[dict[str, str]] = Column(JSON, nullable=True)
     parameters: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
 
     def __init__(self, *, entry: Prompt):
@@ -268,7 +268,7 @@ class PromptEntry(Base):
         self.source = entry.source
         self.date_added = entry.date_added
         self.added_by = entry.added_by
-        self.metadata = entry.metadata
+        self.prompt_metadata = entry.metadata
         self.parameters = entry.parameters
     
     def get_prompt(self) -> Prompt:
@@ -285,6 +285,6 @@ class PromptEntry(Base):
             source=self.source,
             date_added=self.date_added,
             added_by=self.added_by,
-            metadata=self.metadata,
+            metadata=self.prompt_metadata,
             parameters=self.parameters,
         )

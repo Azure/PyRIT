@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import MutableSequence, Union, Optional, Sequence
 import logging
 
+from pyrit.models.prompt_dataset import Prompt
 from sqlalchemy import create_engine, MetaData, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
@@ -12,7 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
-from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base, ScoreEntry
+from pyrit.memory.memory_models import EmbeddingData, PromptEntry, PromptMemoryEntry, Base, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
@@ -365,3 +366,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Base.metadata.drop_all(self.engine)
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
+
+    def add_prompts_to_memory(self, *, prompts: list[Prompt]) -> None:
+        """
+        Inserts a list of prompts into the memory storage.
+        """
+        self._insert_entries(entries=[PromptEntry(entry=prompt) for prompt in prompts])

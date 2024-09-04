@@ -13,10 +13,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import EmbeddingData, Base, PromptMemoryEntry, ScoreEntry
+from pyrit.memory.memory_models import Base, EmbeddingData, PromptEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import Score
+from pyrit.models import Prompt, PromptRequestPiece, Score
+
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +223,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
+    def query_entries(self, model, *, conditions: Optional = None, distinct: bool = False) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 
@@ -239,6 +239,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(model)
                 if conditions is not None:
                     query = query.filter(conditions)
+                if distinct:
+                    return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
@@ -249,3 +251,22 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Base.metadata.drop_all(self.engine)
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
+
+    def add_prompts_to_memory(self, *, prompts: list[Prompt]) -> None:
+        """
+        Inserts a list of prompts into the memory storage.
+        """
+        self._insert_entries(entries=[PromptEntry(entry=prompt) for prompt in prompts])
+    
+    def get_prompt_dataset_names(self) -> list[str]:
+        """
+        Returns a list of all prompt dataset names in the memory storage.
+        """
+        try:
+            return self.query_entries(
+                PromptEntry,
+                conditions=and_(PromptEntry.dataset_name != None, PromptEntry.dataset_name != ""),
+            )  # type: ignore
+        except Exception as e:
+            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
+            return []
