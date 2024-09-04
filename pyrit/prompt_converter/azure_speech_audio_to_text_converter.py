@@ -43,11 +43,13 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         )
 
         self._recognition_language = recognition_language
+        # Create a flag to indicate when recognition is finished
+        self.done = False
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
+        return input_type == "audio_path"
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """
         Converter that transcribes audio to text.
 
@@ -61,7 +63,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         if not os.path.exists(prompt):
-            raise ValueError("File path does not exist. Please provide valid audio file path.")
+            raise FileNotFoundError("File path does not exist. Please provide valid audio file path.")
 
         if not prompt.endswith(".wav"):
             raise ValueError("Please provide a .wav audio file. Compressed formats are not currently supported.")
@@ -92,52 +94,53 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         # Instantiate a speech recognizer object
         speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
         # Create an empty list to store recognized text
-        transcribed_text = []
-        done = False
-
-        def transcript_cb(evt: speechsdk.SessionEventArgs) -> None:
-            """
-            Callback function that appends transcribed text upon receiving a "recognized" event
-
-            Args:
-                evt (SessionEventArgs): event
-            """
-            logging.info("RECOGNIZED: {}".format(evt.result.text))
-            transcribed_text.append(evt.result.text)
-
-        def stop_cb(evt: speechsdk.SessionEventArgs) -> None:
-            """
-            Callback function that stops continuous recognition upon receiving an event 'evt'
-
-            Args:
-                evt (SessionEventArgs): event
-            """
-            logging.info("CLOSING on {}".format(evt))
-            speech_recognizer.stop_continuous_recognition_async()
-            nonlocal done
-            done = True
-            if evt.result.reason == speechsdk.ResultReason.Canceled:
-                cancellation_details = evt.result.cancellation_details
-                logging.info("Speech recognition canceled: {}".format(cancellation_details.reason))
-                if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                    logger.error("Error details: {}".format(cancellation_details.error_details))
-                elif cancellation_details.reason == speechsdk.CancellationReason.EndOfStream:
-                    logging.info("End of audio stream detected.")
+        transcribed_text: list[str] = []
+        # Flag is set to False to indicate that recognition is not yet finished
+        self.done = False
 
         # Connect callbacks to the events fired by the speech recognizer
-        speech_recognizer.recognized.connect(transcript_cb)
-        speech_recognizer.recognizing.connect(lambda evt: logging.info("RECOGNIZING: {}".format(evt)))
-        speech_recognizer.recognized.connect(lambda evt: logging.info("RECOGNIZED: {}".format(evt)))
-        speech_recognizer.session_started.connect(lambda evt: logging.info("SESSION STARTED: {}".format(evt)))
-        speech_recognizer.session_stopped.connect(lambda evt: logging.info("SESSION STOPPED: {}".format(evt)))
-
+        speech_recognizer.recognized.connect(lambda evt: self.transcript_cb(evt, transcript=transcribed_text))
+        speech_recognizer.recognizing.connect(lambda evt: logger.info("RECOGNIZING: {}".format(evt)))
+        speech_recognizer.recognized.connect(lambda evt: logger.info("RECOGNIZED: {}".format(evt)))
+        speech_recognizer.session_started.connect(lambda evt: logger.info("SESSION STARTED: {}".format(evt)))
+        speech_recognizer.session_stopped.connect(lambda evt: logger.info("SESSION STOPPED: {}".format(evt)))
         # Stop continuous recognition when stopped or canceled event is fired
-        speech_recognizer.canceled.connect(stop_cb)
-        speech_recognizer.session_stopped.connect(stop_cb)
+        speech_recognizer.canceled.connect(lambda evt: self.stop_cb(evt, recognizer=speech_recognizer))
+        speech_recognizer.session_stopped.connect(lambda evt: self.stop_cb(evt, recognizer=speech_recognizer))
 
         # Start continuous recognition
         speech_recognizer.start_continuous_recognition_async()
-        while not done:
+        while not self.done:
             time.sleep(0.5)
 
         return "".join(transcribed_text)
+
+    def transcript_cb(self, evt: speechsdk.SpeechRecognitionEventArgs, transcript: list[str]) -> None:
+        """
+        Callback function that appends transcribed text upon receiving a "recognized" event
+
+        Args:
+            evt (SessionEventArgs): event
+            transcript (list): list to store transcribed text
+        """
+        logger.info("RECOGNIZED: {}".format(evt.result.text))
+        transcript.append(evt.result.text)
+
+    def stop_cb(self, evt: speechsdk.SpeechRecognitionEventArgs, recognizer: speechsdk.SpeechRecognizer) -> None:
+        """
+        Callback function that stops continuous recognition upon receiving an event 'evt'
+
+        Args:
+            evt (SessionEventArgs): event
+            recognizer (SpeechRecognizer): speech recognizer object
+        """
+        logger.info("CLOSING on {}".format(evt))
+        recognizer.stop_continuous_recognition_async()
+        self.done = True
+        if evt.result.reason == speechsdk.ResultReason.Canceled:
+            cancellation_details = evt.result.cancellation_details
+            logger.info("Speech recognition canceled: {}".format(cancellation_details.reason))
+            if cancellation_details.reason == speechsdk.CancellationReason.Error:
+                logger.error("Error details: {}".format(cancellation_details.error_details))
+            elif cancellation_details.reason == speechsdk.CancellationReason.EndOfStream:
+                logger.info("End of audio stream detected.")
