@@ -141,10 +141,17 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
         connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server"
     )
 
-    with patch("pyrit.memory.AzureSQLMemory.get_session") as get_session_mock:
+    with (
+        patch("pyrit.memory.AzureSQLMemory.get_session") as get_session_mock,
+        patch("pyrit.memory.AzureSQLMemory._create_auth_token") as create_auth_token_mock,
+        patch("pyrit.memory.AzureSQLMemory._enable_azure_authorization") as enable_azure_authorization_mock,
+    ):
         session_mock = UnifiedAlchemyMagicMock()
         session_mock.__enter__.return_value = session_mock
         get_session_mock.return_value = session_mock
+
+        create_auth_token_mock.return_value = "token"
+        enable_azure_authorization_mock.return_value = None
 
         azure_sql_memory.disable_embedding()
 
