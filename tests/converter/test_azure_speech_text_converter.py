@@ -89,4 +89,4 @@ async def test_azure_speech_audio_text_converter_non_wav_file(mock_path_exists):
     converter = AzureSpeechAudioToTextConverter()
     prompt = "dummy_audio.mp3"
     with pytest.raises(ValueError):
-        assert await converter.convert_async(prompt=prompt, input_type="text")
+        assert await converter.convert_async(prompt=prompt, input_type="audio_path")
