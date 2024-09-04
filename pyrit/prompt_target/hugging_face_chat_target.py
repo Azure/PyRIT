@@ -1,12 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import logging
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
-from pyrit.prompt_target.prompt_target import PromptTarget  
+from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.common.prompt_template_generator import PromptTemplateGenerator
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
@@ -24,11 +25,11 @@ class HuggingFaceChatTarget(PromptTarget):
     def __init__(
         self,
         *,
-        model_id: str = "cognitivecomputations/WizardLM-7B-Uncensored",
+        model_id: str,
         use_cuda: bool = False,
         tensor_format: str = "pt",
         memory: MemoryInterface = None,
-        verbose: bool = False
+        verbose: bool = False,
     ) -> None:
         super().__init__(memory=memory, verbose=verbose)
         self.model_id = model_id
@@ -44,7 +45,6 @@ class HuggingFaceChatTarget(PromptTarget):
         # Initialize the PromptTemplateGenerator
         self.prompt_template_generator = PromptTemplateGenerator()
 
-
     def is_model_id_valid(self) -> bool:
         """
         Check if the HuggingFace model ID is valid.
@@ -57,8 +57,7 @@ class HuggingFaceChatTarget(PromptTarget):
         except Exception as e:
             logger.error(f"Invalid HuggingFace model ID {self.model_id}: {e}")
             return False
-        
-    
+
     def load_model_and_tokenizer(self):
         """
         Load the model and tokenizer.
@@ -72,7 +71,6 @@ class HuggingFaceChatTarget(PromptTarget):
         except Exception as e:
             logger.error(f"Error loading model {self.model_id}: {e}")
             raise
-
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -102,14 +100,13 @@ class HuggingFaceChatTarget(PromptTarget):
             prompt_response = construct_response_from_request(
                 request=request,
                 response_text_pieces=[response_message],
-                prompt_metadata={"model_id": self.model_id},
+                prompt_metadata=json.dumps({"model_id": self.model_id}),
             )
             return prompt_response
 
         except Exception as e:
             logger.error(f"Error occurred during inference: {e}")
             raise
-
 
     def complete_chat(
         self,
@@ -119,15 +116,15 @@ class HuggingFaceChatTarget(PromptTarget):
         top_p: int = 1,
     ) -> str:
         """Completes a chat interaction by generating a response to the given input prompt.
-            Args:
-                messages (list[ChatMessage]): The chat messages object containing the role and content.
-                max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-                temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
-                top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
-            Returns:
-                str: The generated response message.
+        Args:
+            messages (list[ChatMessage]): The chat messages object containing the role and content.
+            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
+            temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
+            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
+        Returns:
+            str: The generated response message.
         """
-        
+
         # Generate the prompt template using PromptTemplateGenerator
         prompt_template = self.prompt_template_generator.generate_template(messages)
 
@@ -167,10 +164,10 @@ class HuggingFaceChatTarget(PromptTarget):
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
 
-
     def extract_last_assistant_response(self, text: str) -> str:
         """
-        Improved method to identify the last occurrence of 'ASSISTANT' in a given text string and extracts everything after it.
+        Improved method to identify the last occurrence of 'ASSISTANT' in a given text string.
+        Extracts everything after it.
         """
         # Find the last occurrence of "ASSISTANT:"
         last_assistant_index = text.rfind("ASSISTANT:")
@@ -179,7 +176,7 @@ class HuggingFaceChatTarget(PromptTarget):
             return ""
 
         # Extract the text after "ASSISTANT:"
-        extracted_text = text[last_assistant_index + len("ASSISTANT:"):]
+        extracted_text = text[last_assistant_index + len("ASSISTANT:") :]
 
         # Remove any extra spaces at the start of the extracted text
         extracted_text = extracted_text.lstrip()
@@ -192,7 +189,6 @@ class HuggingFaceChatTarget(PromptTarget):
         # Ensure no leading spaces are in the final extracted text
         final_text = extracted_text.strip()
         return final_text
-
 
     def _generate_prompt(self, messages: list[ChatMessage]) -> str:
         """

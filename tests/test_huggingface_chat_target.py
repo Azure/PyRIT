@@ -9,8 +9,10 @@ from pyrit.models import ChatMessage
 
 @pytest.fixture
 def hf_chat() -> HuggingFaceChatTarget:
-    with patch('transformers.AutoTokenizer.from_pretrained') as mock_tokenizer, \
-         patch('transformers.AutoModelForCausalLM.from_pretrained') as mock_model:
+    with (
+        patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer,
+        patch("transformers.AutoModelForCausalLM.from_pretrained") as mock_model,
+    ):
         mock_tokenizer_instance = MagicMock()
         mock_model_instance = MagicMock()
         mock_tokenizer.return_value = mock_tokenizer_instance
@@ -72,29 +74,31 @@ def test_complete_chat_success(hf_chat: HuggingFaceChatTarget):
 
     # Call the method and get the response
     response = hf_chat.complete_chat(messages)
-    
+
     # Assert that the response matches the mocked return value
     assert response == "Generated response"
-
 
 
 def test_extract_last_assistant_response_multiple_markers(hf_chat: HuggingFaceChatTarget):
     text = "USER: HelloASSISTANT: HiUSER: How are you?ASSISTANT: I'm good, thanks!"
     assert hf_chat.extract_last_assistant_response(text) == "I'm good, thanks!"  # Removed leading space
 
+
 def test_extract_last_assistant_response_single_marker(hf_chat: HuggingFaceChatTarget):
     text = "USER: HelloASSISTANT: Hi there"
     assert hf_chat.extract_last_assistant_response(text) == "Hi there"  # Removed leading space
+
 
 def test_extract_last_assistant_response_no_marker(hf_chat: HuggingFaceChatTarget):
     text = "USER: Hello, how are you?"
     assert hf_chat.extract_last_assistant_response(text) == ""
 
+
 def test_extract_last_assistant_response_with_closing_token(hf_chat: HuggingFaceChatTarget):
     text = "USER: HelloASSISTANT: Hi there</s>USER: Bye"
     assert hf_chat.extract_last_assistant_response(text) == "Hi there"
 
+
 def test_extract_last_assistant_response_without_closing_token(hf_chat: HuggingFaceChatTarget):
     text = "USER: HelloASSISTANT: Hi there"
     assert hf_chat.extract_last_assistant_response(text) == "Hi there"  # Removed leading space
-
