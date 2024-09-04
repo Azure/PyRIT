@@ -385,7 +385,7 @@ class FuzzerOrchestrator(Orchestrator):
             converted template with placeholder for prompt.
 
         Raises:
-            MissingPromptHolderException: If the prompt placeholder is still missing.
+            MissingPromptPlaceHolderException: If the prompt placeholder is still missing.
         """
         
         self._template_converter = random.choice(self._template_converter)
