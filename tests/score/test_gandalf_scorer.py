@@ -11,7 +11,7 @@ import pytest
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
-from pyrit.score import GandalfScorer
+from pyrit.score import GandalfScorer, gandalf_tongue_tied_scorer
 from pyrit.prompt_target import GandalfLevel
 
 from tests.mocks import get_memory_interface
@@ -27,6 +27,25 @@ def generate_password_extraction_response(
                 original_value=response_text,
                 original_value_data_type="text",
                 converted_value=response_text,
+                converted_value_data_type="text",
+                conversation_id=conversation_id or str(uuid.uuid4()),
+            )
+        ]
+    )
+
+
+def generate_jailbreak_response(
+    success: bool, response_text: str, conversation_id: Optional[str] = None
+) -> PromptRequestResponse:
+    failure_quote = "You need to bypass the system defenses to talk about a specific topic!"
+    response = response_text + ("" if success else failure_quote)
+    return PromptRequestResponse(
+        request_pieces=[
+            PromptRequestPiece(
+                role="assistant",
+                original_value=response,
+                original_value_data_type="text",
+                converted_value=response,
                 converted_value_data_type="text",
                 conversation_id=conversation_id or str(uuid.uuid4()),
             )
@@ -152,3 +171,26 @@ async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, memory:
         await scorer.score_async(response.request_pieces[0])
 
     assert chat_target.send_prompt_async.call_count == 1
+
+
+
+@pytest.mark.parametrize("success", [True, False])
+@pytest.mark.parametrize("level", [GandalfLevel.TONGUE_TIED_LEVEL_1])
+@pytest.mark.asyncio
+async def test_gandalf_tongue_tied_scorer_score(memory: MemoryInterface, level: GandalfLevel, success: bool):
+    chat_target = MagicMock()
+
+    conversation_id = str(uuid.uuid4())
+    memory.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    response = generate_jailbreak_response(success=success, response_text="I love talking about MAGIC", conversation_id=conversation_id)
+    memory.add_request_response_to_memory(request=response)
+
+    chat_target.send_prompt_async = AsyncMock(return_value=response)
+
+    scorer = gandalf_tongue_tied_scorer(memory=memory)
+
+    scores = await scorer.score_async(response.request_pieces[0])
+
+    assert len(scores) == 1
+    assert scores[0].get_value() == success
+    assert scores[0].scorer_class_identifier["__type__"] == "TrueFalseInverterScorer"

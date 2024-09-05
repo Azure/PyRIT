@@ -8,7 +8,7 @@ from pyrit.prompt_target.prompt_chat_target.azure_ml_chat_target import AzureMLC
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAITextChatTarget, OpenAIChatTarget
 from pyrit.prompt_target.prompt_chat_target.azure_openai_gptv_chat_target import AzureOpenAIGPTVChatTarget
 from pyrit.prompt_target.prompt_chat_target.azure_openai_gpto_chat_target import AzureOpenAIGPT4OChatTarget
-from pyrit.prompt_target.gandalf_target import GandalfTarget, GandalfTongueTiedTarget, GandalfLevel, GandalfTongueTiedLevel
+from pyrit.prompt_target.gandalf_target import GandalfTarget, GandalfLevel
 from pyrit.prompt_target.crucible_target import CrucibleTarget
 from pyrit.prompt_target.text_target import TextTarget
 from pyrit.prompt_target.tts_target import AzureTTSTarget
@@ -29,8 +29,6 @@ __all__ = [
     "CrucibleTarget",
     "GandalfTarget",
     "GandalfLevel",
-    "GandalfTongueTiedTarget"
-    "GandalfTongueTiedLevel",
     "DALLETarget",
     "OpenAIChatTarget",
     "PromptChatTarget",

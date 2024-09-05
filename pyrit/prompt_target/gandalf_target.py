@@ -5,8 +5,6 @@ import enum
 import json
 import logging
 
-from typing import Union
-
 from pyrit.common import net_utility
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestResponse
@@ -28,22 +26,19 @@ class GandalfLevel(enum.Enum):
     LEVEL_8 = "gandalf-the-white"
     LEVEL_9 = "adventure-1"
     LEVEL_10 = "adventure-2"
+    TONGUE_TIED_LEVEL_1 = "adventure-8"
+    TONGUE_TIED_LEVEL_2 = "adventure-9"
+    TONGUE_TIED_LEVEL_3 = "adventure-10"
+    TONGUE_TIED_LEVEL_4 = "adventure-11"
+    TONGUE_TIED_LEVEL_5 = "adventure-12"
 
 
-class GandalfTongueTiedLevel(enum.Enum):
-    LEVEL_1 = "adventure-8"
-    LEVEL_2 = "adventure-9"
-    LEVEL_3 = "adventure-10"
-    LEVEL_4 = "adventure-11"
-    LEVEL_5 = "adventure-12"
-
-
-class GandalfCommon(PromptTarget):
+class GandalfTarget(PromptTarget):
 
     def __init__(
         self,
         *,
-        level: Union[GandalfLevel, GandalfTongueTiedLevel],
+        level: GandalfLevel,
         memory: MemoryInterface = None,
     ) -> None:
         self._memory = memory if memory else DuckDBMemory()
@@ -70,7 +65,6 @@ class GandalfCommon(PromptTarget):
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
 
-
     async def _complete_text_async(self, text: str) -> str:
         payload: dict[str, object] = {
             "defender": self._defender,
@@ -88,52 +82,3 @@ class GandalfCommon(PromptTarget):
 
         logger.info(f'Received the following response from the prompt target "{answer}"')
         return answer
-
-
-
-class GandalfTarget(GandalfCommon):
-
-    def __init__(
-        self,
-        *,
-        level: GandalfLevel,
-        memory: MemoryInterface = None,
-    ) -> None:
-        super().__init__(level=level, memory=memory)
-
-
-    async def check_password(self, password: str) -> bool:
-        """
-        Checks if the password is correct
-
-        True means the password is correct, False means it is not
-        """
-        payload: dict[str, object] = {
-            "defender": self._defender,
-            "password": password,
-        }
-
-        resp = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=self._endpoint, method="POST", request_body=payload, post_type="data"
-        )
-
-        if not resp.text:
-            raise ValueError("The chat returned an empty response.")
-
-        json_response = resp.json()
-        return json_response["success"]
-
-
-class GandalfTongueTiedTarget(GandalfCommon):
-
-    def __init__(
-        self,
-        *,
-        level: GandalfTongueTiedLevel,
-        memory: MemoryInterface = None,
-    ) -> None:
-        # Level 3 and beyond not yet supported
-        if level not in {GandalfTongueTiedLevel.LEVEL_1, GandalfTongueTiedLevel.LEVEL_2}:
-            raise ValueError(f"Multi Target Level {level.value} is not yet supported.")
-
-        super().__init__(level=level, memory=memory)
