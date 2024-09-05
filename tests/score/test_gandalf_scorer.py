@@ -11,7 +11,7 @@ import pytest
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
-from pyrit.score import GandalfScorer, gandalf_tongue_tied_scorer
+from pyrit.score import GandalfScorer, GandalfTongueTiedScorer
 from pyrit.prompt_target import GandalfLevel
 
 from tests.mocks import get_memory_interface
@@ -187,10 +187,10 @@ async def test_gandalf_tongue_tied_scorer_score(memory: MemoryInterface, level: 
 
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
-    scorer = gandalf_tongue_tied_scorer(memory=memory)
+    scorer = GandalfTongueTiedScorer(memory=memory)
 
     scores = await scorer.score_async(response.request_pieces[0])
 
     assert len(scores) == 1
     assert scores[0].get_value() == success
-    assert scores[0].scorer_class_identifier["__type__"] == "TrueFalseInverterScorer"
+    assert scores[0].scorer_class_identifier["__type__"] == "GandalfTongueTiedScorer"
