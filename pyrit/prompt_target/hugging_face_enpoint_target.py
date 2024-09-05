@@ -2,13 +2,12 @@
 # Licensed under the MIT license.
 
 import logging
-import httpx  
+import httpx
 
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.common.prompt_template_generator import PromptTemplateGenerator
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
-from pyrit.models import ChatMessage
 
 
 logger = logging.getLogger(__name__)
@@ -16,13 +15,14 @@ logger = logging.getLogger(__name__)
 
 class HuggingFaceEndpointTarget(PromptTarget):
     """The HuggingFaceEndpointTarget interacts with HuggingFace models hosted on cloud endpoints.
+
     Inherits from PromptTarget to comply with the current design standards.
     """
 
     def __init__(
         self,
         *,
-        api_key: str,
+        hf_token: str,
         endpoint: str,
         model_id: str,
         max_tokens: int = 400,
@@ -31,8 +31,20 @@ class HuggingFaceEndpointTarget(PromptTarget):
         memory: MemoryInterface = None,
         verbose: bool = False,
     ) -> None:
+        """Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
+
+        Args:
+            hf_token (str): The Hugging Face token for authenticating with the Hugging Face endpoint.
+            endpoint (str): The endpoint URL for the Hugging Face model.
+            model_id (str): The model ID to be used at the endpoint.
+            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
+            temperature (float, optional): The sampling temperature to use. Defaults to 1.0.
+            top_p (float, optional): The cumulative probability for nucleus sampling. Defaults to 1.0.
+            memory (MemoryInterface, optional): Memory interface instance for handling state. Defaults to None.
+            verbose (bool, optional): Flag to enable verbose logging. Defaults to False.
+        """
         super().__init__(memory=memory, verbose=verbose)
-        self.api_key = api_key
+        self.hf_token = hf_token
         self.endpoint = endpoint
         self.model_id = model_id
         self.max_tokens = max_tokens
@@ -45,10 +57,23 @@ class HuggingFaceEndpointTarget(PromptTarget):
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt asynchronously to a cloud-based HuggingFace model endpoint.
+
+        Args:
+            prompt_request (PromptRequestResponse): The prompt request containing the input data and associated details
+            such as conversation ID and role.
+
+        Returns:
+            PromptRequestResponse: A response object containing generated text pieces as a list of `PromptRequestPiece`
+                objects. Each `PromptRequestPiece` includes the generated text and relevant information such as
+                conversation ID, role, and any additional response attributes.
+
+        Raises:
+            ValueError: If the response from the Hugging Face API is not successful.
+            Exception: If an error occurs during the HTTP request to the Hugging Face endpoint.
         """
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-        headers = {"Authorization": f"Bearer {self.api_key}"}
+        headers = {"Authorization": f"Bearer {self.hf_token}"}
         payload = {
             "inputs": request.converted_value,
             "parameters": {
@@ -72,14 +97,14 @@ class HuggingFaceEndpointTarget(PromptTarget):
                 # Check if the response is a list and handle appropriately
                 if isinstance(response_data, list):
                     # Access the first element if it's a list and extract 'generated_text' safely
-                    response_message = response_data[0].get('generated_text', '')
+                    response_message = response_data[0].get("generated_text", "")
                 else:
-                    response_message = response_data.get('generated_text', '')
+                    response_message = response_data.get("generated_text", "")
 
                 prompt_response = construct_response_from_request(
                     request=request,
                     response_text_pieces=[response_message],
-                    prompt_metadata={"model_id": self.model_id},
+                    prompt_metadata=str({"model_id": self.model_id}),
                 )
                 return prompt_response
 
@@ -87,54 +112,15 @@ class HuggingFaceEndpointTarget(PromptTarget):
                 logger.error(f"Error occurred during HTTP request to the Hugging Face endpoint: {e}")
                 raise
 
-    async def complete_chat(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int = 400,
-        temperature: float = 1.0,
-        top_p: int = 0.9,
-    ) -> str:
-        """
-        Completes a chat interaction by sending a request to a cloud-based HuggingFace model endpoint.
-        """
-        prompt_template = self.prompt_template_generator.generate_template(messages)
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        payload = {
-            "inputs": prompt_template,
-            "parameters": {
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "top_p": top_p,
-            },
-        }
-
-        logger.info(f"Sending the following chat message to the cloud endpoint: {prompt_template}")
-
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(self.endpoint, headers=headers, json=payload)
-                response_data = response.json()
-
-                if response.status_code != 200:
-                    logger.error(f"Failed to get a response from Hugging Face API: {response_data}")
-                    raise ValueError(f"Error from Hugging Face API: {response_data}")
-
-                # Check if the response is a list and handle appropriately
-                if isinstance(response_data, list):
-                    response_message = response_data[0].get('generated_text', '')
-                else:
-                    response_message = response_data.get('generated_text', '')
-
-                return response_message
-
-            except Exception as e:
-                logger.error(f"Error occurred during HTTP request to the Hugging Face endpoint: {e}")
-                raise
-
-
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
         Validates the provided prompt request response.
+
+        Args:
+            prompt_request (PromptRequestResponse): The prompt request to validate.
+
+        Raises:
+            ValueError: If the request is not valid for this target.
         """
         if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
