@@ -155,17 +155,20 @@ class RedTeamingOrchestrator(Orchestrator):
         return score
 
     async def send_prompt_async(
-        self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False
+        self,
+        *,
+        prompt: Optional[str] = None,
+        feedback: Optional[str] = None,
     ) -> PromptRequestPiece:
         """
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
         Args:
-            prompt: The prompt to send to the target.
+            prompt (str, optional): The prompt to send to the target.
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
                 This can only be specified for the first iteration at this point.
-            feedback: feedback from a previous iteration of send_prompt_async.
+            feedback (str, optional): feedback from a previous iteration of send_prompt_async.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
                 The feedback is passed back to the red teaming chat to improve the next prompt.

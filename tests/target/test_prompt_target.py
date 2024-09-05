@@ -137,3 +137,24 @@ async def test_send_prompt_with_system_calls_chat_complete(
         await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
         mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_with_delay(
+    azure_openai_target: AzureOpenAITextChatTarget,
+    openai_mock_return: ChatCompletion,
+    sample_entries: list[PromptRequestPiece],
+):
+    azure_openai_target._max_requests_per_minute = 10
+
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
+        with patch("asyncio.sleep") as mock_sleep:
+            mock.return_value = openai_mock_return
+
+            request = sample_entries[0]
+            request.converted_value = "hi, I am a victim chatbot, how can I help?"
+
+            await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
+
+            mock.assert_called_once()
+            mock_sleep.assert_called_once_with(6)  # 60/max_requests_per_minute
