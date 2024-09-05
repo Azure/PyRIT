@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class PromptSendingOrchestrator(Orchestrator):
     """
     This orchestrator takes a set of prompts, converts them using the list of PromptConverters,
-    sends them to a target, and scores the resonses with scorers (if provided).
+    sends them to a target, and scores the responses with scorers (if provided).
     """
 
     def __init__(
