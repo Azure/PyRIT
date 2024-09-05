@@ -55,8 +55,6 @@ def simple_prompt_templates():
     prompt_template4 = PromptTemplate.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "axies.yaml"
     )
-    # prompt_template5 = PromptTemplate.from_yaml_file(
-    # pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "balakula.yaml")
 
     prompt_templates = [
         prompt_template1.template,
@@ -71,8 +69,6 @@ def simple_prompt_templates():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("rounds", list(range(1, 6)))
 async def test_execute_fuzzer(rounds: int, simple_prompts: list, simple_prompt_templates: list):
-    # prompt_templates = [PromptTemplate.from_yaml_file(
-    # pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml")],
 
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
