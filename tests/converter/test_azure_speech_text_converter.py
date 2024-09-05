@@ -21,43 +21,39 @@ def test_azure_speech_audio_text_converter_initialization(mock_get_required_valu
 
 @patch("azure.cognitiveservices.speech.SpeechRecognizer")
 @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
-def test_stop_cb(MockLogger, mock_speech_recognizer):
+def test_stop_cb(mock_logger, MockSpeechRecognizer):
     # Create a mock event
     mock_event = MagicMock()
     mock_event.result.reason = speechsdk.ResultReason.Canceled
     mock_event.result.cancellation_details.reason = speechsdk.CancellationReason.EndOfStream
     mock_event.result.cancellation_details.error_details = "Mock error details"
 
-    mock_recognizer = MagicMock()
-    mock_speech_recognizer.return_value = mock_recognizer
+    MockSpeechRecognizer.return_value = MagicMock()
 
-    mock_logger = MagicMock()
-    MockLogger.return_value = mock_logger
+    mock_logger.return_value = MagicMock()
 
     # Call the stop_cb function with the mock event
     converter = AzureSpeechAudioToTextConverter()
-    converter.stop_cb(evt=mock_event, recognizer=mock_speech_recognizer)
+    converter.stop_cb(evt=mock_event, recognizer=MockSpeechRecognizer)
 
     # Check if the callback function worked as expected
-    mock_speech_recognizer.stop_continuous_recognition_async.assert_called_once()
-    MockLogger.info.assert_any_call("CLOSING on {}".format(mock_event))
-    MockLogger.info.assert_any_call("Speech recognition canceled: {}".format(speechsdk.CancellationReason.EndOfStream))
-    MockLogger.info.assert_called_with("End of audio stream detected.")
+    MockSpeechRecognizer.stop_continuous_recognition_async.assert_called_once()
+    mock_logger.info.assert_any_call("CLOSING on {}".format(mock_event))
+    mock_logger.info.assert_any_call("Speech recognition canceled: {}".format(speechsdk.CancellationReason.EndOfStream))
+    mock_logger.info.assert_called_with("End of audio stream detected.")
 
 
 @patch("azure.cognitiveservices.speech.SpeechRecognizer")
 @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
-def test_transcript_cb(MockLogger, mock_speech_recognizer):
+def test_transcript_cb(mock_logger, MockSpeechRecognizer):
     # Create a mock event
     mock_event = MagicMock()
     mock_event.result.reason = speechsdk.ResultReason.RecognizedSpeech
     mock_event.result.text = "Mock transcribed text"
 
-    mock_recognizer = MagicMock()
-    mock_speech_recognizer.return_value = mock_recognizer
+    MockSpeechRecognizer.return_value = MagicMock()
 
-    mock_logger = MagicMock()
-    MockLogger.return_value = mock_logger
+    mock_logger.return_value = MagicMock()
 
     # Call the transcript_cb function with the mock event
     converter = AzureSpeechAudioToTextConverter()
@@ -65,7 +61,7 @@ def test_transcript_cb(MockLogger, mock_speech_recognizer):
     converter.transcript_cb(evt=mock_event, transcript=transcript)
 
     # Check if the callback function worked as expected
-    MockLogger.info.assert_called_once_with("RECOGNIZED: {}".format(mock_event.result.text))
+    mock_logger.info.assert_called_once_with("RECOGNIZED: {}".format(mock_event.result.text))
     assert mock_event.result.text in transcript
 
 
