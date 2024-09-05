@@ -257,6 +257,8 @@ class PromptEntry(Base):
     added_by = Column(String, nullable=False)
     prompt_metadata: Mapped[dict[str, str]] = Column(JSON, nullable=True)
     parameters: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+    prompt_group_id: Mapped[Optional[uuid.UUID]] = Column(Uuid, nullable=True)
+    sequence: Mapped[Optional[int]] = Column(INTEGER, nullable=True)
 
     def __init__(self, *, entry: Prompt):
         self.id = entry.id
@@ -273,6 +275,8 @@ class PromptEntry(Base):
         self.added_by = entry.added_by
         self.prompt_metadata = entry.metadata
         self.parameters = entry.parameters
+        self.prompt_group_id = entry.prompt_group_id
+        self.sequence = entry.sequence
     
     def get_prompt(self) -> Prompt:
         return Prompt(
@@ -290,4 +294,6 @@ class PromptEntry(Base):
             added_by=self.added_by,
             metadata=self.prompt_metadata,
             parameters=self.parameters,
+            prompt_group_id=self.prompt_group_id,
+            sequence=self.sequence
         )

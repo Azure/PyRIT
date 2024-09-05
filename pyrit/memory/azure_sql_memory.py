@@ -312,5 +312,32 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 conditions=and_(PromptEntry.dataset_name != None, PromptEntry.dataset_name != ""),
             )  # type: ignore
         except Exception as e:
-            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
+            logger.exception(f"Failed to retrieve dataset names with error {e}")
+            return []
+    
+    def get_prompts(self, *, value: str, dataset_name: str) -> list[Prompt]:
+        """
+        Retrieves a list of prompts that have the specified dataset name.
+
+        Args:
+            value (str): The value to match by substring. If None, all values are returned.
+            dataset_name (str): The dataset name to match. If None, all dataset names are considered.
+
+        Returns:
+            list[Prompt]: A list of prompts with the specified dataset name.
+        """
+        conditions = []
+        
+        if value:
+            conditions.append(PromptEntry.value.contains(value))
+        if dataset_name:
+            conditions.append(PromptEntry.dataset_name == dataset_name)
+        
+        try:
+            return self.query_entries(
+                PromptEntry,
+                conditions=PromptEntry.dataset_name == dataset_name,
+            )  # type: ignore
+        except Exception as e:
+            logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             return []

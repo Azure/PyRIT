@@ -26,6 +26,8 @@ class Prompt(YamlLoadable):
     added_by: Optional[str]
     metadata: Optional[Dict[str, str]]
     parameters: Optional[List[str]]
+    prompt_group_id: Optional[Union[uuid.UUID, str]]
+    sequence: Optional[int]
 
     def __init__(
         self,
@@ -44,6 +46,8 @@ class Prompt(YamlLoadable):
         added_by: Optional[str] = None,
         metadata: Optional[Dict[str, str]] = None,
         parameters: Optional[List[str]] = None,
+        prompt_group_id: Optional[uuid.UUID] = None,
+        sequence: Optional[int] = None,
     ):
         self.id = id if id else uuid.uuid4()
         self.value = value
@@ -59,7 +63,30 @@ class Prompt(YamlLoadable):
         self.added_by = added_by
         self.metadata = metadata or {}
         self.parameters = parameters or []
+        self.prompt_group_id = prompt_group_id
+        self.sequence = sequence
 
 
+# TODO: how do people query for this? What is the scenario?
+class PromptGroup(YamlLoadable):
+    id: Optional[Union[uuid.UUID, str]]
+    name: str
+    description: Optional[str]
+    prompts: List[List[Prompt]]
+
+    def __init__(
+        self,
+        *,
+        id: Optional[uuid.UUID] = None,
+        name: str,
+        description: Optional[str] = None,
+        prompts: List[Prompt],
+    ):
+        self.id = id if id else uuid.uuid4()
+        self.name = name
+        self.description = description
+        self.prompts = prompts
+
+# TODO: consider removing as it doesn't serve any purpose
 class PromptDataset(YamlLoadable):
     prompts: List[Prompt]

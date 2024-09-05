@@ -22,14 +22,19 @@
 import os
 
 from pyrit.common import default_values
-# from pyrit.memory import AzureSQLMemory
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import AzureSQLMemory
+
 default_values.load_default_env()
 
-#conn_str = os.environ.get('AZURE_SQL_SERVER_CONNECTION_STRING')
+azure_memory = AzureSQLMemory()
 
-#azure_memory = AzureSQLMemory(connection_string=conn_str)
-memory = DuckDBMemory()
 
 # %%
-memory
+import os
+os.environ
+
+# %%
+azure_memory.
+
+
+# %%
