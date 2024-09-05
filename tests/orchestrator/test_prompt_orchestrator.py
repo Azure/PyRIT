@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pytest
 import tempfile
+import time
 from unittest.mock import AsyncMock, MagicMock
 import uuid
-import pytest
 
 from pyrit.memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece
@@ -161,7 +162,25 @@ async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_c
     scorer.score_async.assert_called_with(request_response=response2)
 
 
-def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
+@pytest.mark.asyncio
+@pytest.mark.parametrize("num_prompts", [2, 20])
+@pytest.mark.parametrize("max_rpm", [30])
+async def test_max_requests_per_minute_delay(num_prompts: int, max_rpm: int):
+    mock_target = MockPromptTarget(rpm=max_rpm)
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, batch_size=1)
+
+    prompt_list = []
+    for n in range(num_prompts):
+        prompt_list.append("test")
+
+    start = time.time()
+    await orchestrator.send_prompts_async(prompt_list=prompt_list)
+    end = time.time()
+
+    assert (end - start) > (60 / max_rpm * num_prompts)
+
+
+def test_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
     assert orchestrator._memory is mock_target._memory
 
