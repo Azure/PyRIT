@@ -142,16 +142,8 @@ class PAIROrchestrator(Orchestrator):
             )
         # Send a new request to the attacker
         attacker_response = await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=NormalizerRequest(
-                request_pieces=[
-                    NormalizerRequestPiece(
-                        request_converters=self._prompt_converters,
-                        prompt_value=target_response,
-                        prompt_data_type="text",
-                    )
-                ]
-            ),
-            target=self._prompt_target,
+            normalizer_request=self._create_normalizer_request(prompt_text=target_response),
+            target=self._adversarial_target,
             conversation_id=self._last_attacker_conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
@@ -173,13 +165,7 @@ class PAIROrchestrator(Orchestrator):
         """
         curr_conversation_id = conversation_id or str(uuid.uuid4())
         target_response = await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=NormalizerRequest(
-                request_pieces=[
-                    NormalizerRequestPiece(
-                        request_converters=self._prompt_converters, prompt_value=text, prompt_data_type="text"
-                    )
-                ]
-            ),
+            normalizer_request=self._create_normalizer_request(prompt_text=text),
             target=self._prompt_target,
             conversation_id=curr_conversation_id,
             labels=self._global_memory_labels,
