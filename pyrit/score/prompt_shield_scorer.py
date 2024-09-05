@@ -30,8 +30,7 @@ class PromptShieldScorer(Scorer):
         prompt_shield_target: PromptShieldTarget,
         memory: Union[MemoryInterface, None] = None,
     ) -> None:
-        super().__init__(target=prompt_shield_target)
-
+        self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
         self._memory = memory if memory else DuckDBMemory()
 

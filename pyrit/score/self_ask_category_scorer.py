@@ -44,7 +44,7 @@ class SelfAskCategoryScorer(Scorer):
             chat_target (PromptChatTarget): The chat target to interact with.
             content_classifier (Path): The path to the classifier file.
         """
-        super().__init__(chat_target=chat_target)
+        self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
@@ -108,7 +108,7 @@ class SelfAskCategoryScorer(Scorer):
 
         conversation_id = str(uuid.uuid4())
 
-        self._prompt_chat_target.set_system_prompt(
+        self._prompt_target.set_system_prompt(
             system_prompt=self._system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
@@ -120,7 +120,7 @@ class SelfAskCategoryScorer(Scorer):
                     role="user",
                     original_value=request_response.converted_value,
                     conversation_id=conversation_id,
-                    prompt_target_identifier=self._prompt_chat_target.get_identifier(),
+                    prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
             ]
         )
@@ -132,7 +132,7 @@ class SelfAskCategoryScorer(Scorer):
 
     @pyrit_json_retry
     async def _send_chat_target_async(self, request: PromptRequestResponse, request_response_id: uuid.UUID) -> Score:
-        response = await self._prompt_chat_target.send_prompt_async(prompt_request=request)
+        response = await self._prompt_target.send_prompt_async(prompt_request=request)
 
         try:
             response_json = response.request_pieces[0].converted_value

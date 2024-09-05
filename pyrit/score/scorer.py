@@ -18,15 +18,6 @@ class Scorer(abc.ABC):
 
     scorer_type: ScoreType
 
-    def __init__(self, *, chat_target: PromptChatTarget = None, target: PromptTarget = None) -> None:
-        self._prompt_chat_target = chat_target
-        self._prompt_target = target
-
-        if chat_target and target:
-            raise ValueError(
-                f"Scorer can only have one target, either of type {type(PromptChatTarget)} or {type(PromptTarget)}"
-            )
-
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
@@ -76,10 +67,11 @@ class Scorer(abc.ABC):
     async def score_prompts_batch_async(
         self, prompts: Sequence[PromptRequestPiece], batch_size: int = 10
     ) -> list[Score]:
+        prompt_target = getattr(self, '_prompt_target', None)
         results = await batch_task_async(
             task=self.score_async,
             task_argument="request_response",
-            prompt_target=self._prompt_target if self._prompt_target else self._prompt_chat_target,
+            prompt_target=prompt_target,
             batch_size=batch_size,
             items_to_batch=prompts,
         )

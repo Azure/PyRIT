@@ -6,11 +6,11 @@ import json
 from pathlib import Path
 import sys
 
-from typing import IO, Optional
+from typing import IO
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptTarget
 
 
 class TextTarget(PromptTarget):
@@ -27,12 +27,10 @@ class TextTarget(PromptTarget):
         *,
         text_stream: IO[str] = sys.stdout,
         memory: MemoryInterface = None,
-        requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
+        super().__init__(memory=memory)
         self._text_stream = text_stream
 
-    @set_max_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)

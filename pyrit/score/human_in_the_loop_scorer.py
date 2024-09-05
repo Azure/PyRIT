@@ -16,7 +16,6 @@ class HumanInTheLoopScorer(Scorer):
     """
 
     def __init__(self, *, memory: MemoryInterface = None) -> None:
-        super().__init__()
         self._memory = memory if memory else DuckDBMemory()
 
     def import_scores_from_csv(self, csv_file_path: Path | str) -> list[Score]:
