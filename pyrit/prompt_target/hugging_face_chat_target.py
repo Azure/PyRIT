@@ -3,12 +3,15 @@
 
 import json
 import logging
+import os
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
+
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.common.prompt_template_generator import PromptTemplateGenerator
+from pyrit.common.huggingface_model_manager import download_model_with_cli, download_specific_files_with_cli
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 from pyrit.models import ChatMessage
@@ -30,11 +33,15 @@ class HuggingFaceChatTarget(PromptTarget):
         tensor_format: str = "pt",
         memory: MemoryInterface = None,
         verbose: bool = False,
+        necessary_files: list = None
     ) -> None:
         super().__init__(memory=memory, verbose=verbose)
         self.model_id = model_id
         self.use_cuda = use_cuda
         self.tensor_format = tensor_format
+
+        # Set necessary files if provided, otherwise set to None to trigger general download
+        self.necessary_files = necessary_files
 
         if self.use_cuda and not torch.cuda.is_available():
             raise RuntimeError("CUDA requested but not available.")
@@ -59,15 +66,40 @@ class HuggingFaceChatTarget(PromptTarget):
             return False
 
     def load_model_and_tokenizer(self):
-        """
-        Load the model and tokenizer.
+        """Loads the model and tokenizer, downloading if necessary.
+
+            Downloads the model to the HF_MODELS_DIR folder if it does not exist,
+            then loads it from there.
+
+            Raises:
+                Exception: If the model loading fails.
         """
         try:
+            # Define the default Hugging Face cache directory
+            cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "hub", f"models--{self.model_id.replace('/', '--')}")
+
+            if self.necessary_files is None:
+                # Perform general download if no specific files are mentioned
+                print(f"Downloading the entire model {self.model_id} since no specific files are provided...")
+                download_model_with_cli(self.model_id)
+            else:
+                # Check if the necessary files are already in the Hugging Face cache
+                missing_files = [file for file in self.necessary_files if not os.path.exists(os.path.join(cache_dir, file))]
+
+                if missing_files:
+                    # If some files are missing, use CLI to download them
+                    print(f"Model {self.model_id} not fully found in cache. Downloading missing files using CLI...")
+                    download_specific_files_with_cli(self.model_id, missing_files)  # Download only the missing files
+
+            # Load the tokenizer and model from the specified directory
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
             self.model = AutoModelForCausalLM.from_pretrained(self.model_id)
+
             if self.use_cuda and torch.cuda.is_available():
                 self.model.to("cuda")  # Move the model to GPU
+
             logger.info(f"Model {self.model_id} loaded successfully.")
+            
         except Exception as e:
             logger.error(f"Error loading model {self.model_id}: {e}")
             raise
