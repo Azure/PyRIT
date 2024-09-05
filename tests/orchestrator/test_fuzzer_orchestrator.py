@@ -209,7 +209,7 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list):
 
     fuzzer_orchestrator._current_query = 78
     result = await fuzzer_orchestrator.execute_fuzzer()
-    assert result.success == False
+    assert result.success is False
     assert result.description == "Maximum query limit reached."
 
 
