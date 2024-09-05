@@ -11,7 +11,7 @@ from pyrit.exceptions import EmptyResponseException, handle_bad_request_exceptio
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 
 logger = logging.getLogger(__name__)
@@ -26,16 +26,16 @@ class CrucibleTarget(PromptTarget):
         endpoint: str,
         api_key: str = None,
         memory: MemoryInterface = None,
-        requests_per_minute: Optional[int] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._endpoint = endpoint
         self._api_key: str = default_values.get_required_value(
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
-    @set_max_requests_per_minute
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]

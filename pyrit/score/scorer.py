@@ -7,7 +7,6 @@ from typing import Optional, Sequence
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.models import PromptRequestPiece
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Score, ScoreType
 
 
@@ -67,7 +66,7 @@ class Scorer(abc.ABC):
     async def score_prompts_batch_async(
         self, prompts: Sequence[PromptRequestPiece], batch_size: int = 10
     ) -> list[Score]:
-        prompt_target = getattr(self, '_prompt_target', None)
+        prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
             task=self.score_async,
             task_argument="request_response",

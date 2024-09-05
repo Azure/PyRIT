@@ -145,7 +145,7 @@ async def test_send_prompt_async_with_delay(
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):
-    azure_openai_target._requests_per_minute = 10
+    azure_openai_target._max_requests_per_minute = 10
 
     with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
         with patch("asyncio.sleep") as mock_sleep:
@@ -157,4 +157,4 @@ async def test_send_prompt_async_with_delay(
             await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
             mock.assert_called_once()
-            mock_sleep.assert_called_once_with(6)  # 60/requests_per_minute
+            mock_sleep.assert_called_once_with(6)  # 60/max_requests_per_minute

@@ -12,7 +12,7 @@ from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class AzureMLChatTarget(PromptChatTarget):
         temperature: float = 1.0,
         top_p: int = 1,
         repetition_penalty: float = 1.2,
-        requests_per_minute: Optional[int] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Initializes an instance of the AzureMLChatTarget class.
@@ -55,11 +55,11 @@ class AzureMLChatTarget(PromptChatTarget):
                 Defaults to 1.
             repetition_penalty (float, optional): The repetition penalty for generating diverse responses.
                 Defaults to 1.2.
-            requests_per_minute (int, optional): Number of requests the target can handle per
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory, requests_per_minute=requests_per_minute)
+        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self.endpoint_uri: str = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri
@@ -74,7 +74,7 @@ class AzureMLChatTarget(PromptChatTarget):
         self._top_p = top_p
         self._repetition_penalty = repetition_penalty
 
-    @set_max_requests_per_minute
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)

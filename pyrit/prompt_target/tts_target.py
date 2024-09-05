@@ -11,7 +11,7 @@ from pyrit.exceptions import handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import data_serializer_factory, construct_response_from_request
-from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 from pyrit.common import net_utility
 
@@ -41,10 +41,10 @@ class AzureTTSTarget(PromptTarget):
         language: str = "en",
         temperature: float = 0.0,
         api_version: str = "2024-03-01-preview",
-        requests_per_minute: Optional[int] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
 
-        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._voice = voice
         self._model = model
@@ -66,7 +66,7 @@ class AzureTTSTarget(PromptTarget):
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
-    @set_max_requests_per_minute
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]

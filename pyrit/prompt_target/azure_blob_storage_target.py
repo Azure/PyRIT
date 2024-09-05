@@ -13,7 +13,7 @@ from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 from pyrit.auth import AzureStorageAuth
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ class AzureBlobStorageTarget(PromptTarget):
         blob_content_type (SupportedContentType): Expected Content Type of the blob, chosen from the
             SupportedContentType enum. Set to PLAIN_TEXT by default.
         memory (str): MemoryInterface to use for the class. FileMemory by default.
-        requests_per_minute (int, optional): Number of requests the target can handle per
+        max_requests_per_minute (int, optional): Number of requests the target can handle per
             minute before hitting a rate limit. The number of requests sent to the target
             will be capped at the value provided.
     """
@@ -55,7 +55,7 @@ class AzureBlobStorageTarget(PromptTarget):
         sas_token: Optional[str] = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
         memory: Optional[MemoryInterface] = None,
-        requests_per_minute: Optional[int] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
 
         self._blob_content_type: str = blob_content_type.value
@@ -67,7 +67,7 @@ class AzureBlobStorageTarget(PromptTarget):
         self._sas_token = sas_token
         self._client_async: AsyncContainerClient = None
 
-        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
     async def _create_container_client_async(self):
         """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
@@ -123,7 +123,7 @@ class AzureBlobStorageTarget(PromptTarget):
                 logger.exception(msg=f"An unexpected error occurred: {exc}")
                 raise
 
-    @set_max_requests_per_minute
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob

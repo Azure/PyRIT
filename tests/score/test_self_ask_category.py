@@ -210,13 +210,13 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("requests_per_minute", [None, 10])
+@pytest.mark.parametrize("max_requests_per_minute", [None, 10])
 @pytest.mark.parametrize("batch_size", [1, 10])
 async def test_score_prompts_batch_async(
-    requests_per_minute: int, batch_size: int, scorer_category_response_false: PromptRequestResponse
+    max_requests_per_minute: int, batch_size: int, scorer_category_response_false: PromptRequestResponse
 ):
     chat_target = AsyncMock()
-    chat_target._requests_per_minute = requests_per_minute
+    chat_target._max_requests_per_minute = max_requests_per_minute
 
     scorer = SelfAskCategoryScorer(
         chat_target=chat_target,
@@ -228,7 +228,7 @@ async def test_score_prompts_batch_async(
     prompt2 = PromptRequestPiece(role="assistant", original_value="test 2")
 
     with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
-        if batch_size != 1 and requests_per_minute:
+        if batch_size != 1 and max_requests_per_minute:
             with pytest.raises(ValueError):
                 await scorer.score_prompts_batch_async(prompts=[prompt], batch_size=batch_size)
         else:

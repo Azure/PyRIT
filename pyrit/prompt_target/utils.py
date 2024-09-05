@@ -5,7 +5,7 @@ import asyncio
 from typing import Callable
 
 
-def set_max_requests_per_minute(func: Callable) -> Callable:
+def limit_requests_per_minute(func: Callable) -> Callable:
     """
     A decorator to enforce rate limit of the target through setting requests per minute.
     This should be applied to all send_prompt_async() functions on PromptTarget and PromptChatTarget.
@@ -19,7 +19,7 @@ def set_max_requests_per_minute(func: Callable) -> Callable:
 
     async def set_max_rpm(*args, **kwargs):
         self = args[0]
-        rpm = getattr(self, '_requests_per_minute', None)
+        rpm = getattr(self, "_max_requests_per_minute", None)
         if rpm and rpm > 0:
             await asyncio.sleep(60 / rpm)
 

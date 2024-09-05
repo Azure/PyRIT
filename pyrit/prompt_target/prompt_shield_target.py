@@ -5,7 +5,7 @@ import logging
 import json
 from typing import Any, Literal, Union, Optional
 
-from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 from pyrit.memory import MemoryInterface
 from pyrit.common import default_values
 from pyrit.common import net_utility
@@ -55,10 +55,10 @@ class PromptShieldTarget(PromptTarget):
         api_version: Optional[str] = "2024-02-15-preview",
         field: Optional[PromptShieldEntryField] = None,
         memory: Union[MemoryInterface, None] = None,
-        requests_per_minute: Optional[int] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
 
-        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
@@ -72,7 +72,7 @@ class PromptShieldTarget(PromptTarget):
 
         self._force_entry_field: PromptShieldEntryField = field
 
-    @set_max_requests_per_minute
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Parses the text in prompt_request to separate the userPrompt and documents contents,

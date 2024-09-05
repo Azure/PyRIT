@@ -79,9 +79,7 @@ class GandalfScorer(Scorer):
 
         try:
             response_text = (
-                (await self._prompt_target.send_prompt_async(prompt_request=request))
-                .request_pieces[0]
-                .converted_value
+                (await self._prompt_target.send_prompt_async(prompt_request=request)).request_pieces[0].converted_value
             )
         except (RuntimeError, BadRequestError):
             raise PyritException("Error in Gandalf Scorer. Unable to check for password in text.")

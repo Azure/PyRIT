@@ -17,7 +17,7 @@ from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessageListContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
 from pyrit.models import data_serializer_factory, construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         top_p: int = 1,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
-        requests_per_minute: Optional[int] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Class that initializes an Azure Open AI GPTV chat target
@@ -80,11 +80,11 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.5.
-            requests_per_minute (int, optional): Number of requests the target can handle per
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory, requests_per_minute=requests_per_minute)
+        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._max_tokens = max_tokens
         self._temperature = temperature
@@ -131,7 +131,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
             )
 
-    @set_max_requests_per_minute
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """Asynchronously sends a prompt request and handles the response within a managed conversation context.
 

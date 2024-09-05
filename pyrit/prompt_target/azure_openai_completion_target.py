@@ -12,7 +12,7 @@ from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptResponse
 from pyrit.models import PromptRequestResponse, construct_response_from_request
-from pyrit.prompt_target import PromptTarget, set_max_requests_per_minute
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
         top_p: int = 1,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
-        requests_per_minute: Optional[int] = None,
+        max_requests_per_minute: Optional[int] = None,
     ):
         """
         Class that initializes an Azure OpenAI completion target.
@@ -68,11 +68,11 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.5.
-            requests_per_minute (int, optional): Number of requests the target can handle per
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
         """
-        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._max_tokens = max_tokens
         self._temperature = temperature
@@ -107,7 +107,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 azure_endpoint=endpoint,
             )
 
-    @set_max_requests_per_minute
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.

@@ -92,7 +92,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
 # ### Introducing Rate Limit (RPM) Threshold
 #
 # If using an LLM or Target-Based Scorer, you may need to provide a max number of Requests Per Minute to abide by a Rate Limit and avoid exceptions.
-# You can configure this on the target by providing a value to the `requests_per_minute` parameter. **Note**: `batch_size` should be 1 to properly use the RPM provided.
+# You can configure this on the target by providing a value to the `max_requests_per_minute` parameter. **Note**: `batch_size` should be 1 to properly use the RPM provided.
 
 # %%
 # pylint: disable=W0611
@@ -109,9 +109,9 @@ from pyrit.score import (
 # we need the id from the previous run to score all prompts from the orchestrator
 id = prompt_sending_orchestrator_id
 
-# NOTE: requests_per_minute are provided
+# NOTE: max_requests_per_minute are provided
 scorer = SelfAskCategoryScorer(
-    chat_target=AzureOpenAIGPT4OChatTarget(requests_per_minute=20),
+    chat_target=AzureOpenAIGPT4OChatTarget(max_requests_per_minute=20),
     content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
 )
 

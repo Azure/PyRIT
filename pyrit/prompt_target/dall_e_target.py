@@ -11,7 +11,7 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
-from pyrit.prompt_target import AzureOpenAITextChatTarget, PromptTarget, set_max_requests_per_minute
+from pyrit.prompt_target import AzureOpenAITextChatTarget, PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class DALLETarget(PromptTarget):
         headers (dict, optional): Headers of the endpoint.
         quality (str, optional): picture quality. Defaults to standard
         style (str, optional): image style. Defaults to natural
-        requests_per_minute (int, optional): Number of requests the target can handle per
+        max_requests_per_minute (int, optional): Number of requests the target can handle per
             minute before hitting a rate limit. The number of requests sent to the target
             will be capped at the value provided.
     """
@@ -59,10 +59,10 @@ class DALLETarget(PromptTarget):
         headers: Optional[dict[str, str]] = None,
         quality: Literal["standard", "hd"] = "standard",
         style: Literal["natural", "vivid"] = "natural",
-        requests_per_minute: Optional[int] = None,
+        max_requests_per_minute: Optional[int] = None,
     ):
 
-        super().__init__(memory=memory, requests_per_minute=requests_per_minute)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         # make sure number of images and headers are allowed by Dall-e version
         self.dalle_version = dalle_version
@@ -93,7 +93,7 @@ class DALLETarget(PromptTarget):
             target_kwargs["api_key"] = api_key
         self._image_target = AzureOpenAITextChatTarget(**target_kwargs)
 
-    @set_max_requests_per_minute
+    @limit_requests_per_minute
     async def send_prompt_async(
         self,
         *,

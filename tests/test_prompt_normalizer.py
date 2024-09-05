@@ -242,19 +242,19 @@ async def test_send_prompt_async_image_converter():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("requests_per_minute", [None, 10])
+@pytest.mark.parametrize("max_requests_per_minute", [None, 10])
 @pytest.mark.parametrize("batch_size", [1, 10])
 async def test_prompt_normalizer_send_prompt_batch_async_throws(
     normalizer_piece: NormalizerRequestPiece,
-    requests_per_minute: int,
+    max_requests_per_minute: int,
     batch_size: int,
 ):
-    prompt_target = MockPromptTarget(rpm=requests_per_minute)
+    prompt_target = MockPromptTarget(rpm=max_requests_per_minute)
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    if requests_per_minute and batch_size != 1:
+    if max_requests_per_minute and batch_size != 1:
         with pytest.raises(ValueError):
             results = await normalizer.send_prompt_batch_to_target_async(
                 requests=[NormalizerRequest([normalizer_piece])],

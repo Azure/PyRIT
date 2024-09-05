@@ -28,6 +28,8 @@ class ScoringOrchestrator(Orchestrator):
         Args:
             memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+                Note: If using a scorer that takes a prompt target, and providing max requests per
+                minute on the target, this should be set to 1 to ensure proper rate limit management.
         """
         super().__init__(memory=memory, verbose=verbose)
 

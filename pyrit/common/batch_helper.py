@@ -34,7 +34,7 @@ def _validate_rate_limit_parameters(prompt_target: PromptTarget, batch_size: int
     """
 
     exc_message = "Batch size must be configured to 1 for the target requests per minute value to be respected."
-    if prompt_target and prompt_target._requests_per_minute and batch_size != 1:
+    if prompt_target and prompt_target._max_requests_per_minute and batch_size != 1:
         raise ValueError(exc_message)
 
 
