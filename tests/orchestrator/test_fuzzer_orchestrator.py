@@ -296,8 +296,6 @@ async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list):
     prompt_nodes[1].rewards = 2
     prompt_nodes[2].rewards = 3
     for index, node in enumerate(prompt_nodes):
-        # fuzzer_orchestrator.rewards = [1,2,3,4,5]
-        # fuzzer_orchestrator.index = node.index
         fuzzer_orchestrator._step = 1
         UCT_score_func = fuzzer_orchestrator._best_UCT_score()
         UCT_score = UCT_score_func(node)
@@ -320,7 +318,6 @@ async def test_select(simple_prompts: list, probability: int, simple_prompt_temp
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "axies.yaml"
     )
     prompt_templates = [prompt_template1.template, prompt_template2.template]
-    # set the children of each parent
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget())
     prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget())
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
