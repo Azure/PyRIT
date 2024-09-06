@@ -10,6 +10,7 @@ from pyrit.exceptions.exception_classes import pyrit_target_retry
 from pyrit.exceptions.exception_classes import pyrit_json_retry
 from pyrit.exceptions.exception_classes import RateLimitException
 from pyrit.exceptions.exception_classes import MissingPromptPlaceHolderException
+from pyrit.exceptions.exception_classes import pyrit_placeholder_retry
 
 
 __all__ = [
