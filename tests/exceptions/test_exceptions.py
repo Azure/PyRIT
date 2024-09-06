@@ -67,7 +67,7 @@ def test_empty_response_exception_process_exception(caplog):
 
 
 def test_empty_promptholder_exception(caplog):
-    ex = MissingPromptHolderException()
+    ex = MissingPromptPlaceHolderException()
     with caplog.at_level(logging.ERROR):
         result = ex.process_exception()
     assert json.loads(result) == {"status_code": 204, "message": "No Content"}
