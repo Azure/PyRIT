@@ -21,7 +21,7 @@ from pyrit.models import PromptTemplate
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from colorama import Fore, Style
 
-from pyrit.exceptions import MissingPromptPlaceHolderException, pyrit_placeholder_retry
+from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 
 TEMPLATE_PLACEHOLDER = "{{ prompt }}"
 logger = logging.getLogger(__name__)
@@ -204,7 +204,7 @@ class FuzzerOrchestrator(Orchestrator):
 
         for template in self._prompt_templates:
             if TEMPLATE_PLACEHOLDER not in template:
-                raise MissingPromptPlaceHolderException(message="Prompt placeholder is empty.")
+                raise MissingPromptPlaceholderException(message="Prompt placeholder is empty.")
 
         # convert each template into a node and maintain the node information parent, child, etc.
         self._initial_prompts_nodes: list[PromptNode] = [PromptNode(prompt) for prompt in prompt_templates]
@@ -274,7 +274,7 @@ class FuzzerOrchestrator(Orchestrator):
             # 2. Apply seed converter to the selected template.
             try:
                 target_seed_obj = await self._apply_template_converter(current_seed.template)
-            except MissingPromptPlaceHolderException as e:
+            except MissingPromptPlaceholderException as e:
                 logger.error(
                     f"Tried to apply to and failed even after retries as it didn't preserve the \
                     prompt placeholder: {e}"
@@ -421,13 +421,13 @@ class FuzzerOrchestrator(Orchestrator):
             converted template with placeholder for prompt.
 
         Raises:
-            MissingPromptHolderException: If the prompt placeholder is still missing.
+            MissingPromptPlaceholderException: If the prompt placeholder is still missing.
         """
         template_converter = random.choice(self._template_converter)
 
         target_seed_obj = await template_converter.convert_async(prompt=template)
         if TEMPLATE_PLACEHOLDER not in target_seed_obj.output_text:
-            raise MissingPromptPlaceHolderException(status_code=204, message="Prompt placeholder is empty.")
+            raise MissingPromptPlaceholderException(status_code=204, message="Prompt placeholder is empty.")
         return target_seed_obj.output_text
     
     def print_conversation(self, result: FuzzerResult):
