@@ -63,7 +63,7 @@ class InvalidJsonException(PyritException):
         super().__init__(message=message)
 
 class MissingPromptPlaceHolderException(PyritException):
-    """Exception class for missing prompt holder errors."""
+    """Exception class for missing prompt placeholder errors."""
 
     def __init__(self, status_code: int = 204, *, message: str = "No Content"):
         super().__init__(status_code=status_code, message=message)
