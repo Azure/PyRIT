@@ -16,7 +16,7 @@ from pyrit.exceptions import pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         pass
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request: PromptRequestPiece = prompt_request.request_pieces[0]
@@ -159,6 +160,7 @@ class AzureOpenAITextChatTarget(OpenAIChatInterface):
         top_p: int = 1,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Class that initializes an Azure OpenAI chat target. This class facilitates text as input and output
@@ -194,8 +196,11 @@ class AzureOpenAITextChatTarget(OpenAIChatInterface):
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.5.
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory)
+        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._max_tokens = max_tokens
         self._temperature = temperature
@@ -259,6 +264,7 @@ class OpenAIChatTarget(OpenAIChatInterface):
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
         headers: Optional[dict[str, str]] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Class that initializes an openai chat target
@@ -282,8 +288,11 @@ class OpenAIChatTarget(OpenAIChatInterface):
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.5.
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory)
+        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._max_tokens = max_tokens
         self._temperature = temperature

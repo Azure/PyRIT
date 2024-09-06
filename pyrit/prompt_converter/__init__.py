@@ -8,6 +8,7 @@ from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverte
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
+from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
@@ -40,6 +41,7 @@ __all__ = [
     "AddTextImageConverter",
     "AsciiArtConverter",
     "AtbashConverter",
+    "AzureSpeechAudioToTextConverter",
     "AzureSpeechTextToAudioConverter",
     "Base64Converter",
     "CaesarConverter",

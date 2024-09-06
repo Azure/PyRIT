@@ -3,8 +3,9 @@
 
 import abc
 from abc import abstractmethod
-from typing import Optional
+from typing import Optional, Sequence
 
+from pyrit.common.batch_helper import batch_task_async
 from pyrit.models import PromptRequestPiece
 from pyrit.score import Score, ScoreType
 
@@ -61,6 +62,21 @@ class Scorer(abc.ABC):
 
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
+
+    async def score_prompts_batch_async(
+        self, prompts: Sequence[PromptRequestPiece], batch_size: int = 10
+    ) -> list[Score]:
+        prompt_target = getattr(self, "_prompt_target", None)
+        results = await batch_task_async(
+            task=self.score_async,
+            task_argument="request_response",
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=prompts,
+        )
+
+        # results is a list[list[Score]] and needs to be flattened
+        return [score for sublist in results for score in sublist]
 
     async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
         """

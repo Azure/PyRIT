@@ -2,13 +2,14 @@
 # Licensed under the MIT license.
 
 import logging
+from typing import Optional
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,9 @@ class OllamaChatTarget(PromptChatTarget):
         model_name: str = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         memory: MemoryInterface = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        PromptChatTarget.__init__(self, memory=memory)
+        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self.endpoint_uri = endpoint_uri or default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri
@@ -37,6 +39,7 @@ class OllamaChatTarget(PromptChatTarget):
         )
         self.chat_message_normalizer = chat_message_normalizer
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)

@@ -2,13 +2,13 @@
 # Licensed under the MIT license.
 
 import logging
-import asyncio
 from pathlib import Path
 
 from typing import Optional
 from uuid import uuid4
 
 
+from pyrit.common.batch_helper import batch_task_async
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
@@ -57,6 +57,8 @@ class SkeletonKeyOrchestrator(Orchestrator):
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+                Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
+                ensure proper rate limit management.
             verbose (bool, optional): If set to True, verbose output will be enabled. Defaults to False.
         """
         super().__init__(
@@ -141,24 +143,13 @@ class SkeletonKeyOrchestrator(Orchestrator):
             list[PromptRequestResponse]: The responses from the prompt target.
         """
 
-        responses = []
-        for prompts_batch in self._chunked_prompts(prompt_list, self._batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(
-                    self.send_skeleton_key_with_prompt_async(
-                        prompt=prompt,
-                    )
-                )
-
-            batch_results = await asyncio.gather(*tasks)
-            responses.extend(batch_results)
-
-        return responses
-
-    def _chunked_prompts(self, prompts: list[str], size: int):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]
+        return await batch_task_async(
+            task=self.send_skeleton_key_with_prompt_async,
+            task_argument="prompt",
+            prompt_target=self._prompt_target,
+            batch_size=self._batch_size,
+            items_to_batch=prompt_list,
+        )
 
     def print_conversation(self) -> None:
         """Prints all the conversations that have occured with the prompt target."""
