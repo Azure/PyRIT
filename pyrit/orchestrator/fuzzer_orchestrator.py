@@ -190,8 +190,6 @@ class FuzzerOrchestrator(Orchestrator):
         # convert each template into a node and maintain the node information parent, child, etc.
         self._initial_prompts_nodes: list[PromptNode] = [PromptNode(prompt) for prompt in prompt_templates]
 
-        # self._initial_prompts_nodes = self._prompt_nodes.copy()
-
     async def execute_fuzzer(self):
         """
         Steps:
