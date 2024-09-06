@@ -11,7 +11,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.common.prompt_template_generator import PromptTemplateGenerator
-from pyrit.common.huggingface_model_manager import download_model_with_cli, download_specific_files_with_cli
+from pyrit.common.download_hf_model_with_hf_cli import download_model_with_cli, download_specific_files_with_cli
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 from pyrit.models import ChatMessage
@@ -80,7 +80,7 @@ class HuggingFaceChatTarget(PromptTarget):
 
             if self.necessary_files is None:
                 # Perform general download if no specific files are mentioned
-                print(f"Downloading the entire model {self.model_id} since no specific files are provided...")
+                logger.info(f"Downloading the entire model {self.model_id} since no specific files are provided...")
                 download_model_with_cli(self.model_id)
             else:
                 # Check if the necessary files are already in the Hugging Face cache
@@ -88,12 +88,13 @@ class HuggingFaceChatTarget(PromptTarget):
 
                 if missing_files:
                     # If some files are missing, use CLI to download them
-                    print(f"Model {self.model_id} not fully found in cache. Downloading missing files using CLI...")
+                    logger.info(f"Model {self.model_id} not fully found in cache. Downloading missing files using CLI...")
                     download_specific_files_with_cli(self.model_id, missing_files)  # Download only the missing files
 
             # Load the tokenizer and model from the specified directory
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-            self.model = AutoModelForCausalLM.from_pretrained(self.model_id)
+            logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, cache_dir=cache_dir)
+            self.model = AutoModelForCausalLM.from_pretrained(self.model_id, cache_dir=cache_dir)
 
             if self.use_cuda and torch.cuda.is_available():
                 self.model.to("cuda")  # Move the model to GPU
@@ -148,6 +149,7 @@ class HuggingFaceChatTarget(PromptTarget):
         top_p: int = 1,
     ) -> str:
         """Completes a chat interaction by generating a response to the given input prompt.
+        
         Args:
             messages (list[ChatMessage]): The chat messages object containing the role and content.
             max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
