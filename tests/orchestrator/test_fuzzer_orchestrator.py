@@ -12,7 +12,7 @@ from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
 from tests.mocks import MockPromptTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.exceptions import MissingPromptPlaceHolderException
+from pyrit.exceptions import MissingPromptPlaceholderException
 import pathlib
 import pytest
 import tempfile
@@ -270,7 +270,7 @@ async def test_apply_template_converter_empty_placeholder(
         if template_converter == ExpandConverter or template_converter == ShortenConverter:
             with patch.object(fuzzer_orchestrator._template_converter, "_convert_async") as mock_template:
                 mock_template.return_value = prompt_template
-                with pytest.raises(MissingPromptPlaceHolderException) as e:
+                with pytest.raises(MissingPromptPlaceholderException) as e:
                     mock_template
                     assert e.match("Prompt placeholder is empty.")
 
