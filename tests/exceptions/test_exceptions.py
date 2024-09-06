@@ -72,6 +72,6 @@ def test_empty_promptholder_exception(caplog):
         result = ex.process_exception()
     assert json.loads(result) == {"status_code": 204, "message": "No Content"}
     assert (
-        "MissingPromptHolderException encountered: Status Code: 204, Message: Missing Prompt Holder Exception"
+        "MissingPromptPlaceHolderException encountered: Status Code: 204, Message: Missing Prompt Holder Exception"
         in caplog.text
     )
