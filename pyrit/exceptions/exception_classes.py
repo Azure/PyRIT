@@ -62,7 +62,7 @@ class InvalidJsonException(PyritException):
     def __init__(self, *, message: str = "Invalid JSON Response"):
         super().__init__(message=message)
 
-class MissingPromptPlaceHolderException(PyritException):
+class MissingPromptPlaceholderException(PyritException):
     """Exception class for missing prompt placeholder errors."""
 
     def __init__(self, status_code: int = 204, *, message: str = "No prompt placeholder"):
@@ -158,7 +158,7 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
 
-    Retries the function if it raises MissingPromptHolderException,
+    Retries the function if it raises MissingPromptholderException,
     with a wait time between retries that follows an exponential backoff strategy.
     Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
@@ -173,7 +173,7 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
     
     return retry(
         reraise=True,
-        retry=retry_if_exception_type(MissingPromptPlaceHolderException),
+        retry=retry_if_exception_type(MissingPromptPlaceholderException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=after_log(logger, logging.INFO),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
