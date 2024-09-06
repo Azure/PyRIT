@@ -37,7 +37,7 @@ class SelfAskLikertScorer(Scorer):
     """
 
     def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path, memory: MemoryInterface = None) -> None:
-
+        self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()
@@ -55,8 +55,6 @@ class SelfAskLikertScorer(Scorer):
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
             likert_scale=likert_scale, category=self._score_category
         )
-
-        self._chat_target: PromptChatTarget = chat_target
 
     def _likert_scale_description_to_string(self, descriptions: list[Dict[str, str]]) -> str:
         """
@@ -104,7 +102,7 @@ class SelfAskLikertScorer(Scorer):
 
         conversation_id = str(uuid.uuid4())
 
-        self._chat_target.set_system_prompt(
+        self._prompt_target.set_system_prompt(
             system_prompt=self._system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
@@ -116,7 +114,7 @@ class SelfAskLikertScorer(Scorer):
                     role="user",
                     original_value=request_response.converted_value,
                     conversation_id=conversation_id,
-                    prompt_target_identifier=self._chat_target.get_identifier(),
+                    prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
             ]
         )
@@ -128,7 +126,7 @@ class SelfAskLikertScorer(Scorer):
 
     @pyrit_json_retry
     async def _send_chat_target_async(self, request, request_response_id):
-        response = await self._chat_target.send_prompt_async(prompt_request=request)
+        response = await self._prompt_target.send_prompt_async(prompt_request=request)
 
         try:
             response_json = response.request_pieces[0].converted_value

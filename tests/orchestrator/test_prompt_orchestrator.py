@@ -1,16 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pytest
 import tempfile
+import time
 from unittest.mock import AsyncMock, MagicMock
 import uuid
-import pytest
 
 from pyrit.memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.score import Score
+from pyrit.score import Score, SubStringScorer
 
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 from tests.mocks import MockPromptTarget
@@ -94,7 +95,13 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
 @pytest.mark.parametrize("num_conversations", [1, 10, 20])
 async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_conversations: int):
     # Set up mocks and return values
-    scorer = AsyncMock()
+    scorer = SubStringScorer(
+        substring="test",
+        category="test",
+        memory=mock_target._memory,
+    )
+
+    scorer.score_async = AsyncMock()  # type: ignore
 
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
     orchestrator._prompt_normalizer = AsyncMock()
@@ -155,7 +162,25 @@ async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_c
     scorer.score_async.assert_called_with(request_response=response2)
 
 
-def test_sendprompts_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
+@pytest.mark.asyncio
+@pytest.mark.parametrize("num_prompts", [2, 20])
+@pytest.mark.parametrize("max_rpm", [30])
+async def test_max_requests_per_minute_delay(num_prompts: int, max_rpm: int):
+    mock_target = MockPromptTarget(rpm=max_rpm)
+    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, batch_size=1)
+
+    prompt_list = []
+    for n in range(num_prompts):
+        prompt_list.append("test")
+
+    start = time.time()
+    await orchestrator.send_prompts_async(prompt_list=prompt_list)
+    end = time.time()
+
+    assert (end - start) > (60 / max_rpm * num_prompts)
+
+
+def test_orchestrator_sets_target_memory(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
     assert orchestrator._memory is mock_target._memory
 

@@ -22,7 +22,12 @@ class TextTarget(PromptTarget):
     but enter them manually.
     """
 
-    def __init__(self, *, text_stream: IO[str] = sys.stdout, memory: MemoryInterface = None) -> None:
+    def __init__(
+        self,
+        *,
+        text_stream: IO[str] = sys.stdout,
+        memory: MemoryInterface = None,
+    ) -> None:
         super().__init__(memory=memory)
         self._text_stream = text_stream
 
