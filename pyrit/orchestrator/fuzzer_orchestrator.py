@@ -19,7 +19,6 @@ from pyrit.score import SelfAskScaleScorer
 from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.models import PromptTemplate
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from colorama import Fore, Style
 
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 
