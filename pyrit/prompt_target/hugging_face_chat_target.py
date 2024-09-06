@@ -25,6 +25,11 @@ class HuggingFaceChatTarget(PromptTarget):
     Inherits from PromptTarget to comply with the current design standards.
     """
 
+    # Class-level cache for model and tokenizer
+    _cached_model = None
+    _cached_tokenizer = None
+    _cached_model_id = None
+
     def __init__(
         self,
         *,
@@ -75,8 +80,15 @@ class HuggingFaceChatTarget(PromptTarget):
                 Exception: If the model loading fails.
         """
         try:
+            # Check if the model is already cached
+            if HuggingFaceChatTarget._cached_model_id == self.model_id:
+                logger.info(f"Using cached model and tokenizer for {self.model_id}.")
+                self.model = HuggingFaceChatTarget._cached_model
+                self.tokenizer = HuggingFaceChatTarget._cached_tokenizer
+                return
+
             # Define the default Hugging Face cache directory
-            cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "hub", f"models--{self.model_id.replace('/', '--')}")
+            cache_dir = os.path.join(os.path.expanduser("~"),".cache","huggingface","hub",f"models--{self.model_id.replace('/', '--')}")
 
             if self.necessary_files is None:
                 # Perform general download if no specific files are mentioned
@@ -95,6 +107,11 @@ class HuggingFaceChatTarget(PromptTarget):
             logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, cache_dir=cache_dir)
             self.model = AutoModelForCausalLM.from_pretrained(self.model_id, cache_dir=cache_dir)
+
+            # Cache the loaded model and tokenizer
+            HuggingFaceChatTarget._cached_model = self.model
+            HuggingFaceChatTarget._cached_tokenizer = self.tokenizer
+            HuggingFaceChatTarget._cached_model_id = self.model_id
 
             if self.use_cuda and torch.cuda.is_available():
                 self.model.to("cuda")  # Move the model to GPU
