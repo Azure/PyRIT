@@ -3,7 +3,7 @@
 
 import json
 import logging
-from pyrit.exceptions import PyritException, BadRequestException, RateLimitException, EmptyResponseException
+from pyrit.exceptions import PyritException, BadRequestException, RateLimitException, EmptyResponseException, MissingPromptPlaceholderException
 
 
 def test_pyrit_exception_initialization():
@@ -67,11 +67,11 @@ def test_empty_response_exception_process_exception(caplog):
 
 
 def test_empty_promptholder_exception(caplog):
-    ex = MissingPromptPlaceHolderException()
+    ex = MissingPromptPlaceholderException()
     with caplog.at_level(logging.ERROR):
         result = ex.process_exception()
     assert json.loads(result) == {"status_code": 204, "message": "No Content"}
     assert (
-        "MissingPromptPlaceHolderException encountered: Status Code: 204, Message: Missing Prompt Holder Exception"
+        "MissingPromptPlaceholderException encountered: Status Code: 204, Message: Missing Prompt Holder Exception"
         in caplog.text
     )
