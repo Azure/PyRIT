@@ -62,6 +62,7 @@ class InvalidJsonException(PyritException):
     def __init__(self, *, message: str = "Invalid JSON Response"):
         super().__init__(message=message)
 
+
 class MissingPromptPlaceholderException(PyritException):
     """Exception class for missing prompt placeholder errors."""
 
@@ -170,7 +171,7 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
     """
 
     global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
-    
+
     return retry(
         reraise=True,
         retry=retry_if_exception_type(MissingPromptPlaceholderException),

@@ -4,23 +4,20 @@
 from dataclasses import dataclass
 import logging
 import random
+import uuid
 import numpy as np
-from typing import Optional
+from typing import Optional, Union
 from pathlib import Path
 from pyrit.common.path import SCALES_PATH
-from pyrit.memory import MemoryInterface
-from pyrit.models.score import Score
-from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import NormalizerRequest
-from pyrit.prompt_converter import PromptConverter
-from pyrit.score import SelfAskScaleScorer
-from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
-from pyrit.models import PromptTemplate
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
-
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
+from pyrit.memory import MemoryInterface
+from pyrit.models import PromptRequestResponse, PromptTemplate
+from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
+from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.score import SelfAskScaleScorer, FloatScaleThresholdScorer
+
 
 TEMPLATE_PLACEHOLDER = "{{ prompt }}"
 logger = logging.getLogger(__name__)
@@ -48,7 +45,7 @@ class PromptNode:
         self.rewards: int = 0
         if self.parent is not None:
             self.parent.children.append(self)
-    
+
     def add_parent(self, parent: "PromptNode"):
         self.parent = parent
         parent.children.append(self)
@@ -61,11 +58,11 @@ class FuzzerResult:
     description: str
     prompt_target_conversation_ids: Optional[list[str]] = None
 
-    def __str__(self) -> list[str]:
+    def __str__(self) -> str:
         return (
             "FuzzerResult("
             f"success={self.success},"
-            f"template={self.template},"
+            f"templates={self.templates},"
             f"description={self.description},"
             f"prompt_target_conversation_ids={self.prompt_target_conversation_ids})",
         )
@@ -111,7 +108,8 @@ class FuzzerOrchestrator(Orchestrator):
             prompt_target: The target to send the prompts to.
             prompt_templates: List of all the jailbreak templates which will act as the seed pool.
                 At each iteration, a seed will be selected using the MCTS-explore algorithm which will be sent to the
-                shorten/expand prompt converter. The converted template along with the prompt will be sent to the target.
+                shorten/expand prompt converter. The converted template along with the prompt will be sent to the
+                target.
             prompt_converters: The prompt_converters to use to convert the prompts before sending
                 them to the prompt target.
             template_converters: The converters that will be applied on the jailbreak template that was
@@ -167,7 +165,7 @@ class FuzzerOrchestrator(Orchestrator):
             self._query_limit = len(self._prompt_templates) * len(self._prompts) * 10
         self._total_target_query_count = 0
         self._total_jailbreak_count = 0
-        self._jailbreak_conversation_ids = []
+        self._jailbreak_conversation_ids: list[Union[str, uuid.UUID]] = []
         self._batch_size = batch_size
         self._new_templates: list[str] = []
         self._step = 0
@@ -220,13 +218,21 @@ class FuzzerOrchestrator(Orchestrator):
             if (self._total_target_query_count + len(self._prompts)) > self._query_limit:
                 query_limit_reached_message = "Query limit reached."
                 logger.info(query_limit_reached_message)
-                return FuzzerResult(success=False, templates=self._new_templates, description=query_limit_reached_message, prompt_target_conversation_ids=self._jailbreak_conversation_ids)
+                return FuzzerResult(
+                    success=False,
+                    templates=self._new_templates,
+                    description=query_limit_reached_message,
+                    prompt_target_conversation_ids=self._jailbreak_conversation_ids,
+                )
 
             if self._total_jailbreak_count >= self._jailbreak_goal:
                 jailbreak_goal_reached_message = "Maximum number of jailbreaks reached."
                 logger.info(jailbreak_goal_reached_message)
                 return FuzzerResult(
-                    success=True, templates=self._new_templates, description=jailbreak_goal_reached_message, prompt_target_conversation_ids=self._jailbreak_conversation_ids
+                    success=True,
+                    templates=self._new_templates,
+                    description=jailbreak_goal_reached_message,
+                    prompt_target_conversation_ids=self._jailbreak_conversation_ids,
                 )
 
             # 1. Select a seed from the list of the templates using the MCTS
@@ -285,7 +291,9 @@ class FuzzerOrchestrator(Orchestrator):
             conversation_ids = [response.request_pieces[0].conversation_id for response in responses]
 
             # 5. Score responses.
-            scores = await self._scorer.score_prompts_batch_async(request_responses=response_pieces, tasks=self._prompts)
+            scores = await self._scorer.score_prompts_batch_async(
+                request_responses=response_pieces, tasks=self._prompts
+            )
             score_values = [score.get_value() for score in scores]
 
             # 6. Update the rewards for each of the nodes.

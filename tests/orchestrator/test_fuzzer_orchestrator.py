@@ -4,6 +4,7 @@ from unittest import mock
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 
 from unittest.mock import AsyncMock, MagicMock, patch
+from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.score import Score, Scorer
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptDataset, PromptTemplate
@@ -115,7 +116,7 @@ async def test_execute_fuzzer(rounds: int, success_pattern: str, simple_prompts:
     ]
     with patch.object(fuzzer_orchestrator, "_select") as mock_get_seed:
         with patch.object(fuzzer_orchestrator, "_apply_template_converter") as mock_apply_template_converter:
-            with patch.object(fuzzer_orchestrator, "_update") as mock_update:
+            with patch.object(fuzzer_orchestrator, "_update"):
                 mock_get_seed.return_value = prompt_node[0]
                 mock_apply_template_converter.return_value = prompt_node[0].template
                 fuzzer_orchestrator._prompt_normalizer = AsyncMock()
@@ -125,7 +126,9 @@ async def test_execute_fuzzer(rounds: int, success_pattern: str, simple_prompts:
                 fuzzer_orchestrator._scorer = AsyncMock()
                 fuzzer_orchestrator._scorer.score_prompts_batch_async = AsyncMock()
                 if success_pattern == "1_per_round":
-                    fuzzer_orchestrator._scorer.score_prompts_batch_async.return_value = [false_score] * (len(simple_prompts) - 1) + [true_score]
+                    fuzzer_orchestrator._scorer.score_prompts_batch_async.return_value = [false_score] * (
+                        len(simple_prompts) - 1
+                    ) + [true_score]
                 elif success_pattern == "1_every_other_round":
                     fuzzer_orchestrator._scorer.score_prompts_batch_async.side_effect = [
                         [false_score] * len(simple_prompts),
@@ -141,7 +144,7 @@ async def test_execute_fuzzer(rounds: int, success_pattern: str, simple_prompts:
                 assert result.description == "Maximum number of jailbreaks reached."
                 assert len(result.templates) == rounds
                 assert len(prompt_node[0].children) == rounds
-                
+
 
 def test_prompt_templates(simple_prompts: list, simple_templateconverter: list[PromptConverter]):
     with pytest.raises(ValueError) as e:
@@ -228,7 +231,9 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list):
     "template_converter",
     [ShortenConverter(converter_target=MockPromptTarget()), ExpandConverter(converter_target=MockPromptTarget())],
 )
-async def test_apply_template_converter(simple_prompts: list, simple_prompt_templates: list, template_converter: list):
+async def test_apply_template_converter(
+    simple_prompts: list, simple_prompt_templates: list, template_converter: PromptConverter
+):
     prompt_template = PromptTemplate.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
     )
@@ -243,13 +248,18 @@ async def test_apply_template_converter(simple_prompts: list, simple_prompt_temp
         template_converters=template_converters,
         scoring_target=MagicMock(),
     )
-    mocked_random_number = lambda: template_converter
 
-    with mock.patch("random.choice", mocked_random_number):
-        if template_converter == ExpandConverter or template_converter == ShortenConverter:
-            target = await fuzzer_orchestrator._apply_template_converter(prompt_template)
-            TEMPLATE_PLACEHOLDER = "{{ prompt }}"
-            assert TEMPLATE_PLACEHOLDER in target.template
+    def get_mocked_converter():
+        return template_converter
+
+    with mock.patch("random.choice", get_mocked_converter):
+        new_template = "new template {{ prompt}}"
+        template_converter.convert_async = AsyncMock(
+            return_value=ConverterResult(output_text=new_template, output_type="text")
+        )
+        target = await fuzzer_orchestrator._apply_template_converter(prompt_template)
+        TEMPLATE_PLACEHOLDER = "{{ prompt }}"
+        assert TEMPLATE_PLACEHOLDER in target.template
 
 
 @pytest.mark.asyncio
@@ -272,9 +282,10 @@ async def test_apply_template_converter_empty_placeholder(
         scoring_target=MagicMock(),
     )
 
-    mocked_random_number = lambda: template_converter
+    def get_mocked_random_number():
+        return template_converter
 
-    with mock.patch("random.choice", mocked_random_number):
+    with mock.patch("random.choice", get_mocked_random_number):
         if template_converter == ExpandConverter or template_converter == ShortenConverter:
             with patch.object(fuzzer_orchestrator._template_converter, "_convert_async") as mock_template:
                 mock_template.return_value = prompt_template
@@ -351,9 +362,11 @@ async def test_select(simple_prompts: list, probability: int, simple_prompt_temp
     prompt_node = fuzzer_orchestrator._initial_prompts_nodes
     prompt_node[0].rewards = 1
     prompt_node[1].rewards = 2
-    mocked_random_number = lambda: probability
 
-    with mock.patch("numpy.random.rand", mocked_random_number):
+    def get_mocked_random_number():
+        return probability
+
+    with mock.patch("numpy.random.rand", get_mocked_random_number):
         if probability == 0:
             fuzzer_orchestrator._select()
             path_mcts = fuzzer_orchestrator._mcts_selected_path

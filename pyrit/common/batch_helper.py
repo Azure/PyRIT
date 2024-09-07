@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from pyrit.prompt_target import PromptTarget
 
@@ -44,7 +44,13 @@ def _validate_rate_limit_parameters(prompt_target: PromptTarget, batch_size: int
 
 
 async def batch_task_async(
-    *, prompt_target: PromptTarget, batch_size: int, items_to_batch: list[list[Any]], task_func: Callable, task_arguments: list[str], **task_kwargs
+    *,
+    prompt_target: PromptTarget,
+    batch_size: int,
+    items_to_batch: Sequence[Sequence[Any]],
+    task_func: Callable,
+    task_arguments: list[str],
+    **task_kwargs,
 ):
     """
     Performs provided task in batches and validates parameters using helpers.
@@ -62,11 +68,11 @@ async def batch_task_async(
     """
 
     responses = []
-        
+
     print("items_to_batch: ", items_to_batch)
 
     _validate_rate_limit_parameters(prompt_target=prompt_target, batch_size=batch_size)
-            
+
     if len(items_to_batch) == 0 or len(items_to_batch[0]) == 0:
         raise ValueError("No items to batch.")
 

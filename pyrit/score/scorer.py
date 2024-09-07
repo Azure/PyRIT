@@ -64,7 +64,11 @@ class Scorer(abc.ABC):
         return await self.score_async(request_piece, task=task)
 
     async def score_prompts_batch_async(
-        self, *, request_responses: Sequence[PromptRequestPiece], tasks: Optional[Sequence[str]] = None, batch_size: int = 10
+        self,
+        *,
+        request_responses: Sequence[PromptRequestPiece],
+        tasks: Optional[Sequence[str]] = None,
+        batch_size: int = 10,
     ) -> list[Score]:
         if not tasks:
             tasks = [None] * len(request_responses)
