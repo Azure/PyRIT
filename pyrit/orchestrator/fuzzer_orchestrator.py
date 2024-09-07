@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 from dataclasses import dataclass
 import logging
 import random
@@ -53,6 +52,26 @@ class PromptNode:
     def add_parent(self, parent: "PromptNode"):
         self.parent = parent
         parent.children.append(self)
+
+
+@dataclass
+class FuzzerResult:
+    success: bool
+    templates: list[str]
+    description: str
+    prompt_target_conversation_ids: Optional[list[str]] = None
+
+    def __str__(self) -> list[str]:
+        return (
+            "FuzzerResult("
+            f"success={self.success},"
+            f"template={self.template},"
+            f"description={self.description},"
+            f"prompt_target_conversation_ids={self.prompt_target_conversation_ids})",
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 class FuzzerOrchestrator(Orchestrator):
@@ -110,7 +129,7 @@ class FuzzerOrchestrator(Orchestrator):
                 from being too small or negative.
             non_leaf_node_probability: parameter which decides the likelihood of selecting a non-leaf node.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
-            jailbreak_goal: Maximum number of the jailbreaks after which the fuzzer will stop.
+            jailbreak_goal: target number of the jailbreaks after which the fuzzer will stop.
             query_limit: Maximum number of times the fuzzer will run.
         """
 
@@ -137,7 +156,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._reward_penalty = reward_penalty
         self._minimum_reward = minimum_reward
         self._non_leaf_node_probability = non_leaf_node_probability
-        # Maximum number of the jailbreaks after which the fuzzer will stop
+        # Target number of the jailbreaks after which the fuzzer will stop
         self._jailbreak_goal = jailbreak_goal
         # Maximum number of times the fuzzer will query the target (not including scoring calls)
         if query_limit:
@@ -148,6 +167,7 @@ class FuzzerOrchestrator(Orchestrator):
             self._query_limit = len(self._prompt_templates) * len(self._prompts) * 10
         self._total_target_query_count = 0
         self._total_jailbreak_count = 0
+        self._jailbreak_conversation_ids = []
         self._batch_size = batch_size
         self._new_templates: list[str] = []
         self._step = 0
@@ -200,13 +220,13 @@ class FuzzerOrchestrator(Orchestrator):
             if (self._total_target_query_count + len(self._prompts)) > self._query_limit:
                 query_limit_reached_message = "Query limit reached."
                 logger.info(query_limit_reached_message)
-                return FuzzerResult(success=False, templates=self._new_templates, description=query_limit_reached_message)
+                return FuzzerResult(success=False, templates=self._new_templates, description=query_limit_reached_message, prompt_target_conversation_ids=self._jailbreak_conversation_ids)
 
             if self._total_jailbreak_count >= self._jailbreak_goal:
                 jailbreak_goal_reached_message = "Maximum number of jailbreaks reached."
                 logger.info(jailbreak_goal_reached_message)
                 return FuzzerResult(
-                    success=True, templates=self._new_templates, description=jailbreak_goal_reached_message,
+                    success=True, templates=self._new_templates, description=jailbreak_goal_reached_message, prompt_target_conversation_ids=self._jailbreak_conversation_ids
                 )
 
             # 1. Select a seed from the list of the templates using the MCTS
@@ -225,6 +245,7 @@ class FuzzerOrchestrator(Orchestrator):
                     success=False,
                     templates=self._new_templates,
                     description=error_message,
+                    prompt_target_conversation_ids=self._jailbreak_conversation_ids,
                 )
 
             target_template = PromptTemplate(target_seed_obj, parameters=["prompt"])
@@ -269,11 +290,10 @@ class FuzzerOrchestrator(Orchestrator):
 
             # 6. Update the rewards for each of the nodes.
             jailbreak_count = 0
-            jailbreak_conversation_ids = []
             for index, score in enumerate(score_values):
                 if score is True:
                     jailbreak_count += 1
-                    jailbreak_conversation_ids.append(conversation_ids[index])
+                    self._jailbreak_conversation_ids.append(conversation_ids[index])
             num_executed_queries = len(score_values)
 
             self._total_jailbreak_count += jailbreak_count
@@ -362,21 +382,4 @@ class FuzzerOrchestrator(Orchestrator):
         target_seed_obj = await template_converter.convert_async(prompt=template)
         if TEMPLATE_PLACEHOLDER not in target_seed_obj.output_text:
             raise MissingPromptPlaceholderException(status_code=204, message="Prompt placeholder is empty.")
-        return target_seed_obj
-
-
-@dataclass
-class FuzzerResult:
-    success: bool
-    templates: list[str]
-    description: str
-    prompt_target_conversation_ids: Optional[list[str]] = None
-
-    def __str__(self) -> str:
-        return (
-            f"FuzzerResult(success={self.success}, template={self.templates}, description={self.description}",
-            f"prompt_target_conversation_id={self.prompt_target_conversation_ids})"
-        )
-
-    def __repr__(self) -> str:
-        return self.__str__()
+        return target_seed_obj.output_text
