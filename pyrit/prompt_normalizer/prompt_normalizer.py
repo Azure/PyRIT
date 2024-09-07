@@ -115,9 +115,9 @@ class PromptNormalizer(abc.ABC):
         return await batch_task_async(
             prompt_target=target,
             batch_size=batch_size,
-            items_to_batch=requests,
-            task=self.send_prompt_async,
-            task_argument="normalizer_request",
+            items_to_batch=[requests],
+            task_func=self.send_prompt_async,
+            task_arguments=["normalizer_request"],
             target=target,
             labels=labels,
             orchestrator_identifier=orchestrator_identifier,

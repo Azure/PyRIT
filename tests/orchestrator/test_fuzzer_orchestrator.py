@@ -12,7 +12,7 @@ from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
 from tests.mocks import MockPromptTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.exceptions import MissingPromptPlaceHolderException
+from pyrit.exceptions import MissingPromptPlaceholderException
 import pathlib
 import pytest
 import tempfile
@@ -68,7 +68,8 @@ def simple_prompt_templates():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("rounds", list(range(1, 6)))
-async def test_execute_fuzzer(rounds: int, simple_prompts: list, simple_prompt_templates: list):
+@pytest.mark.parametrize("success_pattern", ["1_per_round", "1_every_other_round"])
+async def test_execute_fuzzer(rounds: int, success_pattern: str, simple_prompts: list, simple_prompt_templates: list):
 
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
@@ -79,9 +80,9 @@ async def test_execute_fuzzer(rounds: int, simple_prompts: list, simple_prompt_t
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
         prompt_target=MockPromptTarget(),
-        template_converter=template_converters,
+        template_converters=template_converters,
         scoring_target=MagicMock(),
-        random_seed=None,
+        jailbreak_goal=rounds,
     )
     prompt_node = fuzzer_orchestrator._initial_prompts_nodes
     fuzzer_orchestrator._scorer = MagicMock()
@@ -110,25 +111,35 @@ async def test_execute_fuzzer(rounds: int, simple_prompts: list, simple_prompt_t
         )
         for prompt in simple_prompts
     ]
-    for round in range(1, rounds + 1):
-        with patch.object(fuzzer_orchestrator, "_select") as mock_get_seed:
-            with patch.object(fuzzer_orchestrator, "_apply_template_converter") as mock_apply_template_converter:
-                with patch.object(fuzzer_orchestrator, "_update") as mock_update:
-                    mock_get_seed.return_value = prompt_node[0]  # return a promptnode
-                    mock_apply_template_converter.return_value = prompt_node[0].template  # return_value
-                    fuzzer_orchestrator._prompt_normalizer = AsyncMock()
-                    fuzzer_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
-                        return_value=prompt_target_response
-                    )
-                    fuzzer_orchestrator._scorer = AsyncMock()
+    with patch.object(fuzzer_orchestrator, "_select") as mock_get_seed:
+        with patch.object(fuzzer_orchestrator, "_apply_template_converter") as mock_apply_template_converter:
+            with patch.object(fuzzer_orchestrator, "_update") as mock_update:
+                mock_get_seed.return_value = prompt_node[0]
+                mock_apply_template_converter.return_value = prompt_node[0].template
+                fuzzer_orchestrator._prompt_normalizer = AsyncMock()
+                fuzzer_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
+                    return_value=prompt_target_response
+                )
+                fuzzer_orchestrator._scorer = AsyncMock()
+                fuzzer_orchestrator._scorer.score_prompts_batch_async = AsyncMock()
+                if success_pattern == "1_per_round":
+                    fuzzer_orchestrator._scorer.score_prompts_batch_async.return_value = [false_score] * (len(simple_prompts) - 1) + [true_score]
+                elif success_pattern == "1_every_other_round":
+                    fuzzer_orchestrator._scorer.score_prompts_batch_async.side_effect = [
+                        [false_score] * len(simple_prompts),
+                        [false_score] * (len(simple_prompts) - 1) + [true_score],
+                    ] * rounds
+                else:
+                    raise ValueError("Invalid success_pattern.")
 
-                    fuzzer_orchestrator._scorer.score_async = AsyncMock(  # type: ignore
-                        side_effect=[
-                            [false_score] * (rounds - 1) * len(simple_prompts) + [true_score] * len(simple_prompts)
-                        ]
-                    )
-                    await fuzzer_orchestrator.execute_fuzzer()
+                result = await fuzzer_orchestrator.execute_fuzzer()
 
+                assert result.success
+                assert fuzzer_orchestrator._total_jailbreak_count == rounds
+                assert result.description == "Maximum number of jailbreaks reached."
+                assert len(result.templates) == rounds
+                assert len(prompt_node[0].children) == rounds
+                
 
 def test_prompt_templates(simple_prompts: list, simple_templateconverter: list[PromptConverter]):
     with pytest.raises(ValueError) as e:
@@ -136,10 +147,9 @@ def test_prompt_templates(simple_prompts: list, simple_templateconverter: list[P
             prompts=simple_prompts,
             prompt_templates=[],
             prompt_target=MockPromptTarget(),
-            template_converter=simple_templateconverter,
+            template_converters=simple_templateconverter,
             scoring_target=MagicMock(),
             memory=MagicMock(),
-            random_seed=None,
         )
     assert e.match("The initial set of prompt templates cannot be empty.")
 
@@ -152,10 +162,9 @@ def test_invalid_batchsize(
             prompts=simple_prompts,
             prompt_templates=simple_prompt_templates,
             prompt_target=MockPromptTarget(),
-            template_converter=simple_templateconverter,
+            template_converters=simple_templateconverter,
             scoring_target=MagicMock(),
             memory=MagicMock(),
-            random_seed=None,
             batch_size=0,
         )
     assert e.match("Batch size must be at least 1.")
@@ -170,12 +179,11 @@ def test_prompts(simple_prompt_templates: list):
             prompts=[],
             prompt_templates=simple_prompt_templates,
             prompt_target=MockPromptTarget(),
-            template_converter=template_converters,
+            template_converters=template_converters,
             scoring_target=MagicMock(),
             memory=MagicMock(),
-            random_seed=None,
         )
-    assert e.match("The initial prompts cannot be empty")
+    assert e.match("The initial prompts cannot be empty.")
 
 
 def test_template_converter(simple_prompts: list, simple_prompt_templates: list):
@@ -184,12 +192,11 @@ def test_template_converter(simple_prompts: list, simple_prompt_templates: list)
             prompts=simple_prompts,
             prompt_templates=simple_prompt_templates,
             prompt_target=MockPromptTarget(),
-            template_converter=[],
+            template_converters=[],
             scoring_target=MagicMock(),
             memory=MagicMock(),
-            random_seed=None,
         )
-    assert e.match("Template converter cannot be empty")
+    assert e.match("Template converters cannot be empty.")
 
 
 @pytest.mark.asyncio
@@ -201,16 +208,17 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list):
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
         prompt_target=MockPromptTarget(),
-        template_converter=template_converters,
+        template_converters=template_converters,
         scoring_target=MagicMock(),
         memory=MagicMock(),
-        random_seed=None,
     )
 
-    fuzzer_orchestrator._current_query = 78
+    assert fuzzer_orchestrator._query_limit == 80
+
+    fuzzer_orchestrator._total_target_query_count = 79
     result = await fuzzer_orchestrator.execute_fuzzer()
     assert result.success is False
-    assert result.description == "Maximum query limit reached."
+    assert result.description == "Query limit reached."
 
 
 @pytest.mark.asyncio
@@ -230,9 +238,8 @@ async def test_apply_template_converter(simple_prompts: list, simple_prompt_temp
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
         prompt_target=MockPromptTarget(),
-        template_converter=template_converters,
+        template_converters=template_converters,
         scoring_target=MagicMock(),
-        random_seed=None,
     )
     mocked_random_number = lambda: template_converter
 
@@ -259,9 +266,8 @@ async def test_apply_template_converter_empty_placeholder(
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
         prompt_target=MockPromptTarget(),
-        template_converter=template_converters,
+        template_converters=template_converters,
         scoring_target=MagicMock(),
-        random_seed=None,
     )
 
     mocked_random_number = lambda: template_converter
@@ -270,7 +276,7 @@ async def test_apply_template_converter_empty_placeholder(
         if template_converter == ExpandConverter or template_converter == ShortenConverter:
             with patch.object(fuzzer_orchestrator._template_converter, "_convert_async") as mock_template:
                 mock_template.return_value = prompt_template
-                with pytest.raises(MissingPromptPlaceHolderException) as e:
+                with pytest.raises(MissingPromptPlaceholderException) as e:
                     mock_template
                     assert e.match("Prompt placeholder is empty.")
 
@@ -284,9 +290,8 @@ async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list):
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
         prompt_target=MockPromptTarget(),
-        template_converter=template_converters,
+        template_converters=template_converters,
         scoring_target=MagicMock(),
-        random_seed=None,
     )
     fuzzer_orchestrator._initial_prompts_nodes[0].visited_num = 2
 
@@ -325,13 +330,12 @@ async def test_select(simple_prompts: list, probability: int, simple_prompt_temp
         prompts=simple_prompts,
         prompt_templates=prompt_templates,
         prompt_target=MockPromptTarget(),
-        template_converter=template_converters,
+        template_converters=template_converters,
         scoring_target=MagicMock(),
         frequency_weight=0.5,
         reward_penalty=0.1,
         minimum_reward=0.2,
         non_leaf_node_probability=0.1,
-        random_seed=None,
         batch_size=10,
     )
 
