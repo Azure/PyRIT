@@ -287,8 +287,6 @@ async def test_apply_template_converter_empty_placeholder(
 
     with mock.patch("random.choice", get_mocked_random_number):
         if template_converter == ExpandConverter or template_converter == ShortenConverter:
-            # with patch.object(fuzzer_orchestrator._template_converters, "_convert_async") as mock_template:
-            #     mock_template.return_value = prompt_template
             new_template = "new template"
 
             with pytest.raises(MissingPromptPlaceholderException) as e:
