@@ -372,6 +372,7 @@ async def test_select(simple_prompts: list, probability: int, simple_prompt_temp
             path_mcts = fuzzer_orchestrator._mcts_selected_path
             for node in path_mcts:
                 assert node.parent is None
+                assert len(path_mcts) == 1
 
         if probability == 0.5:
             fuzzer_orchestrator._select()
