@@ -72,7 +72,7 @@ def test_empty_response_exception_process_exception(caplog):
     assert "EmptyResponseException encountered: Status Code: 204, Message: No Content" in caplog.text
 
 
-def test_empty_promptholder_exception(caplog):
+def test_empty_prompt_placeholder_exception(caplog):
     ex = MissingPromptPlaceholderException()
     with caplog.at_level(logging.ERROR):
         result = ex.process_exception()
