@@ -287,8 +287,6 @@ async def test_apply_template_converter_empty_placeholder(
 
     with mock.patch("random.choice", get_mocked_random_number):
         if template_converter == ExpandConverter or template_converter == ShortenConverter:
-            # with patch.object(fuzzer_orchestrator._template_converters, "_convert_async") as mock_template:
-            #     mock_template.return_value = prompt_template
             new_template = "new template"
 
             with pytest.raises(MissingPromptPlaceholderException) as e:
@@ -318,8 +316,6 @@ async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list):
     prompt_nodes[1].rewards = 2
     prompt_nodes[2].rewards = 3
     for index, node in enumerate(prompt_nodes):
-        # fuzzer_orchestrator.rewards = [1,2,3,4,5]
-        # fuzzer_orchestrator.index = node.index
         fuzzer_orchestrator._step = 1
         UCT_score_func = fuzzer_orchestrator._best_UCT_score()
         UCT_score = UCT_score_func(node)
