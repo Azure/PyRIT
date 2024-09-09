@@ -325,26 +325,13 @@ async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("probability", [0, 0.5])
 async def test_select(simple_prompts: list, probability: int, simple_prompt_templates: list):
-    prompt_template1 = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
-    )
-    prompt_template2 = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aim.yaml"
-    )
-    prompt_template3 = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aligned.yaml"
-    )
-    prompt_template4 = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "axies.yaml"
-    )
-    prompt_templates = [prompt_template1.template, prompt_template2.template]
     # set the children of each parent
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget())
     prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget())
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
-        prompt_templates=prompt_templates,
+        prompt_templates=[simple_prompt_templates[0],simple_prompt_templates[1]],
         prompt_target=MockPromptTarget(),
         template_converters=template_converters,
         scoring_target=MagicMock(),
@@ -355,8 +342,8 @@ async def test_select(simple_prompts: list, probability: int, simple_prompt_temp
         batch_size=10,
     )
 
-    new_node1 = PromptNode(prompt_template3.template, parent=fuzzer_orchestrator._initial_prompts_nodes[1])
-    PromptNode(prompt_template4.template, parent=new_node1)
+    new_node1 = PromptNode(simple_prompt_templates[2], parent=fuzzer_orchestrator._initial_prompts_nodes[1])
+    PromptNode(simple_prompt_templates[3], parent=new_node1)
 
     fuzzer_orchestrator._step = 2
     prompt_node = fuzzer_orchestrator._initial_prompts_nodes
