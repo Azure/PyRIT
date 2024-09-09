@@ -157,10 +157,9 @@ def remove_markdown_json(response_msg: str) -> str:
 
 def pyrit_placeholder_retry(func: Callable) -> Callable:
     """
-    A decorator to apply retry logic with exponential backoff to a function.
+    A decorator to apply retry logic.
 
-    Retries the function if it raises MissingPromptPlaceholderException,
-    with a wait time between retries that follows an exponential backoff strategy.
+    Retries the function if it raises MissingPromptPlaceholderException.
     Logs retry attempts at the INFO level and stops after a maximum number of attempts.
 
     Args:
@@ -170,12 +169,11 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
         Callable: The decorated function with retry logic applied.
     """
 
-    global RETRY_MAX_NUM_ATTEMPTS, RETRY_WAIT_MIN_SECONDS, RETRY_WAIT_MAX_SECONDS
+    global RETRY_MAX_NUM_ATTEMPTS
 
     return retry(
         reraise=True,
         retry=retry_if_exception_type(MissingPromptPlaceholderException),
-        wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
         after=after_log(logger, logging.INFO),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
