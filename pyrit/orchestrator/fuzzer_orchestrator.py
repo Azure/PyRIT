@@ -11,7 +11,7 @@ from pathlib import Path
 from pyrit.common.path import SCALES_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptTemplate
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
@@ -42,7 +42,7 @@ class PromptNode:
         self.children: list[PromptNode] = []
         self.level: int = 0 if parent is None else parent.level + 1
         self.visited_num = 0
-        self.rewards: int = 0
+        self.rewards: float = 0
         if self.parent is not None:
             self.parent.children.append(self)
 
@@ -64,7 +64,7 @@ class FuzzerResult:
             f"success={self.success},"
             f"templates={self.templates},"
             f"description={self.description},"
-            f"prompt_target_conversation_ids={self.prompt_target_conversation_ids})",
+            f"prompt_target_conversation_ids={self.prompt_target_conversation_ids})"
         )
 
     def __repr__(self) -> str:
@@ -278,7 +278,6 @@ class FuzzerOrchestrator(Orchestrator):
             for request in requests:
                 request.validate()
 
-            responses: list[PromptRequestResponse]
             responses = await self._prompt_normalizer.send_prompt_batch_to_target_async(
                 requests=requests,
                 target=self._prompt_target,

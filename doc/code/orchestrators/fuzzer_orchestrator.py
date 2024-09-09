@@ -38,37 +38,33 @@ prompt_template3 = PromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aligned.yaml"
 )
 
-prompt_templates = [
-        prompt_template1.template,
-        prompt_template2.template,
-        prompt_template3.template
-]
+prompt_templates = [prompt_template1.template, prompt_template2.template, prompt_template3.template]
 
 # %%
-target=AzureOpenAITextChatTarget()
-scoring_target=AzureOpenAITextChatTarget()
+target = AzureOpenAITextChatTarget()
+scoring_target = AzureOpenAITextChatTarget()
 
 # %%
-converter_target=AzureOpenAITextChatTarget()
+converter_target = AzureOpenAITextChatTarget()
 prompt_shorten_converter = ShortenConverter(converter_target=converter_target)
 prompt_expand_converter = ExpandConverter(converter_target=converter_target)
 
 # %%
 
 fuzzer_orchestrator = FuzzerOrchestrator(
-    prompts = prompts.prompts,
-    prompt_target = target,
-    prompt_templates = prompt_templates,
-    scoring_target= scoring_target,
-    template_converters = [prompt_shorten_converter, prompt_expand_converter],
+    prompts=prompts.prompts,
+    prompt_target=target,
+    prompt_templates=prompt_templates,
+    scoring_target=scoring_target,
+    template_converters=[prompt_shorten_converter, prompt_expand_converter],
     jailbreak_goal=10,
-    verbose=True
+    verbose=True,
 )
 
-result = await fuzzer_orchestrator.execute_fuzzer() 
-print('Success:', result.success)
-print('Description: ', result.description)
-print('Templates', "\n".join(result.templates))
+result = await fuzzer_orchestrator.execute_fuzzer()  # type: ignore
+print("Success:", result.success)
+print("Description: ", result.description)
+print("Templates", "\n".join(result.templates))
 
 
 # %%
