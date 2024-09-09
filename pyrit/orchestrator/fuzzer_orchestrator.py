@@ -314,7 +314,7 @@ class FuzzerOrchestrator(Orchestrator):
                 target_template_node.add_parent(current_seed)
 
             # update the rewards for the target node and others on its path
-            self._update(target_template_node, jailbreak_count=jailbreak_count)
+            self._update(jailbreak_count=jailbreak_count)
 
     def _select(self) -> PromptNode:
         """
