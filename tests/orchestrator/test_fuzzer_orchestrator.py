@@ -290,7 +290,7 @@ async def test_apply_template_converter_empty_placeholder(
 
             with pytest.raises(MissingPromptPlaceholderException) as e:
                 await fuzzer_orchestrator._apply_template_converter(new_template)
-                assert e.match("Prompt placeholder is empty.")
+                assert e.match("No prompt placeholder")
 
 
 @pytest.mark.asyncio
