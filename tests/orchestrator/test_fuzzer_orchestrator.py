@@ -232,9 +232,6 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list):
 async def test_apply_template_converter(
     simple_prompts: list, simple_prompt_templates: list, template_converter: PromptConverter
 ):
-    prompt_template = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
-    )
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget())
     prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget())
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
@@ -257,7 +254,7 @@ async def test_apply_template_converter(
             template_converter.convert_async = AsyncMock(  # type:ignore
                 return_value=ConverterResult(output_text=new_template, output_type="text")
             )
-            target = await fuzzer_orchestrator._apply_template_converter(prompt_template)
+            target = await fuzzer_orchestrator._apply_template_converter(new_template)
             TEMPLATE_PLACEHOLDER = "{{ prompt }}"
             assert TEMPLATE_PLACEHOLDER in target.template
 
@@ -270,11 +267,10 @@ async def test_apply_template_converter(
 async def test_apply_template_converter_empty_placeholder(
     simple_prompts: list, template_converter: list, simple_prompt_templates: list
 ):
-    # prompt_template = ['Write a wikipedia article on . Start the article with "Title:".']
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget())
     prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget())
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
-    FuzzerOrchestrator(
+    fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
         prompt_target=MockPromptTarget(),
@@ -288,11 +284,12 @@ async def test_apply_template_converter_empty_placeholder(
     with mock.patch("random.choice", get_mocked_random_number):
         if template_converter == ExpandConverter or template_converter == ShortenConverter:
             new_template = "new template"
+            template_converter.convert_async = AsyncMock(  # type:ignore
+                return_value=ConverterResult(output_text=new_template, output_type="text")
+            )
 
             with pytest.raises(MissingPromptPlaceholderException) as e:
-                template_converter.convert_async = AsyncMock(  # type:ignore
-                    return_value=ConverterResult(output_text=new_template, output_type="text")
-                )
+                await fuzzer_orchestrator._apply_template_converter(new_template)
                 assert e.match("Prompt placeholder is empty.")
 
 
@@ -331,7 +328,7 @@ async def test_select(simple_prompts: list, probability: int, simple_prompt_temp
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
-        prompt_templates=[simple_prompt_templates[0],simple_prompt_templates[1]],
+        prompt_templates=[simple_prompt_templates[0], simple_prompt_templates[1]],
         prompt_target=MockPromptTarget(),
         template_converters=template_converters,
         scoring_target=MagicMock(),
