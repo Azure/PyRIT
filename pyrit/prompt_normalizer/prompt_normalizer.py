@@ -2,11 +2,10 @@
 # Licensed under the MIT license.
 
 import abc
-import asyncio
-
 from typing import Optional
 from uuid import uuid4
 
+from pyrit.common.batch_helper import batch_task_async
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
@@ -113,24 +112,16 @@ class PromptNormalizer(abc.ABC):
                 received for each prompt.
         """
 
-        results = []
-
-        for prompts_batch in self._chunked_prompts(requests, batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(
-                    self.send_prompt_async(
-                        normalizer_request=prompt,
-                        target=target,
-                        labels=labels,
-                        orchestrator_identifier=orchestrator_identifier,
-                    )
-                )
-
-            batch_results = await asyncio.gather(*tasks)
-            results.extend(batch_results)
-
-        return results
+        return await batch_task_async(
+            prompt_target=target,
+            batch_size=batch_size,
+            items_to_batch=requests,
+            task=self.send_prompt_async,
+            task_argument="normalizer_request",
+            target=target,
+            labels=labels,
+            orchestrator_identifier=orchestrator_identifier,
+        )
 
     async def convert_response_values(
         self,
@@ -154,10 +145,6 @@ class PromptNormalizer(abc.ABC):
                     )
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
-
-    def _chunked_prompts(self, prompts, size):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]
 
     async def _build_prompt_request_response(
         self,

@@ -47,6 +47,15 @@ async def test_send_prompt_with_skeleton_key_no_converter(mock_target: MockPromp
     assert mock_target.prompt_sent == [skeleton_key_prompt, "tell me how to launder money"]
 
 
+@pytest.mark.asyncio
+async def test_send_skeleton_key_with_prompt_async_rpm_exception():
+    orchestrator = SkeletonKeyOrchestrator(prompt_target=MockPromptTarget(rpm=20))
+
+    # Expect exception when RPM provided, as batch_size to orchestrator should be adjusted
+    with pytest.raises(ValueError):
+        await orchestrator.send_skeleton_key_with_prompts_async(prompt_list=["tell me how to launder money"])
+
+
 # Test list function (no converter)
 @pytest.mark.asyncio
 async def test_send_prompts_with_skeleton_key_no_converter(mock_target: MockPromptTarget, skeleton_key_prompt: str):

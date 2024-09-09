@@ -15,7 +15,7 @@ from pyrit.memory import AzureSQLMemory, DuckDBMemory, MemoryInterface
 from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 
 class MockHttpPostAsync(AbstractAsyncContextManager):
@@ -60,10 +60,10 @@ class MockHttpPostSync:
 class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
-    def __init__(self, id=None, memory=None) -> None:
+    def __init__(self, id=None, memory=None, rpm=None) -> None:
+        super().__init__(memory=memory, max_requests_per_minute=rpm)
         self.id = id
         self.prompt_sent = []
-        self._memory = memory
 
     def set_system_prompt(
         self,
@@ -96,6 +96,7 @@ class MockPromptTarget(PromptChatTarget):
             orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
         ).to_prompt_request_response()
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
 
