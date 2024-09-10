@@ -30,6 +30,9 @@ class HuggingFaceChatTarget(PromptTarget):
     _cached_tokenizer = None
     _cached_model_id = None
 
+    # Class-level flag to enable or disable cache
+    _cache_enabled = False
+
     def __init__(
         self,
         *,
@@ -38,15 +41,27 @@ class HuggingFaceChatTarget(PromptTarget):
         tensor_format: str = "pt",
         memory: MemoryInterface = None,
         verbose: bool = False,
-        necessary_files: list = None
+        necessary_files: list = None,
+        max_new_tokens: int = 20,      # Default max_new_tokens parameter
+        temperature: float = 1.0,      # Default temperature parameter
+        top_p: float = 1.0,  
     ) -> None:
         super().__init__(memory=memory, verbose=verbose)
         self.model_id = model_id
         self.use_cuda = use_cuda
         self.tensor_format = tensor_format
 
+        # Determine the device
+        self.device = "cuda" if self.use_cuda and torch.cuda.is_available() else "cpu"
+        logger.info(f"Using device: {self.device}")
+
         # Set necessary files if provided, otherwise set to None to trigger general download
         self.necessary_files = necessary_files
+
+        # Set the default parameters for the model generation
+        self.max_new_tokens = max_new_tokens
+        self.temperature = temperature
+        self.top_p = top_p
 
         if self.use_cuda and not torch.cuda.is_available():
             raise RuntimeError("CUDA requested but not available.")
@@ -55,7 +70,7 @@ class HuggingFaceChatTarget(PromptTarget):
         self.load_model_and_tokenizer()
 
         # Initialize the PromptTemplateGenerator
-        self.prompt_template_generator = PromptTemplateGenerator()
+        self.prompt_template_generator = PromptTemplateGenerator() # TODO; I think i need to use that!
 
     def is_model_id_valid(self) -> bool:
         """
@@ -80,8 +95,8 @@ class HuggingFaceChatTarget(PromptTarget):
                 Exception: If the model loading fails.
         """
         try:
-            # Check if the model is already cached
-            if HuggingFaceChatTarget._cached_model_id == self.model_id:
+           # Check if the model is already cached
+            if HuggingFaceChatTarget._cache_enabled and HuggingFaceChatTarget._cached_model_id == self.model_id:
                 logger.info(f"Using cached model and tokenizer for {self.model_id}.")
                 self.model = HuggingFaceChatTarget._cached_model
                 self.tokenizer = HuggingFaceChatTarget._cached_tokenizer
@@ -106,15 +121,21 @@ class HuggingFaceChatTarget(PromptTarget):
             # Load the tokenizer and model from the specified directory
             logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, cache_dir=cache_dir)
+            #self.model = AutoModelForCausalLM.from_pretrained(self.model_id, device_map="auto", cache_dir=cache_dir)
             self.model = AutoModelForCausalLM.from_pretrained(self.model_id, cache_dir=cache_dir)
 
-            # Cache the loaded model and tokenizer
-            HuggingFaceChatTarget._cached_model = self.model
-            HuggingFaceChatTarget._cached_tokenizer = self.tokenizer
-            HuggingFaceChatTarget._cached_model_id = self.model_id
+            # Move the model to the correct device
+            self.model = self.model.to(self.device)
 
-            if self.use_cuda and torch.cuda.is_available():
-                self.model.to("cuda")  # Move the model to GPU
+            # Debug prints to check types
+            logger.info(f"Model loaded: {type(self.model)}")  # Debug print
+            logger.info(f"Tokenizer loaded: {type(self.tokenizer)}")  # Debug print
+
+            # Cache the loaded model and tokenizer if caching is enabled
+            if HuggingFaceChatTarget._cache_enabled:
+                HuggingFaceChatTarget._cached_model = self.model
+                HuggingFaceChatTarget._cached_tokenizer = self.tokenizer
+                HuggingFaceChatTarget._cached_model_id = self.model_id
 
             logger.info(f"Model {self.model_id} loaded successfully.")
             
@@ -130,81 +151,52 @@ class HuggingFaceChatTarget(PromptTarget):
         request = prompt_request.request_pieces[0]
         prompt_template = request.converted_value
 
-        try:
-            # Tokenize the chat template and obtain the input_ids
-            input_ids = self.tokenizer(prompt_template, return_tensors=self.tensor_format).input_ids
+        logger.info(f"Sending the following prompt to the HuggingFace model: {prompt_template}")
 
-            # Move the inputs to GPU for inferencing, if CUDA is available
-            if self.use_cuda and torch.cuda.is_available():
-                input_ids = input_ids.to("cuda")
+        # Prepare the input messages using chat templates
+        messages = [
+            {"role": "user", "content": prompt_template}
+        ]
+
+        # Apply chat template to format the conversation correctly
+        tokenized_chat = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=True,  # Tokenize the formatted string
+            add_generation_prompt=True,  # Add prompt for generation
+            return_tensors=self.tensor_format
+        ).to(self.device)
+
+        logger.info(f"Tokenized chat: {tokenized_chat}")
+
+        try:
+            # Ensure model is on the correct device (should already be the case from `load_model_and_tokenizer`)
+            self.model.to(self.device)
 
             # Generate the response
-            outputs = self.model.generate(
-                input_ids,
-                max_new_tokens=400,
-                temperature=1.0,
-                top_p=1,
+            logger.info("Generating response from model...")
+            generated_ids = self.model.generate(
+                tokenized_chat,  
+                max_new_tokens=self.max_new_tokens,
+                temperature=self.temperature,
+                top_p=self.top_p,
             )
 
-            response_message = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            logger.info(f"Generated IDs: {generated_ids}")  # Log the generated IDs
+
+            # Decode the response
+            response_message = self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
             prompt_response = construct_response_from_request(
                 request=request,
                 response_text_pieces=[response_message],
                 prompt_metadata=json.dumps({"model_id": self.model_id}),
             )
-            return prompt_response
 
         except Exception as e:
             logger.error(f"Error occurred during inference: {e}")
             raise
 
-    def complete_chat(
-        self,
-        messages: list[ChatMessage],
-        max_tokens: int = 400,
-        temperature: float = 1.0,
-        top_p: int = 1,
-    ) -> str:
-        """Completes a chat interaction by generating a response to the given input prompt.
-        
-        Args:
-            messages (list[ChatMessage]): The chat messages object containing the role and content.
-            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-            temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
-        Returns:
-            str: The generated response message.
-        """
-
-        # Generate the prompt template using PromptTemplateGenerator
-        prompt_template = self.prompt_template_generator.generate_template(messages)
-
-        try:
-            # Tokenize the chat template and obtain the input_ids
-            input_ids = self.tokenizer(prompt_template, return_tensors=self.tensor_format).input_ids
-
-            # Move the inputs to GPU for inferencing, if CUDA is available
-            if self.use_cuda and torch.cuda.is_available():
-                input_ids = input_ids.to("cuda")
-
-            # Generate the response
-            outputs = self.model.generate(
-                input_ids,
-                max_new_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-            )
-
-            response_message = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-        except Exception as e:
-            logger.error(f"Error occurred during inference: {e}")
-            raise
-
-        # Clean the response message to remove specific tokens, if there are any
-        extracted_response_message = self.extract_last_assistant_response(response_message)
-        return extracted_response_message
-
+        return prompt_response
+    
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
         Validates the provided prompt request response.
@@ -215,34 +207,17 @@ class HuggingFaceChatTarget(PromptTarget):
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
 
-    def extract_last_assistant_response(self, text: str) -> str:
-        """
-        Improved method to identify the last occurrence of 'ASSISTANT' in a given text string.
-        Extracts everything after it.
-        """
-        # Find the last occurrence of "ASSISTANT:"
-        last_assistant_index = text.rfind("ASSISTANT:")
+    @classmethod
+    def enable_cache(cls):
+        """Enables the class-level cache."""
+        cls._cache_enabled = True
+        logger.info("Class-level cache enabled.")
 
-        if last_assistant_index == -1:
-            return ""
-
-        # Extract the text after "ASSISTANT:"
-        extracted_text = text[last_assistant_index + len("ASSISTANT:") :]
-
-        # Remove any extra spaces at the start of the extracted text
-        extracted_text = extracted_text.lstrip()
-
-        # Find the closing token </s> and trim the text up to that point
-        closing_token_index = extracted_text.find("</s>")
-        if closing_token_index != -1:
-            extracted_text = extracted_text[:closing_token_index].strip()
-
-        # Ensure no leading spaces are in the final extracted text
-        final_text = extracted_text.strip()
-        return final_text
-
-    def _generate_prompt(self, messages: list[ChatMessage]) -> str:
-        """
-        Generates a prompt from a list of chat messages.
-        """
-        return "\n".join(f"{message.role.upper()}: {message.content}" for message in messages)
+    @classmethod
+    def disable_cache(cls):
+        """Disables the class-level cache and clears the cache."""
+        cls._cache_enabled = False
+        cls._cached_model = None
+        cls._cached_tokenizer = None
+        cls._cached_model_id = None
+        logger.info("Class-level cache disabled and cleared.")
