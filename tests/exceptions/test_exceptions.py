@@ -78,6 +78,5 @@ def test_empty_prompt_placeholder_exception(caplog):
         result = ex.process_exception()
     assert json.loads(result) == {"status_code": 204, "message": "No prompt placeholder"}
     assert (
-        "MissingPromptPlaceholderException encountered: Status Code: 204, Message: No prompt placeholder"
-        in caplog.text
+        "MissingPromptPlaceholderException encountered: Status Code: 204, Message: No prompt placeholder" in caplog.text
     )
