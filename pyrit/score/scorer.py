@@ -3,10 +3,13 @@
 
 import abc
 from abc import abstractmethod
+import json
 from typing import Optional, Sequence
 
 from pyrit.common.batch_helper import batch_task_async
+from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.models import PromptRequestPiece
+from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 from pyrit.score import Score, ScoreType
 
 
@@ -130,3 +133,51 @@ class Scorer(abc.ABC):
         identifier["__module__"] = self.__class__.__module__
         identifier["sub_identifier"] = None
         return identifier
+
+    @pyrit_json_retry
+    async def send_chat_target_async(
+        self,
+        *,
+        prompt_target: PromptChatTarget,
+        scorer_llm_request: PromptRequestPiece,
+        scored_prompt_id: str,
+        category: str,
+        task: str = "",
+    ) -> Score:
+        """
+        Sends a request to a target LLM, and takes care of retries.
+
+        The scorer LLM response should be JSON with value, rationale, and optional metadata and description fields.
+
+        Args:
+            prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
+            scorer_llm_response (PromptRequestPiece): The prompt request to be sent to the target LLM.
+            scored_prompt_id (str): The ID of the scored prompt.
+            category (str): The category of the score.
+        Returns:
+            Score: The score object containing the response from the target LLM.
+        """
+        response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
+
+        try:
+            response_json = response.request_pieces[0].converted_value
+            parsed_response = json.loads(response_json)
+
+            score = Score(
+                score_value=str(parsed_response["value"]),
+                score_value_description=parsed_response.get("description"),
+                score_type=self.scorer_type,
+                score_category=category,
+                score_rationale=parsed_response["rationale"],
+                scorer_class_identifier=self.get_identifier(),
+                score_metadata=parsed_response.get("metadata"),
+                prompt_request_response_id=scored_prompt_id,
+                task=task,
+            )
+        except json.JSONDecodeError:
+            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
+
+        except KeyError:
+            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
+
+        return score

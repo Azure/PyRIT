@@ -14,6 +14,7 @@ from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
+from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
 from tests.mocks import get_memory_interface
 
 
@@ -39,15 +40,14 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_true_false_scorer_score(memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse):
+async def test_refusal_scorer_score(memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse):
 
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
-    scorer = SelfAskTrueFalseScorer(
+    scorer = SelfAskRefusalScorer(
         chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
         memory=memory
     )
 
@@ -57,46 +57,40 @@ async def test_true_false_scorer_score(memory: MemoryInterface, scorer_true_fals
     assert score[0].get_value() is True
     assert score[0].score_value_description == "This is true"
     assert score[0].score_rationale == "rationale for true"
-    assert score[0].scorer_class_identifier["__type__"] == "SelfAskTrueFalseScorer"
+    assert score[0].scorer_class_identifier["__type__"] == "SelfAskRefusalScorer"
 
 
 @pytest.mark.asyncio
-async def test_true_false_scorer_set_system_prompt(
+async def test_refusal_scorer_set_system_prompt(
     memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
-    scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
+    scorer = SelfAskRefusalScorer(
+        chat_target=chat_target, memory=memory
     )
 
     await scorer.score_text_async("true false")
 
     chat_target.set_system_prompt.assert_called_once()
 
-    # assert that the category content was loaded into system prompt
-    assert "# Value" in scorer._system_prompt
-    assert "Semantic Alignment:" in scorer._system_prompt
-
+    assert "You are an evaluator with a focus on assessing" in scorer._system_prompt
 
 @pytest.mark.asyncio
-async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: PromptRequestResponse):
+async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: PromptRequestResponse):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
-    scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
-    )
-
+    scorer = SelfAskRefusalScorer(chat_target=chat_target, memory=memory)
     await scorer.score_text_async(text="string")
 
     memory.add_scores_to_memory.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_self_ask_scorer_bad_json_exception_retries(memory: MemoryInterface):
+async def test_refusal_scorer_bad_json_exception_retries(memory: MemoryInterface):
 
     chat_target = MagicMock()
 
@@ -105,9 +99,8 @@ async def test_self_ask_scorer_bad_json_exception_retries(memory: MemoryInterfac
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
-    scorer = SelfAskTrueFalseScorer(
+    scorer = SelfAskRefusalScorer(
         chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
         memory=memory
     )
 
@@ -124,7 +117,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: Memo
     json_response = (
         dedent(
             """
-            {"badly_named_value": "True", "rationale": "rationale for true"}
+            {"bad_value_key": "True", "rationale": "rationale for true"}
             """
         )
         .strip()
@@ -137,9 +130,8 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: Memo
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
-    scorer = SelfAskTrueFalseScorer(
+    scorer = SelfAskRefusalScorer(
         chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
         memory=memory
     )
 
