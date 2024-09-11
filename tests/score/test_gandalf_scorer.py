@@ -194,3 +194,4 @@ async def test_gandalf_tongue_tied_scorer_score(memory: MemoryInterface, level: 
     assert len(scores) == 1
     assert scores[0].get_value() == success
     assert scores[0].scorer_class_identifier["__type__"] == "GandalfTongueTiedScorer"
+    
