@@ -39,6 +39,7 @@ class PromptRequestPiece(abc.ABC):
         converted_value_data_type (PromptDataType): The data type of the converted prompt (text, image)
         converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
+        original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -63,6 +64,7 @@ class PromptRequestPiece(abc.ABC):
         converted_value_data_type: PromptDataType = "text",
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
+        original_prompt_id: Optional[uuid.UUID] = None,
     ):
 
         self.id = id if id else uuid4()
@@ -113,6 +115,9 @@ class PromptRequestPiece(abc.ABC):
 
         self.response_error = response_error
         self.originator = originator
+
+        # Original prompt id defaults to id (assumes that this is the original prompt, not a duplicate)
+        self.original_prompt_id = original_prompt_id or self.id
 
     @property
     def converted_value(self) -> str:

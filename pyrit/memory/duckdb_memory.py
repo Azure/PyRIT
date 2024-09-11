@@ -122,7 +122,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             prompt_ids (list[str]): The prompt IDs to match.
 
         Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified prompt ID.
         """
         try:
             return self.query_entries(
@@ -209,6 +209,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Gets a list of scores based on prompt_request_response_ids.
         """
+        prompt_pieces = self.get_prompt_request_pieces_by_id(prompt_ids=prompt_request_response_ids)
+        # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
+        prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         entries = self.query_entries(
             ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
         )

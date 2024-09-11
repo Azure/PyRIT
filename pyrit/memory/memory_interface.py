@@ -118,8 +118,9 @@ class MemoryInterface(abc.ABC):
             list[Score]: A list of Score objects associated with the PromptRequestPiece objects
                 which match the specified orchestrator ID.
         """
-
-        prompt_ids = self.get_prompt_ids_by_orchestrator(orchestrator_id=orchestrator_id)
+        prompt_pieces = self.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator_id)
+        # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
+        prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
 
     def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
@@ -204,12 +205,12 @@ class MemoryInterface(abc.ABC):
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
         prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
         for piece in prompt_pieces:
+            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
             if piece.orchestrator_identifier["id"] == new_orchestrator_id:
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
             piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
-
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
         return new_conversation_id
 
@@ -254,6 +255,7 @@ class MemoryInterface(abc.ABC):
         ]
 
         for piece in prompt_pieces:
+            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
             if new_orchestrator_id:
                 piece.orchestrator_identifier["id"] = new_orchestrator_id
