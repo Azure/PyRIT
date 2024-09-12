@@ -12,7 +12,6 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
-from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
 from tests.mocks import get_memory_interface
@@ -46,10 +45,7 @@ async def test_refusal_scorer_score(memory: MemoryInterface, scorer_true_false_r
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
-    scorer = SelfAskRefusalScorer(
-        chat_target=chat_target,
-        memory=memory
-    )
+    scorer = SelfAskRefusalScorer(chat_target=chat_target, memory=memory)
 
     score = await scorer.score_text_async("true false")
 
@@ -67,15 +63,14 @@ async def test_refusal_scorer_set_system_prompt(
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
-    scorer = SelfAskRefusalScorer(
-        chat_target=chat_target, memory=memory
-    )
+    scorer = SelfAskRefusalScorer(chat_target=chat_target, memory=memory)
 
     await scorer.score_text_async("true false")
 
     chat_target.set_system_prompt.assert_called_once()
 
     assert "You are an evaluator with a focus on assessing" in scorer._system_prompt
+
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: PromptRequestResponse):
@@ -99,10 +94,7 @@ async def test_refusal_scorer_bad_json_exception_retries(memory: MemoryInterface
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
-    scorer = SelfAskRefusalScorer(
-        chat_target=chat_target,
-        memory=memory
-    )
+    scorer = SelfAskRefusalScorer(chat_target=chat_target, memory=memory)
 
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async("this has no bullying")
@@ -130,10 +122,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: Memo
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
-    scorer = SelfAskRefusalScorer(
-        chat_target=chat_target,
-        memory=memory
-    )
+    scorer = SelfAskRefusalScorer(chat_target=chat_target, memory=memory)
 
     with pytest.raises(InvalidJsonException):
         await scorer.score_text_async("this has no bullying")

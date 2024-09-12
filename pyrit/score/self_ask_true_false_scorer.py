@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import enum
-import json
 from typing import Dict, Optional
 import uuid
 import yaml
@@ -10,7 +9,6 @@ import yaml
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
@@ -113,7 +111,6 @@ class SelfAskTrueFalseScorer(Scorer):
             ]
         )
 
-
         score = await self.send_chat_target_async(
             prompt_target=self._prompt_target,
             scorer_llm_request=request,
@@ -124,7 +121,6 @@ class SelfAskTrueFalseScorer(Scorer):
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if task:

@@ -8,7 +8,7 @@ from typing import Optional, Sequence
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 from pyrit.score import Score, ScoreType
 
@@ -139,7 +139,7 @@ class Scorer(abc.ABC):
         self,
         *,
         prompt_target: PromptChatTarget,
-        scorer_llm_request: PromptRequestPiece,
+        scorer_llm_response: PromptRequestResponse,
         scored_prompt_id: str,
         category: str,
         task: str = "",
@@ -157,7 +157,7 @@ class Scorer(abc.ABC):
         Returns:
             Score: The score object containing the response from the target LLM.
         """
-        response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
+        response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_response)
 
         try:
             response_json = response.request_pieces[0].converted_value

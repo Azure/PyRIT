@@ -1,14 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import uuid
 
 from pathlib import Path
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions import pyrit_json_retry, InvalidJsonException
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, Score, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
@@ -78,7 +76,6 @@ class SelfAskRefusalScorer(Scorer):
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
         pass

@@ -46,9 +46,7 @@ async def test_true_false_scorer_score(memory: MemoryInterface, scorer_true_fals
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
-        memory=memory
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
     )
 
     score = await scorer.score_text_async("true false")
@@ -106,9 +104,7 @@ async def test_self_ask_scorer_bad_json_exception_retries(memory: MemoryInterfac
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
-        memory=memory
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
     )
 
     with pytest.raises(InvalidJsonException):
@@ -138,9 +134,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: Memo
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
-        memory=memory
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
     )
 
     with pytest.raises(InvalidJsonException):
