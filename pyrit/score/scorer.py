@@ -10,7 +10,7 @@ from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
-from pyrit.score import Score, ScoreType
+from pyrit.models import ScoreType, Score, UnvalidatedScore
 
 
 class Scorer(abc.ABC):
@@ -139,11 +139,11 @@ class Scorer(abc.ABC):
         self,
         *,
         prompt_target: PromptChatTarget,
-        scorer_llm_response: PromptRequestResponse,
+        scorer_llm_request: PromptRequestResponse,
         scored_prompt_id: str,
-        category: str,
+        category: str = "",
         task: str = "",
-    ) -> Score:
+    ) -> UnvalidatedScore:
         """
         Sends a request to a target LLM, and takes care of retries.
 
@@ -153,18 +153,26 @@ class Scorer(abc.ABC):
             prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
             scorer_llm_response (PromptRequestPiece): The prompt request to be sent to the target LLM.
             scored_prompt_id (str): The ID of the scored prompt.
-            category (str): The category of the score.
+            category (str): The category of the score. This can alternatively be parsed from the JSON.
         Returns:
-            Score: The score object containing the response from the target LLM.
+            UnvalidatedScore: The score object containing the response from the target LLM.
+                score_value stille needs to be normalized and validated.
         """
-        response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_response)
+        response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
 
         try:
             response_json = response.request_pieces[0].converted_value
             parsed_response = json.loads(response_json)
 
-            score = Score(
-                score_value=str(parsed_response["value"]),
+            category_response = parsed_response.get("category")
+
+            if category_response and category:
+                raise ValueError("Category is present in the response and an argument")
+
+            category = category_response if category_response else category
+
+            score = UnvalidatedScore(
+                raw_score_value=str(parsed_response["score_value"]),
                 score_value_description=parsed_response.get("description"),
                 score_type=self.scorer_type,
                 score_category=category,
@@ -174,10 +182,20 @@ class Scorer(abc.ABC):
                 prompt_request_response_id=scored_prompt_id,
                 task=task,
             )
+
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
 
         except KeyError:
             raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
+
+        try:
+            if self.scorer_type == "float_scale":
+                # raise an exception if it's not parsable as a float
+                float(score.raw_score_value)
+        except ValueError:
+            raise InvalidJsonException(
+                message=f"Invalid JSON response, score_value should be a float not this: {score.raw_score_value}"
+            )
 
         return score

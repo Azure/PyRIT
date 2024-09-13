@@ -23,7 +23,7 @@ def scorer_true_false_response() -> PromptRequestResponse:
     json_response = (
         dedent(
             """
-        {"value": "True", "description": "This is true", "rationale": "rationale for true"}
+        {"score_value": "True", "description": "This is true", "rationale": "rationale for true"}
         """
         )
         .strip()

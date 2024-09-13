@@ -23,7 +23,7 @@ def scorer_true_false_response() -> PromptRequestResponse:
     json_response = (
         dedent(
             """
-        {"value": "True", "description": "This is true", "rationale": "rationale for true"}
+        {"score_value": "True", "description": "This is true", "rationale": "rationale for true"}
         """
         )
         .strip()
@@ -74,7 +74,7 @@ async def test_true_false_scorer_set_system_prompt(
     chat_target.set_system_prompt.assert_called_once()
 
     # assert that the category content was loaded into system prompt
-    assert "# Value" in scorer._system_prompt
+    assert "# Instructions" in scorer._system_prompt
     assert "Semantic Alignment:" in scorer._system_prompt
 
 

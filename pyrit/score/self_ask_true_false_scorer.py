@@ -11,6 +11,7 @@ from pathlib import Path
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models.score import UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Score, Scorer
 
@@ -111,13 +112,15 @@ class SelfAskTrueFalseScorer(Scorer):
             ]
         )
 
-        score = await self.send_chat_target_async(
+        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
             prompt_target=self._prompt_target,
             scorer_llm_request=request,
             scored_prompt_id=request_response.id,
             category=self._score_category,
             task=task,
         )
+
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
