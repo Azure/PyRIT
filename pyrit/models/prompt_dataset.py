@@ -90,3 +90,9 @@ class PromptGroup(YamlLoadable):
 # TODO: consider removing as it doesn't serve any purpose
 class PromptDataset(YamlLoadable):
     prompts: List[Prompt]
+
+    def __init__(self, prompts: List[Prompt]):
+        if prompts and isinstance(prompts[0], dict):
+            self.prompts = [Prompt(**prompt_args) for prompt_args in prompts]
+        else:
+            self.prompts = prompts
