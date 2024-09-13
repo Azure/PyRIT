@@ -30,7 +30,7 @@ def apply_parameters(
         # Matches field names within brackets {{ }}
         #  {{   key    }}
         #  ^^^^^^^^^^^^^^
-        regex = "{}{}{}".format("\{\{ *", key, " *\}\}")  # noqa: W605
+        regex = f"{{{{ *{key} *}}}}"
         matches = re.findall(pattern=regex, string=final_prompt)
         if not matches:
             raise ValueError(
