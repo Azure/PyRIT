@@ -31,7 +31,7 @@ class AzureMLChatTarget(PromptChatTarget):
         memory: MemoryInterface = None,
         max_tokens: int = 400,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         repetition_penalty: float = 1.2,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
@@ -51,8 +51,8 @@ class AzureMLChatTarget(PromptChatTarget):
                 Defaults to 400.
             temperature (float, optional): The temperature for generating diverse responses.
                 Defaults to 1.0.
-            top_p (int, optional): The top-p value for generating diverse responses.
-                Defaults to 1.
+            top_p (float, optional): The top-p value for generating diverse responses.
+                Defaults to 1.0.
             repetition_penalty (float, optional): The repetition penalty for generating diverse responses.
                 Defaults to 1.2.
             max_requests_per_minute (int, optional): Number of requests the target can handle per
@@ -119,7 +119,7 @@ class AzureMLChatTarget(PromptChatTarget):
         messages: list[ChatMessage],
         max_tokens: int = 400,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         repetition_penalty: float = 1.2,
     ) -> str:
         """
@@ -132,7 +132,7 @@ class AzureMLChatTarget(PromptChatTarget):
             max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
             temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
                 1 is more random, 0 is less.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
+            top_p (float, optional): Controls diversity of the response generation. Defaults to 1.0.
                 1 is more random, 0 is less.
             repetition_penalty (float, optional): Controls repetition in the response generation.
                 Defaults to 1.2.
@@ -157,7 +157,7 @@ class AzureMLChatTarget(PromptChatTarget):
         messages: list[ChatMessage],
         max_tokens: int,
         temperature: float,
-        top_p: int,
+        top_p: float,
         repetition_penalty: float,
     ) -> dict:
         """Constructs the HTTP request body for the AML online endpoint."""
