@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from datetime import datetime
 import logging
 import struct
 
@@ -237,6 +238,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     # Perhaps we should find a way to refactor
     def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
+        if not entries:
+            raise ValueError("No entries provided to insert.")
         with closing(self.get_session()) as session:
             try:
                 session.add_all(entries)
@@ -296,10 +299,22 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
 
-    def add_prompts_to_memory(self, *, prompts: list[Prompt]) -> None:
+    def add_prompts_to_memory(self, *, prompts: list[Prompt], added_by: Optional[str]=None) -> None:
         """
         Inserts a list of prompts into the memory storage.
+
+        Args:
         """
+        if added_by:
+            for prompt in prompts:
+                prompt.added_by = added_by
+        if any([not prompt.added_by for prompt in prompts]):
+            raise ValueError("One or more prompts did not have the 'added_by' attribute set.")
+        
+        for prompt in prompts:
+            if prompt.date_added is None:
+                prompt.date_added = datetime.now()
+
         self._insert_entries(entries=[PromptEntry(entry=prompt) for prompt in prompts])
     
     def get_prompt_dataset_names(self) -> list[str]:
@@ -308,14 +323,15 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         try:
             return self.query_entries(
-                PromptEntry,
+                PromptEntry.dataset_name,
                 conditions=and_(PromptEntry.dataset_name != None, PromptEntry.dataset_name != ""),
+                distinct=True,
             )  # type: ignore
         except Exception as e:
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             return []
     
-    def get_prompts(self, *, value: str, dataset_name: str) -> list[Prompt]:
+    def get_prompts(self, *, value: Optional[str] = None, dataset_name: Optional[str] = None) -> list[Prompt]:
         """
         Retrieves a list of prompts that have the specified dataset name.
 
@@ -336,8 +352,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         try:
             return self.query_entries(
                 PromptEntry,
-                conditions=PromptEntry.dataset_name == dataset_name,
+                conditions=and_(*conditions),
             )  # type: ignore
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             return []
+    
+    def delete_prompts(self, *, ids: list[str]) -> None:
+        """
+        Deletes prompts by id.
+        """
+        
