@@ -8,7 +8,7 @@ import tempfile
 from datasets import load_dataset
 from pathlib import Path
 
-# import pycountry
+import pycountry
 import requests
 
 from pyrit.common.csv_helper import read_csv, write_csv
@@ -373,6 +373,7 @@ def fetch_harmbench_examples(
 
     return dataset
 
+from datasets import load_dataset
 def fetch_pku_safeRLHF_dataset() -> PromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a PromptDataset.
