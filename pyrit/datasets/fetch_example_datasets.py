@@ -373,15 +373,34 @@ def fetch_harmbench_examples(
     return dataset
 
 
-def fetch_pku_safeRLHF_dataset(
-    source: str = "https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
-    source_type: Literal["public_url"] = "public_url",
-    cache: bool = True,  ## TODO: verify cache parameter
-    data_home: Optional[Path] = None ## TODO: verify data_home paramter
-) -> PromptDataset:
+def fetch_pku_safeRLHF_dataset() -> PromptDataset:
     """
-    TODO: Add Description
-    """
+    Fetch PKU-SafeRLHF examples and create a PromptDataset.
 
-    dataset = PromptDataset()
+    Args:
+        source (str): The source from which to fetch examples. Defaults to the PKU-Alignment repository.
+        source_type (Literal["public_url"]): The type of source ('public_url').
+        cache (bool): Whether to cache the fetched examples. Defaults to True.
+        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+
+    Returns:
+        PromptDataset: A PromptDataset containing the examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://github.com/centerforaisafety/HarmBench
+    """
+    data = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
+    prompts = [item['prompt'] for item in data['train']]
+    
+    # TODO: verify the should_be_blocked, description, harm_category, etc.
+    dataset = PromptDataset(
+        name="PKU-SafeRLHF",
+        description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
+        harm_category="TODO: Harm Category",
+        should_be_blocked=False,
+        source='https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF',
+        prompts=prompts
+    )
+
     return dataset
