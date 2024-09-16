@@ -373,12 +373,14 @@ def fetch_harmbench_examples(
     return dataset
 
 def fetch_pku_safeRLHF_dataset( 
+    all_items: bool = True,
     cache: bool = True,
     data_home: Optional[Path] = None) -> PromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a PromptDataset.
 
     Args:
+        all_items (bool): If this field is passed as false, we will only grab the unsafe prompts
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
@@ -390,8 +392,11 @@ def fetch_pku_safeRLHF_dataset(
         https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF
     """
     data = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
-    prompts = [item['prompt'] for item in data['train']]
-
+    if all_items:
+        prompts = [item['prompt'] for item in data['train']]
+    else: 
+        prompts = [item['prompt'] for item in data['train'] if (item['is_response_0_safe'] == False or item['is_response_1_safe'] == False)]
+   
     # harm_categories = [item["note"] for example in examples]
     # # Join all categories into a single comma-separated string
     # harm_category_str = ", ".join(filter(None, harm_categories))
