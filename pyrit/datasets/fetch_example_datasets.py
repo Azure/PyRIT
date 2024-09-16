@@ -8,7 +8,7 @@ import tempfile
 from datasets import load_dataset
 from pathlib import Path
 
-# import pycountry
+import pycountry
 import requests
 
 from pyrit.common.csv_helper import read_csv, write_csv
@@ -302,7 +302,6 @@ def fetch_xstest_examples(
 
     return dataset
 
-
 def fetch_harmbench_examples(
     source: str = (
         "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/"
@@ -373,14 +372,15 @@ def fetch_harmbench_examples(
 
     return dataset
 
-
-def fetch_pku_safeRLHF_dataset() -> PromptDataset:
+def fetch_pku_safeRLHF_dataset( 
+    include_safe_prompts: bool = True,
+    cache: bool = True,
+    data_home: Optional[Path] = None) -> PromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a PromptDataset.
 
     Args:
-        source (str): The source from which to fetch examples. Defaults to the PKU-Alignment repository.
-        source_type (Literal["public_url"]): The type of source ('public_url').
+        include_safe_prompts (bool): If this field is passed as false, we will only grab the unsafe prompts
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
@@ -389,17 +389,23 @@ def fetch_pku_safeRLHF_dataset() -> PromptDataset:
 
     Note:
         For more information and access to the original dataset and related materials, visit:
-        https://github.com/centerforaisafety/HarmBench
+        https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF
     """
     data = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
-    prompts = [item['prompt'] for item in data['train']]
-    
-    # TODO: verify the should_be_blocked, description, harm_category, etc.
+    if include_safe_prompts:
+        prompts = [item['prompt'] for item in data['train']]
+    else: 
+        prompts = [item['prompt'] for item in data['train'] if (item['is_response_0_safe'] == False or item['is_response_1_safe'] == False)]
+
+    harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior, Endangering Public Health, Copyright Issues, Violence, Drugs, 
+    Privacy Violation, Economic Crime, Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order, 
+    Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
+
     dataset = PromptDataset(
         name="PKU-SafeRLHF",
         description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
-        harm_category="TODO: Harm Category",
-        should_be_blocked=False,
+        harm_category=harm_categories,
+        should_be_blocked=not include_safe_prompts,
         source='https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF',
         prompts=prompts
     )
