@@ -390,24 +390,17 @@ def fetch_pku_safeRLHF_dataset() -> PromptDataset:
         For more information and access to the original dataset and related materials, visit:
         https://github.com/centerforaisafety/HarmBench
     """
-    ds = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
-    # prompts = []
-    # for items in ds['train']:
-    #     prompts.append(items['prompt'])
-    print(ds['train'][0])
+    data = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
+    prompts = [item['prompt'] for item in data['train']]
     
-    dataset = PromptDataset()
-    """class PromptDataset(YamlLoadable):
-    name: str
-    description: str
-    harm_category: str
-    should_be_blocked: bool
-    author: str = ""
-    group: str = ""
-    source: str = ""
-    prompts: list[str] = field(default_factory=list)
-"""
+    # TODO: verify the should_be_blocked, description, harm_category, etc.
+    dataset = PromptDataset(
+        name="PKU-SafeRLHF",
+        description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
+        harm_category="TODO: Harm Category",
+        should_be_blocked=False,
+        source='https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF',
+        prompts=prompts
+    )
+
     return dataset
-
-
-fetch_pku_safeRLHF_dataset()
