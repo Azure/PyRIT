@@ -33,7 +33,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
         api_version: str = "2024-02-01",
         max_tokens: int = 1024,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
         max_requests_per_minute: Optional[int] = None,
@@ -62,8 +62,8 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
                 randomness of the response. Defaults to 1.0.
-            top_p (int, optional): The top-p parameter for controlling the diversity of the
-                response. Defaults to 1.
+            top_p (float, optional): The top-p parameter for controlling the diversity of the
+                response. Defaults to 1.0.
             frequency_penalty (float, optional): The frequency penalty parameter for penalizing
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
