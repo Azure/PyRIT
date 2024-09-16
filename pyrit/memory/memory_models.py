@@ -80,7 +80,6 @@ class PromptMemoryEntry(Base):
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
-    # The original PromptRequestPiece id that this PromptRequestPiece is a duplicate of
     original_prompt_id = Column(Uuid, nullable=False)
 
     def __init__(self, *, entry: PromptRequestPiece):

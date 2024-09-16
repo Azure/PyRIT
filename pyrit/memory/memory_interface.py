@@ -16,7 +16,7 @@ from pyrit.models import (
     group_conversation_request_pieces_by_sequence,
 )
 
-from pyrit.memory.memory_models import EmbeddingData
+from pyrit.memory.memory_models import Base, EmbeddingData, ScoreEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 
@@ -94,16 +94,58 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
+    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
+        """
+        Fetches data from the specified table model with optional conditions.
+
+        Args:
+            model: The SQLAlchemy model class corresponding to the table you want to query.
+            conditions: SQLAlchemy filter conditions (optional).
+
+        Returns:
+            List of model instances representing the rows fetched from the table.
+        """
+
+    @abc.abstractmethod
+    def insert_entry(self, entry: Base) -> None:  # type: ignore
+        """
+        Inserts an entry into the Table.
+
+        Args:
+            entry: An instance of a SQLAlchemy model to be added to the Table.
+        """
+
+    @abc.abstractmethod
+    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+        """Inserts multiple entries into the database."""
+
     def add_scores_to_memory(self, *, scores: list[Score]) -> None:
         """
         Inserts a list of scores into the memory storage.
         """
+        prompt_ids = [str(score.prompt_request_response_id) for score in scores]
+        prompt_pieces = self.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
+        # Check for duplicate prompt pieces. Scores should only be added to the original prompt pieces.
+        for piece in prompt_pieces:
+            if piece.original_prompt_id != piece.id:
+                raise ValueError(
+                    f"Cannot add scores to duplicate prompt pieces. \
+                                 Prompt ID {piece.id} is a duplicate of {piece.original_prompt_id}."
+                )
+        self.insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
-    @abc.abstractmethod
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
         """
         Gets a list of scores based on prompt_request_response_ids.
         """
+        prompt_pieces = self.get_prompt_request_pieces_by_id(prompt_ids=prompt_request_response_ids)
+        # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
+        prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
+        entries = self.query_entries(
+            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
+        )
+
+        return [entry.get_score() for entry in entries]
 
     def get_scores_by_orchestrator_id(self, *, orchestrator_id: str) -> list[Score]:
         """
@@ -119,6 +161,26 @@ class MemoryInterface(abc.ABC):
                 which match the specified orchestrator ID.
         """
         prompt_pieces = self.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator_id)
+        # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
+        prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
+        return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
+
+    def get_scores_by_memory_labels(self, *, memory_labels: dict[str, str]) -> list[Score]:
+        """
+        Retrieves a list of Score objects associated with the PromptRequestPiece objects
+        which have the specified memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
+                These labels can be used to track all prompts sent as part of an operation, score prompts based on
+                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+                Users can define any key-value pairs according to their needs.
+
+        Returns:
+            list[Score]: A list of Score objects associated with the PromptRequestPiece objects
+                which match the specified memory labels.
+        """
+        prompt_pieces = self.get_prompt_request_piece_by_memory_labels(memory_labels=memory_labels)
         # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
         prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)

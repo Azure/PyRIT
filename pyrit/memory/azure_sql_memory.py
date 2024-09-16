@@ -18,10 +18,9 @@ from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import EmbeddingData, Base, PromptMemoryEntry, ScoreEntry
+from pyrit.memory.memory_models import EmbeddingData, Base, PromptMemoryEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
-from pyrit.models import Score
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +119,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts embedding data into memory storage
         """
-        self._insert_entries(entries=embedding_data)
+        self.insert_entries(entries=embedding_data)
 
     def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
@@ -171,13 +170,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Inserts a list of prompt request pieces into the memory storage.
 
         """
-        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
-
-    def add_scores_to_memory(self, *, scores: list[Score]) -> None:
-        """
-        Inserts a list of scores into the memory storage.
-        """
-        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
+        self.insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
     def dispose_engine(self):
         """
@@ -222,34 +215,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
-        """
-        Gets a list of scores based on prompt_request_response_ids.
-        """
-        prompt_pieces = self.get_prompt_request_pieces_by_id(prompt_ids=prompt_request_response_ids)
-        # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
-        prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        entries = self.query_entries(
-            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
-        )
-
-        return [entry.get_score() for entry in entries]
-
-    # The following methods are not part of MemoryInterface, but seem
-    # common between SQLAlchemy-based implementations, regardless of engine.
-    # Perhaps we should find a way to refactor
-    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
-        """Inserts multiple entries into the database."""
-        with closing(self.get_session()) as session:
-            try:
-                session.add_all(entries)
-                session.commit()
-            except SQLAlchemyError as e:
-                session.rollback()
-                logger.exception(f"Error inserting multiple entries into the table: {e}")
-                raise
-
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
+    def insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -263,6 +229,20 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
+
+    # The following methods are not part of MemoryInterface, but seem
+    # common between SQLAlchemy-based implementations, regardless of engine.
+    # Perhaps we should find a way to refactor
+    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+        """Inserts multiple entries into the database."""
+        with closing(self.get_session()) as session:
+            try:
+                session.add_all(entries)
+                session.commit()
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error inserting multiple entries into the table: {e}")
+                raise
 
     def get_session(self) -> Session:
         """

@@ -156,8 +156,8 @@ def test_insert_entry(memory_interface):
             converted_value="Hello",
         )
     )
-    # Use the _insert_entry method to insert the entry into the database
-    memory_interface._insert_entry(entry)
+    # Use the insert_entry method to insert the entry into the database
+    memory_interface.insert_entry(entry)
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
@@ -220,8 +220,8 @@ def test_insert_entries(memory_interface):
 
     # Now, get a new session to query the database and verify the entries were inserted
     with memory_interface.get_session() as session:
-        # Use the _insert_entries method to insert multiple entries into the database
-        memory_interface._insert_entries(entries=entries)
+        # Use the insert_entries method to insert multiple entries into the database
+        memory_interface.insert_entries(entries=entries)
         inserted_entries = session.query(PromptMemoryEntry).all()
         assert len(inserted_entries) == 5
         for i, entry in enumerate(inserted_entries):
@@ -237,8 +237,8 @@ def test_insert_embedding_entry(memory_interface):
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="abc")
     )
 
-    # Insert the ConversationData entry using the _insert_entry method
-    memory_interface._insert_entry(conversation_entry)
+    # Insert the ConversationData entry using the insert_entry method
+    memory_interface.insert_entry(conversation_entry)
 
     # Re-query the ConversationData entry within a new session to ensure it's attached
     with memory_interface.get_session() as session:
@@ -248,7 +248,7 @@ def test_insert_embedding_entry(memory_interface):
 
     # Now that we have the uuid, we can create and insert the EmbeddingData entry
     embedding_entry = EmbeddingData(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
-    memory_interface._insert_entry(embedding_entry)
+    memory_interface.insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
     with memory_interface.get_session() as session:
@@ -294,7 +294,7 @@ def test_query_entries(memory_interface, sample_conversation_entries):
         sample_conversation_entries[i].original_value = f"Message {i}"
         sample_conversation_entries[i].converted_value = f"Message {i}"
 
-    memory_interface._insert_entries(entries=sample_conversation_entries)
+    memory_interface.insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
     queried_entries = memory_interface.query_entries(PromptMemoryEntry)
@@ -314,7 +314,7 @@ def test_update_entries(memory_interface):
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
-    memory_interface._insert_entry(entry)
+    memory_interface.insert_entry(entry)
 
     # Fetch the entry to update and update its content
     entries_to_update = memory_interface.query_entries(
@@ -330,7 +330,7 @@ def test_update_entries(memory_interface):
 
 def test_get_all_memory(memory_interface, sample_conversation_entries):
 
-    memory_interface._insert_entries(entries=sample_conversation_entries)
+    memory_interface.insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
     all_entries = memory_interface.get_all_prompt_pieces()
@@ -423,7 +423,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: DuckDBMemory):
         ),
     ]
 
-    memory_interface._insert_entries(entries=entries)
+    memory_interface.insert_entries(entries=entries)
 
     orchestrator1_id = orchestrator1.get_identifier()["id"]
 
@@ -472,7 +472,7 @@ def test_get_memories_with_memory_labels(memory_interface: DuckDBMemory):
         ),
     ]
 
-    memory_interface._insert_entries(entries=entries)
+    memory_interface.insert_entries(entries=entries)
 
     retrieved_entries = memory_interface.get_prompt_request_piece_by_memory_labels(memory_labels=labels)
 
@@ -518,7 +518,7 @@ def test_get_memories_with_zero_memory_labels(memory_interface: DuckDBMemory):
         ),
     ]
 
-    memory_interface._insert_entries(entries=entries)
+    memory_interface.insert_entries(entries=entries)
     labels = {"nonexistent_key": "nonexiststent_value"}
     retrieved_entries = memory_interface.get_prompt_request_piece_by_memory_labels(memory_labels=labels)
 
@@ -535,9 +535,9 @@ def test_update_entries_by_conversation_id(memory_interface, sample_conversation
     sample_conversation_entries[1].conversation_id = "other_id"
     original_content = sample_conversation_entries[1].original_value
 
-    # Insert the ConversationData entries using the _insert_entries method within a session
+    # Insert the ConversationData entries using the insert_entries method within a session
     with memory_interface.get_session() as session:
-        memory_interface._insert_entries(entries=sample_conversation_entries)
+        memory_interface.insert_entries(entries=sample_conversation_entries)
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id
@@ -567,7 +567,7 @@ def test_update_entries_by_conversation_id(memory_interface, sample_conversation
 def test_add_score_get_score(memory_interface, sample_conversation_entries, score_type):
     prompt_id = sample_conversation_entries[0].id
 
-    memory_interface._insert_entries(entries=sample_conversation_entries)
+    memory_interface.insert_entries(entries=sample_conversation_entries)
 
     score_value = str(True) if score_type == "true_false" else "0.8"
 

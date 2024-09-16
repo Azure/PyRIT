@@ -4,6 +4,7 @@
 from typing import Generator
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+from uuid import uuid4
 import pytest
 import random
 from string import ascii_lowercase
@@ -130,6 +131,87 @@ def test_duplicate_memory(memory: MemoryInterface):
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
     assert len([p for p in all_pieces if p.conversation_id == new_conversation_id1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == new_conversation_id2]) == 2
+
+
+def test_duplicate_conversation_pieces_not_score(memory: MemoryInterface):
+    conversation_id = str(uuid4())
+    prompt_id_1 = uuid4()
+    prompt_id_2 = uuid4()
+    orchestrator1 = Orchestrator()
+    memory_labels = {"sample": "label"}
+    pieces = [
+        PromptRequestPiece(
+            id=prompt_id_1,
+            role="assistant",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            conversation_id=conversation_id,
+            sequence=0,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+            labels=memory_labels,
+        ),
+        PromptRequestPiece(
+            id=prompt_id_2,
+            role="assistant",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            conversation_id=conversation_id,
+            sequence=0,
+            orchestrator_identifier=orchestrator1.get_identifier(),
+            labels=memory_labels,
+        ),
+    ]
+    # Ensure that the original prompt id defaults to the id of the piece
+    assert pieces[0].original_prompt_id == pieces[0].id
+    assert pieces[1].original_prompt_id == pieces[1].id
+    scores = [
+        Score(
+            score_value=str(0.8),
+            score_value_description="High score",
+            score_type="float_scale",
+            score_category="test",
+            score_rationale="Test score",
+            score_metadata="Test metadata",
+            scorer_class_identifier={"__type__": "TestScorer1"},
+            prompt_request_response_id=prompt_id_1,
+        ),
+        Score(
+            score_value=str(0.5),
+            score_value_description="High score",
+            score_type="float_scale",
+            score_category="test",
+            score_rationale="Test score",
+            score_metadata="Test metadata",
+            scorer_class_identifier={"__type__": "TestScorer2"},
+            prompt_request_response_id=prompt_id_2,
+        ),
+    ]
+    memory.add_request_pieces_to_memory(request_pieces=pieces)
+    memory.add_scores_to_memory(scores=scores)
+    orchestrator2 = Orchestrator()
+    new_conversation_id = memory.duplicate_conversation_for_new_orchestrator(
+        new_orchestrator_id=orchestrator2.get_identifier()["id"],
+        conversation_id=conversation_id,
+    )
+    new_pieces = memory._get_prompt_pieces_with_conversation_id(conversation_id=new_conversation_id)
+    new_pieces_ids = [str(p.id) for p in new_pieces]
+    assert len(new_pieces) == 2
+    assert new_pieces[0].original_prompt_id == prompt_id_1
+    assert new_pieces[1].original_prompt_id == prompt_id_2
+    assert new_pieces[0].id != prompt_id_1
+    assert new_pieces[1].id != prompt_id_2
+    assert len(memory.get_scores_by_memory_labels(memory_labels=memory_labels)) == 2
+    assert len(memory.get_scores_by_orchestrator_id(orchestrator_id=orchestrator1.get_identifier()["id"])) == 2
+    assert len(memory.get_scores_by_orchestrator_id(orchestrator_id=orchestrator2.get_identifier()["id"])) == 2
+    # The duplicate prompts ids should not have scores so only two scores are returned
+    assert (
+        len(
+            memory.get_scores_by_prompt_ids(
+                prompt_request_response_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids
+            )
+        )
+        == 2
+    )
 
 
 def test_duplicate_conversation_excluding_last_turn(memory: MemoryInterface):
@@ -456,3 +538,8 @@ def test_get_scores_by_orchestrator_id(memory: MemoryInterface, sample_conversat
     assert db_score[0].score_metadata == score.score_metadata
     assert db_score[0].scorer_class_identifier == score.scorer_class_identifier
     assert db_score[0].prompt_request_response_id == score.prompt_request_response_id
+
+
+def test_get_scores_by_memory_labels(memory: MemoryInterface):
+    # TODO
+    pass
