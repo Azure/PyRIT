@@ -371,3 +371,17 @@ def fetch_harmbench_examples(
     )
 
     return dataset
+
+
+def fetch_pku_safeRLHF_dataset(
+    source: str = "https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
+    source_type: Literal["public_url"] = "public_url",
+    cache: bool = True,  ## TODO: verify cache parameter
+    data_home: Optional[Path] = None ## TODO: verify data_home paramter
+) -> PromptDataset:
+    """
+    TODO: Add Description
+    """
+
+    dataset = PromptDataset()
+    return dataset
