@@ -302,7 +302,6 @@ def fetch_xstest_examples(
 
     return dataset
 
-
 def fetch_harmbench_examples(
     source: str = (
         "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/"
@@ -373,8 +372,6 @@ def fetch_harmbench_examples(
 
     return dataset
 
-from datasets import load_dataset
-
 def fetch_pku_safeRLHF_dataset( 
     cache: bool = True,
     data_home: Optional[Path] = None) -> PromptDataset:
@@ -394,7 +391,12 @@ def fetch_pku_safeRLHF_dataset(
     """
     data = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
     prompts = [item['prompt'] for item in data['train']]
-    
+
+    # harm_categories = [item["note"] for example in examples]
+    # # Join all categories into a single comma-separated string
+    # harm_category_str = ", ".join(filter(None, harm_categories))
+    # can add the harm categories from hugging face vars if needed, but not all data is necessarily harmful
+
     # TODO: verify the should_be_blocked, description, harm_category, etc.
     dataset = PromptDataset(
         name="PKU-SafeRLHF",
