@@ -1,28 +1,27 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
 from textwrap import dedent
-from typing import Generator, Optional
+from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import yaml
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import ScalePaths, Scorer
-from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
-from pyrit.score.self_ask_scale_scorer import Scale, ScaleExample, SelfAskScaleScorer
+from pyrit.score import Scorer
 
-from tests.mocks import get_memory_interface
 
 class MockScorer(Scorer):
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
-        return [Score(score_value=1, rationale="rationale")]
+        return []
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         pass
+
 
 BAD_JSON = "this is not json"
 
@@ -65,13 +64,11 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
 
     with pytest.raises(InvalidJsonException):
         await scorer.send_chat_target_async(
-            prompt_target=chat_target,
-            scorer_llm_request=None,
-            scored_prompt_id="123",
-            category="category",
-            task="task")
+            prompt_target=chat_target, scorer_llm_request=None, scored_prompt_id="123", category="category", task="task"
+        )
 
         assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+
 
 @pytest.mark.asyncio
 async def test_scorer_send_chat_target_async_good_response():
@@ -98,11 +95,7 @@ async def test_scorer_send_chat_target_async_good_response():
     scorer.scorer_type = "true_false"
 
     await scorer.send_chat_target_async(
-        prompt_target=chat_target,
-        scorer_llm_request=None,
-        scored_prompt_id="123",
-        category="category",
-        task="task")
+        prompt_target=chat_target, scorer_llm_request=None, scored_prompt_id="123", category="category", task="task"
+    )
 
     assert chat_target.send_prompt_async.call_count == int(1)
-
