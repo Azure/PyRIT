@@ -7,7 +7,7 @@ from .fetch_example_datasets import (
     fetch_many_shot_jailbreaking_examples,
     fetch_seclists_bias_testing_examples,
     fetch_xstest_examples,
-    fetch_pku_saferlhf_dataset
+    fetch_pku_safe_rlhf_dataset
 )
 
 __all__ = [
@@ -16,5 +16,5 @@ __all__ = [
     "fetch_many_shot_jailbreaking_examples",
     "fetch_seclists_bias_testing_examples",
     "fetch_xstest_examples",
-    "fetch_pku_saferlhf_dataset"
+    "fetch_pku_safe_rlhf_dataset"
 ]
