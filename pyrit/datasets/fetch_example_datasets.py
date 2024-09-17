@@ -391,6 +391,8 @@ def fetch_pku_safeRLHF_dataset(
     if include_safe_prompts:
         prompts = [item['prompt'] for item in data['train']]
     else: 
+        # Each prompt has two responses in the dataset.
+        # If either of them is marked as unsafe we include it.
         prompts = [item['prompt'] for item in data['train'] if (item['is_response_0_safe'] == False or item['is_response_1_safe'] == False)]
 
     harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior, Endangering Public Health, Copyright Issues, Violence, Drugs, 
