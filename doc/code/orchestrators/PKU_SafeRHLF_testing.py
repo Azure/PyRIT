@@ -1,8 +1,8 @@
 # %% [markdown]
-# # HarmBench dataset testing
+# # PKU-SafeRHLF dataset testing
 #
-# This notebook demonstrates the process of using HarmBench examples to perform AI red teaming on a target language model (LLM).
-# It involves fetching potentially harmful behavior prompts from the HarmBench repository, sending them to the LLM, and analyzing the responses.
+# This notebook demonstrates the process of using PKU-SafeRHLF examples to perform AI red teaming on a target language model (LLM).
+# It involves fetching potentially harmful behavior prompts from the PKU-SafeRHLF repository, sending them to the LLM, and analyzing the responses.
 # The goal is to identify vulnerabilities, inappropriate responses, or weaknesses in the model's handling of harmful or ethically sensitive prompts.
 
 
