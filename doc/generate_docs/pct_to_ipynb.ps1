@@ -6,7 +6,7 @@ param (
     [string]$runId,
 
     [Parameter(Position=1,mandatory=$false)]
-    [string]$kernelName = "pyrit-kernel"
+    [string]$kernelName = "pyrit_kernel"
 )
 
 $scriptDir = Split-Path -Parent -Path $MyInvocation.MyCommand.Definition
