@@ -378,7 +378,7 @@ def fetch_pku_safeRLHF_dataset(
     Fetch PKU-SafeRLHF examples and create a PromptDataset.
 
     Args:
-        include_safe_prompts (bool): If this field is passed as false, we will only grab the unsafe prompts
+        include_safe_prompts (bool): all prompts in the dataset are returned if True; the dataset has RLHF markers for unsafe responses, so if False we only return the unsafe subset
 
     Returns:
         PromptDataset: A PromptDataset containing the examples.
