@@ -373,16 +373,12 @@ def fetch_harmbench_examples(
     return dataset
 
 def fetch_pku_safeRLHF_dataset( 
-    include_safe_prompts: bool = True,
-    cache: bool = True,
-    data_home: Optional[Path] = None) -> PromptDataset:
+    include_safe_prompts: bool = True) -> PromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a PromptDataset.
 
     Args:
         include_safe_prompts (bool): If this field is passed as false, we will only grab the unsafe prompts
-        cache (bool): Whether to cache the fetched examples. Defaults to True.
-        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
         PromptDataset: A PromptDataset containing the examples.
@@ -396,15 +392,11 @@ def fetch_pku_safeRLHF_dataset(
         prompts = [item['prompt'] for item in data['train']]
     else: 
         prompts = [item['prompt'] for item in data['train'] if (item['is_response_0_safe'] == False or item['is_response_1_safe'] == False)]
-<<<<<<< HEAD
-   
-=======
 
     harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior, Endangering Public Health, Copyright Issues, Violence, Drugs, 
     Privacy Violation, Economic Crime, Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order, 
     Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
 
->>>>>>> mshirsekar1/FHL/add-PKU-SafeRLHF-dataset
     dataset = PromptDataset(
         name="PKU-SafeRLHF",
         description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
