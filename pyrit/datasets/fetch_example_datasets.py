@@ -373,14 +373,14 @@ def fetch_harmbench_examples(
     return dataset
 
 def fetch_pku_safeRLHF_dataset( 
-    all_items: bool = True,
+    include_safe_prompts: bool = True,
     cache: bool = True,
     data_home: Optional[Path] = None) -> PromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a PromptDataset.
 
     Args:
-        all_items (bool): If this field is passed as false, we will only grab the unsafe prompts
+        include_safe_prompts (bool): If this field is passed as false, we will only grab the unsafe prompts
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
@@ -392,16 +392,24 @@ def fetch_pku_safeRLHF_dataset(
         https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF
     """
     data = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
-    if all_items:
+    if include_safe_prompts:
         prompts = [item['prompt'] for item in data['train']]
     else: 
         prompts = [item['prompt'] for item in data['train'] if (item['is_response_0_safe'] == False or item['is_response_1_safe'] == False)]
+<<<<<<< HEAD
    
+=======
+
+    harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior, Endangering Public Health, Copyright Issues, Violence, Drugs, 
+    Privacy Violation, Economic Crime, Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order, 
+    Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
+
+>>>>>>> mshirsekar1/FHL/add-PKU-SafeRLHF-dataset
     dataset = PromptDataset(
         name="PKU-SafeRLHF",
         description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
-        harm_category="TODO: Harm Category",
-        should_be_blocked=False,
+        harm_category=harm_categories,
+        should_be_blocked=not include_safe_prompts,
         source='https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF',
         prompts=prompts
     )
