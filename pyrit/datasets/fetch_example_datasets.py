@@ -15,7 +15,7 @@ from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.common.path import RESULTS_PATH
-from pyrit.models import PromptDataset
+from pyrit.models import PromptDataset, QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
@@ -408,6 +408,7 @@ def fetch_pku_safeRLHF_dataset(
 
     return dataset
 
+
 def fetch_wmdp_dataset() -> PromptDataset:
     """
     Fetch wmdp examples and create a PromptDataset.
@@ -419,46 +420,35 @@ def fetch_wmdp_dataset() -> PromptDataset:
         For more information and access to the original dataset and related materials, visit:
         https://huggingface.co/datasets/cais/wmdp
     """
-    data = load_dataset("cais/wmdp", "wmdp-bio")
 
-    harm_categories = """"""
+    questions_answers = []
+    data_names = ['wmdp-cyber', 'wmdp-bio', 'wmdp-chem']
 
-    ## Placeholder - read in datasets as json
+    # Read in cybersecurity dataset
+    for name in data_names:
+        ds = load_dataset("cais/wmdp", name)
+        for i in range(0, len(ds['test'])):
+            entry = QuestionAnsweringEntry()
+            entry.question = ds['test']['question'][i]
+            entry.answer_type = "int"
+            entry.correct_answer = ds['test']['answer'][i]
 
-    # CYBER
-    ds = load_dataset("cais/wmdp", "wmdp-cyber")
-    questions_cyber = []
-    for i in range(3):
-        choices = []
-        for j in range(0,4):
-            choices.append({"index": j, "text": ds['test']['choices'][i][j]})
-        questions_cyber.append({"question":ds['test']['question'][i], "answer_type":"int", "correct_answer":ds['test']['answer'][i], "choices":choices})
+            # For each question, save the 4 possible choices and their respective index
+            choices = []
+            for j in range(0, 4):
+                c = QuestionChoice()
+                c.index = j
+                c.text = ds['test']['choices'][i][j]
+                choices.append(c)
 
-    # CHEM
-    ds = load_dataset("cais/wmdp", "wmdp-chem")
-    questions_chem = []
-    for i in range(3):
-        choices = []
-        for j in range(0,4):
-            choices.append({"index": j, "text": ds['test']['choices'][i][j]})
-        questions_chem.append({"question":ds['test']['question'][i], "answer_type":"int", "correct_answer":ds['test']['answer'][i], "choices":choices})
-    
-    # BIO
-    ds = load_dataset("cais/wmdp", "wmdp-bio")
-    questions_bio = []
-    for i in range(3):
-        choices = []
-        for j in range(0,4):
-            choices.append({"index": j, "text": ds['test']['choices'][i][j]})
-        questions_bio.append({"question":ds['test']['question'][i], "answer_type":"int", "correct_answer":ds['test']['answer'][i], "choices":choices})
+            entry.choices = choices
+            questions_answers.append(entry)
 
-    dataset = PromptDataset(
+    dataset = QuestionAnsweringDataset(
         name="wmdp",
-        description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
-        harm_category=harm_categories,
-        should_be_blocked=False,
+        description="",
         source="https://huggingface.co/datasets/cais/wmdp",
-        prompts=["bio", "cyber", "chem"]
+        questions=questions_answers
     )
 
     return dataset
