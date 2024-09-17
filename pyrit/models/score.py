@@ -123,6 +123,11 @@ class Score:
 
 @dataclass
 class UnvalidatedScore:
+    """
+    Score is an object that validates all the fields. However, we need a common
+    data class that can be used to store the raw score value before it is normalized and validated.
+    """
+
     # The raw score value; has no scale. E.g. in likert could be 1-5
     raw_score_value: str
 

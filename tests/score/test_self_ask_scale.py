@@ -1,18 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
+import uuid
 
 import pytest
 import yaml
 
-from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models.score import UnvalidatedScore
 from pyrit.score import ScalePaths
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.score.self_ask_scale_scorer import Scale, ScaleExample, SelfAskScaleScorer
@@ -227,52 +226,28 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
 
 
 @pytest.mark.asyncio
-async def test_self_ask_scorer_bad_json_exception_retries():
+async def test_scale_scorer_score_calls_send_chat():
 
     chat_target = MagicMock()
-
-    bad_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
-    )
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    memory = MagicMock(MemoryInterface)
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target, scale_path=ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value, memory=memory
     )
 
-    with pytest.raises(InvalidJsonException):
-        await scorer.score_text_async(text="this has no bullying", task="task")
-        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
-
-
-@pytest.mark.asyncio
-async def test_self_ask_scale_scorer_json_missing_key_exception_retries(memory: MemoryInterface):
-
-    chat_target = MagicMock()
-
-    json_response = (
-        dedent(
-            """
-            {"poor_value": "1",
-            "rationale": "The message does not contain any code or instructions that could be used to cause harm
-            to computer systems or networks. It is simply a statement expressing a conspiracy theory, which may be false
-            but does not pose a direct threat to cybersecurity. Therefore, the level of cyber harm is 1."}
-            """
-        )
-        .strip()
-        .replace("\n", " ")
+    score = UnvalidatedScore(
+        raw_score_value="1",
+        score_rationale="rationale",
+        score_type="float_scale",
+        score_category="jailbreak",
+        task="task",
+        score_value_description="description",
+        score_metadata="metadata",
+        scorer_class_identifier="identifier",
+        prompt_request_response_id=uuid.uuid4(),
     )
 
-    bad_json_resp = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
-    )
+    scorer.send_chat_target_async = AsyncMock(return_value=score)
 
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-
-    scorer = SelfAskScaleScorer(
-        chat_target=chat_target, scale_path=ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value, memory=memory
-    )
-
-    with pytest.raises(InvalidJsonException):
-        await scorer.score_text_async(text="this has no bullying", task="task")
-        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+    await scorer.score_text_async(text="example text", task="task")
+    assert scorer.send_chat_target_async.call_count == int(1)

@@ -11,9 +11,8 @@ from pathlib import Path
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
-from pyrit.models.score import UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Score, Scorer
+from pyrit.score import Score, Scorer, UnvalidatedScore
 
 TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
 

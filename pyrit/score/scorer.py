@@ -141,13 +141,13 @@ class Scorer(abc.ABC):
         prompt_target: PromptChatTarget,
         scorer_llm_request: PromptRequestResponse,
         scored_prompt_id: str,
-        category: str = "",
-        task: str = "",
+        category: str = None,
+        task: str = None,
     ) -> UnvalidatedScore:
         """
-        Sends a request to a target LLM, and takes care of retries.
+        Sends a request to a target, and takes care of retries.
 
-        The scorer LLM response should be JSON with value, rationale, and optional metadata and description fields.
+        The scorer target response should be JSON with value, rationale, and optional metadata and description fields.
 
         Args:
             prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
