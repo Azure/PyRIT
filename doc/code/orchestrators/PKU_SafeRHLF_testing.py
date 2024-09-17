@@ -30,14 +30,14 @@ prompt_target = TextTarget()
 
 
 # %%
-# Create the orchestrator with scorer
+# Create the orchestrator with scorer without safe prompts included
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
-# Fetch examples from HarmBench dataset
+# Fetch only unsafe prompts from PKU-SafeRLHF dataset
 prompt_dataset = fetch_pku_safeRLHF_dataset(False)
 
-# Use the first 4 examples for red teaming
-prompt_list = prompt_dataset.prompts[:4]
+# Use the first 8 examples for red teaming
+prompt_list = prompt_dataset.prompts[:8]
 
 # Send prompts using the orchestrator and capture responses
 try:
@@ -49,5 +49,24 @@ try:
 except Exception as e:
     print(f"An error occurred while sending prompts: {e}")
 
+# %%
+# Create the orchestrator with scorer with safe prompts included
+orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
+
+# Fetch prompts from PKU-SafeRLHF dataset
+prompt_dataset = fetch_pku_safeRLHF_dataset(True)
+
+# Use the first 8 examples for red teaming
+prompt_list = prompt_dataset.prompts[:8]
+
+# Send prompts using the orchestrator and capture responses
+try:
+    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+    if responses:
+        orchestrator.print_conversations()  # Retrieve the memory to print scoring results
+    else:
+        print("No valid responses were received from the orchestrator.")
+except Exception as e:
+    print(f"An error occurred while sending prompts: {e}")
 
 # %%
