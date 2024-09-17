@@ -397,12 +397,6 @@ def fetch_pku_safeRLHF_dataset(
     else: 
         prompts = [item['prompt'] for item in data['train'] if (item['is_response_0_safe'] == False or item['is_response_1_safe'] == False)]
    
-    # harm_categories = [item["note"] for example in examples]
-    # # Join all categories into a single comma-separated string
-    # harm_category_str = ", ".join(filter(None, harm_categories))
-    # can add the harm categories from hugging face vars if needed, but not all data is necessarily harmful
-
-    # TODO: verify the should_be_blocked, description, harm_category, etc.
     dataset = PromptDataset(
         name="PKU-SafeRLHF",
         description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
