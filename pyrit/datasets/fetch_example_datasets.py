@@ -456,7 +456,7 @@ def fetch_wmdp_dataset() -> PromptDataset:
         name="wmdp",
         description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
         harm_category=harm_categories,
-        should_be_blocked=False
+        should_be_blocked=False,
         source="https://huggingface.co/datasets/cais/wmdp",
         prompts=["bio", "cyber", "chem"]
     )
