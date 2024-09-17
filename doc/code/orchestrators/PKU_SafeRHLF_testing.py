@@ -9,7 +9,7 @@
 # %%
 # Import necessary packages
 from pyrit.common import default_values
-from pyrit.datasets import fetch_pku_safeRLHF_dataset
+from pyrit.datasets import fetch_pku_saferlhf_dataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
@@ -34,7 +34,7 @@ prompt_target = TextTarget()
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
 # Fetch only unsafe prompts from PKU-SafeRLHF dataset
-prompt_dataset = fetch_pku_safeRLHF_dataset(False)
+prompt_dataset = fetch_pku_saferlhf_dataset(False)
 
 # Use the first 8 examples for red teaming
 prompt_list = prompt_dataset.prompts[:8]
@@ -54,7 +54,7 @@ except Exception as e:
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
 # Fetch prompts from PKU-SafeRLHF dataset
-prompt_dataset = fetch_pku_safeRLHF_dataset(True)
+prompt_dataset = fetch_pku_saferlhf_dataset(True)
 
 # Use the first 8 examples for red teaming
 prompt_list = prompt_dataset.prompts[:8]

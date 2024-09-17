@@ -372,7 +372,7 @@ def fetch_harmbench_examples(
 
     return dataset
 
-def fetch_pku_safeRLHF_dataset( 
+def fetch_pku_saferlhf_dataset( 
     include_safe_prompts: bool = True) -> PromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a PromptDataset.
