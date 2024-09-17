@@ -385,7 +385,8 @@ def fetch_pku_safe_rlhf_dataset(
 
     Note:
         For more information and access to the original dataset and related materials, visit:
-        https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF
+        https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF. Based on research in paper:
+        https://arxiv.org/pdf/2406.15513 written by Jiaming Ji and Donghai Hong and Borong Zhang and Boyuan Chen and Josef Dai and Boren Zheng and Tianyi Qiu and Boxun Li and Yaodong Yang
     """
     data = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
     if include_safe_prompts:
