@@ -13,6 +13,7 @@ from io import BytesIO
 from pyrit.models import data_serializer_factory
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.memory import MemoryInterface, DuckDBMemory
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ class AddTextImageConverter(PromptConverter):
         font_size (float, optional): Size of font to use. Defaults to 15.
         x_pos (int, optional): X coordinate to place text in (0 is left most). Defaults to 10.
         y_pos (int, optional): Y coordinate to place text in (0 is upper most). Defaults to 10.
+        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     def __init__(
@@ -38,6 +40,7 @@ class AddTextImageConverter(PromptConverter):
         font_size: Optional[int] = 15,
         x_pos: Optional[int] = 10,
         y_pos: Optional[int] = 10,
+        memory: Optional[MemoryInterface] = None
     ):
         if text_to_add.strip() == "":
             raise ValueError("Please provide valid text_to_add value")
@@ -50,6 +53,7 @@ class AddTextImageConverter(PromptConverter):
         self._color = color
         self._x_pos = x_pos
         self._y_pos = y_pos
+        self._memory = memory or DuckDBMemory()
 
     def _load_font(self):
         """
@@ -118,22 +122,22 @@ class AddTextImageConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        img_serializer = data_serializer_factory(value=prompt, data_type="image_path")
+        img_serializer = data_serializer_factory(value=prompt, data_type="image_path", memory=self._memory)
 
         # Open the image
-        original_img_bytes = img_serializer.read_data()
+        original_img_bytes = await img_serializer.read_data()
         original_img = Image.open(BytesIO(original_img_bytes))
 
         # Add text to the image
         updated_img = self._add_text_to_image(image=original_img)
 
         image_bytes = BytesIO()
-        mime_type = img_serializer.get_mime_type(prompt)
+        mime_type = await img_serializer.get_mime_type(prompt)
         image_type = mime_type.split("/")[-1]
         updated_img.save(image_bytes, format=image_type)
         image_str = base64.b64encode(image_bytes.getvalue())
         # Save image as generated UUID filename
-        img_serializer.save_b64_image(data=image_str)
+        await img_serializer.save_b64_image(data=image_str)
         return ConverterResult(output_text=img_serializer.value, output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

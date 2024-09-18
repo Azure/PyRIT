@@ -6,7 +6,7 @@ import base64
 import hashlib
 import os
 import time
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 from pathlib import Path
 from mimetypes import guess_type
 from urllib.parse import urlparse
@@ -122,7 +122,7 @@ class DataTypeSerializer(abc.ABC):
         hash_object = hashlib.sha256(input_bytes)
         return hash_object.hexdigest()
 
-    async def get_data_filename(self) -> Path:
+    async def get_data_filename(self) -> Union[Path, str]:
         """
         Generates or retrieves a unique filename for the data file.
         """
@@ -163,14 +163,14 @@ class DataTypeSerializer(abc.ABC):
             return ext
         return None
 
-    @staticmethod
-    async def get_mime_type(file_path: str) -> str | None:
+    async def get_mime_type(self, file_path: str) -> str | None:
         """
         Get the MIME type of the file path.
         """
-        if await DataTypeSerializer.path_exists(file_path):
-            mime_type, _ = guess_type(file_path)
-            return mime_type
+        if self._memory:
+            if await self._memory._storage_io.is_path_exists(file_path):
+                mime_type, _ = guess_type(file_path)
+                return mime_type
         return None
 
     def is_url(self, path: str) -> bool:
