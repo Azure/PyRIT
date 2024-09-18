@@ -475,7 +475,7 @@ def fetch_adv_bench_dataset(
         the instruction, and to do so over as many harmful behaviors as possible.""",
         harm_category=harm_categories,
         should_be_blocked=True,
-        source="https://huggingface.co/datasets/walledai/AdvBench",
+        source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
         prompts=prompts,
     )
 
