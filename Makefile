@@ -22,5 +22,9 @@ test-cov-html:
 test-cov-xml:
 	$(CMD) pytest --cov=$(PYMODULE) $(TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
 
+docs-build:
+	jb toc from-project ./doc -e .ipynb -e .md -f jb-book > ./doc/_toc.yml
+	jb build ./doc
+
 #clean:
 #	git clean -Xdf # Delete all files in .gitignore
