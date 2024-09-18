@@ -421,9 +421,12 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
     return dataset
 
 
-def fetch_wmdp_dataset(category: str = None) -> QuestionAnsweringDataset:
+def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDataset:
     """
     Fetch WMDP examples and create a QuestionAnsweringDataset.
+
+    Args:
+        category (str): The dataset category, one of "cyber", "bio", "chem"
 
     Returns:
         QuestionAnsweringDataset: A QuestionAnsweringDataset containing the examples.
@@ -434,17 +437,17 @@ def fetch_wmdp_dataset(category: str = None) -> QuestionAnsweringDataset:
     """
 
     # Determine which subset of data to load
-    data_category = None
+    data_categories = None
     if not category:  # if category is not specified, read in all 3 subsets of data
-        data_category = ["wmdp-cyber", "wmdp-bio", "wmdp-chem"]
+        data_categories = ["wmdp-cyber", "wmdp-bio", "wmdp-chem"]
     elif category not in ["cyber", "bio", "chem"]:
         raise ValueError(f"Invalid Parameter: {category}. Expected 'cyber', 'bio', or 'chem'")
     else:
-        data_category = ["wmdp-" + category]
+        data_categories = ["wmdp-" + category]
 
     # Read in cybersecurity dataset
     questions_answers = []
-    for name in data_category:
+    for name in data_categories:
         ds = load_dataset("cais/wmdp", name)
         for i in range(0, len(ds["test"])):
             # For each question, save the 4 possible choices and their respective index
