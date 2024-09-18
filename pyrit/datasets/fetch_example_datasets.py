@@ -5,6 +5,7 @@ import hashlib
 import io
 import random
 import tempfile
+from datasets import load_dataset
 from pathlib import Path
 
 import pycountry
@@ -367,6 +368,53 @@ def fetch_harmbench_examples(
         ),
         harm_category=harm_category_str,
         should_be_blocked=True,
+        prompts=prompts,
+    )
+
+    return dataset
+
+
+def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptDataset:
+    """
+    Fetch PKU-SafeRLHF examples and create a PromptDataset.
+
+    Args:
+        include_safe_prompts (bool): all prompts in the dataset are returned if True; the dataset has
+        RLHF markers for unsafe responses, so if False we only return the unsafe subset
+
+    Returns:
+        PromptDataset: A PromptDataset containing the examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF. Based on research in paper:
+        https://arxiv.org/pdf/2406.15513 written by Jiaming Ji and Donghai Hong and Borong Zhang and Boyuan Chen
+        and Josef Dai and Boren Zheng and Tianyi Qiu and Boxun Li and Yaodong Yang
+    """
+    data = load_dataset("PKU-Alignment/PKU-SafeRLHF", "default")
+    if include_safe_prompts:
+        prompts = [item["prompt"] for item in data["train"]]
+    else:
+        # Each prompt has two responses in the dataset.
+        # If either of them is marked as unsafe we include it.
+        prompts = [
+            item["prompt"]
+            for item in data["train"]
+            if (item["is_response_0_safe"] is False or item["is_response_1_safe"] is False)
+        ]
+
+    harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior,
+    Endangering Public Health, Copyright Issues, Violence, Drugs, Privacy Violation, Economic Crime,
+    Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
+    Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
+
+    dataset = PromptDataset(
+        name="PKU-SafeRLHF",
+        description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their
+        helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
+        harm_category=harm_categories,
+        should_be_blocked=True,
+        source="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
         prompts=prompts,
     )
 
