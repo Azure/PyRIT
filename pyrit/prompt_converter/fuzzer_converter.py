@@ -44,8 +44,9 @@ class FuzzerConverter(PromptConverter):
         File name to be used with instructions for the chat target.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, converter_file: str):
+    def __init__(self, *, converter_target: PromptChatTarget, converter_file: str, prompts: Optional[List[str]] = None):
         self.converter_target = converter_target
+        self.prompts = prompts
 
         prompt_template = PromptTemplate.from_yaml_file(
             pathlib.Path(DATASETS_PATH) / "prompt_converters" / converter_file
@@ -53,9 +54,7 @@ class FuzzerConverter(PromptConverter):
 
         self.system_prompt = prompt_template.template
 
-    async def convert_async(
-        self, *, prompt: str, input_type: PromptDataType = "text", prompts: Optional[List[str]] = None
-    ) -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converter to generate versions of prompt with new, prepended sentences.
         """
@@ -70,10 +69,10 @@ class FuzzerConverter(PromptConverter):
             orchestrator_identifier=None,
         )
 
-        template_label = "TEMPLATE 1" if prompts is not None else "TEMPLATE"
+        template_label = "TEMPLATE 1" if self.prompts is not None else "TEMPLATE"
         formatted_prompt = f"===={template_label} BEGINS====\n{prompt}\n===={template_label} ENDS===="
-        if prompts is not None:
-            formatted_prompt += f"\n====TEMPLATE 2 BEGINS====\n{random.choice(prompts)}\n====TEMPLATE 2 ENDS====\n"
+        if self.prompts is not None:
+            formatted_prompt += f"\n====TEMPLATE 2 BEGINS====\n{random.choice(self.prompts)}\n====TEMPLATE 2 ENDS====\n"
 
         request = PromptRequestResponse(
             [
@@ -120,8 +119,8 @@ class FuzzerConverter(PromptConverter):
 
 
 class CrossOverConverter(FuzzerConverter):
-    def __init__(self, *, converter_target: PromptChatTarget):
-        super().__init__(converter_target=converter_target, converter_file="crossover_converter.yaml")
+    def __init__(self, *, converter_target: PromptChatTarget, prompts: Optional[List[str]] = None):
+        super().__init__(converter_target=converter_target, converter_file="crossover_converter.yaml", prompts=prompts)
 
 
 class RephraseConverter(FuzzerConverter):
