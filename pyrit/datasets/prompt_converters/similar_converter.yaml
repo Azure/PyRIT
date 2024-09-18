@@ -1,4 +1,4 @@
-name: prompt_generate
+name: prompt_similar
 description: |
   A general strategy for similar prompts adapted from
   https://arxiv.org/abs/2309.10253 by J. Yu et al.
