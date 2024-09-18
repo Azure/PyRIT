@@ -10,11 +10,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
 
 from pyrit.prompt_target.prompt_target import PromptTarget
-from pyrit.common.prompt_template_generator import PromptTemplateGenerator
+from pyrit.common.dynamic_prompt_formatter import format_prompt
 from pyrit.common.download_hf_model_with_hf_cli import download_model_with_cli, download_specific_files_with_cli
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
-from pyrit.models import ChatMessage
 
 
 logger = logging.getLogger(__name__)
@@ -68,9 +67,6 @@ class HuggingFaceChatTarget(PromptTarget):
 
         # Load the model and tokenizer using the encapsulated method
         self.load_model_and_tokenizer()
-
-        # Initialize the PromptTemplateGenerator
-        self.prompt_template_generator = PromptTemplateGenerator() # TODO; I think i need to use that!
 
     def is_model_id_valid(self) -> bool:
         """
@@ -154,17 +150,31 @@ class HuggingFaceChatTarget(PromptTarget):
         logger.info(f"Sending the following prompt to the HuggingFace model: {prompt_template}")
 
         # Prepare the input messages using chat templates
-        messages = [
-            {"role": "user", "content": prompt_template}
-        ]
+        messages = [{"role": "user", "content": prompt_template}]
 
-        # Apply chat template to format the conversation correctly
-        tokenized_chat = self.tokenizer.apply_chat_template(
-            messages,
-            tokenize=True,  # Tokenize the formatted string
-            add_generation_prompt=True,  # Add prompt for generation
-            return_tensors=self.tensor_format
-        ).to(self.device)
+        # Check if the tokenizer has a chat template
+        if hasattr(self.tokenizer, 'chat_template') and self.tokenizer.chat_template is not None:
+            logger.info("Tokenizer has a chat template. Applying it to the input messages.")
+
+            # Apply the chat template to format and tokenize the messages
+            tokenized_chat = self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=True,
+                add_generation_prompt=True,
+                return_tensors=self.tensor_format
+            ).to(self.device)
+        else:
+            logger.info("Tokenizer does not have a chat template. Using default formatting.")
+
+            # Format the prompt dynamically based on the tokenizer configuration
+            prompt_text = format_prompt(self.tokenizer, prompt_template)
+
+            # Tokenize the prompt
+            tokenized_chat = self.tokenizer(
+                prompt_text,
+                return_tensors=self.tensor_format,
+                add_special_tokens=False  # We manage special tokens manually
+            ).input_ids.to(self.device)
 
         logger.info(f"Tokenized chat: {tokenized_chat}")
 
@@ -172,10 +182,13 @@ class HuggingFaceChatTarget(PromptTarget):
             # Ensure model is on the correct device (should already be the case from `load_model_and_tokenizer`)
             self.model.to(self.device)
 
+            # Record the length of the input tokens to later extract only the generated tokens
+            input_length = tokenized_chat.shape[-1]
+
             # Generate the response
             logger.info("Generating response from model...")
             generated_ids = self.model.generate(
-                tokenized_chat,  
+                input_ids=tokenized_chat,  
                 max_new_tokens=self.max_new_tokens,
                 temperature=self.temperature,
                 top_p=self.top_p,
@@ -183,11 +196,17 @@ class HuggingFaceChatTarget(PromptTarget):
 
             logger.info(f"Generated IDs: {generated_ids}")  # Log the generated IDs
 
-            # Decode the response
-            response_message = self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+             # Extract the assistant's response by slicing the generated tokens after the input tokens
+            generated_tokens = generated_ids[0][input_length:]
+
+            # Decode the assistant's response from the generated token IDs
+            assistant_response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+
+            logger.info(f"Assistant's response: {assistant_response}")
+
             prompt_response = construct_response_from_request(
                 request=request,
-                response_text_pieces=[response_message],
+                response_text_pieces=[assistant_response],
                 prompt_metadata=json.dumps({"model_id": self.model_id}),
             )
 
