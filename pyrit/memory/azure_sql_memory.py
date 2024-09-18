@@ -64,7 +64,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             self._sas_token = None # To use delegation SAS
         self._storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
 
-        # Create results directory 
         self.results_path = self._container_url
         
         self.engine = self._create_engine(has_echo=verbose)
