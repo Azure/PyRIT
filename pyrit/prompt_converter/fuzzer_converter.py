@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class FuzzerConverter(PromptConverter):
     """
-    Base class for GPTFUZZER converters. 
+    Base class for GPTFUZZER converters.
 
     Adapted from GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
 
@@ -47,11 +47,15 @@ class FuzzerConverter(PromptConverter):
     def __init__(self, *, converter_target: PromptChatTarget, converter_file: str):
         self.converter_target = converter_target
 
-        prompt_template = PromptTemplate.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompt_converters" / converter_file)
+        prompt_template = PromptTemplate.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "prompt_converters" / converter_file
+        )
 
         self.system_prompt = prompt_template.template
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text", prompts: Optional[List[str]]=None) -> ConverterResult:
+    async def convert_async(
+        self, *, prompt: str, input_type: PromptDataType = "text", prompts: Optional[List[str]] = None
+    ) -> ConverterResult:
         """
         Converter to generate versions of prompt with new, prepended sentences.
         """
@@ -110,13 +114,16 @@ class FuzzerConverter(PromptConverter):
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
+
 class CrossOverConverter(FuzzerConverter):
     def __init__(self, *, converter_target: PromptChatTarget):
         super().__init__(converter_target=converter_target, converter_file="crossover_converter.yaml")
 
+
 class RephraseConverter(FuzzerConverter):
     def __init__(self, *, converter_target: PromptChatTarget):
         super().__init__(converter_target=converter_target, converter_file="rephrase_converter.yaml")
+
 
 class SimilarConverter(FuzzerConverter):
     def __init__(self, *, converter_target: PromptChatTarget):
