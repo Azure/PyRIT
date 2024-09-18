@@ -1,6 +1,6 @@
 name: prompt_rephrase
 description: |
-  A general strategy for shortening prompts adapted from
+  A general strategy for rephrased prompts adapted from
   https://arxiv.org/abs/2309.10253 by J. Yu et al.
 harm_category: NA
 author: J. Yu et al.
