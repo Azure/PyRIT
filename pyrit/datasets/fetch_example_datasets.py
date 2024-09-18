@@ -372,83 +372,49 @@ def fetch_harmbench_examples(
 
     return dataset
 
-def fetch_pku_safeRLHF_dataset( 
-    include_safe_prompts: bool = True) -> PromptDataset:
+
+def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a PromptDataset.
 
     Args:
-        include_safe_prompts (bool): If this field is passed as false, we will only grab the unsafe prompts
+        include_safe_prompts (bool): all prompts in the dataset are returned if True; the dataset has
+        RLHF markers for unsafe responses, so if False we only return the unsafe subset
 
     Returns:
         PromptDataset: A PromptDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
-        https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF
+        https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF. Based on research in paper:
+        https://arxiv.org/pdf/2406.15513 written by Jiaming Ji and Donghai Hong and Borong Zhang and Boyuan Chen
+        and Josef Dai and Boren Zheng and Tianyi Qiu and Boxun Li and Yaodong Yang
     """
-    data = load_dataset('PKU-Alignment/PKU-SafeRLHF', 'default')
+    data = load_dataset("PKU-Alignment/PKU-SafeRLHF", "default")
     if include_safe_prompts:
-        prompts = [item['prompt'] for item in data['train']]
-    else: 
-        prompts = [item['prompt'] for item in data['train'] if (item['is_response_0_safe'] == False or item['is_response_1_safe'] == False)]
+        prompts = [item["prompt"] for item in data["train"]]
+    else:
+        # Each prompt has two responses in the dataset.
+        # If either of them is marked as unsafe we include it.
+        prompts = [
+            item["prompt"]
+            for item in data["train"]
+            if (item["is_response_0_safe"] is False or item["is_response_1_safe"] is False)
+        ]
 
-    harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior, Endangering Public Health, Copyright Issues, Violence, Drugs, 
-    Privacy Violation, Economic Crime, Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order, 
+    harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior,
+    Endangering Public Health, Copyright Issues, Violence, Drugs, Privacy Violation, Economic Crime,
+    Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
     Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
 
     dataset = PromptDataset(
         name="PKU-SafeRLHF",
-        description="This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their helpfulness or harmfulness. Only the \'prompt'\ column is extracted.",
+        description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their
+        helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
         harm_category=harm_categories,
-        should_be_blocked=not include_safe_prompts,
-        source='https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF',
-        prompts=prompts
-    )
-
-    return dataset
-
-
-def fetch_wmdp_dataset() -> PromptDataset:
-    """
-    Fetch wmdp examples and create a PromptDataset.
-
-    Returns:
-        PromptDataset: A PromptDataset containing the examples.
-
-    Note:
-        For more information and access to the original dataset and related materials, visit:
-        https://huggingface.co/datasets/cais/wmdp
-    """
-
-    questions_answers = []
-    data_names = ['wmdp-cyber', 'wmdp-bio', 'wmdp-chem']
-
-    # Read in cybersecurity dataset
-    for name in data_names:
-        ds = load_dataset("cais/wmdp", name)
-        for i in range(0, len(ds['test'])):
-            entry = QuestionAnsweringEntry()
-            entry.question = ds['test']['question'][i]
-            entry.answer_type = "int"
-            entry.correct_answer = ds['test']['answer'][i]
-
-            # For each question, save the 4 possible choices and their respective index
-            choices = []
-            for j in range(0, 4):
-                c = QuestionChoice()
-                c.index = j
-                c.text = ds['test']['choices'][i][j]
-                choices.append(c)
-
-            entry.choices = choices
-            questions_answers.append(entry)
-
-    dataset = QuestionAnsweringDataset(
-        name="wmdp",
-        description="",
-        source="https://huggingface.co/datasets/cais/wmdp",
-        questions=questions_answers
+        should_be_blocked=True,
+        source="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
+        prompts=prompts,
     )
 
     return dataset
