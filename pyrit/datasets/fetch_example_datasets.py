@@ -423,7 +423,7 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
 
 def fetch_wmdp_dataset() -> QuestionAnsweringDataset:
     """
-    Fetch wmdp examples and create a QuestionAnsweringDataset.
+    Fetch WMDP examples and create a QuestionAnsweringDataset.
 
     Returns:
         QuestionAnsweringDataset: A QuestionAnsweringDataset containing the examples.
