@@ -452,9 +452,6 @@ def fetch_adv_bench_dataset(
         valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
-    # Initialize containers for prompts and semantic categories
-    prompts = []
-
     # Fetch the examples using the provided `fetch_examples` function
     examples = fetch_examples(source, source_type, cache, data_home)
 
