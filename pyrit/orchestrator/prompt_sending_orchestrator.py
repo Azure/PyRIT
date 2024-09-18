@@ -11,6 +11,7 @@ from pyrit.common.display_response import display_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestResponse
+from pyrit.models.storage_io import StorageIO
 from pyrit.orchestrator import Orchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -167,9 +168,6 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-        # These are the responses from the target
-        # print(responses[0].request_pieces)
-
         if self._scorers:
             response_ids = []
             for response in responses:
@@ -226,6 +224,6 @@ class PromptSendingOrchestrator(Orchestrator):
     def _combine_with_global_memory_labels(self, memory_labels: dict[str, str]) -> dict[str, str]:
         """
         Combines the global memory labels with the provided memory labels.
-        The passed memory_leabels take prcedence with collisions.
+        The passed memory_labels take precedence with collisions.
         """
         return {**(self._global_memory_labels or {}), **(memory_labels or {})}

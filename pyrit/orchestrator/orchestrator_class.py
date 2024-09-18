@@ -63,6 +63,7 @@ class Orchestrator(abc.ABC, Identifier):
             prompt_value=prompt_text,
             prompt_data_type=prompt_type,
             metadata=metadata,
+            memory=self._memory
         )
 
         request = NormalizerRequest([request_piece])

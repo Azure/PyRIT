@@ -6,11 +6,10 @@ import struct
 
 from contextlib import closing
 from typing import Optional, Sequence
-
 from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 
-from sqlalchemy import create_engine, func, and_, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
@@ -20,8 +19,9 @@ from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_models import EmbeddingData, Base, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import Score
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.score import Score
+from pyrit.models.storage_io import AzureBlobStorageIO
 
 logger = logging.getLogger(__name__)
 
@@ -38,14 +38,35 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
     TOKEN_URL = "https://database.windows.net/"  # The token URL for any Azure SQL database
     AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
+    AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"
+    SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN"
 
-    def __init__(self, *, connection_string: Optional[str] = None, verbose: bool = False):
+    def __init__(
+        self, 
+        *, 
+        connection_string: Optional[str] = None, 
+        container_url: Optional[str] = None,
+        sas_token: Optional[str] = None,
+        verbose: bool = False):
         super(AzureSQLMemory, self).__init__()
 
         self._connection_string = default_values.get_required_value(
             env_var_name=self.AZURE_SQL_DB_CONNECTION_STRING, passed_value=connection_string
         )
+        self._container_url: str = default_values.get_required_value(
+            env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
+        )
+        try:
+            self._sas_token: str = default_values.get_required_value(
+                env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
+            )
+        except ValueError:
+            self._sas_token = None # To use delegation SAS
+        self._storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
 
+        # Create results directory 
+        self.results_path = self._container_url
+        
         self.engine = self._create_engine(has_echo=verbose)
 
         self._auth_token = self._create_auth_token()
@@ -87,7 +108,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         For further details, see:
         * <https://docs.sqlalchemy.org/en/20/dialects/mssql.html#connecting-to-databases-with-access-tokens>
         * <https://learn.microsoft.com/en-us/azure/azure-sql/database/azure-sql-python-quickstart
-          #add-code-to-connect-to-azure-sql-database>
         """
 
         @event.listens_for(self.engine, "do_connect")
@@ -134,13 +154,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
         """
         try:
-            return self.query_entries(
+            sql_condition = text("ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id").bindparams(json_id=str(orchestrator_id))
+            result = self.query_entries(
                 PromptMemoryEntry,
-                conditions=and_(
-                    func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
-                    func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == orchestrator_id,
-                ),
+                conditions=sql_condition
             )  # type: ignore
+            return result
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
