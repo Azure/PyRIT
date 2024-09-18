@@ -15,12 +15,14 @@ import uuid
 from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_converter import Base64Converter
 from pyrit.datasets import fetch_adv_bench_dataset
 
-default_values.load_default_env()
 
+default_values.load_default_env()
 target = AzureOpenAIGPT4OChatTarget()
 
+# %%
 # You could optionally pass memory labels to orchestrators, which will be associated with each prompt and assist in retrieving or scoring later.
 test_op_name = str(uuid.uuid4())
 test_user_name = str(uuid.uuid4())
@@ -48,15 +50,6 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 # **Note**: `batch_size` should be 1 to properly use the RPM provided.
 
 # %%
-import time
-
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
-from pyrit.common import default_values
-from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.datasets import fetch_adv_bench_dataset
-
-
-default_values.load_default_env()
 max_requests_per_minute = 20
 
 target = AzureOpenAIGPT4OChatTarget(max_requests_per_minute=max_requests_per_minute)
@@ -78,19 +71,9 @@ with PromptSendingOrchestrator(prompt_target=target, batch_size=1) as orchestrat
 # This variation takes the original example, but converts the text to base64 before sending it to the target.
 
 # %%
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
-
-from pyrit.datasets import fetch_adv_bench_dataset
-from pyrit.common import default_values
-from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import Base64Converter
-
-
-default_values.load_default_env()
-
-target = AzureOpenAIGPT4OChatTarget()
-
-with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()]) as orchestrator:
+with PromptSendingOrchestrator(
+    prompt_target=target, prompt_converters=[Base64Converter()], batch_size=1
+) as orchestrator:
 
     adv_bench_prompts = fetch_adv_bench_dataset()
 
