@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import enum
-import json
 from typing import Dict, Optional
 import uuid
 import yaml
@@ -10,11 +9,10 @@ import yaml
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Score, Scorer
+from pyrit.score import Score, Scorer, UnvalidatedScore
 
 TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
 
@@ -113,36 +111,18 @@ class SelfAskTrueFalseScorer(Scorer):
             ]
         )
 
-        score = await self._send_chat_target_async(request, request_response.id)
-        score.task = task
+        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
+            prompt_target=self._prompt_target,
+            scorer_llm_request=request,
+            scored_prompt_id=request_response.id,
+            category=self._score_category,
+            task=task,
+        )
+
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
+
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-
-    @pyrit_json_retry
-    async def _send_chat_target_async(self, request, request_response_id):
-        response = await self._prompt_target.send_prompt_async(prompt_request=request)
-
-        try:
-            response_json = response.request_pieces[0].converted_value
-            parsed_response = json.loads(response_json)
-
-            score = Score(
-                score_value=str(parsed_response["value"]),
-                score_value_description=parsed_response["description"],
-                score_type=self.scorer_type,
-                score_category=self._score_category,
-                score_rationale=parsed_response["rationale"],
-                scorer_class_identifier=self.get_identifier(),
-                score_metadata=parsed_response.get("metadata"),
-                prompt_request_response_id=request_response_id,
-            )
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
-
-        except KeyError:
-            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
-
-        return score
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if task:
