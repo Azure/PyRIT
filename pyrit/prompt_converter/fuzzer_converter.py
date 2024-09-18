@@ -40,14 +40,13 @@ class FuzzerConverter(PromptConverter):
     converter_target: PromptChatTarget
         Chat target used to perform fuzzing on user prompt
 
-    prompt_template: PromptTemplate, default=None
-        Template to be used instead of the default system prompt with instructions for the chat target.
+    converter_file: str
+        File name to be used with instructions for the chat target.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, converter_file: str = None):
+    def __init__(self, *, converter_target: PromptChatTarget, converter_file: str):
         self.converter_target = converter_target
 
-        # set to default strategy if not provided
         prompt_template = PromptTemplate.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompt_converters" / converter_file)
 
         self.system_prompt = prompt_template.template
@@ -72,8 +71,6 @@ class FuzzerConverter(PromptConverter):
         if prompts is not None:
             formatted_prompt += f"\n====TEMPLATE 2 BEGINS====\n{random.choice(prompts)}\n====TEMPLATE 2 ENDS====\n"
 
-        # print(formatted_prompt)
-        # print(self.system_prompt)
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
