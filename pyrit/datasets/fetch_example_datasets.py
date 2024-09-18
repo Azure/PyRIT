@@ -419,8 +419,7 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
     )
 
     return dataset
-
-
+  
 def fetch_adv_bench_dataset(
     source: str = (
         "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"
