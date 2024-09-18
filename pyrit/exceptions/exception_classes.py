@@ -66,8 +66,8 @@ class InvalidJsonException(PyritException):
 class MissingPromptPlaceholderException(PyritException):
     """Exception class for missing prompt placeholder errors."""
 
-    def __init__(self, status_code: int = 204, *, message: str = "No prompt placeholder"):
-        super().__init__(status_code=status_code, message=message)
+    def __init__(self, *, message: str = "No prompt placeholder"):
+        super().__init__(message=message)
 
 
 def handle_bad_request_exception(

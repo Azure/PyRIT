@@ -12,7 +12,7 @@ def _get_chunks(*args, batch_size: int):
     Helper function utilized during prompt batching to chunk based off of size.
 
     Args:
-        prompts (list[str, NormalizerRequest, PromptRequestPiece]): List of prompts to batch
+        *args: Arguments to chunk; each argument should be a list
         batch_size (int): Batch size
 
     """
