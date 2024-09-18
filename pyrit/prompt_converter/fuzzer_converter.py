@@ -92,8 +92,9 @@ class FuzzerConverter(PromptConverter):
         )
 
         response = await self.send_prompt_async(request)
+        output = self._generate_output(response, prompt)
 
-        return ConverterResult(output_text=response, output_type="text")
+        return ConverterResult(output_text=output, output_type="text")
 
     @pyrit_json_retry
     async def send_prompt_async(self, request):
@@ -110,6 +111,9 @@ class FuzzerConverter(PromptConverter):
 
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
+
+    def _generate_output(self, response: str, _: str) -> str:
+        return response
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
@@ -128,3 +132,16 @@ class RephraseConverter(FuzzerConverter):
 class SimilarConverter(FuzzerConverter):
     def __init__(self, *, converter_target: PromptChatTarget):
         super().__init__(converter_target=converter_target, converter_file="similar_converter.yaml")
+
+
+class ShortenConverter(FuzzerConverter):
+    def __init__(self, *, converter_target: PromptChatTarget):
+        super().__init__(converter_target=converter_target, converter_file="shorten_converter.yaml")
+
+
+class ExpandConverter(FuzzerConverter):
+    def __init__(self, *, converter_target: PromptChatTarget):
+        super().__init__(converter_target=converter_target, converter_file="expand_converter.yaml")
+
+    def _generate_output(self, response: str, prompt: str) -> str:
+        return response + " " + prompt

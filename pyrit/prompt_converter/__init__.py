@@ -15,8 +15,13 @@ from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
-from pyrit.prompt_converter.expand_converter import ExpandConverter
-from pyrit.prompt_converter.fuzzer_converter import RephraseConverter, SimilarConverter, CrossOverConverter
+from pyrit.prompt_converter.fuzzer_converter import (
+    CrossOverConverter,
+    ExpandConverter,
+    ShortenConverter,
+    SimilarConverter,
+    RephraseConverter,
+)
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
@@ -26,7 +31,6 @@ from pyrit.prompt_converter.random_capital_letters_converter import RandomCapita
 from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
 from pyrit.prompt_converter.rot13_converter import ROT13Converter
 from pyrit.prompt_converter.search_replace_converter import SearchReplaceConverter
-from pyrit.prompt_converter.shorten_converter import ShortenConverter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
 from pyrit.prompt_converter.tense_converter import TenseConverter
