@@ -438,7 +438,7 @@ def fetch_wmdp_dataset(category: str = None) -> QuestionAnsweringDataset:
     if not category:  # if category is not specified, read in all 3 subsets of data
         data_category = ["wmdp-cyber", "wmdp-bio", "wmdp-chem"]
     elif category not in ["cyber", "bio", "chem"]:
-        raise ValueError(f"Invalid Parameter: {category}. Expected \'cyber\', \'bio\', or \'chem\'")
+        raise ValueError(f"Invalid Parameter: {category}. Expected 'cyber', 'bio', or 'chem'")
     else:
         data_category = ["wmdp-" + category]
 
