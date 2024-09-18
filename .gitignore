@@ -125,6 +125,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+# env-operator and env-test, if you downloaded them as-is
+env-operator
+env-test
 
 # Spyder project settings
 .spyderproject
@@ -166,3 +169,6 @@ doc/generate_docs/cache/*
 
 # ignore all VSCode settings
 .vscode/*
+
+# Ignore DS_STORE files
+**/.DS_Store

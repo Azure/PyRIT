@@ -1,9 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
+from typing import Optional
 
 from openai import AsyncAzureOpenAI
 from openai.types.completion import Completion
@@ -12,8 +11,8 @@ from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credenti
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptResponse
-from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.models import PromptRequestResponse, construct_response_from_request
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +30,13 @@ class AzureOpenAICompletionTarget(PromptTarget):
         api_key: str = None,
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
-        api_version: str = "2023-05-15",
+        api_version: str = "2024-02-01",
         max_tokens: int = 1024,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
+        max_requests_per_minute: Optional[int] = None,
     ):
         """
         Class that initializes an Azure OpenAI completion target.
@@ -57,19 +57,22 @@ class AzureOpenAICompletionTarget(PromptTarget):
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
-                "2023-08-01-preview".
+                "2024-02-01".
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
                 randomness of the response. Defaults to 1.0.
-            top_p (int, optional): The top-p parameter for controlling the diversity of the
-                response. Defaults to 1.
+            top_p (float, optional): The top-p parameter for controlling the diversity of the
+                response. Defaults to 1.0.
             frequency_penalty (float, optional): The frequency penalty parameter for penalizing
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.5.
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
         """
-        super().__init__(memory=memory)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._max_tokens = max_tokens
         self._temperature = temperature
@@ -104,21 +107,13 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 azure_endpoint=endpoint,
             )
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Sends a normalized prompt to the prompt target and adds the request and response to memory
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.
         """
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -141,7 +136,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
             model=text_response.model,
             object=text_response.object,
         )
-        response_entry = self._memory.add_response_entries_to_memory(
+        response_entry = construct_response_from_request(
             request=request,
             response_text_pieces=[prompt_response.completion],
             prompt_metadata=prompt_response.to_json(),

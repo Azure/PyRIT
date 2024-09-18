@@ -1,19 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-# mypy: ignore-errors
-
 import uuid
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.types import Uuid  # type: ignore
+from sqlalchemy.orm import DeclarativeBase  # type: ignore
+from sqlalchemy.orm import Mapped  # type: ignore
 
 from pyrit.models import PromptRequestPiece, Score
 
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 class PromptMemoryEntry(Base):
@@ -25,7 +26,7 @@ class PromptMemoryEntry(Base):
     Attributes:
         __tablename__ (str): The name of the database table.
         __table_args__ (dict): Additional arguments for the database table.
-        id (UUID): The unique identifier for the memory entry.
+        id (Uuid): The unique identifier for the memory entry.
         role (PromptType): system, assistant, user
         conversation_id (str): The identifier for the conversation which is associated with a single target.
         sequence (int): The order of the conversation within a conversation_id.
@@ -52,23 +53,27 @@ class PromptMemoryEntry(Base):
 
     __tablename__ = "PromptMemoryEntries"
     __table_args__ = {"extend_existing": True}
-    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
-    role = Column(String, nullable=False)
+    id = Column(Uuid, nullable=False, primary_key=True)
+    role: Mapped[Literal["system", "user", "assistant"]] = Column(String, nullable=False)
     conversation_id = Column(String, nullable=False)
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
-    labels = Column(JSON)
+    labels: Mapped[dict[str, str]] = Column(JSON)
     prompt_metadata = Column(String, nullable=True)
-    converter_identifiers = Column(JSON)
-    prompt_target_identifier = Column(JSON)
-    orchestrator_identifier = Column(JSON)
-    response_error = Column(String, nullable=True)
+    converter_identifiers: Mapped[dict[str, str]] = Column(JSON)
+    prompt_target_identifier: Mapped[dict[str, str]] = Column(JSON)
+    orchestrator_identifier: Mapped[dict[str, str]] = Column(JSON)
+    response_error: Mapped[Literal["blocked", "none", "processing", "unknown"]] = Column(String, nullable=True)
 
-    original_value_data_type = Column(String, nullable=False)
+    original_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = Column(
+        String, nullable=False
+    )
     original_value = Column(String, nullable=False)
     original_value_sha256 = Column(String)
 
-    converted_value_data_type = Column(String, nullable=False)
+    converted_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = Column(
+        String, nullable=False
+    )
     converted_value = Column(String)
     converted_value_sha256 = Column(String)
 
@@ -126,7 +131,7 @@ class EmbeddingData(Base):  # type: ignore
     Each embedding is linked to a specific conversation entry via an id
 
     Attributes:
-        uuid (UUID): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.
+        uuid (Uuid): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.
         embedding (ARRAY(Float)): An array of floats representing the embedding vector.
         embedding_type_name (String): The name or type of the embedding, indicating the model or method used.
     """
@@ -134,8 +139,8 @@ class EmbeddingData(Base):  # type: ignore
     __tablename__ = "EmbeddingData"
     # Allows table redefinition if already defined.
     __table_args__ = {"extend_existing": True}
-    id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
-    embedding = Column(ARRAY(Float))
+    id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"), primary_key=True)
+    embedding = Column(ARRAY(Float).with_variant(JSON, "mssql"))  # type: ignore
     embedding_type_name = Column(String)
 
     def __str__(self):
@@ -151,16 +156,17 @@ class ScoreEntry(Base):  # type: ignore
     __tablename__ = "ScoreEntries"
     __table_args__ = {"extend_existing": True}
 
-    id = Column(UUID(as_uuid=True), nullable=False, primary_key=True)
+    id = Column(Uuid(as_uuid=True), nullable=False, primary_key=True)
     score_value = Column(String, nullable=False)
     score_value_description = Column(String, nullable=True)
-    score_type = Column(String, nullable=False)
+    score_type: Mapped[Literal["true_false", "float_scale"]] = Column(String, nullable=False)
     score_category = Column(String, nullable=False)
     score_rationale = Column(String, nullable=True)
     score_metadata = Column(String, nullable=True)
-    scorer_class_identifier = Column(JSON)
-    prompt_request_response_id = Column(UUID(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
-    date_time = Column(DateTime, nullable=False)
+    scorer_class_identifier: Mapped[dict[str, str]] = Column(JSON)
+    prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
+    timestamp = Column(DateTime, nullable=False)
+    task = Column(String, nullable=True)
 
     def __init__(self, *, entry: Score):
         self.id = entry.id
@@ -172,7 +178,8 @@ class ScoreEntry(Base):  # type: ignore
         self.score_metadata = entry.score_metadata
         self.scorer_class_identifier = entry.scorer_class_identifier
         self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
-        self.date_time = entry.date_time
+        self.timestamp = entry.timestamp
+        self.task = entry.task
 
     def get_score(self) -> Score:
         return Score(
@@ -185,7 +192,8 @@ class ScoreEntry(Base):  # type: ignore
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
             prompt_request_response_id=self.prompt_request_response_id,
-            date_time=self.date_time,
+            timestamp=self.timestamp,
+            task=self.task,
         )
 
 

@@ -1,19 +1,31 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: pyrit-311
+# ---
+
 # %% [markdown]
 # ### Introduction
 #
 # This notebook gives an introduction to the concept of `ChatMessage` and `ChatMessageNormalizer` and how it can be helpful as you start to work with different models.
 #
 #
-# The main format PyRIT works with is the `ChatMessage` paradigm. Any time a user wants to store or retrieve a chat message, they will use the `ChatMessage` object.
+# The main format PyRIT works with is the `PromptRequestPiece` paradigm. Any time a user wants to store or retrieve a chat message, they will use the `PromptRequestPiece` object. However, `ChatMessage` is very common, so there are a lot of times this is the most useful. Any `PromptRequestPiece` object can be translated into a `ChatMessage` object.
 #
 # However, different models may require different formats. For example, certain models may use chatml, or may not support system messages. This is handled
 # in from `ChatMessageNormalizer` and its subclasses.
 #
 # Below is an example that converts a list of chat messages to chatml format and back.
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from pyrit.models import ChatMessage
 from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 
@@ -30,7 +42,7 @@ chatml_messages = normalizer.normalize(messages)
 print(chatml_messages)
 
 # %% [markdown]
-
+#
 # If you wish you load a chatml-format conversation, you can use the `from_chatml` method in the `ChatMessageNormalizerChatML`. This will return a list of `ChatMessage` objects that you can then use.
 
 # %%
@@ -48,7 +60,7 @@ chat_messages = normalizer.from_chatml(
 print(chat_messages)
 
 # %% [markdown]
-# To see how to use this in action, check out the [aml endpoint](./aml_endpoints.ipynb) notebook. It takes a `chat_message_normalizer` parameter so that an AML model can support various chat message formats.
+# To see how to use this in action, check out the [aml endpoint](../targets/4_non_open_ai_chat_targets.ipynb) notebook. It takes a `chat_message_normalizer` parameter so that an AML model can support various chat message formats.
 
 # %% [markdown]
 # Besides chatml, there are many other chat templates that a model might be trained on. If you would like to apply the template stored in a Hugging Face tokenizer,

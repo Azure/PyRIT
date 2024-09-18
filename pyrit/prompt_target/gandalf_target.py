@@ -1,15 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import enum
+import json
 import logging
+from typing import Optional
 
 from pyrit.common import net_utility
-from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.prompt_target import PromptTarget
+from pyrit.models import construct_response_from_request
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 
 logger = logging.getLogger(__name__)
@@ -35,30 +36,23 @@ class GandalfTarget(PromptTarget):
         *,
         level: GandalfLevel,
         memory: MemoryInterface = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        self._memory = memory if memory else DuckDBMemory()
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._endpoint = "https://gandalf.lakera.ai/api/send-message"
         self._defender = level.value
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
         response = await self._complete_text_async(request.converted_value)
 
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[response])
+        response_entry = construct_response_from_request(request=request, response_text_pieces=[response])
 
         return response_entry
 
@@ -103,5 +97,7 @@ class GandalfTarget(PromptTarget):
         if not resp.text:
             raise ValueError("The chat returned an empty response.")
 
-        logger.info(f'Received the following response from the prompt target "{resp.text}"')
-        return resp.text
+        answer = json.loads(resp.text)["answer"]
+
+        logger.info(f'Received the following response from the prompt target "{answer}"')
+        return answer

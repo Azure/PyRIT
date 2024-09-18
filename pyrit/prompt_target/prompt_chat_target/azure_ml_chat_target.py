@@ -1,14 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import asyncio
-import concurrent.futures
+
 import logging
+from httpx import HTTPStatusError
+from typing import Optional
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
+from pyrit.exceptions import EmptyResponseException, RateLimitException
+from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestResponse
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.models import construct_response_from_request
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +31,9 @@ class AzureMLChatTarget(PromptChatTarget):
         memory: MemoryInterface = None,
         max_tokens: int = 400,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         repetition_penalty: float = 1.2,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Initializes an instance of the AzureMLChatTarget class.
@@ -46,12 +51,15 @@ class AzureMLChatTarget(PromptChatTarget):
                 Defaults to 400.
             temperature (float, optional): The temperature for generating diverse responses.
                 Defaults to 1.0.
-            top_p (int, optional): The top-p value for generating diverse responses.
-                Defaults to 1.
+            top_p (float, optional): The top-p value for generating diverse responses.
+                Defaults to 1.0.
             repetition_penalty (float, optional): The repetition penalty for generating diverse responses.
                 Defaults to 1.2.
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory)
+        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self.endpoint_uri: str = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri
@@ -66,13 +74,7 @@ class AzureMLChatTarget(PromptChatTarget):
         self._top_p = top_p
         self._repetition_penalty = repetition_penalty
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)
@@ -81,32 +83,43 @@ class AzureMLChatTarget(PromptChatTarget):
         messages = self._memory.get_chat_messages_with_conversation_id(conversation_id=request.conversation_id)
 
         messages.append(request.to_chat_message())
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        resp_text = await self._complete_chat_async(
-            messages=messages,
-            temperature=self._temperature,
-            top_p=self._top_p,
-            repetition_penalty=self._repetition_penalty,
+        try:
+            resp_text = await self._complete_chat_async(
+                messages=messages,
+                temperature=self._temperature,
+                top_p=self._top_p,
+                repetition_penalty=self._repetition_penalty,
+            )
+
+            if not resp_text:
+                raise EmptyResponseException(message="The chat returned an empty response.")
+
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
+        except HTTPStatusError as hse:
+            if hse.response.status_code == 400:
+                # Handle Bad Request
+                response_entry = handle_bad_request_exception(response_text=hse.response.text, request=request)
+            elif hse.response.status_code == 429:
+                raise RateLimitException()
+            else:
+                raise hse
+
+        logger.info(
+            "Received the following response from the prompt target"
+            + f"{response_entry.request_pieces[0].converted_value}"
         )
-
-        if not resp_text:
-            raise ValueError("The chat returned an empty response.")
-
-        logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp_text])
-
         return response_entry
 
+    @pyrit_target_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessage],
         max_tokens: int = 400,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         repetition_penalty: float = 1.2,
     ) -> str:
         """
@@ -119,7 +132,7 @@ class AzureMLChatTarget(PromptChatTarget):
             max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
             temperature (float, optional): Controls randomness in the response generation. Defaults to 1.0.
                 1 is more random, 0 is less.
-            top_p (int, optional): Controls diversity of the response generation. Defaults to 1.
+            top_p (float, optional): Controls diversity of the response generation. Defaults to 1.0.
                 1 is more random, 0 is less.
             repetition_penalty (float, optional): Controls repetition in the response generation.
                 Defaults to 1.2.
@@ -136,6 +149,7 @@ class AzureMLChatTarget(PromptChatTarget):
         response = await net_utility.make_request_and_raise_if_error_async(
             endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
         )
+
         return response.json()["output"]
 
     def _construct_http_body(
@@ -143,7 +157,7 @@ class AzureMLChatTarget(PromptChatTarget):
         messages: list[ChatMessage],
         max_tokens: int,
         temperature: float,
-        top_p: int,
+        top_p: float,
         repetition_penalty: float,
     ) -> dict:
         """Constructs the HTTP request body for the AML online endpoint."""

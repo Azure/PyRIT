@@ -3,19 +3,15 @@
 import json
 import logging
 import pathlib
-import concurrent.futures
-import asyncio
-from typing import Literal, Optional, Dict, Any
 
+from typing import Literal, Optional, Dict, Any
 from openai import BadRequestError
 
 from pyrit.common.path import RESULTS_PATH
+from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestResponse, data_serializer_factory
-from pyrit.models.literals import PromptDataType
-from pyrit.models.prompt_request_piece import PromptRequestPiece, PromptResponseError
-from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAIChatTarget
+from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
+from pyrit.prompt_target import AzureOpenAITextChatTarget, PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +39,9 @@ class DALLETarget(PromptTarget):
         headers (dict, optional): Headers of the endpoint.
         quality (str, optional): picture quality. Defaults to standard
         style (str, optional): image style. Defaults to natural
+        max_requests_per_minute (int, optional): Number of requests the target can handle per
+            minute before hitting a rate limit. The number of requests sent to the target
+            will be capped at the value provided.
     """
 
     def __init__(
@@ -60,9 +59,10 @@ class DALLETarget(PromptTarget):
         headers: Optional[dict[str, str]] = None,
         quality: Literal["standard", "hd"] = "standard",
         style: Literal["natural", "vivid"] = "natural",
+        max_requests_per_minute: Optional[int] = None,
     ):
 
-        super().__init__(memory=memory)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         # make sure number of images and headers are allowed by Dall-e version
         self.dalle_version = dalle_version
@@ -91,19 +91,9 @@ class DALLETarget(PromptTarget):
             target_kwargs["use_aad_auth"] = True
         else:
             target_kwargs["api_key"] = api_key
-        self._image_target = AzureOpenAIChatTarget(**target_kwargs)
+        self._image_target = AzureOpenAITextChatTarget(**target_kwargs)
 
-    def send_prompt(
-        self,
-        *,
-        prompt_request: PromptRequestResponse,
-    ) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
+    @limit_requests_per_minute
     async def send_prompt_async(
         self,
         *,
@@ -118,12 +108,8 @@ class DALLETarget(PromptTarget):
 
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
+        prompt = request.converted_value
 
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        return await self._generate_images_async(prompt=request.converted_value, request=request)
-
-    async def _generate_images_async(self, prompt: str, request=PromptRequestPiece) -> PromptRequestResponse:
         image_generation_args: Dict[str, Any] = {
             "model": self.deployment_name,
             "prompt": prompt,
@@ -136,42 +122,47 @@ class DALLETarget(PromptTarget):
             image_generation_args["style"] = self.style
 
         try:
-            response = await self._image_target._async_client.images.generate(**image_generation_args)
-            json_response = json.loads(response.model_dump_json())
-
+            b64_data = await self._generate_image_response_async(image_generation_args)
             data = data_serializer_factory(data_type="image_path")
-            b64_data = json_response["data"][0]["b64_json"]
             data.save_b64_image(data=b64_data)
-            prompt_text = data.value
-            error: PromptResponseError = "none"
+            resp_text = data.value
             response_type: PromptDataType = "image_path"
 
-        except BadRequestError as e:
-            json_response = {"exception type": "Blocked", "data": ""}
-            json_response["error"] = e.body
-            prompt_text = "content blocked"
-            error = "blocked"
-            response_type = "text"
+            response_entry = construct_response_from_request(
+                request=request, response_text_pieces=[resp_text], response_type=response_type
+            )
 
-        except json.JSONDecodeError as e:
-            json_response = {"error": e, "exception type": "JSON Error"}
-            prompt_text = "JSON Error"
-            error = "processing"
-            response_type = "text"
+        except BadRequestError as bre:
+            response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
 
-        except Exception as e:
-            json_response = {"error": e, "exception type": "exception"}
-            prompt_text = "target error"
-            error = "unknown"
-            response_type = "text"
+        return response_entry
 
-        return self._memory.add_response_entries_to_memory(
-            request=request,
-            response_text_pieces=[prompt_text],
-            response_type=response_type,
-            prompt_metadata=json.dumps(json_response),
-            error=error,
-        )
+    @pyrit_target_retry
+    async def _generate_image_response_async(self, image_generation_args):
+        """
+        Asynchronously generates an image using the provided generation arguments.
+
+        Retries the function if it raises RateLimitError (HTTP 429) or EmptyResponseException,
+        with a wait time between retries that follows an exponential backoff strategy.
+        Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+        Args:
+            image_generation_args (dict): The arguments required for image generation.
+
+        Returns:
+            The generated image  in base64 format.
+
+        Raises:
+            RateLimitError: If the rate limit is exceeded and the maximum number of retries is exhausted.
+            EmptyResponseException: If the response is empty after exhausting the maximum number of retries.
+        """
+        result = await self._image_target._async_client.images.generate(**image_generation_args)
+        json_response = json.loads(result.model_dump_json())
+        b64_data = json_response["data"][0]["b64_json"]
+        # Handle empty response using retry
+        if not b64_data:
+            raise EmptyResponseException(message="The chat returned an empty response.")
+        return b64_data
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:

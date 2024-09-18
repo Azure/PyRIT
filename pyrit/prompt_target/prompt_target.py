@@ -3,10 +3,11 @@
 
 import abc
 import logging
+from typing import Optional
 
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestResponse
-from pyrit.models.identifiers import Identifier
+from pyrit.models import PromptRequestResponse, Identifier
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,18 +21,15 @@ class PromptTarget(abc.ABC, Identifier):
     """
     supported_converters: list
 
-    def __init__(self, memory: MemoryInterface, verbose: bool = False) -> None:
+    def __init__(
+        self, memory: MemoryInterface, verbose: bool = False, max_requests_per_minute: Optional[int] = None
+    ) -> None:
         self._memory = memory if memory else DuckDBMemory()
         self._verbose = verbose
+        self._max_requests_per_minute = max_requests_per_minute
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
-
-    @abc.abstractmethod
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Sends a normalized prompt to the prompt target and adds the request and response to memory
-        """
 
     @abc.abstractmethod
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:

@@ -11,10 +11,10 @@ from unittest.mock import MagicMock
 
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 
 
-from pyrit.models.score import Score
+from pyrit.models import Score
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.substring_scorer import SubStringScorer
 from tests.mocks import get_image_request_piece, get_memory_interface

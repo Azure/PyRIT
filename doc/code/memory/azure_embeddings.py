@@ -1,12 +1,24 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: pyrit-311
+# ---
+
 # %% [markdown]
 # ## Azure OpenAI Embeddings
 #
-# Similarly to the [Azure OpenAI Completions](./azure_completions.ipynb) endpoint, PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
+# Similar to the [Azure OpenAI Completions](../targets/azure_completions.ipynb) endpoint, PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
 
 # %%
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from pprint import pprint
 
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding

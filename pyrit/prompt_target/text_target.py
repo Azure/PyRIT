@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import csv
 import json
 from pathlib import Path
@@ -10,8 +9,7 @@ import sys
 from typing import IO
 
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 
 
@@ -24,24 +22,23 @@ class TextTarget(PromptTarget):
     but enter them manually.
     """
 
-    def __init__(self, *, text_stream: IO[str] = sys.stdout, memory: MemoryInterface = None) -> None:
+    def __init__(
+        self,
+        *,
+        text_stream: IO[str] = sys.stdout,
+        memory: MemoryInterface = None,
+    ) -> None:
         super().__init__(memory=memory)
-        self.stream_name = text_stream.name
         self._text_stream = text_stream
-
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-
-        self._text_stream.write(f"{str(prompt_request)}\n")
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        return prompt_request
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)
-        await asyncio.sleep(0)
 
-        return self.send_prompt(prompt_request=prompt_request)
+        self._text_stream.write(f"{str(prompt_request)}\n")
+        self._text_stream.flush()
+
+        return None
 
     def import_scores_from_csv(self, csv_file_path: Path) -> list[PromptRequestPiece]:
 

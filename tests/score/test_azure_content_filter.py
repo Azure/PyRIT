@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 from tests.mocks import get_audio_request_piece, get_image_request_piece, get_test_request_piece
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 from azure.ai.contentsafety.models import TextCategory
 
@@ -107,9 +107,9 @@ async def test_azure_content_filter_scorer_score():
 
 def test_azure_content_default_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar")
-    assert len(scorer._harm_categories) == 4
+    assert len(scorer._score_categories) == 4
 
 
 def test_azure_content_explicit_category():
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    assert len(scorer._harm_categories) == 1
+    assert len(scorer._score_categories) == 1

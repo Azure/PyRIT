@@ -4,10 +4,9 @@
 import logging
 from typing import Optional, Union, Dict, Any
 from uuid import uuid4
-from PIL import Image
 from colorama import Fore, Style
 
-from pyrit.common.notebook_utils import is_in_ipython_session
+from pyrit.common.display_response import display_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
@@ -61,7 +60,10 @@ class RedTeamingOrchestrator(Orchestrator):
                 to satisfy the objective that is specified in the attack_strategy.
             use_score_as_feedback: Whether to use the score as feedback to the red teaming chat.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
-            memory_labels: The labels to use for the memory. This is useful to identify the messages in the memory.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
         """
 
@@ -152,32 +154,21 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return score
 
-    def _display_response(self, response_piece: PromptRequestPiece) -> None:
-        # If running in notebook environment, display the image.
-        if (
-            response_piece.response_error == "none"
-            and response_piece.converted_value_data_type == "image_path"
-            and is_in_ipython_session()
-        ):
-            with open(response_piece.converted_value, "rb") as f:
-                img = Image.open(f)
-                # Jupyter built-in display function only works in notebooks.
-                display(img)  # type: ignore # noqa: F821
-        if response_piece.response_error == "blocked":
-            logger.info("---\nContent blocked, cannot show a response.\n---")
-
     async def send_prompt_async(
-        self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False
+        self,
+        *,
+        prompt: Optional[str] = None,
+        feedback: Optional[str] = None,
     ) -> PromptRequestPiece:
         """
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
         Args:
-            prompt: The prompt to send to the target.
+            prompt (str, optional): The prompt to send to the target.
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
                 This can only be specified for the first iteration at this point.
-            feedback: feedback from a previous iteration of send_prompt_async.
+            feedback (str, optional): feedback from a previous iteration of send_prompt_async.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
                 The feedback is passed back to the red teaming chat to improve the next prompt.
@@ -199,8 +190,8 @@ class RedTeamingOrchestrator(Orchestrator):
             prompt = await self._get_prompt_from_red_teaming_target(feedback=feedback)
 
         target_prompt_obj = NormalizerRequestPiece(
-            prompt_converters=self._prompt_converters,
-            prompt_text=prompt,
+            request_converters=self._prompt_converters,
+            prompt_value=prompt,
             prompt_data_type="text",
         )
 
@@ -236,7 +227,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                self._display_response(message)
+                display_response(message)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
             if scores and len(scores) > 0:
@@ -296,7 +287,7 @@ class RedTeamingOrchestrator(Orchestrator):
             logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
             return self._initial_red_teaming_prompt
 
-        if last_response_from_attack_target.converted_value_data_type == "text":
+        if last_response_from_attack_target.converted_value_data_type in ["text", "error"]:
             return self._handle_text_response(last_response_from_attack_target, feedback)
 
         return self._handle_file_response(last_response_from_attack_target, feedback)
@@ -314,8 +305,9 @@ class RedTeamingOrchestrator(Orchestrator):
 
         response_text = (
             (
-                await self._red_teaming_chat.send_chat_prompt_async(
-                    prompt=prompt_text,
+                await self._prompt_normalizer.send_prompt_async(
+                    normalizer_request=self._create_normalizer_request(prompt_text=prompt_text),
+                    target=self._red_teaming_chat,
                     conversation_id=self._red_teaming_chat_conversation_id,
                     orchestrator_identifier=self.get_identifier(),
                     labels=self._global_memory_labels,

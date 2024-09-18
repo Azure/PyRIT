@@ -1,12 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from httpx import HTTPStatusError
+from openai import RateLimitError
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
 
 import pytest
 
+from pyrit.common import net_utility
+from pyrit.exceptions import RateLimitException
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import AzureTTSTarget
 
@@ -109,23 +113,63 @@ async def test_tts_send_prompt_file_save_async(
         os.remove(file_path)
 
 
-@pytest.mark.asyncio
-async def test_tts_send_prompt_adds_memory_async(sample_conversations: list[PromptRequestPiece]) -> None:
+testdata = [(400, "Bad Request", HTTPStatusError), (429, "Rate Limit Reached", RateLimitException)]
 
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status_code, error_text, exception_class", testdata)
+async def test_tts_send_prompt_async_exception_adds_to_memory(
+    tts_target: AzureTTSTarget,
+    sample_conversations: list[PromptRequestPiece],
+    status_code: int,
+    error_text: str,
+    exception_class: type[BaseException],
+):
     mock_memory = MagicMock()
-    tts_target = AzureTTSTarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+    mock_memory.add_response_entries_to_memory = AsyncMock()
+
+    tts_target._memory = mock_memory
+
+    response = MagicMock()
+    response.status_code = status_code
+    response.text = error_text
+    mock_response_async = AsyncMock(
+        side_effect=HTTPStatusError(message=response.text, request=MagicMock(), response=response)
+    )
+
+    setattr(net_utility, "make_request_and_raise_if_error_async", mock_response_async)
 
     request_piece = sample_conversations[0]
     request_piece.conversation_id = str(uuid.uuid4())
     request = PromptRequestResponse(request_pieces=[request_piece])
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        return_value = MagicMock()
-        return_value.content = b"audio data"
-        mock_request.return_value = return_value
 
+    with pytest.raises((exception_class)) as exc:
         await tts_target.send_prompt_async(prompt_request=request)
+        tts_target._memory.get_conversation.assert_called_once_with(conversation_id=request_piece.conversation_id)
 
-        assert mock_memory.add_request_response_to_memory.called, "Request and Response need to be added to memory"
-        assert mock_memory.add_response_entries_to_memory.called, "Request and Response need to be added to memory"
+        tts_target._memory.add_request_response_to_memory.assert_called_once_with(request=request)
+        tts_target._memory.add_response_entries_to_memory.assert_called_once()
+
+        assert response.text in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_tts_send_prompt_async_rate_limit_exception_retries(
+    tts_target: AzureTTSTarget, sample_conversations: list[PromptRequestPiece]
+):
+    response = MagicMock()
+    response.status_code = 429
+    response.text = "Rate Limit Reached"
+    mock_response_async = AsyncMock(
+        side_effect=RateLimitError(message=response.text, response=response, body="Rate limit reached")
+    )
+
+    setattr(net_utility, "make_request_and_raise_if_error_async", mock_response_async)
+    request_piece = sample_conversations[0]
+    request = PromptRequestResponse(request_pieces=[request_piece])
+
+    with pytest.raises(RateLimitError):
+        await tts_target.send_prompt_async(prompt_request=request)
+        assert mock_response_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")

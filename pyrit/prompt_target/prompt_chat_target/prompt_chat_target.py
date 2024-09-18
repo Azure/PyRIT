@@ -9,8 +9,8 @@ from pyrit.prompt_target import PromptTarget
 
 class PromptChatTarget(PromptTarget):
 
-    def __init__(self, *, memory: MemoryInterface) -> None:
-        super().__init__(memory=memory)
+    def __init__(self, *, memory: MemoryInterface, max_requests_per_minute: Optional[int] = None) -> None:
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
     def set_system_prompt(
         self,
@@ -39,34 +39,6 @@ class PromptChatTarget(PromptTarget):
                 labels=labels,
             ).to_prompt_request_response()
         )
-
-    def send_chat_prompt(
-        self,
-        *,
-        prompt: str,
-        conversation_id: str,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
-        labels: Optional[dict[str, str]] = None,
-    ) -> PromptRequestResponse:
-        """
-        Sends a text prompt to the target without having to build the prompt request.
-        """
-
-        request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    conversation_id=conversation_id,
-                    original_value=prompt,
-                    converted_value=prompt,
-                    prompt_target_identifier=self.get_identifier(),
-                    orchestrator_identifier=orchestrator_identifier,
-                    labels=labels,
-                )
-            ]
-        )
-
-        return self.send_prompt(prompt_request=request)
 
     async def send_chat_prompt_async(
         self,

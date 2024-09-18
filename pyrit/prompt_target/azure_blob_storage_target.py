@@ -1,9 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
+from typing import Optional
 
 from azure.core.exceptions import ClientAuthenticationError
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
@@ -13,7 +12,9 @@ from enum import Enum
 from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.prompt_target import PromptTarget
+from pyrit.models import construct_response_from_request
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.auth import AzureStorageAuth
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +35,14 @@ class AzureBlobStorageTarget(PromptTarget):
 
     Args:
         container_url (str): URL to the Azure Blob Storage Container.
-        sas_token (str): Blob SAS token required to authenticate blob operations.
+        sas_token (optional[str]): Optional Blob SAS token needed to authenticate blob operations. If not provided, a
+            delegation SAS token will be created using Entra ID authentication.
         blob_content_type (SupportedContentType): Expected Content Type of the blob, chosen from the
             SupportedContentType enum. Set to PLAIN_TEXT by default.
         memory (str): MemoryInterface to use for the class. FileMemory by default.
+        max_requests_per_minute (int, optional): Number of requests the target can handle per
+            minute before hitting a rate limit. The number of requests sent to the target
+            will be capped at the value provided.
     """
 
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"
@@ -46,10 +51,11 @@ class AzureBlobStorageTarget(PromptTarget):
     def __init__(
         self,
         *,
-        container_url: str | None = None,
-        sas_token: str | None = None,
+        container_url: Optional[str] = None,
+        sas_token: Optional[str] = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
-        memory: MemoryInterface | None = None,
+        memory: Optional[MemoryInterface] = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
 
         self._blob_content_type: str = blob_content_type.value
@@ -58,23 +64,28 @@ class AzureBlobStorageTarget(PromptTarget):
             env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
         )
 
-        self._sas_token: str = default_values.get_required_value(
-            env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
-        )
+        self._sas_token = sas_token
+        self._client_async: AsyncContainerClient = None
+
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
+
+    async def _create_container_client_async(self):
+        """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
+        AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
+        for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""
+        try:
+            sas_token: str = default_values.get_required_value(
+                env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=self._sas_token
+            )
+            logger.info("Using SAS token from environment variable or passed parameter.")
+        except ValueError:
+            logger.info("SAS token not provided. Creating a delegation SAS token using Entra ID authentication.")
+            sas_token = await AzureStorageAuth.get_sas_token(self._container_url)
 
         self._client_async = AsyncContainerClient.from_container_url(
             container_url=self._container_url,
-            credential=self._sas_token,
+            credential=sas_token,
         )
-
-        super().__init__(memory=memory)
-
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
 
     async def _upload_blob_async(self, file_name: str, data: bytes, content_type: str) -> None:
         """
@@ -89,6 +100,9 @@ class AzureBlobStorageTarget(PromptTarget):
         content_settings = ContentSettings(content_type=f"{content_type}")
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
+        if not self._client_async:
+            await self._create_container_client_async()
+
         try:
             await self._client_async.upload_blob(
                 name=file_name,
@@ -97,16 +111,19 @@ class AzureBlobStorageTarget(PromptTarget):
                 overwrite=True,
             )
         except Exception as exc:
-            if type(exc) is ClientAuthenticationError:
+            if isinstance(exc, ClientAuthenticationError):
                 logger.exception(
-                    msg="Authentication failed. Verify the container's existence in the Azure Storage Account and "
-                    + "the validity of the provided SAS token."
+                    msg="Authentication failed. Please check that the container existence in the "
+                    + "Azure Storage Account and ensure the validity of the provided SAS token. If you "
+                    + "haven't set the SAS token as an environment variable use `az login` to "
+                    + "enable delegation-based SAS authentication to connect to the storage account"
                 )
                 raise
             else:
                 logger.exception(msg=f"An unexpected error occurred: {exc}")
                 raise
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         (Async) Sends prompt to target, which creates a file and uploads it as a blob
@@ -127,14 +144,13 @@ class AzureBlobStorageTarget(PromptTarget):
         data = str.encode(request.converted_value)
         blob_url = self._container_url + "/" + file_name
 
-        request.converted_value = blob_url
-        request.converted_value_data_type = "url"
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
         await self._upload_blob_async(file_name=file_name, data=data, content_type=self._blob_content_type)
 
-        return PromptRequestResponse([request])
+        response = construct_response_from_request(
+            request=request, response_text_pieces=[blob_url], response_type="url"
+        )
+
+        return response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         if len(prompt_request.request_pieces) != 1:

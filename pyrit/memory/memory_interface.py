@@ -2,20 +2,23 @@
 # Licensed under the MIT license.
 
 import abc
+import copy
 from pathlib import Path
+from typing import MutableSequence, Optional, Sequence
+import uuid
 
-from typing import Optional
-from uuid import uuid4
+from pyrit.common.path import RESULTS_PATH
+from pyrit.models import (
+    ChatMessage,
+    PromptRequestResponse,
+    Score,
+    PromptRequestPiece,
+    group_conversation_request_pieces_by_sequence,
+)
 
 from pyrit.memory.memory_models import EmbeddingData
-from pyrit.models import PromptRequestResponse, Score, PromptRequestPiece, PromptResponseError, PromptDataType
-
-from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.memory.memory_embedding import MemoryEmbedding
+from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.models import ChatMessage
-from pyrit.common.path import RESULTS_PATH
-from pyrit.models import group_conversation_request_pieces_by_sequence
 
 
 class MemoryInterface(abc.ABC):
@@ -42,19 +45,19 @@ class MemoryInterface(abc.ABC):
         self.memory_embedding = None
 
     @abc.abstractmethod
-    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
+    def get_all_prompt_pieces(self) -> Sequence[PromptRequestPiece]:
         """
         Loads all ConversationData from the memory storage handler.
         """
 
     @abc.abstractmethod
-    def get_all_embeddings(self) -> list[EmbeddingData]:
+    def get_all_embeddings(self) -> Sequence[EmbeddingData]:
         """
         Loads all EmbeddingData from the memory storage handler.
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> MutableSequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
 
@@ -62,11 +65,11 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[PromptRequestPiece]: A list of chat memory entries with the specified conversation ID.
+            MutableSequence[PromptRequestPiece]: A list of chat memory entries with the specified conversation ID.
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -75,11 +78,11 @@ class MemoryInterface(abc.ABC):
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
+            Sequence[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
         """
 
     @abc.abstractmethod
-    def add_request_pieces_to_memory(self, *, request_pieces: list[PromptRequestPiece]) -> None:
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
         """
@@ -102,7 +105,24 @@ class MemoryInterface(abc.ABC):
         Gets a list of scores based on prompt_request_response_ids.
         """
 
-    def get_conversation(self, *, conversation_id: str) -> list[PromptRequestResponse]:
+    def get_scores_by_orchestrator_id(self, *, orchestrator_id: str) -> list[Score]:
+        """
+        Retrieves a list of Score objects associated with the PromptRequestPiece objects
+        which have the specified orchestrator ID.
+
+        Args:
+            orchestrator_id (str): The id of the orchestrator.
+                Can be retrieved by calling orchestrator.get_identifier()["id"]
+
+        Returns:
+            list[Score]: A list of Score objects associated with the PromptRequestPiece objects
+                which match the specified orchestrator ID.
+        """
+
+        prompt_ids = self.get_prompt_ids_by_orchestrator(orchestrator_id=orchestrator_id)
+        return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
+
+    def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
         """
         Retrieves a list of PromptRequestResponse objects that have the specified conversation ID.
 
@@ -110,13 +130,13 @@ class MemoryInterface(abc.ABC):
             conversation_id (str): The conversation ID to match.
 
         Returns:
-            list[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
+            MutableSequence[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
         """
         request_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
     @abc.abstractmethod
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
+    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
 
@@ -124,15 +144,15 @@ class MemoryInterface(abc.ABC):
             prompt_ids (list[int]): The prompt IDs to match.
 
         Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
+            Sequence[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
 
-    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: int) -> list[PromptRequestPiece]:
+    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
         Args:
-            orchestrator_id (int): The orchestrator ID to match.
+            orchestrator_id (str): The orchestrator ID to match.
 
         Returns:
             list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
@@ -141,13 +161,32 @@ class MemoryInterface(abc.ABC):
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
-    def duplicate_conversation_for_new_orchestrator(
-        self,
-        *,
-        new_orchestrator_id: str,
-        conversation_id: str,
-        new_conversation_id: Optional[str] = None,
-    ) -> None:
+    def get_prompt_request_piece_by_memory_labels(
+        self, *, memory_labels: dict[str, str] = {}
+    ) -> list[PromptRequestPiece]:
+        """
+        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
+        """
+
+    def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: str) -> list[str]:
+        prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+
+        prompt_ids = []
+        for piece in prompt_pieces:
+            prompt_ids.append(str(piece.id))
+
+        return prompt_ids
+
+    def duplicate_conversation_for_new_orchestrator(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
         """
         Duplicates a conversation from one orchestrator to another.
 
@@ -158,24 +197,74 @@ class MemoryInterface(abc.ABC):
         Args:
             new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
             conversation_id (str): The conversation ID with existing conversations.
-            new_conversation_id (str): The new conversation ID to assign to the duplicated conversations.
-                If no new_conversation_id is provided, a new one will be generated.
+        Returns:
+            The uuid for the new conversation.
         """
-        new_conversation_id = new_conversation_id or str(uuid4())
-        if conversation_id == new_conversation_id:
-            raise ValueError("The new conversation ID must be different from the existing conversation ID.")
-        prompt_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        new_conversation_id = str(uuid.uuid4())
+        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
+        prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
         for piece in prompt_pieces:
-            piece.id = uuid4()
+            piece.id = uuid.uuid4()
             if piece.orchestrator_identifier["id"] == new_orchestrator_id:
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
             piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+        return new_conversation_id
+
+    def duplicate_conversation_excluding_last_turn(
+        self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None
+    ) -> str:
+        """
+        Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
+        user request (e.g. if there is half a turn, it just removes that half).
+
+        This can be useful when an attack strategy requires back tracking the last prompt/response pair.
+
+        Args:
+            conversation_id (str): The conversation ID with existing conversations.
+            new_orchestrator_id (str, optional): The new orchestrator ID to assign to the duplicated conversations.
+                If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
+        Returns:
+            The uuid for the new conversation.
+        """
+        new_conversation_id = str(uuid.uuid4())
+
+        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
+        prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
+
+        # remove the final turn from the conversation
+        if len(prompt_pieces) == 0:
+            return new_conversation_id
+
+        last_prompt = max(prompt_pieces, key=lambda x: x.sequence)
+
+        length_of_sequence_to_remove = 0
+
+        if last_prompt.role == "system" or last_prompt.role == "user":
+            length_of_sequence_to_remove = 1
+        else:
+            length_of_sequence_to_remove = 2
+
+        prompt_pieces = [
+            prompt_piece
+            for prompt_piece in prompt_pieces
+            if prompt_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
+        ]
+
+        for piece in prompt_pieces:
+            piece.id = uuid.uuid4()
+            if new_orchestrator_id:
+                piece.orchestrator_identifier["id"] = new_orchestrator_id
+            piece.conversation_id = new_conversation_id
+
+        self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
+
+        return new_conversation_id
 
     def export_conversation_by_orchestrator_id(
-        self, *, orchestrator_id: int, file_path: Path = None, export_type: str = "json"
+        self, *, orchestrator_id: str, file_path: Path = None, export_type: str = "json"
     ):
         """
         Exports conversation data with the given orchestrator ID to a specified file.
@@ -244,53 +333,6 @@ class MemoryInterface(abc.ABC):
 
         for piece in request_pieces:
             piece.sequence = sequence
-
-    def add_response_entries_to_memory(
-        self,
-        *,
-        request: PromptRequestPiece,
-        response_text_pieces: list[str],
-        response_type: PromptDataType = "text",
-        prompt_metadata: str = None,
-        error: PromptResponseError = "none",
-    ) -> PromptRequestResponse:
-        """
-        Adds response entries to the memory.
-
-        This is a convenience function that ultimately calls add_request_response_to_memory
-        but sets values appropriately.
-
-        Args:
-            request (PromptRequestPiece): The original prompt request.
-            response_text_pieces (list[str]): List of response text pieces.
-            response_type (PromptDataType, optional): The data type of the response. Defaults to "text".
-            prompt_metadata (str, optional): Additional metadata for the prompt. Defaults to None.
-            error (PromptResponseError, optional): The error type of the response. Defaults to "none".
-
-        Returns:
-            PromptRequestResponse: The response containing the updated request pieces.
-        """
-        constructed_request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="assistant",
-                    original_value=resp_text,
-                    converted_value=resp_text,
-                    conversation_id=request.conversation_id,
-                    labels=request.labels,
-                    prompt_target_identifier=request.prompt_target_identifier,
-                    orchestrator_identifier=request.orchestrator_identifier,
-                    original_value_data_type=response_type,
-                    converted_value_data_type=response_type,
-                    prompt_metadata=prompt_metadata,
-                    response_error=error,
-                )
-                for resp_text in response_text_pieces
-            ]
-        )
-
-        self.add_request_response_to_memory(request=constructed_request)
-        return constructed_request
 
     @abc.abstractmethod
     def dispose_engine(self):

@@ -1,15 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 from tests.mocks import get_memory_interface
@@ -21,7 +23,7 @@ def scorer_true_false_response() -> PromptRequestResponse:
     json_response = (
         dedent(
             """
-        {"value": "True", "description": "This is true", "rationale": "rationale for true"}
+        {"score_value": "True", "description": "This is true", "rationale": "rationale for true"}
         """
         )
         .strip()
@@ -44,8 +46,7 @@ async def test_true_false_scorer_score(memory: MemoryInterface, scorer_true_fals
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
     scorer = SelfAskTrueFalseScorer(
-        chat_target=chat_target,
-        true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
     )
 
     score = await scorer.score_text_async("true false")
@@ -57,17 +58,23 @@ async def test_true_false_scorer_score(memory: MemoryInterface, scorer_true_fals
     assert score[0].scorer_class_identifier["__type__"] == "SelfAskTrueFalseScorer"
 
 
-def test_true_false_scorer_set_system_prompt(memory: MemoryInterface):
+@pytest.mark.asyncio
+async def test_true_false_scorer_set_system_prompt(
+    memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse
+):
     chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
     scorer = SelfAskTrueFalseScorer(
         chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
     )
 
+    await scorer.score_text_async("true false")
+
     chat_target.set_system_prompt.assert_called_once()
 
     # assert that the category content was loaded into system prompt
-    assert "# Value" in scorer._system_prompt
+    assert "# Instructions" in scorer._system_prompt
     assert "Semantic Alignment:" in scorer._system_prompt
 
 
@@ -84,3 +91,53 @@ async def test_true_false_scorer_adds_to_memory(scorer_true_false_response: Prom
     await scorer.score_text_async(text="string")
 
     memory.add_scores_to_memory.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_self_ask_scorer_bad_json_exception_retries(memory: MemoryInterface):
+
+    chat_target = MagicMock()
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
+    )
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskTrueFalseScorer(
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+
+    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
+
+
+@pytest.mark.asyncio
+async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: MemoryInterface):
+    chat_target = MagicMock()
+
+    json_response = (
+        dedent(
+            """
+            {"badly_named_value": "True", "rationale": "rationale for true"}
+            """
+        )
+        .strip()
+        .replace("\n", " ")
+    )
+
+    bad_json_resp = PromptRequestResponse(
+        request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
+    )
+
+    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+
+    scorer = SelfAskTrueFalseScorer(
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value, memory=memory
+    )
+
+    with pytest.raises(InvalidJsonException):
+        await scorer.score_text_async("this has no bullying")
+
+    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))

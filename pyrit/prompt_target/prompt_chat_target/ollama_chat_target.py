@@ -1,14 +1,16 @@
-# Copyright (c) Adriano Maia <adriano@drstrange.wtf>
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import asyncio
-import concurrent.futures
+
 import logging
+from typing import Optional
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_target import PromptChatTarget
+from pyrit.models import construct_response_from_request
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +27,9 @@ class OllamaChatTarget(PromptChatTarget):
         model_name: str = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         memory: MemoryInterface = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        PromptChatTarget.__init__(self, memory=memory)
+        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self.endpoint_uri = endpoint_uri or default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri
@@ -36,13 +39,7 @@ class OllamaChatTarget(PromptChatTarget):
         )
         self.chat_message_normalizer = chat_message_normalizer
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         self._validate_request(prompt_request=prompt_request)
@@ -53,20 +50,14 @@ class OllamaChatTarget(PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {self} {request}")
 
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        resp = await self._complete_chat_async(
-            messages=messages,
-        )
+        resp = await self._complete_chat_async(messages=messages)
 
         if not resp:
             raise ValueError("The chat returned an empty response.")
 
         logger.info(f'Received the following response from the prompt target "{resp}"')
 
-        response_entry = self._memory.add_response_entries_to_memory(request=request, response_text_pieces=[resp])
-
-        return response_entry
+        return construct_response_from_request(request=request, response_text_pieces=[resp])
 
     async def _complete_chat_async(
         self,
@@ -85,11 +76,11 @@ class OllamaChatTarget(PromptChatTarget):
         self,
         messages: list[ChatMessage],
     ) -> dict:
-        squased_messages = self.chat_message_normalizer.normalize(messages)
-        messages_dict = [message.model_dump(exclude_none=True) for message in squased_messages]
+        squashed_messages = self.chat_message_normalizer.normalize(messages)
+        messages_list = [message.model_dump(exclude_none=True) for message in squashed_messages]
         data = {
             "model": self.model_name,
-            "messages": messages_dict,
+            "messages": messages_list,
             "stream": False,
         }
         return data

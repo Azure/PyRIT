@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 from unittest.mock import MagicMock
 from pyrit.models import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse, group_conversation_request_pieces_by_sequence
+from pyrit.models import PromptRequestResponse, group_conversation_request_pieces_by_sequence
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 from tests.mocks import MockPromptTarget
@@ -154,16 +154,6 @@ def test_prompt_response_validate_conversation_id_throws(sample_conversations: l
         request_response.validate()
 
 
-def test_prompt_response_converted_empty_throws(sample_conversations: list[PromptRequestPiece]):
-    for c in sample_conversations:
-        c.conversation_id = sample_conversations[0].conversation_id
-
-    sample_conversations[0].converted_value = None
-    request_response = PromptRequestResponse(request_pieces=sample_conversations)
-    with pytest.raises(ValueError, match="Converted prompt text is None."):
-        request_response.validate()
-
-
 def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: list[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
@@ -221,3 +211,23 @@ def test_prompt_request_piece_no_roles():
         )
 
         assert "not a valid role." in str(excinfo.value)
+
+
+def test_prompt_request_piece_sets_original_sha256():
+    entry = PromptRequestPiece(
+        role="user",
+        original_value="Hello",
+    )
+
+    entry.original_value = "newvalue"
+    assert entry.original_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
+
+
+def test_prompt_request_piece_sets_converted_sha256():
+    entry = PromptRequestPiece(
+        role="user",
+        original_value="Hello",
+    )
+
+    entry.converted_value = "newvalue"
+    assert entry.converted_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"

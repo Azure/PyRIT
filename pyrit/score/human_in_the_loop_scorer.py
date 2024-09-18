@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import csv
 
 from pathlib import Path
+from typing import Optional
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import Scorer
@@ -34,6 +34,7 @@ class HumanInTheLoopScorer(Scorer):
                     score_metadata=row.get("score_metadata", None),
                     scorer_class_identifier=self.get_identifier(),
                     prompt_request_response_id=row["prompt_request_response_id"],
+                    task=row.get("task", None),
                 )
                 scores.append(score)
 
@@ -41,9 +42,8 @@ class HumanInTheLoopScorer(Scorer):
         self._memory.add_scores_to_memory(scores=scores)
         return scores
 
-    async def score_async(self, request_response: PromptRequestPiece) -> list[Score]:
-
-        await asyncio.sleep(0)
+    async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
+        self.validate(request_response, task=task)
 
         print("Scoring the following:")
         print(request_response)
@@ -62,7 +62,7 @@ class HumanInTheLoopScorer(Scorer):
             if value < 0 or value > 1:
                 raise ValueError("Score value must be between 0 and 1 for float_scale scores")
 
-        score_category = input("Enter score category (e.g., 'hate' or 'violence'): ")
+        self._score_category = input("Enter score category (e.g., 'hate' or 'violence'): ")
         score_value_description = self._optional_input("Enter score value description (optional): ")
         score_rationale = self._optional_input("Enter score rationale (optional): ")
         score_metadata = self._optional_input("Enter score metadata (optional): ")
@@ -71,11 +71,12 @@ class HumanInTheLoopScorer(Scorer):
             score_value=score_value,
             score_value_description=score_value_description,
             score_type=score_type,  # type: ignore
-            score_category=score_category,
+            score_category=self._score_category,
             score_rationale=score_rationale,
             score_metadata=score_metadata,
             scorer_class_identifier=self.get_identifier(),
             prompt_request_response_id=request_response.id,
+            task=task,
         )
 
         self._memory.add_scores_to_memory(scores=[score])
@@ -85,5 +86,6 @@ class HumanInTheLoopScorer(Scorer):
         value = input(prompt)
         return None if value == "" else value
 
-    def validate(self, request_response: PromptRequestPiece):
-        pass
+    def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
+        if task:
+            raise ValueError("This scorer does not support tasks")

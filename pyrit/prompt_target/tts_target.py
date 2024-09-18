@@ -1,16 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
-from typing import Literal
+from httpx import HTTPStatusError
+from typing import Literal, Optional
 
 from pyrit.common import default_values
+from pyrit.exceptions import RateLimitException
+from pyrit.exceptions import handle_bad_request_exception
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
-from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.prompt_target import PromptTarget
+from pyrit.models import data_serializer_factory, construct_response_from_request
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 from pyrit.common import net_utility
 
@@ -40,9 +41,10 @@ class AzureTTSTarget(PromptTarget):
         language: str = "en",
         temperature: float = 0.0,
         api_version: str = "2024-03-01-preview",
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
 
-        super().__init__(memory=memory)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._voice = voice
         self._model = model
@@ -64,18 +66,10 @@ class AzureTTSTarget(PromptTarget):
             env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
         )
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -92,14 +86,24 @@ class AzureTTSTarget(PromptTarget):
             "api-key": self._api_key,
         }
 
-        # Note the openai client doesn't work here, potentially due to a mismatch
-        response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/"
-            f"audio/speech?api-version={self._api_version}",
-            method="POST",
-            headers=headers,
-            request_body=body,
-        )
+        response_entry = None
+        try:
+            # Note the openai client doesn't work here, potentially due to a mismatch
+            response = await net_utility.make_request_and_raise_if_error_async(
+                endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/"
+                f"audio/speech?api-version={self._api_version}",
+                method="POST",
+                headers=headers,
+                request_body=body,
+            )
+        except HTTPStatusError as hse:
+            if hse.response.status_code == 400:
+                # Handle Bad Request
+                response_entry = handle_bad_request_exception(response_text=hse.response.text, request=request)
+            elif hse.response.status_code == 429:
+                raise RateLimitException()
+            else:
+                raise hse
 
         logger.info("Received valid response from the prompt target")
 
@@ -109,9 +113,10 @@ class AzureTTSTarget(PromptTarget):
 
         audio_response.save_data(data=data)
 
-        response_entry = self._memory.add_response_entries_to_memory(
-            request=request, response_text_pieces=[audio_response.value], response_type="audio_path"
-        )
+        if not response_entry:
+            response_entry = construct_response_from_request(
+                request=request, response_text_pieces=[audio_response.value], response_type="audio_path"
+            )
 
         return response_entry
 

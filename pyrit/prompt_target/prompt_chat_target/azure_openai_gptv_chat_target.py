@@ -1,10 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
-import concurrent.futures
 import logging
 import json
+from typing import MutableSequence, Optional
 
 from openai import AsyncAzureOpenAI
 from openai import BadRequestError
@@ -13,13 +12,12 @@ from openai.types.chat import ChatCompletion
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.exceptions.exception_classes import PyritException, handle_bad_request_exception
+from pyrit.exceptions import PyritException, EmptyResponseException
+from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessageListContent
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.models.data_type_serializer import data_serializer_factory, DataTypeSerializer
-from pyrit.prompt_target import PromptChatTarget
-from pyrit.exceptions import EmptyResponseException, pyrit_retry
+from pyrit.models import ChatMessageListContent, PromptRequestResponse, PromptRequestPiece, DataTypeSerializer
+from pyrit.models import data_serializer_factory, construct_response_from_request
+from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +43,13 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         headers: str = None,
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
-        api_version: str = "2023-08-01-preview",
+        api_version: str = "2024-02-01",
         max_tokens: int = 1024,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
         Class that initializes an Azure Open AI GPTV chat target
@@ -69,20 +68,23 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
-                "2023-08-01-preview".
+                "2024-02-01".
             headers (str, optional): Headers of the endpoint.
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
                 randomness of the response. Defaults to 1.0.
-            top_p (int, optional): The top-p parameter for controlling the diversity of the
-                response. Defaults to 1.
+            top_p (float, optional): The top-p parameter for controlling the diversity of the
+                response. Defaults to 1.0.
             frequency_penalty (float, optional): The frequency penalty parameter for penalizing
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.5.
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory)
+        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._max_tokens = max_tokens
         self._temperature = temperature
@@ -129,6 +131,42 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 api_key=api_key, api_version=api_version, azure_endpoint=endpoint, default_headers=final_headers
             )
 
+    @limit_requests_per_minute
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        """Asynchronously sends a prompt request and handles the response within a managed conversation context.
+
+        Args:
+            prompt_request (PromptRequestResponse): The prompt request response object.
+
+        Returns:
+            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
+        """
+        self._validate_request(prompt_request=prompt_request)
+        request: PromptRequestPiece = prompt_request.request_pieces[0]
+
+        prompt_req_res_entries = self._memory.get_conversation(conversation_id=request.conversation_id)
+        prompt_req_res_entries.append(prompt_request)
+
+        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
+
+        messages = self._build_chat_messages(prompt_req_res_entries)
+        try:
+            resp_text = await self._complete_chat_async(
+                messages=messages,
+                top_p=self._top_p,
+                temperature=self._temperature,
+                frequency_penalty=self._frequency_penalty,
+                presence_penalty=self._presence_penalty,
+            )
+
+            logger.info(f'Received the following response from the prompt target "{resp_text}"')
+
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
+        except BadRequestError as bre:
+            response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
+
+        return response_entry
+
     def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
 
@@ -158,7 +196,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    def _build_chat_messages(self, prompt_req_res_entries: list[PromptRequestResponse]) -> list[ChatMessageListContent]:
+    def _build_chat_messages(
+        self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
+    ) -> list[ChatMessageListContent]:
         """
         Builds chat messages based on prompt request response entries.
 
@@ -197,59 +237,6 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
             chat_messages.append(chat_message)
         return chat_messages
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """
-        Deprecated. Use send_prompt_async instead.
-        """
-        pool = concurrent.futures.ThreadPoolExecutor()
-        return pool.submit(asyncio.run, self.send_prompt_async(prompt_request=prompt_request)).result()
-
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        """Asynchronously sends a prompt request and handles the response within a managed conversation context.
-
-        Args:
-            prompt_request (PromptRequestResponse): The prompt request response object.
-
-        Returns:
-            PromptRequestResponse: The updated conversation entry with the response from the prompt target.
-        """
-        self._validate_request(prompt_request=prompt_request)
-        request: PromptRequestPiece = prompt_request.request_pieces[0]
-
-        prompt_req_res_entries = self._memory.get_conversation(conversation_id=request.conversation_id)
-        prompt_req_res_entries.append(prompt_request)
-
-        logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
-
-        self._memory.add_request_response_to_memory(request=prompt_request)
-
-        messages = self._build_chat_messages(prompt_req_res_entries)
-        try:
-            resp_text = await self._complete_chat_async(
-                messages=messages,
-                top_p=self._top_p,
-                temperature=self._temperature,
-                frequency_penalty=self._frequency_penalty,
-                presence_penalty=self._presence_penalty,
-            )
-
-            logger.info(f'Received the following response from the prompt target "{resp_text}"')
-
-            response_entry = self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[resp_text]
-            )
-        except BadRequestError as bre:
-            response_entry = handle_bad_request_exception(
-                memory=self._memory, response_text=bre.message, request=request
-            )
-        except Exception as ex:
-            self._memory.add_response_entries_to_memory(
-                request=request, response_text_pieces=[str(ex)], response_type="error", error="processing"
-            )
-            raise
-
-        return response_entry
-
     def _parse_chat_completion(self, response):
         """
         Parses chat message to get response
@@ -263,13 +250,13 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         response_message = response.choices[0].message.content
         return response_message
 
-    @pyrit_retry
+    @pyrit_target_retry
     async def _complete_chat_async(
         self,
         messages: list[ChatMessageListContent],
         max_tokens: int = 1024,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
     ) -> str:
@@ -284,8 +271,8 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                 Defaults to 1024.
             temperature (float, optional): Controls randomness in the response generation.
                 Defaults to 1.0.
-            top_p (int, optional): Controls diversity of the response generation.
-                Defaults to 1.
+            top_p (float, optional): Controls diversity of the response generation.
+                Defaults to 1.0.
             frequency_penalty (float, optional): Controls the frequency of generating the same lines of text.
                 Defaults to 0.5.
             presence_penalty (float, optional): Controls the likelihood to talk about new topics.
