@@ -122,7 +122,7 @@ class FuzzCrossOverConverter(FuzzerConverter):
             )
         )
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
-        self.prompts = prompts
+        self.prompts = prompts or []
         self.template_label = "TEMPLATE 1"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

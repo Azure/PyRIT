@@ -41,7 +41,10 @@ def test_converter_init_templates_not_null(converter_class):
 async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class):
     prompt_target = MockPromptTarget()
 
-    converter = converter_class(converter_target=prompt_target)
+    if converter_class != FuzzCrossOverConverter:
+        converter = converter_class(converter_target=prompt_target)
+    else:
+        converter = converter_class(converter_target=prompt_target, prompts=["testing"])
 
     with patch("tests.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
 
