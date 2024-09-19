@@ -106,7 +106,7 @@ class FuzzerConverter(PromptConverter):
         return input_type == "text"
 
 
-class FuzzCrossOverConverter(FuzzerConverter):
+class FuzzerCrossOverConverter(FuzzerConverter):
     def __init__(
         self,
         *,
@@ -164,7 +164,7 @@ class FuzzCrossOverConverter(FuzzerConverter):
         return ConverterResult(output_text=response, output_type="text")
 
 
-class FuzzRephraseConverter(FuzzerConverter):
+class FuzzerRephraseConverter(FuzzerConverter):
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
         prompt_template = (
             prompt_template
@@ -176,7 +176,7 @@ class FuzzRephraseConverter(FuzzerConverter):
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
 
-class FuzzSimilarConverter(FuzzerConverter):
+class FuzzerRephraseConverter(FuzzerConverter):
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
         prompt_template = (
             prompt_template
@@ -188,7 +188,7 @@ class FuzzSimilarConverter(FuzzerConverter):
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
 
-class FuzzShortenConverter(FuzzerConverter):
+class FuzzerShortenConverter(FuzzerConverter):
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
         prompt_template = (
             prompt_template
@@ -200,7 +200,7 @@ class FuzzShortenConverter(FuzzerConverter):
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
 
-class FuzzExpandConverter(FuzzerConverter):
+class FuzzerCrossOverConverter(FuzzerConverter):
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
         prompt_template = (
             prompt_template

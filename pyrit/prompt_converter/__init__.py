@@ -16,11 +16,11 @@ from pyrit.prompt_converter.character_space_converter import CharacterSpaceConve
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
 from pyrit.prompt_converter.fuzzer_converter import (
-    FuzzCrossOverConverter,
-    FuzzExpandConverter,
-    FuzzShortenConverter,
-    FuzzSimilarConverter,
-    FuzzRephraseConverter,
+    FuzzerCrossOverConverter,
+    FuzzerCrossOverConverter,
+    FuzzerShortenConverter,
+    FuzzerRephraseConverter,
+    FuzzerRephraseConverter,
 )
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
@@ -54,11 +54,11 @@ __all__ = [
     "CodeChameleonConverter",
     "ConverterResult",
     "EmojiConverter",
-    "FuzzCrossOverConverter",
-    "FuzzExpandConverter",
-    "FuzzRephraseConverter",
-    "FuzzShortenConverter",
-    "FuzzSimilarConverter",
+    "FuzzerCrossOverConverter",
+    "FuzzerCrossOverConverter",
+    "FuzzerRephraseConverter",
+    "FuzzerShortenConverter",
+    "FuzzerRephraseConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MorseConverter",
