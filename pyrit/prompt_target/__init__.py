@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.prompt_target.utils import limit_requests_per_minute
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.azure_blob_storage_target import AzureBlobStorageTarget
 from pyrit.prompt_target.prompt_chat_target.azure_ml_chat_target import AzureMLChatTarget
@@ -34,6 +35,7 @@ __all__ = [
     "PromptChatTarget",
     "PromptShieldTarget",
     "PromptTarget",
+    "limit_requests_per_minute",
     "TextTarget",
     "OllamaChatTarget",
 ]

@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
+from typing import Optional
 
 from openai import AsyncAzureOpenAI
 from openai.types.completion import Completion
@@ -11,7 +12,7 @@ from pyrit.common import default_values
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptResponse
 from pyrit.models import PromptRequestResponse, construct_response_from_request
-from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +33,10 @@ class AzureOpenAICompletionTarget(PromptTarget):
         api_version: str = "2024-02-01",
         max_tokens: int = 1024,
         temperature: float = 1.0,
-        top_p: int = 1,
+        top_p: float = 1.0,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
+        max_requests_per_minute: Optional[int] = None,
     ):
         """
         Class that initializes an Azure OpenAI completion target.
@@ -60,14 +62,17 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
                 randomness of the response. Defaults to 1.0.
-            top_p (int, optional): The top-p parameter for controlling the diversity of the
-                response. Defaults to 1.
+            top_p (float, optional): The top-p parameter for controlling the diversity of the
+                response. Defaults to 1.0.
             frequency_penalty (float, optional): The frequency penalty parameter for penalizing
                 frequently generated tokens. Defaults to 0.5.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.5.
+            max_requests_per_minute (int, optional): Number of requests the target can handle per
+                minute before hitting a rate limit. The number of requests sent to the target
+                will be capped at the value provided.
         """
-        super().__init__(memory=memory)
+        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
 
         self._max_tokens = max_tokens
         self._temperature = temperature
@@ -102,6 +107,7 @@ class AzureOpenAICompletionTarget(PromptTarget):
                 azure_endpoint=endpoint,
             )
 
+    @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt async to the prompt target.

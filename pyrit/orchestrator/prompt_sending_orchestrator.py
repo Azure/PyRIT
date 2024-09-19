@@ -52,6 +52,8 @@ class PromptSendingOrchestrator(Orchestrator):
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+                Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
+                ensure proper rate limit management.
         """
         super().__init__(
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose

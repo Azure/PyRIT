@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import uuid
 import yaml
 
@@ -9,8 +8,8 @@ import enum
 from pathlib import Path
 from typing import Dict, Optional
 
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
@@ -44,6 +43,7 @@ class SelfAskCategoryScorer(Scorer):
             chat_target (PromptChatTarget): The chat target to interact with.
             content_classifier (Path): The path to the classifier file.
         """
+        self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
@@ -61,8 +61,6 @@ class SelfAskCategoryScorer(Scorer):
             categories=categories_as_string,
             no_category_found=self._no_category_found_category,
         )
-
-        self._chat_target: PromptChatTarget = chat_target
 
     def _content_classifier_to_string(self, categories: list[Dict[str, str]]) -> str:
         """
@@ -109,7 +107,7 @@ class SelfAskCategoryScorer(Scorer):
 
         conversation_id = str(uuid.uuid4())
 
-        self._chat_target.set_system_prompt(
+        self._prompt_target.set_system_prompt(
             system_prompt=self._system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
@@ -121,43 +119,22 @@ class SelfAskCategoryScorer(Scorer):
                     role="user",
                     original_value=request_response.converted_value,
                     conversation_id=conversation_id,
-                    prompt_target_identifier=self._chat_target.get_identifier(),
+                    prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
             ]
         )
 
-        score = await self._send_chat_target_async(request, request_response.id)
-        score.task = task
+        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
+            prompt_target=self._prompt_target,
+            scorer_llm_request=request,
+            scored_prompt_id=request_response.id,
+            task=task,
+        )
+
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
+
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-
-    @pyrit_json_retry
-    async def _send_chat_target_async(self, request: PromptRequestResponse, request_response_id: uuid.UUID) -> Score:
-        response = await self._chat_target.send_prompt_async(prompt_request=request)
-
-        try:
-            response_json = response.request_pieces[0].converted_value
-            parsed_response = json.loads(response_json)
-            self._score_category = parsed_response["category_name"]
-            score_value = parsed_response["category_name"] != self._no_category_found_category
-            score = Score(
-                score_value=str(score_value),
-                score_value_description=parsed_response["category_description"],
-                score_type=self.scorer_type,
-                score_category=self._score_category,
-                score_rationale=parsed_response["rationale"],
-                scorer_class_identifier=self.get_identifier(),
-                score_metadata=None,
-                prompt_request_response_id=request_response_id,
-            )
-
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
-
-        except KeyError:
-            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
-
-        return score
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if task:
