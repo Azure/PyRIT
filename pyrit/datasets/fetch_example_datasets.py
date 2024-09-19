@@ -457,7 +457,7 @@ def fetch_adv_bench_dataset(
     examples = fetch_examples(source, source_type, cache, data_home)
 
     # Extract and append the data to respective containers
-    prompts = [item["goal"] for item in examples]
+    prompts = [item["goal"] for item in examples if "goal" in item]
 
     harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior,
     Endangering Public Health, Copyright Issues, Violence, Drugs, Privacy Violation, Economic Crime,
