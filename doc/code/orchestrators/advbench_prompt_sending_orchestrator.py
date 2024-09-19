@@ -36,33 +36,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 
     print(f"Elapsed time for operation: {end-start}")
 
-    memory = orchestrator.get_memory()
-
-    for entry in memory:
-        print(entry)
-
-# %% [markdown]
-# ### Introducing Rate Limit (RPM) Threshold
-#
-# Some targets have a specific Rate Limit (Requests Per Minute) they can handle. In order to abide by this limitation
-# and avoid exceptions, you can configure `max_requests_per_minute` on the target before using it with an orchestrator.
-#
-# **Note**: `batch_size` should be 1 to properly use the RPM provided.
-
-# %%
-max_requests_per_minute = 20
-
-target = AzureOpenAIGPT4OChatTarget(max_requests_per_minute=max_requests_per_minute)
-
-with PromptSendingOrchestrator(prompt_target=target, batch_size=1) as orchestrator:
-    adv_bench_prompts = fetch_adv_bench_dataset()
-
-    start = time.time()
-    await orchestrator.send_prompts_async(prompt_list=adv_bench_prompts.prompts[:3])  # type: ignore
-    end = time.time()
-
-    print(f"Elapsed time for operation, with request delay is: {end-start}")
-    assert (end - start) > (60 / max_requests_per_minute * len(adv_bench_prompts.prompts[:3]))
+    orchestrator.print_conversations()
 
 # %% [markdown]
 # ### Adding Converters
@@ -80,7 +54,4 @@ with PromptSendingOrchestrator(
     # this is run in a Jupyter notebook, so we can use await
     await orchestrator.send_prompts_async(prompt_list=adv_bench_prompts.prompts[:3])  # type: ignore
 
-    memory = orchestrator.get_memory()
-
-    for entry in memory:
-        print(entry)
+    orchestrator.print_conversations()
