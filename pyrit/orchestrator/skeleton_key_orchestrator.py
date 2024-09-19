@@ -103,6 +103,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
             request_converters=self._prompt_converters,
             prompt_data_type="text",
             prompt_value=self._skeleton_key_prompt,
+            memory=self._memory
         )
 
         await self._prompt_normalizer.send_prompt_async(
@@ -117,6 +118,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
             request_converters=self._prompt_converters,
             prompt_data_type="text",
             prompt_value=prompt,
+            memory=self._memory
         )
 
         return await self._prompt_normalizer.send_prompt_async(

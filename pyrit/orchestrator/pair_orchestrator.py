@@ -148,6 +148,7 @@ class PAIROrchestrator(Orchestrator):
                         request_converters=self._prompt_converters,
                         prompt_value=target_response,
                         prompt_data_type="text",
+                        memory=self._memory
                     )
                 ]
             ),
@@ -176,7 +177,7 @@ class PAIROrchestrator(Orchestrator):
             normalizer_request=NormalizerRequest(
                 request_pieces=[
                     NormalizerRequestPiece(
-                        request_converters=self._prompt_converters, prompt_value=text, prompt_data_type="text"
+                        request_converters=self._prompt_converters, prompt_value=text, prompt_data_type="text", memory=self._memory
                     )
                 ]
             ),
