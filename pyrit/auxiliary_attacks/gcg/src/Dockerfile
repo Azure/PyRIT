@@ -16,8 +16,7 @@ RUN conda env create -p $CONDA_ENVIRONMENT_PATH -f conda_dependencies.yaml -q &&
 
 RUN conda list
 
-# TODO fix
-RUN git clone -b romanlutz/gcg_azureml https://github.com/romanlutz/PyRIT.git
+RUN git clone -b romanlutz/gcg_azureml https://github.com/blakebullwinkel/PyRIT.git
 
 # TODO upgrade to next FastChat release
 # use commit hash: e395370d0a037d91c07705776e7d31fa9449972a
