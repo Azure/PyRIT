@@ -3,12 +3,12 @@ import numpy as np
 from typing import Union
 import torch.multiprocessing as mp
 from ml_collections import config_dict
-import pyrit.optimizers.GreedyCoordinateGradient.gcg.gcg_attack as attack_lib
-from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import (
+import pyrit.auxiliary_attacks.GreedyCoordinateGradient.gcg.gcg_attack as attack_lib
+from pyrit.auxiliary_attacks.GreedyCoordinateGradient.base.attack_manager import (
     IndividualPromptAttack,
     ProgressiveMultiPromptAttack,
 )
-from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
+from pyrit.auxiliary_attacks.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
 
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:

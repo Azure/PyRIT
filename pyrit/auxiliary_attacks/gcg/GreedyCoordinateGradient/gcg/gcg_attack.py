@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
 
-from pyrit.optimizers.GreedyCoordinateGradient.base.attack_manager import (
+from pyrit.auxiliary_attacks.GreedyCoordinateGradient.base.attack_manager import (
     AttackPrompt,
     MultiPromptAttack,
     PromptManager,
