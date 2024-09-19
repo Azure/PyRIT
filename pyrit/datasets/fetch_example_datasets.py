@@ -14,7 +14,7 @@ import requests
 from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.text_helper import read_txt, write_txt
-from pyrit.common.path import RESULTS_PATH
+from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
 from pyrit.models import PromptDataset
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
@@ -421,14 +421,16 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
     return dataset
 
 
-def fetch_decoding_trust_examples(
+def fetch_decoding_trust_stereotypes_examples(
     source: str = (
         "https://raw.githubusercontent.com/AI-secure/DecodingTrust/main/data/stereotype/dataset/user_prompts.csv"
     ),
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-    perspective: Optional[str] = "stereotype",
+    stereotype_topic: Optional[List[str]] = None,
+    target_group: Optional[List[str]] = None,
+    system_prompt_type: Literal["benign", "untargeted", "targeted"] = "targeted",
 ) -> PromptDataset:
     """
     Fetch DecodingTrust examples and create a PromptDataset.
@@ -438,6 +440,10 @@ def fetch_decoding_trust_examples(
         source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+        stereotype_topic (Optional[List[str]]): List of stereotype topics to filter the examples. Defaults to None.
+        target_group (Optional[List[str]]): List of target groups to filter the examples. Defaults to None.
+        system_prompt_type (Literal["benign", "untargeted", "targeted"]): The type of system prompt to use.
+            Defaults to "targeted".
 
     Returns:
         PromptDataset: A PromptDataset containing the examples.
@@ -446,18 +452,23 @@ def fetch_decoding_trust_examples(
         For more information and access to the original dataset and related materials, visit:
         https://github.com/centerforaisafety/HarmBench
     """
+    if system_prompt_type not in ["benign", "untargeted", "targeted"]:
+        raise ValueError("Invalid system_prompt_type. Expected 'benign', 'untargeted', or 'targeted'}")
     # Determine the file type from the source URL
     file_type = source.split(".")[-1]
     if file_type not in FILE_TYPE_HANDLERS:
         valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
+    system_prompt = PromptDataset.from_yaml_file(Path(DATASETS_PATH) / "prompts" / "dt_stereotypes.prompt").prompts[
+        system_prompt_type
+    ]  # type: ignore
+
     # Required keys to validate each example
     required_keys = {"stereotype_topic", "target_group"}
 
     # Initialize containers for prompts and semantic categories
     prompts = []
-    # semantic_categories = set()
 
     # Fetch the examples using the provided `fetch_examples` function
     examples = fetch_examples(source, source_type, cache, data_home)
@@ -468,22 +479,25 @@ def fetch_decoding_trust_examples(
         missing_keys = required_keys - example.keys()
         if missing_keys:
             raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
+        # Check if the example should be filtered based on the provided topics and target groups
+        if stereotype_topic and example["stereotype_topic"] not in stereotype_topic:
+            continue
+        if target_group and example["target_group"] not in target_group:
+            continue
 
-        # Extract and append the data to respective containers
-        prompts.append(example["user_prompt"])
-        # semantic_categories.add(example["target_group"])
-
-        # Use the semantic categories to determine harm categories
-        # harm_category_str = ", ".join(set(semantic_categories))
+        if system_prompt_type == "targeted":
+            taregted_system_prompt = system_prompt.replace("{{target_group}}", example["target_group"])
+            prompts.append(taregted_system_prompt + " " + example["user_prompt"])
+        else:
+            prompts.append(system_prompt + " " + example["user_prompt"])
 
     # Create a PromptDataset object with the fetched examples
     dataset = PromptDataset(
-        name="HarmBench Examples",
+        name="DecodingTrust Examples",
         description=(
-            "A dataset of HarmBench examples containing various categories such as chemical,"
-            "biological, illegal activities, etc."
+            "A dataset of Decoding Trust 'Stereotypes' examples across many different topics and target groups."
         ),
-        harm_category=perspective,
+        harm_category="Stereotypes",
         should_be_blocked=True,
         prompts=prompts,
     )

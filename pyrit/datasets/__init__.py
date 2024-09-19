@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from .fetch_example_datasets import (
-    fetch_decoding_trust_examples,
+    fetch_decoding_trust_stereotypes_examples,
     fetch_examples,
     fetch_harmbench_examples,
     fetch_many_shot_jailbreaking_examples,
@@ -12,7 +12,7 @@ from .fetch_example_datasets import (
 )
 
 __all__ = [
-    "fetch_decoding_trust_examples",
+    "fetch_decoding_trust_stereotypes_examples",
     "fetch_examples",
     "fetch_harmbench_examples",
     "fetch_many_shot_jailbreaking_examples",
