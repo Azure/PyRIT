@@ -9,6 +9,7 @@ from .fetch_example_datasets import (
     fetch_seclists_bias_testing_examples,
     fetch_xstest_examples,
     fetch_pku_safe_rlhf_dataset,
+    fetch_wmdp_dataset,
 )
 
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "fetch_seclists_bias_testing_examples",
     "fetch_xstest_examples",
     "fetch_pku_safe_rlhf_dataset",
+    "fetch_wmdp_dataset",
 ]
