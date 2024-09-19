@@ -150,7 +150,7 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
 
-        messages = self._build_chat_messages(prompt_req_res_entries)
+        messages = await self._build_chat_messages(prompt_req_res_entries)
         try:
             resp_text = await self._complete_chat_async(
                 messages=messages,
@@ -168,7 +168,7 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
 
         return response_entry
 
-    def _convert_local_image_to_data_url(self, image_path: str) -> str:
+    async def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
 
         Args:
@@ -191,8 +191,8 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
-        base64_encoded_data = image_serializer.read_data_base64()
+        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext, memory=self._memory)
+        base64_encoded_data = await image_serializer.read_data_base64()
         # Azure OpenAI GPT-4o documentation doesn't specify the local image upload format for API.
         # GPT-4o image upload format is determined using "view code" functionality in Azure OpenAI deployments
         # The image upload format is same as GPT-4 Turbo.
@@ -200,7 +200,7 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#call-the-chat-completion-apis
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    def _build_chat_messages(
+    async def _build_chat_messages(
         self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
     ) -> list[ChatMessageListDictContent]:
         """
@@ -224,7 +224,7 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
                     entry = {"type": "text", "text": prompt_request_piece.converted_value}
                     content.append(entry)
                 elif prompt_request_piece.converted_value_data_type == "image_path":
-                    data_base64_encoded_url = self._convert_local_image_to_data_url(
+                    data_base64_encoded_url = await self._convert_local_image_to_data_url(
                         prompt_request_piece.converted_value
                     )
                     image_url_entry = {"url": data_base64_encoded_url}

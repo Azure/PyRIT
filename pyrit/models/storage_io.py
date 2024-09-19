@@ -98,7 +98,7 @@ class DiskStorageIO(StorageIO):
 
     async def is_path_exists(self, path: Union[Path, str]) -> bool:
         """
-        Asynchronously checks if a path exists on the local disk.
+        Checks if a path exists on the local disk.
         Args:
             path (Union[Path, str]): The path to check.
         Returns:
@@ -108,7 +108,7 @@ class DiskStorageIO(StorageIO):
 
     async def is_file(self, path: Union[Path, str]) -> bool:
         """
-        Asynchronously checks if the given path is a file (not a directory).
+        Checks if the given path is a file (not a directory).
         Args:
             path (Union[Path, str]): The path to check.
         Returns:

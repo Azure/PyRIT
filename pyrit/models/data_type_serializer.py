@@ -101,7 +101,9 @@ class DataTypeSerializer(abc.ABC):
 
         if not self.value:
             raise RuntimeError("Prompt text not set")
-
+        # Check if path exists
+        await self._memory._storage_io.is_path_exists(path=self.value)
+        # Read the contents from the path
         return await self._memory._storage_io.read_file(self.value)
 
     async def read_data_base64(self) -> str:
@@ -145,33 +147,20 @@ class DataTypeSerializer(abc.ABC):
         return self._file_path
 
     @staticmethod
-    async def path_exists(file_path: str) -> bool:
-        """
-        Check if the file exists at the specified path.
-        """
-        if not await DataTypeSerializer._memory._storage_io.is_path_exists(path=file_path):
-            raise FileNotFoundError(f"No file found at the specified path: {file_path}")
-        return True
-
-    @staticmethod
-    async def get_extension(file_path: str) -> str | None:
+    def get_extension(file_path: str) -> str | None:
         """
         Get the file extension from the file path.
         """
-        if await DataTypeSerializer.path_exists(file_path):
-            _, ext = os.path.splitext(file_path)
-            return ext
-        return None
+        _, ext = os.path.splitext(file_path)
+        return ext if ext else None
 
-    async def get_mime_type(self, file_path: str) -> str | None:
+    @staticmethod
+    def get_mime_type(file_path: str) -> str | None:
         """
         Get the MIME type of the file path.
         """
-        if self._memory:
-            if await self._memory._storage_io.is_path_exists(file_path):
-                mime_type, _ = guess_type(file_path)
-                return mime_type
-        return None
+        mime_type, _ = guess_type(file_path)
+        return mime_type
 
     def is_url(self, path: str) -> bool:
         """

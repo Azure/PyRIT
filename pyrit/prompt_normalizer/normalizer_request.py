@@ -6,7 +6,7 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import data_serializer_factory, PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
-
+from pyrit.memory import DuckDBMemory
 
 class NormalizerRequestPiece(abc.ABC):
     _memory: MemoryInterface
@@ -41,7 +41,7 @@ class NormalizerRequestPiece(abc.ABC):
         self.prompt_value = prompt_value
         self.prompt_data_type = prompt_data_type
         self.metadata = metadata
-        self._memory = memory
+        self._memory = memory or DuckDBMemory()
 
         self.validate()
 
