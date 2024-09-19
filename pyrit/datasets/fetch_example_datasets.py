@@ -420,6 +420,7 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
 
     return dataset
 
+
 def fetch_adv_bench_dataset(
     source: str = (
         "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"
@@ -477,7 +478,8 @@ def fetch_adv_bench_dataset(
 
     return dataset
 
-  def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDataset:
+
+def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDataset:
     """
     Fetch WMDP examples and create a QuestionAnsweringDataset.
 
@@ -541,6 +543,6 @@ def fetch_adv_bench_dataset(
         Shoshitaishvili and Jimmy Ba and Kevin M. Esvelt and Alexandr Wang and Dan Hendrycks""",
         source="https://huggingface.co/datasets/cais/wmdp",
         questions=questions_answers,
-      )
+    )
 
     return dataset
