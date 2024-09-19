@@ -12,6 +12,7 @@ import torch
 import torch.multiprocessing as mp
 import torch.nn as nn
 from fastchat.model import get_conversation_template
+from fastchat.conversation import Conversation, SeparatorStyle
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -1608,7 +1609,18 @@ def get_workers(params, eval=False):
     raw_conv_templates = []
     for template in params.conversation_templates:
         if template in ["llama-2", "mistral", "llama-3", "vicuna"]:
-            raw_conv_templates.append(get_conversation_template(template))
+            raw_conv_templates.append(get_conversation_template(template)),
+        elif template in ["phi-3-mini"]:
+            conv_template = Conversation(
+                name="phi-3-mini",
+                system_template="<|system|>\n{system_message}",
+                system_message="",
+                roles=("<|user|>", "<|assistant|>"),
+                sep_style=SeparatorStyle.CHATML,
+                sep="<|end|>",
+                stop_token_ids=[32000],
+            )
+            raw_conv_templates.append(conv_template)
         else:
             raise ValueError("Conversation template not recognized")
             
