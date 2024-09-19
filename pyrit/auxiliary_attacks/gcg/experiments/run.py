@@ -12,7 +12,7 @@ def _load_yaml_to_dict(config_path: str) -> dict:
     return data
 
 
-MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna"]
+MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
 ALL_MODELS = "all_models"
 MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
 
@@ -28,7 +28,7 @@ def run_trainer(
 
     Args:
         model_name (str): The name of the model, currently supports:
-            "mistral", "llama_2", "llama_3", "vicuna", "all_models"
+            "mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "all_models"
         setup (str): Identifier for the setup, currently supporst
             - "single": one prompt one model
             - "multiple": multiple prompts one model or multiple prompts multiple models
@@ -36,7 +36,7 @@ def run_trainer(
     """
 
     if model_name not in MODEL_NAMES:
-        raise ValueError("Model name not supported. Currently supports 'mistral' and 'llama2'")
+        raise ValueError("Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'")
 
     default_values.load_default_env()
     hf_token = os.environ.get("HF_TOKEN")
