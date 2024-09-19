@@ -41,7 +41,6 @@ class ScoringOrchestrator(Orchestrator):
         scorer: Scorer,
         orchestrator_ids: list[str],
         responses_only: bool = True,
-        avoid_duplicate_scoring: bool = True,
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts correlated to the orchestrator_ids.
@@ -52,8 +51,6 @@ class ScoringOrchestrator(Orchestrator):
             request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
-        if avoid_duplicate_scoring:
-            request_pieces = self._remove_duplicates(request_pieces)
 
         return await scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
 
@@ -63,7 +60,6 @@ class ScoringOrchestrator(Orchestrator):
         scorer: Scorer,
         memory_labels: dict[str, str] = {},
         responses_only: bool = True,
-        avoid_duplicate_scoring: bool = True,
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts based on the memory labels.
@@ -80,18 +76,10 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
 
-        if avoid_duplicate_scoring:
-            request_pieces = self._remove_duplicates(request_pieces)
-
         return await scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
 
     async def score_prompts_by_request_id_async(
-        self,
-        *,
-        scorer: Scorer,
-        prompt_ids: list[str],
-        responses_only: bool = False,
-        avoid_duplicate_scoring: bool = True,
+        self, *, scorer: Scorer, prompt_ids: list[str], responses_only: bool = False
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts with the prompt_ids
@@ -102,20 +90,11 @@ class ScoringOrchestrator(Orchestrator):
 
         if responses_only:
             requests = self._extract_responses_only(requests)
-        if avoid_duplicate_scoring:
-            requests = self._remove_duplicates(requests)
 
         return await scorer.score_prompts_batch_async(prompts=requests, batch_size=self._batch_size)
 
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
         """
-        Extracts the responses from the list of PromptRequestPiece objects.
+        Extracts the responses from the list of PromptRequestResponse objects.
         """
         return [response for response in request_responses if response.role == "assistant"]
-
-    def _remove_duplicates(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
-        """
-        Removes the duplicates from the list of PromptRequestPiece objects so that identical prompts are not
-        scored twice.
-        """
-        return [response for response in request_responses if response.original_prompt_id == response.id]

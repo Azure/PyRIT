@@ -46,7 +46,6 @@ class PromptMemoryEntry(Base):
         converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         idx_conversation_id (Index): The index for the conversation ID.
-        original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -80,9 +79,6 @@ class PromptMemoryEntry(Base):
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
-    # The original PromptRequestPiece id that this PromptRequestPiece is a duplicate of
-    original_prompt_id = Column(Uuid, nullable=False)
-
     def __init__(self, *, entry: PromptRequestPiece):
         self.id = entry.id
         self.role = entry.role
@@ -105,8 +101,6 @@ class PromptMemoryEntry(Base):
 
         self.response_error = entry.response_error
 
-        self.original_prompt_id = entry.original_prompt_id
-
     def get_prompt_request_piece(self) -> PromptRequestPiece:
         return PromptRequestPiece(
             role=self.role,
@@ -123,7 +117,6 @@ class PromptMemoryEntry(Base):
             original_value_data_type=self.original_value_data_type,
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,
-            original_prompt_id=self.original_prompt_id,
         )
 
     def __str__(self):
