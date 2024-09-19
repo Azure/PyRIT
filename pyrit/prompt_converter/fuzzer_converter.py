@@ -40,19 +40,14 @@ class FuzzerConverter(PromptConverter):
     converter_target: PromptChatTarget
         Chat target used to perform fuzzing on user prompt
 
-    converter_file: str
-        File name to be used with instructions for the chat target.
+    prompt_template: PromptTemplate, default=None
+        Template to be used instead of the default system prompt with instructions for the chat target.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, converter_file: str, prompts: Optional[List[str]] = None):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
         self.converter_target = converter_target
-        self.prompts = prompts
-
-        prompt_template = PromptTemplate.from_yaml_file(
-            pathlib.Path(DATASETS_PATH) / "prompt_converters" / converter_file
-        )
-
         self.system_prompt = prompt_template.template
+        self.template_label = "TEMPLATE"
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -69,10 +64,7 @@ class FuzzerConverter(PromptConverter):
             orchestrator_identifier=None,
         )
 
-        template_label = "TEMPLATE 1" if self.prompts is not None else "TEMPLATE"
-        formatted_prompt = f"===={template_label} BEGINS====\n{prompt}\n===={template_label} ENDS===="
-        if self.prompts is not None:
-            formatted_prompt += f"\n====TEMPLATE 2 BEGINS====\n{random.choice(self.prompts)}\n====TEMPLATE 2 ENDS====\n"
+        formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
 
         request = PromptRequestResponse(
             [
@@ -91,9 +83,8 @@ class FuzzerConverter(PromptConverter):
         )
 
         response = await self.send_prompt_async(request)
-        output = self._generate_output(response, prompt)
 
-        return ConverterResult(output_text=output, output_type="text")
+        return ConverterResult(output_text=response, output_type="text")
 
     @pyrit_json_retry
     async def send_prompt_async(self, request):
@@ -111,36 +102,148 @@ class FuzzerConverter(PromptConverter):
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
 
-    def _generate_output(self, response: str, _: str) -> str:
-        return response
-
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
 
 
-class CrossOverConverter(FuzzerConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, prompts: Optional[List[str]] = None):
-        super().__init__(converter_target=converter_target, converter_file="crossover_converter.yaml", prompts=prompts)
+class FuzzCrossOverConverter(FuzzerConverter):
+    def __init__(
+        self,
+        *,
+        converter_target: PromptChatTarget,
+        prompt_template: PromptTemplate = None,
+        prompts: Optional[List[str]] = None,
+    ):
+        prompt_template = (
+            prompt_template
+            if prompt_template
+            else PromptTemplate.from_yaml_file(
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "crossover_converter.yaml"
+            )
+        )
+        super().__init__(converter_target=converter_target, prompt_template=prompt_template)
+        self.prompts = prompts
+        self.template_label = "TEMPLATE 1"
+
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Converter to generate versions of prompt with new, prepended sentences.
+        """
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
+
+        conversation_id = str(uuid.uuid4())
+
+        self.converter_target.set_system_prompt(
+            system_prompt=self.system_prompt,
+            conversation_id=conversation_id,
+            orchestrator_identifier=None,
+        )
+
+        formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
+        formatted_prompt += f"\n====TEMPLATE 2 BEGINS====\n{random.choice(self.prompts)}\n====TEMPLATE 2 ENDS====\n"
+
+        request = PromptRequestResponse(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_value=formatted_prompt,
+                    converted_value=formatted_prompt,
+                    conversation_id=conversation_id,
+                    sequence=1,
+                    prompt_target_identifier=self.converter_target.get_identifier(),
+                    original_value_data_type=input_type,
+                    converted_value_data_type=input_type,
+                    converter_identifiers=[self.get_identifier()],
+                )
+            ]
+        )
+
+        response = await self.send_prompt_async(request)
+
+        return ConverterResult(output_text=response, output_type="text")
 
 
-class RephraseConverter(FuzzerConverter):
-    def __init__(self, *, converter_target: PromptChatTarget):
-        super().__init__(converter_target=converter_target, converter_file="rephrase_converter.yaml")
+class FuzzRephraseConverter(FuzzerConverter):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+        prompt_template = (
+            prompt_template
+            if prompt_template
+            else PromptTemplate.from_yaml_file(
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "rephrase_converter.yaml"
+            )
+        )
+        super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
 
-class SimilarConverter(FuzzerConverter):
-    def __init__(self, *, converter_target: PromptChatTarget):
-        super().__init__(converter_target=converter_target, converter_file="similar_converter.yaml")
+class FuzzSimilarConverter(FuzzerConverter):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+        prompt_template = (
+            prompt_template
+            if prompt_template
+            else PromptTemplate.from_yaml_file(
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "similar_converter.yaml"
+            )
+        )
+        super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
 
-class ShortenConverter(FuzzerConverter):
-    def __init__(self, *, converter_target: PromptChatTarget):
-        super().__init__(converter_target=converter_target, converter_file="shorten_converter.yaml")
+class FuzzShortenConverter(FuzzerConverter):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+        prompt_template = (
+            prompt_template
+            if prompt_template
+            else PromptTemplate.from_yaml_file(
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "shorten_converter.yaml"
+            )
+        )
+        super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
 
-class ExpandConverter(FuzzerConverter):
-    def __init__(self, *, converter_target: PromptChatTarget):
-        super().__init__(converter_target=converter_target, converter_file="expand_converter.yaml")
+class FuzzExpandConverter(FuzzerConverter):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+        prompt_template = (
+            prompt_template
+            if prompt_template
+            else PromptTemplate.from_yaml_file(
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "expand_converter.yaml"
+            )
+        )
+        super().__init__(converter_target=converter_target, prompt_template=prompt_template)
 
-    def _generate_output(self, response: str, prompt: str) -> str:
-        return response + " " + prompt
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Converter to generate versions of prompt with new, prepended sentences.
+        """
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
+
+        conversation_id = str(uuid.uuid4())
+
+        self.converter_target.set_system_prompt(
+            system_prompt=self.system_prompt,
+            conversation_id=conversation_id,
+            orchestrator_identifier=None,
+        )
+
+        formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
+
+        request = PromptRequestResponse(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_value=formatted_prompt,
+                    converted_value=formatted_prompt,
+                    conversation_id=conversation_id,
+                    sequence=1,
+                    prompt_target_identifier=self.converter_target.get_identifier(),
+                    original_value_data_type=input_type,
+                    converted_value_data_type=input_type,
+                    converter_identifiers=[self.get_identifier()],
+                )
+            ]
+        )
+
+        response = await self.send_prompt_async(request)
+
+        return ConverterResult(output_text=response + " " + prompt, output_type="text")
