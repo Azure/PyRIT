@@ -61,7 +61,7 @@ class FuzzerResult:
     success: bool
     templates: list[str]
     description: str
-    prompt_target_conversation_ids: Optional[list[str]] = None
+    prompt_target_conversation_ids: Optional[list[Union[str, uuid.UUID]]] = None
 
     def __str__(self) -> str:
         return (
@@ -96,7 +96,7 @@ class FuzzerResult:
         for conversation_id in self.prompt_target_conversation_ids:
             print(f"\nConversation ID: {conversation_id}")
 
-            target_messages = memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+            target_messages = memory._get_prompt_pieces_with_conversation_id(conversation_id=str(conversation_id))
 
             if not target_messages or len(target_messages) == 0:
                 print("No conversation with the target")
@@ -108,7 +108,7 @@ class FuzzerResult:
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
 
-                scores = memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+                scores = memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
                 if scores and len(scores) > 0:
                     score = scores[0]
                     print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
@@ -238,7 +238,7 @@ class FuzzerOrchestrator(Orchestrator):
 
         self._last_choice_node: Optional[PromptNode] = None
 
-    async def execute_fuzzer(self):
+    async def execute_fuzzer(self) -> FuzzerResult:
         """
         Generates new templates by applying transformations to existing templates and returns successful ones.
 

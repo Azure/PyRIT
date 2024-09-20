@@ -58,7 +58,7 @@ fuzzer_orchestrator = FuzzerOrchestrator(
     template_converters=[prompt_shorten_converter, prompt_expand_converter],
 )
 
-result = await fuzzer_orchestrator.execute_fuzzer()
+result = await fuzzer_orchestrator.execute_fuzzer()  # type: ignore
 
 result.print_templates()
 result.print_conversations(memory=memory)
