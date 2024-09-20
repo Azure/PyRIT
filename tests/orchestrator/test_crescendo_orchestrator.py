@@ -78,8 +78,7 @@ def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("rounds", [1, 6, 10])
-@patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces_by_id")
-async def test_apply_crescendo_attack(mock_get_piece, mock_target: MockPromptTarget, rounds: int):
+async def test_apply_crescendo_attack(mock_target: MockPromptTarget, rounds: int):
 
     scoring_target = AsyncMock()
     orchestrator = CrescendoOrchestrator(
@@ -90,8 +89,6 @@ async def test_apply_crescendo_attack(mock_get_piece, mock_target: MockPromptTar
     )
 
     orchestrator._prompt_normalizer = AsyncMock()
-
-    mock_get_piece.return_value = [PromptRequestPiece(role="assistant", original_value="Prompt Target Response")]
 
     normalizer_responses = []
     scorer_responses = []

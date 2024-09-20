@@ -3,6 +3,7 @@
 
 import abc
 import copy
+import logging
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence
 import uuid
@@ -19,6 +20,8 @@ from pyrit.models import (
 from pyrit.memory.memory_models import Base, EmbeddingData, ScoreEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryInterface(abc.ABC):
@@ -125,10 +128,13 @@ class MemoryInterface(abc.ABC):
         """
         for score in scores:
             prompt_request_response_id = score.prompt_request_response_id
-            prompt_piece = self.get_prompt_request_pieces_by_id(prompt_ids=[str(prompt_request_response_id)])[0]
+            prompt_piece = self.get_prompt_request_pieces_by_id(prompt_ids=[str(prompt_request_response_id)])
+            if not prompt_piece:
+                logging.error(f"Prompt with ID {prompt_request_response_id} not found in memory.")
+                continue
             # auto-link score to the original prompt id if the prompt is a duplicate
-            if prompt_piece.original_prompt_id != prompt_piece.id:
-                score.prompt_request_response_id = prompt_piece.original_prompt_id
+            if prompt_piece[0].original_prompt_id != prompt_piece[0].id:
+                score.prompt_request_response_id = prompt_piece[0].original_prompt_id
         self.insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
