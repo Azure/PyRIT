@@ -1624,7 +1624,7 @@ def get_workers(params, eval=False):
                 roles=("<|user|>", "<|assistant|>"),
                 sep_style=SeparatorStyle.CHATML,
                 sep="<|end|>",
-                stop_token_ids=[32000],
+                stop_token_ids=[32000, 32001, 32007],
             )
             raw_conv_templates.append(conv_template)
         else:
