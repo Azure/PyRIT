@@ -88,9 +88,10 @@ class RedTeamingOrchestrator(Orchestrator):
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
-        self._scorer._memory = self._memory
-        if getattr(self._scorer, '_prompt_target', None) is not None:
-            self._scorer._prompt_target._memory = self._memory
+        if self._scorer:
+            self._scorer._memory = self._memory
+            if getattr(self._scorer, '_prompt_target', None) is not None:
+                self._scorer._prompt_target._memory = self._memory
 
     async def check_conversation_complete_async(self) -> Union[Score, None]:
         """

@@ -62,9 +62,11 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._scorers = scorers
-        self._scorers._memory = self._memory
-        if getattr(self._scorers, '_prompt_target', None) is not None:
-            self._scorers._prompt_target._memory = self._memory
+        if self._scorers:
+            for scorer in self._scorers:
+                scorer._memory = self._memory
+                if getattr(scorer, '_prompt_target', None) is not None:
+                    scorer._prompt_target._memory = self._memory
 
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
