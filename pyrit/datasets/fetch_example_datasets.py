@@ -421,6 +421,64 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
     return dataset
 
 
+def fetch_adv_bench_dataset(
+    source: str = (
+        "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"
+    ),
+    source_type: Literal["public_url"] = "public_url",
+    cache: bool = True,
+    data_home: Optional[Path] = None,
+) -> PromptDataset:
+    """
+    Fetch AdvBench examples and create a PromptDataset.
+
+    Args:
+        source (str): The source from which to fetch examples. Defaults to the AdvBench repository.
+        source_type (Literal["public_url"]): The type of source ('public_url').
+        cache (bool): Whether to cache the fetched examples. Defaults to True.
+        data_home (Optional[Path]): Directory to store cached data. Defaults to None.
+
+    Returns:
+        PromptDataset: A PromptDataset containing the examples.
+
+    Note:
+        For more information and access to the original dataset and related materials, visit:
+        https://github.com/llm-attacks/llm-attacks/blob/main/data/advbench. Based on research in paper:
+        https://arxiv.org/abs/2307.15043 written by Andy Zou, Zifan Wang, Nicholas Carlini, Milad Nasr,
+        J. Zico Kolter, Matt Fredrikson
+    """
+    # Determine the file type from the source URL
+    file_type = source.split(".")[-1]
+    if file_type not in FILE_TYPE_HANDLERS:
+        valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+        raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+
+    # Fetch the examples using the provided `fetch_examples` function
+    examples = fetch_examples(source, source_type, cache, data_home)
+
+    # Extract and append the data to respective containers
+    prompts = [item["goal"] for item in examples if "goal" in item]
+
+    harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior,
+    Endangering Public Health, Copyright Issues, Violence, Drugs, Privacy Violation, Economic Crime,
+    Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
+    Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse, and more """
+
+    dataset = PromptDataset(
+        name="AdvBench Dataset",
+        description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
+        range over the same themes as the harmful strings setting, but the adversary's goal is instead to find
+        a single attack string that will cause the model to generate any response that attempts to comply with
+        the instruction, and to do so over as many harmful behaviors as possible.""",
+        harm_category=harm_categories,
+        should_be_blocked=True,
+        source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
+        prompts=prompts,
+    )
+
+    return dataset
+
+
 def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDataset:
     """
     Fetch WMDP examples and create a QuestionAnsweringDataset.
