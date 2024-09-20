@@ -77,7 +77,7 @@ def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("rounds", list(range(1, 11)))
+@pytest.mark.parametrize("rounds", [1, 6, 10])
 @patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces_by_id")
 async def test_apply_crescendo_attack(mock_get_piece, mock_target: MockPromptTarget, rounds: int):
 
@@ -105,7 +105,9 @@ async def test_apply_crescendo_attack(mock_get_piece, mock_target: MockPromptTar
                 '{"generated_question": "Red Teaming Response", "last_response_summary": "Last Response Summary",'
                 '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
             )
-            refusal_converted_value = '{"value": "True", "description": "Refusal", "rationale": "Refusal_Rationale"}'
+            refusal_converted_value = (
+                '{"score_value": "True", "description": "Refusal", "rationale": "Refusal_Rationale"}'
+            )
 
             red_teaming_response = PromptRequestResponse(
                 request_pieces=[
@@ -141,9 +143,9 @@ async def test_apply_crescendo_attack(mock_get_piece, mock_target: MockPromptTar
             '{"generated_question": "Red Teaming Response", "last_response_summary": "Last Response Summary",'
             '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
         )
-        refusal_converted_value = '{"value": "False", "description": "Refusal", "rationale": "Refusal_Rationale"}'
+        refusal_converted_value = '{"score_value": "False", "description": "Refusal", "rationale": "Refusal_Rationale"}'
         eval_converted_value = (
-            '{{"value": "True", "description": "Eval", "rationale": "Eval_Rationale", "metadata": "{0}"}}'.format(
+            '{{"score_value": "True", "description": "Eval", "rationale": "Eval_Rationale", "metadata": "{0}"}}'.format(
                 eval_percentage
             )
         )

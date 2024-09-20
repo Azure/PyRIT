@@ -144,7 +144,7 @@ async def test_apply_strategy_single_turn_success(
                 if on_topic_checking_enabled:
                     mock_scoring_target_return_values.append(
                         get_prompt_response_with_content(
-                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'
+                            '{"score_value": "True", "description": "On topic", "rationale": "Rationale"}'
                         ),
                     )
                 mock_scoring_target_return_values.append(
@@ -207,7 +207,7 @@ async def test_apply_strategy_max_depth_reached(
                 if on_topic_checking_enabled:
                     mock_scoring_target_return_values.append(
                         get_prompt_response_with_content(
-                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'
+                            '{"score_value": "True", "description": "On topic", "rationale": "Rationale"}'
                         ),
                     )
                 mock_scoring_target_return_values.append(
@@ -271,7 +271,7 @@ async def test_apply_strategy_multiturn_failure(
                 if on_topic_checking_enabled:
                     scorer_responses_for_one_turn.append(
                         get_prompt_response_with_content(
-                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'
+                            '{"score_value": "True", "description": "On topic", "rationale": "Rationale"}'
                         ),
                     )
                 scorer_responses_for_one_turn.append(
@@ -341,7 +341,7 @@ async def test_apply_strategy_multiturn_success_in_last_turn(
                 if on_topic_checking_enabled:
                     mock_scoring_target_return_values_except_last_iteration.append(
                         get_prompt_response_with_content(
-                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'
+                            '{"score_value": "True", "description": "On topic", "rationale": "Rationale"}'
                         ),
                     )
                 mock_scoring_target_return_values_except_last_iteration.append(
@@ -353,7 +353,7 @@ async def test_apply_strategy_multiturn_success_in_last_turn(
                 if on_topic_checking_enabled:
                     mock_scoring_target_return_values_last_iteration.append(
                         get_prompt_response_with_content(
-                            '{"value": "True", "description": "On topic", "rationale": "Rationale"}'
+                            '{"score_value": "True", "description": "On topic", "rationale": "Rationale"}'
                         ),
                     )
                 mock_scoring_target_return_values_last_iteration.append(
