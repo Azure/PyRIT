@@ -1536,7 +1536,7 @@ class ModelWorker(object):
     def __init__(self, model_path, token, model_kwargs, tokenizer, conv_template, device):
         self.model = (
             AutoModelForCausalLM.from_pretrained(
-                model_path, token=token, torch_dtype=torch.float16, trust_remote_code=True, **model_kwargs
+                model_path, token=token, torch_dtype=torch.float16, trust_remote_code=False, **model_kwargs
             )
             .to(device)
             .eval()
@@ -1593,7 +1593,7 @@ def get_workers(params, eval=False):
     tokenizers = []
     for i in range(len(params.tokenizer_paths)):
         tokenizer = AutoTokenizer.from_pretrained(
-            params.tokenizer_paths[i], token=params.token, trust_remote_code=True, **params.tokenizer_kwargs[i]
+            params.tokenizer_paths[i], token=params.token, trust_remote_code=False, **params.tokenizer_kwargs[i]
         )
         if "oasst-sft-6-llama-30b" in params.tokenizer_paths[i]:
             tokenizer.bos_token_id = 1
