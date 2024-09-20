@@ -362,4 +362,5 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Deletes prompts by id.
         """
-        
+        # TODO for this PR
+        raise NotImplementedError("Method not yet implemented.")
