@@ -74,7 +74,7 @@ class FuzzerResult:
 
     def __repr__(self) -> str:
         return self.__str__()
-    
+
     def print_templates(self):
         """
         Prints the templates that were successful in jailbreaking the target.
@@ -85,7 +85,7 @@ class FuzzerResult:
                 print(f"---\n{template}")
         else:
             print("No successful templates found.")
-    
+
     def print_conversations(self, memory: MemoryInterface):
         """
         Prints the conversations of the successful jailbreaks.
@@ -96,9 +96,7 @@ class FuzzerResult:
         for conversation_id in self.prompt_target_conversation_ids:
             print(f"\nConversation ID: {conversation_id}")
 
-            target_messages = memory._get_prompt_pieces_with_conversation_id(
-                conversation_id=conversation_id
-            )
+            target_messages = memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
 
             if not target_messages or len(target_messages) == 0:
                 print("No conversation with the target")
