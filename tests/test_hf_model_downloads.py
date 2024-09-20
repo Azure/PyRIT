@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
 import time
 import pytest
@@ -8,6 +11,7 @@ from pyrit.common.download_hf_model_with_hf_cli import (
     download_specific_files_with_cli,
 )
 from pyrit.common.download_hf_model_with_transformers import download_model_with_transformers
+
 
 # Define constants for testing
 MODEL_ID = "microsoft/Phi-3-mini-4k-instruct"
@@ -20,6 +24,7 @@ FILE_PATTERNS = [
     "special_tokens_map.json",
     "generation_config.json",
 ]
+
 
 @pytest.fixture(scope="module")
 def setup_environment():

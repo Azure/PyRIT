@@ -2,13 +2,14 @@
 # Licensed under the MIT license.
 
 import os
-import pathlib
 import logging
 import subprocess
+from pathlib import Path
+from typing import Optional
 from huggingface_hub import HfApi
 
 # Define the base directory for the project
-PYRIT_PATH = pathlib.Path(__file__, "..", "..").resolve()
+PYRIT_PATH = Path(__file__, "..", "..").resolve()
 
 # Define the new folder for Hugging Face models within the same hierarchy as 'pyrit'
 HF_MODELS_DIR = PYRIT_PATH / "hf_models"
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 if not HUGGINGFACE_TOKEN:
     raise ValueError("HUGGINGFACE_TOKEN environment variable is not set. Please set it before running this function.")
+
 
 def get_available_files(model_id: str):
     """Fetches available files for a model from the Hugging Face repository."""
@@ -30,18 +32,28 @@ def get_available_files(model_id: str):
         logger.info(f"Error fetching model files for {model_id}: {e}")
         return []
 
-def download_files_with_aria2(urls: list, download_dir: str):
+
+def download_files_with_aria2(urls: list, download_dir: Optional[Path] = None):
     """Uses aria2 to download files from the given list of URLs."""
+
+    # Convert download_dir to string if it's a Path object
+    download_dir_str = str(download_dir) if isinstance(download_dir, Path) else download_dir
+
     aria2_command = [
         "aria2c",
-        "-d", download_dir,
-        "-x", "3",
-        "-s", "5",
-        "-j", "4",
+        "-d",
+        download_dir_str,
+        "-x",
+        "3",
+        "-s",
+        "5",
+        "-j",
+        "4",
         "--continue=true",
         "--enable-http-pipelining=true",
         f"--header=Authorization: Bearer {HUGGINGFACE_TOKEN}",
-        "-i", "-"  # Use '-' to read input from stdin
+        "-i",
+        "-",  # Use '-' to read input from stdin
     ]
 
     try:
@@ -56,6 +68,7 @@ def download_files_with_aria2(urls: list, download_dir: str):
     except subprocess.CalledProcessError as e:
         logger.info(f"Error downloading files with aria2: {e}")
         raise
+
 
 def download_specific_files_with_aria2(model_id: str, file_patterns: list):
     """Downloads specific files from a Hugging Face model repository using aria2."""

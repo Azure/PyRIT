@@ -22,18 +22,14 @@ def login_to_huggingface():
     token = os.getenv("HUGGINGFACE_TOKEN")
 
     if not token:
-        raise ValueError("HUGGINGFACE_TOKEN environment variable is not set. Please set it before running this function.")
+        raise ValueError(
+            "HUGGINGFACE_TOKEN environment variable is not set. Please set it before running this function."
+        )
 
-    command = [
-        "huggingface-cli", 
-        "login", 
-        "--token", 
-        token, 
-        "--add-to-git-credential"
-    ]
+    command = ["huggingface-cli", "login", "--token", token, "--add-to-git-credential"]
 
     try:
-        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        subprocess.run(command, check=True, capture_output=True, text=True)
         logger.info("Successfully logged into Hugging Face.")
     except subprocess.CalledProcessError as e:
         logger.info(f"Error logging into Hugging Face: {e}")
@@ -55,25 +51,20 @@ def get_available_files(model_id: str):
 def download_model_with_cli(model_id: str):
     """Downloads a Hugging Face model using huggingface-cli with parallel transfer enabled.
 
-        Args:
-            model_id: The model ID from Hugging Face.
-        Raises:
-            subprocess.CalledProcessError: If the huggingface-cli command fails.
+    Args:
+        model_id: The model ID from Hugging Face.
+    Raises:
+        subprocess.CalledProcessError: If the huggingface-cli command fails.
     """
     logger.info("Please make sure you are logged in to Hugging Face CLI. Running login process...")
     login_to_huggingface()  # Log in before downloading
 
     # Command to run huggingface-cli
-    command = [
-        "huggingface-cli",
-        "download",
-        model_id,
-        "--repo-type", "model"  # Ensure we specify the repository type
-    ]
+    command = ["huggingface-cli", "download", model_id, "--repo-type", "model"]  # Ensure we specify the repository type
 
     try:
         # Run the huggingface-cli command
-        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        subprocess.run(command, check=True, capture_output=True, text=True)
         logger.info(f"Model {model_id} downloaded successfully to the cache.")
     except subprocess.CalledProcessError as e:
         logger.info(f"Error downloading model {model_id}: {e}")
@@ -83,11 +74,11 @@ def download_model_with_cli(model_id: str):
 def download_specific_files_with_cli(model_id: str, file_patterns: list):
     """Downloads specific files from a Hugging Face model repository using huggingface-cli.
 
-        Args:
-            model_id: The model ID from Hugging Face.
-            file_patterns: A list of file patterns to download.
-        Raises:
-            subprocess.CalledProcessError: If the huggingface-cli command fails.
+    Args:
+        model_id: The model ID from Hugging Face.
+        file_patterns: A list of file patterns to download.
+    Raises:
+        subprocess.CalledProcessError: If the huggingface-cli command fails.
     """
     logger.info("Please make sure you are logged in to Hugging Face CLI. Running login process...")
     login_to_huggingface()
@@ -107,8 +98,10 @@ def download_specific_files_with_cli(model_id: str, file_patterns: list):
         "huggingface-cli",
         "download",
         model_id,
-        "--repo-type", "model",
-        "--include", ", ".join(files_to_download)
+        "--repo-type",
+        "model",
+        "--include",
+        ", ".join(files_to_download),
     ]
 
     try:
