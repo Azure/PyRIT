@@ -63,6 +63,13 @@ class InvalidJsonException(PyritException):
         super().__init__(message=message)
 
 
+class MissingPromptPlaceholderException(PyritException):
+    """Exception class for missing prompt placeholder errors."""
+
+    def __init__(self, *, message: str = "No prompt placeholder"):
+        super().__init__(message=message)
+
+
 def handle_bad_request_exception(
     response_text: str,
     request: PromptRequestPiece,
@@ -146,3 +153,27 @@ def remove_markdown_json(response_msg: str) -> str:
         response_msg = response_msg[8:-4]
 
     return response_msg
+
+
+def pyrit_placeholder_retry(func: Callable) -> Callable:
+    """
+    A decorator to apply retry logic.
+
+    Retries the function if it raises MissingPromptPlaceholderException.
+    Logs retry attempts at the INFO level and stops after a maximum number of attempts.
+
+    Args:
+        func (Callable): The function to be decorated.
+
+    Returns:
+        Callable: The decorated function with retry logic applied.
+    """
+
+    global RETRY_MAX_NUM_ATTEMPTS
+
+    return retry(
+        reraise=True,
+        retry=retry_if_exception_type(MissingPromptPlaceholderException),
+        after=after_log(logger, logging.INFO),
+        stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
+    )(func)
