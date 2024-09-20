@@ -30,7 +30,7 @@ from pyrit.models.prompt_request_response import (
 )
 from pyrit.models.prompt_response import PromptResponse
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
-from pyrit.models.score import Score, ScoreType
+from pyrit.models.score import Score, ScoreType, UnvalidatedScore
 
 
 __all__ = [
@@ -67,4 +67,5 @@ __all__ = [
     "Score",
     "ScoreType",
     "TextDataTypeSerializer",
+    "UnvalidatedScore",
 ]

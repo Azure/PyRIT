@@ -20,6 +20,7 @@ from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
 from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer
 
 
@@ -80,18 +81,8 @@ class CrescendoOrchestrator(Orchestrator):
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._red_teaming_chat._memory = self._memory
 
-        self.refusal_scorer = SelfAskTrueFalseScorer(
+        self.refusal_scorer = SelfAskRefusalScorer(
             chat_target=scoring_target,
-            true_false_question_path=Path(DATASETS_PATH)
-            / "score"
-            / "crescendo"
-            / "conversation_objective"
-            / "refusal.yaml",
-            true_false_system_prompt_path=Path(DATASETS_PATH)
-            / "score"
-            / "crescendo"
-            / "conversation_objective"
-            / "conversation_objective_system_prompt.yaml",
             memory=self._memory,
         )
 
