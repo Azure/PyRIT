@@ -63,6 +63,9 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
         self._chat_model_under_evaluation = chat_model_under_evaluation
         self._scorer = scorer
+        self._scorer._memory = self._memory
+        if getattr(self._scorer, '_prompt_target', None) is not None:
+            self._scorer._prompt_target._memory = self._memory
         self._conversation_id = str(uuid4())
         self._normalizer = PromptNormalizer(memory=self._memory)
 

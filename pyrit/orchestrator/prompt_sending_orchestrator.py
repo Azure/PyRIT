@@ -62,6 +62,9 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._scorers = scorers
+        self._scorers._memory = self._memory
+        if getattr(self._scorers, '_prompt_target', None) is not None:
+            self._scorers._prompt_target._memory = self._memory
 
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
@@ -192,7 +195,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     responses_only=True,
                 )
 
-    def print_conversations(self):
+    async def print_conversations(self):
         """Prints the conversation between the prompt target and the red teaming bot."""
         all_messages = self.get_memory()
 
@@ -215,7 +218,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    display_response(message)
+                    await display_response(message, self._memory)
 
                 scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
                 for score in scores:

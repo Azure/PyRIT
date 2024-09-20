@@ -102,6 +102,9 @@ class PAIROrchestrator(Orchestrator):
         self._single_turn_jailbreak_only = single_turn_jailbreak_only
         self._scorer_sensitivity = scorer_sensitivity
         self._scorer = scorer
+        self._scorer._memory = self._memory
+        if getattr(self._scorer, '_prompt_target', None) is not None:
+            self._scorer._prompt_target._memory = self._memory
         self._desired_target_response_prefix = desired_target_response_prefix
 
         # Load the prompt templates for the attacker

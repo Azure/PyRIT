@@ -88,6 +88,9 @@ class RedTeamingOrchestrator(Orchestrator):
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
+        self._scorer._memory = self._memory
+        if getattr(self._scorer, '_prompt_target', None) is not None:
+            self._scorer._prompt_target._memory = self._memory
 
     async def check_conversation_complete_async(self) -> Union[Score, None]:
         """
@@ -208,7 +211,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return response_piece
 
-    def print_conversation(self):
+    async def print_conversation(self):
         """Prints the conversation between the prompt target and the red teaming bot."""
         target_messages = self._memory._get_prompt_pieces_with_conversation_id(
             conversation_id=self._prompt_target_conversation_id
@@ -228,7 +231,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                display_response(message)
+                await display_response(message, self._memory)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
             if scores and len(scores) > 0:
