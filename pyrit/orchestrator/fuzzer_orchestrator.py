@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from colorama import Fore, Style
 from dataclasses import dataclass
 import logging
 from pathlib import Path
@@ -15,7 +16,7 @@ import numpy as np
 from pyrit.common.path import SCALES_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptTemplate
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
@@ -73,6 +74,46 @@ class FuzzerResult:
 
     def __repr__(self) -> str:
         return self.__str__()
+    
+    def print_templates(self):
+        """
+        Prints the templates that were successful in jailbreaking the target.
+        """
+        if self.templates:
+            print("Successful Templates:")
+            for template in self.templates:
+                print(f"---\n{template}")
+        else:
+            print("No successful templates found.")
+    
+    def print_conversations(self, memory: MemoryInterface):
+        """
+        Prints the conversations of the successful jailbreaks.
+
+        Args:
+            result: The result of the fuzzer.
+        """
+        for conversation_id in self.prompt_target_conversation_ids:
+            print(f"\nConversation ID: {conversation_id}")
+
+            target_messages = memory._get_prompt_pieces_with_conversation_id(
+                conversation_id=conversation_id
+            )
+
+            if not target_messages or len(target_messages) == 0:
+                print("No conversation with the target")
+                return
+
+            for message in target_messages:
+                if message.role == "user":
+                    print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+                else:
+                    print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+
+                scores = memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+                if scores and len(scores) > 0:
+                    score = scores[0]
+                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
 
 class FuzzerOrchestrator(Orchestrator):
@@ -283,7 +324,6 @@ class FuzzerOrchestrator(Orchestrator):
                 request.validate()
                 requests.append(request)
 
-            responses: list[PromptRequestResponse]
             responses = await self._prompt_normalizer.send_prompt_batch_to_target_async(
                 requests=requests,
                 target=self._prompt_target,
@@ -318,7 +358,7 @@ class FuzzerOrchestrator(Orchestrator):
                 target_template_node.add_parent(current_seed)
 
             # update the rewards for the target node and others on its path
-            self._update(target_template_node, jailbreak_count=jailbreak_count)
+            self._update(jailbreak_count=jailbreak_count)
 
     def _select_template_with_mcts(self) -> PromptNode:
         """

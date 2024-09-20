@@ -51,8 +51,6 @@ def simple_prompt_templates():
     prompt_template4 = PromptTemplate.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "axies.yaml"
     )
-    # prompt_template5 = PromptTemplate.from_yaml_file(
-    # pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "balakula.yaml")
 
     prompt_templates = [
         prompt_template1.template,
@@ -252,35 +250,23 @@ async def test_apply_template_converter(simple_prompts: list, simple_prompt_temp
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "template_converter",
-    [ShortenConverter(converter_target=MockPromptTarget()), ExpandConverter(converter_target=MockPromptTarget())],
-)
-async def test_apply_template_converter_empty_placeholder(
-    simple_prompts: list[str], template_converter: PromptConverter, simple_prompt_templates: list
-):
-    prompt_template = ['Write a wikipedia article on . Start the article with "Title:".']
+async def test_apply_template_converter_empty_placeholder(simple_prompts: list[str], simple_prompt_templates: list):
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget())
-    prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget())
-    template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
         prompt_target=MockPromptTarget(),
-        template_converters=template_converters,
+        template_converters=[prompt_shorten_converter],
         scoring_target=MagicMock(),
     )
 
-    def get_mocked_random_number():
-        return template_converter
-
-    with patch("random.choice", get_mocked_random_number):
-        if template_converter == ExpandConverter or template_converter == ShortenConverter:
-            with patch.object(template_converter, "_convert_async") as mock_template:
-                mock_template.return_value = prompt_template
-                with pytest.raises(MissingPromptPlaceholderException) as e:
-                    fuzzer_orchestrator._apply_template_converter(simple_prompt_templates[0])
-                    assert e.match("Prompt placeholder is empty.")
+    prompt_shorten_converter.convert_async = AsyncMock(  # type: ignore
+        return_value=ConverterResult(output_text="new template without prompt placeholder", output_type="text")
+    )
+    with pytest.raises(MissingPromptPlaceholderException) as e:
+        await fuzzer_orchestrator._apply_template_converter(simple_prompt_templates[0])
+        prompt_shorten_converter.convert_async.assert_called_once()
+    assert e.match("Prompt placeholder is empty.")
 
 
 @pytest.mark.asyncio
@@ -303,8 +289,6 @@ async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list):
     prompt_nodes[1].rewards = 2
     prompt_nodes[2].rewards = 3
     for index, node in enumerate(prompt_nodes):
-        # fuzzer_orchestrator.rewards = [1,2,3,4,5]
-        # fuzzer_orchestrator.index = node.index
         fuzzer_orchestrator._step = 1
         UCT_score_func = fuzzer_orchestrator._best_UCT_score()
         UCT_score = UCT_score_func(node)
@@ -314,26 +298,13 @@ async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("probability", [0, 0.5])
 async def test_select(simple_prompts: list, probability: int, simple_prompt_templates: list):
-    prompt_template1 = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
-    )
-    prompt_template2 = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aim.yaml"
-    )
-    prompt_template3 = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aligned.yaml"
-    )
-    prompt_template4 = PromptTemplate.from_yaml_file(
-        pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "axies.yaml"
-    )
-    prompt_templates = [prompt_template1.template, prompt_template2.template]
     # set the children of each parent
     prompt_shorten_converter = ShortenConverter(converter_target=MockPromptTarget())
     prompt_expand_converter = ExpandConverter(converter_target=MockPromptTarget())
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
-        prompt_templates=prompt_templates,
+        prompt_templates=[simple_prompt_templates[0], simple_prompt_templates[1]],
         prompt_target=MockPromptTarget(),
         template_converters=template_converters,
         scoring_target=MagicMock(),
@@ -344,8 +315,8 @@ async def test_select(simple_prompts: list, probability: int, simple_prompt_temp
         batch_size=10,
     )
 
-    new_node1 = PromptNode(prompt_template3.template, parent=fuzzer_orchestrator._initial_prompts_nodes[1])
-    PromptNode(prompt_template4.template, parent=new_node1)
+    new_node1 = PromptNode(simple_prompt_templates[2], parent=fuzzer_orchestrator._initial_prompts_nodes[1])
+    PromptNode(simple_prompt_templates[3], parent=new_node1)
 
     fuzzer_orchestrator._step = 2
     prompt_node = fuzzer_orchestrator._initial_prompts_nodes
@@ -361,6 +332,7 @@ async def test_select(simple_prompts: list, probability: int, simple_prompt_temp
             path_mcts = fuzzer_orchestrator._mcts_selected_path
             for node in path_mcts:
                 assert node.parent is None
+                assert len(path_mcts) == 1
 
         if probability == 0.5:
             fuzzer_orchestrator._select_template_with_mcts()

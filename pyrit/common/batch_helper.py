@@ -69,8 +69,6 @@ async def batch_task_async(
 
     responses = []
 
-    print("items_to_batch: ", items_to_batch)
-
     _validate_rate_limit_parameters(prompt_target=prompt_target, batch_size=batch_size)
 
     if len(items_to_batch) == 0 or len(items_to_batch[0]) == 0:
@@ -80,12 +78,10 @@ async def batch_task_async(
         raise ValueError("Number of lists of items to batch must match number of task arguments.")
 
     for task_args in _get_chunks(*items_to_batch, batch_size=batch_size):
-        print("task_args: ", task_args)
         tasks = []
         for batch_index in range(len(task_args[0])):
             for arg_index, task_argument in enumerate(task_arguments):
                 task_kwargs[task_argument] = task_args[arg_index][batch_index]
-                print("task_kwargs: ", task_kwargs)
             tasks.append(task_func(**task_kwargs))
 
         batch_results = await asyncio.gather(*tasks)
