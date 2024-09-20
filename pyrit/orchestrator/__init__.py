@@ -14,6 +14,7 @@ from pyrit.orchestrator.xpia_orchestrator import (
     XPIAManualProcessingOrchestrator,
 )
 from pyrit.orchestrator.pair_orchestrator import PAIROrchestrator
+from pyrit.orchestrator.fuzzer_orchestrator import FuzzerOrchestrator
 
 __all__ = [
     "SkeletonKeyOrchestrator",
@@ -27,4 +28,5 @@ __all__ = [
     "XPIATestOrchestrator",
     "XPIAOrchestrator",
     "XPIAManualProcessingOrchestrator",
+    "FuzzerOrchestrator",
 ]
