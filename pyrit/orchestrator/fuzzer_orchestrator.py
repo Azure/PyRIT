@@ -173,7 +173,7 @@ class FuzzerOrchestrator(Orchestrator):
             target_jailbreak_goal_count: target number of the jailbreaks after which the fuzzer will stop.
             max_query_limit: Maximum number of times the fuzzer will run. By default, it calculates the product
                 of prompts and prompt templates and multiplies it by 10. Each iteration makes as many calls as
-                the number of prompts
+                the number of prompts.
         """
 
         super().__init__(
