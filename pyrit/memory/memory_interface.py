@@ -123,15 +123,12 @@ class MemoryInterface(abc.ABC):
         """
         Inserts a list of scores into the memory storage.
         """
-        prompt_ids = [str(score.prompt_request_response_id) for score in scores]
-        prompt_pieces = self.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
-        # Check for duplicate prompt pieces. Scores should only be added to the original prompt pieces.
-        for piece in prompt_pieces:
-            if piece.original_prompt_id != piece.id:
-                raise ValueError(
-                    f"Cannot add scores to duplicate prompt pieces. \
-                                 Prompt ID {piece.id} is a duplicate of {piece.original_prompt_id}."
-                )
+        for score in scores:
+            prompt_request_response_id = score.prompt_request_response_id
+            prompt_piece = self.get_prompt_request_pieces_by_id(prompt_ids=[str(prompt_request_response_id)])[0]
+            # auto-link score to the original prompt id if the prompt is a duplicate
+            if prompt_piece.original_prompt_id != prompt_piece.id:
+                score.prompt_request_response_id = prompt_piece.original_prompt_id
         self.insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
