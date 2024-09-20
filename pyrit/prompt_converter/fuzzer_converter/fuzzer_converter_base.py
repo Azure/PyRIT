@@ -3,16 +3,12 @@
 
 import json
 import logging
-import random
-from typing import List, Optional
 import uuid
-import pathlib
 
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.models import PromptTemplate
-from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.exceptions.exception_classes import (
     InvalidJsonException,

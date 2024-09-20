@@ -10,16 +10,23 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_converter import (
-    FuzzerCrossOverConverter,
+    FuzzerExpandConverter,
     FuzzerShortenConverter,
     FuzzerRephraseConverter,
     FuzzerCrossOverConverter,
-    FuzzerRephraseConverter,
+    FuzzerSimilarConverter,
 )
 
 
 @pytest.mark.parametrize(
-    "converter_class", [FuzzerCrossOverConverter, FuzzerShortenConverter, FuzzerRephraseConverter, FuzzerCrossOverConverter, FuzzerRephraseConverter]
+    "converter_class",
+    [
+        FuzzerExpandConverter,
+        FuzzerShortenConverter,
+        FuzzerRephraseConverter,
+        FuzzerCrossOverConverter,
+        FuzzerSimilarConverter,
+    ],
 )
 def test_converter_init_templates_not_null(converter_class):
     prompt_target = MockPromptTarget()
@@ -36,7 +43,14 @@ def test_converter_init_templates_not_null(converter_class):
     ],
 )
 @pytest.mark.parametrize(
-    "converter_class", [FuzzerCrossOverConverter, FuzzerShortenConverter, FuzzerRephraseConverter, FuzzerCrossOverConverter, FuzzerRephraseConverter]
+    "converter_class",
+    [
+        FuzzerExpandConverter,
+        FuzzerShortenConverter,
+        FuzzerRephraseConverter,
+        FuzzerCrossOverConverter,
+        FuzzerSimilarConverter,
+    ],
 )
 async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class):
     prompt_target = MockPromptTarget()

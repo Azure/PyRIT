@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pathlib
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models.prompt_template import PromptTemplate
