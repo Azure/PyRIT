@@ -60,7 +60,7 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
 
-        return await scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_prompts_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
 
     async def score_prompts_by_memory_labels_async(
         self,
@@ -84,7 +84,7 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
 
-        return await scorer.score_prompts_batch_async(prompts=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_prompts_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
 
     async def score_prompts_by_request_id_async(
         self, *, scorer: Scorer, prompt_ids: list[str], responses_only: bool = False
@@ -99,7 +99,7 @@ class ScoringOrchestrator(Orchestrator):
         if responses_only:
             requests = self._extract_responses_only(requests)
 
-        return await scorer.score_prompts_batch_async(prompts=requests, batch_size=self._batch_size)
+        return await scorer.score_prompts_batch_async(request_responses=requests, batch_size=self._batch_size)
 
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
         """
