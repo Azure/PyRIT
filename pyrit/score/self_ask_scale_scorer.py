@@ -95,7 +95,8 @@ class SelfAskScaleScorer(Scorer):
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()
-
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
         if not scale_path and not scale:
             raise ValueError("Either scale_path or scale must be provided.")
         if scale_path and scale:

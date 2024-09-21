@@ -40,7 +40,8 @@ class SelfAskLikertScorer(Scorer):
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()
-
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:

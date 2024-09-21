@@ -47,7 +47,8 @@ class SelfAskCategoryScorer(Scorer):
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
-
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 
         self._no_category_found_category = category_file_contents["no_category_found"]

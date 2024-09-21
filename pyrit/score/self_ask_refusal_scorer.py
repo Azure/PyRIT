@@ -30,7 +30,8 @@ class SelfAskRefusalScorer(Scorer):
 
         self._prompt_target = chat_target
         self._memory = memory if memory else DuckDBMemory()
-
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
         self._system_prompt = (PromptTemplate.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT)).template
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:

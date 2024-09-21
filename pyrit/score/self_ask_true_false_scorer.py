@@ -41,6 +41,9 @@ class SelfAskTrueFalseScorer(Scorer):
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
+        
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
 
         if not true_false_question_path and not true_false_question_contents:
             raise ValueError("Either true_false_question_path or true_false_question_contents must be provided.")
