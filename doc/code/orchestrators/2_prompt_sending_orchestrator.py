@@ -33,7 +33,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     end = time.time()
 
     print(f"Elapsed time for operation: {end-start}")
-    orchestrator.print_conversations()
+    await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
 # ### Introducing Rate Limit (RPM) Threshold
@@ -96,7 +96,7 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
     # this is run in a Jupyter notebook, so we can use await
     await orchestrator.send_prompts_async(prompt_list=prompts.prompts)  # type: ignore
 
-    orchestrator.print_conversations()
+    await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
 # ### Multi-Modal

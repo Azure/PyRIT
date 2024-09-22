@@ -40,7 +40,7 @@ class AddTextImageConverter(PromptConverter):
         font_size: Optional[int] = 15,
         x_pos: Optional[int] = 10,
         y_pos: Optional[int] = 10,
-        memory: Optional[MemoryInterface] = None
+        memory: Optional[MemoryInterface] = None,
     ):
         if text_to_add.strip() == "":
             raise ValueError("Please provide valid text_to_add value")

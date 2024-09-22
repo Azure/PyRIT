@@ -44,7 +44,7 @@ class QRCodeConverter(PromptConverter):
         finder_dark_color: Optional[tuple] = None,
         finder_light_color: Optional[tuple] = None,
         border_color: Optional[tuple] = None,
-        memory: Optional[MemoryInterface] = None
+        memory: Optional[MemoryInterface] = None,
     ):
         self._scale = scale
         self._border = border

@@ -91,7 +91,7 @@ class RedTeamingOrchestrator(Orchestrator):
         # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         if self._scorer:
             self._scorer._memory = self._memory
-            if getattr(self._scorer, '_prompt_target', None) is not None:
+            if hasattr(self._scorer, "_prompt_target"):
                 self._scorer._prompt_target._memory = self._memory
 
     async def check_conversation_complete_async(self) -> Union[Score, None]:
@@ -198,7 +198,7 @@ class RedTeamingOrchestrator(Orchestrator):
             request_converters=self._prompt_converters,
             prompt_value=prompt,
             prompt_data_type="text",
-            memory=self._memory
+            memory=self._memory,
         )
 
         response_piece = (

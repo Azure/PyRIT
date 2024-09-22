@@ -5,9 +5,8 @@ import aiofiles
 import os
 import logging
 from abc import ABC, abstractmethod
-from typing import Union
-from pathlib import Path
 from typing import Union, Optional
+from pathlib import Path
 from enum import Enum
 from urllib.parse import urlparse
 
@@ -25,6 +24,7 @@ class SupportedContentType(Enum):
     All supported content types for uploading blobs to provided storage account container.
     See all options here: https://www.iana.org/assignments/media-types/media-types.xhtml
     """
+
     # TODO, add other media supported types
     PLAIN_TEXT = "text/plain"
 
@@ -61,7 +61,7 @@ class StorageIO(ABC):
         Asynchronously checks if the path refers to a file (not a directory or container).
         """
         pass
-    
+
     @abstractmethod
     async def create_directory_if_not_exists(self, path: Union[Path, str]) -> None:
         """
@@ -83,7 +83,7 @@ class DiskStorageIO(StorageIO):
         Returns:
             bytes: The content of the file.
         """
-        async with aiofiles.open(path, 'rb') as file:
+        async with aiofiles.open(path, "rb") as file:
             return await file.read()
 
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
@@ -93,7 +93,7 @@ class DiskStorageIO(StorageIO):
             path (Union[Path, str]): The path to the file.
             data (bytes): The content to write to the file.
         """
-        async with aiofiles.open(path, 'wb') as file:
+        async with aiofiles.open(path, "wb") as file:
             await file.write(data)
 
     async def path_exists(self, path: Union[Path, str]) -> bool:
@@ -115,7 +115,7 @@ class DiskStorageIO(StorageIO):
             bool: True if the path is a file, False otherwise.
         """
         return os.path.isfile(path)
-    
+
     async def create_directory_if_not_exists(self, path: Union[Path, str]) -> None:
         """
         Asynchronously creates a directory if it doesn't exist on the local disk.
@@ -124,9 +124,9 @@ class DiskStorageIO(StorageIO):
         """
         directory_path = Path(path)
         if not directory_path.exists():
-            os.mkdir(directory_path, exist_ok=True)
-    
-    
+            os.mkdir(directory_path)
+
+
 class AzureBlobStorageIO(StorageIO):
     """
     Implementation of StorageIO for Azure Blob Storage.
@@ -137,13 +137,13 @@ class AzureBlobStorageIO(StorageIO):
         *,
         container_url: str = None,
         sas_token: Optional[str] = None,
-        blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT
+        blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
     ) -> None:
 
         self._blob_content_type: str = blob_content_type.value
         if not container_url:
-            raise ValueError(f"Invalid Azure Storage Account Container URL.")
-        
+            raise ValueError("Invalid Azure Storage Account Container URL.")
+
         self._container_url: str = container_url
         self._sas_token = sas_token
         self._client_async: AsyncContainerClient = None
@@ -196,53 +196,59 @@ class AzureBlobStorageIO(StorageIO):
                 logger.exception(msg=f"An unexpected error occurred: {exc}")
                 raise
 
+    def parse_blob_url(self, file_path: str):
+        """Parses the blob URL to extract the container name and blob name."""
+        parsed_url = urlparse(file_path)
+        if parsed_url.scheme and parsed_url.netloc:
+            container_name = parsed_url.path.split("/")[1]
+            blob_name = "/".join(parsed_url.path.split("/")[2:])
+            return container_name, blob_name
+        else:
+            raise ValueError("Invalid blob URL")
+
     async def read_file(self, path: Union[Path, str]) -> bytes:
         """
         Asynchronously reads the content of a file (blob) from Azure Blob Storage.
 
-        If the provided `path` is a full URL 
+        If the provided `path` is a full URL
         (e.g., "https://<Azure STorage Account>.blob.core.windows.net/<container name>/dir1/dir2/sample.png"),
         it extracts the relative blob path (e.g., "dir1/dir2/sample.png") to correctly access the blob.
         If a relative path is provided, it will use it as-is.
 
         Args:
-            path (Union[Path, str]): The path to the file (blob) in Azure Blob Storage. 
+            path (Union[Path, str]): The path to the file (blob) in Azure Blob Storage.
                                     This can be either a full URL or a relative path.
 
         Returns:
             bytes: The content of the file (blob) as bytes.
 
         Raises:
-            Exception: If there is an error in reading the blob file, an exception will be logged 
+            Exception: If there is an error in reading the blob file, an exception will be logged
                     and re-raised.
 
         Example:
-            file_content = await read_file("https://account.blob.core.windows.net/container/dir1/dir2/1726627689003831.png")
+            file_content =
+            await read_file("https://account.blob.core.windows.net/container/dir2/1726627689003831.png")
             # Or using a relative path:
             file_content = await read_file("dir1/dir2/1726627689003831.png")
         """
         if not self._client_async:
             await self._create_container_client_async()
 
-        file_path = str(path)
+        _, blob_name = self.parse_blob_url(str(path))
 
-        parsed_url = urlparse(file_path)
-        if parsed_url.scheme and parsed_url.netloc:
-            file_path = '/'.join(parsed_url.path.split('/')[2:])
-        
         try:
-            blob_client = self._client_async.get_blob_client(blob=file_path)
-            
+            blob_client = self._client_async.get_blob_client(blob=blob_name)
+
             # Download the blob
             blob_stream = await blob_client.download_blob()
             file_content = await blob_stream.readall()
-            
+
             return file_content
 
         except Exception as exc:
-            logger.exception(f"Failed to read file at {file_path}: {exc}")
+            logger.exception(f"Failed to read file at {blob_name}: {exc}")
             raise
-        
 
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
         """
@@ -252,18 +258,17 @@ class AzureBlobStorageIO(StorageIO):
             path (Union[Path, str]): The full Azure Blob Storage URL
             data (bytes): The data to write.
         """
-        parsed_url = urlparse(str(path))
+        _, blob_name = self.parse_blob_url(str(path))
 
-        sub_path = '/'.join(parsed_url.path.split('/')[2:])
-
-        await self._upload_blob_async(file_name=sub_path, data=data, content_type=self._blob_content_type)
+        await self._upload_blob_async(file_name=blob_name, data=data, content_type=self._blob_content_type)
 
     async def path_exists(self, path: Union[Path, str]) -> bool:
         """Check if a given path exists in the Azure Blob Storage container."""
         if not self._client_async:
             await self._create_container_client_async()
         try:
-            blob_client = self._client_async.get_blob_client(blob=str(path))
+            _, blob_name = self.parse_blob_url(str(path))
+            blob_client = self._client_async.get_blob_client(blob=blob_name)
             await blob_client.get_blob_properties()
             return True
         except ResourceNotFoundError:
@@ -274,11 +279,15 @@ class AzureBlobStorageIO(StorageIO):
         if not self._client_async:
             await self._create_container_client_async()
         try:
-            blob_client = self._client_async.get_blob_client(blob=str(path))
+            _, blob_name = self.parse_blob_url(str(path))
+            blob_client = self._client_async.get_blob_client(blob=blob_name)
             blob_properties = await blob_client.get_blob_properties()
             return blob_properties.size > 0
         except ResourceNotFoundError:
             return False
-    
+
     async def create_directory_if_not_exists(self, directory_path: Union[Path, str]) -> None:
-        pass
+        logger.info(
+            f"Directory creation is handled automatically during upload operations in Azure Blob Storage. "
+            f"Directory path: {directory_path}"
+        )

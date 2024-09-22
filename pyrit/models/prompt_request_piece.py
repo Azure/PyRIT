@@ -1,16 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import abc
 import uuid
 
 from datetime import datetime
-from typing import Dict, List, Optional, Literal, get_args
+from typing import Dict, List, Optional, Literal, get_args, TYPE_CHECKING
 from uuid import uuid4
 
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
+
+if TYPE_CHECKING:
+    from pyrit.memory import MemoryInterface
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
@@ -111,17 +115,22 @@ class PromptRequestPiece(abc.ABC):
 
         self.response_error = response_error
         self.originator = originator
-        
+
     async def compute_sha256(self, memory: MemoryInterface):
         """
         This method computes the SHA256 hash values asynchronously.
         It should be called after object creation if `original_value` and `converted_value` are set.
         """
         from pyrit.models.data_type_serializer import data_serializer_factory
-        original_serializer = data_serializer_factory(data_type=self.original_value_data_type, value=self._original_value, memory=memory)
+
+        original_serializer = data_serializer_factory(
+            data_type=self.original_value_data_type, value=self._original_value, memory=memory
+        )
         self._original_value_sha256 = await original_serializer.get_sha256()
 
-        converted_serializer = data_serializer_factory(data_type=self.converted_value_data_type, value=self._converted_value, memory=memory)
+        converted_serializer = data_serializer_factory(
+            data_type=self.converted_value_data_type, value=self._converted_value, memory=memory
+        )
         self._converted_value_sha256 = await converted_serializer.get_sha256()
 
     @property

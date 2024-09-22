@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import abc
 import base64
 import hashlib
@@ -12,7 +14,6 @@ from mimetypes import guess_type
 from urllib.parse import urlparse
 
 from pyrit.models.literals import PromptDataType
-from __future__ import annotations
 
 if TYPE_CHECKING:
     from pyrit.memory import MemoryInterface
@@ -144,8 +145,8 @@ class DataTypeSerializer(abc.ABC):
         await self._memory._storage_io.create_directory_if_not_exists(self.data_directory)
 
         ticks = int(time.time() * 1_000_000)
-        if self.is_url(self.data_directory):
-            self._file_path = self.data_directory + f"/{ticks}.{self.file_extension}"
+        if self.is_url(str(self.data_directory)):
+            self._file_path = Path(str(self.data_directory) + f"/{ticks}.{self.file_extension}")
         else:
             self._file_path = Path(self.data_directory, f"{ticks}.{self.file_extension}")
         return self._file_path
@@ -205,17 +206,12 @@ class URLDataTypeSerializer(DataTypeSerializer):
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):
     def __init__(
-        self,
-        *,
-        memory: MemoryInterface = None,
-        prompt_text: Optional[str] = None,
-        extension: Optional[str] = None
+        self, *, memory: MemoryInterface = None, prompt_text: Optional[str] = None, extension: Optional[str] = None
     ):
         self._memory = memory
         self.data_type = "image_path"
-        self.data_directory = self._memory.results_path + "/dbdata/images"
+        self.data_directory = Path(self._memory.results_path + "/dbdata/images")
         self.file_extension = extension if extension else "png"
-        
 
         if prompt_text:
             self.value = prompt_text
@@ -234,7 +230,7 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
     ):
         self.data_type = "audio_path"
         self._memory = memory
-        self.data_directory = self._memory.results_path + "/dbdata/audio"
+        self.data_directory = Path(self._memory.results_path + "/dbdata/audio")
         self.file_extension = extension if extension else "mp3"
 
         if prompt_text:

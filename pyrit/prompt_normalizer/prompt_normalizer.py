@@ -188,19 +188,19 @@ class PromptNormalizer(abc.ABC):
 
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
             prompt_request_piece = PromptRequestPiece(
-                    role="user",
-                    original_value=request_piece.prompt_value,
-                    converted_value=converted_prompt_text,
-                    conversation_id=conversation_id,
-                    sequence=sequence,
-                    labels=labels,
-                    prompt_metadata=request_piece.metadata,
-                    converter_identifiers=converter_identifiers,
-                    prompt_target_identifier=target.get_identifier(),
-                    orchestrator_identifier=orchestrator_identifier,
-                    original_value_data_type=request_piece.prompt_data_type,
-                    converted_value_data_type=converted_prompt_type,
-                )
+                role="user",
+                original_value=request_piece.prompt_value,
+                converted_value=converted_prompt_text,
+                conversation_id=conversation_id,
+                sequence=sequence,
+                labels=labels,
+                prompt_metadata=request_piece.metadata,
+                converter_identifiers=converter_identifiers,
+                prompt_target_identifier=target.get_identifier(),
+                orchestrator_identifier=orchestrator_identifier,
+                original_value_data_type=request_piece.prompt_data_type,
+                converted_value_data_type=converted_prompt_type,
+            )
             await prompt_request_piece.compute_sha256(memory=self._memory)
             entries.append(prompt_request_piece)
 

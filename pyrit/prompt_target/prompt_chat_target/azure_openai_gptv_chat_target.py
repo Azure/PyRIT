@@ -190,7 +190,9 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext, memory=self._memory)
+        image_serializer = data_serializer_factory(
+            value=image_path, data_type="image_path", extension=ext, memory=self._memory
+        )
         base64_encoded_data = await image_serializer.read_data_base64()
         # Construct the data URL, as per Azure OpenAI GPTV local image format
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image

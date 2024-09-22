@@ -105,7 +105,7 @@ class PAIROrchestrator(Orchestrator):
         # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         if self._scorer:
             self._scorer._memory = self._memory
-            if getattr(self._scorer, '_prompt_target', None) is not None:
+            if hasattr(self._scorer, "_prompt_target"):
                 self._scorer._prompt_target._memory = self._memory
         self._desired_target_response_prefix = desired_target_response_prefix
 
@@ -153,7 +153,7 @@ class PAIROrchestrator(Orchestrator):
                         request_converters=self._prompt_converters,
                         prompt_value=target_response,
                         prompt_data_type="text",
-                        memory=self._memory
+                        memory=self._memory,
                     )
                 ]
             ),
@@ -182,7 +182,10 @@ class PAIROrchestrator(Orchestrator):
             normalizer_request=NormalizerRequest(
                 request_pieces=[
                     NormalizerRequestPiece(
-                        request_converters=self._prompt_converters, prompt_value=text, prompt_data_type="text", memory=self._memory
+                        request_converters=self._prompt_converters,
+                        prompt_value=text,
+                        prompt_data_type="text",
+                        memory=self._memory,
                     )
                 ]
             ),

@@ -42,7 +42,7 @@ class AddImageTextConverter(PromptConverter):
         font_size: Optional[int] = 15,
         x_pos: Optional[int] = 10,
         y_pos: Optional[int] = 10,
-        memory: Optional[MemoryInterface] = None
+        memory: Optional[MemoryInterface] = None,
     ):
         if not img_to_add:
             raise ValueError("Please provide valid image path")

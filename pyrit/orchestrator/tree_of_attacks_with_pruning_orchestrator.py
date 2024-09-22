@@ -150,10 +150,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
             prompt_text = self._initial_red_teaming_prompt
 
         red_teaming_prompt_obj = NormalizerRequestPiece(
-            request_converters=[],
-            prompt_value=prompt_text,
-            prompt_data_type="text",
-            memory=self._memory
+            request_converters=[], prompt_value=prompt_text, prompt_data_type="text", memory=self._memory
         )
 
         red_teaming_response = (
@@ -208,7 +205,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
             request_converters=self._prompt_converters,
             prompt_value=prompt,
             prompt_data_type="text",
-            memory=self._memory
+            memory=self._memory,
         )
         response = (
             await self._prompt_normalizer.send_prompt_async(

@@ -11,6 +11,7 @@ from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 from pyrit.models import ScoreType, Score, UnvalidatedScore
+from pyrit.memory import MemoryInterface
 
 
 class Scorer(abc.ABC):
@@ -19,6 +20,7 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+    _memory: Optional[MemoryInterface]
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:

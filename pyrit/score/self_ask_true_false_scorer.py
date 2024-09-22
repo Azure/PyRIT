@@ -41,7 +41,7 @@ class SelfAskTrueFalseScorer(Scorer):
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
-        
+
         # Ensure _prompt_target uses the same memory interface as the scorer.
         if self._prompt_target:
             self._prompt_target._memory = self._memory

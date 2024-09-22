@@ -4,7 +4,7 @@
 from typing import Optional
 import uuid
 
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 

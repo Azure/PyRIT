@@ -42,7 +42,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_language: str = "en_US",
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
-        memory: Optional[MemoryInterface] = None
+        memory: Optional[MemoryInterface] = None,
     ) -> None:
 
         self._azure_speech_region: str = default_values.get_required_value(
@@ -68,7 +68,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         if prompt.strip() == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
 
-        audio_serializer = data_serializer_factory(data_type="audio_path", extension=self._output_format, memory=self._memory)
+        audio_serializer = data_serializer_factory(
+            data_type="audio_path", extension=self._output_format, memory=self._memory
+        )
         audio_serializer_file = str(await audio_serializer.get_data_filename())
 
         try:

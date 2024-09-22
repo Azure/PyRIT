@@ -66,7 +66,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         if self._scorer:
             self._scorer._memory = self._memory
-            if getattr(self._scorer, '_prompt_target', None) is not None:
+            if hasattr(self._scorer, "_prompt_target"):
                 self._scorer._prompt_target._memory = self._memory
         self._conversation_id = str(uuid4())
         self._normalizer = PromptNormalizer(memory=self._memory)

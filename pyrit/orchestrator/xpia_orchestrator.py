@@ -66,14 +66,14 @@ class XPIAOrchestrator(Orchestrator):
 
         self._attack_setup_target = attack_setup_target
         self._processing_callback = processing_callback
-        
+
         self._scorer = scorer
         # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         if self._scorer:
             self._scorer._memory = self._memory
-            if getattr(self._scorer, '_prompt_target', None) is not None:
+            if hasattr(self._scorer, "_prompt_target"):
                 self._scorer._prompt_target._memory = self._memory
-            
+
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._attack_setup_target._memory = self._memory
         self._attack_setup_target_conversation_id = attack_setup_target_conversation_id or str(uuid4())

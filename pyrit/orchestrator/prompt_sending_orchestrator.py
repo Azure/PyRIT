@@ -11,7 +11,6 @@ from pyrit.common.display_response import display_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestResponse
-from pyrit.models.storage_io import StorageIO
 from pyrit.orchestrator import Orchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -66,7 +65,7 @@ class PromptSendingOrchestrator(Orchestrator):
         if self._scorers:
             for scorer in self._scorers:
                 scorer._memory = self._memory
-                if getattr(scorer, '_prompt_target', None) is not None:
+                if getattr(scorer, "_prompt_target", None) is not None:
                     scorer._prompt_target._memory = self._memory
 
         self._prompt_target = prompt_target

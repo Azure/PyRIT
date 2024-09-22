@@ -107,7 +107,9 @@ class AzureTTSTarget(PromptTarget):
 
         logger.info("Received valid response from the prompt target")
 
-        audio_response = data_serializer_factory(data_type="audio_path", extension=self._response_format, memory=self._memory)
+        audio_response = data_serializer_factory(
+            data_type="audio_path", extension=self._response_format, memory=self._memory
+        )
 
         data = response.content
 

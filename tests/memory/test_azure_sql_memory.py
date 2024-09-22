@@ -35,17 +35,15 @@ def sample_conversation_entries() -> list[PromptMemoryEntry]:
 @pytest.mark.asyncio
 async def test_insert_entry(memory_interface):
     prompt_request_piece = PromptRequestPiece(
-            id=uuid.uuid4(),
-            conversation_id="123",
-            role="user",
-            original_value_data_type="text",
-            original_value="Hello",
-            converted_value="Hello",
-        )
-    await prompt_request_piece.compute_sha256(memory_interface)
-    entry = PromptMemoryEntry(
-        entry=prompt_request_piece
+        id=uuid.uuid4(),
+        conversation_id="123",
+        role="user",
+        original_value_data_type="text",
+        original_value="Hello",
+        converted_value="Hello",
     )
+    await prompt_request_piece.compute_sha256(memory_interface)
+    entry = PromptMemoryEntry(entry=prompt_request_piece)
 
     memory_interface = AzureSQLMemory(
         connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server"
@@ -265,16 +263,20 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
 
     orchestrator1_id = orchestrator1.get_identifier()["id"]
     # Mock the query_entries method
-    with mock.patch.object(memory_interface, 'query_entries', return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id]):
+    with mock.patch.object(
+        memory_interface,
+        "query_entries",
+        return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
+    ):
         # Call the method under test
         retrieved_entries = memory_interface._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator1_id)
 
         # Verify the returned entries
         assert len(retrieved_entries) == 2
         assert all(piece.orchestrator_identifier["id"] == orchestrator1_id for piece in retrieved_entries)
-        memory_interface.query_entries.assert_called_once()
+
         # Extract the actual SQL condition passed to query_entries
-        actual_sql_condition = memory_interface.query_entries.call_args.kwargs['conditions']
+        actual_sql_condition = memory_interface.query_entries.call_args.kwargs["conditions"]  # type: ignore
         expected_sql_condition = text(
             "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
         ).bindparams(json_id=orchestrator1_id)

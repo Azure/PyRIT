@@ -148,17 +148,15 @@ def test_embedding_data_column_types(memory_interface):
 async def test_insert_entry(memory_interface):
     session = memory_interface.get_session()
     prompt_request_piece_entry = PromptRequestPiece(
-            id=uuid.uuid4(),
-            conversation_id="123",
-            role="user",
-            original_value_data_type="text",
-            original_value="Hello",
-            converted_value="Hello after conversion",
-        )
-    await prompt_request_piece_entry.compute_sha256(memory_interface)
-    entry = PromptMemoryEntry(
-        entry=prompt_request_piece_entry
+        id=uuid.uuid4(),
+        conversation_id="123",
+        role="user",
+        original_value_data_type="text",
+        original_value="Hello",
+        converted_value="Hello after conversion",
     )
+    await prompt_request_piece_entry.compute_sha256(memory_interface)
+    entry = PromptMemoryEntry(entry=prompt_request_piece_entry)
     # Use the _insert_entry method to insert the entry into the database
     memory_interface._insert_entry(entry)
 
@@ -171,7 +169,7 @@ async def test_insert_entry(memory_interface):
         sha265 = "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969"
         assert inserted_entry.original_value_sha256 == sha265
         assert inserted_entry.converted_value == "Hello after conversion"
-        converted_sha256 = '3313a61af7b34d6cde2840bfa000843ac7c6ce5bfaa454ab7e8feef0fb2c5c6c'
+        converted_sha256 = "3313a61af7b34d6cde2840bfa000843ac7c6ce5bfaa454ab7e8feef0fb2c5c6c"
         assert inserted_entry.converted_value_sha256 == converted_sha256
 
 

@@ -24,7 +24,7 @@ def duckdb_in_memory() -> MemoryInterface:
 
 def test_data_serializer_factory_text_no_data_throws(duckdb_in_memory: MemoryInterface):
     with pytest.raises(TypeError):
-        data_serializer_factory("text", memory=duckdb_in_memory)
+        data_serializer_factory(data_type="text", memory=duckdb_in_memory)
 
 
 def test_data_serializer_factory_text_with_data(duckdb_in_memory: MemoryInterface):
@@ -117,7 +117,7 @@ async def test_image_path_read_data_base64(duckdb_in_memory: MemoryInterface):
 async def test_path_not_exists(duckdb_in_memory: MemoryInterface):
     file_path = "non_existing_file.txt"
     serializer = data_serializer_factory(data_type="image_path", value=file_path, memory=duckdb_in_memory)
-    
+
     with pytest.raises(FileNotFoundError):
         await serializer.read_data()
 

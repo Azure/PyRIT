@@ -34,14 +34,15 @@ class ScoringOrchestrator(Orchestrator):
         super().__init__(memory=memory, verbose=verbose)
 
         self._batch_size = batch_size
-    
+
     def _assign_memory(self, scorer: Scorer) -> None:
         """
-        Assigns the provided memory to the scorer passed to the orchestrator, as well as to its prompt target, if applicable.
+        Assigns the provided memory to the scorer passed to the orchestrator,
+        as well as to its prompt target, if applicable.
         """
         # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         scorer._memory = self._memory
-        if getattr(scorer, '_prompt_target', None) is not None:
+        if getattr(scorer, "_prompt_target", None) is not None:
             scorer._prompt_target._memory = self._memory
 
     async def score_prompts_by_orchestrator_id_async(

@@ -8,6 +8,7 @@ from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
 from pyrit.memory import DuckDBMemory
 
+
 class NormalizerRequestPiece(abc.ABC):
     _memory: MemoryInterface
 
@@ -18,7 +19,7 @@ class NormalizerRequestPiece(abc.ABC):
         prompt_value: str,
         prompt_data_type: PromptDataType,
         metadata: str = None,
-        memory: MemoryInterface = None
+        memory: MemoryInterface = None,
     ) -> None:
         """
         Represents a piece of a normalizer request.

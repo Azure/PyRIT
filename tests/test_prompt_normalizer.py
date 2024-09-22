@@ -6,7 +6,6 @@ import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
-from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
