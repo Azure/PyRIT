@@ -62,6 +62,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             )
         except ValueError:
             self._sas_token = None # To use delegation SAS
+        # Handle for Azure Blob Storage when using Azure SQL memory.
         self._storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
 
         self.results_path = self._container_url

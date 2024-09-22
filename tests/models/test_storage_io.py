@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
 import pytest
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from pathlib import Path
@@ -143,5 +142,5 @@ async def test_azure_storage_io_is_file(azure_blob_storage_io):
     azure_blob_storage_io._client_async.get_blob_client = Mock(return_value=mock_blob_client)
     mock_blob_properties = Mock(size=1024)
     mock_blob_client.get_blob_properties = AsyncMock(return_value=mock_blob_properties)
-    exists = await azure_blob_storage_io.is_file("path")
-    assert exists is True
+    is_file = await azure_blob_storage_io.is_file("path")
+    assert is_file is True

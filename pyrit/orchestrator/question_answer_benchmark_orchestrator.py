@@ -63,6 +63,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
         self._chat_model_under_evaluation = chat_model_under_evaluation
         self._scorer = scorer
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         if self._scorer:
             self._scorer._memory = self._memory
             if getattr(self._scorer, '_prompt_target', None) is not None:

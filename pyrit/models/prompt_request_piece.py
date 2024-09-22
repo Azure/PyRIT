@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Literal, get_args
 from uuid import uuid4
 
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
 
@@ -111,7 +112,7 @@ class PromptRequestPiece(abc.ABC):
         self.response_error = response_error
         self.originator = originator
         
-    async def compute_sha256(self, memory):
+    async def compute_sha256(self, memory: MemoryInterface):
         """
         This method computes the SHA256 hash values asynchronously.
         It should be called after object creation if `original_value` and `converted_value` are set.

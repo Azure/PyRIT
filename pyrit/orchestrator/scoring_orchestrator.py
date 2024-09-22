@@ -39,6 +39,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         Assigns the provided memory to the scorer passed to the orchestrator, as well as to its prompt target, if applicable.
         """
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         scorer._memory = self._memory
         if getattr(scorer, '_prompt_target', None) is not None:
             scorer._prompt_target._memory = self._memory

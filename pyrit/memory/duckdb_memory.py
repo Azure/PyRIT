@@ -46,6 +46,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         else:
             self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
         self.results_path = str(RESULTS_PATH)
+        # Handles disk-based storage for DuckDB local memory.
         self._storage_io = DiskStorageIO()
         self.engine = self._create_engine(has_echo=verbose)
         self.SessionFactory = sessionmaker(bind=self.engine)

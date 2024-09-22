@@ -14,8 +14,8 @@ from urllib.parse import urlparse
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from azure.storage.blob import ContentSettings
 from azure.core.exceptions import ClientAuthenticationError, ResourceNotFoundError
-from pyrit.auth import AzureStorageAuth
 
+from pyrit.auth import AzureStorageAuth
 
 logger = logging.getLogger(__name__)
 

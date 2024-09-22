@@ -102,6 +102,7 @@ class PAIROrchestrator(Orchestrator):
         self._single_turn_jailbreak_only = single_turn_jailbreak_only
         self._scorer_sensitivity = scorer_sensitivity
         self._scorer = scorer
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         if self._scorer:
             self._scorer._memory = self._memory
             if getattr(self._scorer, '_prompt_target', None) is not None:

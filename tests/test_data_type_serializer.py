@@ -113,6 +113,15 @@ async def test_image_path_read_data_base64(duckdb_in_memory: MemoryInterface):
     assert base_64_data == "QUFBQQ=="
 
 
+@pytest.mark.asyncio()
+async def test_path_not_exists(duckdb_in_memory: MemoryInterface):
+    file_path = "non_existing_file.txt"
+    serializer = data_serializer_factory(data_type="image_path", value=file_path, memory=duckdb_in_memory)
+    
+    with pytest.raises(FileNotFoundError):
+        await serializer.read_data()
+
+
 def test_get_extension():
     with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
         temp_file_path = temp_file.name

@@ -12,6 +12,8 @@ from mimetypes import guess_type
 from urllib.parse import urlparse
 
 from pyrit.models.literals import PromptDataType
+from __future__ import annotations
+
 if TYPE_CHECKING:
     from pyrit.memory import MemoryInterface
 
@@ -21,7 +23,7 @@ def data_serializer_factory(
     data_type: PromptDataType,
     value: Optional[str] = None,
     extension: Optional[str] = None,
-    memory: 'MemoryInterface' = None,
+    memory: MemoryInterface = None,
 ):
     if not memory:
         raise ValueError("The memory provided is invalid. Please provide a valid memory value.")
@@ -60,7 +62,7 @@ class DataTypeSerializer(abc.ABC):
     value: str
     data_directory: Path
     file_extension: str
-    _memory: 'MemoryInterface' = None
+    _memory: MemoryInterface = None
 
     _file_path: Path = None
 
@@ -172,7 +174,7 @@ class DataTypeSerializer(abc.ABC):
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: 'MemoryInterface'):
+    def __init__(self, *, prompt_text: str, memory: MemoryInterface):
         self.data_type = "text"
         self.value = prompt_text
         self._memory = memory
@@ -182,7 +184,7 @@ class TextDataTypeSerializer(DataTypeSerializer):
 
 
 class ErrorDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: 'MemoryInterface'):
+    def __init__(self, *, prompt_text: str, memory: MemoryInterface):
         self.data_type = "error"
         self.value = prompt_text
         self._memory = memory
@@ -192,7 +194,7 @@ class ErrorDataTypeSerializer(DataTypeSerializer):
 
 
 class URLDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: 'MemoryInterface'):
+    def __init__(self, *, prompt_text: str, memory: MemoryInterface):
         self.data_type = "url"
         self.value = prompt_text
         self._memory = memory
@@ -205,7 +207,7 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
     def __init__(
         self,
         *,
-        memory: 'MemoryInterface' = None,
+        memory: MemoryInterface = None,
         prompt_text: Optional[str] = None,
         extension: Optional[str] = None
     ):
@@ -226,7 +228,7 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
     def __init__(
         self,
         *,
-        memory: 'MemoryInterface' = None,
+        memory: MemoryInterface = None,
         prompt_text: Optional[str] = None,
         extension: Optional[str] = None,
     ):

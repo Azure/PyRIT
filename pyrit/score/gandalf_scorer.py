@@ -24,6 +24,7 @@ class GandalfScorer(Scorer):
         self._defender = level.value
         self._endpoint = "https://gandalf.lakera.ai/api/guess-password"
         self._memory = memory if memory else DuckDBMemory()
+        # Ensure _prompt_target uses the same memory interface as the scorer.
         if self._prompt_target:
             self._prompt_target._memory = self._memory
         self.scorer_type = "true_false"

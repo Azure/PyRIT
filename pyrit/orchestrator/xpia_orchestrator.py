@@ -68,6 +68,7 @@ class XPIAOrchestrator(Orchestrator):
         self._processing_callback = processing_callback
         
         self._scorer = scorer
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         if self._scorer:
             self._scorer._memory = self._memory
             if getattr(self._scorer, '_prompt_target', None) is not None:
