@@ -102,7 +102,9 @@ class DataTypeSerializer(abc.ABC):
         if not self.value:
             raise RuntimeError("Prompt text not set")
         # Check if path exists
-        await self._memory._storage_io.is_path_exists(path=self.value)
+        file_exists = await self._memory._storage_io.path_exists(path=self.value)
+        if not file_exists:
+            raise FileNotFoundError(f"File not found: {self.value}")
         # Read the contents from the path
         return await self._memory._storage_io.read_file(self.value)
 
@@ -215,10 +217,6 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
 
         if prompt_text:
             self.value = prompt_text
-        
-        # TODO blob path validation, maybe functionality in storage_io 
-        # if prompt_text and not await storage_io.is_file(prompt_text):
-        #     raise FileNotFoundError(f"File does not exist: {prompt_text}")
 
     def data_on_disk(self) -> bool:
         return True
@@ -239,10 +237,6 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
 
         if prompt_text:
             self.value = prompt_text
-
-            # TODO blob path validation, maybe functionality in storage_io 
-            # if not self.storage_io.isfile(self.value):
-            #     raise FileNotFoundError(f"File does not exist: {self.value}")
 
     def data_on_disk(self) -> bool:
         return True

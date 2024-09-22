@@ -14,6 +14,8 @@ from pyrit.models import PromptRequestResponse, group_conversation_request_piece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 from tests.mocks import MockPromptTarget
+from pyrit.memory import DuckDBMemory
+from pyrit.memory import MemoryInterface
 
 from tests.mocks import get_sample_conversations
 
@@ -21,6 +23,12 @@ from tests.mocks import get_sample_conversations
 @pytest.fixture
 def sample_conversations() -> list[PromptRequestPiece]:
     return get_sample_conversations()
+
+
+@pytest.fixture(scope="function")
+def duckdb_in_memory() -> MemoryInterface:
+    file_memory = DuckDBMemory(db_path=":memory:")
+    return file_memory
 
 
 def test_id_set():
@@ -88,18 +96,20 @@ def test_orchestrators_serialize():
     assert entry.orchestrator_identifier["__module__"] == "pyrit.orchestrator.prompt_sending_orchestrator"
 
 
-def test_hashes_generated():
+@pytest.mark.asyncio
+async def test_hashes_generated(duckdb_in_memory: MemoryInterface):
     entry = PromptRequestPiece(
         role="user",
         original_value="Hello1",
         converted_value="Hello2",
     )
-
+    await entry.compute_sha256(duckdb_in_memory)
     assert entry.original_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
     assert entry.converted_value_sha256 == "be98c2510e417405647facb89399582fc499c3de4452b3014857f92e6baad9a9"
 
 
-def test_hashes_generated_files():
+@pytest.mark.asyncio
+async def test_hashes_generated_files(duckdb_in_memory: MemoryInterface):
     filename = ""
     with tempfile.NamedTemporaryFile(delete=False) as f:
         filename = f.name
@@ -113,7 +123,7 @@ def test_hashes_generated_files():
             original_value_data_type="image_path",
             converted_value_data_type="audio_path",
         )
-
+        await entry.compute_sha256(duckdb_in_memory)
         assert entry.original_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
         assert entry.converted_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
 
@@ -213,21 +223,24 @@ def test_prompt_request_piece_no_roles():
         assert "not a valid role." in str(excinfo.value)
 
 
-def test_prompt_request_piece_sets_original_sha256():
+@pytest.mark.asyncio
+async def test_prompt_request_piece_sets_original_sha256(duckdb_in_memory: MemoryInterface):
     entry = PromptRequestPiece(
         role="user",
         original_value="Hello",
     )
 
     entry.original_value = "newvalue"
+    await entry.compute_sha256(duckdb_in_memory)
     assert entry.original_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
 
 
-def test_prompt_request_piece_sets_converted_sha256():
+@pytest.mark.asyncio
+async def test_prompt_request_piece_sets_converted_sha256(duckdb_in_memory: MemoryInterface):
     entry = PromptRequestPiece(
         role="user",
         original_value="Hello",
     )
-
     entry.converted_value = "newvalue"
+    await entry.compute_sha256(duckdb_in_memory)
     assert entry.converted_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"

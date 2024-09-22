@@ -49,7 +49,7 @@ class StorageIO(ABC):
         pass
 
     @abstractmethod
-    async def is_path_exists(self, path: Union[Path, str]) -> bool:
+    async def path_exists(self, path: Union[Path, str]) -> bool:
         """
         Asynchronously checks if a file or blob exists at the given path.
         """
@@ -96,7 +96,7 @@ class DiskStorageIO(StorageIO):
         async with aiofiles.open(path, 'wb') as file:
             await file.write(data)
 
-    async def is_path_exists(self, path: Union[Path, str]) -> bool:
+    async def path_exists(self, path: Union[Path, str]) -> bool:
         """
         Checks if a path exists on the local disk.
         Args:
@@ -258,7 +258,7 @@ class AzureBlobStorageIO(StorageIO):
 
         await self._upload_blob_async(file_name=sub_path, data=data, content_type=self._blob_content_type)
 
-    async def is_path_exists(self, path: Union[Path, str]) -> bool:
+    async def path_exists(self, path: Union[Path, str]) -> bool:
         """Check if a given path exists in the Azure Blob Storage container."""
         if not self._client_async:
             await self._create_container_client_async()

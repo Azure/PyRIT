@@ -6,6 +6,7 @@ import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
+from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
@@ -231,6 +232,9 @@ async def test_send_prompt_async_image_converter():
         )
 
         normalizer = PromptNormalizer(memory=MagicMock())
+
+        # Mock the async read_file method
+        normalizer._memory._storage_io.read_file = AsyncMock(return_value=b"mocked data")
 
         await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
 
