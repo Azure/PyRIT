@@ -11,7 +11,7 @@ import pytest
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from sqlalchemy import and_, func
+from sqlalchemy import text
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.models import PromptRequestPiece, Score
@@ -32,21 +32,18 @@ def sample_conversation_entries() -> list[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
-def test_insert_entry(memory_interface):
-    entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(
-            id=uuid.uuid4(),
-            conversation_id="123",
-            role="user",
-            original_value_data_type="text",
-            original_value="Hello",
-            converted_value="Hello",
-        )
+@pytest.mark.asyncio
+async def test_insert_entry(memory_interface):
+    prompt_request_piece = PromptRequestPiece(
+        id=uuid.uuid4(),
+        conversation_id="123",
+        role="user",
+        original_value_data_type="text",
+        original_value="Hello",
+        converted_value="Hello",
     )
-
-    memory_interface = AzureSQLMemory(
-        connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server"
-    )
+    await prompt_request_piece.compute_sha256(memory_interface)
+    entry = PromptMemoryEntry(entry=prompt_request_piece)
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
@@ -261,34 +258,28 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
     ]
 
     orchestrator1_id = orchestrator1.get_identifier()["id"]
+    # Mock the query_entries method
+    with mock.patch.object(
+        memory_interface,
+        "query_entries",
+        return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
+    ):
+        # Call the method under test
+        retrieved_entries = memory_interface._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator1_id)
 
-    session_mock = UnifiedAlchemyMagicMock(
-        data=[
-            (
-                [
-                    mock.call.query(PromptMemoryEntry),
-                    mock.call.filter(
-                        and_(
-                            func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
-                            func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == orchestrator1_id,
-                        )
-                    ),
-                ],
-                [entry for entry in entries if entry.orchestrator_identifier == orchestrator1.get_identifier()],
-            )
-        ]
-    )
-    session_mock.__enter__.return_value = session_mock
-    memory_interface.get_session.return_value = session_mock  # type: ignore
+        # Verify the returned entries
+        assert len(retrieved_entries) == 2
+        assert all(piece.orchestrator_identifier["id"] == orchestrator1_id for piece in retrieved_entries)
 
-    # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-    retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator1_id)
+        # Extract the actual SQL condition passed to query_entries
+        actual_sql_condition = memory_interface.query_entries.call_args.kwargs["conditions"]  # type: ignore
+        expected_sql_condition = text(
+            "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
+        ).bindparams(json_id=orchestrator1_id)
 
-    # Verify that the retrieved entries match the expected normalizer_id
-    assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
-    for retrieved_entry in retrieved_entries:
-        assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
-        assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
+        # Compare the SQL text and the bound parameters
+        assert str(actual_sql_condition) == str(expected_sql_condition)
+        assert actual_sql_condition.compile().params == expected_sql_condition.compile().params
 
 
 @pytest.mark.parametrize("score_type", ["float_scale", "true_false"])

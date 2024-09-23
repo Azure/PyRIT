@@ -1,16 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import abc
 import uuid
 
 from datetime import datetime
-from typing import Dict, List, Optional, Literal, get_args
+from typing import Dict, List, Optional, Literal, get_args, TYPE_CHECKING
 from uuid import uuid4
 
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
-from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.literals import PromptDataType, PromptResponseError
+
+if TYPE_CHECKING:
+    from pyrit.memory import MemoryInterface
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
@@ -95,8 +99,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.original_value_data_type = original_value_data_type
 
-        original_serializer = data_serializer_factory(data_type=original_value_data_type, value=original_value)
-        self._original_value_sha256 = original_serializer.get_sha256()
+        self._original_value_sha256 = None
 
         self._converted_value = converted_value
 
@@ -105,14 +108,30 @@ class PromptRequestPiece(abc.ABC):
 
         self.converted_value_data_type = converted_value_data_type
 
-        converted_serializer = data_serializer_factory(data_type=converted_value_data_type, value=converted_value)
-        self._converted_value_sha256 = converted_serializer.get_sha256()
+        self._converted_value_sha256 = None
 
         if response_error not in get_args(PromptResponseError):
             raise ValueError(f"response_error {response_error} is not a valid response error.")
 
         self.response_error = response_error
         self.originator = originator
+
+    async def compute_sha256(self, memory: MemoryInterface):
+        """
+        This method computes the SHA256 hash values asynchronously.
+        It should be called after object creation if `original_value` and `converted_value` are set.
+        """
+        from pyrit.models.data_type_serializer import data_serializer_factory
+
+        original_serializer = data_serializer_factory(
+            data_type=self.original_value_data_type, value=self._original_value, memory=memory
+        )
+        self._original_value_sha256 = await original_serializer.get_sha256()
+
+        converted_serializer = data_serializer_factory(
+            data_type=self.converted_value_data_type, value=self._converted_value, memory=memory
+        )
+        self._converted_value_sha256 = await converted_serializer.get_sha256()
 
     @property
     def converted_value(self) -> str:
@@ -121,8 +140,6 @@ class PromptRequestPiece(abc.ABC):
     @converted_value.setter
     def converted_value(self, value: str):
         self._converted_value = value
-        converted_serializer = data_serializer_factory(data_type=self.converted_value_data_type, value=value)
-        self._converted_value_sha256 = converted_serializer.get_sha256()
 
     @property
     def converted_value_sha256(self):
@@ -135,8 +152,6 @@ class PromptRequestPiece(abc.ABC):
     @original_value.setter
     def original_value(self, value: str):
         self._original_value = value
-        original_serializer = data_serializer_factory(data_type=self.original_value_data_type, value=value)
-        self._original_value_sha256 = original_serializer.get_sha256()
 
     @property
     def original_value_sha256(self):

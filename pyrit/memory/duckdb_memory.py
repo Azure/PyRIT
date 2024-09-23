@@ -16,8 +16,9 @@ from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base, S
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
-from pyrit.models import PromptRequestPiece
-from pyrit.models import Score
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.score import Score
+from pyrit.models.storage_io import DiskStorageIO
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             self.db_path: Union[Path, str] = ":memory:"
         else:
             self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
-
+        self.results_path = str(RESULTS_PATH)
+        # Handles disk-based storage for DuckDB local memory.
+        self._storage_io = DiskStorageIO()
         self.engine = self._create_engine(has_echo=verbose)
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
