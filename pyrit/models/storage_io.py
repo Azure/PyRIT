@@ -124,7 +124,7 @@ class DiskStorageIO(StorageIO):
         """
         directory_path = Path(path)
         if not directory_path.exists():
-            os.mkdir(directory_path)
+            os.makedirs(directory_path, exist_ok=True)
 
 
 class AzureBlobStorageIO(StorageIO):

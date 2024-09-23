@@ -71,10 +71,10 @@ async def test_disk_storage_io_create_directory_if_not_exists():
     storage = DiskStorageIO()
     directory_path = "sample_dir"
 
-    with patch("os.mkdir") as mock_mkdir, patch("pathlib.Path.exists", return_value=False) as mock_exists:
+    with patch("os.makedirs") as mock_mkdir, patch("pathlib.Path.exists", return_value=False) as mock_exists:
         await storage.create_directory_if_not_exists(directory_path)
         mock_exists.assert_called_once()
-        mock_mkdir.assert_called_once_with(Path(directory_path))
+        mock_mkdir.assert_called_once_with(Path(directory_path), exist_ok=True)
 
 
 @pytest.mark.asyncio
