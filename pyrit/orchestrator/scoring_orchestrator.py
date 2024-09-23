@@ -42,7 +42,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
         scorer._memory = self._memory
-        if getattr(scorer, "_prompt_target", None) is not None:
+        if hasattr(scorer, "_prompt_target"):
             scorer._prompt_target._memory = self._memory
 
     async def score_prompts_by_orchestrator_id_async(

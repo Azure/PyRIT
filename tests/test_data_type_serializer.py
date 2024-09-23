@@ -23,7 +23,7 @@ def duckdb_in_memory() -> MemoryInterface:
 
 
 def test_data_serializer_factory_text_no_data_throws(duckdb_in_memory: MemoryInterface):
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         data_serializer_factory(data_type="text", memory=duckdb_in_memory)
 
 
