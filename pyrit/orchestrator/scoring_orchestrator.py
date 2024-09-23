@@ -36,7 +36,11 @@ class ScoringOrchestrator(Orchestrator):
         self._batch_size = batch_size
 
     async def score_prompts_by_orchestrator_id_async(
-        self, *, scorer: Scorer, orchestrator_ids: list[str], responses_only: bool = True
+        self,
+        *,
+        scorer: Scorer,
+        orchestrator_ids: list[str],
+        responses_only: bool = True,
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts correlated to the orchestrator_ids.
