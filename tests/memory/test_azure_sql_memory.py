@@ -44,13 +44,6 @@ async def test_insert_entry(memory_interface):
     )
     await prompt_request_piece.compute_sha256(memory_interface)
     entry = PromptMemoryEntry(entry=prompt_request_piece)
-    dummy_container_url = "https://storageaccountname.blob.core.windows.net/containername"
-    dummy_sas_token = "dummy_sas_token_value"
-    memory_interface = AzureSQLMemory(
-        connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server",
-        container_url=dummy_container_url,
-        sas_token=dummy_sas_token,
-    )
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
