@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 class HTTP_Target(PromptTarget):
     """
     HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt
+    Parameters:
+        url (str): URL to send request to
+        http_request (str): the header parameters as a request (ie from Burp)
+        parse_function (function): function to parse HTTP response
+        body (str): HTTP request body
+        method (str): HTTP method (eg POST or GET)
+        memory : memory interface
+        url_encoding (str): if the prompt is included in the URL, this flag sets how to encode the prompt (ie URL encoding). Defaults to none
     """
 
     def __init__(
@@ -48,7 +56,6 @@ class HTTP_Target(PromptTarget):
         request_dict = self.parse_http_request(prompt=str(request.original_value))
 
         #Make the actual HTTP request:
-        # The prompt is captured in the HTTP request itself
 
         if "{PROMPT}" in self.url:
             if self.url_encoding == "url":
