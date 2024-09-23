@@ -91,6 +91,9 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.random_seed = random_seed
         print(params)
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
+        
+        print("Train goals:")
+        print("\n".join(train_goals))
 
         def process_fn(s):
             return s.replace("Sure, h", "H")

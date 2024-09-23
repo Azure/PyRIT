@@ -114,7 +114,7 @@ class GCGMultiPromptAttack(MultiPromptAttack):
         verbose=False,
         filter_cand=True,
     ):
-
+        print("BLAKE HERE 2")
         main_device = self.models[0].device
         control_cands = []
 
@@ -131,6 +131,7 @@ class GCGMultiPromptAttack(MultiPromptAttack):
             if grad.shape != new_grad.shape:
                 with torch.no_grad():
                     control_cand = self.prompts[j - 1].sample_control(grad, batch_size, topk, temp, allow_non_ascii)
+                    print(f"BLAKE1: {control_cand}")
                     control_cands.append(
                         self.get_filtered_cands(
                             j - 1, control_cand, filter_cand=filter_cand, curr_control=self.control_str
@@ -142,6 +143,7 @@ class GCGMultiPromptAttack(MultiPromptAttack):
 
         with torch.no_grad():
             control_cand = self.prompts[j].sample_control(grad, batch_size, topk, temp, allow_non_ascii)
+            print(f"BLAKE2: {control_cand}")
             control_cands.append(
                 self.get_filtered_cands(j, control_cand, filter_cand=filter_cand, curr_control=self.control_str)
             )

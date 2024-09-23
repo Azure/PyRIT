@@ -737,6 +737,7 @@ class MultiPromptAttack(object):
             steps += 1
             start = time.time()
             torch.cuda.empty_cache()
+            print("BLAKE HERE")
             control, loss = self.step(
                 batch_size=batch_size,
                 topk=topk,
