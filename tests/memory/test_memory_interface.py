@@ -724,9 +724,19 @@ def test_add_score_duplicate_prompt(memory: MemoryInterface):
     assert memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(original_id)])[0].id == score_id
 
 
-def test_get_scores_by_memory_labels(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
-    prompt_id = sample_conversation_entries[0].id
-    memory.insert_entries(entries=sample_conversation_entries)
+def test_get_scores_by_memory_labels(memory: MemoryInterface):
+    prompt_id = uuid4()
+    pieces = [
+        PromptRequestPiece(
+            id=prompt_id,
+            role="user",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            sequence=0,
+            labels={"sample": "label"},
+        )
+    ]
+    memory.add_request_pieces_to_memory(request_pieces=pieces)
 
     score = Score(
         score_value=str(0.8),
