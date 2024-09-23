@@ -216,6 +216,7 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
             converted_value="Hello, how are you?",
             conversation_id=conversation_1,
             sequence=0,
+            labels={"sample": "label"},
             orchestrator_identifier=orchestrator1.get_identifier(),
         ),
         PromptRequestPiece(

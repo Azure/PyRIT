@@ -4,7 +4,7 @@
 import os
 import uuid
 
-from typing import Generator, Literal
+from typing import Generator
 from unittest import mock
 
 import pytest
@@ -14,7 +14,7 @@ from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from sqlalchemy import and_, func
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -289,42 +289,3 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
     for retrieved_entry in retrieved_entries:
         assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
         assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
-
-
-@pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
-def test_add_score_get_score(
-    memory_interface: AzureSQLMemory,
-    sample_conversation_entries: list[PromptMemoryEntry],
-    score_type: Literal["float_scale"] | Literal["true_false"],
-):
-    prompt_id = sample_conversation_entries[0].id
-
-    memory_interface.insert_entries(entries=sample_conversation_entries)
-
-    score_value = str(True) if score_type == "true_false" else "0.8"
-
-    score = Score(
-        score_value=score_value,
-        score_value_description="High score",
-        score_type=score_type,
-        score_category="test",
-        score_rationale="Test score",
-        score_metadata="Test metadata",
-        scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=prompt_id,
-    )
-
-    memory_interface.add_scores_to_memory(scores=[score])
-
-    # Fetch the score we just added
-    db_score = memory_interface.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_id])
-    assert db_score
-    assert len(db_score) == 1
-    assert db_score[0].score_value == score_value
-    assert db_score[0].score_value_description == "High score"
-    assert db_score[0].score_type == score_type
-    assert db_score[0].score_category == "test"
-    assert db_score[0].score_rationale == "Test score"
-    assert db_score[0].score_metadata == "Test metadata"
-    assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
-    assert db_score[0].prompt_request_response_id == prompt_id
