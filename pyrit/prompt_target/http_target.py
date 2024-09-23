@@ -7,6 +7,8 @@ import requests
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
+import urllib.parse
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,7 @@ class HTTP_Target(PromptTarget):
         body: str = None,
         method: str = "POST",
         memory: Union[MemoryInterface, None] = None,
+        url_encoding: str = None
     ) -> None:
 
         super().__init__(memory=memory)
@@ -32,6 +35,7 @@ class HTTP_Target(PromptTarget):
         self.parse_function = parse_function
         self.body = body
         self.method = method
+        self.url_encoding = url_encoding
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -45,6 +49,14 @@ class HTTP_Target(PromptTarget):
 
         #Make the actual HTTP request:
         # The prompt is captured in the HTTP request itself
+
+        if "{PROMPT}" in self.url:
+            if self.url_encoding == "url":
+                prompt_url_safe = urllib.parse.quote(request.original_value)
+                self.url = self.url.replace("{PROMPT}", prompt_url_safe)
+            else: 
+                self.url = self.url.replace("{PROMPT}", request.original_value)
+
         if self.method == "GET":
             response = requests.get(
                 url=self.url,
