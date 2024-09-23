@@ -653,6 +653,7 @@ class MultiPromptAttack(object):
         cands, count = [], 0
         worker = self.workers[worker_index]
         for i in range(control_cand.shape[0]):
+            print(f"BLAKE3 control_cand[i]: {control_cand[i]}")
             decoded_str = worker.tokenizer.decode(
                 control_cand[i], skip_special_tokens=True, clean_up_tokenization_spaces=False
             )
@@ -737,7 +738,6 @@ class MultiPromptAttack(object):
             steps += 1
             start = time.time()
             torch.cuda.empty_cache()
-            print("BLAKE HERE")
             control, loss = self.step(
                 batch_size=batch_size,
                 topk=topk,

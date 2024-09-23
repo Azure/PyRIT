@@ -1,4 +1,5 @@
 import gc
+import time # TODO: remove this import
 
 import numpy as np
 import torch
@@ -114,7 +115,7 @@ class GCGMultiPromptAttack(MultiPromptAttack):
         verbose=False,
         filter_cand=True,
     ):
-        print("BLAKE HERE 2")
+        
         main_device = self.models[0].device
         control_cands = []
 
@@ -143,7 +144,9 @@ class GCGMultiPromptAttack(MultiPromptAttack):
 
         with torch.no_grad():
             control_cand = self.prompts[j].sample_control(grad, batch_size, topk, temp, allow_non_ascii)
-            print(f"BLAKE2: {control_cand}")
+            print(f"BLAKE2 control_cand.shape: {control_cand.shape}")
+            curr_time = int(time.time())
+            torch.save(control_cand, f"control_cand_{curr_time}.pt")
             control_cands.append(
                 self.get_filtered_cands(j, control_cand, filter_cand=filter_cand, curr_control=self.control_str)
             )
