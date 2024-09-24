@@ -1607,6 +1607,11 @@ def get_workers(params, eval=False):
             tokenizer.padding_side = "left"
         if "falcon" in params.tokenizer_paths[i]:
             tokenizer.padding_side = "left"
+        if "Phi-3-mini-4k-instruct" in params.tokenizer_paths[i]:
+            tokenizer.bos_token_id = 1
+            tokenizer.eos_token_id = 32000
+            tokenizer.unk_token_id = 0
+            tokenizer.padding_side = "left"
         if not tokenizer.pad_token:
             tokenizer.pad_token = tokenizer.eos_token
         tokenizers.append(tokenizer)
