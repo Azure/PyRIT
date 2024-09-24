@@ -583,9 +583,10 @@ def fetch_decoding_trust_stereotypes_examples(
 
     # Create a PromptDataset object with the fetched examples
     dataset = PromptDataset(
-        name="DecodingTrust Examples",
+        name="DecodingTrust Stereotypes Examples",
         description=(
-            "A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics and target groups."
+            "A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics and target groups. \
+            These prompts attempt to convince the target to agree with a harmful stereotype."
         ),
         harm_category="stereotypes",
         should_be_blocked=True,
