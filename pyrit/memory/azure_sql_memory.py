@@ -21,7 +21,7 @@ from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_models import Base, EmbeddingData, PromptEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import Prompt, PromptRequestPiece, Score
+from pyrit.models import Prompt, PromptGroup, PromptRequestPiece, Score
 
 
 logger = logging.getLogger(__name__)
@@ -304,6 +304,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Inserts a list of prompts into the memory storage.
 
         Args:
+            prompts (list[Prompt]): A list of prompts to insert.
+            added_by (str): The user who added the prompts.
         """
         if added_by:
             for prompt in prompts:
@@ -331,7 +333,13 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             return []
     
-    def get_prompts(self, *, value: Optional[str] = None, dataset_name: Optional[str] = None) -> list[Prompt]:
+    def get_prompts(
+        self,
+        *,
+        value: Optional[str] = None,
+        dataset_name: Optional[str] = None,
+        harm_categories: Optional[Sequence[str]] = None,
+    ) -> list[Prompt]:
         """
         Retrieves a list of prompts that have the specified dataset name.
 
@@ -343,11 +351,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             list[Prompt]: A list of prompts with the specified dataset name.
         """
         conditions = []
-        
+        # TODO for this PR: add harm_categories filter
         if value:
             conditions.append(PromptEntry.value.contains(value))
         if dataset_name:
             conditions.append(PromptEntry.dataset_name == dataset_name)
+        if harm_categories:
+            for harm_category in harm_categories:
+                conditions.append(PromptEntry.harm_categories.contains(harm_category))
         
         try:
             return self.query_entries(
@@ -358,9 +369,26 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             return []
     
+    def get_prompt_groups(
+        self,
+        *,
+        dataset_name: Optional[str] = None,
+        data_types: Optional[Sequence[Sequence[str]]]
+    ) -> list[PromptGroup]:
+        # TODO for this PR
+        # join prompt tables as many times as the number of data types passed (which also implies the sequence number)
+        # i.e., join on prompt group ID while matching the data type and sequence number
+        # and optionally dataset_name and harm_categories
+        raise NotImplementedError("Method not yet implemented.")
+
+    def add_prompt_groups():
+        # TODO for this PR
+        raise NotImplementedError("Method not yet implemented.")
+    
     def delete_prompts(self, *, ids: list[str]) -> None:
         """
         Deletes prompts by id.
         """
         # TODO for this PR
         raise NotImplementedError("Method not yet implemented.")
+

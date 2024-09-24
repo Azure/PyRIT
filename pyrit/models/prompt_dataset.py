@@ -67,7 +67,6 @@ class Prompt(YamlLoadable):
         self.sequence = sequence
 
 
-# TODO: how do people query for this? What is the scenario?
 class PromptGroup(YamlLoadable):
     id: Optional[Union[uuid.UUID, str]]
     name: str
