@@ -8,6 +8,7 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 import urllib.parse
+import httpx
 from pyrit.common import net_utility
 
 logger = logging.getLogger(__name__)
@@ -73,15 +74,16 @@ class HTTP_Target(PromptTarget):
                 encoded_prompt = request.original_value.replace(" ", "+")
                 self.body.replace("{PROMPT}", encoded_prompt)
         
-        response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=self.url,
+
+        response = requests.request(
+            url=self.url,
             headers=request_dict,
-            request_body=self.body, 
-            method=self.method
+            data=self.body, 
+            method=self.method,
+            allow_redirects=True
         )
 
-
-        print(response.content)
+        print(response)
         response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response.content)], response_type="text")
         return response_entry
 
@@ -104,6 +106,7 @@ class HTTP_Target(PromptTarget):
             headers_dict[key.strip()] = value.strip()
         
         headers_dict["Content-Length"] = str(len(self.body))
+        print(headers_dict)
         return headers_dict
         
         
