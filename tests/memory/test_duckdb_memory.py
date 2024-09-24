@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.sqltypes import NullType
 
 from pyrit.memory.duckdb_memory import DuckDBMemory
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingDataEntry
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
@@ -251,12 +251,12 @@ def test_insert_embedding_entry(memory_interface):
         uuid = reattached_conversation_entry.id
 
     # Now that we have the uuid, we can create and insert the EmbeddingData entry
-    embedding_entry = EmbeddingData(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
+    embedding_entry = EmbeddingDataEntry(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
     memory_interface.insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
     with memory_interface.get_session() as session:
-        persisted_embedding_entry = session.query(EmbeddingData).filter_by(id=uuid).first()
+        persisted_embedding_entry = session.query(EmbeddingDataEntry).filter_by(id=uuid).first()
         assert persisted_embedding_entry is not None
         assert persisted_embedding_entry.embedding == [1, 2, 3]
         assert persisted_embedding_entry.embedding_type_name == "test_type"

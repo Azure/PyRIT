@@ -25,7 +25,7 @@ async def display_response(response_piece: PromptRequestPiece, memory: MemoryInt
         and is_in_ipython_session()
     ):
         image_location = response_piece.converted_value
-        image_bytes = await memory._storage_io.read_file(image_location)
+        image_bytes = await memory.storage_io.read_file(image_location)
 
         image_stream = io.BytesIO(image_bytes)
         image = Image.open(image_stream)

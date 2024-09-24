@@ -17,7 +17,7 @@ from pyrit.models import (
     group_conversation_request_pieces_by_sequence,
 )
 
-from pyrit.memory.memory_models import Base, EmbeddingData, ScoreEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, ScoreEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models.storage_io import StorageIO
@@ -36,13 +36,14 @@ class MemoryInterface(abc.ABC):
     """
 
     memory_embedding: MemoryEmbedding = None
-    _storage_io: StorageIO = None
+    storage_io: StorageIO = None
     results_path: str = None
 
     def __init__(self, embedding_model=None):
         self.memory_embedding = embedding_model
         # Initialize the MemoryExporter instance
         self.exporter = MemoryExporter()
+        self._init_storage_io()
 
     def enable_embedding(self, embedding_model=None):
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
@@ -57,9 +58,15 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_all_embeddings(self) -> Sequence[EmbeddingData]:
+    def get_all_embeddings(self) -> Sequence[EmbeddingDataEntry]:
         """
         Loads all EmbeddingData from the memory storage handler.
+        """
+
+    @abc.abstractmethod
+    def _init_storage_io(self):
+        """
+        Initialize the storage IO handler storage_io.
         """
 
     @abc.abstractmethod
@@ -94,7 +101,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingDataEntry]) -> None:
         """
         Inserts embedding data into memory storage
         """

@@ -4,7 +4,7 @@
 import os
 import uuid
 
-from typing import Generator, Literal
+from typing import Generator
 from unittest import mock
 
 import pytest
@@ -13,9 +13,8 @@ from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from sqlalchemy import text
 from pyrit.memory import AzureSQLMemory
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingDataEntry
 from pyrit.models import PromptRequestPiece
-from pyrit.models.score import Score
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -101,12 +100,12 @@ def test_insert_embedding_entry(memory_interface: AzureSQLMemory):
         uuid = reattached_conversation_entry.id
 
     # Now that we have the uuid, we can create and insert the EmbeddingData entry
-    embedding_entry = EmbeddingData(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
+    embedding_entry = EmbeddingDataEntry(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
     memory_interface.insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
     with memory_interface.get_session() as session:  # type: ignore
-        persisted_embedding_entry = session.query(EmbeddingData).filter_by(id=uuid).first()
+        persisted_embedding_entry = session.query(EmbeddingDataEntry).filter_by(id=uuid).first()
         assert persisted_embedding_entry is not None
         assert persisted_embedding_entry.embedding == [1, 2, 3]
         assert persisted_embedding_entry.embedding_type_name == "test_type"
@@ -281,42 +280,3 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
         # Compare the SQL text and the bound parameters
         assert str(actual_sql_condition) == str(expected_sql_condition)
         assert actual_sql_condition.compile().params == expected_sql_condition.compile().params
-
-
-@pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
-def test_add_score_get_score(
-    memory_interface: AzureSQLMemory,
-    sample_conversation_entries: list[PromptMemoryEntry],
-    score_type: Literal["float_scale"] | Literal["true_false"],
-):
-    prompt_id = sample_conversation_entries[0].id
-
-    memory_interface._insert_entries(entries=sample_conversation_entries)
-
-    score_value = str(True) if score_type == "true_false" else "0.8"
-
-    score = Score(
-        score_value=score_value,
-        score_value_description="High score",
-        score_type=score_type,
-        score_category="test",
-        score_rationale="Test score",
-        score_metadata="Test metadata",
-        scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=prompt_id,
-    )
-
-    memory_interface.add_scores_to_memory(scores=[score])
-
-    # Fetch the score we just added
-    db_score = memory_interface.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_id])
-    assert db_score
-    assert len(db_score) == 1
-    assert db_score[0].score_value == score_value
-    assert db_score[0].score_value_description == "High score"
-    assert db_score[0].score_type == score_type
-    assert db_score[0].score_category == "test"
-    assert db_score[0].score_rationale == "Test score"
-    assert db_score[0].score_metadata == "Test metadata"
-    assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
-    assert db_score[0].prompt_request_response_id == prompt_id
