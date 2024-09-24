@@ -2,12 +2,10 @@
 # Licensed under the MIT license.
 import json
 import logging
-import pathlib
 
 from typing import Literal, Optional, Dict, Any
 from openai import BadRequestError
 
-from pyrit.common.path import RESULTS_PATH
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
@@ -79,7 +77,6 @@ class DALLETarget(PromptTarget):
         self.n = num_images
 
         self.deployment_name = deployment_name
-        self.output_dir = pathlib.Path(RESULTS_PATH) / "images"
         self.headers = headers
 
         target_kwargs: Dict[str, Any] = {
@@ -123,8 +120,8 @@ class DALLETarget(PromptTarget):
 
         try:
             b64_data = await self._generate_image_response_async(image_generation_args)
-            data = data_serializer_factory(data_type="image_path")
-            data.save_b64_image(data=b64_data)
+            data = data_serializer_factory(data_type="image_path", memory=self._memory)
+            await data.save_b64_image(data=b64_data)
             resp_text = data.value
             response_type: PromptDataType = "image_path"
 

@@ -20,6 +20,7 @@ from pyrit.models import (
 from pyrit.memory.memory_models import Base, EmbeddingData, ScoreEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
+from pyrit.models.storage_io import StorageIO
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,8 @@ class MemoryInterface(abc.ABC):
     """
 
     memory_embedding: MemoryEmbedding = None
+    _storage_io: StorageIO = None
+    results_path: str = None
 
     def __init__(self, embedding_model=None):
         self.memory_embedding = embedding_model
@@ -296,7 +299,6 @@ class MemoryInterface(abc.ABC):
             The uuid for the new conversation.
         """
         new_conversation_id = str(uuid.uuid4())
-
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
         prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
 

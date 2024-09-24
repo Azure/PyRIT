@@ -4,17 +4,18 @@
 import os
 import uuid
 
-from typing import Generator
+from typing import Generator, Literal
 from unittest import mock
 
 import pytest
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from sqlalchemy import and_, func
+from sqlalchemy import text
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
 from pyrit.models import PromptRequestPiece
+from pyrit.models.score import Score
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -32,21 +33,18 @@ def sample_conversation_entries() -> list[PromptMemoryEntry]:
     return get_sample_conversation_entries()
 
 
-def test_insert_entry(memory_interface):
-    entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(
-            id=uuid.uuid4(),
-            conversation_id="123",
-            role="user",
-            original_value_data_type="text",
-            original_value="Hello",
-            converted_value="Hello",
-        )
+@pytest.mark.asyncio
+async def test_insert_entry(memory_interface):
+    prompt_request_piece = PromptRequestPiece(
+        id=uuid.uuid4(),
+        conversation_id="123",
+        role="user",
+        original_value_data_type="text",
+        original_value="Hello",
+        converted_value="Hello",
     )
-
-    memory_interface = AzureSQLMemory(
-        connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server"
-    )
+    await prompt_request_piece.compute_sha256(memory_interface)
+    entry = PromptMemoryEntry(entry=prompt_request_piece)
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
@@ -261,31 +259,64 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
     ]
 
     orchestrator1_id = orchestrator1.get_identifier()["id"]
+    # Mock the query_entries method
+    with mock.patch.object(
+        memory_interface,
+        "query_entries",
+        return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
+    ):
+        # Call the method under test
+        retrieved_entries = memory_interface._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator1_id)
 
-    session_mock = UnifiedAlchemyMagicMock(
-        data=[
-            (
-                [
-                    mock.call.query(PromptMemoryEntry),
-                    mock.call.filter(
-                        and_(
-                            func.ISJSON(PromptMemoryEntry.orchestrator_identifier) > 0,
-                            func.JSON_VALUE(PromptMemoryEntry.orchestrator_identifier, "$.id") == orchestrator1_id,
-                        )
-                    ),
-                ],
-                [entry for entry in entries if entry.orchestrator_identifier == orchestrator1.get_identifier()],
-            )
-        ]
+        # Verify the returned entries
+        assert len(retrieved_entries) == 2
+        assert all(piece.orchestrator_identifier["id"] == orchestrator1_id for piece in retrieved_entries)
+
+        # Extract the actual SQL condition passed to query_entries
+        actual_sql_condition = memory_interface.query_entries.call_args.kwargs["conditions"]  # type: ignore
+        expected_sql_condition = text(
+            "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
+        ).bindparams(json_id=orchestrator1_id)
+
+        # Compare the SQL text and the bound parameters
+        assert str(actual_sql_condition) == str(expected_sql_condition)
+        assert actual_sql_condition.compile().params == expected_sql_condition.compile().params
+
+
+@pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
+def test_add_score_get_score(
+    memory_interface: AzureSQLMemory,
+    sample_conversation_entries: list[PromptMemoryEntry],
+    score_type: Literal["float_scale"] | Literal["true_false"],
+):
+    prompt_id = sample_conversation_entries[0].id
+
+    memory_interface._insert_entries(entries=sample_conversation_entries)
+
+    score_value = str(True) if score_type == "true_false" else "0.8"
+
+    score = Score(
+        score_value=score_value,
+        score_value_description="High score",
+        score_type=score_type,
+        score_category="test",
+        score_rationale="Test score",
+        score_metadata="Test metadata",
+        scorer_class_identifier={"__type__": "TestScorer"},
+        prompt_request_response_id=prompt_id,
     )
-    session_mock.__enter__.return_value = session_mock
-    memory_interface.get_session.return_value = session_mock  # type: ignore
 
-    # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-    retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator1_id)
+    memory_interface.add_scores_to_memory(scores=[score])
 
-    # Verify that the retrieved entries match the expected normalizer_id
-    assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
-    for retrieved_entry in retrieved_entries:
-        assert retrieved_entry.orchestrator_identifier["id"] == str(orchestrator1_id)
-        assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
+    # Fetch the score we just added
+    db_score = memory_interface.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_id])
+    assert db_score
+    assert len(db_score) == 1
+    assert db_score[0].score_value == score_value
+    assert db_score[0].score_value_description == "High score"
+    assert db_score[0].score_type == score_type
+    assert db_score[0].score_category == "test"
+    assert db_score[0].score_rationale == "Test score"
+    assert db_score[0].score_metadata == "Test metadata"
+    assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
+    assert db_score[0].prompt_request_response_id == prompt_id

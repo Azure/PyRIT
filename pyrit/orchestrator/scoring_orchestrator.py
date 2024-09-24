@@ -35,6 +35,16 @@ class ScoringOrchestrator(Orchestrator):
 
         self._batch_size = batch_size
 
+    def _assign_memory(self, scorer: Scorer) -> None:
+        """
+        Assigns the provided memory to the scorer passed to the orchestrator,
+        as well as to its prompt target, if applicable.
+        """
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
+        scorer._memory = self._memory
+        if hasattr(scorer, "_prompt_target"):
+            scorer._prompt_target._memory = self._memory
+
     async def score_prompts_by_orchestrator_id_async(
         self,
         *,
@@ -45,7 +55,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         Scores prompts using the Scorer for prompts correlated to the orchestrator_ids.
         """
-
+        self._assign_memory(scorer)
         request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
             request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
@@ -67,7 +77,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         if not memory_labels:
             raise ValueError("Invalid memory_labels: Please provide valid memory labels.")
-
+        self._assign_memory(scorer)
         request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_piece_by_memory_labels(
             memory_labels=memory_labels
         )
@@ -91,7 +101,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         Scores prompts using the Scorer for prompts with the prompt_ids
         """
-
+        self._assign_memory(scorer)
         request_pieces: Sequence[PromptRequestPiece] = []
         request_pieces = self._memory.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
 
