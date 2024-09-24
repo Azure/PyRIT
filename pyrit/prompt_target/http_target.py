@@ -83,7 +83,6 @@ class HTTP_Target(PromptTarget):
             allow_redirects=True
         )
 
-        print(response)
         response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response.content)], response_type="text")
         return response_entry
 
@@ -106,7 +105,6 @@ class HTTP_Target(PromptTarget):
             headers_dict[key.strip()] = value.strip()
         
         headers_dict["Content-Length"] = str(len(self.body))
-        print(headers_dict)
         return headers_dict
         
         
