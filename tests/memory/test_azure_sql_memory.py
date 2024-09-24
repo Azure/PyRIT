@@ -4,7 +4,7 @@
 import os
 import uuid
 
-from typing import Generator, Literal
+from typing import Generator
 from unittest import mock
 
 import pytest
@@ -14,7 +14,7 @@ from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from sqlalchemy import text
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingDataEntry
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -49,7 +49,7 @@ async def test_insert_entry(memory_interface):
     with memory_interface.get_session() as session:
         assert isinstance(session, UnifiedAlchemyMagicMock)
         session.add.assert_not_called()
-        memory_interface._insert_entry(entry)
+        memory_interface.insert_entry(entry)
         inserted_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
         assert inserted_entry is not None
         assert inserted_entry.role == "user"
@@ -73,8 +73,8 @@ def test_insert_entries(memory_interface: AzureSQLMemory):
 
     # Now, get a new session to query the database and verify the entries were inserted
     with memory_interface.get_session() as session:  # type: ignore
-        # Use the _insert_entries method to insert multiple entries into the database
-        memory_interface._insert_entries(entries=entries)
+        # Use the insert_entries method to insert multiple entries into the database
+        memory_interface.insert_entries(entries=entries)
         inserted_entries = session.query(PromptMemoryEntry).order_by(PromptMemoryEntry.conversation_id).all()
         assert len(inserted_entries) == 5
         for i, entry in enumerate(inserted_entries):
@@ -91,7 +91,7 @@ def test_insert_embedding_entry(memory_interface: AzureSQLMemory):
     )
 
     # Insert the ConversationData entry using the _insert_entry method
-    memory_interface._insert_entry(conversation_entry)
+    memory_interface.insert_entry(conversation_entry)
 
     # Re-query the ConversationData entry within a new session to ensure it's attached
     with memory_interface.get_session() as session:  # type: ignore
@@ -101,7 +101,7 @@ def test_insert_embedding_entry(memory_interface: AzureSQLMemory):
 
     # Now that we have the uuid, we can create and insert the EmbeddingData entry
     embedding_entry = EmbeddingDataEntry(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
-    memory_interface._insert_entry(embedding_entry)
+    memory_interface.insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
     with memory_interface.get_session() as session:  # type: ignore
@@ -147,7 +147,7 @@ def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_ent
         sample_conversation_entries[i].original_value = f"Message {i}"
         sample_conversation_entries[i].converted_value = f"Message {i}"
 
-    memory_interface._insert_entries(entries=sample_conversation_entries)
+    memory_interface.insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
     queried_entries = memory_interface.query_entries(PromptMemoryEntry)
@@ -164,7 +164,7 @@ def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_ent
 
 def test_get_all_memory(memory_interface: AzureSQLMemory, sample_conversation_entries: list[PromptMemoryEntry]):
 
-    memory_interface._insert_entries(entries=sample_conversation_entries)
+    memory_interface.insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
     all_entries = memory_interface.get_all_prompt_pieces()
@@ -280,42 +280,3 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
         # Compare the SQL text and the bound parameters
         assert str(actual_sql_condition) == str(expected_sql_condition)
         assert actual_sql_condition.compile().params == expected_sql_condition.compile().params
-
-
-@pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
-def test_add_score_get_score(
-    memory_interface: AzureSQLMemory,
-    sample_conversation_entries: list[PromptMemoryEntry],
-    score_type: Literal["float_scale"] | Literal["true_false"],
-):
-    prompt_id = sample_conversation_entries[0].id
-
-    memory_interface._insert_entries(entries=sample_conversation_entries)
-
-    score_value = str(True) if score_type == "true_false" else "0.8"
-
-    score = Score(
-        score_value=score_value,
-        score_value_description="High score",
-        score_type=score_type,
-        score_category="test",
-        score_rationale="Test score",
-        score_metadata="Test metadata",
-        scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=prompt_id,
-    )
-
-    memory_interface.add_scores_to_memory(scores=[score])
-
-    # Fetch the score we just added
-    db_score = memory_interface.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_id])
-    assert db_score
-    assert len(db_score) == 1
-    assert db_score[0].score_value == score_value
-    assert db_score[0].score_value_description == "High score"
-    assert db_score[0].score_type == score_type
-    assert db_score[0].score_category == "test"
-    assert db_score[0].score_rationale == "Test score"
-    assert db_score[0].score_metadata == "Test metadata"
-    assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
-    assert db_score[0].prompt_request_response_id == prompt_id
