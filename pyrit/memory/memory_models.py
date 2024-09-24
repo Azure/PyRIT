@@ -126,7 +126,7 @@ class PromptMemoryEntry(Base):
         return f": {self.role}: {self.converted_value}"
 
 
-class EmbeddingData(Base):  # type: ignore
+class EmbeddingDataEntry(Base):  # type: ignore
     """
     Represents the embedding data associated with conversation entries in the database.
     Each embedding is linked to a specific conversation entry via an id
