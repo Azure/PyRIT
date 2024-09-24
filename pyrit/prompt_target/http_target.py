@@ -8,7 +8,7 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 import urllib.parse
-import chardet
+from pyrit.common import net_utility
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +54,6 @@ class HTTP_Target(PromptTarget):
 
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-        print("HERE: request: ", request)
-
         
         request_dict = self.parse_http_request(prompt=str(request.original_value))
 
@@ -74,38 +72,14 @@ class HTTP_Target(PromptTarget):
             if self.url_encoding:
                 encoded_prompt = request.original_value.replace(" ", "+")
                 self.body.replace("{PROMPT}", encoded_prompt)
-        #TODO: figure out error when using net_utility (says CONTENT LENGTH is not right)
-        if self.method == "GET":
-            if not request_dict:
-                if not self.body:
-                    response = requests.get(
-                        url=self.url,
-                        allow_redirects=True
-                )
-            else: 
-                response = requests.get(
-                    url=self.url,
-                    headers=request_dict,
-                    data=self.body, 
-                    allow_redirects=True
-                )
+        
+        response = await net_utility.make_request_and_raise_if_error_async(
+            endpoint_uri=self.url,
+            headers=request_dict,
+            request_body=self.body, 
+            method=self.method
+        )
 
-        elif self.method == "POST":
-            if self.body:
-                response = requests.post(
-                    url=self.url,
-                    headers=request_dict,
-                    data=self.body,
-                    allow_redirects=True
-                )
-            else:
-                response = requests.post(
-                    url=self.url,
-                    headers=request_dict,
-                    allow_redirects=True
-                    )
-        print(type(response.content))
-        resp = response.content.decode("utf-8")
 
         print(response.content)
         response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response.content)], response_type="text")
