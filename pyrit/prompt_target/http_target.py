@@ -14,7 +14,7 @@ from pyrit.common import net_utility
 logger = logging.getLogger(__name__)
 
 
-class HTTP_Target(PromptTarget):
+class HTTPTarget(PromptTarget):
     """
     HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt
     Parameters:
@@ -56,7 +56,7 @@ class HTTP_Target(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
         
-        request_dict = self.parse_http_request(prompt=str(request.original_value))
+        request_dict = self.parse_http_request()
 
         #Make the actual HTTP request:
 
@@ -80,18 +80,17 @@ class HTTP_Target(PromptTarget):
             headers=request_dict,
             data=self.body, 
             method=self.method,
-            allow_redirects=True
+            allow_redirects=True # using Requests so we can leave this flag on, rather than httpx
         )
 
         response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response.content)], response_type="text")
         return response_entry
 
 
-    def parse_http_request(self, prompt: str) -> dict[str, str]:
+    def parse_http_request(self) -> dict[str, str]:
         """
         Parses the HTTP request string into a dictionary of headers
-        Parameters:
-            prompt (str): prompt to be sent in the HTTP request
+
         """
 
         headers_dict = {}
@@ -108,7 +107,6 @@ class HTTP_Target(PromptTarget):
         return headers_dict
         
         
-
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         request_pieces: list[PromptRequestPiece] = prompt_request.request_pieces
 
