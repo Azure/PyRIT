@@ -30,6 +30,8 @@ class OpenAIChatInterface(PromptChatTarget):
     _presence_penalty: float
     _client: OpenAI
     _async_client: AsyncOpenAI
+    _logprobs: Optional[bool] = None
+    _top_logprobs: Optional[int] = None
 
     @abstractmethod
     def __init__(self) -> None:
@@ -51,13 +53,18 @@ class OpenAIChatInterface(PromptChatTarget):
             resp_text = await self._complete_chat_async(
                 messages=messages,
                 top_p=self._top_p,
+                logprobs=self._logprobs,
+                top_logprobs=self._top_logprobs,
                 temperature=self._temperature,
                 frequency_penalty=self._frequency_penalty,
                 presence_penalty=self._presence_penalty,
             )
 
+            breakpoint()
+
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
             response_entry = construct_response_from_request(request=request, response_text_pieces=[resp_text])
+            breakpoint()
         except BadRequestError as bre:
             response_entry = handle_bad_request_exception(response_text=bre.message, request=request)
 
@@ -75,6 +82,70 @@ class OpenAIChatInterface(PromptChatTarget):
         """
         response_message = response.choices[0].message.content
         return response_message
+    
+    def _parse_chat_completion_logprobs(self, response):
+        """
+        Parses chat message to get response logprobs, if available
+
+        Args:
+            response (ChatMessage): The chat messages object containing the generated response message
+
+        Returns:
+            ???: The generated response message log-probabilities
+        """
+        logprobs_data = None
+        if response.choices[0].logprobs:
+                logprobs_data = response.choices[0].logprobs.content[0].top_logprobs
+        
+        return logprobs_data
+    
+    async def _create_chat_completion(
+        self, deployment_name, messages, max_tokens=100, temperature=0.7, top_p=1.0, 
+        frequency_penalty=0.0, presence_penalty=0.0, use_logprobs=False, top_logprobs=5
+    ):
+        try:
+            # Try calling the API with logprobs if supported
+            if use_logprobs:
+                response = await self._async_client.chat.completions.create(
+                    model=deployment_name,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=top_p,
+                    frequency_penalty=frequency_penalty,
+                    presence_penalty=presence_penalty,
+                    n=1,
+                    stream=False,
+                    messages=[{"role": msg.role, "content": msg.content} for msg in messages],
+                    logprobs=top_logprobs,  # Request logprobs
+                )
+            else:
+                # Call API without logprobs
+                response = await self._async_client.chat.completions.create(
+                    model=deployment_name,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=top_p,
+                    frequency_penalty=frequency_penalty,
+                    presence_penalty=presence_penalty,
+                    n=1,
+                    stream=False,
+                    messages=[{"role": msg.role, "content": msg.content} for msg in messages],
+                )
+
+            return response
+
+        except BadRequestError as e:
+            # Catch the error if logprobs are not supported
+            error_message = e.json_body.get('error', {}).get('message', '')
+            if "logprobs" in error_message:
+                print(f"Model does not support `logprobs`. Retrying without it.")
+                # Retry without logprobs
+                return await self._create_chat_completion(
+                    deployment_name, messages, max_tokens, temperature, top_p,
+                    frequency_penalty, presence_penalty, use_logprobs=False
+                )
+            else:
+                raise e
 
     @pyrit_target_retry
     async def _complete_chat_async(
@@ -83,6 +154,8 @@ class OpenAIChatInterface(PromptChatTarget):
         max_tokens: int = 1024,
         temperature: float = 1.0,
         top_p: int = 1,
+        logprobs: bool = False,
+        top_logprobs: int = 5,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
     ) -> str:
@@ -99,6 +172,10 @@ class OpenAIChatInterface(PromptChatTarget):
                 Defaults to 1.0.
             top_p (int, optional): Controls diversity of the response generation.
                 Defaults to 1.
+            logprobs (bool, optional): Controls whether to return logprobs data.
+                Defaults to False.
+            top_logprobs (int, optional): Controls the number of top logprobs to return.
+                Defaults to 5. Requires logprobs to be set to True.
             frequency_penalty (float, optional): Controls the frequency of generating the same lines of text.
                 Defaults to 0.5.
             presence_penalty (float, optional): Controls the likelihood to talk about new topics.
@@ -108,17 +185,23 @@ class OpenAIChatInterface(PromptChatTarget):
             str: The generated response message.
         """
 
-        response: ChatCompletion = await self._async_client.chat.completions.create(
-            model=self._deployment_name,
+        response: ChatCompletion = await self._create_chat_completion(
+            deployment_name=self._deployment_name,
+            messages=messages,  # type: ignore
             max_tokens=max_tokens,
             temperature=temperature,
             top_p=top_p,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
-            n=1,
-            stream=False,
-            messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
+            use_logprobs=logprobs,
+            top_logprobs=top_logprobs,
         )
+                
+        if response.choices[0].logprobs:
+                logprobs_data = response.choices[0].logprobs.get("top_logprobs", None)
+                print(f"Logprobs: {logprobs_data}")
+                # TODO now we can do something with the logprobs data
+
         finish_reason = response.choices[0].finish_reason
         extracted_response: str = ""
         # finish_reason="stop" means API returned complete message and
@@ -130,6 +213,7 @@ class OpenAIChatInterface(PromptChatTarget):
                 raise EmptyResponseException(message="The chat returned an empty response.")
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason}")
+
         return extracted_response
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
@@ -159,6 +243,8 @@ class AzureOpenAITextChatTarget(OpenAIChatInterface):
         top_p: int = 1,
         frequency_penalty: float = 0.5,
         presence_penalty: float = 0.5,
+        logprobs: bool = False,
+        top_logprobs: int = 5,
     ) -> None:
         """
         Class that initializes an Azure OpenAI chat target. This class facilitates text as input and output
@@ -202,6 +288,8 @@ class AzureOpenAITextChatTarget(OpenAIChatInterface):
         self._top_p = top_p
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
+        self._logprobs = logprobs
+        self._top_logprobs = top_logprobs
 
         self._deployment_name = default_values.get_required_value(
             env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
