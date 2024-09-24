@@ -15,7 +15,7 @@ from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
-from pyrit.models import PromptDataset, QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
+from pyrit.models import PromptDataset, PromptTemplate, QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
@@ -497,8 +497,8 @@ def fetch_decoding_trust_stereotypes_examples(
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-    stereotype_topic: Optional[List[str]] = None,
-    target_group: Optional[List[str]] = None,
+    stereotype_topics: Optional[List[str]] = None,
+    target_groups: Optional[List[str]] = None,
     system_prompt_type: Literal["benign", "untargeted", "targeted"] = "targeted",
 ) -> PromptDataset:
     """
@@ -509,8 +509,14 @@ def fetch_decoding_trust_stereotypes_examples(
         source_type (Literal["public_url"]): The type of source ('public_url').
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
-        stereotype_topic (Optional[List[str]]): List of stereotype topics to filter the examples. Defaults to None.
-        target_group (Optional[List[str]]): List of target groups to filter the examples. Defaults to None.
+        stereotype_topics (Optional[List[str]]): List of stereotype topics to filter the examples. Defaults to None.
+            The list of all 16 stereotype_topics can be found here:
+            https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype
+            Defaults to None, which means all topics are included.
+        target_groups (Optional[List[str]]): List of target groups to filter the examples. Defaults to None.
+            The list of all 24 target_groups can be found here:
+            https://github.com/AI-secure/DecodingTrust/tree/main/data/stereotype
+            Defaults to None, which means all target groups are included.
         system_prompt_type (Literal["benign", "untargeted", "targeted"]): The type of system prompt to use.
             Defaults to "targeted".
 
@@ -529,12 +535,21 @@ def fetch_decoding_trust_stereotypes_examples(
         valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
-    system_prompt = PromptDataset.from_yaml_file(Path(DATASETS_PATH) / "prompts" / "dt_stereotypes.prompt").prompts[
-        system_prompt_type
-    ]  # type: ignore
+    if system_prompt_type == "targeted":
+        system_prompt = PromptTemplate.from_yaml_file(
+            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_targeted.yaml"
+        )
+    elif system_prompt_type == "untargeted":
+        system_prompt = PromptTemplate.from_yaml_file(
+            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_untargeted.yaml"
+        )
+    else:
+        system_prompt = PromptTemplate.from_yaml_file(
+            Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_benign.yaml"
+        )
 
     # Required keys to validate each example
-    required_keys = {"stereotype_topic", "target_group"}
+    required_keys = {"stereotype_topic", "target_group", "user_prompt"}
 
     # Initialize containers for prompts and semantic categories
     prompts = []
@@ -542,6 +557,7 @@ def fetch_decoding_trust_stereotypes_examples(
     # Fetch the examples using the provided `fetch_examples` function
     examples = fetch_examples(source, source_type, cache, data_home)
 
+    is_targeted = system_prompt_type == "targeted"
     # Validate each example and extract data
     for example in examples:
         # Check for missing keys in the example
@@ -549,24 +565,29 @@ def fetch_decoding_trust_stereotypes_examples(
         if missing_keys:
             raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
         # Check if the example should be filtered based on the provided topics and target groups
-        if stereotype_topic and example["stereotype_topic"] not in stereotype_topic:
-            continue
-        if target_group and example["target_group"] not in target_group:
+        if (
+            stereotype_topics
+            and example["stereotype_topic"] not in stereotype_topics
+            or (target_groups and example["target_group"] not in target_groups)
+        ):
             continue
 
-        if system_prompt_type == "targeted":
-            taregted_system_prompt = system_prompt.replace("{{target_group}}", example["target_group"])
-            prompts.append(taregted_system_prompt + " " + example["user_prompt"])
-        else:
-            prompts.append(system_prompt + " " + example["user_prompt"])
+        prompt = (
+            system_prompt.apply_custom_metaprompt_parameters(
+                prompt=example["user_prompt"], target_group=example["target_group"]
+            )
+            if is_targeted
+            else system_prompt.apply_custom_metaprompt_parameters(prompt=example["user_prompt"])
+        )
+        prompts.append(prompt)
 
     # Create a PromptDataset object with the fetched examples
     dataset = PromptDataset(
         name="DecodingTrust Examples",
         description=(
-            "A dataset of Decoding Trust 'Stereotypes' examples across many different topics and target groups."
+            "A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics and target groups."
         ),
-        harm_category="Stereotypes",
+        harm_category="stereotypes",
         should_be_blocked=True,
         prompts=prompts,
     )
