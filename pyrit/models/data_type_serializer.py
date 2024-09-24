@@ -79,7 +79,7 @@ class DataTypeSerializer(abc.ABC):
         Saves the data to storage.
         """
         self.value = str(await self.get_data_filename())
-        await self._memory._storage_io.write_file(self.value, data)
+        await self._memory.storage_io.write_file(self.value, data)
 
     async def save_b64_image(self, data: str, output_filename: str = None) -> None:
         """
@@ -93,7 +93,7 @@ class DataTypeSerializer(abc.ABC):
         else:
             self.value = str(await self.get_data_filename())
         image_bytes = base64.b64decode(data)
-        await self._memory._storage_io.write_file(self.value, image_bytes)
+        await self._memory.storage_io.write_file(self.value, image_bytes)
 
     async def read_data(self) -> bytes:
         """
@@ -105,11 +105,11 @@ class DataTypeSerializer(abc.ABC):
         if not self.value:
             raise RuntimeError("Prompt text not set")
         # Check if path exists
-        file_exists = await self._memory._storage_io.path_exists(path=self.value)
+        file_exists = await self._memory.storage_io.path_exists(path=self.value)
         if not file_exists:
             raise FileNotFoundError(f"File not found: {self.value}")
         # Read the contents from the path
-        return await self._memory._storage_io.read_file(self.value)
+        return await self._memory.storage_io.read_file(self.value)
 
     async def read_data_base64(self) -> str:
         """
@@ -122,7 +122,7 @@ class DataTypeSerializer(abc.ABC):
         input_bytes: bytes = None
 
         if self.data_on_disk():
-            input_bytes = await self._memory._storage_io.read_file(self.value)
+            input_bytes = await self._memory.storage_io.read_file(self.value)
         else:
             input_bytes = self.value.encode("utf-8")
 
@@ -142,7 +142,7 @@ class DataTypeSerializer(abc.ABC):
         if not self.data_directory:
             raise RuntimeError("Data directory not set")
 
-        await self._memory._storage_io.create_directory_if_not_exists(self.data_directory)
+        await self._memory.storage_io.create_directory_if_not_exists(self.data_directory)
 
         ticks = int(time.time() * 1_000_000)
         if self.is_url(str(self.data_directory)):
