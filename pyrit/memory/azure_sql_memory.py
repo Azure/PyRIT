@@ -7,10 +7,11 @@ import struct
 
 from contextlib import closing
 from typing import Optional, Sequence
+import uuid
 from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 
-from sqlalchemy import create_engine, event, text, MetaData
+from sqlalchemy import create_engine, event, text, MetaData, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
@@ -20,7 +21,7 @@ from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_models import Base, EmbeddingData, PromptEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import AzureBlobStorageIO, Prompt, PromptGroup, PromptRequestPiece, Score
+from pyrit.models import AzureBlobStorageIO, Prompt, PromptGroup, PromptRequestPiece, PromptTemplate, Score
 
 logger = logging.getLogger(__name__)
 
@@ -393,6 +394,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         value: Optional[str] = None,
         dataset_name: Optional[str] = None,
         harm_categories: Optional[Sequence[str]] = None,
+        added_by: Optional[str] = None,
+        authors: Optional[Sequence[str]] = None,
+        groups: Optional[Sequence[str]] = None,
+        source: Optional[str] = None,
+        parameters: Optional[Sequence[str]] = None,
     ) -> list[Prompt]:
         """
         Retrieves a list of prompts that have the specified dataset name.
@@ -400,12 +406,22 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Args:
             value (str): The value to match by substring. If None, all values are returned.
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
+            harm_categories (list[str]): A list of harm categories to filter by. If None, all harm categories are considered.
+                Specifying multiple harm categories returns only prompts that are marked with all harm categories.
+            added_by (str): The user who added the prompts.
+            authors (list[str]): A list of authors to filter by.
+                Note that this filters by substring, so a query for "Adam Jones" may not return results if the record
+                is "A. Jones", "Jones, Adam", etc. If None, all authors are considered.
+            groups (list[str]): A list of groups to filter by. If None, all groups are considered.
+            source (str): The source to filter by. If None, all sources are considered.
+            parameters (list[str]): A list of parameters to filter by. Specifying parameters effectively returns
+                prompt templates instead of prompts.
+                If None, only prompts without parameters are returned.
 
         Returns:
-            list[Prompt]: A list of prompts with the specified dataset name.
+            list[Prompt]: A list of prompts matching the criteria.
         """
         conditions = []
-        # TODO for this PR: add harm_categories filter
         if value:
             conditions.append(PromptEntry.value.contains(value))
         if dataset_name:
@@ -413,7 +429,20 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         if harm_categories:
             for harm_category in harm_categories:
                 conditions.append(PromptEntry.harm_categories.contains(harm_category))
-        
+        if added_by:
+            conditions.append(PromptEntry.added_by == added_by)
+        if authors:
+            for author in authors:
+                conditions.append(PromptEntry.authors.contains(author))
+        if groups:
+            for group in groups:
+                conditions.append(PromptEntry.groups.contains(group))
+        if source:
+            conditions.append(PromptEntry.source == source)
+        if parameters:
+            for parameter in parameters:
+                conditions.append(PromptEntry.parameters.contains(parameter))
+
         try:
             return self.query_entries(
                 PromptEntry,
@@ -422,6 +451,33 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             return []
+    
+    def get_prompt_templates(
+        self,
+        *,
+        value: Optional[str] = None,
+        dataset_name: Optional[str] = None,
+        harm_categories: Optional[Sequence[str]] = None,
+        added_by: Optional[str] = None,
+        authors: Optional[Sequence[str]] = None,
+        groups: Optional[Sequence[str]] = None,
+        source: Optional[str] = None,
+        parameters: Optional[Sequence[str]] = None,
+    ) -> list[PromptTemplate]:
+        if not parameters:
+            raise ValueError("Prompt templates must have parameters. Please specify at least one.")
+        return [
+            prompt.to_prompt_template() for prompt in self.get_prompts(
+                value=value,
+                dataset_name=dataset_name,
+                harm_categories=harm_categories,
+                added_by=added_by,
+                authors=authors,
+                groups=groups,
+                source=source,
+                parameters=parameters,
+            )
+        ]
     
     def get_prompt_groups(
         self,
@@ -435,15 +491,40 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         # and optionally dataset_name and harm_categories
         raise NotImplementedError("Method not yet implemented.")
 
-    def add_prompt_groups():
-        # TODO for this PR
-        raise NotImplementedError("Method not yet implemented.")
+    def add_prompt_groups_to_memory(self, *, prompt_groups: list[PromptGroup], added_by: Optional[str]=None) -> None:
+        """
+        Inserts a list of prompt groups into the memory storage.
+
+        Args:
+            prompt_groups (list[PromptGroup]): A list of prompt groups to insert.
+            added_by (str): The user who added the prompt groups.
+        
+        Raises:
+            ValueError: If a prompt group does not have at least one prompt.
+            ValueError: If prompt group IDs are inconsistent within the same prompt group.
+        """
+        # Validates the prompt group IDs and sets them if possible before leveraging the add_prompts_to_memory method.
+        all_prompts = []
+        for prompt_group in prompt_groups:
+            if not prompt_group.prompts:
+                raise ValueError("Prompt group must have at least one prompt.")
+            # Determine the prompt group ID.
+            # It should either be set uniformly or generated if not set.
+            # Inconsistent prompt group IDs will raise an error.
+            group_id_set = set([prompt.prompt_group_id for prompt in prompt_group.prompts])
+            if len(group_id_set) > 1:
+                raise ValueError(f"Inconsistent 'prompt_group_id' attribute between members of the same prompt group. Found {group_id_set}")
+            prompt_group_id = group_id_set.pop() or str(uuid.uuid4())
+            for prompt in prompt_group.prompts:
+                prompt.prompt_group_id = prompt_group_id
+            all_prompts.extend(prompt_group.prompts)
+        self.add_prompts_to_memory(prompts=all_prompts, added_by=added_by)
     
     def delete_prompts(self, *, ids: list[str]) -> None:
         """
         Deletes prompts by id.
         """
-        # TODO for this PR
+        # TODO
         raise NotImplementedError("Method not yet implemented.")
 
     def print_schema(self):

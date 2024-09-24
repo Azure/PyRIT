@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional, Union
@@ -66,27 +67,92 @@ class Prompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
 
+    def to_prompt_template(self) -> PromptTemplate:
+        if not self.parameters:
+            raise ValueError("Prompt must have parameters to convert to a PromptTemplate.")
+        return PromptTemplate(
+            id=self.id,
+            value=self.value,
+            data_type=self.data_type,
+            name=self.name,
+            dataset_name=self.dataset_name,
+            harm_categories=self.harm_categories,
+            description=self.description,
+            authors=self.authors,
+            groups=self.groups,
+            source=self.source,
+            date_added=self.date_added,
+            added_by=self.added_by,
+            metadata=self.metadata,
+            parameters=self.parameters,
+            prompt_group_id=self.prompt_group_id,
+            sequence=self.sequence,
+        )
 
-class PromptGroup(YamlLoadable):
-    id: Optional[Union[uuid.UUID, str]]
-    name: str
-    description: Optional[str]
-    prompts: List[List[Prompt]]
+
+class PromptTemplate(Prompt):
+    parameters: List[str]
 
     def __init__(
         self,
         *,
         id: Optional[uuid.UUID] = None,
-        name: str,
+        value: str,
+        data_type: PromptDataType,
+        name: Optional[str] = None,
+        dataset_name: Optional[str] = None,
+        harm_categories: Optional[List[str]] = None,
         description: Optional[str] = None,
+        authors: Optional[List[str]] = None,
+        groups: Optional[List[str]] = None,
+        source: Optional[str] = None,
+        date_added: Optional[datetime] = datetime.now(),
+        added_by: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
+        parameters: List[str],
+        prompt_group_id: Optional[uuid.UUID] = None,
+        sequence: Optional[int] = None,
+    ):
+        if not parameters:
+            raise ValueError("PromptTemplate must have parameters. Please provide at least one.")
+        super().__init__(
+            id=id,
+            value=value,
+            data_type=data_type,
+            name=name,
+            dataset_name=dataset_name,
+            harm_categories=harm_categories,
+            description=description,
+            authors=authors,
+            groups=groups,
+            source=source,
+            date_added=date_added,
+            added_by=added_by,
+            metadata=metadata,
+            parameters=parameters,
+            prompt_group_id=prompt_group_id,
+            sequence=sequence,
+        )
+
+
+class PromptGroup(YamlLoadable):
+    """
+    A group of prompts that need to be sent together.
+
+    For example, when using a target that requires multiple (multimodal) prompt pieces to be sent together,
+    the prompt group enables grouping them together. Their prompt_group_id should match.
+    """
+    prompts: List[Prompt]
+
+    def __init__(
+        self,
+        *,
         prompts: List[Prompt],
     ):
-        self.id = id if id else uuid.uuid4()
-        self.name = name
-        self.description = description
         self.prompts = prompts
+        self.prompts.sort(key=lambda prompt: prompt.sequence)
 
-# TODO: consider removing as it doesn't serve any purpose
+
 class PromptDataset(YamlLoadable):
     prompts: List[Prompt]
 
