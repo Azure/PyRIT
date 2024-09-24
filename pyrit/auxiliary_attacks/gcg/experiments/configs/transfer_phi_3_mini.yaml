@@ -1,5 +1,5 @@
 transfer: True
-logfile: ""
+logfile: "phi_3_mini_log.json"
 progressive_goals: False
 stop_on_success: False
 tokenizer_paths: ["microsoft/Phi-3-mini-4k-instruct"]
