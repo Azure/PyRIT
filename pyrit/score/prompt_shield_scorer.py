@@ -33,6 +33,9 @@ class PromptShieldScorer(Scorer):
         self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
         self._memory = memory if memory else DuckDBMemory()
+        # Ensure _prompt_target uses the same memory interface as the scorer.
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
 
     async def score_async(
         self, request_response: PromptRequestPiece | PromptMemoryEntry, *, task: Optional[str] = None

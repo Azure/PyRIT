@@ -35,6 +35,7 @@ classifiers = [
 requires-python = ">=3.10, <3.13"
 dependencies = [
     "aioconsole>=0.7.1",
+    "aiofiles>=24.1.0",
     "appdirs>=1.4.0",
     "art==6.1.0",
     "azure-cognitiveservices-speech>=1.36.0",

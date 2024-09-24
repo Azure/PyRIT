@@ -19,6 +19,7 @@ from pyrit.models import (
 from pyrit.memory.memory_models import EmbeddingData
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
+from pyrit.models.storage_io import StorageIO
 
 
 class MemoryInterface(abc.ABC):
@@ -32,6 +33,8 @@ class MemoryInterface(abc.ABC):
     """
 
     memory_embedding: MemoryEmbedding = None
+    _storage_io: StorageIO = None
+    results_path: str = None
 
     def __init__(self, embedding_model=None):
         self.memory_embedding = embedding_model

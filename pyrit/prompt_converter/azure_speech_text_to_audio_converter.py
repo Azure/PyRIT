@@ -1,13 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import logging
+from typing import Literal, Optional
+
 import azure.cognitiveservices.speech as speechsdk
 
-from typing import Literal
 from pyrit.common import default_values
 from pyrit.models import data_serializer_factory
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.memory import MemoryInterface, DuckDBMemory
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
         filename (str): File name to be generated.  Please include either .wav or .mp3
         output_format (str): Either wav or mp3. Must match the file prefix.
+        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -39,6 +42,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_language: str = "en_US",
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
+        memory: Optional[MemoryInterface] = None,
     ) -> None:
 
         self._azure_speech_region: str = default_values.get_required_value(
@@ -52,6 +56,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._synthesis_language = synthesis_language
         self._synthesis_voice_name = synthesis_voice_name
         self._output_format = output_format
+        self._memory = memory or DuckDBMemory()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
@@ -63,8 +68,10 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         if prompt.strip() == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
 
-        audio_serializer = data_serializer_factory(data_type="audio_path", extension=self._output_format)
-        audio_serializer_file = str(audio_serializer.get_data_filename().resolve())
+        audio_serializer = data_serializer_factory(
+            data_type="audio_path", extension=self._output_format, memory=self._memory
+        )
+        audio_serializer_file = str(await audio_serializer.get_data_filename())
 
         try:
             speech_config = speechsdk.SpeechConfig(

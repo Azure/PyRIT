@@ -104,10 +104,10 @@ class AzureContentFilterScorer(Scorer):
             filter_result = self._azure_cf_client.analyze_text(text_request_options)  # type: ignore
 
         elif request_response.converted_value_data_type == "image_path":
-            base64_encoded_data = self._get_base64_image_data(request_response)
+            base64_encoded_data = await self._get_base64_image_data(request_response)
             image_data = ImageData(content=base64_encoded_data)
             image_request_options = AnalyzeImageOptions(
-                image=image_data, categories=self._score_categories, output_type="EightSeverityLevels"
+                image=image_data, categories=self._score_categories, output_type="FourSeverityLevels"
             )
             filter_result = self._azure_cf_client.analyze_image(image_request_options)  # type: ignore
 
@@ -135,11 +135,13 @@ class AzureContentFilterScorer(Scorer):
 
         return scores
 
-    def _get_base64_image_data(self, request_response: PromptRequestPiece):
+    async def _get_base64_image_data(self, request_response: PromptRequestPiece):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
-        base64_encoded_data = image_serializer.read_data_base64()
+        image_serializer = data_serializer_factory(
+            value=image_path, data_type="image_path", extension=ext, memory=self._memory
+        )
+        base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
