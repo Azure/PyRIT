@@ -652,14 +652,16 @@ class MultiPromptAttack(object):
     def get_filtered_cands(self, worker_index, control_cand, filter_cand=True, curr_control=None):
         cands, count = [], 0
         worker = self.workers[worker_index]
+
+        # TODO: temporary solution for phi-3-mini: IndexError('piece id is out of range.')
+        print("Masking out of range token_id.")
+        vocab_size = worker.tokenizer.vocab_size
+        control_cand[control_cand > vocab_size] = 1738
+
         for i in range(control_cand.shape[0]):
-            try:
-                decoded_str = worker.tokenizer.decode(
-                    control_cand[i], skip_special_tokens=True, clean_up_tokenization_spaces=False
-                )
-            except IndexError as e:
-                print(f"BLAKE3: {control_cand[i]}")
-                print(e)
+            decoded_str = worker.tokenizer.decode(
+                control_cand[i], skip_special_tokens=True, clean_up_tokenization_spaces=False
+            )
             if filter_cand:
                 if decoded_str != curr_control and len(
                     worker.tokenizer(decoded_str, add_special_tokens=False).input_ids
