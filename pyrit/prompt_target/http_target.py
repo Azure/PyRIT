@@ -8,7 +8,7 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 import urllib.parse
-
+import chardet
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,8 @@ class HTTP_Target(PromptTarget):
         body: str = None,
         method: str = "POST",
         memory: Union[MemoryInterface, None] = None,
-        url_encoding: str = None
+        url_encoding: str = None,
+        body_encoding: str = None
     ) -> None:
 
         super().__init__(memory=memory)
@@ -43,7 +44,8 @@ class HTTP_Target(PromptTarget):
         self.parse_function = parse_function
         self.body = body
         self.method = method
-        self.url_encoding = url_encoding
+        self.url_encoding = url_encoding, 
+        self.body_encoding = body_encoding
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -52,11 +54,14 @@ class HTTP_Target(PromptTarget):
 
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
+        print("HERE: request: ", request)
 
+        
         request_dict = self.parse_http_request(prompt=str(request.original_value))
 
         #Make the actual HTTP request:
 
+        # Add Prompt into URL (if the URL takes it)
         if "{PROMPT}" in self.url:
             if self.url_encoding == "url":
                 prompt_url_safe = urllib.parse.quote(request.original_value)
@@ -64,13 +69,26 @@ class HTTP_Target(PromptTarget):
             else: 
                 self.url = self.url.replace("{PROMPT}", request.original_value)
 
+        # Add Prompt into request body (if the body takes it)
+        if "{PROMPT}" in self.body:
+            if self.url_encoding:
+                encoded_prompt = request.original_value.replace(" ", "+")
+                self.body.replace("{PROMPT}", encoded_prompt)
+        #TODO: figure out error when using net_utility (says CONTENT LENGTH is not right)
         if self.method == "GET":
-            response = requests.get(
-                url=self.url,
-                headers=request_dict,
-                data=self.body, 
-                allow_redirects=True
-            )
+            if not request_dict:
+                if not self.body:
+                    response = requests.get(
+                        url=self.url,
+                        allow_redirects=True
+                )
+            else: 
+                response = requests.get(
+                    url=self.url,
+                    headers=request_dict,
+                    data=self.body, 
+                    allow_redirects=True
+                )
 
         elif self.method == "POST":
             if self.body:
@@ -86,7 +104,10 @@ class HTTP_Target(PromptTarget):
                     headers=request_dict,
                     allow_redirects=True
                     )
-        
+        print(type(response.content))
+        resp = response.content.decode("utf-8")
+
+        print(response.content)
         response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response.content)], response_type="text")
         return response_entry
 
@@ -99,6 +120,8 @@ class HTTP_Target(PromptTarget):
         """
 
         headers_dict = {}
+        if not self.http_request:
+            return {}
         header_lines = self.http_request.strip().split("\n")
         
         # Loop through each line and split into key-value pairs
@@ -106,7 +129,7 @@ class HTTP_Target(PromptTarget):
             key, value = line.split(":", 1)
             headers_dict[key.strip()] = value.strip()
         
-        headers_dict["Content-Length"] = str(len(prompt))
+        headers_dict["Content-Length"] = str(len(self.body))
         return headers_dict
         
         
