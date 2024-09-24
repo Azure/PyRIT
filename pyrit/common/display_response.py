@@ -3,14 +3,17 @@
 
 import logging
 from PIL import Image
+import io
+
 from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.models import PromptRequestPiece
+from pyrit.memory import MemoryInterface
 
 
 logger = logging.getLogger(__name__)
 
 
-def display_response(response_piece: PromptRequestPiece) -> None:
+async def display_response(response_piece: PromptRequestPiece, memory: MemoryInterface) -> None:
     """Displays response images if running in notebook environment.
 
     Args:
@@ -21,9 +24,13 @@ def display_response(response_piece: PromptRequestPiece) -> None:
         and response_piece.converted_value_data_type == "image_path"
         and is_in_ipython_session()
     ):
-        with open(response_piece.converted_value, "rb") as f:
-            img = Image.open(f)
-            # Jupyter built-in display function only works in notebooks.
-            display(img)  # type: ignore # noqa: F821
+        image_location = response_piece.converted_value
+        image_bytes = await memory._storage_io.read_file(image_location)
+
+        image_stream = io.BytesIO(image_bytes)
+        image = Image.open(image_stream)
+
+        # Jupyter built-in display function only works in notebooks.
+        display(image)  # type: ignore # noqa: F821
     if response_piece.response_error == "blocked":
         logger.info("---\nContent blocked, cannot show a response.\n---")

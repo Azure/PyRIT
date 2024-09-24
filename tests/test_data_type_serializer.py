@@ -5,6 +5,8 @@ import os
 import tempfile
 import pytest
 
+from pyrit.memory.duckdb_memory import DuckDBMemory
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import (
     ImagePathDataTypeSerializer,
     TextDataTypeSerializer,
@@ -14,69 +16,75 @@ from pyrit.models import (
 )
 
 
-def test_data_serializer_factory_text_no_data_throws():
+@pytest.fixture(scope="function")
+def duckdb_in_memory() -> MemoryInterface:
+    file_memory = DuckDBMemory(db_path=":memory:")
+    return file_memory
+
+
+def test_data_serializer_factory_text_no_data_throws(duckdb_in_memory: MemoryInterface):
+    with pytest.raises(ValueError):
+        data_serializer_factory(data_type="text", memory=duckdb_in_memory)
+
+
+def test_data_serializer_factory_text_with_data(duckdb_in_memory: MemoryInterface):
+    serializer = data_serializer_factory(data_type="text", value="test", memory=duckdb_in_memory)
+    assert isinstance(serializer, DataTypeSerializer)
+    assert isinstance(serializer, TextDataTypeSerializer)
+    assert serializer.data_type == "text"
+    assert serializer.value == "test"
+    assert serializer.data_on_disk() is False
+
+
+def test_data_serializer_factory_error_with_data(duckdb_in_memory: MemoryInterface):
+    serializer = data_serializer_factory(data_type="error", value="test", memory=duckdb_in_memory)
+    assert isinstance(serializer, DataTypeSerializer)
+    assert isinstance(serializer, ErrorDataTypeSerializer)
+    assert serializer.data_type == "error"
+    assert serializer.value == "test"
+    assert serializer.data_on_disk() is False
+
+
+@pytest.mark.asyncio
+async def test_data_serializer_text_read_data_throws(duckdb_in_memory: MemoryInterface):
+    serializer = data_serializer_factory(data_type="text", value="test", memory=duckdb_in_memory)
     with pytest.raises(TypeError):
-        data_serializer_factory("text")
+        await serializer.read_data()
 
 
-def test_data_serializer_factory_text_with_data():
-    normalizer = data_serializer_factory(data_type="text", value="test")
-    assert isinstance(normalizer, DataTypeSerializer)
-    assert isinstance(normalizer, TextDataTypeSerializer)
-    assert normalizer.data_type == "text"
-    assert normalizer.value == "test"
-    assert normalizer.data_on_disk() is False
-
-
-def test_data_serializer_factory_error_with_data():
-    normalizer = data_serializer_factory(data_type="error", value="test")
-    assert isinstance(normalizer, DataTypeSerializer)
-    assert isinstance(normalizer, ErrorDataTypeSerializer)
-    assert normalizer.data_type == "error"
-    assert normalizer.value == "test"
-    assert normalizer.data_on_disk() is False
-
-
-def test_data_serializer_text_read_data_throws():
-    normalizer = data_serializer_factory(data_type="text", value="test")
+@pytest.mark.asyncio
+async def test_data_serializer_text_save_data_throws(duckdb_in_memory: MemoryInterface):
+    serializer = data_serializer_factory(data_type="text", value="test", memory=duckdb_in_memory)
     with pytest.raises(TypeError):
-        normalizer.read_data()
+        await serializer.save_data(b"\x00")
 
 
-def test_data_serializer_text_save_data_throws():
-    normalizer = data_serializer_factory(data_type="text", value="test")
+@pytest.mark.asyncio
+async def test_data_serializer_error_read_data_throws(duckdb_in_memory: MemoryInterface):
+    serializer = data_serializer_factory(data_type="error", value="test", memory=duckdb_in_memory)
     with pytest.raises(TypeError):
-        normalizer.save_data(b"\x00")
+        await serializer.read_data()
 
 
-def test_data_serializer_error_read_data_throws():
-    normalizer = data_serializer_factory(data_type="error", value="test")
+@pytest.mark.asyncio
+async def test_data_serializer_error_save_data_throws(duckdb_in_memory: MemoryInterface):
+    serializer = data_serializer_factory(data_type="error", value="test", memory=duckdb_in_memory)
     with pytest.raises(TypeError):
-        normalizer.read_data()
+        await serializer.save_data(b"\x00")
 
 
-def test_data_serializer_error_save_data_throws():
-    normalizer = data_serializer_factory(data_type="error", value="test")
-    with pytest.raises(TypeError):
-        normalizer.save_data(b"\x00")
+def test_image_path_normalizer_factory(duckdb_in_memory: MemoryInterface):
+    serializer = data_serializer_factory(data_type="image_path", memory=duckdb_in_memory)
+    assert isinstance(serializer, DataTypeSerializer)
+    assert isinstance(serializer, ImagePathDataTypeSerializer)
+    assert serializer.data_type == "image_path"
+    assert serializer.data_on_disk()
 
 
-def test_image_path_normalizer_factory_prompt_text_raises():
-    with pytest.raises(FileNotFoundError):
-        data_serializer_factory(data_type="image_path", value="no_real_path.txt")
-
-
-def test_image_path_normalizer_factory():
-    normalizer = data_serializer_factory(data_type="image_path")
-    assert isinstance(normalizer, DataTypeSerializer)
-    assert isinstance(normalizer, ImagePathDataTypeSerializer)
-    assert normalizer.data_type == "image_path"
-    assert normalizer.data_on_disk()
-
-
-def test_image_path_save_data():
-    normalizer = data_serializer_factory(data_type="image_path")
-    normalizer.save_data(b"\x00")
+@pytest.mark.asyncio
+async def test_image_path_save_data(duckdb_in_memory: MemoryInterface):
+    normalizer = data_serializer_factory(data_type="image_path", memory=duckdb_in_memory)
+    await normalizer.save_data(b"\x00")
     assert normalizer.value
     assert normalizer.value.endswith(".png")
     assert os.path.isabs(normalizer.value)
@@ -84,36 +92,34 @@ def test_image_path_save_data():
     assert os.path.isfile(normalizer.value)
 
 
-def test_image_path_read_data():
+@pytest.mark.asyncio
+async def test_image_path_read_data(duckdb_in_memory: MemoryInterface):
     data = b"\x00\x11\x22\x33"
+    normalizer = data_serializer_factory(data_type="image_path", memory=duckdb_in_memory)
+    await normalizer.save_data(data)
+    assert await normalizer.read_data() == data
+    read_normalizer = data_serializer_factory(data_type="image_path", value=normalizer.value, memory=duckdb_in_memory)
+    assert await read_normalizer.read_data() == data
 
-    normalizer = data_serializer_factory(data_type="image_path")
-    normalizer.save_data(data)
-    assert normalizer.read_data() == data
-    read_normalizer = data_serializer_factory(data_type="image_path", value=normalizer.value)
-    assert read_normalizer.read_data() == data
 
-
-def test_image_path_read_data_base64():
+@pytest.mark.asyncio
+async def test_image_path_read_data_base64(duckdb_in_memory: MemoryInterface):
     data = b"AAAA"
 
-    normalizer = data_serializer_factory(data_type="image_path")
-    normalizer.save_data(data)
-    base_64_data = normalizer.read_data_base64()
+    normalizer = data_serializer_factory(data_type="image_path", memory=duckdb_in_memory)
+    await normalizer.save_data(data)
+    base_64_data = await normalizer.read_data_base64()
     assert base_64_data
     assert base_64_data == "QUFBQQ=="
 
 
-def test_path_exists():
-    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
-        temp_file_path = temp_file.name
-        assert DataTypeSerializer.path_exists(temp_file_path) is True
-
-
-def test_path_not_exists():
+@pytest.mark.asyncio()
+async def test_path_not_exists(duckdb_in_memory: MemoryInterface):
     file_path = "non_existing_file.txt"
+    serializer = data_serializer_factory(data_type="image_path", value=file_path, memory=duckdb_in_memory)
+
     with pytest.raises(FileNotFoundError):
-        DataTypeSerializer.path_exists(file_path)
+        await serializer.read_data()
 
 
 def test_get_extension():
@@ -132,11 +138,12 @@ def test_get_mime_type():
         assert mime_type == expected_mime_type
 
 
-def test_save_b64_image():
-    normalizer = data_serializer_factory(data_type="image_path")
-    normalizer.save_b64_image("\x00")
-    assert normalizer.value
-    assert normalizer.value.endswith(".png")
-    assert os.path.isabs(normalizer.value)
-    assert os.path.exists(normalizer.value)
-    assert os.path.isfile(normalizer.value)
+@pytest.mark.asyncio
+async def test_save_b64_image(duckdb_in_memory: MemoryInterface):
+    serializer = data_serializer_factory(data_type="image_path", memory=duckdb_in_memory)
+    await serializer.save_b64_image("\x00")
+    assert serializer.value
+    assert serializer.value.endswith(".png")
+    assert os.path.isabs(serializer.value)
+    assert os.path.exists(serializer.value)
+    assert os.path.isfile(serializer.value)

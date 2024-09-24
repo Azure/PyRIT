@@ -31,12 +31,14 @@ from pyrit.models.prompt_request_response import (
 from pyrit.models.prompt_response import PromptResponse
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
+from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 
 __all__ = [
     "ALLOWED_CHAT_MESSAGE_ROLES",
     "AttackStrategy",
     "AudioPathDataTypeSerializer",
+    "AzureBlobStorageIO",
     "ChatMessage",
     "ChatMessagesDataset",
     "ChatMessageRole",
@@ -45,6 +47,7 @@ __all__ = [
     "construct_response_from_request",
     "DataTypeSerializer",
     "data_serializer_factory",
+    "DiskStorageIO",
     "EmbeddingData",
     "EmbeddingResponse",
     "EmbeddingSupport",
@@ -67,6 +70,7 @@ __all__ = [
     "QuestionChoice",
     "Score",
     "ScoreType",
+    "StorageIO",
     "TextDataTypeSerializer",
     "UnvalidatedScore",
 ]

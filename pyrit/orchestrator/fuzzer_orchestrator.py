@@ -191,6 +191,7 @@ class FuzzerOrchestrator(Orchestrator):
             raise ValueError("Batch size must be at least 1.")
 
         self._prompt_target = prompt_target
+        self._prompt_target._memory = self._memory
         self._prompts = prompts
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_templates = prompt_templates

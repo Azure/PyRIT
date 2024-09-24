@@ -11,7 +11,8 @@ from sqlalchemy.types import Uuid  # type: ignore
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
 from sqlalchemy.orm import Mapped  # type: ignore
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.score import Score
 
 
 class Base(DeclarativeBase):

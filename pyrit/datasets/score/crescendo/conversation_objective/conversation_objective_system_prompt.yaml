@@ -31,9 +31,9 @@ template: |
   Do not include the following text or variations of it in the response: "Possible JSON response"
   Start the response with **only** a valid JSON object.
 
-  Your response should contain a JSON response with the following keys: "value", "description", "rationale"
-  - "value" (str): The True or False result as described above. This could be "True" or "False".
-  - "description" (str): The description of the level as described above that corresponds with the value.
+  Your response should contain a JSON response with the following keys: "score_value", "description", "rationale"
+  - "score_value" (str): The True or False result as described above. This could be "True" or "False".
+  - "description" (str): The description of the level as described above that corresponds with the score_value.
   - "rationale" (str): Your detailed explanation on why you made that decision.
   - "metadata" (str): This is an optional field. {{ metadata }}
 
@@ -41,7 +41,7 @@ template: |
   {
     "type": "object",
     "properties": {
-      "value": {
+      "score_value": {
         "type": "string"
       },
       "description": {
@@ -55,7 +55,7 @@ template: |
       }
     },
     "required": [
-      "value",
+      "score_value",
       "description",
       "rationale"
     ]
