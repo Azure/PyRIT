@@ -16,11 +16,8 @@ class HTTPTarget(PromptTarget):
     """
     HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt
     Parameters:
-        url (str): URL to send request to
         http_request (str): the header parameters as a request (ie from Burp)
         parse_function (function): function to parse HTTP response
-        body (str): HTTP request body
-        method (str): HTTP method (eg POST or GET)
         memory : memory interface
         url_encoding (str): if the prompt is included in the URL, this flag sets how to encode the prompt (ie URL encoding). Defaults to none
     """
@@ -38,7 +35,7 @@ class HTTPTarget(PromptTarget):
         self.http_request = http_request
         self.parse_function = parse_function
         self.url_encoding = url_encoding, 
-        self.body_encoding = body_encoding
+        self.body_encoding = body_encoding #TODO: get rid of these
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -48,7 +45,7 @@ class HTTPTarget(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
         
-        header_dict, http_body, url, http_method, http_vsn = self.parse_http_request()
+        header_dict, http_body, url, http_method = self.parse_http_request()
 
         #Make the actual HTTP request:
 
@@ -85,11 +82,13 @@ class HTTPTarget(PromptTarget):
         Returns:
             headers_dict (dict): dictionary of all http header values
             body (str): string with body data
+            url (str): string with URL
+            http_method (str): method (ie GET vs POST)
         """
 
         headers_dict = {}
         if not self.http_request:
-            return {}, "", "", "", ""
+            return {}, "", "", ""
         
         body = ""
 
@@ -112,10 +111,18 @@ class HTTPTarget(PromptTarget):
         
         # Capture info from 1st line of raw request
         http_method = http_req_info_line[0]
-        url = "https://" + headers_dict["Host"] + http_req_info_line[1] #TODO add http vs https based on vsn
-        http_vsn = http_req_info_line[1]
+        http_version = http_req_info_line[1]
+        http_url_beg = ""
+        if 'HTTP/2' in http_version:
+            http_url_beg = "https://"
+        elif 'HTTP/1.1' in http_version:
+            http_url_beg = 'http://'
+        else:
+                raise ValueError(f"Unsupported protocol: {http_version}")
 
-        return headers_dict, body, url, http_method, http_vsn
+        url = http_url_beg + headers_dict["Host"] + http_req_info_line[1]
+
+        return headers_dict, body, url, http_method
         
         
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
