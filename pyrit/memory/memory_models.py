@@ -220,7 +220,7 @@ class EmbeddingMessageWithSimilarity(BaseModel):
     score: float = 0.0
 
 
-class PromptEntry(Base):
+class SeedPromptEntry(Base):
     """
     Represents the raw prompt or prompt template data as found in open datasets.
 

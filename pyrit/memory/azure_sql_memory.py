@@ -19,7 +19,7 @@ from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptEntry, PromptMemoryEntry, ScoreEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, SeedPromptEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import AzureBlobStorageIO, Prompt, PromptGroup, PromptRequestPiece, PromptTemplate, Score
 
@@ -372,7 +372,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             if prompt.date_added is None:
                 prompt.date_added = datetime.now()
 
-        self._insert_entries(entries=[PromptEntry(entry=prompt) for prompt in prompts])
+        self._insert_entries(entries=[SeedPromptEntry(entry=prompt) for prompt in prompts])
     
     def get_prompt_dataset_names(self) -> list[str]:
         """
@@ -380,8 +380,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         try:
             return self.query_entries(
-                PromptEntry.dataset_name,
-                conditions=and_(PromptEntry.dataset_name != None, PromptEntry.dataset_name != ""),
+                SeedPromptEntry.dataset_name,
+                conditions=and_(SeedPromptEntry.dataset_name != None, SeedPromptEntry.dataset_name != ""),
                 distinct=True,
             )  # type: ignore
         except Exception as e:
@@ -423,29 +423,29 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         conditions = []
         if value:
-            conditions.append(PromptEntry.value.contains(value))
+            conditions.append(SeedPromptEntry.value.contains(value))
         if dataset_name:
-            conditions.append(PromptEntry.dataset_name == dataset_name)
+            conditions.append(SeedPromptEntry.dataset_name == dataset_name)
         if harm_categories:
             for harm_category in harm_categories:
-                conditions.append(PromptEntry.harm_categories.contains(harm_category))
+                conditions.append(SeedPromptEntry.harm_categories.contains(harm_category))
         if added_by:
-            conditions.append(PromptEntry.added_by == added_by)
+            conditions.append(SeedPromptEntry.added_by == added_by)
         if authors:
             for author in authors:
-                conditions.append(PromptEntry.authors.contains(author))
+                conditions.append(SeedPromptEntry.authors.contains(author))
         if groups:
             for group in groups:
-                conditions.append(PromptEntry.groups.contains(group))
+                conditions.append(SeedPromptEntry.groups.contains(group))
         if source:
-            conditions.append(PromptEntry.source == source)
+            conditions.append(SeedPromptEntry.source == source)
         if parameters:
             for parameter in parameters:
-                conditions.append(PromptEntry.parameters.contains(parameter))
+                conditions.append(SeedPromptEntry.parameters.contains(parameter))
 
         try:
             return self.query_entries(
-                PromptEntry,
+                SeedPromptEntry,
                 conditions=and_(*conditions),
             )  # type: ignore
         except Exception as e:

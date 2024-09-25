@@ -13,7 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptEntry, PromptMemoryEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, SeedPromptEntry, PromptMemoryEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
@@ -363,4 +363,4 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts a list of prompts into the memory storage.
         """
-        self._insert_entries(entries=[PromptEntry(entry=prompt) for prompt in prompts])
+        self._insert_entries(entries=[SeedPromptEntry(entry=prompt) for prompt in prompts])
