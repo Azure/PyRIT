@@ -8,8 +8,6 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 import urllib.parse
-import httpx
-from pyrit.common import net_utility
 
 logger = logging.getLogger(__name__)
 
@@ -29,22 +27,16 @@ class HTTPTarget(PromptTarget):
 
     def __init__(
         self,
-        url: str,
         http_request: str = None,
         parse_function: callable = None, #TODO: this would be where the parse function will go
-        body: str = None,
-        method: str = "POST",
         memory: Union[MemoryInterface, None] = None,
         url_encoding: str = None,
         body_encoding: str = None
     ) -> None:
 
         super().__init__(memory=memory)
-        self.url = url
         self.http_request = http_request
         self.parse_function = parse_function
-        self.body = body
-        self.method = method
         self.url_encoding = url_encoding, 
         self.body_encoding = body_encoding
 
@@ -56,30 +48,30 @@ class HTTPTarget(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
         
-        request_dict = self.parse_http_request()
+        header_dict, http_body, url, http_method, http_vsn = self.parse_http_request()
 
         #Make the actual HTTP request:
 
         # Add Prompt into URL (if the URL takes it)
-        if "{PROMPT}" in self.url:
-            if self.url_encoding == "url":
+        if "{PROMPT}" in url:
+            if self.url_encoding == "url": #TODO: get rid of & move to converters
                 prompt_url_safe = urllib.parse.quote(request.original_value)
-                self.url = self.url.replace("{PROMPT}", prompt_url_safe)
+                self.url = url.replace("{PROMPT}", prompt_url_safe)
             else: 
-                self.url = self.url.replace("{PROMPT}", request.original_value)
+                self.url = url.replace("{PROMPT}", request.original_value)
 
         # Add Prompt into request body (if the body takes it)
-        if "{PROMPT}" in self.body:
+        if "{PROMPT}" in http_body:
             if self.url_encoding:
                 encoded_prompt = request.original_value.replace(" ", "+")
-                self.body.replace("{PROMPT}", encoded_prompt)
+                http_body.replace("{PROMPT}", encoded_prompt)
         
-
+        #TODO: include vsn here
         response = requests.request(
-            url=self.url,
-            headers=request_dict,
-            data=self.body, 
-            method=self.method,
+            url=url,
+            headers=header_dict,
+            data=http_body, 
+            method=http_method,
             allow_redirects=True # using Requests so we can leave this flag on, rather than httpx
         )
 
@@ -87,24 +79,43 @@ class HTTPTarget(PromptTarget):
         return response_entry
 
 
-    def parse_http_request(self) -> dict[str, str]:
+    def parse_http_request(self):
         """
         Parses the HTTP request string into a dictionary of headers
-
+        Returns:
+            headers_dict (dict): dictionary of all http header values
+            body (str): string with body data
         """
 
         headers_dict = {}
         if not self.http_request:
-            return {}
-        header_lines = self.http_request.strip().split("\n")
+            return {}, "", "", "", ""
         
+        body = ""
+
+        # Split the request into headers and body by finding the double newlines (\n\n)
+        request_parts = self.http_request.strip().split("\n\n", 1)
+
+        # Parse out the header components
+        header_lines = request_parts[0].strip().split("\n")
+        http_req_info_line = header_lines[0].split(" ") # get 1st line like POST /url_ending HTTP_VSN
+        header_lines = header_lines[1:] # rest of the raw request is the headers info
+
         # Loop through each line and split into key-value pairs
         for line in header_lines:
             key, value = line.split(":", 1)
             headers_dict[key.strip()] = value.strip()
+
+        if len(request_parts) > 1:
+            body = request_parts[1]
+            headers_dict["Content-Length"] = str(len(body))
         
-        headers_dict["Content-Length"] = str(len(self.body))
-        return headers_dict
+        # Capture info from 1st line of raw request
+        http_method = http_req_info_line[0]
+        url = "https://" + headers_dict["Host"] + http_req_info_line[1] #TODO add http vs https based on vsn
+        http_vsn = http_req_info_line[1]
+
+        return headers_dict, body, url, http_method, http_vsn
         
         
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
