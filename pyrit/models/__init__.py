@@ -21,7 +21,7 @@ from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingS
 from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import PromptDataType, PromptResponseError, ChatMessageRole
 from pyrit.models.many_shot_template import ManyShotTemplate
-from pyrit.models.prompt_dataset import PromptDataset, PromptGroup, PromptTemplate, SeedPrompt
+from pyrit.models.prompt_dataset import PromptDataset, PromptTemplate, SeedPrompt, SeedPromptGroup
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import (
     PromptRequestResponse,
@@ -57,8 +57,6 @@ __all__ = [
     "Identifier",
     "ImagePathDataTypeSerializer",
     "ManyShotTemplate",
-    "SeedPrompt",
-    "PromptGroup",
     "PromptRequestPiece",
     "PromptResponse",
     "PromptResponseError",
@@ -71,6 +69,8 @@ __all__ = [
     "QuestionChoice",
     "Score",
     "ScoreType",
+    "SeedPrompt",
+    "SeedPromptGroup",
     "StorageIO",
     "TextDataTypeSerializer",
     "UnvalidatedScore",

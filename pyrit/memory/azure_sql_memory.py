@@ -21,7 +21,7 @@ from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_models import Base, EmbeddingDataEntry, SeedPromptEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import AzureBlobStorageIO, SeedPrompt, PromptGroup, PromptRequestPiece, PromptTemplate, Score
+from pyrit.models import AzureBlobStorageIO, SeedPrompt, SeedPromptGroup, PromptRequestPiece, PromptTemplate, Score
 
 logger = logging.getLogger(__name__)
 
@@ -484,19 +484,19 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         *,
         dataset_name: Optional[str] = None,
         data_types: Optional[Sequence[Sequence[str]]]
-    ) -> list[PromptGroup]:
+    ) -> list[SeedPromptGroup]:
         # TODO for this PR
         # join prompt tables as many times as the number of data types passed (which also implies the sequence number)
         # i.e., join on prompt group ID while matching the data type and sequence number
         # and optionally dataset_name and harm_categories
         raise NotImplementedError("Method not yet implemented.")
 
-    def add_prompt_groups_to_memory(self, *, prompt_groups: list[PromptGroup], added_by: Optional[str]=None) -> None:
+    def add_prompt_groups_to_memory(self, *, prompt_groups: list[SeedPromptGroup], added_by: Optional[str]=None) -> None:
         """
         Inserts a list of prompt groups into the memory storage.
 
         Args:
-            prompt_groups (list[PromptGroup]): A list of prompt groups to insert.
+            prompt_groups (list[SeedPromptGroup]): A list of prompt groups to insert.
             added_by (str): The user who added the prompt groups.
         
         Raises:

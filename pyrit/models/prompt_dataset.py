@@ -135,7 +135,7 @@ class PromptTemplate(SeedPrompt):
         )
 
 
-class PromptGroup(YamlLoadable):
+class SeedPromptGroup(YamlLoadable):
     """
     A group of prompts that need to be sent together.
 
