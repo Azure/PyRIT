@@ -21,7 +21,7 @@ from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_models import Base, EmbeddingDataEntry, SeedPromptEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import AzureBlobStorageIO, Prompt, PromptGroup, PromptRequestPiece, PromptTemplate, Score
+from pyrit.models import AzureBlobStorageIO, SeedPrompt, PromptGroup, PromptRequestPiece, PromptTemplate, Score
 
 logger = logging.getLogger(__name__)
 
@@ -354,12 +354,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
 
-    def add_prompts_to_memory(self, *, prompts: list[Prompt], added_by: Optional[str]=None) -> None:
+    def add_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str]=None) -> None:
         """
         Inserts a list of prompts into the memory storage.
 
         Args:
-            prompts (list[Prompt]): A list of prompts to insert.
+            prompts (list[SeedPrompt]): A list of prompts to insert.
             added_by (str): The user who added the prompts.
         """
         if added_by:
@@ -399,7 +399,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
         parameters: Optional[Sequence[str]] = None,
-    ) -> list[Prompt]:
+    ) -> list[SeedPrompt]:
         """
         Retrieves a list of prompts that have the specified dataset name.
 
@@ -419,7 +419,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 If None, only prompts without parameters are returned.
 
         Returns:
-            list[Prompt]: A list of prompts matching the criteria.
+            list[SeedPrompt]: A list of prompts matching the criteria.
         """
         conditions = []
         if value:

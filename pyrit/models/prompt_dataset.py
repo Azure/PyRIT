@@ -12,7 +12,7 @@ from pyrit.models.literals import PromptDataType
 
 
 @dataclass
-class Prompt(YamlLoadable):
+class SeedPrompt(YamlLoadable):
     id: Optional[Union[uuid.UUID, str]]
     value: str
     data_type: PromptDataType
@@ -69,7 +69,7 @@ class Prompt(YamlLoadable):
 
     def to_prompt_template(self) -> PromptTemplate:
         if not self.parameters:
-            raise ValueError("Prompt must have parameters to convert to a PromptTemplate.")
+            raise ValueError("SeedPrompt must have parameters to convert to a PromptTemplate.")
         return PromptTemplate(
             id=self.id,
             value=self.value,
@@ -90,7 +90,7 @@ class Prompt(YamlLoadable):
         )
 
 
-class PromptTemplate(Prompt):
+class PromptTemplate(SeedPrompt):
     parameters: List[str]
 
     def __init__(
@@ -142,22 +142,22 @@ class PromptGroup(YamlLoadable):
     For example, when using a target that requires multiple (multimodal) prompt pieces to be sent together,
     the prompt group enables grouping them together. Their prompt_group_id should match.
     """
-    prompts: List[Prompt]
+    prompts: List[SeedPrompt]
 
     def __init__(
         self,
         *,
-        prompts: List[Prompt],
+        prompts: List[SeedPrompt],
     ):
         self.prompts = prompts
         self.prompts.sort(key=lambda prompt: prompt.sequence)
 
 
 class PromptDataset(YamlLoadable):
-    prompts: List[Prompt]
+    prompts: List[SeedPrompt]
 
-    def __init__(self, prompts: List[Prompt]):
+    def __init__(self, prompts: List[SeedPrompt]):
         if prompts and isinstance(prompts[0], dict):
-            self.prompts = [Prompt(**prompt_args) for prompt_args in prompts]
+            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in prompts]
         else:
             self.prompts = prompts

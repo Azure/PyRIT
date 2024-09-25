@@ -5,7 +5,7 @@ import uuid
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
-from pyrit.models import PromptDataType, Prompt
+from pyrit.models import PromptDataType, SeedPrompt
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
 from sqlalchemy.types import Uuid  # type: ignore
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
@@ -225,7 +225,7 @@ class SeedPromptEntry(Base):
     Represents the raw prompt or prompt template data as found in open datasets.
 
     Note: This is different from the PromptMemoryEntry which is the processed prompt data.
-    Prompt merely reflects basic prompts before plugging into orchestrators,
+    SeedPrompt merely reflects basic prompts before plugging into orchestrators,
     running through models with corresponding attack strategies, and applying converters.
     PromptMemoryEntry captures the processed prompt data before and after the above steps. 
 
@@ -267,7 +267,7 @@ class SeedPromptEntry(Base):
     prompt_group_id: Mapped[Optional[uuid.UUID]] = Column(Uuid, nullable=True)
     sequence: Mapped[Optional[int]] = Column(INTEGER, nullable=True)
 
-    def __init__(self, *, entry: Prompt):
+    def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
         self.value = entry.value
         self.data_type = entry.data_type
@@ -285,8 +285,8 @@ class SeedPromptEntry(Base):
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
     
-    def get_prompt(self) -> Prompt:
-        return Prompt(
+    def get_prompt(self) -> SeedPrompt:
+        return SeedPrompt(
             id=self.id,
             value=self.value,
             data_type=self.data_type,
