@@ -140,3 +140,44 @@ async def test_score_prompts_by_memory_labels_async_raises_error_no_matching_lab
             memory_labels={"op_name": "nonexistent_op", "user_name": "nonexistent_user"},
             responses_only=False,
         )
+
+
+def test_remove_duplicates():
+    prompt_id1 = uuid.uuid4()
+    prompt_id2 = uuid.uuid4()
+    orchestrator = ScoringOrchestrator(memory=MagicMock())
+    pieces = [
+        PromptRequestPiece(
+            id=prompt_id1,
+            role="user",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            sequence=0,
+        ),
+        PromptRequestPiece(
+            id=prompt_id2,
+            role="assistant",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            sequence=1,
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            sequence=0,
+            original_prompt_id=prompt_id1,
+        ),
+        PromptRequestPiece(
+            role="assistant",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            sequence=1,
+            original_prompt_id=prompt_id2,
+        ),
+    ]
+    orig_pieces = orchestrator._remove_duplicates(pieces)
+    assert len(orig_pieces) == 2
+    for piece in orig_pieces:
+        assert piece.id in [prompt_id1, prompt_id2]
+        assert piece.id == piece.original_prompt_id

@@ -92,7 +92,7 @@ with PromptSendingOrchestrator(prompt_target=img_prompt_target, memory=azure_sql
 
     # You can use the following to show the image
     if image_location != "content blocked":
-        image_bytes = await azure_sql_memory._storage_io.read_file(image_location)  # type: ignore
+        image_bytes = await azure_sql_memory.storage_io.read_file(image_location)  # type: ignore
 
         image_stream = io.BytesIO(image_bytes)
         image = Image.open(image_stream)

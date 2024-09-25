@@ -14,8 +14,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.sqltypes import NullType
 
 from pyrit.memory.duckdb_memory import DuckDBMemory
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingData
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingDataEntry
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
@@ -157,8 +157,8 @@ async def test_insert_entry(memory_interface):
     )
     await prompt_request_piece_entry.compute_sha256(memory_interface)
     entry = PromptMemoryEntry(entry=prompt_request_piece_entry)
-    # Use the _insert_entry method to insert the entry into the database
-    memory_interface._insert_entry(entry)
+    # Use the insert_entry method to insert the entry into the database
+    memory_interface.insert_entry(entry)
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
@@ -224,8 +224,8 @@ def test_insert_entries(memory_interface):
 
     # Now, get a new session to query the database and verify the entries were inserted
     with memory_interface.get_session() as session:
-        # Use the _insert_entries method to insert multiple entries into the database
-        memory_interface._insert_entries(entries=entries)
+        # Use the insert_entries method to insert multiple entries into the database
+        memory_interface.insert_entries(entries=entries)
         inserted_entries = session.query(PromptMemoryEntry).all()
         assert len(inserted_entries) == 5
         for i, entry in enumerate(inserted_entries):
@@ -241,8 +241,8 @@ def test_insert_embedding_entry(memory_interface):
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="abc")
     )
 
-    # Insert the ConversationData entry using the _insert_entry method
-    memory_interface._insert_entry(conversation_entry)
+    # Insert the ConversationData entry using the insert_entry method
+    memory_interface.insert_entry(conversation_entry)
 
     # Re-query the ConversationData entry within a new session to ensure it's attached
     with memory_interface.get_session() as session:
@@ -251,12 +251,12 @@ def test_insert_embedding_entry(memory_interface):
         uuid = reattached_conversation_entry.id
 
     # Now that we have the uuid, we can create and insert the EmbeddingData entry
-    embedding_entry = EmbeddingData(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
-    memory_interface._insert_entry(embedding_entry)
+    embedding_entry = EmbeddingDataEntry(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
+    memory_interface.insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
     with memory_interface.get_session() as session:
-        persisted_embedding_entry = session.query(EmbeddingData).filter_by(id=uuid).first()
+        persisted_embedding_entry = session.query(EmbeddingDataEntry).filter_by(id=uuid).first()
         assert persisted_embedding_entry is not None
         assert persisted_embedding_entry.embedding == [1, 2, 3]
         assert persisted_embedding_entry.embedding_type_name == "test_type"
@@ -298,7 +298,7 @@ def test_query_entries(memory_interface, sample_conversation_entries):
         sample_conversation_entries[i].original_value = f"Message {i}"
         sample_conversation_entries[i].converted_value = f"Message {i}"
 
-    memory_interface._insert_entries(entries=sample_conversation_entries)
+    memory_interface.insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
     queried_entries = memory_interface.query_entries(PromptMemoryEntry)
@@ -318,7 +318,7 @@ def test_update_entries(memory_interface):
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
-    memory_interface._insert_entry(entry)
+    memory_interface.insert_entry(entry)
 
     # Fetch the entry to update and update its content
     entries_to_update = memory_interface.query_entries(
@@ -334,7 +334,7 @@ def test_update_entries(memory_interface):
 
 def test_get_all_memory(memory_interface, sample_conversation_entries):
 
-    memory_interface._insert_entries(entries=sample_conversation_entries)
+    memory_interface.insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
     all_entries = memory_interface.get_all_prompt_pieces()
@@ -427,7 +427,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: DuckDBMemory):
         ),
     ]
 
-    memory_interface._insert_entries(entries=entries)
+    memory_interface.insert_entries(entries=entries)
 
     orchestrator1_id = orchestrator1.get_identifier()["id"]
 
@@ -476,7 +476,7 @@ def test_get_memories_with_memory_labels(memory_interface: DuckDBMemory):
         ),
     ]
 
-    memory_interface._insert_entries(entries=entries)
+    memory_interface.insert_entries(entries=entries)
 
     retrieved_entries = memory_interface.get_prompt_request_piece_by_memory_labels(memory_labels=labels)
 
@@ -522,7 +522,7 @@ def test_get_memories_with_zero_memory_labels(memory_interface: DuckDBMemory):
         ),
     ]
 
-    memory_interface._insert_entries(entries=entries)
+    memory_interface.insert_entries(entries=entries)
     labels = {"nonexistent_key": "nonexiststent_value"}
     retrieved_entries = memory_interface.get_prompt_request_piece_by_memory_labels(memory_labels=labels)
 
@@ -539,9 +539,9 @@ def test_update_entries_by_conversation_id(memory_interface, sample_conversation
     sample_conversation_entries[1].conversation_id = "other_id"
     original_content = sample_conversation_entries[1].original_value
 
-    # Insert the ConversationData entries using the _insert_entries method within a session
+    # Insert the ConversationData entries using the insert_entries method within a session
     with memory_interface.get_session() as session:
-        memory_interface._insert_entries(entries=sample_conversation_entries)
+        memory_interface.insert_entries(entries=sample_conversation_entries)
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id
@@ -565,38 +565,3 @@ def test_update_entries_by_conversation_id(memory_interface, sample_conversation
         # Verify that the entry with a different conversation_id was not updated
         other_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="other_id").first()
         assert other_entry.original_value == original_content  # Content should remain unchanged
-
-
-@pytest.mark.parametrize("score_type", ["float_scale", "true_false"])
-def test_add_score_get_score(memory_interface, sample_conversation_entries, score_type):
-    prompt_id = sample_conversation_entries[0].id
-
-    memory_interface._insert_entries(entries=sample_conversation_entries)
-
-    score_value = str(True) if score_type == "true_false" else "0.8"
-
-    score = Score(
-        score_value=score_value,
-        score_value_description="High score",
-        score_type=score_type,
-        score_category="test",
-        score_rationale="Test score",
-        score_metadata="Test metadata",
-        scorer_class_identifier={"__type__": "TestScorer"},
-        prompt_request_response_id=prompt_id,
-    )
-
-    memory_interface.add_scores_to_memory(scores=[score])
-
-    # Fetch the score we just added
-    db_score = memory_interface.get_scores_by_prompt_ids(prompt_request_response_ids=[prompt_id])
-    assert db_score
-    assert len(db_score) == 1
-    assert db_score[0].score_value == score_value
-    assert db_score[0].score_value_description == "High score"
-    assert db_score[0].score_type == score_type
-    assert db_score[0].score_category == "test"
-    assert db_score[0].score_rationale == "Test score"
-    assert db_score[0].score_metadata == "Test metadata"
-    assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
-    assert db_score[0].prompt_request_response_id == prompt_id
