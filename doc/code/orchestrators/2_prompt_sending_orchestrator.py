@@ -1,18 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.4
-#   kernelspec:
-#     display_name: pyrit-311
-#     language: python
-#     name: python3
-# ---
-
 # %% [markdown]
 # # PromptSendingOrchestrator
 #
@@ -48,11 +33,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     end = time.time()
 
     print(f"Elapsed time for operation: {end-start}")
-
-    memory = orchestrator.get_memory()
-
-    for entry in memory:
-        print(entry)
+    await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
 # ### Introducing Rate Limit (RPM) Threshold
@@ -61,7 +42,6 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 # and avoid exceptions, you can configure `max_requests_per_minute` on the target before using it with an orchestrator.
 #
 # **Note**: `batch_size` should be 1 to properly use the RPM provided.
-
 
 # %%
 import time
@@ -116,10 +96,7 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
     # this is run in a Jupyter notebook, so we can use await
     await orchestrator.send_prompts_async(prompt_list=prompts.prompts)  # type: ignore
 
-    memory = orchestrator.get_memory()
-
-    for entry in memory:
-        print(entry)
+    await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
 # ### Multi-Modal

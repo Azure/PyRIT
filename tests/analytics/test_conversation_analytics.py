@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.analytics.conversation_analytics import ConversationAnalytics
-from pyrit.memory.memory_models import EmbeddingData
+from pyrit.memory.memory_models import EmbeddingDataEntry
 
 from tests.mocks import get_sample_conversation_entries
 
@@ -52,8 +52,10 @@ def test_get_similar_chat_messages_by_embedding(mock_memory_interface, sample_co
     different_embedding = [0.9, 0.8, 0.7]
 
     mock_embeddings = [
-        EmbeddingData(id=sample_conversations_entries[0].id, embedding=similar_embedding, embedding_type_name="model1"),
-        EmbeddingData(
+        EmbeddingDataEntry(
+            id=sample_conversations_entries[0].id, embedding=similar_embedding, embedding_type_name="model1"
+        ),
+        EmbeddingDataEntry(
             id=sample_conversations_entries[1].id, embedding=different_embedding, embedding_type_name="model2"
         ),
     ]
