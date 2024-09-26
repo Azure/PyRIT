@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import uuid
 import yaml
 import enum
@@ -9,8 +8,8 @@ import enum
 from pathlib import Path
 from typing import Optional
 
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
@@ -92,11 +91,13 @@ class SelfAskScaleScorer(Scorer):
         scale: Optional[Scale] = None,
         memory: MemoryInterface = None,
     ) -> None:
-
+        self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()
-
+        # Ensure _prompt_target uses the same memory interface as the scorer.
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
         if not scale_path and not scale:
             raise ValueError("Either scale_path or scale must be provided.")
         if scale_path and scale:
@@ -121,15 +122,13 @@ class SelfAskScaleScorer(Scorer):
         system_prompt_kwargs = self._scale.to_dict()
         self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(**system_prompt_kwargs)
 
-        self._chat_target: PromptChatTarget = chat_target
-
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given request_response using "self-ask" for the chat target and adds score to memory.
 
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
-            task (str): The task to be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: The request_response scored.
@@ -139,7 +138,7 @@ class SelfAskScaleScorer(Scorer):
 
         conversation_id = str(uuid.uuid4())
 
-        self._chat_target.set_system_prompt(
+        self._prompt_target.set_system_prompt(
             system_prompt=self._system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
@@ -153,43 +152,29 @@ class SelfAskScaleScorer(Scorer):
                     role="user",
                     original_value=scoring_prompt,
                     conversation_id=conversation_id,
-                    prompt_target_identifier=self._chat_target.get_identifier(),
+                    prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
             ]
         )
 
-        score = await self._send_chat_target_async(request, request_response.id)
+        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
+            prompt_target=self._prompt_target,
+            scorer_llm_request=request,
+            scored_prompt_id=request_response.id,
+            category=self._scale.category,
+            task=task,
+        )
+
+        score = unvalidated_score.to_score(
+            score_value=str(
+                self.scale_value_float(
+                    float(unvalidated_score.raw_score_value), self._scale.minimum_value, self._scale.maximum_value
+                )
+            )
+        )
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-
-    @pyrit_json_retry
-    async def _send_chat_target_async(self, request, request_response_id):
-        response = await self._chat_target.send_prompt_async(prompt_request=request)
-
-        try:
-            response_json = response.request_pieces[0].converted_value
-            parsed_response = json.loads(response_json)
-            score_value = self.scale_value_float(
-                float(parsed_response["score_value"]), self._scale.minimum_value, self._scale.maximum_value
-            )
-            score = Score(
-                score_value=str(score_value),
-                score_value_description=parsed_response["description"],
-                score_type=self.scorer_type,
-                score_category=self._scale.category,
-                score_rationale=parsed_response["rationale"],
-                scorer_class_identifier=self.get_identifier(),
-                score_metadata=None,
-                prompt_request_response_id=request_response_id,
-            )
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
-
-        except KeyError:
-            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
-
-        return score
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.original_value_data_type != "text":

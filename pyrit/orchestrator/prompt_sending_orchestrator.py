@@ -52,6 +52,8 @@ class PromptSendingOrchestrator(Orchestrator):
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+                Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
+                ensure proper rate limit management.
         """
         super().__init__(
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
@@ -59,6 +61,12 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._scorers = scorers
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
+        if self._scorers:
+            for scorer in self._scorers:
+                scorer._memory = self._memory
+                if hasattr(scorer, "_prompt_target"):
+                    scorer._prompt_target._memory = self._memory
 
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
@@ -165,9 +173,6 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-        # These are the responses from the target
-        # print(responses[0].request_pieces)
-
         if self._scorers:
             response_ids = []
             for response in responses:
@@ -192,7 +197,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     responses_only=True,
                 )
 
-    def print_conversations(self):
+    async def print_conversations(self):
         """Prints the conversation between the prompt target and the red teaming bot."""
         all_messages = self.get_memory()
 
@@ -215,7 +220,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    display_response(message)
+                    await display_response(message, self._memory)
 
                 scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
                 for score in scores:
@@ -224,6 +229,6 @@ class PromptSendingOrchestrator(Orchestrator):
     def _combine_with_global_memory_labels(self, memory_labels: dict[str, str]) -> dict[str, str]:
         """
         Combines the global memory labels with the provided memory labels.
-        The passed memory_leabels take prcedence with collisions.
+        The passed memory_labels take precedence with collisions.
         """
         return {**(self._global_memory_labels or {}), **(memory_labels or {})}

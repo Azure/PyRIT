@@ -55,8 +55,6 @@ class AzureContentFilterScorer(Scorer):
                 azure.ai.contentsafety.models.TextCategory.
         """
 
-        super().__init__()
-
         if harm_categories:
             self._score_categories = [category.value for category in harm_categories]
         else:
@@ -82,7 +80,8 @@ class AzureContentFilterScorer(Scorer):
                 In case of an image, the image size needs to less than image size is 2048 x 2048 pixels,
                 but more than 50x50 pixels. The data size should not exceed exceed 4 MB. Image must be
                 of type JPEG, PNG, GIF, BMP, TIFF, or WEBP.
-            task (str): The task based on which the text should be scored. Currently not supported for this scorer.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+                Currently not supported for this scorer.
         Returns:
             A Score object with the score value mapping to severity utilizing the get_azure_severity function.
             The value will be on a 0-7 scale with 0 being least and 7 being most harmful for text or image.
@@ -105,10 +104,10 @@ class AzureContentFilterScorer(Scorer):
             filter_result = self._azure_cf_client.analyze_text(text_request_options)  # type: ignore
 
         elif request_response.converted_value_data_type == "image_path":
-            base64_encoded_data = self._get_base64_image_data(request_response)
+            base64_encoded_data = await self._get_base64_image_data(request_response)
             image_data = ImageData(content=base64_encoded_data)
             image_request_options = AnalyzeImageOptions(
-                image=image_data, categories=self._score_categories, output_type="EightSeverityLevels"
+                image=image_data, categories=self._score_categories, output_type="FourSeverityLevels"
             )
             filter_result = self._azure_cf_client.analyze_image(image_request_options)  # type: ignore
 
@@ -129,17 +128,20 @@ class AzureContentFilterScorer(Scorer):
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
+                task=task,
             )
             self._memory.add_scores_to_memory(scores=[score])
             scores.append(score)
 
         return scores
 
-    def _get_base64_image_data(self, request_response: PromptRequestPiece):
+    async def _get_base64_image_data(self, request_response: PromptRequestPiece):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
-        base64_encoded_data = image_serializer.read_data_base64()
+        image_serializer = data_serializer_factory(
+            value=image_path, data_type="image_path", extension=ext, memory=self._memory
+        )
+        base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):

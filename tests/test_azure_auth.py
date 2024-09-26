@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import pytest
 import time
 from unittest.mock import Mock, patch
 
@@ -38,6 +39,7 @@ def test_refresh_expiration():
         assert mock_get_token.call_count == 2
 
 
+@pytest.mark.skip(reason="Need to updating mocking logic with new azure.identity version")
 def test_get_token_provider_from_default_azure_credential():
     with patch("azure.identity.DefaultAzureCredential.get_token") as mock_default_cred:
         mock_default_cred.return_value = Mock(token=mock_token, expires_on=curr_epoch_time)

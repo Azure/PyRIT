@@ -50,7 +50,7 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
 
 # %%
 # pylint: disable=W0611
-
+import time
 from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
@@ -65,14 +65,20 @@ from pyrit.score import (
 id = prompt_sending_orchestrator_id
 
 # The scorer is interchangeable with other scorers
-scorer = AzureContentFilterScorer()
+# scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
-# scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
+scorer = SelfAskCategoryScorer(
+    chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
+)
 
 with ScoringOrchestrator() as scoring_orchestrator:
+    start = time.time()
     scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[id], responses_only=False
     )
+    end = time.time()
+
+    print(f"Elapsed time for operation: {end-start}")
 
     memory = DuckDBMemory()
 
@@ -82,6 +88,42 @@ with ScoringOrchestrator() as scoring_orchestrator:
         ].original_value
         print(f"{score} : {prompt_text}")
 
+# %% [markdown]
+# ### Introducing Rate Limit (RPM) Threshold
+#
+# If using an LLM or Target-Based Scorer, you may need to provide a max number of Requests Per Minute to abide by a Rate Limit and avoid exceptions.
+# You can configure this on the target by providing a value to the `max_requests_per_minute` parameter. **Note**: `batch_size` should be 1 to properly use the RPM provided.
+
+# %%
+# pylint: disable=W0611
+import time
+from pyrit.memory import DuckDBMemory
+from pyrit.orchestrator import ScoringOrchestrator
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.score import (
+    AzureContentFilterScorer,
+    SelfAskCategoryScorer,
+    ContentClassifierPaths,
+)
+
+# we need the id from the previous run to score all prompts from the orchestrator
+id = prompt_sending_orchestrator_id
+
+# NOTE: max_requests_per_minute are provided
+scorer = SelfAskCategoryScorer(
+    chat_target=AzureOpenAIGPT4OChatTarget(max_requests_per_minute=20),
+    content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+)
+
+# NOTE: batch_size is set to 1
+with ScoringOrchestrator(batch_size=1) as scoring_orchestrator:
+    start = time.time()
+    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
+        scorer=scorer, orchestrator_ids=[id], responses_only=False
+    )
+    end = time.time()
+
+    print(f"Elapsed time for operation with RPM provided: {end-start}")
 
 # %% [markdown]
 # # Scoring Using Memory Labels
@@ -116,9 +158,11 @@ with PromptSendingOrchestrator(prompt_target=prompt_target, memory_labels=memory
     await orchestrator.send_prompts_async(prompt_list=all_prompts)  # type: ignore
 
 # The scorer is interchangeable with other scorers
-scorer = AzureContentFilterScorer()
+# scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
-# scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
+scorer = SelfAskCategoryScorer(
+    chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
+)
 
 # Scoring prompt responses based on user provided memory labels
 with ScoringOrchestrator() as scoring_orchestrator:

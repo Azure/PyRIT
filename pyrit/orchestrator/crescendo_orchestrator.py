@@ -13,12 +13,15 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import (
     InvalidJsonException,
     pyrit_json_retry,
+    remove_markdown_json,
 )
 from pyrit.models import PromptTemplate
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.memory import MemoryInterface
+from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
 from pyrit.score.self_ask_true_false_scorer import SelfAskTrueFalseScorer
 
 
@@ -54,9 +57,10 @@ class CrescendoOrchestrator(Orchestrator):
         red_teaming_chat: PromptChatTarget,
         scoring_target: PromptChatTarget,
         system_prompt_path: Optional[Path] = None,
+        memory: Optional[MemoryInterface] = None,
         verbose: bool = False,
     ) -> None:
-        super().__init__(verbose=verbose)
+        super().__init__(memory=memory, verbose=verbose)
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._conversation_objective = conversation_objective
@@ -79,18 +83,8 @@ class CrescendoOrchestrator(Orchestrator):
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._red_teaming_chat._memory = self._memory
 
-        self.refusal_scorer = SelfAskTrueFalseScorer(
+        self.refusal_scorer = SelfAskRefusalScorer(
             chat_target=scoring_target,
-            true_false_question_path=Path(DATASETS_PATH)
-            / "score"
-            / "crescendo"
-            / "conversation_objective"
-            / "refusal.yaml",
-            true_false_system_prompt_path=Path(DATASETS_PATH)
-            / "score"
-            / "crescendo"
-            / "conversation_objective"
-            / "conversation_objective_system_prompt.yaml",
             memory=self._memory,
         )
 
@@ -262,6 +256,7 @@ class CrescendoOrchestrator(Orchestrator):
             .request_pieces[0]
             .converted_value
         )
+        response_text = remove_markdown_json(response_text)
 
         expected_output = ["generated_question", "rationale_behind_jailbreak", "last_response_summary"]
         try:

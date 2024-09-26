@@ -232,6 +232,9 @@ async def test_send_prompt_async_image_converter():
 
         normalizer = PromptNormalizer(memory=MagicMock())
 
+        # Mock the async read_file method
+        normalizer._memory.storage_io.read_file = AsyncMock(return_value=b"mocked data")
+
         await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
 
         # verify the prompt target received the correct arguments from the normalizer
@@ -242,17 +245,34 @@ async def test_send_prompt_async_image_converter():
 
 
 @pytest.mark.asyncio
-async def test_prompt_normalizer_send_prompt_batch_async(normalizer_piece: NormalizerRequestPiece):
-    prompt_target = MockPromptTarget()
+@pytest.mark.parametrize("max_requests_per_minute", [None, 10])
+@pytest.mark.parametrize("batch_size", [1, 10])
+async def test_prompt_normalizer_send_prompt_batch_async_throws(
+    normalizer_piece: NormalizerRequestPiece,
+    max_requests_per_minute: int,
+    batch_size: int,
+):
+    prompt_target = MockPromptTarget(rpm=max_requests_per_minute)
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
-    request = [NormalizerRequest([normalizer_piece])]
-
     normalizer = PromptNormalizer(memory=MagicMock())
 
-    await normalizer.send_prompt_batch_to_target_async(requests=request, target=prompt_target)
+    if max_requests_per_minute and batch_size != 1:
+        with pytest.raises(ValueError):
+            results = await normalizer.send_prompt_batch_to_target_async(
+                requests=[NormalizerRequest([normalizer_piece])],
+                target=prompt_target,
+                batch_size=batch_size,
+            )
+    else:
+        results = await normalizer.send_prompt_batch_to_target_async(
+            requests=[NormalizerRequest([normalizer_piece])],
+            target=prompt_target,
+            batch_size=batch_size,
+        )
 
-    assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
+        assert "S_G_V_s_b_G_8_=" in prompt_target.prompt_sent
+        assert len(results) == 1
 
 
 @pytest.mark.asyncio

@@ -2,11 +2,10 @@
 # Licensed under the MIT license.
 
 import abc
-import asyncio
-
 from typing import Optional
 from uuid import uuid4
 
+from pyrit.common.batch_helper import batch_task_async
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
@@ -113,24 +112,16 @@ class PromptNormalizer(abc.ABC):
                 received for each prompt.
         """
 
-        results = []
-
-        for prompts_batch in self._chunked_prompts(requests, batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(
-                    self.send_prompt_async(
-                        normalizer_request=prompt,
-                        target=target,
-                        labels=labels,
-                        orchestrator_identifier=orchestrator_identifier,
-                    )
-                )
-
-            batch_results = await asyncio.gather(*tasks)
-            results.extend(batch_results)
-
-        return results
+        return await batch_task_async(
+            prompt_target=target,
+            batch_size=batch_size,
+            items_to_batch=[requests],
+            task_func=self.send_prompt_async,
+            task_arguments=["normalizer_request"],
+            target=target,
+            labels=labels,
+            orchestrator_identifier=orchestrator_identifier,
+        )
 
     async def convert_response_values(
         self,
@@ -154,10 +145,6 @@ class PromptNormalizer(abc.ABC):
                     )
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
-
-    def _chunked_prompts(self, prompts, size):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]
 
     async def _build_prompt_request_response(
         self,
@@ -200,22 +187,22 @@ class PromptNormalizer(abc.ABC):
             )
 
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
-            entries.append(
-                PromptRequestPiece(
-                    role="user",
-                    original_value=request_piece.prompt_value,
-                    converted_value=converted_prompt_text,
-                    conversation_id=conversation_id,
-                    sequence=sequence,
-                    labels=labels,
-                    prompt_metadata=request_piece.metadata,
-                    converter_identifiers=converter_identifiers,
-                    prompt_target_identifier=target.get_identifier(),
-                    orchestrator_identifier=orchestrator_identifier,
-                    original_value_data_type=request_piece.prompt_data_type,
-                    converted_value_data_type=converted_prompt_type,
-                )
+            prompt_request_piece = PromptRequestPiece(
+                role="user",
+                original_value=request_piece.prompt_value,
+                converted_value=converted_prompt_text,
+                conversation_id=conversation_id,
+                sequence=sequence,
+                labels=labels,
+                prompt_metadata=request_piece.metadata,
+                converter_identifiers=converter_identifiers,
+                prompt_target_identifier=target.get_identifier(),
+                orchestrator_identifier=orchestrator_identifier,
+                original_value_data_type=request_piece.prompt_data_type,
+                converted_value_data_type=converted_prompt_type,
             )
+            await prompt_request_piece.compute_sha256(memory=self._memory)
+            entries.append(prompt_request_piece)
 
         return PromptRequestResponse(request_pieces=entries)
 

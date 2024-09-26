@@ -88,6 +88,11 @@ class RedTeamingOrchestrator(Orchestrator):
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
+        if self._scorer:
+            self._scorer._memory = self._memory
+            if hasattr(self._scorer, "_prompt_target"):
+                self._scorer._prompt_target._memory = self._memory
 
     async def check_conversation_complete_async(self) -> Union[Score, None]:
         """
@@ -155,17 +160,20 @@ class RedTeamingOrchestrator(Orchestrator):
         return score
 
     async def send_prompt_async(
-        self, *, prompt: Optional[str] = None, feedback: Optional[str] = None, blocked: bool = False
+        self,
+        *,
+        prompt: Optional[str] = None,
+        feedback: Optional[str] = None,
     ) -> PromptRequestPiece:
         """
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
         Args:
-            prompt: The prompt to send to the target.
+            prompt (str, optional): The prompt to send to the target.
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
                 This can only be specified for the first iteration at this point.
-            feedback: feedback from a previous iteration of send_prompt_async.
+            feedback (str, optional): feedback from a previous iteration of send_prompt_async.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
                 The feedback is passed back to the red teaming chat to improve the next prompt.
@@ -190,6 +198,7 @@ class RedTeamingOrchestrator(Orchestrator):
             request_converters=self._prompt_converters,
             prompt_value=prompt,
             prompt_data_type="text",
+            memory=self._memory,
         )
 
         response_piece = (
@@ -204,7 +213,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return response_piece
 
-    def print_conversation(self):
+    async def print_conversation(self):
         """Prints the conversation between the prompt target and the red teaming bot."""
         target_messages = self._memory._get_prompt_pieces_with_conversation_id(
             conversation_id=self._prompt_target_conversation_id
@@ -224,7 +233,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                display_response(message)
+                await display_response(message, self._memory)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
             if scores and len(scores) > 0:
