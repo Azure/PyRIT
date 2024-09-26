@@ -5,6 +5,7 @@ import random
 import time
 from copy import deepcopy
 from typing import Optional, Any
+import subprocess as sp
 
 import numpy as np
 import pandas as pd
@@ -100,6 +101,14 @@ def get_nonascii_toks(tokenizer, device="cpu"):
         ascii_toks.append(tokenizer.unk_token_id)
 
     return torch.tensor(ascii_toks, device=device)
+
+
+def print_gpu_memory():
+    command = "nvidia-smi --query-gpu=memory.free --format=csv"
+    memory_free_info = sp.check_output(command.split()).decode('ascii').split('\n')[:-1][1:]
+    memory_free_values = [int(x.split()[0]) for x in memory_free_info]
+    print("Free GPU memory:")
+    print(memory_free_values)
 
 
 class AttackPrompt(object):
@@ -734,6 +743,9 @@ class MultiPromptAttack(object):
             self.log(anneal_from, n_steps + anneal_from, self.control_str, loss, runtime, model_tests, verbose=verbose)
 
         for i in range(n_steps):
+
+            # Print free GPU memory
+            print_gpu_memory()
 
             if stop_on_success:
                 model_tests_jb, model_tests_mb, _ = self.test(self.workers, self.prompts)
