@@ -9,6 +9,7 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 import urllib.parse
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -48,21 +49,27 @@ class HTTPTarget(PromptTarget):
         request = prompt_request.request_pieces[0]
         
         header_dict, http_body, url, http_method = self.parse_http_request()
+        re_pattern = re.compile(self.prompt_regex_string)
 
         #Make the actual HTTP request:
 
         # Add Prompt into URL (if the URL takes it)
         if self.prompt_regex_string in url:
             prompt_url_safe = urllib.parse.quote(request.original_value)
-            self.url = url.replace(self.prompt_regex_string, prompt_url_safe)
+            formatted_url = re_pattern.sub(prompt_url_safe, self.url)
+            self.url = formatted_url
 
         # Add Prompt into request body (if the body takes it)
         if self.prompt_regex_string in http_body:
             if self.body_encoding:
                 encoded_prompt = request.original_value.replace(" ", self.body_encoding) 
-                http_body.replace(self.prompt_regex_string, encoded_prompt)
+                formatted_http_body = re_pattern.sub(encoded_prompt, http_body)
+
+            else:
+                formatted_http_body = re_pattern.sub(request.original_value, http_body)
+            
+            http_body = formatted_http_body
         
-        #TODO: include vsn here
         response = requests.request(
             url=url,
             headers=header_dict,
@@ -104,11 +111,11 @@ class HTTPTarget(PromptTarget):
             key, value = line.split(":", 1)
             headers_dict[key.strip()] = value.strip()
 
-        #TODO: parse body for json
         if len(request_parts) > 1:
             # Parse as JSON object if it can be parsed that way
             try: 
-                body = json.dumps(request_parts[1])
+                body = json.loads(request_parts[1])  # Check if valid json
+                body = json.dumps(body)
             except: # if not JSON keep as string
                 body = request_parts[1]
             if "Content-Legnth" in headers_dict: 
@@ -134,7 +141,7 @@ class HTTPTarget(PromptTarget):
         if "Host" in headers_dict.keys():
             url += headers_dict["Host"]
         url += http_req_info_line[1]
-
+        
         return headers_dict, body, url, http_method
         
         
