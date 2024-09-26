@@ -40,6 +40,9 @@ with HTTPTarget(http_request={}, url=url, body={}, url_encoding="url", body_enco
     resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
     print(resp)
     
+# -
+
+# ## BIC Example
 
 # +
 import os
@@ -106,3 +109,47 @@ http_prompt_target = HTTPTarget(http_request=http_resp, url=url, body=body)
 with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
     print(response[0])
+# -
+
+# ## AOAI Example
+
+# +
+from pyrit.common import default_values
+import requests
+import json
+
+default_values.load_default_env()
+
+deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT")
+endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT")
+api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY")
+
+#url = "https://pyrit-github-pipeline.openai.azure.com/openai/deployments/pyrit-github-gpt4/chat/completions?api-version=2024-02-01"
+rl = f"{endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01"
+print("URL: ", url)
+
+# Set headers
+headers = {
+    "Content-Type": "application/json",
+    "api-key": api_key
+}
+
+# Set the payload with your input data
+data = {
+    "messages": [
+        {"role": "user", "content": "Hello what is 2+2?"}
+    ],
+    "max_tokens": 50,
+    "temperature": 0.7
+}
+
+# Send the request
+response = requests.post(url, headers=headers, data=json.dumps(data))
+
+# Check response
+if response.status_code == 200:
+    result = response.json()
+    print(result['choices'][0])  # Extract the completion result
+else:
+    print(f"Request failed: {response.status_code}")
+    print(response.text)

@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
+import json
 from typing import Any, Union
 import requests
 from pyrit.prompt_target import PromptTarget
@@ -103,24 +104,36 @@ class HTTPTarget(PromptTarget):
             key, value = line.split(":", 1)
             headers_dict[key.strip()] = value.strip()
 
+        #TODO: parse body for json
         if len(request_parts) > 1:
-            body = request_parts[1]
-            headers_dict["Content-Length"] = str(len(body))
+            # Parse as JSON object if it can be parsed that way
+            try: 
+                body = json.dumps(request_parts[1])
+            except: # if not JSON keep as string
+                body = request_parts[1]
+            if "Content-Legnth" in headers_dict: 
+                headers_dict["Content-Length"] = str(len(body))
         
         # Capture info from 1st line of raw request
         http_method = http_req_info_line[0]
-        http_version = http_req_info_line[2]
+        
         http_url_beg = ""
-
-        # TODO: qn use_tls_flag variable instead?
-        if 'HTTP/2' in http_version:
-            http_url_beg = "https://"
-        elif 'HTTP/1.1' in http_version:
-            http_url_beg = 'http://'
-        else:
+        if len(http_req_info_line) > 2: 
+            http_version = http_req_info_line[2]
+            # TODO: qn use_tls_flag variable instead?
+            if 'HTTP/2' in http_version:
+                http_url_beg = "https://"
+            elif 'HTTP/1.1' in http_version:
+                http_url_beg = 'http://'
+            else:
                 raise ValueError(f"Unsupported protocol: {http_version}")
 
-        url = http_url_beg + headers_dict["Host"] + http_req_info_line[1]
+        url = ""
+        if http_url_beg and "http" not in http_req_info_line[1]:
+            url = http_url_beg
+        if headers_dict["Host"]:
+            url += headers_dict["Host"]
+        url += http_req_info_line[1]
 
         return headers_dict, body, url, http_method
         
