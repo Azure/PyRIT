@@ -59,7 +59,7 @@ async def test_qr_code_converter_convert_async() -> None:
         mock_get_data_filename.return_value = expected_filename
         qr = await converter.convert_async(prompt="Sample prompt", input_type="text")
         assert qr
-        assert qr.output_text == expected_filename
+        assert str(qr.output_text) == str(expected_filename)
         assert qr.output_type == "image_path"
         assert os.path.exists(qr.output_text)
         os.remove(qr.output_text)
