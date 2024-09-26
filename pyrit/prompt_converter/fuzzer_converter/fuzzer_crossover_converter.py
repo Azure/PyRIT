@@ -16,12 +16,26 @@ from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChat
 
 
 class FuzzerCrossOverConverter(FuzzerConverter):
+    """
+    Fuzzer converter that uses multiple prompt templates to generate new prompts.
+
+    Parameters
+
+    converter_target: PromptChatTarget
+        Chat target used to perform fuzzing on user prompt
+    
+    prompt_template: PromptTemplate, default=None
+        Template to be used instead of the default system prompt with instructions for the chat target.
+    
+    prompt_templates: List[str], default=None
+        List of prompt templates to use in addition to the default template.
+    """
     def __init__(
         self,
         *,
         converter_target: PromptChatTarget,
         prompt_template: PromptTemplate = None,
-        prompts: Optional[List[str]] = None,
+        prompt_templates: Optional[List[str]] = None,
     ):
         prompt_template = (
             prompt_template
@@ -31,8 +45,12 @@ class FuzzerCrossOverConverter(FuzzerConverter):
             )
         )
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
-        self.prompts = prompts or []
+        self.prompt_templates = prompt_templates or []
         self.template_label = "TEMPLATE 1"
+    
+    def update(self, **kwargs) -> None:
+        if "prompt_templates" in kwargs:
+            self.prompt_templates = kwargs["prompt_templates"]
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -40,6 +58,9 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
+        
+        if len(self.prompt_templates) == 0:
+            raise ValueError("No prompt templates available for crossover. Please provide prompt templates via the update method.")
 
         conversation_id = str(uuid.uuid4())
 
@@ -50,7 +71,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         )
 
         formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
-        formatted_prompt += f"\n====TEMPLATE 2 BEGINS====\n{random.choice(self.prompts)}\n====TEMPLATE 2 ENDS====\n"
+        formatted_prompt += f"\n====TEMPLATE 2 BEGINS====\n{random.choice(self.prompt_templates)}\n====TEMPLATE 2 ENDS====\n"
 
         request = PromptRequestResponse(
             [

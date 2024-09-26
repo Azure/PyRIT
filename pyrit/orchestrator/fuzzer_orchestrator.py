@@ -41,7 +41,7 @@ class PromptNode:
             parent: Parent node.
 
         """
-
+        self.id = uuid.uuid4()
         self.template: str = template
         self.children: list[PromptNode] = []
         self.level: int = 0 if parent is None else parent.level + 1
@@ -213,7 +213,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._total_jailbreak_count = 0
         self._jailbreak_conversation_ids: list[Union[str, uuid.UUID]] = []
         self._batch_size = batch_size
-        self._new_templates: list[str] = []
+        self._new_prompt_nodes: list[PromptNode] = []
         self._step = 0
         # keeps track of the path that has been currently selected
         self._mcts_selected_path: list[PromptNode] = []  # type: ignore
@@ -235,7 +235,7 @@ class FuzzerOrchestrator(Orchestrator):
                 raise MissingPromptPlaceholderException(message="Prompt placeholder is empty.")
 
         # convert each template into a node and maintain the node information parent, child, etc.
-        self._initial_prompts_nodes: list[PromptNode] = [PromptNode(prompt) for prompt in prompt_templates]
+        self._initial_prompt_nodes: list[PromptNode] = [PromptNode(prompt) for prompt in prompt_templates]
 
         self._last_choice_node: Optional[PromptNode] = None
 
@@ -268,7 +268,7 @@ class FuzzerOrchestrator(Orchestrator):
                 logger.info(query_limit_reached_message)
                 return FuzzerResult(
                     success=False,
-                    templates=self._new_templates,
+                    templates=[node.template for node in self._new_prompt_nodes],
                     description=query_limit_reached_message,
                     prompt_target_conversation_ids=self._jailbreak_conversation_ids,
                 )
@@ -278,7 +278,7 @@ class FuzzerOrchestrator(Orchestrator):
                 logger.info(target_jailbreak_goal_count_reached_message)
                 return FuzzerResult(
                     success=True,
-                    templates=self._new_templates,
+                    templates=[node.template for node in self._new_prompt_nodes],
                     description=target_jailbreak_goal_count_reached_message,
                     prompt_target_conversation_ids=self._jailbreak_conversation_ids,
                 )
@@ -288,7 +288,15 @@ class FuzzerOrchestrator(Orchestrator):
 
             # 2. Apply seed converter to the selected template.
             try:
-                target_seed_obj = await self._apply_template_converter(current_seed.template)
+                other_templates = []
+                node_ids_on_mcts_selected_path = [node.id for node in self._mcts_selected_path]
+                for prompt_node in self._initial_prompt_nodes + self._new_prompt_nodes:
+                    if prompt_node.id not in node_ids_on_mcts_selected_path:
+                        other_templates.append(prompt_node.template)
+                target_seed_obj = await self._apply_template_converter(
+                    template=current_seed.template,
+                    other_templates=other_templates,
+                )
             except MissingPromptPlaceholderException as e:
                 error_message = (
                     "Tried to apply to and failed even after retries as it didn't preserve the "
@@ -297,7 +305,7 @@ class FuzzerOrchestrator(Orchestrator):
                 logger.error(error_message)
                 return FuzzerResult(
                     success=False,
-                    templates=self._new_templates,
+                    templates=[node.template for node in self._new_prompt_nodes],
                     description=error_message,
                     prompt_target_conversation_ids=self._jailbreak_conversation_ids,
                 )
@@ -353,7 +361,7 @@ class FuzzerOrchestrator(Orchestrator):
             if jailbreak_count > 0:
                 # The template resulted in at least one jailbreak so it will be part of the results
                 # and a potential starting template for future iterations.
-                self._new_templates.append(target_template.template)
+                self._new_prompt_nodes.append(target_template)
                 target_template_node.add_parent(current_seed)
 
             # update the rewards for the target node and others on its path
@@ -365,7 +373,7 @@ class FuzzerOrchestrator(Orchestrator):
         """
         self._step += 1
 
-        current = max(self._initial_prompts_nodes, key=self._best_UCT_score())  # initial path
+        current = max(self._initial_prompt_nodes, key=self._best_UCT_score())  # initial path
         self._mcts_selected_path.append(current)
 
         # while node is not a leaf
@@ -415,7 +423,7 @@ class FuzzerOrchestrator(Orchestrator):
             )
 
     @pyrit_placeholder_retry
-    async def _apply_template_converter(self, template: str) -> str:
+    async def _apply_template_converter(self, *, template: str, other_templates: list[str]) -> str:
         """
         Asynchronously applies template converter.
 
@@ -429,6 +437,10 @@ class FuzzerOrchestrator(Orchestrator):
             MissingPromptPlaceholderException: If the prompt placeholder is still missing.
         """
         template_converter = random.choice(self._template_converters)
+
+        # This is only required for template converters that require multiple templates,
+        # e.g. crossover converter. For others, this is a no op.
+        template_converter.update(prompt_templates=other_templates)
 
         target_seed_obj = await template_converter.convert_async(prompt=template)
         if TEMPLATE_PLACEHOLDER not in target_seed_obj.output_text:
