@@ -23,6 +23,7 @@ class HTTPTarget(PromptTarget):
         memory : memory interface
         url_encoding (str): if the prompt is included in the URL, this flag sets how to encode the prompt (ie URL encoding). Defaults to none
         prompt_regex_string (str): the placeholder for the prompt (ie {PROMPT})
+        body_encoding (str): encoding for prompt in body (ie url for url encoding)
     """
 
     def __init__(
@@ -55,14 +56,14 @@ class HTTPTarget(PromptTarget):
 
         # Add Prompt into URL (if the URL takes it)
         if self.prompt_regex_string in url:
-            prompt_url_safe = urllib.parse.quote(request.original_value)
+            prompt_url_safe = urllib.parse.quote(request.original_value) #does url encoding with %20 for spaces for URLs
             formatted_url = re_pattern.sub(prompt_url_safe, self.url)
             self.url = formatted_url
 
         # Add Prompt into request body (if the body takes it)
         if self.prompt_regex_string in http_body:
-            if self.body_encoding:
-                encoded_prompt = request.original_value.replace(" ", self.body_encoding) 
+            if self.body_encoding == "url":
+                encoded_prompt = urllib.parse.urlencode(request.original_value) #does url encoding for query parameters using + for space
                 formatted_http_body = re_pattern.sub(encoded_prompt, http_body)
 
             else:
