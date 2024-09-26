@@ -40,9 +40,22 @@ def mock_torch_cuda_is_available():
 # Mock the AutoTokenizer and AutoModelForCausalLM to prevent actual model loading
 @pytest.fixture(autouse=True)
 def mock_transformers():
-    with patch("transformers.AutoTokenizer.from_pretrained", return_value=MagicMock()) as mock_tokenizer:
-        with patch("transformers.AutoModelForCausalLM.from_pretrained", return_value=MagicMock()) as mock_model:
-            yield mock_tokenizer, mock_model
+    with patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer_from_pretrained:
+        mock_tokenizer = MagicMock()
+        mock_tokenizer.chat_template = MagicMock()
+        tokenized_chat_mock = MagicMock()
+        tokenized_chat_mock.to.return_value = tokenized_chat_mock
+
+        mock_tokenizer.apply_chat_template.return_value = tokenized_chat_mock
+        mock_tokenizer.decode.return_value = "Assistant's response"
+        mock_tokenizer_from_pretrained.return_value = mock_tokenizer
+
+        with patch("transformers.AutoModelForCausalLM.from_pretrained") as mock_model_from_pretrained:
+            mock_model = MagicMock()
+            mock_model.generate.return_value = [[101, 102, 103]]
+            mock_model_from_pretrained.return_value = mock_model
+
+            yield mock_tokenizer_from_pretrained, mock_model_from_pretrained
 
 
 # Mock PretrainedConfig.from_pretrained to prevent actual configuration loading
@@ -84,12 +97,6 @@ def test_load_model_and_tokenizer():
 def test_send_prompt_success():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
 
-    # Mock the methods used in send_prompt_async
-    hf_chat.tokenizer.chat_template = MagicMock()
-    hf_chat.tokenizer.apply_chat_template.return_value = MagicMock()
-    hf_chat.model.generate.return_value = [[101, 102, 103]]
-    hf_chat.tokenizer.decode.return_value = "Assistant's response"
-
     request_piece = PromptRequestPiece(
         role="user",
         original_value="Hello, how are you?",
@@ -99,8 +106,10 @@ def test_send_prompt_success():
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
     # Run the asynchronous method
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     response = loop.run_until_complete(hf_chat.send_prompt_async(prompt_request=prompt_request))
+    loop.close()
 
     # Access the response text via request_pieces
     assert response.request_pieces[0].original_value == "Assistant's response"
@@ -119,8 +128,10 @@ def test_missing_chat_template_error():
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
     with pytest.raises(ValueError) as excinfo:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.run_until_complete(hf_chat.send_prompt_async(prompt_request=prompt_request))
+        loop.close()
 
     assert "Tokenizer does not have a chat template" in str(excinfo.value)
 
