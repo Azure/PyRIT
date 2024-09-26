@@ -20,6 +20,7 @@ class HTTPTarget(PromptTarget):
         parse_function (function): function to parse HTTP response
         memory : memory interface
         url_encoding (str): if the prompt is included in the URL, this flag sets how to encode the prompt (ie URL encoding). Defaults to none
+        prompt_regex_string (str): the placeholder for the prompt (ie {PROMPT})
     """
 
     def __init__(
@@ -27,15 +28,15 @@ class HTTPTarget(PromptTarget):
         http_request: str = None,
         parse_function: callable = None, #TODO: this would be where the parse function will go
         memory: Union[MemoryInterface, None] = None,
-        url_encoding: str = None,
-        body_encoding: str = None
+        body_encoding: str = "+",
+        prompt_regex_string: str = "{PROMPT}"
     ) -> None:
 
         super().__init__(memory=memory)
         self.http_request = http_request
         self.parse_function = parse_function
-        self.url_encoding = url_encoding, 
         self.body_encoding = body_encoding #TODO: get rid of these
+        self.prompt_regex_string = prompt_regex_string
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -51,16 +52,13 @@ class HTTPTarget(PromptTarget):
 
         # Add Prompt into URL (if the URL takes it)
         if "{PROMPT}" in url:
-            if self.url_encoding == "url": #TODO: get rid of & move to converters
-                prompt_url_safe = urllib.parse.quote(request.original_value)
-                self.url = url.replace("{PROMPT}", prompt_url_safe)
-            else: 
-                self.url = url.replace("{PROMPT}", request.original_value)
+            prompt_url_safe = urllib.parse.quote(request.original_value)
+            self.url = url.replace(self.prompt_regex_string, prompt_url_safe)
 
         # Add Prompt into request body (if the body takes it)
         if "{PROMPT}" in http_body:
-            if self.url_encoding:
-                encoded_prompt = request.original_value.replace(" ", "+")
+            if self.body_encoding:
+                encoded_prompt = request.original_value.replace(" ", self.body_encoding) 
                 http_body.replace("{PROMPT}", encoded_prompt)
         
         #TODO: include vsn here
@@ -111,8 +109,10 @@ class HTTPTarget(PromptTarget):
         
         # Capture info from 1st line of raw request
         http_method = http_req_info_line[0]
-        http_version = http_req_info_line[1]
+        http_version = http_req_info_line[2]
         http_url_beg = ""
+
+        # TODO: qn use_tls_flag variable instead?
         if 'HTTP/2' in http_version:
             http_url_beg = "https://"
         elif 'HTTP/1.1' in http_version:

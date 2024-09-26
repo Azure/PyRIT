@@ -22,7 +22,7 @@ import urllib.parse
 
 from pyrit.models import PromptTemplate
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import HTTP_Target
+from pyrit.prompt_target import HTTPTarget
 from pyrit.models import PromptRequestPiece
 
 
@@ -31,7 +31,7 @@ prompt = "apple"
 url = "https://www.google.com/search?q={PROMPT}"
 # Add the prompt to the body of the request
 
-with HTTP_Target(http_request={}, url=url, body={}, url_encoding="url", body_encoding="+", method="GET") as target_llm:
+with HTTPTarget(http_request={}, url=url, body={}, url_encoding="url", body_encoding="+", method="GET") as target_llm:
     request = PromptRequestPiece(
         role="user",
         original_value=prompt,
@@ -39,7 +39,6 @@ with HTTP_Target(http_request={}, url=url, body={}, url_encoding="url", body_enc
 
     resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
     print(resp)
-    print
     
 
 # +
@@ -48,7 +47,7 @@ import urllib.parse
 
 from pyrit.models import PromptTemplate
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import HTTP_Target
+from pyrit.prompt_target import HTTPTarget
 from pyrit.models import PromptRequestPiece
 # -
 
@@ -57,7 +56,8 @@ from pyrit.models import PromptRequestPiece
 # The HTTP request to make needs to be captured and put here in the "http_req" variable (the values you need to get from DevTools or Burp include the Cookie)
 
 # +
-http_req = f"""
+http_req = """
+POST /images/create?q={PROMPT}&rt=4&FORM=GENCRE HTTP/2
 Host: www.bing.com
 Origin: https://www.bing.com
 Content-Type: application/x-www-form-urlencoded
@@ -69,17 +69,14 @@ Sec-Fetch-User: ?1
 Sec-Fetch-Dest: document
 Referer: https://www.bing.com/images/create?FORM=GENILP
 
+q={PROMPT}&qs=ds
 """
 
 ## Add the prompt you want to send to the URL
 prompt = "apple"
-url = "https://www.bing.com/images/create?q={PROMPT}&rt=4&FORM=GENCRE"
 
-# Add the prompt to the body of the request
-
-body = "q={PROMPT}&qs=ds"
 response_var = None
-with HTTP_Target(http_request=http_req, url=url, body=body, url_encoding="url", method="POST") as target_llm:
+with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}") as target_llm:
     # Questions: do i need to call converter on prompt before calling target? ie url encode rather than handling in target itself?
     request = PromptRequestPiece(
         role="user",
@@ -104,7 +101,7 @@ print(parsed_hmtl_soup.prettify())
 
 # +
 # Just same thing using orchestrator
-http_prompt_target = HTTP_Target(http_request=http_resp, url=url, body=body)
+http_prompt_target = HTTPTarget(http_request=http_resp, url=url, body=body)
 
 with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
