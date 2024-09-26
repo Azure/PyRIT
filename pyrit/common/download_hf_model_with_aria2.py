@@ -4,12 +4,10 @@
 import os
 import logging
 import subprocess
-from pathlib import Path
 from typing import Optional
 from huggingface_hub import HfApi
 
-# Define the base directory for the project
-PYRIT_PATH = Path(__file__, "..", "..").resolve()
+from pyrit.common.path import PYRIT_PATH
 
 # Define the new folder for Hugging Face models within the same hierarchy as 'pyrit'
 HF_MODELS_DIR = PYRIT_PATH / "hf_models"
