@@ -56,12 +56,27 @@ from pyrit.models import PromptRequestPiece
 
 # Bing Image Creator which does not have an API is harder to use
 #
-# The HTTP request to make needs to be captured and put here in the "http_req" variable (the values you need to get from DevTools or Burp include the Cookie)
+# The HTTP request to make needs to be captured and put here in the "http_req" variable (the values you need to get from DevTools or Burp)
+# For Bing Image Creator the cookies contain the authorization in them, which is captured using Devtools/burp/etc
 
 # +
 http_req = """
 POST /images/create?q={PROMPT}&rt=4&FORM=GENCRE HTTP/2
 Host: www.bing.com
+Content-Length: 23
+Cache-Control: max-age=0
+Ect: 4g
+Sec-Ch-Ua: "Not;A=Brand";v="24", "Chromium";v="128"
+Sec-Ch-Ua-Mobile: ?0
+Sec-Ch-Ua-Full-Version: ""
+Sec-Ch-Ua-Arch: ""
+Sec-Ch-Ua-Platform: "Windows"
+Sec-Ch-Ua-Platform-Version: ""
+Sec-Ch-Ua-Model: ""
+Sec-Ch-Ua-Bitness: ""
+Sec-Ch-Ua-Full-Version-List: 
+Accept-Language: en-US,en;q=0.9
+Upgrade-Insecure-Requests: 1
 Origin: https://www.bing.com
 Content-Type: application/x-www-form-urlencoded
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.120 Safari/537.36
@@ -70,7 +85,8 @@ Sec-Fetch-Site: same-origin
 Sec-Fetch-Mode: navigate
 Sec-Fetch-User: ?1
 Sec-Fetch-Dest: document
-Referer: https://www.bing.com/images/create?FORM=GENILP
+Referer: https://www.bing.com/images/create?toWww=1&redig=6F390DBAAF424F70B1B304716CE01190
+Priority: u=0, i
 
 q={PROMPT}&qs=ds
 """
@@ -79,7 +95,7 @@ q={PROMPT}&qs=ds
 prompt = "apple"
 
 response_var = None
-with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}") as target_llm:
+with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}", body_encoding="url") as target_llm:
     # Questions: do i need to call converter on prompt before calling target? ie url encode rather than handling in target itself?
     request = PromptRequestPiece(
         role="user",
@@ -104,7 +120,7 @@ print(parsed_hmtl_soup.prettify())
 
 # +
 # Just same thing using orchestrator
-http_prompt_target = HTTPTarget(http_request=http_resp, url=url, body=body)
+http_prompt_target = HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}")
 
 with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
@@ -117,6 +133,9 @@ with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator
 from pyrit.common import default_values
 import requests
 import json
+import os
+from pyrit.prompt_target import HTTPTarget
+from pyrit.models import PromptRequestPiece
 
 default_values.load_default_env()
 
@@ -124,32 +143,39 @@ deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT")
 endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT")
 api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY")
 
-#url = "https://pyrit-github-pipeline.openai.azure.com/openai/deployments/pyrit-github-gpt4/chat/completions?api-version=2024-02-01"
-rl = f"{endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01"
-print("URL: ", url)
+url = f"{endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01"
 
-# Set headers
-headers = {
-    "Content-Type": "application/json",
-    "api-key": api_key
-}
+prompt = "What is 3+2?"
+http_request = f""" 
+    POST {endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01
+    Content-Type: application/json
+    api-key: {api_key}
 
-# Set the payload with your input data
-data = {
-    "messages": [
-        {"role": "user", "content": "Hello what is 2+2?"}
-    ],
-    "max_tokens": 50,
-    "temperature": 0.7
-}
+    {{
+        "messages": [
+            {{"role": "user", "content": "{{PROMPT}}"}}
+        ],
+        "max_tokens": 50,
+        "temperature": 0.7
+    }}
+"""
 
-# Send the request
-response = requests.post(url, headers=headers, data=json.dumps(data))
 
-# Check response
-if response.status_code == 200:
-    result = response.json()
-    print(result['choices'][0])  # Extract the completion result
-else:
-    print(f"Request failed: {response.status_code}")
-    print(response.text)
+with HTTPTarget(http_request=http_request, prompt_regex_string="{PROMPT}", body_encoding="") as target_llm:
+    # Questions: do i need to call converter on prompt before calling target? ie url encode rather than handling in target itself?
+    request = PromptRequestPiece(
+        role="user",
+        original_value=prompt,
+    ).to_prompt_request_response()
+
+    resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
+    print(resp)
+
+
+# +
+# Just same thing using orchestrator
+http_prompt_target = HTTPTarget(http_request=http_request, url=url, body=body)
+
+with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
+    response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
+    print(response[0])
