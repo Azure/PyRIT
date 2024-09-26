@@ -29,7 +29,7 @@ class HTTPTarget(PromptTarget):
         http_request: str = None,
         parse_function: callable = None, #TODO: this would be where the parse function will go
         memory: Union[MemoryInterface, None] = None,
-        body_encoding: str = "+",
+        body_encoding: str = "",
         prompt_regex_string: str = "{PROMPT}"
     ) -> None:
 
@@ -52,15 +52,15 @@ class HTTPTarget(PromptTarget):
         #Make the actual HTTP request:
 
         # Add Prompt into URL (if the URL takes it)
-        if "{PROMPT}" in url:
+        if self.prompt_regex_string in url:
             prompt_url_safe = urllib.parse.quote(request.original_value)
             self.url = url.replace(self.prompt_regex_string, prompt_url_safe)
 
         # Add Prompt into request body (if the body takes it)
-        if "{PROMPT}" in http_body:
+        if self.prompt_regex_string in http_body:
             if self.body_encoding:
                 encoded_prompt = request.original_value.replace(" ", self.body_encoding) 
-                http_body.replace("{PROMPT}", encoded_prompt)
+                http_body.replace(self.prompt_regex_string, encoded_prompt)
         
         #TODO: include vsn here
         response = requests.request(
@@ -131,7 +131,7 @@ class HTTPTarget(PromptTarget):
         url = ""
         if http_url_beg and "http" not in http_req_info_line[1]:
             url = http_url_beg
-        if headers_dict["Host"]:
+        if "Host" in headers_dict.keys():
             url += headers_dict["Host"]
         url += http_req_info_line[1]
 
