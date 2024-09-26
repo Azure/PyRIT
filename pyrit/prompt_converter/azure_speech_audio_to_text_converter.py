@@ -4,10 +4,12 @@ import os
 import logging
 import time
 import azure.cognitiveservices.speech as speechsdk
+from typing import Optional
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.memory import MemoryInterface, DuckDBMemory
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         recognition_language (str): Recognition voice language. Defaults to "en-US".
             For more on supported languages, see the following link:
             https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -32,6 +35,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         azure_speech_region: str = None,
         azure_speech_key: str = None,
         recognition_language: str = "en-US",
+        memory: Optional[MemoryInterface] = None,
     ) -> None:
 
         self._azure_speech_region: str = default_values.get_required_value(
@@ -45,6 +49,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
         self.done = False
+        self._memory = memory or DuckDBMemory()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
@@ -61,9 +66,6 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
-
-        if not os.path.exists(prompt):
-            raise FileNotFoundError("File path does not exist. Please provide valid audio file path.")
 
         if not prompt.endswith(".wav"):
             raise ValueError("Please provide a .wav audio file. Compressed formats are not currently supported.")

@@ -61,11 +61,11 @@ class DataTypeSerializer(abc.ABC):
 
     data_type: PromptDataType
     value: str
-    data_directory: Path
+    data_sub_directory: str
     file_extension: str
     _memory: MemoryInterface = None
 
-    _file_path: Path = None
+    _file_path: Union[Path, str] = None
 
     @abc.abstractmethod
     def data_on_disk(self) -> bool:
@@ -78,7 +78,7 @@ class DataTypeSerializer(abc.ABC):
         """
         Saves the data to storage.
         """
-        self.value = str(await self.get_data_filename())
+        self.value = await self.get_data_filename()
         await self._memory.storage_io.write_file(self.value, data)
 
     async def save_b64_image(self, data: str, output_filename: str = None) -> None:
@@ -91,7 +91,7 @@ class DataTypeSerializer(abc.ABC):
         if output_filename:
             self.value = output_filename
         else:
-            self.value = str(await self.get_data_filename())
+            self.value = await self.get_data_filename()
         image_bytes = base64.b64decode(data)
         await self._memory.storage_io.write_file(self.value, image_bytes)
 
@@ -139,16 +139,20 @@ class DataTypeSerializer(abc.ABC):
         if not self.data_on_disk():
             raise TypeError("Data is not stored on disk")
 
-        if not self.data_directory:
-            raise RuntimeError("Data directory not set")
-
-        await self._memory.storage_io.create_directory_if_not_exists(self.data_directory)
-
+        if not self.data_sub_directory:
+            raise RuntimeError("Data sub directory not set")
         ticks = int(time.time() * 1_000_000)
-        if self.is_url(str(self.data_directory)):
-            self._file_path = Path(str(self.data_directory) + f"/{ticks}.{self.file_extension}")
+        
+        results_path = self._memory.results_path
+
+        if self.is_url(results_path):
+            full_data_directory_path = results_path + self.data_sub_directory
+            self._file_path = full_data_directory_path + f"/{ticks}.{self.file_extension}"
         else:
-            self._file_path = Path(self.data_directory, f"{ticks}.{self.file_extension}")
+            full_data_directory_path = Path(results_path + self.data_sub_directory)
+            await self._memory.storage_io.create_directory_if_not_exists(full_data_directory_path)
+            self._file_path = Path(full_data_directory_path, f"{ticks}.{self.file_extension}")
+        
         return self._file_path
 
     @staticmethod
@@ -210,7 +214,7 @@ class ImagePathDataTypeSerializer(DataTypeSerializer):
     ):
         self._memory = memory
         self.data_type = "image_path"
-        self.data_directory = Path(self._memory.results_path + "/dbdata/images")
+        self.data_sub_directory = "/dbdata/images"
         self.file_extension = extension if extension else "png"
 
         if prompt_text:
@@ -230,7 +234,7 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
     ):
         self.data_type = "audio_path"
         self._memory = memory
-        self.data_directory = Path(self._memory.results_path + "/dbdata/audio")
+        self.data_sub_directory = "/dbdata/audio"
         self.file_extension = extension if extension else "mp3"
 
         if prompt_text:

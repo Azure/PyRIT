@@ -71,7 +71,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         audio_serializer = data_serializer_factory(
             data_type="audio_path", extension=self._output_format, memory=self._memory
         )
-        audio_serializer_file = str(await audio_serializer.get_data_filename())
+        # audio_serializer_file = str(await audio_serializer.get_data_filename())
 
         try:
             speech_config = speechsdk.SpeechConfig(
@@ -86,11 +86,13 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                     speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
                 )
 
-            file_config = speechsdk.audio.AudioOutputConfig(filename=audio_serializer_file)
-            speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=file_config)
+            speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
 
             result = speech_synthesizer.speak_text_async(prompt).get()
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+                audio_data = result.audio_data
+                await audio_serializer.save_data(audio_data)
+                audio_serializer_file = str(audio_serializer.value)
                 logger.info(
                     "Speech synthesized for text [{}], and the audio was saved to [{}]".format(
                         prompt, audio_serializer_file
