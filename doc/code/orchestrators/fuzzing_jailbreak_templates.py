@@ -70,7 +70,7 @@ fuzzer_orchestrator = FuzzerOrchestrator(
     prompt_target=target,
     prompt_templates=prompt_templates,
     scoring_target=scoring_target,
-    target_jailbreak_goal_count=4,
+    target_jailbreak_goal_count=1,
     template_converters=fuzzer_converters,
 )
 
