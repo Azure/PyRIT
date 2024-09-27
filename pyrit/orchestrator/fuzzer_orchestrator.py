@@ -18,7 +18,7 @@ from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholde
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptTemplate
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_converter import PromptConverter, FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.score import SelfAskScaleScorer, FloatScaleThresholdScorer
@@ -124,7 +124,7 @@ class FuzzerOrchestrator(Orchestrator):
         prompt_target: PromptTarget,
         prompt_templates: list[str],
         prompt_converters: Optional[list[PromptConverter]] = None,
-        template_converters: list[PromptConverter],
+        template_converters: list[FuzzerConverter],
         scoring_target: PromptChatTarget,
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
@@ -428,7 +428,8 @@ class FuzzerOrchestrator(Orchestrator):
         Asynchronously applies template converter.
 
         Args:
-            current_seed: The template that is selected.
+            template: The template that is selected.
+            other_templates: Other templates that are available. Some fuzzer converters require multiple templates.
 
         Returns:
             converted template with placeholder for prompt.

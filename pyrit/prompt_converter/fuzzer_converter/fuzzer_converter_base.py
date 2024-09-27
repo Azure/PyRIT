@@ -44,7 +44,7 @@ class FuzzerConverter(PromptConverter):
         self.converter_target = converter_target
         self.system_prompt = prompt_template.template
         self.template_label = "TEMPLATE"
-    
+
     def update(self, **kwargs) -> None:
         pass
 
