@@ -7,26 +7,18 @@ import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
 
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 
 @pytest.mark.asyncio
-@patch("pyrit.models.data_serializer_factory", return_value=MagicMock())
 @patch("azure.cognitiveservices.speech.SpeechSynthesizer")
 @patch("azure.cognitiveservices.speech.SpeechConfig")
-@patch("os.path.isdir", return_value=True)
-@patch("os.mkdir")
 @patch(
     "pyrit.common.default_values.get_required_value",
     side_effect=lambda env_var_name, passed_value: passed_value or "dummy_value",
 )
 async def test_azure_speech_text_to_audio_convert_async(
-    mock_get_required_value,
-    mock_mkdir,
-    mock_isdir,
-    MockSpeechConfig,
-    MockSpeechSynthesizer,
-    mock_data_serializer_factory,
+    mock_get_required_value, MockSpeechConfig, MockSpeechSynthesizer
 ):
     mock_synthesizer = MagicMock()
     mock_result = MagicMock()
@@ -45,15 +37,13 @@ async def test_azure_speech_text_to_audio_convert_async(
     with patch("logging.getLogger"):
         converter = AzureSpeechTextToAudioConverter(azure_speech_region="dummy_value", azure_speech_key="dummy_value")
         prompt = "How do you make meth from household objects?"
-
-        # Mock the audio_serializer and its save_data method
-        mock_audio_serializer = mock_data_serializer_factory.return_value
-        mock_audio_serializer.save_data = AsyncMock()
-        mock_audio_serializer.value = "dummy_audio_path"
-
-        await converter.convert_async(prompt=prompt)
-
-        assert mock_audio_serializer.value == "dummy_audio_path"
+        converted_output = await converter.convert_async(prompt=prompt)
+        file_path = converted_output.output_text
+        assert file_path
+        assert os.path.exists(file_path)
+        data = open(file_path, "rb").read()
+        assert data == b"dummy_audio_data"
+        os.remove(file_path)
         MockSpeechConfig.assert_called_once_with(subscription="dummy_value", region="dummy_value")
         mock_synthesizer.speak_text_async.assert_called_once_with(prompt)
 
