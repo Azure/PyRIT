@@ -89,6 +89,7 @@ class DataTypeSerializer(abc.ABC):
             data: string with base64 data
             output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
         """
+        file_path: Union[Path, str] = None
         if output_filename:
             file_path = output_filename
         else:
