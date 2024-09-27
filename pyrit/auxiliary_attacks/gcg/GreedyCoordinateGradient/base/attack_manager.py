@@ -9,6 +9,7 @@ import subprocess as sp
 
 import numpy as np
 import pandas as pd
+import mlflow
 import torch
 import torch.multiprocessing as mp
 import torch.nn as nn
@@ -26,6 +27,8 @@ from transformers import (
     Phi3ForCausalLM,
 )
 
+# Logging for AML
+mlflow.autolog()
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -167,6 +170,10 @@ class AttackPrompt(object):
         self.conv_template.append_message(self.conv_template.roles[0], f"{self.goal} {self.control}")
         self.conv_template.append_message(self.conv_template.roles[1], f"{self.target}")
         prompt = self.conv_template.get_prompt()
+
+        print("Attack prompt:")
+        print(prompt)
+
         encoding = self.tokenizer(prompt)
         toks = encoding.input_ids
 
@@ -872,6 +879,8 @@ class MultiPromptAttack(object):
 
         with open(self.logfile, "w") as f:
             json.dump(log, f, indent=4, cls=NpEncoder)
+
+        mlflow.log_params(log)
 
         if verbose:
             output_str = ""
