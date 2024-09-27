@@ -117,7 +117,7 @@ class AzureTTSTarget(PromptTarget):
 
         if not response_entry:
             response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[audio_response.value], response_type="audio_path"
+                request=request, response_text_pieces=[str(audio_response.value)], response_type="audio_path"
             )
 
         return response_entry

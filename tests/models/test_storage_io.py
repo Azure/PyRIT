@@ -26,7 +26,7 @@ async def test_disk_storage_io_read_file():
 
         result = await storage.read_file(path)
         assert result == content
-        mock_open.assert_called_once_with(path, "rb")
+        mock_open.assert_called_once_with(Path(path), "rb")
 
 
 @pytest.mark.asyncio
@@ -40,7 +40,7 @@ async def test_disk_storage_io_write_file():
         mock_file.write = AsyncMock()
 
         await storage.write_file(path, content)
-        mock_open.assert_called_once_with(path, "wb")
+        mock_open.assert_called_once_with(Path(path), "wb")
         mock_file.write.assert_called_once_with(content)
 
 
@@ -52,7 +52,7 @@ async def test_disk_storage_io_path_exists():
     with patch("os.path.exists", return_value=True) as mock_exists:
         result = await storage.path_exists(path)
         assert result is True
-        mock_exists.assert_called_once_with(path)
+        mock_exists.assert_called_once_with(Path(path))
 
 
 @pytest.mark.asyncio
@@ -63,7 +63,7 @@ async def test_disk_storage_io_is_file():
     with patch("os.path.isfile", return_value=True) as mock_isfile:
         result = await storage.is_file(path)
         assert result is True
-        mock_isfile.assert_called_once_with(path)
+        mock_isfile.assert_called_once_with(Path(path))
 
 
 @pytest.mark.asyncio
