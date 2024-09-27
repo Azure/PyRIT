@@ -45,7 +45,7 @@ class FuzzerConverter(PromptConverter):
         self.system_prompt = prompt_template.template
         self.template_label = "TEMPLATE"
     
-    def update(**kwargs) -> None:
+    def update(self, **kwargs) -> None:
         pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

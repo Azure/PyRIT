@@ -361,7 +361,7 @@ class FuzzerOrchestrator(Orchestrator):
             if jailbreak_count > 0:
                 # The template resulted in at least one jailbreak so it will be part of the results
                 # and a potential starting template for future iterations.
-                self._new_prompt_nodes.append(target_template)
+                self._new_prompt_nodes.append(target_template_node)
                 target_template_node.add_parent(current_seed)
 
             # update the rewards for the target node and others on its path
@@ -374,7 +374,7 @@ class FuzzerOrchestrator(Orchestrator):
         self._step += 1
 
         current = max(self._initial_prompt_nodes, key=self._best_UCT_score())  # initial path
-        self._mcts_selected_path.append(current)
+        self._mcts_selected_path = [current]
 
         # while node is not a leaf
         while len(current.children) > 0:
@@ -440,6 +440,7 @@ class FuzzerOrchestrator(Orchestrator):
 
         # This is only required for template converters that require multiple templates,
         # e.g. crossover converter. For others, this is a no op.
+        print(f"Other templates: {len(other_templates)}")
         template_converter.update(prompt_templates=other_templates)
 
         target_seed_obj = await template_converter.convert_async(prompt=template)
