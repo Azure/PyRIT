@@ -441,7 +441,6 @@ class FuzzerOrchestrator(Orchestrator):
 
         # This is only required for template converters that require multiple templates,
         # e.g. crossover converter. For others, this is a no op.
-        print(f"Other templates: {len(other_templates)}")
         template_converter.update(prompt_templates=other_templates)
 
         target_seed_obj = await template_converter.convert_async(prompt=template)
