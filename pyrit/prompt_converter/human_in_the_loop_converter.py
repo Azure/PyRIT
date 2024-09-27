@@ -38,16 +38,24 @@ class HumanInTheLoopConverter(PromptConverter):
         Returns:
             ConverterResult: The filename of the converted image as a ConverterResult Object
         """
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
         user_input = ""
-        while user_input not in ["1", "2", "3"]:
-            user_input = input(
-                f"This is the next {input_type} prompt to be sent: [{prompt}] \
-                               Select an option: (1) Proceed with sending the prompt as is. \
-                               (2) Manually modify the prompt. (3) Re-run prompt through a converter and try again. \
-                               Please enter 1, 2, or 3."
-            ).strip()
+        if self._converters:
+            while user_input not in ["1", "2", "3"]:
+                user_input = input(
+                    f"This is the next {input_type} prompt to be sent: [{prompt}] \
+                                Select an option: (1) Proceed with sending the prompt as is. \
+                                (2) Manually modify the prompt. (3) Run the prompt through a \
+                                converter before sending it. Please enter the number of the \
+                                choice you'd like."
+                ).strip()
+        else:
+            while user_input not in ["1", "2"]:
+                user_input = input(
+                    f"This is the next {input_type} prompt to be sent: [{prompt}] \
+                                Select an option: (1) Proceed with sending the prompt as is. \
+                                (2) Manually modify the prompt. \
+                                Please enter the number of the choice you'd like."
+                ).strip()
         if user_input == "1":
             return ConverterResult(output_text=prompt, output_type=input_type)
         elif user_input == "2":
@@ -73,5 +81,4 @@ class HumanInTheLoopConverter(PromptConverter):
         return ConverterResult(output_text=prompt, output_type=input_type)
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        # For now, only text input is supported
-        return input_type == "text"
+        pass
