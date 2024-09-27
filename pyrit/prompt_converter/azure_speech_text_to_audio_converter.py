@@ -73,6 +73,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             data_type="audio_path", extension=self._output_format, memory=self._memory
         )
 
+        audio_serializer_file = None
         try:
             speech_config = speechsdk.SpeechConfig(
                 subscription=self._azure_speech_key,
