@@ -94,6 +94,13 @@ dev = [
 torch = [
     "torch>=2.3.0"
 ]
+gcg = [
+    "numpy<2",
+    "fschat==0.2.36",
+    "accelerate==0.34.2",
+    "transformers==4.45.1",
+    "sentencepiece==0.2.0",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
