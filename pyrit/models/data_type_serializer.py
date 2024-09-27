@@ -78,8 +78,9 @@ class DataTypeSerializer(abc.ABC):
         """
         Saves the data to storage.
         """
-        self.value = await self.get_data_filename()
-        await self._memory.storage_io.write_file(self.value, data)
+        file_path = await self.get_data_filename()
+        await self._memory.storage_io.write_file(file_path, data)
+        self.value = str(file_path)
 
     async def save_b64_image(self, data: str, output_filename: str = None) -> None:
         """
@@ -89,11 +90,12 @@ class DataTypeSerializer(abc.ABC):
             output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
         """
         if output_filename:
-            self.value = output_filename
+            file_path = output_filename
         else:
-            self.value = await self.get_data_filename()
+            file_path = await self.get_data_filename()
         image_bytes = base64.b64decode(data)
-        await self._memory.storage_io.write_file(self.value, image_bytes)
+        await self._memory.storage_io.write_file(file_path, image_bytes)
+        self.value = str(file_path)
 
     async def read_data(self) -> bytes:
         """
@@ -124,7 +126,10 @@ class DataTypeSerializer(abc.ABC):
         if self.data_on_disk():
             input_bytes = await self._memory.storage_io.read_file(self.value)
         else:
-            input_bytes = self.value.encode("utf-8")
+            if isinstance(self.value, str):
+                input_bytes = self.value.encode("utf-8")
+            else:
+                raise ValueError(f"Invalid data type {self.value}, expected str data type.")
 
         hash_object = hashlib.sha256(input_bytes)
         return hash_object.hexdigest()
@@ -142,17 +147,17 @@ class DataTypeSerializer(abc.ABC):
         if not self.data_sub_directory:
             raise RuntimeError("Data sub directory not set")
         ticks = int(time.time() * 1_000_000)
-        
+
         results_path = self._memory.results_path
 
         if self.is_url(results_path):
             full_data_directory_path = results_path + self.data_sub_directory
             self._file_path = full_data_directory_path + f"/{ticks}.{self.file_extension}"
         else:
-            full_data_directory_path = Path(results_path + self.data_sub_directory)
-            await self._memory.storage_io.create_directory_if_not_exists(full_data_directory_path)
+            full_data_directory_path = results_path + self.data_sub_directory
+            await self._memory.storage_io.create_directory_if_not_exists(Path(full_data_directory_path))
             self._file_path = Path(full_data_directory_path, f"{ticks}.{self.file_extension}")
-        
+
         return self._file_path
 
     @staticmethod

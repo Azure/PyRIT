@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
 import logging
 from typing import Literal, Optional
 
@@ -71,7 +72,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         audio_serializer = data_serializer_factory(
             data_type="audio_path", extension=self._output_format, memory=self._memory
         )
-        # audio_serializer_file = str(await audio_serializer.get_data_filename())
 
         try:
             speech_config = speechsdk.SpeechConfig(

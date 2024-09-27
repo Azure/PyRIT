@@ -24,15 +24,18 @@ async def test_azure_speech_text_to_audio_convert_async(
 ):
     mock_synthesizer = MagicMock()
     mock_result = MagicMock()
+
+    # Mock audio data as bytes
+    mock_audio_data = b"dummy_audio_data"
+    mock_result.audio_data = mock_audio_data
     mock_result.reason = speechsdk.ResultReason.SynthesizingAudioCompleted
-    mock_synthesizer.speak_text_async.return_value.get.return_value.reason = (
-        speechsdk.ResultReason.SynthesizingAudioCompleted
-    )
+
+    mock_synthesizer.speak_text_async.return_value.get.return_value = mock_result
     MockSpeechSynthesizer.return_value = mock_synthesizer
     os.environ[AzureSpeechTextToAudioConverter.AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE] = "dummy_value"
     os.environ[AzureSpeechTextToAudioConverter.AZURE_SPEECH_KEY_ENVIRONMENT_VARIABLE] = "dummy_value"
 
-    with patch("logging.getLogger") as _:
+    with patch("logging.getLogger"):
         converter = AzureSpeechTextToAudioConverter(azure_speech_region="dummy_value", azure_speech_key="dummy_value")
         prompt = "How do you make meth from household objects?"
         await converter.convert_async(prompt=prompt)

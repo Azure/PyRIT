@@ -1,6 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import os
+
 import logging
 import time
 import azure.cognitiveservices.speech as speechsdk
@@ -8,6 +8,7 @@ from typing import Optional
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
+from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.memory import MemoryInterface, DuckDBMemory
 
@@ -70,19 +71,22 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         if not prompt.endswith(".wav"):
             raise ValueError("Please provide a .wav audio file. Compressed formats are not currently supported.")
 
+        audio_serializer = data_serializer_factory(data_type="audio_path", value=prompt, memory=self._memory)
+        audio_bytes = await audio_serializer.read_data()
+
         try:
-            transcript = self.recognize_audio(prompt)
+            transcript = self.recognize_audio(audio_bytes)
         except Exception as e:
             logger.error("Failed to convert audio file to text: %s", str(e))
             raise
         return ConverterResult(output_text=transcript, output_type="text")
 
-    def recognize_audio(self, audio_file: str) -> str:
+    def recognize_audio(self, audio_bytes: bytes) -> str:
         """
         Recognize audio file and return transcribed text.
 
         Args:
-            audio_file (str): File path to audio file
+            audio_bytes (bytes): Audio bytes input.
         Returns:
             str: Transcribed text
         """
@@ -92,7 +96,10 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         )
         speech_config.speech_recognition_language = self._recognition_language
 
-        audio_config = speechsdk.audio.AudioConfig(filename=audio_file)
+        # Create a PullAudioInputStream from the byte stream
+        push_stream = speechsdk.audio.PushAudioInputStream()
+        audio_config = speechsdk.audio.AudioConfig(stream=push_stream)
+
         # Instantiate a speech recognizer object
         speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
         # Create an empty list to store recognized text
@@ -112,6 +119,11 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
         # Start continuous recognition
         speech_recognizer.start_continuous_recognition_async()
+
+        # Push the entire audio data into the stream
+        push_stream.write(audio_bytes)
+        push_stream.close()
+
         while not self.done:
             time.sleep(0.5)
 
