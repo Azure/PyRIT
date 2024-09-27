@@ -13,7 +13,7 @@ ENV PATH $CONDA_ENVIRONMENT_PATH/bin:$PATH
 #     rm conda_dependencies.yaml && \
 #     conda run -p $CONDA_ENVIRONMENT_PATH pip cache purge && \
 #     conda clean -a -y
-RUN conda env create -p $CONDA_ENVIRONMENT_PATH python=3.11 -q && \
+RUN conda env create -p $CONDA_ENVIRONMENT_PATH -q python=3.11 && \
     conda run -p $CONDA_ENVIRONMENT_PATH pip cache purge && \
     conda clean -a -y
 
