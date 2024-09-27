@@ -8,12 +8,9 @@ ENV CONDA_ENVIRONMENT_PATH /azureml-envs/pyrit
 ENV PATH $CONDA_ENVIRONMENT_PATH/bin:$PATH
 
 # Create conda environment
-# COPY conda_dependencies.yaml .
-# RUN conda env create -p $CONDA_ENVIRONMENT_PATH -f conda_dependencies.yaml -q && \
-#     rm conda_dependencies.yaml && \
-#     conda run -p $CONDA_ENVIRONMENT_PATH pip cache purge && \
-#     conda clean -a -y
-RUN conda env create -p $CONDA_ENVIRONMENT_PATH -q python=3.11 && \
+COPY conda_dependencies.yaml .
+RUN conda env create -p $CONDA_ENVIRONMENT_PATH -f conda_dependencies.yaml -q && \
+    rm conda_dependencies.yaml && \
     conda run -p $CONDA_ENVIRONMENT_PATH pip cache purge && \
     conda clean -a -y
 
