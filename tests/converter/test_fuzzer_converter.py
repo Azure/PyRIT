@@ -52,13 +52,17 @@ def test_converter_init_templates_not_null(converter_class):
         FuzzerSimilarConverter,
     ],
 )
-async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class):
+@pytest.mark.parametrize(
+    "update",
+    [True, False],
+)
+async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class, update):
     prompt_target = MockPromptTarget()
 
     if converter_class != FuzzerCrossOverConverter:
         converter = converter_class(converter_target=prompt_target)
     else:
-        converter = converter_class(converter_target=prompt_target, prompts=["testing"])
+        converter = converter_class(converter_target=prompt_target, prompt_templates=["testing 1"])
 
     with patch("tests.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
 
@@ -78,6 +82,15 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(converted_
             ]
         )
         mock_create.return_value = prompt_req_resp
+
+        if update:
+            converter.update(prompt_templates=["testing 2"])
+
+        if converter_class == FuzzerCrossOverConverter:
+            if update:
+                assert converter.prompt_templates == ["testing 2"]
+            else:
+                assert converter.prompt_templates == ["testing 1"]
 
         with pytest.raises(InvalidJsonException):
             await converter.convert_async(prompt="testing", input_type="text")
