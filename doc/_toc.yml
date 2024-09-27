@@ -1,0 +1,92 @@
+format: jb-book
+root: index
+parts:
+  - caption: Introduction
+    chapters:
+    - file: how_to_guide
+      title: Introduction
+    - file: README
+      title: Reading Order
+    - file: code/architecture
+      title: Architecture
+  - caption: Setup
+    chapters:
+    - file: setup/install_pyrit
+    - file: setup/jupyter_setup
+    - file: setup/populating_secrets
+    - file: setup/use_sql_server
+  - caption: Converters
+    numbered: True
+    chapters:
+    - file: code/converters/1_converters
+    - file: code/converters/2_llm_converters
+    - file: code/converters/3_using_converters
+    - file: code/converters/4_audio_converters
+    - file: code/converters/5_image_converters
+    - file: code/converters/6_selectively_converting
+  - caption: Memory
+    chapters:
+    - file: code/memory/1_memory
+    - file: code/memory/2_basic_memory_programming
+    - file: code/memory/3_prompt_request
+    - file: code/memory/4_manually_working_with_memory
+    - file: code/memory/5_resending_prompts
+    - file: code/memory/azure_embeddings
+    - file: code/memory/chat_message
+  - caption: Orchestrators
+    chapters:
+    - file: code/orchestrators/1_orchestrator
+    - file: code/orchestrators/2_prompt_sending_orchestrator
+    - file: code/orchestrators/3_red_teaming_orchestrator
+    - file: code/orchestrators/4_xpia_orchestrator
+    - file: code/orchestrators/5_scoring_orchestrator
+    - file: code/orchestrators/6_crescendo_orchestrator
+    - file: code/orchestrators/benchmark_orchestrator
+    - file: code/orchestrators/harmbench_testing
+    - file: code/orchestrators/many_shot_jailbreak
+    - file: code/orchestrators/pair_orchestrator
+    - file: code/orchestrators/pku_safe_rlhf_testing
+    - file: code/orchestrators/seclists_bias_testing
+    - file: code/orchestrators/tree_of_attacks_with_pruning
+    - file: code/orchestrators/xstest_bias_testing
+  - caption: Scoring
+    chapters:
+    - file: code/scoring/1_scoring
+    - file: code/scoring/2_azure_content_safety_scorers
+    - file: code/scoring/3_true_false_scorers
+    - file: code/scoring/4_classification_scorers
+    - file: code/scoring/5_likert_scorers
+    - file: code/scoring/6_human_scorers
+    - file: code/scoring/prompt_shield_scorer
+  - caption: Targets
+    chapters:
+    - file: code/targets/1_prompt_targets
+    - file: code/targets/2_gpt_4o_target
+    - file: code/targets/3_custom_targets
+    - file: code/targets/4_non_open_ai_chat_targets
+    - file: code/targets/5_non_llm_targets
+    - file: code/targets/6_multi_modal_targets
+    - file: code/targets/azure_completions
+    - file: code/targets/gpt_v_target
+    - file: code/targets/open_ai_text_target
+    - file: code/targets/prompt_shield_target
+  - caption: Contributing
+    chapters:
+    - file: contributing/exception
+    - file: contributing/git
+    - file: contributing/incorporating_research
+    - file: contributing/installation
+    - file: contributing/README
+    - file: contributing/release_process
+    - file: contributing/style_guide
+    - file: contributing/tests
+  - caption: Deployment
+    chapters:
+    - file: deployment/deploy_hf_model_aml
+    - file: deployment/download_and_register_hf_model_aml
+    - file: deployment/hf_aml_model_endpoint_guide
+    - file: deployment/score_aml_endpoint
+    - file: deployment/troubleshooting_guide_hf_azureml
+  - caption: API Reference
+    chapters:
+    - file: api.rst
