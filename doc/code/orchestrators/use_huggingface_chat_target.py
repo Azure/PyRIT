@@ -36,72 +36,63 @@
 
 # %%
 import time
-from pyrit.prompt_target import HuggingFaceChatTarget
+from pyrit.prompt_target import HuggingFaceChatTarget  
 from pyrit.orchestrator import PromptSendingOrchestrator
 
-# List of models to iterate through
-model_list = [
-    "microsoft/Phi-3-mini-4k-instruct",
-    "HuggingFaceTB/SmolLM-135M-Instruct",
-    "HuggingFaceTB/SmolLM-360M-Instruct",
-    "HuggingFaceTB/SmolLM-1.7B-Instruct",
-    "Qwen/Qwen2-0.5B-Instruct",
-    "Qwen/Qwen2-1.5B-Instruct",
-    "stabilityai/stablelm-2-zephyr-1_6b",
-    "stabilityai/stablelm-zephyr-3b",
-]
+# models to test
+model_id = "HuggingFaceTB/SmolLM-135M-Instruct" 
 
 # List of prompts to send
-prompt_list = ["What is 3*3?", "What is 4*4?", "What is 5*5?", "What is 6*6?", "What is 7*7?"]
-
+prompt_list = [
+        "What is 3*3? Give me the solution.",
+        "What is 4*4? Give me the solution."
+    ]
 
 # Dictionary to store average response times
 model_times = {}
+  
+print(f"Running model: {model_id}")
+        
+try:
+    # Initialize HuggingFaceChatTarget with the current model
+    target = HuggingFaceChatTarget(
+        model_id=model_id,          
+        use_cuda=False,     
+        tensor_format="pt",
+        max_new_tokens=30           
+    )
+            
+    # Initialize the orchestrator
+    orchestrator = PromptSendingOrchestrator(
+        prompt_target=target,
+        verbose=False
+    )
+            
+    # Record start time
+    start_time = time.time()
+            
+    # Send prompts asynchronously
+    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list) # type: ignore
+            
+    # Record end time
+    end_time = time.time()
+            
+    # Calculate total and average response time
+    total_time = end_time - start_time
+    avg_time = total_time / len(prompt_list)
+    model_times[model_id] = avg_time
+            
+    print(f"Average response time for {model_id}: {avg_time:.2f} seconds\n")
+            
+    # Print the conversations
+    await orchestrator.print_conversations() # type: ignore
+        
+except Exception as e:
+    print(f"An error occurred with model {model_id}: {e}\n")
+    model_times[model_id] = None
 
-for model_id in model_list:
-    print(f"Running model: {model_id}")
-
-    try:
-        # Initialize HuggingFaceChatTarget with the current model
-        target = HuggingFaceChatTarget(
-            model_id=model_id,  # Use the desired model ID
-            use_cuda=False,  # Set to True if using CUDA
-            tensor_format="pt",
-            max_new_tokens=30,  # Increases response length and time.
-        )
-
-        # Initialize the orchestrator
-        orchestrator = PromptSendingOrchestrator(prompt_target=target, verbose=False)
-
-        # Record start time
-        start_time = time.time()
-
-        # Send prompts asynchronously
-        responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
-
-        # Record end time
-        end_time = time.time()
-
-        # Calculate total and average response time
-        total_time = end_time - start_time
-        avg_time = total_time / len(prompt_list)
-        model_times[model_id] = avg_time
-
-        print(f"Average response time for {model_id}: {avg_time:.2f} seconds\n")
-
-        # Print the conversations
-        orchestrator.print_conversations()
-        print("-" * 50)
-
-    except Exception as e:
-        print(f"An error occurred with model {model_id}: {e}\n")
-        model_times[model_id] = None
-        continue
-
-# Print all model average times
-print("Model Average Response Times:")
-for model_id, avg_time in model_times.items():
-    if avg_time is not None:
-        print(f"{model_id}: {avg_time:.2f} seconds")
-    else:
-        print(f"{model_id}: Error occurred, no average time calculated.")
+# Print the model average time
+if model_times[model_id] is not None:
+    print(f"{model_id}: {model_times[model_id]:.2f} seconds")
+else:
+    print(f"{model_id}: Error occurred, no average time calculated.")
