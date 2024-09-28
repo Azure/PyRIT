@@ -14,7 +14,7 @@ class FuzzerRephraseConverter(FuzzerConverter):
             prompt_template
             if prompt_template
             else PromptTemplate.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "rephrase_converter.yaml"
+                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "fuzzer_converters" / "rephrase_converter.yaml"
             )
         )
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
