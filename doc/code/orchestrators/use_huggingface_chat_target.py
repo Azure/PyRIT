@@ -67,7 +67,6 @@ for model_id in model_list:
             model_id=model_id,  # Use the desired model ID
             use_cuda=False,  # Set to True if using CUDA
             tensor_format="pt",
-            verbose=False,  # Set to True for detailed logs
             max_new_tokens=30,  # Increases response length and time.
         )
 

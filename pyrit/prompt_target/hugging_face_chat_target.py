@@ -4,21 +4,23 @@
 import json
 import logging
 import os
+from typing import Optional
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
-
-from pyrit.prompt_target.prompt_target import PromptTarget
-from pyrit.common.download_hf_model_with_hf_cli import download_model_with_cli, download_specific_files_with_cli
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.common.download_hf_model_with_aria2 import download_specific_files_with_aria2
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
+from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
+from pyrit.common import default_values
 
 
 logger = logging.getLogger(__name__)
 
 
-class HuggingFaceChatTarget(PromptTarget):
+class HuggingFaceChatTarget(PromptChatTarget):
     """The HuggingFaceChatTarget interacts with HuggingFace models, specifically for conducting red teaming activities.
     Inherits from PromptTarget to comply with the current design standards.
     """
@@ -31,23 +33,32 @@ class HuggingFaceChatTarget(PromptTarget):
     # Class-level flag to enable or disable cache
     _cache_enabled = False
 
+    # Define the environment variable name for the Hugging Face token
+    API_KEY_ENVIRONMENT_VARIABLE = "HUGGINGFACE_TOKEN"
+
     def __init__(
         self,
         *,
         model_id: str,
+        api_key: Optional[str] = None,
         use_cuda: bool = False,
         tensor_format: str = "pt",
         memory: MemoryInterface = None,
-        verbose: bool = False,
         necessary_files: list = None,
-        max_new_tokens: int = 20,  # Default max_new_tokens parameter
-        temperature: float = 1.0,  # Default temperature parameter
-        top_p: float = 1.0,  # Considers all possible tokens (100% of the probability distribution)
+        max_new_tokens: int = 20,
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        skip_special_tokens: bool = True,
     ) -> None:
-        super().__init__(memory=memory, verbose=verbose)
+        super().__init__(memory=memory)
         self.model_id = model_id
         self.use_cuda = use_cuda
         self.tensor_format = tensor_format
+
+        # Use the `get_required_value` to get the API key (from env or passed value)
+        self.huggingface_token = default_values.get_required_value(
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
 
         # Determine the device
         self.device = "cuda" if self.use_cuda and torch.cuda.is_available() else "cpu"
@@ -60,6 +71,7 @@ class HuggingFaceChatTarget(PromptTarget):
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.top_p = top_p
+        self.skip_special_tokens = skip_special_tokens
 
         if self.use_cuda and not torch.cuda.is_available():
             raise RuntimeError("CUDA requested but not available.")
@@ -90,6 +102,11 @@ class HuggingFaceChatTarget(PromptTarget):
             Exception: If the model loading fails.
         """
         try:
+            # Define the default Hugging Face cache directory
+            cache_dir = os.path.join(
+                os.path.expanduser("~"), ".cache", "huggingface", "hub", f"models--{self.model_id.replace('/', '--')}"
+            )
+
             # Check if the model is already cached
             if HuggingFaceChatTarget._cache_enabled and HuggingFaceChatTarget._cached_model_id == self.model_id:
                 logger.info(f"Using cached model and tokenizer for {self.model_id}.")
@@ -97,32 +114,20 @@ class HuggingFaceChatTarget(PromptTarget):
                 self.tokenizer = HuggingFaceChatTarget._cached_tokenizer
                 return
 
-            # Define the default Hugging Face cache directory
-            cache_dir = os.path.join(
-                os.path.expanduser("~"), ".cache", "huggingface", "hub", f"models--{self.model_id.replace('/', '--')}"
-            )
-
             if self.necessary_files is None:
-                # Perform general download if no specific files are mentioned
-                logger.info(f"Downloading the entire model {self.model_id} since no specific files are provided...")
-                download_model_with_cli(self.model_id)
+                # Download all files if no specific files are provided
+                logger.info(f"Downloading all files for {self.model_id} using aria2...")
+                download_specific_files_with_aria2(self.model_id, None, self.huggingface_token, cache_dir)
             else:
-                # Check if the necessary files are already in the Hugging Face cache
-                missing_files = [
-                    file for file in self.necessary_files if not os.path.exists(os.path.join(cache_dir, file))
-                ]
-
-                if missing_files:
-                    # If some files are missing, use CLI to download them
-                    logger.info(
-                        f"Model {self.model_id} not fully found in cache. Downloading missing files using CLI..."
-                    )
-                    download_specific_files_with_cli(self.model_id, missing_files)  # Download only the missing files
+                # Download only the necessary files
+                logger.info(f"Downloading specific files for {self.model_id} using aria2...")
+                download_specific_files_with_aria2(
+                    self.model_id, self.necessary_files, self.huggingface_token, cache_dir
+                )
 
             # Load the tokenizer and model from the specified directory
             logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, cache_dir=cache_dir)
-            # self.model = AutoModelForCausalLM.from_pretrained(self.model_id, device_map="auto", cache_dir=cache_dir)
             self.model = AutoModelForCausalLM.from_pretrained(self.model_id, cache_dir=cache_dir)
 
             # Move the model to the correct device
@@ -144,6 +149,7 @@ class HuggingFaceChatTarget(PromptTarget):
             logger.error(f"Error loading model {self.model_id}: {e}")
             raise
 
+    @pyrit_target_retry
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
         Sends a normalized prompt asynchronously to the HuggingFace model.
@@ -157,23 +163,8 @@ class HuggingFaceChatTarget(PromptTarget):
         # Prepare the input messages using chat templates
         messages = [{"role": "user", "content": prompt_template}]
 
-        # Check if the tokenizer has a chat template
-        if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
-            logger.info("Tokenizer has a chat template. Applying it to the input messages.")
-
-            # Apply the chat template to format and tokenize the messages
-            tokenized_chat = self.tokenizer.apply_chat_template(
-                messages, tokenize=True, add_generation_prompt=True, return_tensors=self.tensor_format
-            ).to(self.device)
-        else:
-            # Log the error and raise an exception since we only support models with chat templates
-            error_message = (
-                "Tokenizer does not have a chat template. "
-                "This model is not supported, as we only support instruct models "
-                "with a chat template."
-            )
-            logger.error(error_message)
-            raise ValueError(error_message)
+        # Apply chat template via the _apply_chat_template method
+        tokenized_chat = self._apply_chat_template(messages)
 
         logger.info(f"Tokenized chat: {tokenized_chat}")
 
@@ -199,11 +190,16 @@ class HuggingFaceChatTarget(PromptTarget):
             generated_tokens = generated_ids[0][input_length:]
 
             # Decode the assistant's response from the generated token IDs
-            assistant_response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+            assistant_response = self.tokenizer.decode(
+                generated_tokens, skip_special_tokens=self.skip_special_tokens
+            ).strip()
+
+            if not assistant_response:
+                raise EmptyResponseException()
 
             logger.info(f"Assistant's response: {assistant_response}")
 
-            prompt_response = construct_response_from_request(
+            return construct_response_from_request(
                 request=request,
                 response_text_pieces=[assistant_response],
                 prompt_metadata=json.dumps({"model_id": self.model_id}),
@@ -213,7 +209,26 @@ class HuggingFaceChatTarget(PromptTarget):
             logger.error(f"Error occurred during inference: {e}")
             raise
 
-        return prompt_response
+    def _apply_chat_template(self, messages):
+        """
+        A private method to apply the chat template to the input messages and tokenize them.
+        """
+        # Check if the tokenizer has a chat template
+        if hasattr(self.tokenizer, "chat_template") and self.tokenizer.chat_template is not None:
+            logger.info("Tokenizer has a chat template. Applying it to the input messages.")
+
+            # Apply the chat template to format and tokenize the messages
+            tokenized_chat = self.tokenizer.apply_chat_template(
+                messages, tokenize=True, add_generation_prompt=True, return_tensors=self.tensor_format
+            ).to(self.device)
+            return tokenized_chat
+        else:
+            error_message = (
+                "Tokenizer does not have a chat template. "
+                "This model is not supported, as we only support instruct models with a chat template."
+            )
+            logger.error(error_message)
+            raise ValueError(error_message)
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
@@ -224,6 +239,24 @@ class HuggingFaceChatTarget(PromptTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
+
+    def set_system_prompt(
+        self,
+        *,
+        system_prompt: str,
+        conversation_id: str,
+        orchestrator_identifier: Optional[dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
+    ) -> None:
+        """
+        Sets the system prompt for the conversation.
+        """
+        super().set_system_prompt(
+            system_prompt=system_prompt,
+            conversation_id=conversation_id,
+            orchestrator_identifier=orchestrator_identifier,
+            labels=labels,
+        )
 
     @classmethod
     def enable_cache(cls):

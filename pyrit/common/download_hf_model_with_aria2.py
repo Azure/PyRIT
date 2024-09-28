@@ -1,37 +1,36 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 import logging
+import os
+from pathlib import Path
 import subprocess
 from typing import Optional
+
 from huggingface_hub import HfApi
 
-from pyrit.common.path import PYRIT_PATH
-
-# Define the new folder for Hugging Face models within the same hierarchy as 'pyrit'
-HF_MODELS_DIR = PYRIT_PATH / "hf_models"
-HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
 
 logger = logging.getLogger(__name__)
 
-if not HUGGINGFACE_TOKEN:
-    raise ValueError("HUGGINGFACE_TOKEN environment variable is not set. Please set it before running this function.")
 
-
-def get_available_files(model_id: str):
+def get_available_files(model_id: str, token: str):
     """Fetches available files for a model from the Hugging Face repository."""
     api = HfApi()
     try:
-        model_info = api.model_info(model_id, token=HUGGINGFACE_TOKEN)
+        model_info = api.model_info(model_id, token=token)
         available_files = [file.rfilename for file in model_info.siblings]
+
+        # Perform simple validation: raise a ValueError if no files are available
+        if not len(available_files):
+            raise ValueError(f"No available files found for the model: {model_id}")
+
         return available_files
     except Exception as e:
         logger.info(f"Error fetching model files for {model_id}: {e}")
         return []
 
 
-def download_files_with_aria2(urls: list, download_dir: Optional[Path] = None):
+def download_files_with_aria2(urls: list, token: str, download_dir: Optional[Path] = None):
     """Uses aria2 to download files from the given list of URLs."""
 
     # Convert download_dir to string if it's a Path object
@@ -42,14 +41,14 @@ def download_files_with_aria2(urls: list, download_dir: Optional[Path] = None):
         "-d",
         download_dir_str,
         "-x",
-        "3",
+        "3",  # Number of connections per server for each download.
         "-s",
-        "5",
+        "5",  # Number of splits for each file.
         "-j",
-        "4",
+        "4",  # Maximum number of parallel downloads.
         "--continue=true",
         "--enable-http-pipelining=true",
-        f"--header=Authorization: Bearer {HUGGINGFACE_TOKEN}",
+        f"--header=Authorization: Bearer {token}",
         "-i",
         "-",  # Use '-' to read input from stdin
     ]
@@ -68,20 +67,28 @@ def download_files_with_aria2(urls: list, download_dir: Optional[Path] = None):
         raise
 
 
-def download_specific_files_with_aria2(model_id: str, file_patterns: list):
-    """Downloads specific files from a Hugging Face model repository using aria2."""
-    os.makedirs(HF_MODELS_DIR, exist_ok=True)
+def download_specific_files_with_aria2(model_id: str, file_patterns: list, token: str, cache_dir: Optional[Path]):
+    """
+    Downloads specific files from a Hugging Face model repository using aria2.
+    If file_patterns is None, downloads all files.
+    """
+    os.makedirs(cache_dir, exist_ok=True)
 
-    available_files = get_available_files(model_id)
-    files_to_download = [file for file in available_files if any(pattern in file for pattern in file_patterns)]
-
-    if not files_to_download:
-        logger.info(f"No files matched the patterns provided for model {model_id}.")
-        return
+    available_files = get_available_files(model_id, token)
+    # If no file patterns are provided, download all available files
+    if file_patterns is None:
+        files_to_download = available_files
+        logger.info(f"Downloading all files for model {model_id}.")
+    else:
+        # Filter files based on the patterns provided
+        files_to_download = [file for file in available_files if any(pattern in file for pattern in file_patterns)]
+        if not files_to_download:
+            logger.info(f"No files matched the patterns provided for model {model_id}.")
+            return
 
     # Generate download URLs directly
     base_url = f"https://huggingface.co/{model_id}/resolve/main/"
     urls = [base_url + file for file in files_to_download]
 
-    # Use the aria2c downloader without creating a .txt file
-    download_files_with_aria2(urls, HF_MODELS_DIR)
+    # Use aria2c to download the files
+    download_files_with_aria2(urls, token, cache_dir)

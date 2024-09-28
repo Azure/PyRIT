@@ -9,18 +9,13 @@ from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRe
 import asyncio
 
 
-# Fixture to mock download_model_with_cli globally for all tests
+# Fixture to mock download_specific_files_with_aria2 globally for all tests
 @pytest.fixture(autouse=True)
-def mock_download_model_with_cli():
-    with patch("pyrit.prompt_target.hugging_face_chat_target.download_model_with_cli", return_value=None):
-        yield
-
-
-# Fixture to mock download_specific_files_with_cli globally for all tests
-@pytest.fixture(autouse=True)
-def mock_download_specific_files_with_cli():
-    with patch("pyrit.prompt_target.hugging_face_chat_target.download_specific_files_with_cli", return_value=None):
-        yield
+def mock_download_specific_files_with_aria2():
+    with patch(
+        "pyrit.common.download_hf_model_with_aria2.download_specific_files_with_aria2", return_value=None
+    ) as mock_download:
+        yield mock_download
 
 
 # Fixture to mock os.path.exists to prevent file system access
