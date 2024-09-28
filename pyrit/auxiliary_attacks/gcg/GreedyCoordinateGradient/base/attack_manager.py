@@ -110,8 +110,9 @@ def print_gpu_memory():
     command = "nvidia-smi --query-gpu=memory.free --format=csv"
     memory_free_info = sp.check_output(command.split()).decode('ascii').split('\n')[:-1][1:]
     memory_free_values = [int(x.split()[0]) for x in memory_free_info]
+    memory_free_string = ", ".join(f"{x}B" for x in memory_free_values)
     print("Free GPU memory:")
-    print(memory_free_values)
+    print(memory_free_string)
 
 
 class AttackPrompt(object):
