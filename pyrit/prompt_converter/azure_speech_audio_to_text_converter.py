@@ -1,13 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import os
+
 import logging
 import time
 import azure.cognitiveservices.speech as speechsdk
+from typing import Optional
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
+from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.memory import MemoryInterface, DuckDBMemory
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         recognition_language (str): Recognition voice language. Defaults to "en-US".
             For more on supported languages, see the following link:
             https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -32,6 +36,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         azure_speech_region: str = None,
         azure_speech_key: str = None,
         recognition_language: str = "en-US",
+        memory: Optional[MemoryInterface] = None,
     ) -> None:
 
         self._azure_speech_region: str = default_values.get_required_value(
@@ -45,6 +50,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
         self.done = False
+        self._memory = memory or DuckDBMemory()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
@@ -62,25 +68,25 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        if not os.path.exists(prompt):
-            raise FileNotFoundError("File path does not exist. Please provide valid audio file path.")
-
         if not prompt.endswith(".wav"):
             raise ValueError("Please provide a .wav audio file. Compressed formats are not currently supported.")
 
+        audio_serializer = data_serializer_factory(data_type="audio_path", value=prompt, memory=self._memory)
+        audio_bytes = await audio_serializer.read_data()
+
         try:
-            transcript = self.recognize_audio(prompt)
+            transcript = self.recognize_audio(audio_bytes)
         except Exception as e:
             logger.error("Failed to convert audio file to text: %s", str(e))
             raise
         return ConverterResult(output_text=transcript, output_type="text")
 
-    def recognize_audio(self, audio_file: str) -> str:
+    def recognize_audio(self, audio_bytes: bytes) -> str:
         """
         Recognize audio file and return transcribed text.
 
         Args:
-            audio_file (str): File path to audio file
+            audio_bytes (bytes): Audio bytes input.
         Returns:
             str: Transcribed text
         """
@@ -90,7 +96,10 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         )
         speech_config.speech_recognition_language = self._recognition_language
 
-        audio_config = speechsdk.audio.AudioConfig(filename=audio_file)
+        # Create a PullAudioInputStream from the byte stream
+        push_stream = speechsdk.audio.PushAudioInputStream()
+        audio_config = speechsdk.audio.AudioConfig(stream=push_stream)
+
         # Instantiate a speech recognizer object
         speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
         # Create an empty list to store recognized text
@@ -110,6 +119,11 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
         # Start continuous recognition
         speech_recognizer.start_continuous_recognition_async()
+
+        # Push the entire audio data into the stream
+        push_stream.write(audio_bytes)
+        push_stream.close()
+
         while not self.done:
             time.sleep(0.5)
 
