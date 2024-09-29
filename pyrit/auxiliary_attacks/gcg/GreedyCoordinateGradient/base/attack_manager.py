@@ -878,10 +878,16 @@ class MultiPromptAttack(object):
         log["runtimes"].append(runtime)
         log["tests"].append(tests)
 
+        # mlflow logging
+        mlflow.log_params({
+            "step": step_num,
+            "control": control,
+            "loss": loss,
+        })
+        print(f"Logfile: {self.logfile}")
+
         with open(self.logfile, "w") as f:
             json.dump(log, f, indent=4, cls=NpEncoder)
-
-        mlflow.log_params(log)
 
         if verbose:
             output_str = ""
