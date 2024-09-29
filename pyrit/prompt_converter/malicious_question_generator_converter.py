@@ -10,9 +10,6 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 
 
-# Set up basic logging configuration
-logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO
-
 # Use logger
 logger = logging.getLogger(__name__)
 
@@ -111,7 +108,7 @@ class MaliciousQuestionGeneratorConverter(PromptConverter):
 
         return cleaned_response
 
-    def _parse_response(self, response: str) -> list:
+    def _parse_response(self, response: str) -> list[str]:
         """Parses the cleaned LLM response into a Python list of questions."""
         try:
             # Clean the response
