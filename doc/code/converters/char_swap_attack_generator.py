@@ -9,7 +9,7 @@ import os
 from pyrit.common import default_values
 from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator  # Import your custom converter
+from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
 
 # Load default environment values (API keys, endpoints, etc.)
 default_values.load_default_env()
@@ -25,7 +25,7 @@ prompt_target = AzureOpenAITextChatTarget(
 )
 
 # Initialize the CharSwapGenerator
-char_swap_converter = CharSwapGenerator(max_iterations=5, word_swap_ratio=0.3)
+char_swap_converter = CharSwapGenerator(max_iterations=5, word_swap_ratio=0.8)
 
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
