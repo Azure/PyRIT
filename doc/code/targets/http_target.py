@@ -14,17 +14,78 @@
 
 # # This notebook shows how to interact with the HTTP Target: 
 
-# As a simple example google search is used to show the interaction (this won't result in a successful search because of the anti-bot rules but shows how to use it in a simple case)
-
 # +
+import json
+import requests
 import os
 import urllib.parse
 
-from pyrit.models import PromptTemplate
+from pyrit.common import default_values
+from pyrit.models import PromptRequestPiece, PromptTemplate
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import HTTPTarget
-from pyrit.models import PromptRequestPiece
+from pyrit.prompt_target.http_target import parse_json_http_response
+# -
 
+# ## AOAI Example
+
+# +
+default_values.load_default_env()
+
+deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT")
+endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT")
+api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY")
+
+url = f"{endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01"
+
+prompt = "What is 3+2? make sure to include 'the answer is' in your response"
+
+# Raw HTTP Request example: 
+raw_http_request = f""" 
+    POST {endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01
+    Content-Type: application/json
+    api-key: {api_key}
+
+    {{
+        "messages": [
+            {{"role": "user", "content": "{{PROMPT}}"}}
+        ],
+        "max_tokens": 50,
+        "temperature": 0.7
+    }}
+"""
+# -
+
+response = ""
+with HTTPTarget(http_request=raw_http_request, prompt_regex_string="{PROMPT}", body_encoding="") as target_llm:
+    request = PromptRequestPiece(
+        role="user",
+        original_value=prompt,
+    ).to_prompt_request_response()
+
+    resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
+    print(resp)
+    response = resp
+
+print((response.request_pieces[0].original_value))
+
+# +
+# Just same thing using orchestrator
+http_response = ""
+http_prompt_target = HTTPTarget(http_request=raw_http_request, prompt_regex_string="{PROMPT}", parse_function=parse_json_http_response)
+
+with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
+    response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
+    await orchestrator.print_conversations()
+# -
+
+print(http_response.request_pieces[0].converted_value)
+
+# ## Google example (scrap?)
+
+# As a simple example google search is used to show the interaction (this won't result in a successful search because of the anti-bot rules but shows how to use it in a simple case)
+
+# +
 
 ## Add the prompt you want to send to the URL
 prompt = "apple"
@@ -105,7 +166,7 @@ with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}", body_enco
     resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
     response_var = resp
 
-    
+
 
 # +
 from bs4 import BeautifulSoup
@@ -127,49 +188,7 @@ with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator
     print(response[0])
 # -
 
-# ## AOAI Example
 
-# +
-from pyrit.common import default_values
-import requests
-import json
-import os
-from pyrit.prompt_target import HTTPTarget
-from pyrit.models import PromptRequestPiece
-
-default_values.load_default_env()
-
-deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT")
-endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT")
-api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY")
-
-url = f"{endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01"
-
-prompt = "What is 3+2?"
-http_request = f""" 
-    POST {endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01
-    Content-Type: application/json
-    api-key: {api_key}
-
-    {{
-        "messages": [
-            {{"role": "user", "content": "{{PROMPT}}"}}
-        ],
-        "max_tokens": 50,
-        "temperature": 0.7
-    }}
-"""
-
-
-with HTTPTarget(http_request=http_request, prompt_regex_string="{PROMPT}", body_encoding="") as target_llm:
-    # Questions: do i need to call converter on prompt before calling target? ie url encode rather than handling in target itself?
-    request = PromptRequestPiece(
-        role="user",
-        original_value=prompt,
-    ).to_prompt_request_response()
-
-    resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
-    print(resp)
 
 
 # +

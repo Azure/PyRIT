@@ -3,7 +3,7 @@
 
 import logging
 import json
-from typing import Any, Union
+from typing import Callable, Union
 import requests
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
@@ -29,7 +29,7 @@ class HTTPTarget(PromptTarget):
     def __init__(
         self,
         http_request: str = None,
-        parse_function: callable = None, #TODO: this would be where the parse function will go
+        parse_function: Callable = None, 
         memory: Union[MemoryInterface, None] = None,
         body_encoding: str = "",
         prompt_regex_string: str = "{PROMPT}"
@@ -49,7 +49,7 @@ class HTTPTarget(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
         
-        header_dict, http_body, url, http_method = self.parse_http_request()
+        header_dict, http_body, url, http_method = self.parse_raw_http_request()
         re_pattern = re.compile(self.prompt_regex_string)
 
         #Make the actual HTTP request:
@@ -79,11 +79,14 @@ class HTTPTarget(PromptTarget):
             allow_redirects=True # using Requests so we can leave this flag on, rather than httpx
         )
 
-        response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response.content)], response_type="text")
+        #parsed_response = self.parse_json_http_response(response)
+        parsed_response = self.parse_function(response)
+
+        response_entry = construct_response_from_request(request=request, response_text_pieces=[str(parsed_response)], response_type="text")
         return response_entry
 
 
-    def parse_http_request(self):
+    def parse_raw_http_request(self):
         """
         Parses the HTTP request string into a dictionary of headers
         Returns:
@@ -155,3 +158,32 @@ class HTTPTarget(PromptTarget):
             raise ValueError(
                 f"This target only supports text prompt input. Got: {type(request_pieces[0].original_value_data_type)}"
             )
+
+def parse_json_http_response(response):
+    json_response = json.loads(response.content)
+    data_key = fetch_key(data=json_response, key="choices[0].message.content")
+    return data_key
+
+
+def fetch_key(data:dict, key: str) -> str:
+    """
+    Credit to @Mayuraggarwal1992
+    Fetches the answer from the HTTP JSON response based on the path.
+
+    Args:
+        data (dict): HTTP response data.
+        key (str): The key path to fetch the value.
+
+    Returns:
+        str: The fetched value.
+    """
+    pattern = re.compile(r'([a-zA-Z_]+)|\[(\d+)\]')
+    keys = pattern.findall(key)
+    for key_part, index_part in keys:
+        if key_part:
+            data = data.get(key_part, None)
+        elif index_part and isinstance(data, list):
+            data = data[int(index_part)] if len(data) > int(index_part) else None
+        if data is None:
+            return ""
+    return data
