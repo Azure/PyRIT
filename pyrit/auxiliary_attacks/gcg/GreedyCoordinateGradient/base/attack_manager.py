@@ -172,9 +172,6 @@ class AttackPrompt(object):
         self.conv_template.append_message(self.conv_template.roles[1], f"{self.target}")
         prompt = self.conv_template.get_prompt()
 
-        print("Attack prompt:")
-        print(prompt)
-
         encoding = self.tokenizer(prompt)
         toks = encoding.input_ids
 
@@ -879,12 +876,13 @@ class MultiPromptAttack(object):
         log["tests"].append(tests)
 
         # mlflow logging
-        mlflow.log_params({
-            "step": step_num,
-            "control": control,
-            "loss": loss,
-        })
-        print(f"Logfile: {self.logfile}")
+        mlflow.log_param(f"control_step_{step_num}", control, synchronous=False)
+        mlflow.log_metric("loss", loss, step=step_num, synchronous=False)
+        # mlflow.log_params({
+        #     "step": step_num,
+        #     "control": control,
+        #     "loss": loss,
+        # })
 
         with open(self.logfile, "w") as f:
             json.dump(log, f, indent=4, cls=NpEncoder)
