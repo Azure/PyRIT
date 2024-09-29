@@ -14,7 +14,7 @@
 # %%
 import os
 from pyrit.common import default_values
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter  # Import your custom converter
 
@@ -25,10 +25,10 @@ default_values.load_default_env()
 prompts = ["cybersecurity vulnerabilities"]
 
 # Initialize Azure OpenAI completion target
-prompt_target = OpenAIChatTarget(
-    api_key=os.environ.get("OPENAI_CHAT_KEY"),
-    endpoint=os.environ.get("OPENAI_CHAT_ENDPOINT"),
-    deployment_name=os.environ.get("UNCENSORED_OPENAI_CHAT_DEPLOYMENT"),
+prompt_target = AzureOpenAITextChatTarget(
+    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
 )
 
 # Initialize the MaliciousQuestionGeneratorConverter
