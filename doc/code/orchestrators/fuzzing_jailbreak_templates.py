@@ -1,18 +1,16 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.3
-#   kernelspec:
-#     display_name: pyrit_kernel
-#     language: python
-#     name: pyrit_kernel
-# ---
+# %% [markdown]
+# # Fuzzing Jailbreak Templates
+#
+# Based on GPTFuzzer by Yu et al. (https://arxiv.org/abs/2309.10253, https://github.com/sherdencooper/GPTFuzz),
+# this notebook demonstrates the process of generating new jailbreak templates from existing ones by applying
+# various conversion techniques. The underlying algorithm uses Monte Carlo Tree Search (MCTS) to explore the
+# space of possible templates and select the most promising ones.
+#
+# Note that setting the `target_jailbreak_goal_count` to a larger number can help. The current setting, 1, is
+# used for demonstration purposes. It means that the algorithm stops after finding the first jailbreak.
 
 # %%
+
 import pathlib
 
 from pyrit.common.default_values import load_default_env
