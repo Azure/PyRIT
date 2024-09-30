@@ -11,9 +11,6 @@ from pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.base.attack_manager im
 )
 from pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
 
-# Logging for AML
-mlflow.autolog()
-
 class GreedyCoordinateGradientAdversarialSuffixGenerator:
     def __init__(self):
         if mp.get_start_method(allow_none=True) != "spawn":
@@ -95,6 +92,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         print(params)
 
         # Log to mlflow
+        mlflow.start_run()
         mlflow_param_keys = ["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]
         mlflow_params = {key: params.to_dict()[key] for key in mlflow_param_keys}
         mlflow.log_params(mlflow_params)

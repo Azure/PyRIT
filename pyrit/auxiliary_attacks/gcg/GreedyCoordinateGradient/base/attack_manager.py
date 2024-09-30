@@ -27,9 +27,6 @@ from transformers import (
     Phi3ForCausalLM,
 )
 
-# Logging for AML
-mlflow.autolog()
-
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -875,17 +872,6 @@ class MultiPromptAttack(object):
         log["runtimes"].append(runtime)
         log["tests"].append(tests)
 
-        # Log to mlflow
-        mlflow.log_metric("loss", loss, step=step_num, synchronous=False)
-
-        if step_num == n_steps:
-            timestamp = time.strftime("%Y%m%d-%H:%M:%S")
-            mlflow.log_table({
-                "step": [i+1 for i in range(n_steps)],
-                "loss": log["losses"],
-                "control": log["controls"],
-            }, artifact_file=f"gcg_results_{timestamp}.json")
-
         with open(self.logfile, "w") as f:
             json.dump(log, f, indent=4, cls=NpEncoder)
 
@@ -907,6 +893,18 @@ class MultiPromptAttack(object):
                     f"====================================================\n"
                 )
             )
+
+        # Log to mlflow
+        mlflow.log_metric("loss", loss, step=step_num, synchronous=False)
+
+        if step_num == n_steps:
+            timestamp = time.strftime("%Y%m%d-%H:%M:%S")
+            mlflow.log_table({
+                "step": [i+1 for i in range(n_steps)],
+                "loss": log["losses"],
+                "control": log["controls"],
+            }, artifact_file=f"gcg_results_{timestamp}.json")
+            mlflow.end_run()  
 
 
 class ProgressiveMultiPromptAttack(object):
