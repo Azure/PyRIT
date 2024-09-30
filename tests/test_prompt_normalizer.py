@@ -232,6 +232,9 @@ async def test_send_prompt_async_image_converter():
 
         normalizer = PromptNormalizer(memory=MagicMock())
 
+        # Mock the async read_file method
+        normalizer._memory.storage_io.read_file = AsyncMock(return_value=b"mocked data")
+
         await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
 
         # verify the prompt target received the correct arguments from the normalizer

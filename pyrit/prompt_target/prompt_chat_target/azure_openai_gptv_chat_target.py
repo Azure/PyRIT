@@ -149,7 +149,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {prompt_request}")
 
-        messages = self._build_chat_messages(prompt_req_res_entries)
+        messages = await self._build_chat_messages(prompt_req_res_entries)
         try:
             resp_text = await self._complete_chat_async(
                 messages=messages,
@@ -167,7 +167,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
 
         return response_entry
 
-    def _convert_local_image_to_data_url(self, image_path: str) -> str:
+    async def _convert_local_image_to_data_url(self, image_path: str) -> str:
         """Converts a local image file to a data URL encoded in base64.
 
         Args:
@@ -190,13 +190,15 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
-        base64_encoded_data = image_serializer.read_data_base64()
+        image_serializer = data_serializer_factory(
+            value=image_path, data_type="image_path", extension=ext, memory=self._memory
+        )
+        base64_encoded_data = await image_serializer.read_data_base64()
         # Construct the data URL, as per Azure OpenAI GPTV local image format
         # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/gpt-with-vision?tabs=rest%2Csystem-assigned%2Cresource#use-a-local-image
         return f"data:{mime_type};base64,{base64_encoded_data}"
 
-    def _build_chat_messages(
+    async def _build_chat_messages(
         self, prompt_req_res_entries: MutableSequence[PromptRequestResponse]
     ) -> list[ChatMessageListContent]:
         """
@@ -220,7 +222,7 @@ class AzureOpenAIGPTVChatTarget(PromptChatTarget):
                     entry = {"type": "text", "text": prompt_request_piece.converted_value}
                     content.append(entry)
                 elif prompt_request_piece.converted_value_data_type == "image_path":
-                    data_base64_encoded_url = self._convert_local_image_to_data_url(
+                    data_base64_encoded_url = await self._convert_local_image_to_data_url(
                         prompt_request_piece.converted_value
                     )
                     entry = {"type": "image_url", "image_url": data_base64_encoded_url}

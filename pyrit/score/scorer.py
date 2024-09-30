@@ -11,6 +11,7 @@ from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 from pyrit.models import ScoreType, Score, UnvalidatedScore
+from pyrit.memory import MemoryInterface
 
 
 class Scorer(abc.ABC):
@@ -19,6 +20,7 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+    _memory: Optional[MemoryInterface]
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
@@ -67,15 +69,24 @@ class Scorer(abc.ABC):
         return await self.score_async(request_piece, task=task)
 
     async def score_prompts_batch_async(
-        self, prompts: Sequence[PromptRequestPiece], batch_size: int = 10
+        self,
+        *,
+        request_responses: Sequence[PromptRequestPiece],
+        tasks: Optional[Sequence[str]] = None,
+        batch_size: int = 10,
     ) -> list[Score]:
+        if not tasks:
+            tasks = [None] * len(request_responses)
+        elif len(tasks) != len(request_responses):
+            raise ValueError("The number of tasks must match the number of request_responses.")
+
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
-            task=self.score_async,
-            task_argument="request_response",
+            task_func=self.score_async,
+            task_arguments=["request_response", "task"],
             prompt_target=prompt_target,
             batch_size=batch_size,
-            items_to_batch=prompts,
+            items_to_batch=[request_responses, tasks],
         )
 
         # results is a list[list[Score]] and needs to be flattened

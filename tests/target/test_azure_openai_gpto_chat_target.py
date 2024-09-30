@@ -129,12 +129,14 @@ def test_init_with_no_additional_request_headers_var_raises():
         )
 
 
-def test_convert_image_to_data_url_file_not_found(azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget):
+@pytest.mark.asyncio()
+async def test_convert_image_to_data_url_file_not_found(azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget):
     with pytest.raises(FileNotFoundError):
-        azure_gpt4o_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
+        await azure_gpt4o_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
 
 
-def test_convert_image_with_unsupported_extension(azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget):
+@pytest.mark.asyncio()
+async def test_convert_image_with_unsupported_extension(azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget):
 
     with NamedTemporaryFile(mode="w+", suffix=".txt", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
@@ -142,38 +144,42 @@ def test_convert_image_with_unsupported_extension(azure_gpt4o_chat_engine: Azure
     assert os.path.exists(tmp_file_name)
 
     with pytest.raises(ValueError) as exc_info:
-        azure_gpt4o_chat_engine._convert_local_image_to_data_url(tmp_file_name)
+        await azure_gpt4o_chat_engine._convert_local_image_to_data_url(tmp_file_name)
 
     assert "Unsupported image format" in str(exc_info.value)
 
     os.remove(tmp_file_name)
 
 
+@pytest.mark.asyncio()
 @patch("os.path.exists", return_value=True)
 @patch("mimetypes.guess_type", return_value=("image/jpg", None))
 @patch("pyrit.models.data_type_serializer.ImagePathDataTypeSerializer")
-def test_convert_image_to_data_url_success(
+async def test_convert_image_to_data_url_success(
     mock_serializer_class, mock_guess_type, mock_exists, azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget
 ):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
     mock_serializer_instance = MagicMock()
-    mock_serializer_instance.read_data_base64.return_value = "encoded_base64_string"
+    mock_serializer_instance.read_data_base64 = AsyncMock(return_value="encoded_base64_string")
     mock_serializer_class.return_value = mock_serializer_instance
+    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
+    mock_serializer_class._memory = duckdb_in_memory
 
     assert os.path.exists(tmp_file_name)
 
-    result = azure_gpt4o_chat_engine._convert_local_image_to_data_url(tmp_file_name)
+    result = await azure_gpt4o_chat_engine._convert_local_image_to_data_url(tmp_file_name)
     assert "data:image/jpeg;base64,encoded_base64_string" in result
 
     # Assertions for the mocks
-    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name)
+    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name, memory=duckdb_in_memory)
     mock_serializer_instance.read_data_base64.assert_called_once()
 
     os.remove(tmp_file_name)
 
 
-def test_build_chat_messages_with_consistent_roles(azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget):
+@pytest.mark.asyncio()
+async def test_build_chat_messages_with_consistent_roles(azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget):
 
     image_request = get_image_request_piece()
     entries = [
@@ -193,7 +199,7 @@ def test_build_chat_messages_with_consistent_roles(azure_gpt4o_chat_engine: Azur
         "_convert_local_image_to_data_url",
         return_value="data:image/jpeg;base64,encoded_string",
     ):
-        messages = azure_gpt4o_chat_engine._build_chat_messages(entries)
+        messages = await azure_gpt4o_chat_engine._build_chat_messages(entries)
 
     assert len(messages) == 1
     assert messages[0].role == "user"
@@ -203,13 +209,14 @@ def test_build_chat_messages_with_consistent_roles(azure_gpt4o_chat_engine: Azur
     os.remove(image_request.original_value)
 
 
-def test_build_chat_messages_with_unsupported_data_types(azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget):
+@pytest.mark.asyncio
+async def test_build_chat_messages_with_unsupported_data_types(azure_gpt4o_chat_engine: AzureOpenAIGPT4OChatTarget):
     # Like an image_path, the audio_path requires a file, but doesn't validate any contents
     entry = get_image_request_piece()
     entry.converted_value_data_type = "audio_path"
 
     with pytest.raises(ValueError) as excinfo:
-        azure_gpt4o_chat_engine._build_chat_messages([PromptRequestResponse(request_pieces=[entry])])
+        await azure_gpt4o_chat_engine._build_chat_messages([PromptRequestResponse(request_pieces=[entry])])
     assert "Multimodal data type audio_path is not yet supported." in str(excinfo.value)
 
 

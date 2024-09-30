@@ -4,7 +4,7 @@
 from typing import Optional
 import uuid
 
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 
@@ -15,7 +15,7 @@ class TrueFalseInverterScorer(Scorer):
     def __init__(self, *, memory: MemoryInterface, scorer: Scorer, threshold: float) -> None:
         self._scorer = scorer
         self._threshold = threshold
-        self._memory = memory
+        self._memory = memory if memory else DuckDBMemory()
 
         if not scorer.scorer_type == "true_false":
             raise ValueError("The scorer must be a true false scorer")
