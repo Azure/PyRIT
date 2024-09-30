@@ -875,14 +875,13 @@ class MultiPromptAttack(object):
         log["runtimes"].append(runtime)
         log["tests"].append(tests)
 
-        # mlflow logging
-        mlflow.log_param(f"control_step_{step_num}", control, synchronous=False)
+        # Log to mlflow
         mlflow.log_metric("loss", loss, step=step_num, synchronous=False)
-        # mlflow.log_params({
-        #     "step": step_num,
-        #     "control": control,
-        #     "loss": loss,
-        # })
+        mlflow.log_table({
+            "step": [step_num],
+            "loss": [loss],
+            "control": [control],
+        }, artifact_file="gcg_results.json")
 
         with open(self.logfile, "w") as f:
             json.dump(log, f, indent=4, cls=NpEncoder)
