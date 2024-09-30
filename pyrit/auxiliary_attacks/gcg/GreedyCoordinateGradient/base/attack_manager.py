@@ -877,11 +877,13 @@ class MultiPromptAttack(object):
 
         # Log to mlflow
         mlflow.log_metric("loss", loss, step=step_num, synchronous=False)
-        mlflow.log_table({
-            "step": [step_num],
-            "loss": [loss],
-            "control": [control],
-        }, artifact_file="gcg_results.json")
+
+        if step_num == n_steps:
+            mlflow.log_table({
+                "step": [i+1 for i in range(n_steps)],
+                "loss": log["losses"],
+                "control": log["controls"],
+            }, artifact_file="gcg_results.json")
 
         with open(self.logfile, "w") as f:
             json.dump(log, f, indent=4, cls=NpEncoder)
