@@ -112,10 +112,10 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                 memory=self._memory,
             )
 
-        scorer_scale_path = Path(SCALES_PATH / "tree_of_attacks_with_pruning_jailbreak.yaml")
         self._scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
-            scale_path=scorer_scale_path,
+            scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
             memory=self._memory,
         )
 

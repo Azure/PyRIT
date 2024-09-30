@@ -71,7 +71,7 @@ pair_orchestrator = PAIROrchestrator(
     desired_target_response_prefix="Sure, ",
     scorer=SelfAskScaleScorer(
         chat_target=AzureOpenAIGPT4OChatTarget(),
-        scale_path=DATASETS_PATH / "score" / "scales" / "tree_of_attacks_with_pruning_jailbreak.yaml",
+        scale_arguments_path=DATASETS_PATH / "score" / "scales" / "tree_of_attacks_with_pruning_jailbreak.yaml",
     ),
     scorer_sensitivity=0.7,
 )

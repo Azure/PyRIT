@@ -93,31 +93,11 @@ class SelfAskTrueFalseScorer(Scorer):
 
         self.validate(request_response, task=task)
 
-        conversation_id = str(uuid.uuid4())
-
-        self._prompt_target.set_system_prompt(
-            system_prompt=self._system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
-        )
-
-        request = PromptRequestResponse(
-            [
-                PromptRequestPiece(
-                    role="user",
-                    original_value=request_response.converted_value,
-                    original_value_data_type=request_response.original_value_data_type,
-                    converted_value=request_response.converted_value,
-                    converted_value_data_type=request_response.converted_value_data_type,
-                    conversation_id=conversation_id,
-                    prompt_target_identifier=self._prompt_target.get_identifier(),
-                )
-            ]
-        )
-
         unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
             prompt_target=self._prompt_target,
-            scorer_llm_request=request,
+            system_prompt=self._system_prompt,
+            prompt_request_value=request_response.converted_value,
+            prompt_request_data_type=request_response.converted_value_data_type,
             scored_prompt_id=request_response.id,
             category=self._score_category,
             task=task,

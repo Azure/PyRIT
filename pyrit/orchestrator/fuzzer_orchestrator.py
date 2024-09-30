@@ -221,7 +221,7 @@ class FuzzerOrchestrator(Orchestrator):
         scorer_scale_path = Path(SCALES_PATH / "tree_of_attacks_with_pruning_jailbreak.yaml")
         scale_scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
-            scale_path=scorer_scale_path,
+            scale_arguments_path=scorer_scale_path,
             memory=self._memory,
         )
         self._scorer = FloatScaleThresholdScorer(

@@ -5,10 +5,12 @@ import abc
 from abc import abstractmethod
 import json
 from typing import Optional, Sequence
+import uuid
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 from pyrit.models import ScoreType, Score, UnvalidatedScore
 from pyrit.memory import MemoryInterface
@@ -145,12 +147,15 @@ class Scorer(abc.ABC):
         identifier["sub_identifier"] = None
         return identifier
 
+
     @pyrit_json_retry
     async def send_chat_target_async(
         self,
         *,
         prompt_target: PromptChatTarget,
-        scorer_llm_request: PromptRequestResponse,
+        system_prompt: str,
+        prompt_request_value: str,
+        prompt_request_data_type: PromptDataType,
         scored_prompt_id: str,
         category: str = None,
         task: str = None,
@@ -169,6 +174,28 @@ class Scorer(abc.ABC):
             UnvalidatedScore: The score object containing the response from the target LLM.
                 score_value stille needs to be normalized and validated.
         """
+
+        conversation_id = str(uuid.uuid4())
+
+        prompt_target.set_system_prompt(
+            system_prompt=system_prompt,
+            conversation_id=conversation_id,
+            orchestrator_identifier=None,
+        )
+
+        scorer_llm_request = PromptRequestResponse(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_value=prompt_request_value,
+                    original_value_data_type=prompt_request_data_type,
+                    conversation_id=conversation_id,
+                    prompt_target_identifier=prompt_target.get_identifier(),
+                )
+            ]
+        )
+
+
         response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
 
         try:

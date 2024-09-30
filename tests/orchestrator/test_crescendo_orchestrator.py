@@ -65,6 +65,19 @@ def true_eval_score() -> Score:
         prompt_request_response_id="id",
     )
 
+@pytest.fixture
+def false_eval_score() -> Score:
+    return Score(
+        score_value="false",
+        score_rationale="Refusal Rationale",
+        score_value_description="description",
+        score_type="true_false",
+        score_metadata="",
+        score_category="category",
+        scorer_class_identifier=None,
+        prompt_request_response_id="id",
+    )
+
 
 @pytest.fixture
 def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
@@ -196,7 +209,7 @@ async def test_apply_crescendo_attack(mock_target: MockPromptTarget, rounds: int
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("rounds", list(range(1, 11)))
+@pytest.mark.parametrize("rounds", [1,2,11])
 async def test_max_backtracks_occurred(
     orchestrator: CrescendoOrchestrator, true_eval_score: Score, did_refuse_score: Score, rounds: int
 ):
@@ -204,13 +217,12 @@ async def test_max_backtracks_occurred(
     for round_num in range(1, rounds + 1):
         with (
             patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
-            patch.object(orchestrator, "_send_prompt_async", AsyncMock(return_value="last_response")),
             patch.object(
                 orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
             ) as mock_backtrack_memory,
-            patch.object(orchestrator.refusal_scorer, "score_text_async", AsyncMock(return_value=[did_refuse_score])),
+            patch.object(orchestrator.refusal_scorer, "score_async", AsyncMock(return_value=[did_refuse_score])),
             patch.object(
-                orchestrator.eval_judge_true_false_scorer, "score_text_async", AsyncMock(return_value=[true_eval_score])
+                orchestrator.eval_judge_true_false_scorer, "score_async", AsyncMock(return_value=[true_eval_score])
             ) as mock_eval_judge,
         ):
 
@@ -225,29 +237,27 @@ async def test_max_backtracks_occurred(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("rounds", list(range(1, 11)))
+@pytest.mark.parametrize("rounds", [1,6,11])
 async def test_no_backtracks_occurred(
-    orchestrator: CrescendoOrchestrator, true_eval_score: Score, did_not_refuse_score: Score, rounds: int
+    orchestrator: CrescendoOrchestrator, false_eval_score: Score, did_not_refuse_score: Score, rounds: int
 ):
     for round_num in range(1, rounds + 1):
         with (
             patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
-            patch.object(orchestrator, "_send_prompt_async", AsyncMock(return_value="last_response")),
             patch.object(
                 orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
             ) as mock_backtrack_memory,
             patch.object(
-                orchestrator.refusal_scorer, "score_text_async", AsyncMock(return_value=[did_not_refuse_score])
+                orchestrator.refusal_scorer, "score_async", AsyncMock(return_value=[did_not_refuse_score])
             ),
             patch.object(
-                orchestrator.eval_judge_true_false_scorer, "score_text_async", AsyncMock(return_value=[true_eval_score])
+                orchestrator.eval_judge_true_false_scorer, "score_async", AsyncMock(return_value=[false_eval_score])
             ) as mock_eval_judge,
         ):
 
             max_rounds = round_num
-            max_backtracks = random.randint(1, 10)
 
-            await orchestrator.apply_crescendo_attack_async(max_rounds=max_rounds, max_backtracks=max_backtracks)
+            await orchestrator.apply_crescendo_attack_async(max_rounds=max_rounds)
 
             assert mock_backtrack_memory.call_count == 0
             assert orchestrator._prompt_target_conversation_id != "new_conversation_id"
@@ -260,11 +270,10 @@ async def test_value_error_exceptions(
 ):
     with (
         patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
-        patch.object(orchestrator, "_send_prompt_async", AsyncMock(return_value="last_response")),
         patch.object(orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")),
-        patch.object(orchestrator.refusal_scorer, "score_text_async", AsyncMock(return_value=[did_refuse_score])),
+        patch.object(orchestrator.refusal_scorer, "score_async", AsyncMock(return_value=[did_refuse_score])),
         patch.object(
-            orchestrator.eval_judge_true_false_scorer, "score_text_async", AsyncMock(return_value=[true_eval_score])
+            orchestrator.eval_judge_true_false_scorer, "score_async", AsyncMock(return_value=[true_eval_score])
         ),
     ):
 

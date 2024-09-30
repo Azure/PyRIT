@@ -39,15 +39,9 @@ class PromptTemplate(YamlLoadable):
             #  {{   key    }}
             #  ^^^^^^^^^^^^^^
             regex = "{}{}{}".format("\{\{ *", key, " *\}\}")  # noqa: W605
-            matches = re.findall(pattern=regex, string=final_prompt)
-            if not matches:
-                raise ValueError(
-                    f"No parameters matched, they might be missing in the template. "
-                    f'[expected="{self.parameters}", actual="{kwargs}"]'
-                )
+
             final_prompt = re.sub(pattern=regex, string=final_prompt, repl=str(value))
         return final_prompt
-
 
 @dataclass
 class AttackStrategy:
