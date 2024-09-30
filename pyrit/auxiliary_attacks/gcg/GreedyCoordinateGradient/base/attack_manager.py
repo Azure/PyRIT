@@ -898,7 +898,7 @@ class MultiPromptAttack(object):
         mlflow.log_metric("loss", loss, step=step_num, synchronous=False)
 
         if step_num == n_steps:
-            timestamp = time.strftime("%Y%m%d-%H:%M:%S")
+            timestamp = time.strftime("%Y%m%d-%H%M%S")
             mlflow.log_table({
                 "step": [i+1 for i in range(n_steps)],
                 "loss": log["losses"],
