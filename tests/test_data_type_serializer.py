@@ -83,13 +83,14 @@ def test_image_path_normalizer_factory(duckdb_in_memory: MemoryInterface):
 
 @pytest.mark.asyncio
 async def test_image_path_save_data(duckdb_in_memory: MemoryInterface):
-    normalizer = data_serializer_factory(data_type="image_path", memory=duckdb_in_memory)
-    await normalizer.save_data(b"\x00")
-    assert normalizer.value
-    assert normalizer.value.endswith(".png")
-    assert os.path.isabs(normalizer.value)
-    assert os.path.exists(normalizer.value)
-    assert os.path.isfile(normalizer.value)
+    serializer = data_serializer_factory(data_type="image_path", memory=duckdb_in_memory)
+    await serializer.save_data(b"\x00")
+    serializer_value = serializer.value
+    assert serializer_value
+    assert serializer_value.endswith(".png")
+    assert os.path.isabs(serializer_value)
+    assert os.path.exists(serializer_value)
+    assert os.path.isfile(serializer_value)
 
 
 @pytest.mark.asyncio
@@ -142,8 +143,9 @@ def test_get_mime_type():
 async def test_save_b64_image(duckdb_in_memory: MemoryInterface):
     serializer = data_serializer_factory(data_type="image_path", memory=duckdb_in_memory)
     await serializer.save_b64_image("\x00")
-    assert serializer.value
-    assert serializer.value.endswith(".png")
-    assert os.path.isabs(serializer.value)
-    assert os.path.exists(serializer.value)
-    assert os.path.isfile(serializer.value)
+    serializer_value = str(serializer.value)
+    assert serializer_value
+    assert serializer_value.endswith(".png")
+    assert os.path.isabs(serializer_value)
+    assert os.path.exists(serializer_value)
+    assert os.path.isfile(serializer_value)
