@@ -154,7 +154,7 @@ async def test_dalle_send_prompt_file_save_async() -> None:
     mock_dalle_target._image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
 
     response = await mock_dalle_target.send_prompt_async(prompt_request=request)
-    file_path = response.request_pieces[0].converted_value
+    file_path = str(response.request_pieces[0].converted_value)
     assert file_path
     assert file_path.endswith(".png")
 

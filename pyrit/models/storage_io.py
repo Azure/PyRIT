@@ -83,6 +83,7 @@ class DiskStorageIO(StorageIO):
         Returns:
             bytes: The content of the file.
         """
+        path = self._convert_to_path(path)
         async with aiofiles.open(path, "rb") as file:
             return await file.read()
 
@@ -90,9 +91,10 @@ class DiskStorageIO(StorageIO):
         """
         Asynchronously writes data to a file on the local disk.
         Args:
-            path (Union[Path, str]): The path to the file.
+            path (Path): The path to the file.
             data (bytes): The content to write to the file.
         """
+        path = self._convert_to_path(path)
         async with aiofiles.open(path, "wb") as file:
             await file.write(data)
 
@@ -100,31 +102,39 @@ class DiskStorageIO(StorageIO):
         """
         Checks if a path exists on the local disk.
         Args:
-            path (Union[Path, str]): The path to check.
+            path (Path): The path to check.
         Returns:
             bool: True if the path exists, False otherwise.
         """
+        path = self._convert_to_path(path)
         return os.path.exists(path)
 
     async def is_file(self, path: Union[Path, str]) -> bool:
         """
         Checks if the given path is a file (not a directory).
         Args:
-            path (Union[Path, str]): The path to check.
+            path (Path): The path to check.
         Returns:
             bool: True if the path is a file, False otherwise.
         """
+        path = self._convert_to_path(path)
         return os.path.isfile(path)
 
     async def create_directory_if_not_exists(self, path: Union[Path, str]) -> None:
         """
         Asynchronously creates a directory if it doesn't exist on the local disk.
         Args:
-            path (Union[Path, str]): The directory path to create.
+            path (Path): The directory path to create.
         """
-        directory_path = Path(path)
+        directory_path = self._convert_to_path(path)
         if not directory_path.exists():
             os.makedirs(directory_path, exist_ok=True)
+
+    def _convert_to_path(self, path: Union[Path, str]) -> Path:
+        """
+        Converts the path to a Path object if it's a string.
+        """
+        return Path(path) if isinstance(path, str) else path
 
 
 class AzureBlobStorageIO(StorageIO):
@@ -216,7 +226,7 @@ class AzureBlobStorageIO(StorageIO):
         If a relative path is provided, it will use it as-is.
 
         Args:
-            path (Union[Path, str]): The path to the file (blob) in Azure Blob Storage.
+            path (str): The path to the file (blob) in Azure Blob Storage.
                                     This can be either a full URL or a relative path.
 
         Returns:
@@ -255,7 +265,7 @@ class AzureBlobStorageIO(StorageIO):
         Writes data to Azure Blob Storage at the specified path.
 
         Args:
-            path (Union[Path, str]): The full Azure Blob Storage URL
+            path (str): The full Azure Blob Storage URL
             data (bytes): The data to write.
         """
         _, blob_name = self.parse_blob_url(str(path))

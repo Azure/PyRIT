@@ -138,7 +138,7 @@ class AddTextImageConverter(PromptConverter):
         image_str = base64.b64encode(image_bytes.getvalue())
         # Save image as generated UUID filename
         await img_serializer.save_b64_image(data=image_str)
-        return ConverterResult(output_text=img_serializer.value, output_type="image_path")
+        return ConverterResult(output_text=str(img_serializer.value), output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"
