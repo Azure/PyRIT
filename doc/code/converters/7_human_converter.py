@@ -75,7 +75,7 @@ hitl_converter = HumanInTheLoopConverter(
     converters=[
         LeetspeakConverter(),
         RandomCapitalLettersConverter(percentage=50),
-        TranslationConverter(converter_target=AzureOpenAIGPT4OChatTarget(), language="Singaporean English"),
+        TranslationConverter(converter_target=AzureOpenAIGPT4OChatTarget(), language="British English"),
     ]
 )
 
@@ -110,8 +110,7 @@ async def call_rto_with_simulated_input(mock_input):
         await red_teaming_orchestrator.print_conversation()  # type: ignore
 
 
-# line is commented out here since Jupyter notebooks support `await`` directly in the cell while a Python file does not.
-# await call_rto_with_simulated_input()
+await call_rto_with_simulated_input()  # type: ignore
 
 # %% [markdown]
 # Example without simulated input so you can try on your own!
@@ -163,7 +162,6 @@ hitl_converter = HumanInTheLoopConverter(
         TranslationConverter(converter_target=AzureOpenAIGPT4OChatTarget(), language="British English"),
     ]
 )
-
 
 with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
