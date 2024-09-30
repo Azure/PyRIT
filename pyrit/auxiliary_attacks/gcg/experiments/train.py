@@ -1,6 +1,7 @@
 import time
 import numpy as np
 from typing import Union
+import mlflow
 import torch.multiprocessing as mp
 from ml_collections import config_dict
 import pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.gcg.gcg_attack as attack_lib
@@ -10,6 +11,8 @@ from pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.base.attack_manager im
 )
 from pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
 
+# Logging for AML
+mlflow.autolog()
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:
     def __init__(self):
@@ -89,7 +92,11 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.token = token
         params.logfile = logfile
         params.random_seed = random_seed
+
+        # Log to mlflow
         print(params)
+        mlflow.log_params(params.to_dict(), synchronous=False)
+
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
         
         print("Train goals:")
