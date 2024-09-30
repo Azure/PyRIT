@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Union
 
-from pyrit.common.apply_parameters import apply_parameters
+from pyrit.common.apply_parameters_to_template_to_template import apply_parameters_to_template
 from pyrit.common.yaml_loadable import YamlLoadable
 
 
@@ -27,4 +27,4 @@ class AttackStrategy(YamlLoadable):
 
     def __str__(self):
         """Returns a string representation of the attack strategy."""
-        return apply_parameters(**self.kwargs)
+        return apply_parameters_to_template(**self.kwargs)

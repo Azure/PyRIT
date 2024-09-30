@@ -5,7 +5,7 @@ import re
 from typing import List
 
 
-def apply_parameters(
+def apply_parameters_to_template(
     template: str,
     parameters: List[str],
     **kwargs
