@@ -92,10 +92,12 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.token = token
         params.logfile = logfile
         params.random_seed = random_seed
+        print(params)
 
         # Log to mlflow
-        print(params)
-        mlflow.log_params(params.to_dict(), synchronous=False)
+        mlflow_param_keys = ["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]
+        mlflow_params = {key: params.to_dict()[key] for key in mlflow_param_keys}
+        mlflow.log_params(mlflow_params)
 
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
         
