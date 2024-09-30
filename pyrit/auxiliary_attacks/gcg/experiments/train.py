@@ -93,14 +93,26 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
 
         # Log to mlflow
         mlflow.start_run()
-        mlflow_param_keys = ["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]
-        mlflow_params = {key: params.to_dict()[key] for key in mlflow_param_keys}
+        timestamp = time.strftime("%Y%m%d-%H:%M:%S")
+        mlflow_param_keys = [
+            "model_name", 
+            "transfer", 
+            "n_train_data", 
+            "n_test_data", 
+            "n_steps", 
+            "batch_size"
+        ]
+        mlflow_params = {
+            key: params.to_dict()[key] for key in mlflow_param_keys
+        }
         mlflow.log_params(mlflow_params)
 
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
         
         print("Train goals:")
-        print("\n".join(train_goals))
+        train_goals_str = "\n".join(train_goals)
+        print(train_goals_str)
+        mlflow.log_text(train_goals_str, f"train_goals_{timestamp}.txt")
 
         def process_fn(s):
             return s.replace("Sure, h", "H")
