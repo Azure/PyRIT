@@ -336,5 +336,11 @@ async def test_invalid_json_exceptions(orchestrator: CrescendoOrchestrator, red_
         mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
 
         with pytest.raises(InvalidJsonException):
-            await orchestrator._get_attack_prompt(round_num=1, eval_score=None, last_response=None)
+            await orchestrator._get_attack_prompt(
+                red_team_conversation_id="123",
+                refused_text= None,
+                round_num=1,
+                max_rounds=10,
+                objective_score=None
+            )
             assert mock_backtrack_memory.call_count == 1
