@@ -17,7 +17,7 @@ from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import EmbeddingData, Base, PromptMemoryEntry, ScoreEntry
+from pyrit.memory.memory_models import EmbeddingDataEntry, Base, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.score import Score
@@ -36,7 +36,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     """
 
     SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
-    TOKEN_URL = "https://database.windows.net/"  # The token URL for any Azure SQL database
+    TOKEN_URL = "https://database.windows.net/.default"  # The token URL for any Azure SQL database
     AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"
     SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN"
@@ -49,8 +49,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         sas_token: Optional[str] = None,
         verbose: bool = False,
     ):
-        super(AzureSQLMemory, self).__init__()
-
         self._connection_string = default_values.get_required_value(
             env_var_name=self.AZURE_SQL_DB_CONNECTION_STRING, passed_value=connection_string
         )
@@ -63,8 +61,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             )
         except ValueError:
             self._sas_token = None  # To use delegation SAS
-        # Handle for Azure Blob Storage when using Azure SQL memory.
-        self._storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
 
         self.results_path = self._container_url
 
@@ -75,6 +71,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
+
+        super(AzureSQLMemory, self).__init__()
+
+    def _init_storage_io(self):
+        # Handle for Azure Blob Storage when using Azure SQL memory.
+        self.storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
 
     def _create_auth_token(self) -> AccessToken:
         azure_credentials = DefaultAzureCredential()
@@ -137,13 +139,13 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingDataEntry]) -> None:
         """
         Inserts embedding data into memory storage
         """
-        self._insert_entries(entries=embedding_data)
+        self.insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[Base]:
+    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptMemoryEntry Base objects that have the specified orchestrator ID.
 
@@ -152,13 +154,15 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 Can be retrieved by calling orchestrator.get_identifier()["id"]
 
         Returns:
-            list[Base]: A list of PromptMemoryEntry Base objects matching the specified orchestrator ID.
+            list[PromptRequestPiece]: A list of PromptMemoryEntry Base objects matching the specified orchestrator ID.
         """
         try:
             sql_condition = text(
                 "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
             ).bindparams(json_id=str(orchestrator_id))
-            result = self.query_entries(PromptMemoryEntry, conditions=sql_condition)  # type: ignore
+            entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)  # type: ignore
+            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+
             return result
         except Exception as e:
             logger.exception(
@@ -177,10 +181,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
         """
         try:
-            return self.query_entries(
+            entries = self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.conversation_id == conversation_id,
             )  # type: ignore
+
+            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            return result
+
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
@@ -190,13 +198,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Inserts a list of prompt request pieces into the memory storage.
 
         """
-        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
-
-    def add_scores_to_memory(self, *, scores: list[Score]) -> None:
-        """
-        Inserts a list of scores into the memory storage.
-        """
-        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
+        self.insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
     def dispose_engine(self):
         """
@@ -206,11 +208,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             self.engine.dispose()
             logger.info("Engine disposed successfully.")
 
-    def get_all_embeddings(self) -> list[EmbeddingData]:
+    def get_all_embeddings(self) -> list[EmbeddingDataEntry]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self.query_entries(EmbeddingData)
+        result = self.query_entries(EmbeddingDataEntry)
         return result
 
     def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
@@ -231,10 +233,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
         try:
-            return self.query_entries(
+            entries = self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )  # type: ignore
+            )
+            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            return result
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
@@ -266,10 +270,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             # for safe parameter passing, preventing SQL injection
             sql_condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
 
-            result: list[PromptRequestPiece] = self.query_entries(
-                PromptMemoryEntry, conditions=sql_condition
-            )  # type: ignore
-
+            entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)
+            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
             return result
         except Exception as e:
             logger.exception(
@@ -288,21 +290,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         return [entry.get_score() for entry in entries]
 
-    # The following methods are not part of MemoryInterface, but seem
-    # common between SQLAlchemy-based implementations, regardless of engine.
-    # Perhaps we should find a way to refactor
-    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
-        """Inserts multiple entries into the database."""
-        with closing(self.get_session()) as session:
-            try:
-                session.add_all(entries)
-                session.commit()
-            except SQLAlchemyError as e:
-                session.rollback()
-                logger.exception(f"Error inserting multiple entries into the table: {e}")
-                raise
-
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
+    def insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -316,6 +304,20 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
+
+    # The following methods are not part of MemoryInterface, but seem
+    # common between SQLAlchemy-based implementations, regardless of engine.
+    # Perhaps we should find a way to refactor
+    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+        """Inserts multiple entries into the database."""
+        with closing(self.get_session()) as session:
+            try:
+                session.add_all(entries)
+                session.commit()
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error inserting multiple entries into the table: {e}")
+                raise
 
     def get_session(self) -> Session:
         """
