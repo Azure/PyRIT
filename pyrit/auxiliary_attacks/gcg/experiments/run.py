@@ -60,7 +60,6 @@ def run_trainer(
 
     config.update(runtime_config)
     config.update(extra_config_parameters)
-    config["model_name"] = model_name
 
     trainer = GreedyCoordinateGradientAdversarialSuffixGenerator()
     if not os.path.exists("results"):
