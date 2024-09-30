@@ -354,7 +354,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
 
-    def add_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str]=None) -> None:
+    def add_seed_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str]=None) -> None:
         """
         Inserts a list of prompts into the memory storage.
 
@@ -362,17 +362,18 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             prompts (list[SeedPrompt]): A list of prompts to insert.
             added_by (str): The user who added the prompts.
         """
-        if added_by:
-            for prompt in prompts:
-                prompt.added_by = added_by
-        if any([not prompt.added_by for prompt in prompts]):
-            raise ValueError("One or more prompts did not have the 'added_by' attribute set.")
-        
+        entries: list[SeedPromptEntry] = []
+        current_time = datetime.now()
         for prompt in prompts:
+            if added_by:
+                prompt.added_by = added_by
+            if not prompt.added_by:
+                raise ValueError("The 'added_by' attribute must be set for each prompt. Set it explicitly or pass a value to the 'added_by' parameter.")
             if prompt.date_added is None:
-                prompt.date_added = datetime.now()
+                prompt.date_added = current_time
+            entries.append(SeedPromptEntry(entry=prompt))
 
-        self._insert_entries(entries=[SeedPromptEntry(entry=prompt) for prompt in prompts])
+        self._insert_entries(entries=entries)
     
     def get_prompt_dataset_names(self) -> list[str]:
         """
@@ -503,7 +504,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             ValueError: If a prompt group does not have at least one prompt.
             ValueError: If prompt group IDs are inconsistent within the same prompt group.
         """
-        # Validates the prompt group IDs and sets them if possible before leveraging the add_prompts_to_memory method.
+        # Validates the prompt group IDs and sets them if possible before leveraging the add_seed_prompts_to_memory method.
         all_prompts = []
         for prompt_group in prompt_groups:
             if not prompt_group.prompts:
@@ -518,7 +519,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             for prompt in prompt_group.prompts:
                 prompt.prompt_group_id = prompt_group_id
             all_prompts.extend(prompt_group.prompts)
-        self.add_prompts_to_memory(prompts=all_prompts, added_by=added_by)
+        self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
     
     def delete_prompts(self, *, ids: list[str]) -> None:
         """
