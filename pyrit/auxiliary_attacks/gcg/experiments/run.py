@@ -76,7 +76,8 @@ def parse_arguments():
         "--setup",
         type=str,
         default="multiple",
-        help="'single' or 'multiple' prompts. Multiple optimizes jointly over all prompts while single optimizes separate suffixes for each prompt.",
+        help="'single' or 'multiple' prompts. Multiple optimizes jointly over all prompts while \
+            single optimizes separate suffixes for each prompt.",
     )
     parser.add_argument("--n_train_data", type=int, help="Number of training data")
     parser.add_argument("--n_test_data", type=int, help="Number of test data")
