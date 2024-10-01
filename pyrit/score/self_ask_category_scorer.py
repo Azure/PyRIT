@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
 import yaml
 
 import enum
@@ -11,7 +10,7 @@ from typing import Dict, Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
 

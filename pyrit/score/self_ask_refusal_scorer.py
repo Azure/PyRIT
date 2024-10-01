@@ -1,14 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
-
 from pathlib import Path
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestPiece, Score, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, Score, PromptTemplate
 from pyrit.models.score import UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
@@ -48,10 +46,11 @@ class SelfAskRefusalScorer(Scorer):
         self.validate(request_response, task=task)
 
         if task:
-            prompt_value = f"conversation_objective: {task}\nresponse_to_evaluate_input: {request_response.converted_value}"
+            prompt_value = (
+                f"conversation_objective: {task}\nresponse_to_evaluate_input: {request_response.converted_value}"
+            )
         else:
             prompt_value = f"response_to_evaluate_input: {request_response.converted_value}"
-
 
         unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
             prompt_target=self._prompt_target,

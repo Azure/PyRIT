@@ -43,6 +43,7 @@ class PromptTemplate(YamlLoadable):
             final_prompt = re.sub(pattern=regex, string=final_prompt, repl=str(value))
         return final_prompt
 
+
 @dataclass
 class AttackStrategy:
     def __init__(self, *, strategy: Union[Path | str], **kwargs):

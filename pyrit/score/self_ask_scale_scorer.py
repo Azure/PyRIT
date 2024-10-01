@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
 import yaml
 import enum
 
@@ -11,11 +10,9 @@ from typing import Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import SCALES_PATH
-
-
 
 
 class SelfAskScaleScorer(Scorer):
@@ -26,7 +23,6 @@ class SelfAskScaleScorer(Scorer):
     class ScalePaths(enum.Enum):
         TREE_OF_ATTACKS_SCALE = Path(SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
         TASK_ACHIEVED_SCALE = Path(SCALES_PATH, "task_achieved_scale.yaml").resolve()
-
 
     class SystemPaths(enum.Enum):
         GENERAL_SYSTEM_PROMPT = Path(SCALES_PATH, "general_system_prompt.yaml").resolve()

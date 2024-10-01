@@ -11,7 +11,7 @@ from treelib import Tree
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common.path import DATASETS_PATH, SCALES_PATH
+from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptTemplate

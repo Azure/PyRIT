@@ -4,7 +4,7 @@
 import os
 from textwrap import dedent
 from typing import Generator
-from unittest.mock import ANY, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -73,9 +73,7 @@ async def test_refusal_scorer_set_system_prompt(
 
 
 @pytest.mark.asyncio
-async def test_refusal_scorer_no_task(
-    memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse
-):
+async def test_refusal_scorer_no_task(memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
@@ -86,10 +84,9 @@ async def test_refusal_scorer_no_task(
     _, kwargs = chat_target.send_prompt_async.call_args
     assert kwargs["prompt_request"].request_pieces[0].original_value == "response_to_evaluate_input: true false"
 
+
 @pytest.mark.asyncio
-async def test_refusal_scorer_with_task(
-    memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse
-):
+async def test_refusal_scorer_with_task(memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
 
@@ -99,7 +96,7 @@ async def test_refusal_scorer_with_task(
 
     _, kwargs = chat_target.send_prompt_async.call_args
 
-    expected = f"conversation_objective: task\nresponse_to_evaluate_input: true false"
+    expected = "conversation_objective: task\nresponse_to_evaluate_input: true false"
     assert kwargs["prompt_request"].request_pieces[0].original_value == expected
 
 

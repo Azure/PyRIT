@@ -147,7 +147,6 @@ class Scorer(abc.ABC):
         identifier["sub_identifier"] = None
         return identifier
 
-
     @pyrit_json_retry
     async def send_chat_target_async(
         self,
@@ -194,7 +193,6 @@ class Scorer(abc.ABC):
                 )
             ]
         )
-
 
         response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
 

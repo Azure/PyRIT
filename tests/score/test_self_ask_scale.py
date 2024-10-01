@@ -56,7 +56,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
         (task_scale_path, red_teamer_system_prompt_path),
         (tree_scale_path, red_teamer_system_prompt_path),
         (task_scale_path, general_system_prompt_path),
-    ]
+    ],
 )
 async def test_scale_scorer_set_system_prompt(
     scorer_scale_response: PromptRequestResponse,
@@ -71,7 +71,7 @@ async def test_scale_scorer_set_system_prompt(
         chat_target=chat_target,
         scale_arguments_path=scale_arguments_path,
         system_prompt_path=system_prompt_path,
-        memory=memory
+        memory=memory,
     )
 
     await scorer.score_text_async(text="string", task="task")
@@ -110,38 +110,6 @@ def test_scale_scorer_invalid_scale_file_contents():
             "maximum_value": 1,
             "category": "category",
         },
-    ]
-)
-def test_validate_scale_arguments_missing_args_raises_value_error(scale_args):
-    memory = MagicMock(MemoryInterface)
-    chat_target = MagicMock()
-
-    # Create an object that passes initial validation
-    # We're calling it later to test the method
-    scorer = SelfAskScaleScorer(
-        chat_target=chat_target,
-        memory=memory
-    )
-
-    with pytest.raises(ValueError, match="Missing key in scale_args"):
-        scorer._validate_scale_arguments_set(scale_args)
-
-
-@pytest.mark.parametrize(
-    "scale_args",
-    [
-        {
-            "minimum_value": 0,
-            "maximum_value": 1,
-        },
-        {
-            "minimum_value": 0,
-            "category": "category",
-        },
-        {
-            "maximum_value": 1,
-            "category": "category",
-        },
         {
             "minimum_value": 0,
             "maximum_value": 1,
@@ -157,7 +125,7 @@ def test_validate_scale_arguments_missing_args_raises_value_error(scale_args):
             "maximum_value": 1,
             "category": "test",
         },
-    ]
+    ],
 )
 def test_validate_scale_arguments_missing_args_raises_value_error(scale_args):
     memory = MagicMock(MemoryInterface)
@@ -165,15 +133,10 @@ def test_validate_scale_arguments_missing_args_raises_value_error(scale_args):
 
     # Create an object that passes initial validation
     # We're calling it later to test the method
-    scorer = SelfAskScaleScorer(
-        chat_target=chat_target,
-        memory=memory
-    )
+    scorer = SelfAskScaleScorer(chat_target=chat_target, memory=memory)
 
     with pytest.raises(ValueError):
         scorer._validate_scale_arguments_set(scale_args)
-
-
 
 
 @pytest.mark.asyncio
@@ -183,10 +146,7 @@ async def test_scale_scorer_score(memory: MemoryInterface, scorer_scale_response
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 
-    scorer = SelfAskScaleScorer(
-        chat_target=chat_target,
-        memory=memory
-    )
+    scorer = SelfAskScaleScorer(chat_target=chat_target, memory=memory)
 
     score = await scorer.score_text_async(text="example text", task="task")
 
@@ -215,14 +175,10 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 
-    scorer = SelfAskScaleScorer(
-        chat_target=chat_target,
-        memory=memory
-    )
+    scorer = SelfAskScaleScorer(chat_target=chat_target, memory=memory)
 
     scorer._minimum_value = 1
     scorer._maximum_value = 100
-
 
     score = await scorer.score_text_async(text="example text", task="task")
 
@@ -245,10 +201,7 @@ async def test_scale_scorer_score_calls_send_chat():
     chat_target = MagicMock()
     memory = MagicMock(MemoryInterface)
 
-    scorer = SelfAskScaleScorer(
-        chat_target=chat_target,
-        memory=memory
-    )
+    scorer = SelfAskScaleScorer(chat_target=chat_target, memory=memory)
 
     score = UnvalidatedScore(
         raw_score_value="1",

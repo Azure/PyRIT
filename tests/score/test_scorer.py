@@ -70,7 +70,7 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
             prompt_request_data_type="text",
             scored_prompt_id="123",
             category="category",
-            task="task"
+            task="task",
         )
 
         assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
@@ -107,7 +107,7 @@ async def test_scorer_send_chat_target_async_good_response():
         prompt_request_data_type="text",
         scored_prompt_id="123",
         category="category",
-        task="task"
+        task="task",
     )
 
     assert chat_target.send_prompt_async.call_count == int(1)

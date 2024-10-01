@@ -3,14 +3,13 @@
 
 import enum
 from typing import Dict, Optional
-import uuid
 import yaml
 
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Score, Scorer, UnvalidatedScore
 

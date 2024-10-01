@@ -6,14 +6,12 @@ from __future__ import annotations
 from colorama import Fore, Style
 from dataclasses import dataclass
 import logging
-from pathlib import Path
 import random
 from typing import Optional, Union
 import uuid
 
 import numpy as np
 
-from pyrit.common.path import SCALES_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptTemplate

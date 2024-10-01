@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import AttackStrategy
 
