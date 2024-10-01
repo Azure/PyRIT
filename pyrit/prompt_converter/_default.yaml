@@ -1,0 +1,91 @@
+# Default app configuration
+# Changes here affect all other configurations!
+# In new toml files, unspecified values will be populated with defaults from this file
+
+output_dir:  "./streamlit-outputs/claims" # folder where outputs will be stored
+global_seed:  11235
+openai_engine:  "gpt-3.5-turbo-instruct" # GPT-3 model to use for generating tests
+utterances: "data/sample_utterances.json" # Can also specify utterances directly here
+
+# Whether to distinguish related from unrelated failures in the interface
+# false means binary pass/fail, true means pass/related fail/unrelated fail
+annotate_unrelated_failures:  true
+
+# set keys: can either put raw keys or paths to keys.
+openai_api_key:  "~/.openai_api_key"
+perspective_api_key:  "~/.perspective_api_key"
+
+cache_dir: null
+
+## Configurations for the claim classifier
+# There are two types of classifiers: one is `setfit`, which fine-tunes an embedding
+# model (more accurate, but slower); the other is `cross-encoder`, which only trains
+# a lightweight classifier on top of an existing NLI model
+classifier:
+  type:  "setfit"
+  # Experiments indicate models fine-tuned for NLI work best; have tried
+  #   "cross-encoder/nli-deberta-v3-base" and 
+  #   "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
+  # both can be used with either classifier type
+  # for a lighter-weight (but not thoroughly tested) model, use `cross-encoder/nli-MiniLM2-L6-H768`
+  encoder_model:  "cross-encoder/nli-deberta-v3-base"
+
+  # arguments specific to setfit; most meaningful ones included here
+  setfit:
+    use_differentiable_head:  false # setting to true increases train time
+    num_iterations:  10 # Can sometimes achieve better results with 20; 40 often overkill
+    body_learning_rate:  1.e-5 # 2e-5 and 2e-6 also viable
+    batch_size:  20 # Will be smaller if entire training set fits in batch
+
+## Configurations for the interface; these mostly set defaults which can be changed in the UI
+interface:
+  disable: false # whether to disable interface elements
+  inferences_to_generations:
+    sampling_strategy: top_p
+    sampling_value:  0.95
+    num_samples: 40
+    generations_to_annotate: 20
+  generations_to_tests:
+    truncation_strategy: # defaults
+      - root
+      - 3_toks
+      - gpt3
+    completions_per_prompt: 1
+    tests_to_annotate: 20
+    ## Target generation model configurations
+    target_model:
+      types: 
+        - gpt2 # first in list is the default
+        - gpt3/gpt-3.5-turbo-instruct # if prefix is `gpt3`, will use gpt3 instead
+        - gpt3/davinci-002
+      # turing: # set to `null` in configurations to not use
+      #   basedir: "./TuringInference-API"
+      #   batch_size:  16
+      #   python_path:  null # <bin to your deepwrite install>
+      #   config_fname:  "DW6_int8_wordv3.json"
+
+## GPT-3 Few-shot instructions and exemplars;
+## pull from list of FEW_SHOT_SORUCES in exemplars.py (see file for more information)
+few_shot:
+  data_dir: "data/few_shot" # base data directory for external few-shot
+  utterances_to_claims: # exemplars for going from a problematic utterance to a claim
+    - "internal-utterances_to_claims"
+  claims_to_inferences: # exemplars for going from a claim to related claims
+    - "internal-claims_to_inferences"
+    - "internal-hyponym_inferences"
+    # pragmatic inferences
+    - "nope"
+    - "imppres-implicature"
+    - "imppres-presupposition"
+    # entailments
+    - "glue-rte"
+    - "glue-mnli"
+    - "entailmentbank"
+    # paraphrases
+    - "glue-stsb" # shorter than mrpc
+  inferences_to_generations: # exemplars for generating sentences from claims
+    - "internal-inferences_to_generations"
+    # entailments (code places hypothesis first, premise second because latter is longer)
+    - "sbf"
+    - "glue-rte"
+    - "entailmentbank"

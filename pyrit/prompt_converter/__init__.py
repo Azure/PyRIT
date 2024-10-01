@@ -71,4 +71,9 @@ __all__ = [
     "UnicodeConfusableConverter",
     "UnicodeSubstitutionConverter",
     "VariationConverter",
+    "ClaimConverter",
+    "prompt_openai",
+    "exemplars",
+    "config",
+    "utils",
 ]

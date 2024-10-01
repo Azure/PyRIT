@@ -171,3 +171,5 @@ doc/generate_docs/cache/*
 
 # Ignore DS_STORE files
 **/.DS_Store
+
+data/

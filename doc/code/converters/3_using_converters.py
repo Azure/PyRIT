@@ -53,12 +53,11 @@ with PromptSendingOrchestrator(
 # %%
 
 from pyrit.common import default_values
+default_values.load_default_env()
+
 from pyrit.prompt_target import TextTarget, AzureOpenAIGPT4OChatTarget
 from pyrit.prompt_converter import ClaimConverter, StringJoinConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
-
-
-default_values.load_default_env()
 
 prompts = ["cancer is contagious"]
 

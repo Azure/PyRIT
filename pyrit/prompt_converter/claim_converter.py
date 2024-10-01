@@ -15,12 +15,37 @@ from pyrit.exceptions.exception_classes import (
     remove_markdown_json,
 )
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import PromptConverter, ConverterResult, config, utils, prompt_openai, exemplars
 from pyrit.prompt_target import PromptChatTarget
-
 
 logger = logging.getLogger(__name__)
 
+config_path = pathlib.Path(__file__).parent / '_default.yaml'
+config = config.load_config(config_path)
+sections = [
+    "utterances_to_claims",
+    "claims_to_inferences",
+    "inferences_to_generations",
+]
+utterances = utils.read_json(pathlib.Path(__file__).parent / config["utterances"])
+# load few shot exemplars
+few_shot_sources = {}
+for section in sections:
+    sources = config["few_shot"][section]
+    few_shot_sources[section] = {}
+    for source in sources:
+        # `load_few_shot_sources` is wrapped with experimental singleton so 
+        # there will be no duplicated data in memory
+        data = exemplars.load_few_shot_source(
+            source=source,
+            few_shot_dir=pathlib.Path(__file__).parent / config["few_shot"]["data_dir"],
+            max_n=500,
+            premise_first=section != "inferences_to_generations", # premises are usually longer
+            max_hypothesis_toks=6,
+            max_sent_toks=50,
+        )
+        if data is not None:
+            few_shot_sources[section][source] = data
 
 class ClaimConverter(PromptConverter):
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
@@ -34,7 +59,6 @@ class ClaimConverter(PromptConverter):
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "claim_converter.yaml"
             )
         )
-
         self.number_variations = 1
 
         self.system_prompt = str(
@@ -91,6 +115,12 @@ class ClaimConverter(PromptConverter):
     async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
+        produced_claims = prompt_openai.run_pipeline_per_source(
+            instance=utterances[0],
+            target_n=20,
+            few_shot_sources=few_shot_sources["utterances_to_claims"],
+            engine=config["openai_engine"],
+        )
         response_msg = response.request_pieces[0].converted_value
         response_msg = remove_markdown_json(response_msg)
         try:
