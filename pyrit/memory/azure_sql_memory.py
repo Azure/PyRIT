@@ -37,7 +37,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     """
 
     SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
-    TOKEN_URL = "https://database.windows.net/"  # The token URL for any Azure SQL database
+    TOKEN_URL = "https://database.windows.net/.default"  # The token URL for any Azure SQL database
     AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"
     SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN"

@@ -4,13 +4,11 @@
 import json
 import logging
 import uuid
-import pathlib
 
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.models import PromptTemplate
-from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.exceptions.exception_classes import (
     InvalidJsonException,
@@ -21,9 +19,9 @@ from pyrit.exceptions.exception_classes import (
 logger = logging.getLogger(__name__)
 
 
-class ExpandConverter(PromptConverter):
+class FuzzerConverter(PromptConverter):
     """
-    Converter to expand prompts by prepending sentences.
+    Base class for GPTFUZZER converters.
 
     Adapted from GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
 
@@ -36,7 +34,7 @@ class ExpandConverter(PromptConverter):
     Parameters
     ---
     converter_target: PromptChatTarget
-        Chat target used to perform expanding on user prompt
+        Chat target used to perform fuzzing on user prompt
 
     prompt_template: PromptTemplate, default=None
         Template to be used instead of the default system prompt with instructions for the chat target.
@@ -44,17 +42,11 @@ class ExpandConverter(PromptConverter):
 
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
         self.converter_target = converter_target
-
-        # set to default strategy if not provided
-        prompt_template = (
-            prompt_template
-            if prompt_template
-            else PromptTemplate.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "expand_converter.yaml"
-            )
-        )
-
         self.system_prompt = prompt_template.template
+        self.template_label = "TEMPLATE"
+
+    def update(self, **kwargs) -> None:
+        pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -71,7 +63,7 @@ class ExpandConverter(PromptConverter):
             orchestrator_identifier=None,
         )
 
-        formatted_prompt = f"====TEMPLATE BEGINS====\n{prompt}\n====TEMPLATE ENDS===="
+        formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
 
         request = PromptRequestResponse(
             [
@@ -89,12 +81,12 @@ class ExpandConverter(PromptConverter):
             ]
         )
 
-        response = await self.send_expand_prompt_async(request)
+        response = await self.send_prompt_async(request)
 
-        return ConverterResult(output_text=response + " " + prompt, output_type="text")
+        return ConverterResult(output_text=response, output_type="text")
 
     @pyrit_json_retry
-    async def send_expand_prompt_async(self, request):
+    async def send_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
         response_msg = response.request_pieces[0].converted_value
