@@ -1,10 +1,10 @@
-name: prompt_expand
+name: fuzzer_expand_converter
 description: |
   A general strategy for expanding outputs adapted from
   https://arxiv.org/abs/2309.10253 by J. Yu et al.
 harm_category: NA
-author: J. Yu et al.
-group:
+author: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
+group: Northwestern University, Ant Group
 source: https://github.com/sherdencooper/GPTFuzz/blob/master/gptfuzzer/fuzzer/mutator.py
 should_be_blocked: false
 parameters:

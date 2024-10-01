@@ -15,7 +15,15 @@ from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
-from pyrit.prompt_converter.expand_converter import ExpandConverter
+from pyrit.prompt_converter.fuzzer_converter import (
+    FuzzerConverter,
+    FuzzerCrossOverConverter,
+    FuzzerExpandConverter,
+    FuzzerRephraseConverter,
+    FuzzerShortenConverter,
+    FuzzerSimilarConverter,
+)
+from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
@@ -25,7 +33,6 @@ from pyrit.prompt_converter.random_capital_letters_converter import RandomCapita
 from pyrit.prompt_converter.repeat_token_converter import RepeatTokenConverter
 from pyrit.prompt_converter.rot13_converter import ROT13Converter
 from pyrit.prompt_converter.search_replace_converter import SearchReplaceConverter
-from pyrit.prompt_converter.shorten_converter import ShortenConverter
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
 from pyrit.prompt_converter.tense_converter import TenseConverter
@@ -33,6 +40,7 @@ from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
+from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
 
 
@@ -49,7 +57,13 @@ __all__ = [
     "CodeChameleonConverter",
     "ConverterResult",
     "EmojiConverter",
-    "ExpandConverter",
+    "FuzzerConverter",
+    "FuzzerCrossOverConverter",
+    "FuzzerExpandConverter",
+    "FuzzerRephraseConverter",
+    "FuzzerShortenConverter",
+    "FuzzerSimilarConverter",
+    "HumanInTheLoopConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MorseConverter",
@@ -61,7 +75,6 @@ __all__ = [
     "RepeatTokenConverter",
     "ROT13Converter",
     "SearchReplaceConverter",
-    "ShortenConverter",
     "StringJoinConverter",
     "SuffixAppendConverter",
     "TenseConverter",
@@ -69,5 +82,6 @@ __all__ = [
     "TranslationConverter",
     "UnicodeConfusableConverter",
     "UnicodeSubstitutionConverter",
+    "UrlConverter",
     "VariationConverter",
 ]
