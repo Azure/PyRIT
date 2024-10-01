@@ -76,7 +76,7 @@ class HTTPTarget(PromptTarget):
 
             else:
                 if http_body_json: # clean prompt of whitespace control characters to ensure still valid json
-                    cleaned_prompt = re.sub(r'\s','', request.original_value)
+                    cleaned_prompt = re.sub(r'\s',' ', request.original_value)
                     formatted_http_body = re_pattern.sub(cleaned_prompt, http_body)
                 else: # doesn't clean prompt, enters it all in
                     formatted_http_body = re_pattern.sub(request.original_value, http_body)
