@@ -20,6 +20,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         self,
         token: str = "",
         tokenizer_paths: list = [],
+        model_name: str = "",
         model_paths: list = [],
         conversation_templates: list = [],
         result_prefix: str = "",
@@ -75,6 +76,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.num_train_models = num_train_models
         params.tokenizer_paths = tokenizer_paths
         params.tokenizer_kwargs = tokenizer_kwargs
+        params.model_name = model_name
         params.model_paths = model_paths
         params.model_kwargs = model_kwargs
         params.conversation_templates = conversation_templates
@@ -95,6 +97,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         mlflow.start_run()
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         mlflow_param_keys = [
+            "model_name", 
             "transfer", 
             "n_train_data", 
             "n_test_data", 
