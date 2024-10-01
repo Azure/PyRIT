@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import math
 import random
 import string
@@ -16,7 +19,7 @@ class CharSwapGenerator(PromptConverter):
     to test adversarial textual robustness.
     """
 
-    def __init__(self, max_iterations: int = 10, word_swap_ratio: float = 0.2):
+    def __init__(self, *, max_iterations: int = 10, word_swap_ratio: float = 0.2):
         """
         Initializes the CharSwapConverter.
         Args:
@@ -32,6 +35,25 @@ class CharSwapGenerator(PromptConverter):
         Checks if the input type is supported by the converter.
         """
         return input_type == "text"
+    
+    def _perturb_word(self, word: str) -> str:
+        """
+        Perturb a word by swapping two adjacent characters.
+        Args:
+            word (str): The word to perturb.
+        Returns:
+            str: The perturbed word with swapped characters.
+        """
+        if word not in string.punctuation and len(word) > 3:
+            idx1 = random.randint(1, len(word) - 2)
+            idx_elements = list(word)
+            # Swap characters
+            idx_elements[idx1], idx_elements[idx1 + 1] = (
+                idx_elements[idx1 + 1],
+                idx_elements[idx1],
+            )
+            return "".join(idx_elements)
+        return word
 
     async def convert_async(self, *, prompt: str, input_type="text") -> ConverterResult:
         """
@@ -53,18 +75,9 @@ class CharSwapGenerator(PromptConverter):
         for attempt in range(self.max_iterations):
             perturbed_word_list = word_list.copy()
             # Get random indices of words to undergo swapping
-            random_words_idx = self.get_n_random(0, word_list_len, num_perturb_words)
+            random_words_idx = self._get_n_random(0, word_list_len, num_perturb_words)
             for idx in random_words_idx:
-                word = perturbed_word_list[idx]
-                if word not in string.punctuation and len(word) > 3:
-                    idx1 = random.randint(1, len(word) - 2)
-                    idx_elements = list(word)
-                    # Swap characters
-                    idx_elements[idx1], idx_elements[idx1 + 1] = (
-                        idx_elements[idx1 + 1],
-                        idx_elements[idx1],
-                    )
-                    perturbed_word_list[idx] = "".join(idx_elements)
+                perturbed_word_list[idx] = self._perturb_word(perturbed_word_list[idx])
             new_prompt = TreebankWordDetokenizer().detokenize(perturbed_word_list)
             result_list.append(new_prompt)
 
@@ -72,7 +85,7 @@ class CharSwapGenerator(PromptConverter):
         output_text = "\n".join(result_list)
         return ConverterResult(output_text=output_text, output_type="text")
 
-    def get_n_random(self, low: int, high: int, n: int) -> list:
+    def _get_n_random(self, low: int, high: int, n: int) -> list:
         """
         Utility function to generate random indices.
         Words at these indices will be subjected to perturbation.
