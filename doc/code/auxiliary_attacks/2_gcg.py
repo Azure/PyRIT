@@ -28,7 +28,7 @@
 # %% [markdown]
 # The [workspace](https://docs.microsoft.com/en-us/azure/machine-learning/concept-workspace) is the top-level resource for Azure Machine Learning (AML), providing a centralized place to work with all the artifacts you create when using AML. In this section, we will connect to the workspace in which the job will be run.
 #
-# To connect to a workspace, we need identifier parameters - a subscription, resource group and workspace name. We will use these details in the `MLClient` from `azure.ai.ml` to get a handle to the required AML workspace. We use the [default Azure authentication](https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python) for this tutorial. Check the [configuration notebook](../../../configuration.ipynb) for more details on how to configure credentials and connect to a workspace.
+# To connect to a workspace, we need identifier parameters - a subscription, resource group and workspace name. We will use these details in the `MLClient` from `azure.ai.ml` to get a handle to the required AML workspace. We use the [default Azure authentication](https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python) for this tutorial.
 
 # %%
 import os
@@ -88,7 +88,7 @@ job = command(
         "n_train_data": 25,
         "n_test_data": 0,
         "n_steps": 500,
-        "batch_size": 512,
+        "batch_size": 256,
     },
     environment=f"{env_docker_context.name}:{env_docker_context.version}",
     environment_variables={"HF_TOKEN": os.environ["HF_TOKEN"]},
