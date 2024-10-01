@@ -32,8 +32,8 @@ class SelfAskScaleScorer(Scorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        scale_arguments_path: Optional[Path] = None,
-        system_prompt_path: Optional[Path] = None,
+        scale_arguments_path: Optional[Path],
+        system_prompt_path: Optional[Path],
         memory: MemoryInterface = None,
     ) -> None:
         self._prompt_target = chat_target
@@ -78,7 +78,7 @@ class SelfAskScaleScorer(Scorer):
 
         scoring_prompt = f"task: {task}\nresponse: {request_response.converted_value}"
 
-        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
             prompt_request_value=scoring_prompt,

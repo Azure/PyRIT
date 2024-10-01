@@ -106,7 +106,7 @@ class SelfAskCategoryScorer(Scorer):
         """
         self.validate(request_response, task=task)
 
-        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
             prompt_request_value=request_response.converted_value,

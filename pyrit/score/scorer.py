@@ -148,7 +148,7 @@ class Scorer(abc.ABC):
         return identifier
 
     @pyrit_json_retry
-    async def send_chat_target_async(
+    async def _score_value_with_llm(
         self,
         *,
         prompt_target: PromptChatTarget,
@@ -166,12 +166,18 @@ class Scorer(abc.ABC):
 
         Args:
             prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
-            scorer_llm_response (PromptRequestPiece): The prompt request to be sent to the target LLM.
+            system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
+            prompt_request_value (str): The actual value or content to be scored by the LLM.
+            prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
             scored_prompt_id (str): The ID of the scored prompt.
-            category (str): The category of the score. This can alternatively be parsed from the JSON.
+            category (str, optional): The category of the score. Can also be parsed from the JSON response if not
+                provided.
+            task (str, optional): A description of the task that is associated with the score, used for contextualizing
+                the result.
+
         Returns:
             UnvalidatedScore: The score object containing the response from the target LLM.
-                score_value stille needs to be normalized and validated.
+                score_value still needs to be normalized and validated.
         """
 
         conversation_id = str(uuid.uuid4())

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -49,11 +49,7 @@
 #
 
 # %%
-# %load_ext autoreload
-# %autoreload 2
-
 from pyrit.common.default_values import load_default_env
-from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator.pair_orchestrator import PAIROrchestrator
 from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
@@ -71,7 +67,8 @@ pair_orchestrator = PAIROrchestrator(
     desired_target_response_prefix="Sure, ",
     scorer=SelfAskScaleScorer(
         chat_target=AzureOpenAIGPT4OChatTarget(),
-        scale_arguments_path=DATASETS_PATH / "score" / "scales" / "tree_of_attacks_with_pruning_jailbreak.yaml",
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     ),
     scorer_sensitivity=0.7,
 )

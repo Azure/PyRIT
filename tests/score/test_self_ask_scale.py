@@ -47,6 +47,16 @@ def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
+@pytest.fixture
+def scale_scorer(memory) -> SelfAskScaleScorer:
+    return SelfAskScaleScorer(
+        memory=memory,
+        chat_target=MagicMock(),
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+    )
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "scale_arguments_path, system_prompt_path",
@@ -92,6 +102,7 @@ def test_scale_scorer_invalid_scale_file_contents():
         SelfAskScaleScorer(
             chat_target=chat_target,
             scale_arguments_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
         )
 
 
@@ -127,16 +138,9 @@ def test_scale_scorer_invalid_scale_file_contents():
         },
     ],
 )
-def test_validate_scale_arguments_missing_args_raises_value_error(scale_args):
-    memory = MagicMock(MemoryInterface)
-    chat_target = MagicMock()
-
-    # Create an object that passes initial validation
-    # We're calling it later to test the method
-    scorer = SelfAskScaleScorer(chat_target=chat_target, memory=memory)
-
+def test_validate_scale_arguments_missing_args_raises_value_error(scale_args, scale_scorer):
     with pytest.raises(ValueError):
-        scorer._validate_scale_arguments_set(scale_args)
+        scale_scorer._validate_scale_arguments_set(scale_args)
 
 
 @pytest.mark.asyncio
@@ -146,7 +150,12 @@ async def test_scale_scorer_score(memory: MemoryInterface, scorer_scale_response
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 
-    scorer = SelfAskScaleScorer(chat_target=chat_target, memory=memory)
+    scorer = SelfAskScaleScorer(
+        chat_target=chat_target,
+        memory=memory,
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+    )
 
     score = await scorer.score_text_async(text="example text", task="task")
 
@@ -175,7 +184,12 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 
-    scorer = SelfAskScaleScorer(chat_target=chat_target, memory=memory)
+    scorer = SelfAskScaleScorer(
+        chat_target=chat_target,
+        memory=memory,
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+    )
 
     scorer._minimum_value = 1
     scorer._maximum_value = 100
@@ -201,7 +215,12 @@ async def test_scale_scorer_score_calls_send_chat():
     chat_target = MagicMock()
     memory = MagicMock(MemoryInterface)
 
-    scorer = SelfAskScaleScorer(chat_target=chat_target, memory=memory)
+    scorer = SelfAskScaleScorer(
+        chat_target=chat_target,
+        memory=memory,
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+    )
 
     score = UnvalidatedScore(
         raw_score_value="1",
@@ -215,7 +234,7 @@ async def test_scale_scorer_score_calls_send_chat():
         prompt_request_response_id=uuid.uuid4(),
     )
 
-    scorer.send_chat_target_async = AsyncMock(return_value=score)
+    scorer._score_value_with_llm = AsyncMock(return_value=score)
 
     await scorer.score_text_async(text="example text", task="task")
-    assert scorer.send_chat_target_async.call_count == int(1)
+    assert scorer._score_value_with_llm.call_count == int(1)

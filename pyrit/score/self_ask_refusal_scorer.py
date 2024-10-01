@@ -52,7 +52,7 @@ class SelfAskRefusalScorer(Scorer):
         else:
             prompt_value = f"response_to_evaluate_input: {request_response.converted_value}"
 
-        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
             prompt_request_value=prompt_value,
