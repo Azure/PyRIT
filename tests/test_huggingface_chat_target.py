@@ -89,7 +89,8 @@ def test_load_model_and_tokenizer():
     assert hf_chat.tokenizer is not None
 
 
-def test_send_prompt_success():
+@pytest.mark.asyncio
+async def test_send_prompt_async():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
 
     request_piece = PromptRequestPiece(
@@ -100,11 +101,8 @@ def test_send_prompt_success():
     )
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
-    # Run the asynchronous method
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    response = loop.run_until_complete(hf_chat.send_prompt_async(prompt_request=prompt_request))
-    loop.close()
+    # Use await to handle the asynchronous call
+    response = await hf_chat.send_prompt_async(prompt_request=prompt_request)  # type: ignore
 
     # Access the response text via request_pieces
     assert response.request_pieces[0].original_value == "Assistant's response"

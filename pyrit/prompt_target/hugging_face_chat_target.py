@@ -34,13 +34,13 @@ class HuggingFaceChatTarget(PromptChatTarget):
     _cache_enabled = False
 
     # Define the environment variable name for the Hugging Face token
-    API_KEY_ENVIRONMENT_VARIABLE = "HUGGINGFACE_TOKEN"
+    HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE = "HUGGINGFACE_TOKEN"
 
     def __init__(
         self,
         *,
         model_id: str,
-        api_key: Optional[str] = None,
+        hf_access_token: Optional[str] = None,
         use_cuda: bool = False,
         tensor_format: str = "pt",
         memory: MemoryInterface = None,
@@ -57,7 +57,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         # Use the `get_required_value` to get the API key (from env or passed value)
         self.huggingface_token = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+            env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, passed_value=hf_access_token
         )
 
         # Determine the device
@@ -239,24 +239,6 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
-
-    def set_system_prompt(
-        self,
-        *,
-        system_prompt: str,
-        conversation_id: str,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
-        labels: Optional[dict[str, str]] = None,
-    ) -> None:
-        """
-        Sets the system prompt for the conversation.
-        """
-        super().set_system_prompt(
-            system_prompt=system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=orchestrator_identifier,
-            labels=labels,
-        )
 
     @classmethod
     def enable_cache(cls):

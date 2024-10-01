@@ -36,57 +36,46 @@
 
 # %%
 import time
-from pyrit.prompt_target import HuggingFaceChatTarget  
+from pyrit.prompt_target import HuggingFaceChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 # models to test
-model_id = "HuggingFaceTB/SmolLM-135M-Instruct" 
+model_id = "HuggingFaceTB/SmolLM-135M-Instruct"
 
 # List of prompts to send
-prompt_list = [
-        "What is 3*3? Give me the solution.",
-        "What is 4*4? Give me the solution."
-    ]
+prompt_list = ["What is 3*3? Give me the solution.", "What is 4*4? Give me the solution."]
 
 # Dictionary to store average response times
 model_times = {}
-  
+
 print(f"Running model: {model_id}")
-        
+
 try:
     # Initialize HuggingFaceChatTarget with the current model
-    target = HuggingFaceChatTarget(
-        model_id=model_id,          
-        use_cuda=False,     
-        tensor_format="pt",
-        max_new_tokens=30           
-    )
-            
+    target = HuggingFaceChatTarget(model_id=model_id, use_cuda=False, tensor_format="pt", max_new_tokens=30)
+
     # Initialize the orchestrator
-    orchestrator = PromptSendingOrchestrator(
-        prompt_target=target,
-        verbose=False
-    )
-            
+    orchestrator = PromptSendingOrchestrator(prompt_target=target, verbose=False)
+
     # Record start time
     start_time = time.time()
-            
+
     # Send prompts asynchronously
-    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list) # type: ignore
-            
+    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+
     # Record end time
     end_time = time.time()
-            
+
     # Calculate total and average response time
     total_time = end_time - start_time
     avg_time = total_time / len(prompt_list)
     model_times[model_id] = avg_time
-            
+
     print(f"Average response time for {model_id}: {avg_time:.2f} seconds\n")
-            
+
     # Print the conversations
-    await orchestrator.print_conversations() # type: ignore
-        
+    await orchestrator.print_conversations()  # type: ignore
+
 except Exception as e:
     print(f"An error occurred with model {model_id}: {e}\n")
     model_times[model_id] = None

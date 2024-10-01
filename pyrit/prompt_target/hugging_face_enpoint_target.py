@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
-import httpx
 
 from pyrit.prompt_target.prompt_target import PromptTarget
 from pyrit.common.prompt_template_generator import PromptTemplateGenerator
+from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 
@@ -74,7 +74,7 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
         headers = {"Authorization": f"Bearer {self.hf_token}"}
-        payload = {
+        payload: dict[str, object] = {
             "inputs": request.converted_value,
             "parameters": {
                 "max_tokens": self.max_tokens,
@@ -85,32 +85,35 @@ class HuggingFaceEndpointTarget(PromptTarget):
 
         logger.info(f"Sending the following prompt to the cloud endpoint: {request.converted_value}")
 
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(self.endpoint, headers=headers, json=payload)
-                response_data = response.json()
+        try:
+            # Use the utility method to make the request
+            response = await make_request_and_raise_if_error_async(
+                endpoint_uri=self.endpoint,
+                method="POST",
+                request_body=payload,
+                headers=headers,
+                post_type="json",
+            )
 
-                if response.status_code != 200:
-                    logger.error(f"Failed to get a response from Hugging Face API: {response_data}")
-                    raise ValueError(f"Error from Hugging Face API: {response_data}")
+            response_data = response.json()
 
-                # Check if the response is a list and handle appropriately
-                if isinstance(response_data, list):
-                    # Access the first element if it's a list and extract 'generated_text' safely
-                    response_message = response_data[0].get("generated_text", "")
-                else:
-                    response_message = response_data.get("generated_text", "")
+            # Check if the response is a list and handle appropriately
+            if isinstance(response_data, list):
+                # Access the first element if it's a list and extract 'generated_text' safely
+                response_message = response_data[0].get("generated_text", "")
+            else:
+                response_message = response_data.get("generated_text", "")
 
-                prompt_response = construct_response_from_request(
-                    request=request,
-                    response_text_pieces=[response_message],
-                    prompt_metadata=str({"model_id": self.model_id}),
-                )
-                return prompt_response
+            prompt_response = construct_response_from_request(
+                request=request,
+                response_text_pieces=[response_message],
+                prompt_metadata=str({"model_id": self.model_id}),
+            )
+            return prompt_response
 
-            except Exception as e:
-                logger.error(f"Error occurred during HTTP request to the Hugging Face endpoint: {e}")
-                raise
+        except Exception as e:
+            logger.error(f"Error occurred during HTTP request to the Hugging Face endpoint: {e}")
+            raise
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
