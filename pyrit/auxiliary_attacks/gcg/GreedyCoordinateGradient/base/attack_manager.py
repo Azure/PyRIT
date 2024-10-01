@@ -27,6 +27,7 @@ from transformers import (
     Phi3ForCausalLM,
 )
 
+
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -103,13 +104,15 @@ def get_nonascii_toks(tokenizer, device="cpu"):
     return torch.tensor(ascii_toks, device=device)
 
 
-def print_gpu_memory():
+def get_gpu_memory():
     command = "nvidia-smi --query-gpu=memory.free --format=csv"
-    memory_free_info = sp.check_output(command.split()).decode('ascii').split('\n')[:-1][1:]
-    memory_free_values = [int(x.split()[0]) for x in memory_free_info]
-    memory_free_string = ", ".join(f"{x}B" for x in memory_free_values)
-    print("Free GPU memory:")
-    print(memory_free_string)
+    memory_free_info = sp.check_output(command.split()).decode("ascii").split("\n")[:-1][1:]
+    memory_free_values = {
+        f"gpu{i+1}_free_memory": int(val.split()[0]) for i, val in enumerate(memory_free_info)
+    }
+    memory_free_string = ", ".join(f"{val} MiB" for val in memory_free_values.values())
+    print(f"Free GPU memory:\n{memory_free_string}")
+    return memory_free_values
 
 
 class AttackPrompt(object):
@@ -746,9 +749,6 @@ class MultiPromptAttack(object):
 
         for i in range(n_steps):
 
-            # Print free GPU memory
-            print_gpu_memory()
-
             if stop_on_success:
                 model_tests_jb, model_tests_mb, _ = self.test(self.workers, self.prompts)
                 if all(all(tests for tests in model_test) for model_test in model_tests_jb):
@@ -894,17 +894,23 @@ class MultiPromptAttack(object):
                 )
             )
 
-        # Log to mlflow
+        # Log metrics to mlflow
         mlflow.log_metric("loss", loss, step=step_num, synchronous=False)
+        memory_values = get_gpu_memory()
+        for gpu, val in memory_values.items():
+            mlflow.log_metric(gpu, val, step=step_num, synchronous=False)
 
         if step_num == n_steps:
             timestamp = time.strftime("%Y%m%d-%H%M%S")
-            mlflow.log_table({
-                "step": [i+1 for i in range(n_steps)],
-                "loss": log["losses"],
-                "control": log["controls"],
-            }, artifact_file=f"gcg_results_{timestamp}.json")
-            mlflow.end_run()  
+            mlflow.log_table(
+                {
+                    "step": [i + 1 for i in range(n_steps)],
+                    "loss": log["losses"],
+                    "control": log["controls"],
+                },
+                artifact_file=f"gcg_results_{timestamp}.json",
+            )
+            mlflow.end_run()
 
 
 class ProgressiveMultiPromptAttack(object):
@@ -1666,7 +1672,6 @@ def get_workers(params, eval=False):
             raw_conv_templates.append(conv_template)
         else:
             raise ValueError("Conversation template not recognized")
-            
 
     conv_templates = []
     for conv in raw_conv_templates:
