@@ -27,7 +27,7 @@
 # %%
 from pyrit.common import default_values
 from pyrit.orchestrator import CrescendoOrchestrator
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget, AzureMLChatTarget
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAITextChatTarget
 
 default_values.load_default_env()
