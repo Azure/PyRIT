@@ -1,7 +1,10 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import time
-import numpy as np
 from typing import Union
 import mlflow
+import numpy as np
 import torch.multiprocessing as mp
 from ml_collections import config_dict
 import pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.gcg.gcg_attack as attack_lib
@@ -10,6 +13,7 @@ from pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.base.attack_manager im
     ProgressiveMultiPromptAttack,
 )
 from pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
+
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:
     def __init__(self):
@@ -96,21 +100,12 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         # Log to mlflow
         mlflow.start_run()
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        mlflow_param_keys = [
-            "model_name", 
-            "transfer", 
-            "n_train_data", 
-            "n_test_data", 
-            "n_steps", 
-            "batch_size"
-        ]
-        mlflow_params = {
-            key: params.to_dict()[key] for key in mlflow_param_keys
-        }
+        mlflow_param_keys = ["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]
+        mlflow_params = {key: params.to_dict()[key] for key in mlflow_param_keys}
         mlflow.log_params(mlflow_params)
 
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
-        
+
         print("Train goals:")
         train_goals_str = "\n".join(train_goals)
         print(train_goals_str)

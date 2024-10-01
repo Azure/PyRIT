@@ -20,7 +20,7 @@ There are 2 setups of suffix optimization:
 
  - "single": Optimizes suffix for one prompt using one model.
 
- - "multiple": Optimize suffix across multiple prompts using one or more models. When using multiple models, specify the <code>num_train_models</code> in the <code>run_trainer</code> function. 
+ - "multiple": Optimize suffix across multiple prompts using one or more models. When using multiple models, specify the <code>num_train_models</code> in the <code>run_trainer</code> function.
 
 ## Function Calls in <code>run.py</code>
 

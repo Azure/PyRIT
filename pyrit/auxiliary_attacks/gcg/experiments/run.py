@@ -1,9 +1,12 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
 import yaml
+import argparse
 from typing import Union, Dict, Any
 from pyrit.common import default_values
 from train import GreedyCoordinateGradientAdversarialSuffixGenerator
-import argparse
 
 
 def _load_yaml_to_dict(config_path: str) -> dict:
@@ -17,12 +20,7 @@ ALL_MODELS = "all_models"
 MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
 
 
-def run_trainer(
-    *,
-    model_name: str,
-    setup: str = "single",
-    **extra_config_parameters
-):
+def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parameters):
     """
     Trains and generates adversarial suffix - single model single prompt
 
@@ -36,7 +34,9 @@ def run_trainer(
     """
 
     if model_name not in MODEL_NAMES:
-        raise ValueError("Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'")
+        raise ValueError(
+            "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"
+        )
 
     default_values.load_default_env()
     hf_token = os.environ.get("HF_TOKEN")
@@ -70,19 +70,24 @@ def run_trainer(
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='Script to run the adversarial suffix trainer')
-    parser.add_argument('--model_name', type=str, help='The name of the model')
-    parser.add_argument('--setup', type=str, default='multiple', help="'single' or 'multiple' prompts. Multiple optimizes jointly over all prompts while single optimizes separate suffixes for each prompt.")
-    parser.add_argument('--n_train_data', type=int, help='Number of training data')
-    parser.add_argument('--n_test_data', type=int, help='Number of test data')
-    parser.add_argument('--n_steps', type=int, default=100, help='Number of steps')
-    parser.add_argument('--batch_size', type=int, default=512, help='Batch size')
-    parser.add_argument('--random_seed', type=int, default=None, help='Random seed')
+    parser = argparse.ArgumentParser(description="Script to run the adversarial suffix trainer")
+    parser.add_argument("--model_name", type=str, help="The name of the model")
+    parser.add_argument(
+        "--setup",
+        type=str,
+        default="multiple",
+        help="'single' or 'multiple' prompts. Multiple optimizes jointly over all prompts while single optimizes separate suffixes for each prompt.",
+    )
+    parser.add_argument("--n_train_data", type=int, help="Number of training data")
+    parser.add_argument("--n_test_data", type=int, help="Number of test data")
+    parser.add_argument("--n_steps", type=int, default=100, help="Number of steps")
+    parser.add_argument("--batch_size", type=int, default=512, help="Batch size")
+    parser.add_argument("--random_seed", type=int, default=None, help="Random seed")
 
     return parser.parse_args()
-    
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     args = parse_arguments()
     run_trainer(
         model_name=args.model_name,
@@ -93,5 +98,5 @@ if __name__ == '__main__':
         n_steps=args.n_steps,
         batch_size=args.batch_size,
         test_steps=1,
-        random_seed=args.random_seed
+        random_seed=args.random_seed,
     )
