@@ -8,6 +8,8 @@ import logging
 import uuid
 import pathlib
 
+import pandas as pd
+
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import (
     InvalidJsonException,
@@ -19,6 +21,7 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult, config, uti
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 config_path = pathlib.Path(__file__).parent / '_default.yaml'
 config = config.load_config(config_path)
@@ -84,30 +87,91 @@ class ClaimConverter(PromptConverter):
             orchestrator_identifier=None,
         )
 
-        prompt = dedent(
-            f"Create {self.number_variations} variation of the seed prompt given by the user between the "
-            "begin and end tags"
-            "=== begin ==="
-            f"{prompt}"
-            "=== end ==="
+        # prompt = dedent(
+        #     f"Create {self.number_variations} variation of the seed prompt given by the user between the "
+        #     "begin and end tags"
+        #     "=== begin ==="
+        #     f"{prompt}"
+        #     "=== end ==="
+        # )
+
+        # request = PromptRequestResponse(
+        #     [
+        #         PromptRequestPiece(
+        #             role="user",
+        #             original_value=prompt,
+        #             converted_value=prompt,
+        #             conversation_id=conversation_id,
+        #             sequence=1,
+        #             prompt_target_identifier=self.converter_target.get_identifier(),
+        #             original_value_data_type=input_type,
+        #             converted_value_data_type=input_type,
+        #             converter_identifiers=[self.get_identifier()],
+        #         )
+        #     ]
+        # )
+
+        produced_claims = prompt_openai.run_pipeline_per_source(
+            instance=prompt, #utterances[0],
+            target_n=20,
+            few_shot_sources=few_shot_sources["utterances_to_claims"],
+            engine=config["openai_engine"],
         )
 
-        request = PromptRequestResponse(
-            [
-                PromptRequestPiece(
-                    role="user",
-                    original_value=prompt,
-                    converted_value=prompt,
-                    conversation_id=conversation_id,
-                    sequence=1,
-                    prompt_target_identifier=self.converter_target.get_identifier(),
-                    original_value_data_type=input_type,
-                    converted_value_data_type=input_type,
-                    converter_identifiers=[self.get_identifier()],
-                )
-            ]
+        # select initial claim
+        initial_claim = produced_claims[0][0]
+
+        # Generate from GPT-3
+        inference_methods = ["pragmatic", "entailment", "paraphrase"]
+        inference_sources = []
+        if "pragmatic" in inference_methods:
+            inference_sources.extend([
+                "internal-claims_to_inferences", "internal-hyponym_inferences",
+                "imppres-implicature", "imppres-presupposition"]
+            )
+        if "entailment" in inference_methods:
+            inference_sources.extend(["entailmentbank"])
+        if "paraphrase" in inference_methods:
+            inference_sources.extend(["glue-mrpc", "glue-stsb"])
+
+        inferences = prompt_openai.run_pipeline_per_source(
+            instance=initial_claim,
+            target_n=20,
+            few_shot_sources={
+                k: few_shot_sources["claims_to_inferences"][k] for k in inference_sources
+                if k in few_shot_sources["claims_to_inferences"]
+            },
+            engine=config["openai_engine"],
         )
-        response_msg = await self.send_variation_prompt_async(request)
+
+        inferences = [i.capitalize().rstrip(".") if i[0].islower() else i.rstrip(".") for i, _ in inferences]
+        inferences = [initial_claim] + inferences
+        inferences = list(dict.fromkeys(inferences)) # maintains order while turning into a set
+
+        inferences_selected = inferences[0]
+        inf_to_gen_cfg = config["interface"]["inferences_to_generations"]
+
+        generations = []
+        num_gen_samples = 20
+
+        result = prompt_openai.run_pipeline_per_source(
+            instance=inferences_selected,
+            few_shot_sources=few_shot_sources["inferences_to_generations"],
+            target_n=num_gen_samples, #//len(inferences_selected),
+            one_output_per_exemplar=False,
+            exemplars_per_prompt=3,
+            engine=config["openai_engine"],
+            # **sampling_kwargs,
+        )
+        generations.extend([(inferences_selected, out) for out, _ in result])
+            # pb_gen.progress((i+1)/len(inferences_selected))
+        generations = [g for g in generations if "->" not in g[0]+g[1]] # infrequent bug
+        generations_df = pd.DataFrame(generations, columns=["claim", "inst"]).drop_duplicates(subset="inst")
+        logger.info(f"TestGenie generated {len(generations_df)} statements.")
+
+        response_msg = generations_df["inst"].iloc[0]
+
+        # response_msg = await self.send_variation_prompt_async(request)
 
         return ConverterResult(output_text=response_msg, output_type="text")
 
@@ -115,12 +179,6 @@ class ClaimConverter(PromptConverter):
     async def send_variation_prompt_async(self, request):
         response = await self.converter_target.send_prompt_async(prompt_request=request)
 
-        produced_claims = prompt_openai.run_pipeline_per_source(
-            instance=utterances[0],
-            target_n=20,
-            few_shot_sources=few_shot_sources["utterances_to_claims"],
-            engine=config["openai_engine"],
-        )
         response_msg = response.request_pieces[0].converted_value
         response_msg = remove_markdown_json(response_msg)
         try:
