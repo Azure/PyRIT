@@ -110,9 +110,7 @@ def get_nonascii_toks(tokenizer, device="cpu"):
 def get_gpu_memory():
     command = "nvidia-smi --query-gpu=memory.free --format=csv"
     memory_free_info = sp.check_output(command.split()).decode("ascii").split("\n")[:-1][1:]
-    memory_free_values = {
-        f"gpu{i+1}_free_memory": int(val.split()[0]) for i, val in enumerate(memory_free_info)
-    }
+    memory_free_values = {f"gpu{i+1}_free_memory": int(val.split()[0]) for i, val in enumerate(memory_free_info)}
     memory_free_string = ", ".join(f"{val} MiB" for val in memory_free_values.values())
     print(f"Free GPU memory:\n{memory_free_string}")
     return memory_free_values
