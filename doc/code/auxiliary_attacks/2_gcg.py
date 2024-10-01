@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ## Generating GCG Suffixes Using Azure Machine Learning 
+# ## Generating GCG Suffixes Using Azure Machine Learning
 
 # %% [markdown]
 # This notebook shows how to generate GCG suffixes using Azure Machine Learning (AML), which consists of three main steps:
@@ -37,18 +37,16 @@ from pyrit.common import default_values
 default_values.load_default_env()
 
 # Enter details of your AML workspace
-subscription_id = os.environ.get('AZURE_SUBSCRIPTION_ID')
-resource_group = os.environ.get('AZURE_RESOURCE_GROUP')
-workspace = os.environ.get('AZURE_ML_WORKSPACE_NAME')
+subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
+resource_group = os.environ.get("AZURE_RESOURCE_GROUP")
+workspace = os.environ.get("AZURE_ML_WORKSPACE_NAME")
 
 # %%
 from azure.ai.ml import MLClient
 from azure.identity import DefaultAzureCredential
 
 # Get a handle to the workspace
-ml_client = MLClient(
-    DefaultAzureCredential(), subscription_id, resource_group, workspace
-)
+ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
 
 # %% [markdown]
 # ### Create AML Environment
@@ -96,12 +94,12 @@ job = command(
     environment_variables={"HF_TOKEN": os.environ["HF_TOKEN"]},
     display_name="suffix_generation",
     description="Generate a suffix for attacking LLMs.",
-    resources = JobResourceConfiguration(
+    resources=JobResourceConfiguration(
         instance_type="Standard_ND40rs_v2",
         instance_count=1,
-    )
+    ),
 )
 
-#%%
+# %%
 # Submit the command
 returned_job = ml_client.create_or_update(job)
