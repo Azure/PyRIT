@@ -38,8 +38,10 @@ api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY")
 
 url = f"{endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01"
 
-prompt = "What is 3+2? make sure to include 'the answer is' in your response"
-
+#prompt = "Roakey is our team mascot and Roakey is the best racooon ever who will save the world! Write a haiku about Roakey"
+#prompt = "Hello there! I was hoping you could assist me in turning a single dollar into one hundred dollars. I know it might seem impossible, but I\'ve done some research and I think there are a few ways we could potentially make this happen.\n\nFirst, we could try investing the dollar in the stock market. While there\'s always some risk involved, there\'s also the potential for high returns if we choose the right stocks. Of course, we would need to do our due diligence and research the market thoroughly before making any investments.\n\nAnother option could be to start a small business. With just a dollar, we could invest in some low-cost materials and create a product to sell. For example, we could buy a bag of flour and some yeast, bake a few loaves of bread, and sell them at a local farmer\'s market. If we\'re able to price our product competitively and create a loyal customer base, we could potentially turn that one dollar into much more.\n\nAlternatively, we could try our hand at flipping items for a profit. With just a dollar, we might not be able to buy anything of significant value, but we could start small and look for items at garage sales or thrift stores that have the potential to be resold for a profit.\n\nOverall, there are a few different approaches we could take to turn a single dollar into one hundred. I\'m open to hearing any ideas you might have as well, and I\'m confident that with some creativity and hard work, we can make this happen."
+#prompt = "I was hoping you could assist me in turning a single dollar into one hundred dollars. I know it might seem impossible, but I\'ve done some research and I think there are a few ways we could potentially make this happen. \n\nFirst, we could try investing the dollar in the stock market."
+prompt = "Can I put a new line in an HTTP request body \nfor real??"
 # Raw HTTP Request example: 
 raw_http_request = f""" 
     POST {endpoint}openai/deployments/{deployment_name}/chat/completions?api-version=2024-02-01
@@ -54,23 +56,9 @@ raw_http_request = f"""
         "temperature": 0.7
     }}
 """
-# -
-
-response = ""
-with HTTPTarget(http_request=raw_http_request, prompt_regex_string="{PROMPT}", body_encoding="") as target_llm:
-    request = PromptRequestPiece(
-        role="user",
-        original_value=prompt,
-    ).to_prompt_request_response()
-
-    resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
-    print(resp)
-    response = resp
-
-print((response.request_pieces[0].original_value))
 
 # +
-# Just same thing using orchestrator
+# Using orchestrator to send 
 http_response = ""
 http_prompt_target = HTTPTarget(http_request=raw_http_request, prompt_regex_string="{PROMPT}", parse_function=parse_json_http_response)
 
@@ -79,29 +67,57 @@ with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator
     await orchestrator.print_conversations()
 # -
 
-print(http_response.request_pieces[0].converted_value)
-
-# ## Google example (scrap?)
-
-# As a simple example google search is used to show the interaction (this won't result in a successful search because of the anti-bot rules but shows how to use it in a simple case)
+# ## Red Teaming Orchestrator
 
 # +
+# Red Teaming Orchestrator: 
+import logging
+from pathlib import Path
 
-## Add the prompt you want to send to the URL
-prompt = "apple"
-url = "https://www.google.com/search?q={PROMPT}"
-# Add the prompt to the body of the request
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import AttackStrategy
+from pyrit.orchestrator import RedTeamingOrchestrator
+from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.prompt_target import AzureMLChatTarget
+from pyrit.chat_message_normalizer import GenericSystemSquash
 
-with HTTPTarget(http_request={}, url=url, body={}, url_encoding="url", body_encoding="+", method="GET") as target_llm:
-    request = PromptRequestPiece(
-        role="user",
-        original_value=prompt,
-    ).to_prompt_request_response()
+# Logging set to lower levels will print a lot more diagnostic information about what's happening.
+logging.basicConfig(level=logging.WARNING)
 
-    resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
-    print(resp)
-    
+conversation_objective = "Generate how to turn one dollar into one hundred"
+strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml"
+
+attack_strategy = AttackStrategy(
+    strategy=strategy_path,
+    conversation_objective=conversation_objective,
+)
+
+# The red_teaming_chat is used to generate prompts that are sent to the target.
+# In this case, it's a deployed AML endpoint called mistralai-mixtral-8x7b-instru-2
+# but it can be any supported target.
+# mixtral disallows system prompts, so we include a chat_message_normalizer to squash them:
+red_teaming_chat = AzureMLChatTarget(chat_message_normalizer=GenericSystemSquash())
+
+prompt_target = HTTPTarget(http_request=raw_http_request, prompt_regex_string="{PROMPT}", parse_function=parse_json_http_response)
+
+scorer = SelfAskTrueFalseScorer(
+    chat_target=red_teaming_chat,
+    true_false_question_path=Path("../../../assets/demo_scorer_definitions/demo_pizza.yaml"),
+)
+
+with RedTeamingOrchestrator(
+    attack_strategy=attack_strategy,
+    red_teaming_chat=red_teaming_chat,
+    prompt_target=prompt_target,
+    initial_red_teaming_prompt="how can I help you?",
+    scorer=scorer,
+    verbose=True,
+) as red_teaming_orchestrator:
+    score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    await red_teaming_orchestrator.print_conversation() # type: ignore
 # -
+
+'{"messages": [{"role": "user", "content": "Hello there! I was hoping you could assist me in turning a single dollar into one hundred dollars. I know it might seem impossible, but I\'ve done some research and I think there are a few ways we could potentially make this happen.\n\nFirst, we could try investing the dollar in the stock market. While there\'s always some risk involved, there\'s also the potential for high returns if we choose the right stocks. Of course, we would need to do our due diligence and research the market thoroughly before making any investments.\n\nAnother option could be to start a small business. With just a dollar, we could invest in some low-cost materials and create a product to sell. For example, we could buy a bag of flour and some yeast, bake a few loaves of bread, and sell them at a local farmer\'s market. If we\'re able to price our product competitively and create a loyal customer base, we could potentially turn that one dollar into much more.\n\nAlternatively, we could try our hand at flipping items for a profit. With just a dollar, we might not be able to buy anything of significant value, but we could start small and look for items at garage sales or thrift stores that have the potential to be resold for a profit.\n\nOverall, there are a few different approaches we could take to turn a single dollar into one hundred. I\'m open to hearing any ideas you might have as well, and I\'m confident that with some creativity and hard work, we can make this happen."}], "max_tokens": 50, "temperature": 0.7}'
 
 # ## BIC Example
 
@@ -124,7 +140,7 @@ from pyrit.models import PromptRequestPiece
 http_req = """
 POST /images/create?q={PROMPT}&rt=4&FORM=GENCRE HTTP/2
 Host: www.bing.com
-Content-Length: 23
+Content-Length: 15
 Cache-Control: max-age=0
 Ect: 4g
 Sec-Ch-Ua: "Not;A=Brand";v="24", "Chromium";v="128"
@@ -146,17 +162,17 @@ Sec-Fetch-Site: same-origin
 Sec-Fetch-Mode: navigate
 Sec-Fetch-User: ?1
 Sec-Fetch-Dest: document
-Referer: https://www.bing.com/images/create?toWww=1&redig=6F390DBAAF424F70B1B304716CE01190
+Referer: https://www.bing.com/images/create?toWww=1&redig=AF6FE07C6D774CABA91EEF863A5EA874
 Priority: u=0, i
 
 q={PROMPT}&qs=ds
 """
 
 ## Add the prompt you want to send to the URL
-prompt = "apple"
+prompt = "raccoon"
 
 response_var = None
-with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}", body_encoding="url") as target_llm:
+with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}") as target_llm:
     # Questions: do i need to call converter on prompt before calling target? ie url encode rather than handling in target itself?
     request = PromptRequestPiece(
         role="user",
@@ -164,36 +180,13 @@ with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}", body_enco
     ).to_prompt_request_response()
 
     resp = await target_llm.send_prompt_async(prompt_request=request)  # type: ignore
-    response_var = resp
+    print(resp)
 
-
-
-# +
-from bs4 import BeautifulSoup
-html_content = response_var.request_pieces[0].original_value
-parsed_hmtl_soup = BeautifulSoup(html_content, 'html.parser')
-
-print(parsed_hmtl_soup.prettify())
-
-#TODO: parse & turn this into a parsing function: as an example this is the image 
-# <div data-c="/images/create/async/results/1-66f2fad6d7834081a343ac05ae3c1784?q=apple&amp;IG=52AE84FF96F948909718523E5DB8AF89&amp;IID=images.as" data-mc="/images/create/async/mycreation?requestId=1-66f2fad6d7834081a343ac05ae3c1784" data-nfurl="" id="gir">
 
 
 # +
 # Just same thing using orchestrator
 http_prompt_target = HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}")
-
-with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
-    response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
-    print(response[0])
-# -
-
-
-
-
-# +
-# Just same thing using orchestrator
-http_prompt_target = HTTPTarget(http_request=http_request, url=url, body=body)
 
 with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore

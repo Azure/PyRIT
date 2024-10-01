@@ -31,7 +31,7 @@ class HTTPTarget(PromptTarget):
         http_request: str = None,
         parse_function: Callable = None, 
         memory: Union[MemoryInterface, None] = None,
-        body_encoding: str = "",
+        body_encoding: str = "", #TODO: get rid of this parameter
         prompt_regex_string: str = "{PROMPT}"
     ) -> None:
 
@@ -54,35 +54,50 @@ class HTTPTarget(PromptTarget):
 
         #Make the actual HTTP request:
 
-        # Add Prompt into URL (if the URL takes it)
-        if self.prompt_regex_string in url:
-            prompt_url_safe = urllib.parse.quote(request.original_value) #does url encoding with %20 for spaces for URLs
-            formatted_url = re_pattern.sub(prompt_url_safe, self.url)
+        # Checks if the body is a json object - this matters when we substitute in the prompt for the placeholder
+        try:
+            json.loads(http_body)
+            http_body_json = True
+        except (ValueError, json.JSONDecodeError):
+            http_body_json = False
+    
+
+        # Add Prompt into URL (if the URL takes it) 
+        if self.prompt_regex_string in url: 
+            prompt_url_safe = urllib.parse.quote(request.original_value) #by default doing URL encoding for prompts that go in URL but this can change
+            formatted_url = re_pattern.sub(prompt_url_safe, url)
             self.url = formatted_url
 
         # Add Prompt into request body (if the body takes it)
-        if self.prompt_regex_string in http_body:
-            if self.body_encoding == "url":
-                encoded_prompt = urllib.parse.urlencode(request.original_value) #does url encoding for query parameters using + for space
+        if self.prompt_regex_string in http_body: 
+            if self.body_encoding == "url": #TODO: push this into the user called portion in notebook to do via converter
+                encoded_prompt = urllib.parse.urlencode(request.original_value)
                 formatted_http_body = re_pattern.sub(encoded_prompt, http_body)
 
             else:
-                formatted_http_body = re_pattern.sub(request.original_value, http_body)
+                if http_body_json: # clean prompt of whitespace control characters to ensure still valid json
+                    cleaned_prompt = re.sub(r'\s','', request.original_value)
+                    formatted_http_body = re_pattern.sub(cleaned_prompt, http_body)
+                else: # doesn't clean prompt, enters it all in
+                    formatted_http_body = re_pattern.sub(request.original_value, http_body)
             
             http_body = formatted_http_body
+
+            response = requests.request(
+                url=url,
+                headers=header_dict,
+                data=http_body, 
+                method=http_method,
+                allow_redirects=True # using Requests so we can leave this flag on, rather than httpx
+            )
+
+        if self.parse_function:
+            parsed_response = self.parse_function(response)
+
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[str(parsed_response)])
         
-        response = requests.request(
-            url=url,
-            headers=header_dict,
-            data=http_body, 
-            method=http_method,
-            allow_redirects=True # using Requests so we can leave this flag on, rather than httpx
-        )
-
-        #parsed_response = self.parse_json_http_response(response)
-        parsed_response = self.parse_function(response)
-
-        response_entry = construct_response_from_request(request=request, response_text_pieces=[str(parsed_response)], response_type="text")
+        else:
+            response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response.content)])
         return response_entry
 
 
@@ -118,11 +133,11 @@ class HTTPTarget(PromptTarget):
         if len(request_parts) > 1:
             # Parse as JSON object if it can be parsed that way
             try: 
-                body = json.loads(request_parts[1])  # Check if valid json
+                body = json.loads(request_parts[1], strict=False)  # Check if valid json
                 body = json.dumps(body)
             except: # if not JSON keep as string
                 body = request_parts[1]
-            if "Content-Legnth" in headers_dict: 
+            if "Content-Length" in headers_dict: 
                 headers_dict["Content-Length"] = str(len(body))
         
         # Capture info from 1st line of raw request
@@ -158,6 +173,7 @@ class HTTPTarget(PromptTarget):
             raise ValueError(
                 f"This target only supports text prompt input. Got: {type(request_pieces[0].original_value_data_type)}"
             )
+        
 
 def parse_json_http_response(response):
     json_response = json.loads(response.content)
@@ -187,3 +203,9 @@ def fetch_key(data:dict, key: str) -> str:
         if data is None:
             return ""
     return data
+
+def parse_html_response(response):
+    url_pattern = "/images/create?q={PROMPT}&amp;id=1-"
+
+
+    return response
