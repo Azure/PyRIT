@@ -15,13 +15,14 @@ from sqlalchemy import create_engine, event, text, MetaData, and_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_models import Base, EmbeddingDataEntry, SeedPromptEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import AzureBlobStorageIO, SeedPrompt, SeedPromptGroup, PromptRequestPiece, PromptTemplate, Score
+from pyrit.models import AzureBlobStorageIO, SeedPrompt, SeedPromptGroup, PromptRequestPiece, SeedPromptTemplate, Score
 
 logger = logging.getLogger(__name__)
 
@@ -375,9 +376,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         self._insert_entries(entries=entries)
     
-    def get_prompt_dataset_names(self) -> list[str]:
+    def get_seed_prompt_dataset_names(self) -> list[str]:
         """
-        Returns a list of all prompt dataset names in the memory storage.
+        Returns a list of all seed prompt dataset names in the memory storage.
         """
         try:
             return self.query_entries(
@@ -389,7 +390,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             return []
     
-    def get_prompts(
+    def get_seed_prompts(
         self,
         *,
         value: Optional[str] = None,
@@ -402,7 +403,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         parameters: Optional[Sequence[str]] = None,
     ) -> list[SeedPrompt]:
         """
-        Retrieves a list of prompts that have the specified dataset name.
+        Retrieves a list of seed prompts that have the specified dataset name.
 
         Args:
             value (str): The value to match by substring. If None, all values are returned.
@@ -423,26 +424,21 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             list[SeedPrompt]: A list of prompts matching the criteria.
         """
         conditions = []
+
+        # Apply filters for non-list fields
         if value:
             conditions.append(SeedPromptEntry.value.contains(value))
         if dataset_name:
             conditions.append(SeedPromptEntry.dataset_name == dataset_name)
-        if harm_categories:
-            for harm_category in harm_categories:
-                conditions.append(SeedPromptEntry.harm_categories.contains(harm_category))
         if added_by:
             conditions.append(SeedPromptEntry.added_by == added_by)
-        if authors:
-            for author in authors:
-                conditions.append(SeedPromptEntry.authors.contains(author))
-        if groups:
-            for group in groups:
-                conditions.append(SeedPromptEntry.groups.contains(group))
         if source:
             conditions.append(SeedPromptEntry.source == source)
-        if parameters:
-            for parameter in parameters:
-                conditions.append(SeedPromptEntry.parameters.contains(parameter))
+        
+        self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
+        self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
+        self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
+        self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
 
         try:
             return self.query_entries(
@@ -452,6 +448,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             return []
+    
+    def _add_list_conditions(self, field: InstrumentedAttribute, values: Optional[list[str]], conditions: list) -> None:
+        if values:
+            for value in values:
+                conditions.append(field.contains(value))
     
     def get_prompt_templates(
         self,
@@ -464,7 +465,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
         parameters: Optional[Sequence[str]] = None,
-    ) -> list[PromptTemplate]:
+    ) -> list[SeedPromptTemplate]:
         if not parameters:
             raise ValueError("Prompt templates must have parameters. Please specify at least one.")
         return [
@@ -480,7 +481,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             )
         ]
     
-    def get_prompt_groups(
+    def get_seed_prompt_groups(
         self,
         *,
         dataset_name: Optional[str] = None,
@@ -492,7 +493,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         # and optionally dataset_name and harm_categories
         raise NotImplementedError("Method not yet implemented.")
 
-    def add_prompt_groups_to_memory(self, *, prompt_groups: list[SeedPromptGroup], added_by: Optional[str]=None) -> None:
+    def add_seed_prompt_groups_to_memory(self, *, prompt_groups: list[SeedPromptGroup], added_by: Optional[str]=None) -> None:
         """
         Inserts a list of prompt groups into the memory storage.
 
@@ -512,7 +513,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             # Determine the prompt group ID.
             # It should either be set uniformly or generated if not set.
             # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set([prompt.prompt_group_id for prompt in prompt_group.prompts])
+            group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
             if len(group_id_set) > 1:
                 raise ValueError(f"Inconsistent 'prompt_group_id' attribute between members of the same prompt group. Found {group_id_set}")
             prompt_group_id = group_id_set.pop() or str(uuid.uuid4())
@@ -521,9 +522,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             all_prompts.extend(prompt_group.prompts)
         self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
     
-    def delete_prompts(self, *, ids: list[str]) -> None:
+    def delete_seed_prompt_entries(self, *, ids: list[str]) -> None:
         """
-        Deletes prompts by id.
+        Deletes seed prompt entries by id.
         """
         # TODO
         raise NotImplementedError("Method not yet implemented.")

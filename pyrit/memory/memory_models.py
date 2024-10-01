@@ -233,22 +233,29 @@ class SeedPromptEntry(Base):
         __tablename__ (str): The name of the database table.
         __table_args__ (dict): Additional arguments for the database table.
         id (Uuid): The unique identifier for the memory entry.
-        value (str): The value of the prompt.
-        data_type (PromptDataType): The data type of the prompt.
-        dataset_name (str): The name of the dataset the prompt belongs to.
-        harm_categories (List[str]): The harm categories associated with the prompt.
-        description (str): The description of the prompt.
-        author (str): The author of the prompt.
-        group (str): The group of the prompt.
-        source (str): The source of the prompt.
-        date_added (DateTime): The date the prompt was added.
-        added_by (str): The user who added the prompt.
-        metadata (dict[str, str]): The metadata associated with the prompt.
+        value (str): The value of the seed prompt.
+        data_type (PromptDataType): The data type of the seed prompt.
+        dataset_name (str): The name of the dataset the seed prompt belongs to.
+        harm_categories (List[str]): The harm categories associated with the seed prompt.
+        description (str): The description of the seed prompt.
+        authors (List[str]): The authors of the seed prompt.
+        groups (List[str]): The groups involved in authoring the seed prompt (if any).
+        source (str): The source of the seed prompt.
+        date_added (DateTime): The date the seed prompt was added.
+        added_by (str): The user who added the seed prompt.
+        prompt_metadata (dict[str, str]): The metadata associated with the seed prompt.
+        parameters (List[str]): The parameters included in the value.
+            Note that seed prompts do not have parameters, only prompt templates do.
+            However, they are stored in the same table.
+        prompt_group_id (uuid.UUID): The ID of a group the seed prompt may optionally belong to.
+            Groups are used to organize prompts for multi-turn conversations or multi-modal prompts.
+        sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
+            are stored, this is used to order the prompts.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
     """    
-    __tablename__ = "Prompts"
+    __tablename__ = "SeedPromptEntries"
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid, nullable=False, primary_key=True)
     value = Column(String, nullable=False)
@@ -285,7 +292,7 @@ class SeedPromptEntry(Base):
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
     
-    def get_prompt(self) -> SeedPrompt:
+    def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
             id=self.id,
             value=self.value,

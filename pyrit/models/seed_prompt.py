@@ -67,10 +67,10 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
 
-    def to_prompt_template(self) -> PromptTemplate:
+    def to_prompt_template(self) -> SeedPromptTemplate:
         if not self.parameters:
-            raise ValueError("SeedPrompt must have parameters to convert to a PromptTemplate.")
-        return PromptTemplate(
+            raise ValueError("SeedPrompt must have parameters to convert to a SeedPromptTemplate.")
+        return SeedPromptTemplate(
             id=self.id,
             value=self.value,
             data_type=self.data_type,
@@ -90,7 +90,7 @@ class SeedPrompt(YamlLoadable):
         )
 
 
-class PromptTemplate(SeedPrompt):
+class SeedPromptTemplate(SeedPrompt):
     parameters: List[str]
 
     def __init__(
@@ -114,7 +114,7 @@ class PromptTemplate(SeedPrompt):
         sequence: Optional[int] = None,
     ):
         if not parameters:
-            raise ValueError("PromptTemplate must have parameters. Please provide at least one.")
+            raise ValueError("SeedPromptTemplate must have parameters. Please provide at least one.")
         super().__init__(
             id=id,
             value=value,
@@ -153,7 +153,7 @@ class SeedPromptGroup(YamlLoadable):
         self.prompts.sort(key=lambda prompt: prompt.sequence)
 
 
-class PromptDataset(YamlLoadable):
+class SeedPromptDataset(YamlLoadable):
     prompts: List[SeedPrompt]
 
     def __init__(self, prompts: List[SeedPrompt]):

@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import MutableSequence, Union, Optional, Sequence
 import logging
 
-from pyrit.models.prompt_dataset import SeedPrompt
 from sqlalchemy import create_engine, MetaData, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
@@ -17,8 +16,7 @@ from pyrit.memory.memory_models import Base, EmbeddingDataEntry, SeedPromptEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.storage_io import DiskStorageIO
+from pyrit.models import DiskStorageIO, PromptRequestPiece, SeedPrompt
 
 logger = logging.getLogger(__name__)
 
