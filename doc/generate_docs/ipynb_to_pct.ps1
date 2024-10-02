@@ -8,7 +8,8 @@ $docDir = Split-Path -Parent -Path $scriptDir
 # Find all .ipynb files excluding the deployment directory
 $files = Get-ChildItem -Path $docDir -Recurse -Include *.ipynb -File |
          Where-Object { -not $_.FullName.ToLower().Contains("\deployment\") } |
-         Where-Object { -not $_.FullName.ToLower().Contains("\generate_docs\") }
+         Where-Object { -not $_.FullName.ToLower().Contains("\generate_docs\") } |
+         Where-Object { $_.Name -ne "2_gcg.ipynb" }
 
 
 foreach ($file in $files) {

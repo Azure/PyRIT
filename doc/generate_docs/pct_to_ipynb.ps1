@@ -27,7 +27,8 @@ if (Test-Path $cacheFile) {
 # Find all .py files excluding the deployment directory
 $files = Get-ChildItem -Path $docDir -Recurse -Include *.py -Exclude *_helpers.py -File |
          Where-Object { -not $_.FullName.ToLower().Contains("\deployment\") } |
-         Where-Object { -not $_.FullName.ToLower().Contains("\generate_docs\") }
+         Where-Object { -not $_.FullName.ToLower().Contains("\generate_docs\") } |
+         Where-Object { $_.Name -ne "2_gcg.py" }
 
 
 foreach ($file in $files) {
