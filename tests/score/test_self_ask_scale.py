@@ -1,22 +1,27 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pathlib import Path
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock
 import uuid
 
 import pytest
-import yaml
 
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.models.score import UnvalidatedScore
-from pyrit.score import ScalePaths
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
-from pyrit.score.self_ask_scale_scorer import Scale, ScaleExample, SelfAskScaleScorer
+from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 
 from tests.mocks import get_memory_interface
+
+
+tree_scale_path = SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value
+task_scale_path = SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value
+general_system_prompt_path = SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value
+red_teamer_system_prompt_path = SelfAskScaleScorer.SystemPaths.RED_TEAMER_SYSTEM_PROMPT.value
 
 
 @pytest.fixture
@@ -42,14 +47,41 @@ def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
 
+@pytest.fixture
+def scale_scorer(memory) -> SelfAskScaleScorer:
+    return SelfAskScaleScorer(
+        memory=memory,
+        chat_target=MagicMock(),
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
+    )
+
+
 @pytest.mark.asyncio
-async def test_scale_scorer_set_system_prompt(scorer_scale_response: PromptRequestResponse):
+@pytest.mark.parametrize(
+    "scale_arguments_path, system_prompt_path",
+    [
+        (None, None),
+        (tree_scale_path, general_system_prompt_path),
+        (task_scale_path, red_teamer_system_prompt_path),
+        (tree_scale_path, red_teamer_system_prompt_path),
+        (task_scale_path, general_system_prompt_path),
+    ],
+)
+async def test_scale_scorer_set_system_prompt(
+    scorer_scale_response: PromptRequestResponse,
+    scale_arguments_path: Path,
+    system_prompt_path: Path,
+):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 
     scorer = SelfAskScaleScorer(
-        chat_target=chat_target, scale_path=ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value, memory=memory
+        chat_target=chat_target,
+        scale_arguments_path=scale_arguments_path,
+        system_prompt_path=system_prompt_path,
+        memory=memory,
     )
 
     await scorer.score_text_async(text="string", task="task")
@@ -57,98 +89,58 @@ async def test_scale_scorer_set_system_prompt(scorer_scale_response: PromptReque
     chat_target.set_system_prompt.assert_called_once()
 
     # assert that the scale score was loaded into system prompt
-    assert str(scorer._scale.category) in scorer._system_prompt
+
+    assert scorer._system_prompt
+    assert str(scorer._minimum_value) in scorer._system_prompt
+    assert str(scorer._maximum_value) in scorer._system_prompt
 
 
 def test_scale_scorer_invalid_scale_file_contents():
     chat_target = MagicMock()
     # When using a YAML with wrong keys the Scale constructor will raise an exception.
-    with pytest.raises(TypeError, match="unexpected keyword argument 'no_category_found'"):
+    with pytest.raises(ValueError, match="Missing key in scale_args:"):
         SelfAskScaleScorer(
             chat_target=chat_target,
-            scale_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+            scale_arguments_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
         )
 
 
 @pytest.mark.parametrize(
-    "field_to_delete",
+    "scale_args",
     [
-        "category",
-        "minimum_value",
-        "maximum_value",
-        "examples",
-        "minimum_description",
-        "maximum_description",
-        "step_description",
+        {
+            "minimum_value": 0,
+            "maximum_value": 1,
+        },
+        {
+            "minimum_value": 0,
+            "category": "category",
+        },
+        {
+            "maximum_value": 1,
+            "category": "category",
+        },
+        {
+            "minimum_value": 0,
+            "maximum_value": 1,
+            "category": None,
+        },
+        {
+            "minimum_value": "Blah",
+            "maximum_value": 1,
+            "category": "test",
+        },
+        {
+            "minimum_value": 2,
+            "maximum_value": 1,
+            "category": "test",
+        },
     ],
 )
-def test_scale_must_have_fields(field_to_delete):
-    scale_path = ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value
-    scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
-    scale_args["examples"] = [
-        ScaleExample(
-            task=example["task"],
-            response=example["response"],
-            rationale=example["rationale"],
-            score_value=example["score_value"],
-        )
-        for example in scale_args["examples"]
-    ]
-    del scale_args[field_to_delete]
-
-    with pytest.raises(TypeError, match=f"required keyword-only argument: '{field_to_delete}'"):
-        Scale(**scale_args)
-
-
-def test_scale_invalid_min_max():
-    scale_path = ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value
-    scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
-    scale_args["examples"] = [
-        ScaleExample(
-            task=example["task"],
-            response=example["response"],
-            rationale=example["rationale"],
-            score_value=example["score_value"],
-        )
-        for example in scale_args["examples"]
-    ]
-    scale_args["minimum_value"] = scale_args["maximum_value"] + 1
-
-    with pytest.raises(ValueError, match="minimum_value must be less than maximum_value"):
-        Scale(**scale_args)
-
-
-def test_scale_no_examples():
-    scale_path = ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value
-    scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
-    scale_args["examples"] = []
-
-    with pytest.raises(ValueError, match="examples must be provided"):
-        Scale(**scale_args)
-
-
-def test_scale_malformed_examples():
-    scale_path = ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value
-    scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
-    scale_args["examples"] = [{"wrong": "entry"}]
-
-    with pytest.raises(ValueError, match="All examples must be of type ScaleExample"):
-        Scale(**scale_args)
-
-
-@pytest.mark.asyncio
-async def test_scale_scorer_adds_to_memory(scorer_scale_response: PromptRequestResponse):
-    memory = MagicMock(MemoryInterface)
-    chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
-
-    scorer = SelfAskScaleScorer(
-        chat_target=chat_target, scale_path=ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value, memory=memory
-    )
-
-    await scorer.score_text_async(text="string", task="task")
-
-    memory.add_scores_to_memory.assert_called_once()
+def test_validate_scale_arguments_missing_args_raises_value_error(scale_args, scale_scorer):
+    with pytest.raises(ValueError):
+        scale_scorer._validate_scale_arguments_set(scale_args)
 
 
 @pytest.mark.asyncio
@@ -159,7 +151,10 @@ async def test_scale_scorer_score(memory: MemoryInterface, scorer_scale_response
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
 
     scorer = SelfAskScaleScorer(
-        chat_target=chat_target, scale_path=ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value, memory=memory
+        chat_target=chat_target,
+        memory=memory,
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
 
     score = await scorer.score_text_async(text="example text", task="task")
@@ -191,24 +186,13 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
-        scale=Scale(
-            category="jailbreak",
-            minimum_value=1,
-            maximum_value=100,
-            minimum_description="minimum_description",
-            maximum_description="maximum_description",
-            step_description="step_description",
-            examples=[
-                ScaleExample(
-                    task="task",
-                    response="response",
-                    rationale="rationale",
-                    score_value=47,
-                )
-            ],
-        ),
         memory=memory,
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
+
+    scorer._minimum_value = 1
+    scorer._maximum_value = 100
 
     score = await scorer.score_text_async(text="example text", task="task")
 
@@ -232,7 +216,10 @@ async def test_scale_scorer_score_calls_send_chat():
     memory = MagicMock(MemoryInterface)
 
     scorer = SelfAskScaleScorer(
-        chat_target=chat_target, scale_path=ScalePaths.TREE_OF_ATTACKS_WITH_PRUNING_SCALE.value, memory=memory
+        chat_target=chat_target,
+        memory=memory,
+        scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+        system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
     )
 
     score = UnvalidatedScore(
@@ -247,7 +234,7 @@ async def test_scale_scorer_score_calls_send_chat():
         prompt_request_response_id=uuid.uuid4(),
     )
 
-    scorer.send_chat_target_async = AsyncMock(return_value=score)
+    scorer._score_value_with_llm = AsyncMock(return_value=score)
 
     await scorer.score_text_async(text="example text", task="task")
-    assert scorer.send_chat_target_async.call_count == int(1)
+    assert scorer._score_value_with_llm.call_count == int(1)
