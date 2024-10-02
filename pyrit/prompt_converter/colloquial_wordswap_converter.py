@@ -58,7 +58,7 @@ class ColloquialWordswapConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         # Tokenize the prompt into words and non-words
-        words = re.findall(r'\w+|\S+', prompt)
+        words = re.findall(r"\w+|\S+", prompt)
         converted_prompt = []
 
         for word in words:
@@ -73,12 +73,12 @@ class ColloquialWordswapConverter(PromptConverter):
             else:
                 # If word not in substitutions, keep it as is
                 converted_prompt.append(word)
-        
+
         # Join all words and punctuation with spaces
         final_prompt = " ".join(converted_prompt)
 
         # Clean up spaces for final prompt
-        final_prompt = re.sub(r'\s([?.!,\'"])', r'\1', final_prompt)
+        final_prompt = re.sub(r'\s([?.!,\'"])', r"\1", final_prompt)
         final_prompt = final_prompt.strip()
 
         return ConverterResult(output_text=final_prompt, output_type="text")
