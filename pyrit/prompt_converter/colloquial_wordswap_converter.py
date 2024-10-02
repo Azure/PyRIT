@@ -3,6 +3,7 @@
 
 import random
 import re
+from typing import Dict, List, Optional
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -11,15 +12,17 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 class ColloquialWordswapConverter(PromptConverter):
     """Converts a string to a Singaporean colloquial version"""
 
-    def __init__(self, deterministic: bool = False, custom_substitutions: dict = None) -> None:
+    def __init__(
+        self, deterministic: bool = False, custom_substitutions: Optional[Dict[str, List[str]]] = None
+    ) -> None:
         """
         Initialize the converter with optional deterministic mode and custom substitutions.
 
         Args:
         deterministic (bool): If True, use the first substitution for each wordswap.
-                              If False, randomly choose a substitution for each wordswap.
-        custom_substitutions (dict, optional): A dictionary of custom substitutions to override
-                                               the defaults.
+                              If False, randomly choose a substitution for each wordswap. Defaults to False.
+        custom_substitutions (Optional[Dict[str, List[str]]], optional): A dictionary of custom substitutions to
+                                                                        override the defaults. Defaults to None.
         """
         default_substitutions = {
             "father": ["papa", "lao bei", "lim pei", "bapa", "appa"],

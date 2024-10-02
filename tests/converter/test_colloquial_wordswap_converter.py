@@ -95,3 +95,31 @@ def test_multiple_words(input_text, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True)
     result = asyncio.run(converter.convert_async(prompt=input_text))
     assert result.output_text == expected_output
+
+
+# Test for awkward spacing
+@pytest.mark.parametrize(
+    "input_text,expected_output",
+    [
+        ("  father  and    mother ", "papa and mama"),
+        ("sister   and   brother", "xjj and bro"),
+    ],
+)
+def test_awkward_spacing(input_text, expected_output):
+    converter = ColloquialWordswapConverter(deterministic=True)
+    result = asyncio.run(converter.convert_async(prompt=input_text))
+    assert result.output_text == expected_output
+
+
+# Test for punctuation handling
+@pytest.mark.parametrize(
+    "input_text,expected_output",
+    [
+        ("father, mother!", "papa, mama!"),
+        ("aunt? uncle!", "makcik? encik!"),
+    ],
+)
+def test_punctuation_handling(input_text, expected_output):
+    converter = ColloquialWordswapConverter(deterministic=True)
+    result = asyncio.run(converter.convert_async(prompt=input_text))
+    assert result.output_text == expected_output
