@@ -1,13 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 import re
 import pytest
 from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
 
 
 # Test for deterministic mode
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "input_text,expected_output",
     [
@@ -16,13 +16,14 @@ from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWords
         ("Hello, my Father!", "Hello, my papa!"),  # Combined substitutions with punctuation
     ],
 )
-def test_colloquial_deterministic(input_text, expected_output):
+async def test_colloquial_deterministic(input_text, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True)
-    result = asyncio.run(converter.convert_async(prompt=input_text))
+    result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
 
 
 # Test for non-deterministic mode
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "input_text",
     [
@@ -31,9 +32,9 @@ def test_colloquial_deterministic(input_text, expected_output):
         "uncle and brother",
     ],
 )
-def test_colloquial_non_deterministic(input_text):
+async def test_colloquial_non_deterministic(input_text):
     converter = ColloquialWordswapConverter(deterministic=False)
-    result = asyncio.run(converter.convert_async(prompt=input_text))
+    result = await converter.convert_async(prompt=input_text)
 
     # Valid substitution mappings in the input texts
     valid_substitutions = {
@@ -57,32 +58,35 @@ def test_colloquial_non_deterministic(input_text):
 
 
 # Test for custom substitutions
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "input_text,custom_substitutions,expected_output",
     [
         ("father", {"father": ["appa", "darth vader"]}, "appa"),  # Custom substitution father -> appa
     ],
 )
-def test_colloquial_custom_substitutions(input_text, custom_substitutions, expected_output):
+async def test_colloquial_custom_substitutions(input_text, custom_substitutions, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True, custom_substitutions=custom_substitutions)
-    result = asyncio.run(converter.convert_async(prompt=input_text))
+    result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
 
 
 # Test for empty custom substitutions
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "input_text,expected_output",
     [
         ("mother and father", "mama and papa"),  # Using default substitutions when custom is empty
     ],
 )
-def test_colloquial_empty_custom_substitutions(input_text, expected_output):
+async def test_colloquial_empty_custom_substitutions(input_text, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True, custom_substitutions={})
-    result = asyncio.run(converter.convert_async(prompt=input_text))
+    result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
 
 
 # Test multiple word prompts
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "input_text,expected_output",
     [
@@ -91,13 +95,14 @@ def test_colloquial_empty_custom_substitutions(input_text, expected_output):
         ("aunt and uncle", "makcik and encik"),
     ],
 )
-def test_multiple_words(input_text, expected_output):
+async def test_multiple_words(input_text, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True)
-    result = asyncio.run(converter.convert_async(prompt=input_text))
+    result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
 
 
 # Test for awkward spacing
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "input_text,expected_output",
     [
@@ -105,13 +110,14 @@ def test_multiple_words(input_text, expected_output):
         ("sister   and   brother", "xjj and bro"),
     ],
 )
-def test_awkward_spacing(input_text, expected_output):
+async def test_awkward_spacing(input_text, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True)
-    result = asyncio.run(converter.convert_async(prompt=input_text))
+    result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
 
 
 # Test for punctuation handling
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "input_text,expected_output",
     [
@@ -119,7 +125,7 @@ def test_awkward_spacing(input_text, expected_output):
         ("aunt? uncle!", "makcik? encik!"),
     ],
 )
-def test_punctuation_handling(input_text, expected_output):
+async def test_punctuation_handling(input_text, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True)
-    result = asyncio.run(converter.convert_async(prompt=input_text))
+    result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
