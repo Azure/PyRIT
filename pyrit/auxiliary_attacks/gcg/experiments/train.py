@@ -22,6 +22,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
 
     def generate_suffix(
         self,
+        *,
         token: str = "",
         tokenizer_paths: list = [],
         model_name: str = "",
