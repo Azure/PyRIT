@@ -32,7 +32,8 @@ class HTTPTarget(PromptTarget):
         parse_function: Callable = None, 
         memory: Union[MemoryInterface, None] = None,
         body_encoding: str = "", #TODO: get rid of this parameter
-        prompt_regex_string: str = "{PROMPT}"
+        prompt_regex_string: str = "{PROMPT}",
+        response_parse_key: str = ""
     ) -> None:
 
         super().__init__(memory=memory)
@@ -40,6 +41,7 @@ class HTTPTarget(PromptTarget):
         self.parse_function = parse_function
         self.body_encoding = body_encoding #TODO: get rid of these
         self.prompt_regex_string = prompt_regex_string
+        self.response_parse_key = response_parse_key
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -92,7 +94,7 @@ class HTTPTarget(PromptTarget):
             )
 
         if self.parse_function:
-            parsed_response = self.parse_function(response)
+            parsed_response = self.parse_function(response=response, key=self.response_parse_key)
 
             response_entry = construct_response_from_request(request=request, response_text_pieces=[str(parsed_response)])
         
@@ -175,9 +177,9 @@ class HTTPTarget(PromptTarget):
             )
         
 
-def parse_json_http_response(response):
+def parse_json_http_response(response, key: str):
     json_response = json.loads(response.content)
-    data_key = fetch_key(data=json_response, key="choices[0].message.content")
+    data_key = fetch_key(data=json_response, key=key) 
     return data_key
 
 
