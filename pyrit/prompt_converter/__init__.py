@@ -23,6 +23,7 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerShortenConverter,
     FuzzerSimilarConverter,
 )
+from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
@@ -39,6 +40,7 @@ from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
 from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
+from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
 
 
@@ -61,6 +63,7 @@ __all__ = [
     "FuzzerRephraseConverter",
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
+    "HumanInTheLoopConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MorseConverter",
@@ -79,5 +82,6 @@ __all__ = [
     "TranslationConverter",
     "UnicodeConfusableConverter",
     "UnicodeSubstitutionConverter",
+    "UrlConverter",
     "VariationConverter",
 ]

@@ -180,7 +180,7 @@ class PromptNormalizer(abc.ABC):
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for request_piece in request.request_pieces:
 
-            converted_prompt_text, converted_prompt_type = await self._get_converterd_value_and_type(
+            converted_prompt_text, converted_prompt_type = await self._get_converted_value_and_type(
                 request_converters=request_piece.request_converters,
                 prompt_value=request_piece.prompt_value,
                 prompt_data_type=request_piece.prompt_data_type,
@@ -206,7 +206,7 @@ class PromptNormalizer(abc.ABC):
 
         return PromptRequestResponse(request_pieces=entries)
 
-    async def _get_converterd_value_and_type(
+    async def _get_converted_value_and_type(
         self,
         request_converters: list[PromptConverter],
         prompt_value: str,
