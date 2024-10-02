@@ -170,10 +170,6 @@ class HTTPTarget(PromptTarget):
 
         if len(request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
-        if request_pieces[0].original_value_data_type != "text":  # TODO: should this be text or http_request?
-            raise ValueError(
-                f"This target only supports text prompt input. Got: {type(request_pieces[0].original_value_data_type)}"
-            )
 
 
 def parse_json_http_response(response, key: str):
