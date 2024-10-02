@@ -6,7 +6,6 @@ import pytest
 from unittest.mock import patch, MagicMock
 from pyrit.prompt_target.hugging_face_chat_target import HuggingFaceChatTarget
 from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
-import asyncio
 
 
 # Fixture to mock download_specific_files_with_aria2 globally for all tests
@@ -108,7 +107,8 @@ async def test_send_prompt_async():
     assert response.request_pieces[0].original_value == "Assistant's response"
 
 
-def test_missing_chat_template_error():
+@pytest.mark.asyncio
+async def test_missing_chat_template_error():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
     hf_chat.tokenizer.chat_template = None
 
@@ -121,10 +121,8 @@ def test_missing_chat_template_error():
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
     with pytest.raises(ValueError) as excinfo:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(hf_chat.send_prompt_async(prompt_request=prompt_request))
-        loop.close()
+        # Use await to handle the asynchronous call
+        await hf_chat.send_prompt_async(prompt_request=prompt_request)
 
     assert "Tokenizer does not have a chat template" in str(excinfo.value)
 
