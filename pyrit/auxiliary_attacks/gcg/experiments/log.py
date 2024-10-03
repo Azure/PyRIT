@@ -6,7 +6,7 @@ import mlflow
 import subprocess as sp
 
 
-def log_params(params, param_keys = ["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]):
+def log_params(params, param_keys=["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]):
     mlflow_params = {key: params.to_dict()[key] for key in param_keys}
     mlflow.log_params(mlflow_params)
 
