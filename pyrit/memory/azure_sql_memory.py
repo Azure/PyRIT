@@ -354,41 +354,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Base.metadata.drop_all(self.engine)
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
-
-    def add_seed_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str]=None) -> None:
-        """
-        Inserts a list of prompts into the memory storage.
-
-        Args:
-            prompts (list[SeedPrompt]): A list of prompts to insert.
-            added_by (str): The user who added the prompts.
-        """
-        entries: list[SeedPromptEntry] = []
-        current_time = datetime.now()
-        for prompt in prompts:
-            if added_by:
-                prompt.added_by = added_by
-            if not prompt.added_by:
-                raise ValueError("The 'added_by' attribute must be set for each prompt. Set it explicitly or pass a value to the 'added_by' parameter.")
-            if prompt.date_added is None:
-                prompt.date_added = current_time
-            entries.append(SeedPromptEntry(entry=prompt))
-
-        self._insert_entries(entries=entries)
-    
-    def get_seed_prompt_dataset_names(self) -> list[str]:
-        """
-        Returns a list of all seed prompt dataset names in the memory storage.
-        """
-        try:
-            return self.query_entries(
-                SeedPromptEntry.dataset_name,
-                conditions=and_(SeedPromptEntry.dataset_name != None, SeedPromptEntry.dataset_name != ""),
-                distinct=True,
-            )  # type: ignore
-        except Exception as e:
-            logger.exception(f"Failed to retrieve dataset names with error {e}")
-            return []
     
     def get_seed_prompts(
         self,
@@ -403,7 +368,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         parameters: Optional[Sequence[str]] = None,
     ) -> list[SeedPrompt]:
         """
-        Retrieves a list of seed prompts that have the specified dataset name.
+        Retrieves a list of seed prompts based on the specified filters.
 
         Args:
             value (str): The value to match by substring. If None, all values are returned.
@@ -453,81 +418,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         if values:
             for value in values:
                 conditions.append(field.contains(value))
-    
-    def get_prompt_templates(
-        self,
-        *,
-        value: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[Sequence[str]] = None,
-        added_by: Optional[str] = None,
-        authors: Optional[Sequence[str]] = None,
-        groups: Optional[Sequence[str]] = None,
-        source: Optional[str] = None,
-        parameters: Optional[Sequence[str]] = None,
-    ) -> list[SeedPromptTemplate]:
-        if not parameters:
-            raise ValueError("Prompt templates must have parameters. Please specify at least one.")
-        return [
-            prompt.to_prompt_template() for prompt in self.get_prompts(
-                value=value,
-                dataset_name=dataset_name,
-                harm_categories=harm_categories,
-                added_by=added_by,
-                authors=authors,
-                groups=groups,
-                source=source,
-                parameters=parameters,
-            )
-        ]
-    
-    def get_seed_prompt_groups(
-        self,
-        *,
-        dataset_name: Optional[str] = None,
-        data_types: Optional[Sequence[Sequence[str]]]
-    ) -> list[SeedPromptGroup]:
-        # TODO for this PR
-        # join prompt tables as many times as the number of data types passed (which also implies the sequence number)
-        # i.e., join on prompt group ID while matching the data type and sequence number
-        # and optionally dataset_name and harm_categories
-        raise NotImplementedError("Method not yet implemented.")
-
-    def add_seed_prompt_groups_to_memory(self, *, prompt_groups: list[SeedPromptGroup], added_by: Optional[str]=None) -> None:
-        """
-        Inserts a list of prompt groups into the memory storage.
-
-        Args:
-            prompt_groups (list[SeedPromptGroup]): A list of prompt groups to insert.
-            added_by (str): The user who added the prompt groups.
-        
-        Raises:
-            ValueError: If a prompt group does not have at least one prompt.
-            ValueError: If prompt group IDs are inconsistent within the same prompt group.
-        """
-        # Validates the prompt group IDs and sets them if possible before leveraging the add_seed_prompts_to_memory method.
-        all_prompts = []
-        for prompt_group in prompt_groups:
-            if not prompt_group.prompts:
-                raise ValueError("Prompt group must have at least one prompt.")
-            # Determine the prompt group ID.
-            # It should either be set uniformly or generated if not set.
-            # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
-            if len(group_id_set) > 1:
-                raise ValueError(f"Inconsistent 'prompt_group_id' attribute between members of the same prompt group. Found {group_id_set}")
-            prompt_group_id = group_id_set.pop() or str(uuid.uuid4())
-            for prompt in prompt_group.prompts:
-                prompt.prompt_group_id = prompt_group_id
-            all_prompts.extend(prompt_group.prompts)
-        self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
-    
-    def delete_seed_prompt_entries(self, *, ids: list[str]) -> None:
-        """
-        Deletes seed prompt entries by id.
-        """
-        # TODO
-        raise NotImplementedError("Method not yet implemented.")
 
     def print_schema(self):
         """Prints the schema of all tables in the Azure SQL database."""
