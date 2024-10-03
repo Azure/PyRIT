@@ -27,7 +27,7 @@ class MaliciousQuestionGeneratorConverter(PromptConverter):
             max_iterations (int): Number of questions to generate.
         """
         super().__init__()
-        self.target = target  # Use the existing prompt target (e.g., Azure OpenAI or OpenAI)
+        self.target = target  
         self.max_iterations = max_iterations
 
     def input_supported(self, input_type) -> bool:
@@ -46,44 +46,61 @@ class MaliciousQuestionGeneratorConverter(PromptConverter):
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
-
-        # Build the prompt to ask the LLM for malicious questions
-        generator_prompt = self._build_prompt(prompt)
-        logger.info(f"Generated Prompt: {generator_prompt}")
         
-        # Prepare request for sending to target using PromptRequestPiece
-        prompt_request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",  # Use the correct string for 'user'
-                    original_value=generator_prompt,  # The original prompt to be processed
-                    converted_value=generator_prompt,  # Initially, the converted value is the same as the original
-                )
-            ]
-        )
-
-        logger.info(f"Prompt Request: {prompt_request}")
-
+        # Build and send the prompt to generate one question
+        prompt_request = await self._prepare_prompt_request(prompt)
+        
         try:
-            # Send the prompt to the LLM via the target
-            response_entry = await self.target.send_prompt_async(prompt_request=prompt_request)
-            logger.info(f"Response Entry: {response_entry}")
-            
-            # Check the structure of the response before accessing it
-            if hasattr(response_entry, 'response_text_pieces'):
-                logger.info(f"Response Text Pieces: {response_entry.response_text_pieces}")
-            
-            # Parse the response (assumed to be a JSON array of questions)
-            questions = self._parse_response(response_entry.request_pieces[0].converted_value)
-            logger.info(f"Parsed Questions: {questions}")
-            
-            output_text = "\n".join(questions)
-            return ConverterResult(output_text=output_text, output_type="text")
+            # Send prompt and handle response
+            questions = await self._get_questions_from_response(prompt_request)
+                
+            # Return the first question if available
+            if questions:
+                return ConverterResult(output_text=questions[0], output_type="text")
+            else:
+                return ConverterResult(output_text="No question generated.", output_type="text")
         
         except Exception as e:
             logger.error(f"Error in MaliciousQuestionGeneratorConverter: {e}")
             return ConverterResult(output_text="Error generating questions", output_type="text")
+        
+    async def _prepare_prompt_request(self, prompt: str) -> PromptRequestResponse:
+        """
+        Prepares the prompt request to be sent to the LLM.
+        """
+        generator_prompt = self._build_prompt(prompt)
+        logger.info(f"Generated Prompt: {generator_prompt}")
 
+        # Prepare request for sending to target using PromptRequestPiece
+        prompt_request = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="user",
+                    original_value=generator_prompt,
+                    converted_value=generator_prompt,
+                )
+            ]
+        )
+        logger.info(f"Prompt Request: {prompt_request}")
+        return prompt_request
+    
+    async def _get_questions_from_response(self, prompt_request: PromptRequestResponse) -> list:
+        """
+        Sends the prompt to the LLM and parses the response into a list of questions.
+        """
+        # Send the prompt to the LLM via the target
+        response_entry = await self.target.send_prompt_async(prompt_request=prompt_request)
+        logger.info(f"Response Entry: {response_entry}")
+
+        # Check if response contains 'response_text_pieces'
+        if hasattr(response_entry, 'response_text_pieces'):
+            logger.info(f"Response Text Pieces: {response_entry.response_text_pieces}")
+
+        # Parse the response and return the questions
+        questions = self._parse_response(response_entry.request_pieces[0].converted_value)
+        logger.info(f"Parsed Questions: {questions}")
+        return questions
+    
     def _build_prompt(self, prompt: str) -> str:
         """Constructs the prompt to be sent to the LLM."""
         return (
@@ -128,6 +145,5 @@ class MaliciousQuestionGeneratorConverter(PromptConverter):
         except (SyntaxError, ValueError) as e:
             logger.error(f"Failed to parse LLM response as Python list: {e}")
             return ["Error parsing response."]
-
 
 
