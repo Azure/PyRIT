@@ -30,9 +30,9 @@ char_swap_converter = CharSwapGenerator(max_iterations=5, word_swap_ratio=0.8)
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
     prompt_target=prompt_target,  # The target to which the prompt will be sent
-    prompt_converters=[char_swap_converter]  # Stack of converters to apply
+    prompt_converters=[char_swap_converter],  # Stack of converters to apply
 ) as orchestrator:
     # Send the prompts asynchronously through the orchestrator
-    await orchestrator.send_prompts_async(prompt_list=prompts) # type: ignore
+    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
     # Print the conversations
-    orchestrator.print_conversations() 
+    orchestrator.print_conversations()
