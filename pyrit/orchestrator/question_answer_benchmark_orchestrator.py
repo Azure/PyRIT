@@ -47,8 +47,10 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
             prompt_converters (list[PromptConverter], optional): The prompt converters to be used.
             memory (MemoryInterface, optional): The memory interface to be used. Defaults to None.
-            memory_labels (dict[str, str], optional): The labels to be associated with the memory.
-                Defaults to ["question-answering-benchmark-orchestrator"].
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             evaluation_prompt (str, optional): The evaluation prompt to be used. Defaults to None.
             verbose (bool, optional): Whether to print verbose output. Defaults to False.
         """
@@ -61,6 +63,11 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
         self._chat_model_under_evaluation = chat_model_under_evaluation
         self._scorer = scorer
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
+        if self._scorer:
+            self._scorer._memory = self._memory
+            if hasattr(self._scorer, "_prompt_target"):
+                self._scorer._prompt_target._memory = self._memory
         self._conversation_id = str(uuid4())
         self._normalizer = PromptNormalizer(memory=self._memory)
 

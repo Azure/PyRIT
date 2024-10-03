@@ -12,7 +12,7 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, Score
 from pyrit.orchestrator import PAIROrchestrator
 from pyrit.orchestrator.pair_orchestrator import PromptRequestPiece
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.score import Scorer
 from tests.mocks import get_memory_interface
 
@@ -29,8 +29,8 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAIChatTarget:
-    return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine() -> AzureOpenAITextChatTarget:
+    return AzureOpenAITextChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
@@ -45,12 +45,14 @@ def scorer_mock(memory_interface: MemoryInterface) -> Scorer:
 def orchestrator(memory_interface: MemoryInterface, scorer_mock: Scorer) -> PAIROrchestrator:
     target = Mock()
     attacker = Mock()
+    labels = {"op_name": "name1"}
     orchestrator = PAIROrchestrator(
         prompt_target=target,
         desired_target_response_prefix="desired response",
         red_teaming_chat=attacker,
         conversation_objective="attacker objective",
         memory=memory_interface,
+        memory_labels=labels,
         scorer=scorer_mock,
         stop_on_first_success=True,
         number_of_conversation_streams=3,
@@ -75,6 +77,7 @@ async def test_init(orchestrator):
     assert orchestrator._scorer is not None
     assert orchestrator._conversation_objective == "attacker objective"
     assert orchestrator._desired_target_response_prefix == "desired response"
+    assert orchestrator._global_memory_labels == {"op_name": "name1"}
 
 
 @pytest.mark.asyncio

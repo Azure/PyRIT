@@ -56,7 +56,10 @@ class PAIROrchestrator(Orchestrator):
 
         Args:
             memory: The memory interface to use. If None, a new memory interface will be created.
-            memory_labels: The labels to use for the memory. If None, a new memory interface will be created.
+            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            These labels can be used to track all prompts sent as part of an operation, score prompts based on
+            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category category.
+            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information. Defaults to False.
             prompt_target: The target model to jailbreak.
             desired_target_response_prefix: An example of a desired response from the target. This is used to compare
@@ -84,7 +87,7 @@ class PAIROrchestrator(Orchestrator):
                 the order they are provided. The default PAIR implementation does not use any converters.
         """
         super().__init__(
-            memory=memory, memory_labels=memory_labels or {}, verbose=verbose, prompt_converters=prompt_converters
+            memory=memory, memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters
         )
 
         self.successful_jailbreaks: list[PromptRequestResponse] = []
@@ -99,6 +102,11 @@ class PAIROrchestrator(Orchestrator):
         self._single_turn_jailbreak_only = single_turn_jailbreak_only
         self._scorer_sensitivity = scorer_sensitivity
         self._scorer = scorer
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
+        if self._scorer:
+            self._scorer._memory = self._memory
+            if hasattr(self._scorer, "_prompt_target"):
+                self._scorer._prompt_target._memory = self._memory
         self._desired_target_response_prefix = desired_target_response_prefix
 
         # Load the prompt templates for the attacker
@@ -145,6 +153,7 @@ class PAIROrchestrator(Orchestrator):
                         request_converters=self._prompt_converters,
                         prompt_value=target_response,
                         prompt_data_type="text",
+                        memory=self._memory,
                     )
                 ]
             ),
@@ -173,7 +182,10 @@ class PAIROrchestrator(Orchestrator):
             normalizer_request=NormalizerRequest(
                 request_pieces=[
                     NormalizerRequestPiece(
-                        request_converters=self._prompt_converters, prompt_value=text, prompt_data_type="text"
+                        request_converters=self._prompt_converters,
+                        prompt_value=text,
+                        prompt_data_type="text",
+                        memory=self._memory,
                     )
                 ]
             ),

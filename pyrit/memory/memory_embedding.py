@@ -2,9 +2,10 @@
 # Licensed under the MIT license.
 
 import os
+from typing import Optional
 from pyrit.embedding import AzureTextEmbedding
-from pyrit.interfaces import EmbeddingSupport
-from pyrit.memory.memory_models import EmbeddingData, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, EmbeddingSupport
+from pyrit.memory.memory_models import EmbeddingDataEntry
 
 
 class MemoryEmbedding:
@@ -15,12 +16,12 @@ class MemoryEmbedding:
         embedding_model (EmbeddingSupport): An instance of a class that supports embedding generation.
     """
 
-    def __init__(self, *, embedding_model: EmbeddingSupport):
+    def __init__(self, *, embedding_model: Optional[EmbeddingSupport]):
         if embedding_model is None:
             raise ValueError("embedding_model must be set.")
         self.embedding_model = embedding_model
 
-    def generate_embedding_memory_data(self, *, prompt_request_piece: PromptRequestPiece) -> EmbeddingData:
+    def generate_embedding_memory_data(self, *, prompt_request_piece: PromptRequestPiece) -> EmbeddingDataEntry:
         """
         Generates metadata for a chat memory entry.
 
@@ -31,7 +32,7 @@ class MemoryEmbedding:
             ConversationMemoryEntryMetadata: The generated metadata.
         """
         if prompt_request_piece.converted_value_data_type == "text":
-            embedding_data = EmbeddingData(
+            embedding_data = EmbeddingDataEntry(
                 embedding=self.embedding_model.generate_text_embedding(text=prompt_request_piece.converted_value)
                 .data[0]
                 .embedding,
@@ -43,7 +44,7 @@ class MemoryEmbedding:
         raise ValueError("Only text data is supported for embedding.")
 
 
-def default_memory_embedding_factory(embedding_model: EmbeddingSupport = None) -> MemoryEmbedding | None:
+def default_memory_embedding_factory(embedding_model: Optional[EmbeddingSupport] = None) -> MemoryEmbedding | None:
     if embedding_model:
         return MemoryEmbedding(embedding_model=embedding_model)
 

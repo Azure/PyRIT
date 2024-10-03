@@ -4,6 +4,13 @@ import os
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
+skipped_urls = [
+    "https://cognitiveservices.azure.com/.default",
+    "https://gandalf.lakera.ai/api/send-message",
+    "https://code.visualstudio.com/Download",  # This will block python requests
+]
+
 # Updated regex pattern to capture URLs from Markdown and HTML
 URL_PATTERN = re.compile(r'\[.*?\]\((.*?)\)|href="([^"]+)"|src="([^"]+)"')
 
@@ -24,9 +31,13 @@ def resolve_relative_url(base_path, url):
 
 
 def check_url(url):
-    if os.path.isfile(url) or os.path.isdir(url):
-        return url, True
-    if url.startswith("mailto:"):
+    if (
+        "http://localhost:" in url
+        or url in skipped_urls
+        or os.path.isfile(url)
+        or os.path.isdir(url)
+        or url.startswith("mailto:")
+    ):
         return url, True
     try:
         response = requests.head(url, allow_redirects=True, timeout=5)

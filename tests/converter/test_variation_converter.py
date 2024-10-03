@@ -1,15 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from tests.mocks import MockPromptTarget
 
 import pytest
-from tests.mocks import MockPromptTarget
+import os
 from unittest.mock import AsyncMock, patch
 
-from pyrit.common.constants import RETRY_MAX_NUM_ATTEMPTS
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestResponse
 from pyrit.prompt_converter import VariationConverter
 
 
@@ -56,4 +56,4 @@ async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
         with pytest.raises(InvalidJsonException):
             await prompt_variation.convert_async(prompt="testing", input_type="text")
 
-        assert mock_create.call_count == RETRY_MAX_NUM_ATTEMPTS
+        assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))

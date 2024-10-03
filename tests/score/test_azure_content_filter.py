@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 from tests.mocks import get_audio_request_piece, get_image_request_piece, get_test_request_piece
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 from azure.ai.contentsafety.models import TextCategory
 

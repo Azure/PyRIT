@@ -24,7 +24,7 @@ class Orchestrator(abc.ABC, Identifier):
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
         memory: Optional[MemoryInterface] = None,
-        memory_labels: dict[str, str] = {},
+        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []
@@ -63,6 +63,7 @@ class Orchestrator(abc.ABC, Identifier):
             prompt_value=prompt_text,
             prompt_data_type=prompt_type,
             metadata=metadata,
+            memory=self._memory,
         )
 
         request = NormalizerRequest([request_piece])

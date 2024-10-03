@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, Literal, Optional, get_args
 import uuid
@@ -44,10 +45,13 @@ class Score:
     # Timestamp of when the score was created
     timestamp: datetime
 
+    # The task based on which the text is scored (the original attacker model's objective).
+    task: str
+
     def __init__(
         self,
         *,
-        id: Optional[uuid.UUID] = None,
+        id: Optional[uuid.UUID | str] = None,
         score_value: str,
         score_value_description: str,
         score_type: ScoreType,
@@ -56,11 +60,13 @@ class Score:
         score_metadata: str,
         scorer_class_identifier: Dict[str, str] = None,
         prompt_request_response_id: str | uuid.UUID,
-        date_time: Optional[datetime] = datetime.now(),
+        timestamp: Optional[datetime] = None,
+        task: Optional[str] = None,
     ):
         self.id = id if id else uuid.uuid4()
+        self.timestamp = timestamp if timestamp else datetime.now()
 
-        self._validate(score_type, score_value)
+        self.validate(score_type, score_value)
 
         self.score_value = score_value
         self.score_value_description = score_value_description
@@ -74,7 +80,7 @@ class Score:
         self.score_metadata = score_metadata
         self.scorer_class_identifier = scorer_class_identifier
         self.prompt_request_response_id = prompt_request_response_id
-        self.date_time = date_time
+        self.task = task
 
     def get_value(self):
         """
@@ -98,12 +104,7 @@ class Score:
 
         raise ValueError(f"Unknown scorer type: {self.score_type}")
 
-    def __str__(self):
-        if self.scorer_class_identifier:
-            return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
-        return f": {self.score_category}: {self.score_value}"
-
-    def _validate(self, scorer_type, score_value):
+    def validate(self, scorer_type, score_value):
         if scorer_type == "true_false" and str(score_value).lower() not in ["true", "false"]:
             raise ValueError(f"True False scorers must have a score value of 'true' or 'false' not {score_value}")
         elif scorer_type == "float_scale":
@@ -113,3 +114,45 @@ class Score:
                     raise ValueError(f"Float scale scorers must have a score value between 0 and 1. Got {score_value}")
             except ValueError:
                 raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}")
+
+    def __str__(self):
+        if self.scorer_class_identifier:
+            return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
+        return f": {self.score_category}: {self.score_value}"
+
+
+@dataclass
+class UnvalidatedScore:
+    """
+    Score is an object that validates all the fields. However, we need a common
+    data class that can be used to store the raw score value before it is normalized and validated.
+    """
+
+    # The raw score value; has no scale. E.g. in likert could be 1-5
+    raw_score_value: str
+
+    score_value_description: str
+    score_type: ScoreType
+    score_category: str
+    score_rationale: str
+    score_metadata: str
+    scorer_class_identifier: Dict[str, str]
+    prompt_request_response_id: uuid.UUID | str
+    task: str
+    id: Optional[uuid.UUID | str] = None
+    timestamp: Optional[datetime] = None
+
+    def to_score(self, *, score_value: str):
+        return Score(
+            id=self.id,
+            score_value=score_value,
+            score_value_description=self.score_value_description,
+            score_type=self.score_type,
+            score_category=self.score_category,
+            score_rationale=self.score_rationale,
+            score_metadata=self.score_metadata,
+            scorer_class_identifier=self.scorer_class_identifier,
+            prompt_request_response_id=self.prompt_request_response_id,
+            timestamp=self.timestamp,
+            task=self.task,
+        )

@@ -4,18 +4,18 @@
 from typing import Optional
 import uuid
 
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 
 
 class FloatScaleThresholdScorer(Scorer):
-    """A scorer that pplies a threshold to a float scale score to make it a true/false score."""
+    """A scorer that applies a threshold to a float scale score to make it a true/false score."""
 
     def __init__(self, *, memory: MemoryInterface, scorer: Scorer, threshold: float) -> None:
         self._scorer = scorer
         self._threshold = threshold
-        self._memory = memory
+        self._memory = memory if memory else DuckDBMemory()
 
         if not scorer.scorer_type == "float_scale":
             raise ValueError("The scorer must be a float scale scorer")
@@ -30,7 +30,7 @@ class FloatScaleThresholdScorer(Scorer):
 
         Args:
             request_response (PromptRequestPiece): The piece to score.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: The scores.
@@ -51,6 +51,8 @@ class FloatScaleThresholdScorer(Scorer):
             )
             score.score_type = self.scorer_type
             score.id = uuid.uuid4()
+            score.scorer_class_identifier = self.get_identifier()
+            score.scorer_class_identifier["sub_identifier"] = self._scorer.get_identifier()
         self._memory.add_scores_to_memory(scores=scores)
         return scores
 

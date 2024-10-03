@@ -3,10 +3,17 @@
 
 import abc
 from abc import abstractmethod
-from typing import Optional
+import json
+from typing import Optional, Sequence
+import uuid
 
-from pyrit.models import PromptRequestPiece
-from pyrit.score import Score, ScoreType
+from pyrit.common.batch_helper import batch_task_async
+from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models.literals import PromptDataType
+from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
+from pyrit.models import ScoreType, Score, UnvalidatedScore
+from pyrit.memory import MemoryInterface
 
 
 class Scorer(abc.ABC):
@@ -15,6 +22,7 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
+    _memory: Optional[MemoryInterface]
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
@@ -24,7 +32,7 @@ class Scorer(abc.ABC):
 
         Args:
             request_response (PromptRequestPiece): The request response to be scored.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -39,7 +47,7 @@ class Scorer(abc.ABC):
 
         Args:
             request_response (PromptRequestPiece): The request response to be validated.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
         """
         raise NotImplementedError("score_async method not implemented")
 
@@ -49,7 +57,7 @@ class Scorer(abc.ABC):
 
         Args:
             text (str): The text to be scored.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -62,13 +70,37 @@ class Scorer(abc.ABC):
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
 
+    async def score_prompts_batch_async(
+        self,
+        *,
+        request_responses: Sequence[PromptRequestPiece],
+        tasks: Optional[Sequence[str]] = None,
+        batch_size: int = 10,
+    ) -> list[Score]:
+        if not tasks:
+            tasks = [None] * len(request_responses)
+        elif len(tasks) != len(request_responses):
+            raise ValueError("The number of tasks must match the number of request_responses.")
+
+        prompt_target = getattr(self, "_prompt_target", None)
+        results = await batch_task_async(
+            task_func=self.score_async,
+            task_arguments=["request_response", "task"],
+            prompt_target=prompt_target,
+            batch_size=batch_size,
+            items_to_batch=[request_responses, tasks],
+        )
+
+        # results is a list[list[Score]] and needs to be flattened
+        return [score for sublist in results for score in sublist]
+
     async def score_image_async(self, image_path: str, *, task: Optional[str] = None) -> list[Score]:
         """
         Scores the given image using the chat target.
 
         Args:
             text (str): The image to be scored.
-            task (str): The task based on which the text should be scored.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -112,4 +144,100 @@ class Scorer(abc.ABC):
         identifier = {}
         identifier["__type__"] = self.__class__.__name__
         identifier["__module__"] = self.__class__.__module__
+        identifier["sub_identifier"] = None
         return identifier
+
+    @pyrit_json_retry
+    async def _score_value_with_llm(
+        self,
+        *,
+        prompt_target: PromptChatTarget,
+        system_prompt: str,
+        prompt_request_value: str,
+        prompt_request_data_type: PromptDataType,
+        scored_prompt_id: str,
+        category: str = None,
+        task: str = None,
+    ) -> UnvalidatedScore:
+        """
+        Sends a request to a target, and takes care of retries.
+
+        The scorer target response should be JSON with value, rationale, and optional metadata and description fields.
+
+        Args:
+            prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
+            system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
+            prompt_request_value (str): The actual value or content to be scored by the LLM.
+            prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
+            scored_prompt_id (str): The ID of the scored prompt.
+            category (str, optional): The category of the score. Can also be parsed from the JSON response if not
+                provided.
+            task (str, optional): A description of the task that is associated with the score, used for contextualizing
+                the result.
+
+        Returns:
+            UnvalidatedScore: The score object containing the response from the target LLM.
+                score_value still needs to be normalized and validated.
+        """
+
+        conversation_id = str(uuid.uuid4())
+
+        prompt_target.set_system_prompt(
+            system_prompt=system_prompt,
+            conversation_id=conversation_id,
+            orchestrator_identifier=None,
+        )
+
+        scorer_llm_request = PromptRequestResponse(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_value=prompt_request_value,
+                    original_value_data_type=prompt_request_data_type,
+                    conversation_id=conversation_id,
+                    prompt_target_identifier=prompt_target.get_identifier(),
+                )
+            ]
+        )
+
+        response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
+
+        try:
+            response_json = response.request_pieces[0].converted_value
+            parsed_response = json.loads(response_json)
+
+            category_response = parsed_response.get("category")
+
+            if category_response and category:
+                raise ValueError("Category is present in the response and an argument")
+
+            category = category_response if category_response else category
+
+            score = UnvalidatedScore(
+                raw_score_value=str(parsed_response["score_value"]),
+                score_value_description=parsed_response.get("description"),
+                score_type=self.scorer_type,
+                score_category=category,
+                score_rationale=parsed_response["rationale"],
+                scorer_class_identifier=self.get_identifier(),
+                score_metadata=parsed_response.get("metadata"),
+                prompt_request_response_id=scored_prompt_id,
+                task=task,
+            )
+
+        except json.JSONDecodeError:
+            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
+
+        except KeyError:
+            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
+
+        try:
+            if self.scorer_type == "float_scale":
+                # raise an exception if it's not parsable as a float
+                float(score.raw_score_value)
+        except ValueError:
+            raise InvalidJsonException(
+                message=f"Invalid JSON response, score_value should be a float not this: {score.raw_score_value}"
+            )
+
+        return score

@@ -10,9 +10,10 @@ from PIL import Image, ImageDraw, ImageFont
 import textwrap
 from io import BytesIO
 
-from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.models.prompt_request_piece import PromptDataType
+from pyrit.models import data_serializer_factory
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.memory import MemoryInterface, DuckDBMemory
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +23,13 @@ class AddTextImageConverter(PromptConverter):
     Adds a string to an image and wraps the text into multiple lines if necessary.
 
     Args:
-        text_to_add (str): text to add to an image. Defaults to empty string.
-        font_name (str, optional): path of font to use. Must be a TrueType font (.ttf). Defaults to "arial.ttf".
-        color (tuple, optional): color to print text in, using RGB values. Defaults to (0, 0, 0).
-        font_size (optional, float): size of font to use. Defaults to 15.
-        x_pos (int, optional): x coordinate to place text in (0 is left most). Defaults to 10.
-        y_pos (int, optional): y coordinate to place text in (0 is upper most). Defaults to 10.
-        output_filename (optional, str): filename to store converted image. If not provided a unique UUID will be used
+        text_to_add (str): Text to add to an image. Defaults to empty string.
+        font_name (str, optional): Path of font to use. Must be a TrueType font (.ttf). Defaults to "arial.ttf".
+        color (tuple, optional): Color to print text in, using RGB values. Defaults to (0, 0, 0).
+        font_size (float, optional): Size of font to use. Defaults to 15.
+        x_pos (int, optional): X coordinate to place text in (0 is left most). Defaults to 10.
+        y_pos (int, optional): Y coordinate to place text in (0 is upper most). Defaults to 10.
+        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     def __init__(
@@ -39,9 +40,9 @@ class AddTextImageConverter(PromptConverter):
         font_size: Optional[int] = 15,
         x_pos: Optional[int] = 10,
         y_pos: Optional[int] = 10,
-        output_filename: Optional[str] = None,
+        memory: Optional[MemoryInterface] = None,
     ):
-        if not text_to_add:
+        if text_to_add.strip() == "":
             raise ValueError("Please provide valid text_to_add value")
         if not font_name.endswith(".ttf"):
             raise ValueError("The specified font must be a TrueType font with a .ttf extension")
@@ -52,7 +53,7 @@ class AddTextImageConverter(PromptConverter):
         self._color = color
         self._x_pos = x_pos
         self._y_pos = y_pos
-        self._output_name = output_filename
+        self._memory = memory or DuckDBMemory()
 
     def _load_font(self):
         """
@@ -121,10 +122,10 @@ class AddTextImageConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        img_serializer = data_serializer_factory(value=prompt, data_type="image_path")
+        img_serializer = data_serializer_factory(value=prompt, data_type="image_path", memory=self._memory)
 
         # Open the image
-        original_img_bytes = img_serializer.read_data()
+        original_img_bytes = await img_serializer.read_data()
         original_img = Image.open(BytesIO(original_img_bytes))
 
         # Add text to the image
@@ -135,8 +136,9 @@ class AddTextImageConverter(PromptConverter):
         image_type = mime_type.split("/")[-1]
         updated_img.save(image_bytes, format=image_type)
         image_str = base64.b64encode(image_bytes.getvalue())
-        img_serializer.save_b64_image(data=image_str, output_filename=self._output_name)
-        return ConverterResult(output_text=img_serializer.value, output_type="image_path")
+        # Save image as generated UUID filename
+        await img_serializer.save_b64_image(data=image_str)
+        return ConverterResult(output_text=str(img_serializer.value), output_type="image_path")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "image_path"

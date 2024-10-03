@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.3.1.dev0"
+version = "0.4.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -35,6 +35,7 @@ classifiers = [
 requires-python = ">=3.10, <3.13"
 dependencies = [
     "aioconsole>=0.7.1",
+    "aiofiles>=24.1.0",
     "appdirs>=1.4.0",
     "art==6.1.0",
     "azure-cognitiveservices-speech>=1.36.0",
@@ -44,6 +45,7 @@ dependencies = [
     "azure-ai-ml==1.13.0",
     "azure-storage-blob>=12.19.0",
     "confusables==1.2.0",
+    "datasets>=3.0.0",
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
     "jsonpickle>=3.0.4",
@@ -54,9 +56,12 @@ dependencies = [
     "onnxruntime>=1.14.1",
     "onnx>=1.16.0",
     "openai>=1.23.2",
+    "pillow>=10.3.0",
     "pydantic>=2.7.1",
     "pyodbc>=5.1.0",
+    "pycountry>=24.6.1",
     "python-dotenv>=1.0.1",
+    "segno>=1.6.1",
     "scikit-learn>=1.4.2",
     "SQLAlchemy==2.0.28",
     "sqlalchemy-stubs==0.4",
@@ -65,7 +70,8 @@ dependencies = [
     "tokenizers>=0.19.1",
     "tqdm>=4.66.2",
     "transformers>=4.40.0",
-    "types-requests>=2.31.0.20240406",
+    "treelib>=1.7.0",
+    "types-requests>=2.31.0.20240406"
 ]
 
 [project.optional-dependencies]
@@ -76,7 +82,6 @@ dev = [
     "jupytext>=1.16.1",
     "mypy>=1.9.0",
     "mock-alchemy>=0.2.6",
-    "pillow>=10.3.0",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",
     "pytest-asyncio>=0.23.5",

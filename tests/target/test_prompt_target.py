@@ -11,7 +11,7 @@ from openai.types.chat.chat_completion import Choice
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.prompt_target import AzureOpenAIChatTarget
+from pyrit.prompt_target import AzureOpenAITextChatTarget
 
 from tests.mocks import get_memory_interface
 from tests.mocks import get_sample_conversations
@@ -46,14 +46,14 @@ def openai_mock_return() -> ChatCompletion:
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAIChatTarget:
-    return AzureOpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine() -> AzureOpenAITextChatTarget:
+    return AzureOpenAITextChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
 def azure_openai_target(memory_interface: MemoryInterface):
 
-    return AzureOpenAIChatTarget(
+    return AzureOpenAITextChatTarget(
         deployment_name="test",
         endpoint="test",
         api_key="test",
@@ -61,7 +61,7 @@ def azure_openai_target(memory_interface: MemoryInterface):
     )
 
 
-def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
+def test_set_system_prompt(azure_openai_target: AzureOpenAITextChatTarget):
     azure_openai_target.set_system_prompt(
         system_prompt="system prompt",
         conversation_id="1",
@@ -77,7 +77,7 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAIChatTarget):
 
 @pytest.mark.asyncio
 async def test_send_prompt_user_no_system(
-    azure_openai_target: AzureOpenAIChatTarget,
+    azure_openai_target: AzureOpenAITextChatTarget,
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):
@@ -100,7 +100,7 @@ async def test_send_prompt_user_no_system(
 
 
 @pytest.mark.asyncio
-async def test_set_system_prompt_adds_memory(azure_openai_target: AzureOpenAIChatTarget):
+async def test_set_system_prompt_adds_memory(azure_openai_target: AzureOpenAITextChatTarget):
     azure_openai_target.set_system_prompt(
         system_prompt="system prompt",
         conversation_id="1",
@@ -115,7 +115,7 @@ async def test_set_system_prompt_adds_memory(azure_openai_target: AzureOpenAICha
 
 @pytest.mark.asyncio
 async def test_send_prompt_with_system_calls_chat_complete(
-    azure_openai_target: AzureOpenAIChatTarget,
+    azure_openai_target: AzureOpenAITextChatTarget,
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):
@@ -137,3 +137,24 @@ async def test_send_prompt_with_system_calls_chat_complete(
         await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
 
         mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_with_delay(
+    azure_openai_target: AzureOpenAITextChatTarget,
+    openai_mock_return: ChatCompletion,
+    sample_entries: list[PromptRequestPiece],
+):
+    azure_openai_target._max_requests_per_minute = 10
+
+    with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock:
+        with patch("asyncio.sleep") as mock_sleep:
+            mock.return_value = openai_mock_return
+
+            request = sample_entries[0]
+            request.converted_value = "hi, I am a victim chatbot, how can I help?"
+
+            await azure_openai_target.send_prompt_async(prompt_request=PromptRequestResponse(request_pieces=[request]))
+
+            mock.assert_called_once()
+            mock_sleep.assert_called_once_with(6)  # 60/max_requests_per_minute

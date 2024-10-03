@@ -1,6 +1,3 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 from typing import Any, Optional
 
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
@@ -17,7 +14,7 @@ from semantic_kernel.functions.kernel_function_decorator import kernel_function
 from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
 from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models import construct_response_from_request
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
