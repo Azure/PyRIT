@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import asyncio
 from unittest.mock import patch
 
 import pytest
@@ -63,9 +62,10 @@ async def test_convert_async(homoglyph_generator):
         assert isinstance(p_prompt, str)
 
 
-def test_input_not_supported(homoglyph_generator):
+@pytest.mark.asyncio
+async def test_input_not_supported(homoglyph_generator):
     with pytest.raises(ValueError):
-        asyncio.run(homoglyph_generator.convert_async(prompt="This is a test.", input_type="image"))
+        await homoglyph_generator.convert_async(prompt="This is a test.", input_type="image")
 
 
 @pytest.mark.asyncio
@@ -99,7 +99,7 @@ async def test_convert_async_empty_prompt(homoglyph_generator):
     assert result.output_text == ""
 
 
-@ pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_convert_async_long_prompt(homoglyph_generator):
     prompt = "This is a long prompt intended to test how the HomoglyphGenerator handles larger inputs. " \
              "It contains multiple sentences, various punctuation marks, and a mix of short and long words."
