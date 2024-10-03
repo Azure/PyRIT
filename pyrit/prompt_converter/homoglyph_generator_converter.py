@@ -2,9 +2,8 @@
 # Licensed under the MIT license.
 
 import logging
+import re
 
-from nltk import word_tokenize
-from nltk.tokenize.treebank import TreebankWordDetokenizer
 import homoglyphs as hg
 
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -63,7 +62,7 @@ class HomoglyphGenerator(PromptConverter):
         """
         result_list = []
         count = 0
-        word_list = word_tokenize(prompt)
+        word_list = re.findall(r'\w+|\S+', prompt)
         word_list_len = len(word_list)
 
         for idx in range(word_list_len):
@@ -77,7 +76,9 @@ class HomoglyphGenerator(PromptConverter):
                         break
                     perturbed_word_list = word_list.copy()
                     perturbed_word_list[idx] = variant
-                    new_prompt = TreebankWordDetokenizer().detokenize(perturbed_word_list)
+                    # Detokenize using join and remove extra spaces before punctuation
+                    new_prompt = " ".join(perturbed_word_list)
+                    new_prompt = re.sub(r'\s([?.!,\'"])', r'\1', new_prompt).strip()
                     result_list.append(new_prompt)
                     count += 1
         return result_list
