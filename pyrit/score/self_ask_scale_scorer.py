@@ -11,7 +11,7 @@ from typing import Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import SCALES_PATH
 
@@ -118,9 +118,9 @@ class SelfAskScaleScorer(Scorer):
         else:
             self._scale = scale
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(SCALES_PATH / "scale_system_prompt.yaml")
+        scoring_instructions_template = SeedPromptTemplate.from_yaml_file(SCALES_PATH / "scale_system_prompt.yaml")
         system_prompt_kwargs = self._scale.to_dict()
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(**system_prompt_kwargs)
+        self._system_prompt = scoring_instructions_template.apply_parameters(**system_prompt_kwargs)
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """

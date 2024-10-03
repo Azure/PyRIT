@@ -15,7 +15,7 @@ from pyrit.exceptions.exception_classes import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPromptTemplate
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -70,8 +70,8 @@ class CrescendoOrchestrator(Orchestrator):
             if system_prompt_path
             else Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1.yaml"
         )
-        self._system_prompt_template = PromptTemplate.from_yaml_file(self._system_prompt_path)
-        self._system_prompt = self._system_prompt_template.apply_custom_metaprompt_parameters(
+        self._system_prompt_template = SeedPromptTemplate.from_yaml_file(self._system_prompt_path)
+        self._system_prompt = self._system_prompt_template.apply_parameters(
             conversation_objective=self._conversation_objective
         )
 

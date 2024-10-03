@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Union
 import uuid
 
+from pyrit.common.apply_parameters_to_template import apply_parameters_to_template
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
 
@@ -113,6 +114,8 @@ class SeedPromptTemplate(SeedPrompt):
         prompt_group_id: Optional[uuid.UUID] = None,
         sequence: Optional[int] = None,
     ):
+        if data_type != PromptDataType.TEXT:
+            raise ValueError("SeedPromptTemplate must have data_type 'text'.")
         if not parameters:
             raise ValueError("SeedPromptTemplate must have parameters. Please provide at least one.")
         super().__init__(
@@ -133,6 +136,13 @@ class SeedPromptTemplate(SeedPrompt):
             prompt_group_id=prompt_group_id,
             sequence=sequence,
         )
+    
+    def apply_parameters(self, **kwargs) -> SeedPrompt:
+        if not self.parameters:
+            raise ValueError("SeedPromptTemplate must have parameters to apply.")
+        if not all(param in kwargs for param in self.parameters):
+            raise ValueError("Not all parameters were provided.")
+        return apply_parameters_to_template(self.value, **kwargs)
 
 
 class SeedPromptGroup(YamlLoadable):

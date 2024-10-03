@@ -1,28 +1,25 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from datetime import datetime
 import logging
 import struct
 
 from contextlib import closing
 from typing import Optional, Sequence
-import uuid
 from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 
-from sqlalchemy import create_engine, event, text, MetaData, and_
+from sqlalchemy import create_engine, event, text, MetaData
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, SeedPromptEntry, PromptMemoryEntry, ScoreEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import AzureBlobStorageIO, SeedPrompt, SeedPromptGroup, PromptRequestPiece, SeedPromptTemplate, Score
+from pyrit.models import AzureBlobStorageIO, PromptRequestPiece, Score
 
 logger = logging.getLogger(__name__)
 
@@ -354,70 +351,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Base.metadata.drop_all(self.engine)
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
-    
-    def get_seed_prompts(
-        self,
-        *,
-        value: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[Sequence[str]] = None,
-        added_by: Optional[str] = None,
-        authors: Optional[Sequence[str]] = None,
-        groups: Optional[Sequence[str]] = None,
-        source: Optional[str] = None,
-        parameters: Optional[Sequence[str]] = None,
-    ) -> list[SeedPrompt]:
-        """
-        Retrieves a list of seed prompts based on the specified filters.
-
-        Args:
-            value (str): The value to match by substring. If None, all values are returned.
-            dataset_name (str): The dataset name to match. If None, all dataset names are considered.
-            harm_categories (list[str]): A list of harm categories to filter by. If None, all harm categories are considered.
-                Specifying multiple harm categories returns only prompts that are marked with all harm categories.
-            added_by (str): The user who added the prompts.
-            authors (list[str]): A list of authors to filter by.
-                Note that this filters by substring, so a query for "Adam Jones" may not return results if the record
-                is "A. Jones", "Jones, Adam", etc. If None, all authors are considered.
-            groups (list[str]): A list of groups to filter by. If None, all groups are considered.
-            source (str): The source to filter by. If None, all sources are considered.
-            parameters (list[str]): A list of parameters to filter by. Specifying parameters effectively returns
-                prompt templates instead of prompts.
-                If None, only prompts without parameters are returned.
-
-        Returns:
-            list[SeedPrompt]: A list of prompts matching the criteria.
-        """
-        conditions = []
-
-        # Apply filters for non-list fields
-        if value:
-            conditions.append(SeedPromptEntry.value.contains(value))
-        if dataset_name:
-            conditions.append(SeedPromptEntry.dataset_name == dataset_name)
-        if added_by:
-            conditions.append(SeedPromptEntry.added_by == added_by)
-        if source:
-            conditions.append(SeedPromptEntry.source == source)
-        
-        self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
-        self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
-        self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
-        self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
-
-        try:
-            return self.query_entries(
-                SeedPromptEntry,
-                conditions=and_(*conditions),
-            )  # type: ignore
-        except Exception as e:
-            logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
-            return []
-    
-    def _add_list_conditions(self, field: InstrumentedAttribute, values: Optional[list[str]], conditions: list) -> None:
-        if values:
-            for value in values:
-                conditions.append(field.contains(value))
 
     def print_schema(self):
         """Prints the schema of all tables in the Azure SQL database."""

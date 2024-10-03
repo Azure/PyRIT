@@ -15,7 +15,7 @@ from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
-from pyrit.models import PromptDataset, PromptTemplate, QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
+from pyrit.models import PromptDataset, SeedPromptTemplate, QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
@@ -594,15 +594,15 @@ def fetch_decoding_trust_stereotypes_examples(
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
     if system_prompt_type == "targeted":
-        system_prompt = PromptTemplate.from_yaml_file(
+        system_prompt = SeedPromptTemplate.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_targeted.yaml"
         )
     elif system_prompt_type == "untargeted":
-        system_prompt = PromptTemplate.from_yaml_file(
+        system_prompt = SeedPromptTemplate.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_untargeted.yaml"
         )
     else:
-        system_prompt = PromptTemplate.from_yaml_file(
+        system_prompt = SeedPromptTemplate.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_benign.yaml"
         )
 
@@ -631,11 +631,11 @@ def fetch_decoding_trust_stereotypes_examples(
             continue
 
         prompt = (
-            system_prompt.apply_custom_metaprompt_parameters(
+            system_prompt.apply_parameters(
                 prompt=example["user_prompt"], target_group=example["target_group"]
             )
             if is_targeted
-            else system_prompt.apply_custom_metaprompt_parameters(prompt=example["user_prompt"])
+            else system_prompt.apply_parameters(prompt=example["user_prompt"])
         )
         prompts.append(prompt)
 

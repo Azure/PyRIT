@@ -12,7 +12,7 @@ from typing import Dict, Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import LIKERT_SCALES_PATH
 
@@ -52,8 +52,8 @@ class SelfAskLikertScorer(Scorer):
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(LIKERT_SCALES_PATH / "likert_system_prompt.yaml")
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
+        scoring_instructions_template = SeedPromptTemplate.from_yaml_file(LIKERT_SCALES_PATH / "likert_system_prompt.yaml")
+        self._system_prompt = scoring_instructions_template.apply_parameters(
             likert_scale=likert_scale, category=self._score_category
         )
 

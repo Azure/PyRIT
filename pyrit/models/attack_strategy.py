@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Union
 
-from pyrit.common.apply_parameters_to_template_to_template import apply_parameters_to_template
+from pyrit.common.apply_parameters_to_template import apply_parameters_to_template
 from pyrit.common.yaml_loadable import YamlLoadable
 
 

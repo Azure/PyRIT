@@ -14,7 +14,7 @@ from pyrit.exceptions.exception_classes import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPromptTemplate
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 
@@ -23,14 +23,14 @@ logger = logging.getLogger(__name__)
 
 
 class VariationConverter(PromptConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPromptTemplate = None):
         self.converter_target = converter_target
 
         # set to default strategy if not provided
         prompt_template = (
             prompt_template
             if prompt_template
-            else PromptTemplate.from_yaml_file(
+            else SeedPromptTemplate.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "variation_converter.yaml"
             )
         )
@@ -38,7 +38,7 @@ class VariationConverter(PromptConverter):
         self.number_variations = 1
 
         self.system_prompt = str(
-            prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(self.number_variations))
+            prompt_template.apply_parameters(number_iterations=str(self.number_variations))
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
