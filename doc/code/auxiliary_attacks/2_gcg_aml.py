@@ -72,7 +72,9 @@ ml_client.environments.create_or_update(env_docker_context)
 # ### Submit Training Job to AML
 
 # %% [markdown]
-# Finally, we configure the command to run the GCG algorithm. The entry file for the algorithm is []`run.py`](../../../pyrit/auxiliary_attacks/gcg/experiments/run.py), which takes several command line arguments, as shown below. We also have to specify the compute `instance_type` to run the algorithm on. In our experience, a GPU instance with at least 32GB of vRAM is required. As shown below, we use Standard_ND40rs_v2.
+# Finally, we configure the command to run the GCG algorithm. The entry file for the algorithm is [`run.py`](../../../pyrit/auxiliary_attacks/gcg/experiments/run.py), which takes several command line arguments, as shown below. We also have to specify the compute `instance_type` to run the algorithm on. In our experience, a GPU instance with at least 32GB of vRAM is required. In the example below, we use Standard_ND40rs_v2.
+#
+# Depending on the compute instance you use, you may encounter "out of memory" errors. In this case, we recommend training on a smaller model or lowering `n_train_data` or `batch_size`.
 
 # %%
 from azure.ai.ml import command
