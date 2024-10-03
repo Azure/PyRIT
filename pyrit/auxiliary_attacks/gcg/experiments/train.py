@@ -13,6 +13,7 @@ from pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.base.attack_manager im
     ProgressiveMultiPromptAttack,
 )
 from pyrit.auxiliary_attacks.gcg.GreedyCoordinateGradient.base.attack_manager import get_goals_and_targets, get_workers
+from pyrit.auxiliary_attacks.gcg.experiments.log import log_gpu_memory, log_params, log_train_goals
 
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:
@@ -98,19 +99,13 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         params.random_seed = random_seed
         print(params)
 
-        # Log to mlflow
+        # Start mlflow logging
         mlflow.start_run()
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
-        mlflow_param_keys = ["model_name", "transfer", "n_train_data", "n_test_data", "n_steps", "batch_size"]
-        mlflow_params = {key: params.to_dict()[key] for key in mlflow_param_keys}
-        mlflow.log_params(mlflow_params)
+        log_gpu_memory(step=0)
+        log_params(params=params)
 
         train_goals, train_targets, test_goals, test_targets = get_goals_and_targets(params)
-
-        print("Train goals:")
-        train_goals_str = "\n".join(train_goals)
-        print(train_goals_str)
-        mlflow.log_text(train_goals_str, f"train_goals_{timestamp}.txt")
+        log_train_goals(train_goals=train_goals)
 
         def process_fn(s):
             return s.replace("Sure, h", "H")

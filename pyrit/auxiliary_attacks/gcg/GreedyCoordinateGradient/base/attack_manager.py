@@ -8,7 +8,6 @@ import random
 import time
 from copy import deepcopy
 from typing import Optional, Any
-import subprocess as sp
 
 import numpy as np
 import pandas as pd
@@ -29,6 +28,8 @@ from transformers import (
     MistralForCausalLM,
     Phi3ForCausalLM,
 )
+
+from pyrit.auxiliary_attacks.gcg.experiments.log import log_gpu_memory, log_loss, log_table_summary
 
 
 class NpEncoder(json.JSONEncoder):
@@ -105,15 +106,6 @@ def get_nonascii_toks(tokenizer, device="cpu"):
         ascii_toks.append(tokenizer.unk_token_id)
 
     return torch.tensor(ascii_toks, device=device)
-
-
-def get_gpu_memory():
-    command = "nvidia-smi --query-gpu=memory.free --format=csv"
-    memory_free_info = sp.check_output(command.split()).decode("ascii").split("\n")[:-1][1:]
-    memory_free_values = {f"gpu{i+1}_free_memory": int(val.split()[0]) for i, val in enumerate(memory_free_info)}
-    memory_free_string = ", ".join(f"{val} MiB" for val in memory_free_values.values())
-    print(f"Free GPU memory:\n{memory_free_string}")
-    return memory_free_values
 
 
 class AttackPrompt(object):
@@ -710,7 +702,7 @@ class MultiPromptAttack(object):
         prev_loss=np.infty,
         stop_on_success=True,
         test_steps=50,
-        log_first=False,
+        log_first=True,
         filter_cand=True,
         verbose=True,
     ):
@@ -895,22 +887,13 @@ class MultiPromptAttack(object):
                 )
             )
 
-        # Log metrics to mlflow
-        mlflow.log_metric("loss", loss, step=step_num, synchronous=False)
-        memory_values = get_gpu_memory()
-        for gpu, val in memory_values.items():
-            mlflow.log_metric(gpu, val, step=step_num, synchronous=False)
+        # Log to mlflow
+        log_loss(step=step_num)
+        log_gpu_memory(step=step_num)
 
+        # Log results table to mlflow
         if step_num == n_steps:
-            timestamp = time.strftime("%Y%m%d-%H%M%S")
-            mlflow.log_table(
-                {
-                    "step": [i + 1 for i in range(n_steps)],
-                    "loss": log["losses"],
-                    "control": log["controls"],
-                },
-                artifact_file=f"gcg_results_{timestamp}.json",
-            )
+            log_table_summary(losses=log["losses"], controls=log["controls"], n_steps=n_steps)
             mlflow.end_run()
 
 
