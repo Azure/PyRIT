@@ -4,7 +4,8 @@
 import logging
 import re
 
-import homoglyphs as hg
+from confusable_homoglyphs.confusables import is_confusable
+
 
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
@@ -26,9 +27,6 @@ class HomoglyphGenerator(PromptConverter):
         """
         super().__init__()
         self.max_iterations = max_iterations
-        self.homoglyphs = hg.Homoglyphs(
-            strategy=hg.STRATEGY_LOAD, ascii_strategy=hg.STRATEGY_REMOVE
-        )
 
     def input_supported(self, input_type) -> bool:
         """
@@ -45,12 +43,16 @@ class HomoglyphGenerator(PromptConverter):
             list: A list of homoglyph variants for the word.
         """
         try:
-            variants = self.homoglyphs.to_ascii(word)
-            # Exclude the original word to avoid duplicates
-            return [variant for variant in variants if variant != word]
+            # Check for confusable homoglyphs in the word
+            confusables = is_confusable(word, greedy=True)
+            if confusables:
+                return [item["homoglyphs"][0]["c"] for item in confusables]
         except UnicodeDecodeError:
-            logger.error(f"Cannot process word '{word}'. Skipping.")
+            logger.error(f"Cannot process word '{word}' due to UnicodeDecodeError. Returning empty list.")
             return []
+
+        # Default return if no homoglyphs are found
+        return []
 
     def _generate_perturbed_prompts(self, prompt: str) -> list:
         """
@@ -62,7 +64,7 @@ class HomoglyphGenerator(PromptConverter):
         """
         result_list = []
         count = 0
-        word_list = re.findall(r'\w+|\S+', prompt)
+        word_list = re.findall(r"\w+|\S+", prompt)
         word_list_len = len(word_list)
 
         for idx in range(word_list_len):
@@ -78,7 +80,7 @@ class HomoglyphGenerator(PromptConverter):
                     perturbed_word_list[idx] = variant
                     # Detokenize using join and remove extra spaces before punctuation
                     new_prompt = " ".join(perturbed_word_list)
-                    new_prompt = re.sub(r'\s([?.!,\'"])', r'\1', new_prompt).strip()
+                    new_prompt = re.sub(r'\s([?.!,\'"])', r"\1", new_prompt).strip()
                     result_list.append(new_prompt)
                     count += 1
         return result_list
