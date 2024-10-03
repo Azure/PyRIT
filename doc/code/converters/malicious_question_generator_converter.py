@@ -31,15 +31,32 @@ prompt_target = AzureOpenAITextChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
 )
 
+prompt_converter_llm = AzureOpenAITextChatTarget(
+    api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
+    endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
+    deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
+)
+
 # Initialize the MaliciousQuestionGeneratorConverter
-malicious_question_converter = MaliciousQuestionGeneratorConverter(target=prompt_target, max_iterations=5)
+malicious_question_converter = MaliciousQuestionGeneratorConverter(target=prompt_converter_llm, max_iterations=3)
 
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
     prompt_target=prompt_target,  # The target to which the prompt will be sent (e.g., Azure OpenAI or OpenAI)
-    prompt_converters=[malicious_question_converter]  # Stack of converters to apply (only using the malicious question converter)
+    prompt_converters=[malicious_question_converter],  # Stack of converters to apply (only using the malicious question converter)
+    verbose=True,
 ) as orchestrator:
-    # Send the prompts asynchronously through the orchestrator
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+    # Loop to generate and send each question one by one
+    for _ in range(malicious_question_converter.max_iterations):
+        # Generate one question using the converter for each iteration
+        converter_result = await malicious_question_converter.convert_async(prompt=prompts[0]) # type: ignore
 
-    orchestrator.print_conversations()  # Print the conversations
+        # Send the generated question to the response target via the orchestrator
+        if converter_result.output_text != "No question generated.":
+            # Send the generated question and get the response from the LLM
+            await orchestrator.send_prompts_async(prompt_list=[converter_result.output_text])  # type: ignore
+        else:
+            break  # Exit the loop if no more questions are generated
+
+    # Print the conversations after all questions are sent
+    await orchestrator.print_conversations() # type: ignore
