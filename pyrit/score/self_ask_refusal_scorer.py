@@ -1,14 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
-
 from pathlib import Path
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestPiece, Score, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, Score, PromptTemplate
 from pyrit.models.score import UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
@@ -47,31 +45,18 @@ class SelfAskRefusalScorer(Scorer):
         """
         self.validate(request_response, task=task)
 
-        conversation_id = str(uuid.uuid4())
+        if task:
+            prompt_value = (
+                f"conversation_objective: {task}\nresponse_to_evaluate_input: {request_response.converted_value}"
+            )
+        else:
+            prompt_value = f"response_to_evaluate_input: {request_response.converted_value}"
 
-        self._prompt_target.set_system_prompt(
-            system_prompt=self._system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
-        )
-
-        request = PromptRequestResponse(
-            [
-                PromptRequestPiece(
-                    role="user",
-                    original_value=request_response.converted_value,
-                    original_value_data_type=request_response.original_value_data_type,
-                    converted_value=request_response.converted_value,
-                    converted_value_data_type=request_response.converted_value_data_type,
-                    conversation_id=conversation_id,
-                    prompt_target_identifier=self._prompt_target.get_identifier(),
-                )
-            ]
-        )
-
-        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
-            scorer_llm_request=request,
+            system_prompt=self._system_prompt,
+            prompt_request_value=prompt_value,
+            prompt_request_data_type=request_response.converted_value_data_type,
             scored_prompt_id=request_response.id,
             category="refusal",
             task=task,
@@ -83,4 +68,5 @@ class SelfAskRefusalScorer(Scorer):
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
-        pass
+        if request_response.converted_value_data_type != "text":
+            raise ValueError("This scorer only supports text data types.")
