@@ -1,7 +1,7 @@
 
 # Azure SQL Database Setup, Authentication and User Permissions
 
-This document provides a comprehensive guide to setting up and managing Azure SQL Database with a focus on using Entra ID authentication. It covers the essential steps for creating an Azure SQL Database, configuring Azure SQL Server security controls such as enabling Entra ID-only authentication and restricting access to selected networks, mapping Entra ID users to specific Azure SQL DB roles like `data_owner`, `data_writer`, and `data_reader`, and verifying if corporate email users exist in the database while granting appropriate permissions to them.
+This document provides a comprehensive guide to setting up and managing Azure SQL Database with a focus on using Entra ID authentication. It covers the essential steps for creating an Azure SQL Database, configuring Azure SQL Server security controls such as enabling Entra ID-only authentication and restricting access to selected networks, mapping Entra ID users to specific Azure SQL DB roles like `db_owner`, `db_writer`, and `db_reader`, and verifying if corporate email users exist in the database while granting appropriate permissions to them.
 
 If the Azure SQL Database is already set up, you can skip directly to Section 3 to manage user DB permissions.
 
@@ -44,13 +44,13 @@ Even when users authenticate via Entra ID, they must be explicitly mapped to spe
 
 ### Key Database Roles:
 
-1. **data_owner**: Provides full control over the Azure SQL Database. Users with this role can create, modify, and delete database objects, manage security, and grant/revoke permissions to other users.
-2. **data_writer**: Allows users to insert, update, and delete data but does not permit modifying the database schema or managing users.
-3. **data_reader**: Grants read-only access to all tables and views in the database.
+1. **db_owner**: Provides full control over the Azure SQL Database. Users with this role can create, modify, and delete database objects, manage security, and grant/revoke permissions to other users.
+2. **db_writer**: Allows users to insert, update, and delete data but does not permit modifying the database schema or managing users.
+3. **db_reader**: Grants read-only access to all tables and views in the database.
 
 ### Mapping Entra ID Users to Database Roles
 
-To grant users access to the database, you must map them to the appropriate role. Developers/maintainers should be assigned the `data_owner` role, while operators can be assigned the `data_writer` role.
+To grant users access to the database, you must map them to the appropriate role. Developers/maintainers should be assigned the `db_owner` role, while operators can be assigned the `db_writer` role.
 
 ### Example: Mapping Entra ID Users
 
@@ -58,15 +58,15 @@ To grant users access to the database, you must map them to the appropriate role
 -- Create a database user for the Entra ID user
 CREATE USER [user@domain.com] FROM EXTERNAL PROVIDER;
 
--- Map the user to the data_writer role
-ALTER ROLE data_writer ADD MEMBER [user@domain.com];
+-- Map the user to the db_writer role
+ALTER ROLE db_writer ADD MEMBER [user@domain.com];
 ```
 
 `user@domain.com` could be corporate email address, such as `abc@microsoft.com`, which is linked to Entra ID.
 
 ## 4. Checking If a Corporate Email Address Exists
 
-To verify if a specific corporate email address (Entra ID user) exists in the database, you can run the following query:
+To verify if a specific corporate email address (Entra ID user) exists in the database, you can run the following query from the Query Editor:
 
 ```sql
 SELECT u.name AS UserName, u.type_desc AS UserType, r.name AS RoleName
@@ -85,14 +85,14 @@ ORDER BY UserName, RoleName;
 
 | UserName           | UserType      | RoleName    |
 |--------------------|---------------|-------------|
-| operator1@microsoft.com    | EXTERNAL_USER | data_writer |
-| dev1@microsoft.com  | EXTERNAL_USER      | data_owner  |
+| operator1@microsoft.com    | EXTERNAL_USER | db_writer |
+| dev1@microsoft.com  | EXTERNAL_USER      | db_owner  |
 
 ## 5. Granting Permissions to a New User
 
-1. Determine whether the user needs the `data_owner` or `data_writer` role. 
-   - **data_owner** is recommended for developers and maintainers.
-   - **data_writer** is recommended for operators interacting with the database.
+1. Determine whether the user needs the `db_owner` or `db_writer` role. 
+   - **db_owner** is recommended for developers and maintainers.
+   - **db_writer** is recommended for operators interacting with the database.
 
 2. Run the following commands from the query editor:
 
@@ -101,7 +101,7 @@ ORDER BY UserName, RoleName;
 CREATE USER [user@domain.com] FROM EXTERNAL PROVIDER;
 
 -- Map the user to the required role
-ALTER ROLE data_writer ADD MEMBER [user@domain.com];
+ALTER ROLE db_writer ADD MEMBER [user@domain.com];
 ```
 
 3. Verify the permissions by running the above **Checking If a Corporate Email Address Exists** query again in the Query Editor.
