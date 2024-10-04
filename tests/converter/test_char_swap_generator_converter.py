@@ -97,7 +97,14 @@ async def test_char_swap_generator_word_swap_ratio_other_than_1():
 async def test_char_swap_generator_random_swapping():
     converter = CharSwapGenerator(max_iterations=1, word_swap_ratio=1.0)
     prompt = "Character swapping test"
-    result1 = await converter.convert_async(prompt=prompt)
-    result2 = await converter.convert_async(prompt=prompt)
-    # With randomness, result1 and result2 may be different
+
+    # Mock random.sample to ensure different outputs
+    with patch("random.sample", side_effect=[
+        [0, 1, 2],  # Indices for the first call
+        [1, 2, 3]   # Indices for the second call
+    ]):
+        result1 = await converter.convert_async(prompt=prompt)
+        result2 = await converter.convert_async(prompt=prompt)
+
+    # With the mocked randomness, result1 and result2 should be different
     assert result1.output_text != result2.output_text
