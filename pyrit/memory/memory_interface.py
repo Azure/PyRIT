@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence
 import uuid
+from collections import defaultdict
 
 from pyrit.common.path import RESULTS_PATH
 from pyrit.models import (
@@ -468,35 +469,27 @@ class MemoryInterface(abc.ABC):
 
         all_prompt_pieces = self.get_all_prompt_pieces()
 
-        grouped_pieces = {}
+        grouped_pieces = defaultdict(list)  # Initialize defaultdict with list
         for piece in all_prompt_pieces:
-            if piece.original_prompt_id not in grouped_pieces:
-                grouped_pieces[piece.original_prompt_id] = []
-            grouped_pieces[piece.original_prompt_id].append(piece)
+            grouped_pieces[piece.original_prompt_id].append(piece.converted_value)  # Only store converted_value
 
         # Get scores for all original prompt IDs
         all_scores = self.get_scores_by_prompt_ids(prompt_request_response_ids=list(grouped_pieces.keys()))
-        scores_dict = {str(score.prompt_request_response_id): score for score in all_scores}
-        combined_data = []
-        for original_prompt_id, pieces in grouped_pieces.items():
-            conversation_data = [piece.to_dict() for piece in pieces]
-            score_data = scores_dict.get(str(original_prompt_id))
-            
-            combined_entry = {
-                "prompt_request_response_id": str(original_prompt_id),
-                "conversation": conversation_data,
-                "score": score_data.to_dict() if score_data else None
+
+        combined_data = [
+            {
+                "prompt_request_response_id": str(score.prompt_request_response_id),
+                "conversation": grouped_pieces[score.prompt_request_response_id],  # Directly access grouped pieces by prompt_id
+                "score_value": score.score_value,  # Simplify to just score value
             }
-            combined_data.append(combined_entry)
+            for score in all_scores
+        ]
 
         # If file_path is not provided, construct a default using RESULTS_PATH
         if not file_path:
             file_name = f"conversations_and_scores.{export_type}"
             file_path = RESULTS_PATH / file_name
 
-        # Export the combined data to a JSON file
-        with open(file_path, 'w') as f:
-            json.dump(combined_data, f, indent=2)
-
+        self.exporter.export_data(combined_data, file_path=file_path, export_type=export_type)
         logger.info(f"Exported conversations and scores to {file_path}")
 

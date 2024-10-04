@@ -28,7 +28,7 @@ class MemoryExporter:
             # Future formats can be added here
         }
 
-    def export_data(self, data: list[Base], *, file_path: Path = None, export_type: str = "json"):  # type: ignore
+    def export_data(self, data: list[dict], *, file_path: Path = None, export_type: str = "json"):  # type: ignore
         """
         Exports the provided data to a file in the specified format.
 
