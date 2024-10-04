@@ -9,7 +9,8 @@ $docDir = Split-Path -Parent -Path $scriptDir
 $files = Get-ChildItem -Path $docDir -Recurse -Include *.ipynb -File |
          Where-Object { -not $_.FullName.ToLower().Contains("\deployment\") } |
          Where-Object { -not $_.FullName.ToLower().Contains("\generate_docs\") } |
-         Where-Object { $_.Name -ne "2_gcg_aml.ipynb" }
+         Where-Object { $_.Name -ne "1_auxiliary_attacks.ipynb" } |
+         Where-Object { $_.Name -ne "2_gcg_azure_ml.ipynb" }
 
 
 foreach ($file in $files) {

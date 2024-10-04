@@ -28,7 +28,8 @@ if (Test-Path $cacheFile) {
 $files = Get-ChildItem -Path $docDir -Recurse -Include *.py -Exclude *_helpers.py -File |
          Where-Object { -not $_.FullName.ToLower().Contains("\deployment\") } |
          Where-Object { -not $_.FullName.ToLower().Contains("\generate_docs\") } |
-         Where-Object { $_.Name -ne "2_gcg_aml.py" }
+         Where-Object { $_.Name -ne "1_auxiliary_attacks.py" } |
+         Where-Object { $_.Name -ne "2_gcg_azure_ml.py" }
 
 
 foreach ($file in $files) {
