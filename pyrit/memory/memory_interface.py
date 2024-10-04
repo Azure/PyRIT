@@ -4,6 +4,7 @@
 import abc
 import copy
 import logging
+import json
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence
 import uuid
@@ -448,3 +449,54 @@ class MemoryInterface(abc.ABC):
             file_path = RESULTS_PATH / file_name
 
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
+
+    def export_conversations_and_scores(self, *, file_path: Path = None, export_type: str = "json"):
+        """
+        Exports all conversations and their associated scores to a specified file.
+
+        Args:
+            file_path (Path): The path to the file where the data will be exported.
+                If not provided, a default path using RESULTS_PATH will be constructed.
+            export_type (str): The format of the export. Defaults to "json".
+
+        Returns:
+            None
+        """
+        if export_type.lower() != "json":
+            raise ValueError("Currently, only JSON export is supported for conversations and scores.")
+
+        all_prompt_pieces = self.get_all_prompt_pieces()
+
+        grouped_pieces = {}
+        for piece in all_prompt_pieces:
+            if piece.original_prompt_id not in grouped_pieces:
+                grouped_pieces[piece.original_prompt_id] = []
+            grouped_pieces[piece.original_prompt_id].append(piece)
+
+        # Get scores for all original prompt IDs
+        all_scores = self.get_scores_by_prompt_ids(prompt_request_response_ids=list(grouped_pieces.keys()))
+        scores_dict = {str(score.prompt_request_response_id): score for score in all_scores}
+        combined_data = []
+        for original_prompt_id, pieces in grouped_pieces.items():
+            conversation_data = [piece.to_dict() for piece in pieces]
+            score_data = scores_dict.get(str(original_prompt_id))
+            
+            combined_entry = {
+                "prompt_request_response_id": str(original_prompt_id),
+                "conversation": conversation_data,
+                "score": score_data.to_dict() if score_data else None
+            }
+            combined_data.append(combined_entry)
+
+        # If file_path is not provided, construct a default using RESULTS_PATH
+        if not file_path:
+            file_name = f"conversations_and_scores.{export_type}"
+            file_path = RESULTS_PATH / file_name
+
+        # Export the combined data to a JSON file
+        with open(file_path, 'w') as f:
+            json.dump(combined_data, f, indent=2)
+
+        logger.info(f"Exported conversations and scores to {file_path}")
+
