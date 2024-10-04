@@ -158,7 +158,6 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: Memo
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
 
 
-
 @pytest.mark.asyncio
 async def test_score_async_filtered_response(memory: MemoryInterface):
     chat_target = MagicMock()

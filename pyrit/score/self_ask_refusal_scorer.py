@@ -84,5 +84,8 @@ class SelfAskRefusalScorer(Scorer):
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> None:
-        if request_response.converted_value_data_type != "text" and request_response.converted_value_data_type != "error":
+        if (
+            request_response.converted_value_data_type != "text"
+            and request_response.converted_value_data_type != "error"
+        ):
             raise ValueError("This scorer only supports text data types.")
