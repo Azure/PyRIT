@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import pytest
+import random
 
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
 
@@ -66,21 +67,15 @@ async def test_char_swap_generator_input_type():
 # Test with zero iterations
 @pytest.mark.asyncio
 async def test_char_swap_generator_zero_iterations():
-    converter = CharSwapGenerator(max_iterations=0)
-    prompt = "This is a test."
-    result = await converter.convert_async(prompt=prompt)
-    output_prompts = result.output_text.strip().split("\n")
-    assert output_prompts == [""]  # Output should be an empty string in a list
+    with pytest.raises(ValueError, match="max_iterations must be greater than 0"):
+        converter = CharSwapGenerator(max_iterations=0)
 
 
 # Test with word_swap_ratio=0
 @pytest.mark.asyncio
 async def test_char_swap_generator_zero_word_swap_ratio():
-    converter = CharSwapGenerator(max_iterations=1, word_swap_ratio=0.0)
-    prompt = "This is a test."
-    result = await converter.convert_async(prompt=prompt)
-    output_prompts = result.output_text.strip().split("\n")
-    assert output_prompts[0] == prompt  # No words should be perturbed
+    with pytest.raises(ValueError, match="word_swap_ratio must be between 0 and 1"):
+        converter = CharSwapGenerator(max_iterations=1, word_swap_ratio=0.0)
 
 
 @pytest.mark.asyncio
@@ -97,14 +92,17 @@ async def test_char_swap_generator_word_swap_ratio_other_than_1():
 async def test_char_swap_generator_random_swapping():
     converter = CharSwapGenerator(max_iterations=1, word_swap_ratio=1.0)
     prompt = "Character swapping test"
-
-    # Mock random.sample to ensure different outputs
+    
+    # Ensure the random indices are within the valid range
+    word_count = len(prompt.split())
+    
     with patch("random.sample", side_effect=[
-        [0, 1, 2],  # Indices for the first call
-        [1, 2, 3]   # Indices for the second call
+        random.sample(range(word_count), min(word_count, 3)),  # First set of random indices
+        random.sample(range(word_count), min(word_count, 3))   # Second set of random indices
     ]):
         result1 = await converter.convert_async(prompt=prompt)
         result2 = await converter.convert_async(prompt=prompt)
 
     # With the mocked randomness, result1 and result2 should be different
     assert result1.output_text != result2.output_text
+
