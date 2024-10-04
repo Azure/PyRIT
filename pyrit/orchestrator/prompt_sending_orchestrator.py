@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from collections import defaultdict
+import uuid
 from colorama import Fore, Style
 import logging
 
@@ -72,6 +73,14 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_target._memory = self._memory
 
         self._batch_size = batch_size
+        self._prepended_conversation: list[PromptRequestResponse] = None
+
+
+    def set_prepended_conversation(self, prepended_conversation: list[PromptRequestResponse]):
+        """
+        Prepends a conversation to the prompt target.
+        """
+        self._prepended_conversation = prepended_conversation
 
     async def send_prompts_async(
         self,
@@ -99,6 +108,8 @@ class PromptSendingOrchestrator(Orchestrator):
         if isinstance(prompt_list, str):
             prompt_list = [prompt_list]
 
+        conversation_id = self._prepare_conversation()
+
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
             requests.append(
@@ -106,7 +117,8 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_text=prompt,
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
-                    metadata=metadata if metadata else None,  # NOTE added
+                    metadata=metadata,
+                    conversation_id=conversation_id,
                 )
             )
 
@@ -115,41 +127,6 @@ class PromptSendingOrchestrator(Orchestrator):
             memory_labels=memory_labels,
         )
 
-    async def send_prompt_async(
-        self,
-        *,
-        prompt: str,
-        prompt_type: PromptDataType = "text",
-        memory_labels: Optional[dict[str, str]] = None,
-        conversation_id: Optional[str] = None,
-    ) -> PromptRequestResponse:
-        """
-        Sends a single prompts to the prompt target. Can be used for multi-turn using conversation_id.
-
-        Args:
-            prompt (list[str]): The prompt to be sent.
-            prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
-            memory_labels (dict[str, str], optional): A free-form dictionary of extra labels to apply to the prompts.
-                These labels will be merged with the instance's global memory labels. Defaults to None.
-            conversation_id (str, optional): The conversation ID to use for multi-turn conversation. Defaults to None.
-
-        Returns:
-            list[PromptRequestResponse]: The responses from sending the prompts.
-        """
-
-        normalizer_request = self._create_normalizer_request(
-            prompt_text=prompt,
-            prompt_type=prompt_type,
-            converters=self._prompt_converters,
-        )
-
-        return await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=normalizer_request,
-            target=self._prompt_target,
-            conversation_id=conversation_id,
-            labels=self._combine_with_global_memory_labels(memory_labels),
-            orchestrator_identifier=self.get_identifier(),
-        )
 
     async def send_normalizer_requests_async(
         self,
@@ -162,6 +139,11 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         for request in prompt_request_list:
             request.validate()
+
+        conversation_id = self._prepare_conversation()
+
+        for prompt in prompt_request_list:
+            prompt.conversation_id = conversation_id
 
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
@@ -232,3 +214,16 @@ class PromptSendingOrchestrator(Orchestrator):
         The passed memory_labels take precedence with collisions.
         """
         return {**(self._global_memory_labels or {}), **(memory_labels or {})}
+
+    def _prepare_conversation(self):
+        """
+        Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
+        """
+        conversation_id = None
+        if self._prepended_conversation:
+            conversation_id = uuid.uuid4()
+            for request in self._prepended_conversation:
+                for piece in request.request_pieces:
+                    piece.conversation_id = conversation_id
+
+                self._memory.add_request_response_to_memory(request=request)
