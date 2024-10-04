@@ -8,6 +8,7 @@ repos:
         exclude: NOTICE.txt
       - id: check-yaml
       - id: check-added-large-files
+        args: ["--maxkb=3072"]  # Set limit to 3072 KB (3 MB) for displaying images in notebooks
       - id: detect-private-key
 
   # https://black.readthedocs.io/en/stable/integrations/source_version_control.html

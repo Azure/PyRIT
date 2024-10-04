@@ -103,6 +103,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
             request_converters=self._prompt_converters,
             prompt_data_type="text",
             prompt_value=self._skeleton_key_prompt,
+            memory=self._memory,
         )
 
         await self._prompt_normalizer.send_prompt_async(
@@ -117,6 +118,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
             request_converters=self._prompt_converters,
             prompt_data_type="text",
             prompt_value=prompt,
+            memory=self._memory,
         )
 
         return await self._prompt_normalizer.send_prompt_async(
@@ -144,11 +146,11 @@ class SkeletonKeyOrchestrator(Orchestrator):
         """
 
         return await batch_task_async(
-            task=self.send_skeleton_key_with_prompt_async,
-            task_argument="prompt",
+            task_func=self.send_skeleton_key_with_prompt_async,
+            task_arguments=["prompt"],
             prompt_target=self._prompt_target,
             batch_size=self._batch_size,
-            items_to_batch=prompt_list,
+            items_to_batch=[prompt_list],
         )
 
     def print_conversation(self) -> None:

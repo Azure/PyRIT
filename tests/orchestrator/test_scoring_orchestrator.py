@@ -50,7 +50,7 @@ async def test_score_prompts_by_orchestrator_only_responses(sample_conversations
 
         mock_score.assert_called_once()
         _, called_kwargs = mock_score.call_args
-        for prompt in called_kwargs["prompts"]:
+        for prompt in called_kwargs["request_responses"]:
             assert prompt.role == "assistant"
 
 
@@ -70,7 +70,7 @@ async def test_score_prompts_by_orchestrator_includes_requests(sample_conversati
 
         mock_score.assert_called_once()
         _, called_kwargs = mock_score.call_args
-        roles = [prompt.role for prompt in called_kwargs["prompts"]]
+        roles = [prompt.role for prompt in called_kwargs["request_responses"]]
         assert "user" in roles
 
 
@@ -91,9 +91,9 @@ async def test_score_prompts_by_memory_labels_only_responses(sample_conversation
 
         mock_score.assert_called_once()
         _, called_kwargs = mock_score.call_args
-        for prompt in called_kwargs["prompts"]:
+        for prompt in called_kwargs["request_responses"]:
             assert prompt.role == "assistant"
-        assert len(called_kwargs["prompts"]) == 2
+        assert len(called_kwargs["request_responses"]) == 2
 
 
 @pytest.mark.asyncio
@@ -112,7 +112,7 @@ async def test_score_prompts_by_memory_labels_includes_requests(sample_conversat
 
         mock_score.assert_called_once()
         _, called_kwargs = mock_score.call_args
-        roles = [prompt.role for prompt in called_kwargs["prompts"]]
+        roles = [prompt.role for prompt in called_kwargs["request_responses"]]
         assert "user" in roles
 
 
@@ -140,3 +140,44 @@ async def test_score_prompts_by_memory_labels_async_raises_error_no_matching_lab
             memory_labels={"op_name": "nonexistent_op", "user_name": "nonexistent_user"},
             responses_only=False,
         )
+
+
+def test_remove_duplicates():
+    prompt_id1 = uuid.uuid4()
+    prompt_id2 = uuid.uuid4()
+    orchestrator = ScoringOrchestrator(memory=MagicMock())
+    pieces = [
+        PromptRequestPiece(
+            id=prompt_id1,
+            role="user",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            sequence=0,
+        ),
+        PromptRequestPiece(
+            id=prompt_id2,
+            role="assistant",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            sequence=1,
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            sequence=0,
+            original_prompt_id=prompt_id1,
+        ),
+        PromptRequestPiece(
+            role="assistant",
+            original_value="original prompt text",
+            converted_value="I'm fine, thank you!",
+            sequence=1,
+            original_prompt_id=prompt_id2,
+        ),
+    ]
+    orig_pieces = orchestrator._remove_duplicates(pieces)
+    assert len(orig_pieces) == 2
+    for piece in orig_pieces:
+        assert piece.id in [prompt_id1, prompt_id2]
+        assert piece.id == piece.original_prompt_id

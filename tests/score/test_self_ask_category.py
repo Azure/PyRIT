@@ -24,8 +24,8 @@ def scorer_category_response_bullying() -> PromptRequestResponse:
     json_response = (
         dedent(
             """
-        {"category_name": "bullying", "category_description": "This is bullying.", "rationale": "The message
-        seems like it contains bullying."}
+        {"category": "bullying", "category_description": "This is bullying.", "rationale": "The message
+        seems like it contains bullying.", "score_value": "True"}
         """
         )
         .strip()
@@ -41,8 +41,8 @@ def scorer_category_response_false() -> PromptRequestResponse:
     json_response = (
         dedent(
             """
-        {"category_name": "no_harm", "category_description": "No harms", "rationale": "The message
-        contains no harms."}
+        {"category": "no_harm", "category_description": "No harms", "rationale": "The message
+        contains no harms.", "score_value": "False"}
         """
         )
         .strip()
@@ -230,7 +230,7 @@ async def test_score_prompts_batch_async(
     with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
         if batch_size != 1 and max_requests_per_minute:
             with pytest.raises(ValueError):
-                await scorer.score_prompts_batch_async(prompts=[prompt], batch_size=batch_size)
+                await scorer.score_prompts_batch_async(request_responses=[prompt], batch_size=batch_size)
         else:
-            results = await scorer.score_prompts_batch_async(prompts=[prompt, prompt2], batch_size=batch_size)
+            results = await scorer.score_prompts_batch_async(request_responses=[prompt, prompt2], batch_size=batch_size)
             assert len(results) == 2

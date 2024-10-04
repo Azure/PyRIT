@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -28,14 +28,12 @@
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
 # %%
-import os
 import logging
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.prompt_target import AzureMLChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget, AzureMLChatTarget, AzureOpenAITextChatTarget
 from pyrit.chat_message_normalizer import GenericSystemSquash
 from pyrit.common import default_values
 from pyrit.models import AttackStrategy
@@ -60,12 +58,14 @@ attack_strategy = AttackStrategy(
 # mixtral disallows system prompts, so we include a chat_message_normalizer to squash them:
 red_teaming_chat = AzureMLChatTarget(chat_message_normalizer=GenericSystemSquash())
 
-prompt_target = AzureOpenAIGPT4OChatTarget()
-
 scorer = SelfAskTrueFalseScorer(
-    chat_target=red_teaming_chat,
+    chat_target=AzureOpenAIGPT4OChatTarget(),
     true_false_question_path=Path("../../../assets/demo_scorer_definitions/key_logger_classifier.yaml"),
 )
+
+# GPT 3.5 target, this is what we're testing the security of
+prompt_target = AzureOpenAITextChatTarget(deployment_name="defense-gpt35")
+
 
 with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
@@ -76,7 +76,7 @@ with RedTeamingOrchestrator(
     verbose=True,
 ) as red_teaming_orchestrator:
     score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
-    red_teaming_orchestrator.print_conversation()
+    await red_teaming_orchestrator.print_conversation()  # type: ignore
 
 # %% [markdown]
 # ### Image Target Example
@@ -138,4 +138,4 @@ with RedTeamingOrchestrator(
     verbose=True,
 ) as orchestrator:
     score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
-    orchestrator.print_conversation()
+    await orchestrator.print_conversation()  # type: ignore

@@ -11,7 +11,7 @@ from treelib import Tree
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common.path import DATASETS_PATH, SCALES_PATH
+from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptTemplate
@@ -112,10 +112,10 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                 memory=self._memory,
             )
 
-        scorer_scale_path = Path(SCALES_PATH / "tree_of_attacks_with_pruning_jailbreak.yaml")
         self._scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
-            scale_path=scorer_scale_path,
+            scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
             memory=self._memory,
         )
 
@@ -150,9 +150,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
             prompt_text = self._initial_red_teaming_prompt
 
         red_teaming_prompt_obj = NormalizerRequestPiece(
-            request_converters=[],
-            prompt_value=prompt_text,
-            prompt_data_type="text",
+            request_converters=[], prompt_value=prompt_text, prompt_data_type="text", memory=self._memory
         )
 
         red_teaming_response = (
@@ -207,6 +205,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
             request_converters=self._prompt_converters,
             prompt_value=prompt,
             prompt_data_type="text",
+            memory=self._memory,
         )
         response = (
             await self._prompt_normalizer.send_prompt_async(

@@ -115,9 +115,9 @@ class PromptNormalizer(abc.ABC):
         return await batch_task_async(
             prompt_target=target,
             batch_size=batch_size,
-            items_to_batch=requests,
-            task=self.send_prompt_async,
-            task_argument="normalizer_request",
+            items_to_batch=[requests],
+            task_func=self.send_prompt_async,
+            task_arguments=["normalizer_request"],
             target=target,
             labels=labels,
             orchestrator_identifier=orchestrator_identifier,
@@ -180,33 +180,33 @@ class PromptNormalizer(abc.ABC):
         conversation_id = conversation_id if conversation_id else str(uuid4())
         for request_piece in request.request_pieces:
 
-            converted_prompt_text, converted_prompt_type = await self._get_converterd_value_and_type(
+            converted_prompt_text, converted_prompt_type = await self._get_converted_value_and_type(
                 request_converters=request_piece.request_converters,
                 prompt_value=request_piece.prompt_value,
                 prompt_data_type=request_piece.prompt_data_type,
             )
 
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
-            entries.append(
-                PromptRequestPiece(
-                    role="user",
-                    original_value=request_piece.prompt_value,
-                    converted_value=converted_prompt_text,
-                    conversation_id=conversation_id,
-                    sequence=sequence,
-                    labels=labels,
-                    prompt_metadata=request_piece.metadata,
-                    converter_identifiers=converter_identifiers,
-                    prompt_target_identifier=target.get_identifier(),
-                    orchestrator_identifier=orchestrator_identifier,
-                    original_value_data_type=request_piece.prompt_data_type,
-                    converted_value_data_type=converted_prompt_type,
-                )
+            prompt_request_piece = PromptRequestPiece(
+                role="user",
+                original_value=request_piece.prompt_value,
+                converted_value=converted_prompt_text,
+                conversation_id=conversation_id,
+                sequence=sequence,
+                labels=labels,
+                prompt_metadata=request_piece.metadata,
+                converter_identifiers=converter_identifiers,
+                prompt_target_identifier=target.get_identifier(),
+                orchestrator_identifier=orchestrator_identifier,
+                original_value_data_type=request_piece.prompt_data_type,
+                converted_value_data_type=converted_prompt_type,
             )
+            await prompt_request_piece.compute_sha256(memory=self._memory)
+            entries.append(prompt_request_piece)
 
         return PromptRequestResponse(request_pieces=entries)
 
-    async def _get_converterd_value_and_type(
+    async def _get_converted_value_and_type(
         self,
         request_converters: list[PromptConverter],
         prompt_value: str,

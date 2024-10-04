@@ -35,6 +35,7 @@ classifiers = [
 requires-python = ">=3.10, <3.13"
 dependencies = [
     "aioconsole>=0.7.1",
+    "aiofiles>=24.1.0",
     "appdirs>=1.4.0",
     "art==6.1.0",
     "azure-cognitiveservices-speech>=1.36.0",
@@ -44,6 +45,7 @@ dependencies = [
     "azure-ai-ml==1.13.0",
     "azure-storage-blob>=12.19.0",
     "confusables==1.2.0",
+    "datasets>=3.0.0",
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
     "jsonpickle>=3.0.4",
@@ -69,7 +71,7 @@ dependencies = [
     "tqdm>=4.66.2",
     "transformers>=4.40.0",
     "treelib>=1.7.0",
-    "types-requests>=2.31.0.20240406",
+    "types-requests>=2.31.0.20240406"
 ]
 
 [project.optional-dependencies]

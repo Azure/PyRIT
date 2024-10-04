@@ -2,19 +2,16 @@
 # Licensed under the MIT license.
 
 import enum
-import json
 from typing import Dict, Optional
-import uuid
 import yaml
 
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Score, Scorer
+from pyrit.score import Score, Scorer, UnvalidatedScore
 
 TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
 
@@ -43,6 +40,10 @@ class SelfAskTrueFalseScorer(Scorer):
         self.scorer_type = "true_false"
 
         self._memory = memory if memory else DuckDBMemory()
+
+        # Ensure _prompt_target uses the same memory interface as the scorer.
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
 
         if not true_false_question_path and not true_false_question_contents:
             raise ValueError("Either true_false_question_path or true_false_question_contents must be provided.")
@@ -91,58 +92,20 @@ class SelfAskTrueFalseScorer(Scorer):
 
         self.validate(request_response, task=task)
 
-        conversation_id = str(uuid.uuid4())
-
-        self._prompt_target.set_system_prompt(
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
+            prompt_target=self._prompt_target,
             system_prompt=self._system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
+            prompt_request_value=request_response.converted_value,
+            prompt_request_data_type=request_response.converted_value_data_type,
+            scored_prompt_id=request_response.id,
+            category=self._score_category,
+            task=task,
         )
 
-        request = PromptRequestResponse(
-            [
-                PromptRequestPiece(
-                    role="user",
-                    original_value=request_response.converted_value,
-                    original_value_data_type=request_response.original_value_data_type,
-                    converted_value=request_response.converted_value,
-                    converted_value_data_type=request_response.converted_value_data_type,
-                    conversation_id=conversation_id,
-                    prompt_target_identifier=self._prompt_target.get_identifier(),
-                )
-            ]
-        )
+        score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value)
 
-        score = await self._send_chat_target_async(request, request_response.id)
-        score.task = task
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-
-    @pyrit_json_retry
-    async def _send_chat_target_async(self, request, request_response_id):
-        response = await self._prompt_target.send_prompt_async(prompt_request=request)
-
-        try:
-            response_json = response.request_pieces[0].converted_value
-            parsed_response = json.loads(response_json)
-
-            score = Score(
-                score_value=str(parsed_response["value"]),
-                score_value_description=parsed_response["description"],
-                score_type=self.scorer_type,
-                score_category=self._score_category,
-                score_rationale=parsed_response["rationale"],
-                scorer_class_identifier=self.get_identifier(),
-                score_metadata=parsed_response.get("metadata"),
-                prompt_request_response_id=request_response_id,
-            )
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
-
-        except KeyError:
-            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
-
-        return score
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if task:

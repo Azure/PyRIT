@@ -10,7 +10,8 @@ from sqlalchemy.types import Uuid  # type: ignore
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
 from sqlalchemy.orm import Mapped  # type: ignore
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.score import Score
 
 
 class Base(DeclarativeBase):
@@ -46,6 +47,7 @@ class PromptMemoryEntry(Base):
         converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         idx_conversation_id (Index): The index for the conversation ID.
+        original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -79,6 +81,8 @@ class PromptMemoryEntry(Base):
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
 
+    original_prompt_id = Column(Uuid, nullable=False)
+
     def __init__(self, *, entry: PromptRequestPiece):
         self.id = entry.id
         self.role = entry.role
@@ -101,6 +105,8 @@ class PromptMemoryEntry(Base):
 
         self.response_error = entry.response_error
 
+        self.original_prompt_id = entry.original_prompt_id
+
     def get_prompt_request_piece(self) -> PromptRequestPiece:
         return PromptRequestPiece(
             role=self.role,
@@ -117,6 +123,7 @@ class PromptMemoryEntry(Base):
             original_value_data_type=self.original_value_data_type,
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,
+            original_prompt_id=self.original_prompt_id,
         )
 
     def __str__(self):
@@ -125,7 +132,7 @@ class PromptMemoryEntry(Base):
         return f": {self.role}: {self.converted_value}"
 
 
-class EmbeddingData(Base):  # type: ignore
+class EmbeddingDataEntry(Base):  # type: ignore
     """
     Represents the embedding data associated with conversation entries in the database.
     Each embedding is linked to a specific conversation entry via an id
@@ -165,7 +172,7 @@ class ScoreEntry(Base):  # type: ignore
     score_metadata = Column(String, nullable=True)
     scorer_class_identifier: Mapped[dict[str, str]] = Column(JSON)
     prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
-    date_time = Column(DateTime, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
     task = Column(String, nullable=True)
 
     def __init__(self, *, entry: Score):
@@ -178,7 +185,7 @@ class ScoreEntry(Base):  # type: ignore
         self.score_metadata = entry.score_metadata
         self.scorer_class_identifier = entry.scorer_class_identifier
         self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
-        self.date_time = entry.date_time
+        self.timestamp = entry.timestamp
         self.task = entry.task
 
     def get_score(self) -> Score:
@@ -192,7 +199,7 @@ class ScoreEntry(Base):  # type: ignore
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
             prompt_request_response_id=self.prompt_request_response_id,
-            date_time=self.date_time,
+            timestamp=self.timestamp,
             task=self.task,
         )
 
