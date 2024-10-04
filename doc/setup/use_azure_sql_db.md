@@ -90,7 +90,7 @@ ORDER BY UserName, RoleName;
 
 ## 5. Granting Permissions to a New User
 
-1. Determine whether the user needs the `db_owner` or `db_writer` role. 
+1. Determine whether the user needs the `db_owner` or `db_writer` role.
    - **db_owner** is recommended for developers and maintainers.
    - **db_writer** is recommended for operators interacting with the database.
 
