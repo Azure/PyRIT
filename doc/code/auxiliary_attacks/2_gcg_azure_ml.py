@@ -77,12 +77,14 @@ ml_client.environments.create_or_update(env_docker_context)
 # Depending on the compute instance you use, you may encounter "out of memory" errors. In this case, we recommend training on a smaller model or lowering `n_train_data` or `batch_size`.
 
 # %%
+from pathlib import Path
 from azure.ai.ml import command
 from azure.ai.ml.entities import JobResourceConfiguration
+from pyrit.common.path import HOME_PATH
 
 # Configure the command
 job = command(
-    code="./../../..",  # local path where the code is stored
+    code=Path(HOME_PATH),  # local path where the code is stored
     command="cd pyrit/auxiliary_attacks/gcg/experiments && python run.py --model_name ${{inputs.model_name}} --setup ${{inputs.setup}} --n_train_data ${{inputs.n_train_data}} --n_test_data ${{inputs.n_test_data}} --n_steps ${{inputs.n_steps}} --batch_size ${{inputs.batch_size}}",
     inputs={
         "model_name": "phi_3_mini",
