@@ -18,6 +18,6 @@ RUN conda list
 
 RUN git clone https://github.com/Azure/PyRIT.git
 
-RUN cd PyRIT && pip install -e .[dev, gcg]
+RUN cd PyRIT && pip install -e .[dev,gcg]
 
 RUN pip freeze
