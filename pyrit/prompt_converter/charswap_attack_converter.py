@@ -33,7 +33,7 @@ class CharSwapGenerator(PromptConverter):
         # Ensure max_iterations is positive
         if max_iterations <= 0:
             raise ValueError("max_iterations must be greater than 0")
-        
+
         # Ensure word_swap_ratio is between 0 and 1
         if not (0 < word_swap_ratio <= 1):
             raise ValueError("word_swap_ratio must be between 0 and 1 (exclusive of 0)")
