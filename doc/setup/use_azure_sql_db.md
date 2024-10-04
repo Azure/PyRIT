@@ -108,4 +108,4 @@ ALTER ROLE db_writer ADD MEMBER [user@domain.com];
 
 ## 6. Testing
 
-After assigning permissions, the user can test executing the necessary [azure sql demo code](../code/memory/6_azure_sql_memory.ipynb) by connecting through Azure.
+After assigning the right permissions, the user can test executing the [azure sql demo code](../code/memory/6_azure_sql_memory.ipynb) by connecting through Azure.
