@@ -26,7 +26,7 @@ class CharSwapGenerator(PromptConverter):
         Args:
             max_iterations (int): Number of times to generate perturbed prompts.
                 The higher the number the higher the chance that words are different from the original prompt.
-            word_swap_ratio (float): Percentage of words to perturb in the prompt.
+            word_swap_ratio (float): Percentage of words to perturb in the prompt per iteration.
         """
         super().__init__()
         self.max_iterations = max_iterations
