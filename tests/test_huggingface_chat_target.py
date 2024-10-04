@@ -1,11 +1,24 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-
 import pytest
 from unittest.mock import patch, MagicMock
+
 from pyrit.prompt_target.hugging_face_chat_target import HuggingFaceChatTarget
 from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
+
+
+# Fixture to mock get_required_value
+@pytest.fixture(autouse=True)
+def mock_get_required_value(request):
+    if request.node.name != "test_init_with_no_token_var_raises":
+        with patch(
+            "pyrit.prompt_target.hugging_face_chat_target.default_values.get_required_value", return_value="dummy_token"
+        ):
+            yield
+    else:
+        # Do not apply the mock for this test
+        yield
 
 
 # Fixture to mock download_specific_files_with_aria2 globally for all tests
@@ -57,6 +70,16 @@ def mock_transformers():
 def mock_pretrained_config():
     with patch("transformers.PretrainedConfig.from_pretrained", return_value=MagicMock()):
         yield
+
+
+def test_init_with_no_token_var_raises(monkeypatch):
+    # Ensure the environment variable is unset
+    monkeypatch.delenv("HUGGINGFACE_TOKEN", raising=False)
+
+    with pytest.raises(ValueError) as excinfo:
+        HuggingFaceChatTarget(model_id="test_model", use_cuda=False, hf_access_token=None)
+
+    assert "Environment variable HUGGINGFACE_TOKEN is required" in str(excinfo.value)
 
 
 def test_initialization():
