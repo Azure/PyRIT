@@ -11,6 +11,7 @@ from .fetch_example_datasets import (
     fetch_pku_safe_rlhf_dataset,
     fetch_adv_bench_dataset,
     fetch_wmdp_dataset,
+    fetch_harmful_hf_dataset
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "fetch_pku_safe_rlhf_dataset",
     "fetch_adv_bench_dataset",
     "fetch_wmdp_dataset",
+    "fetch_harmful_hf_dataset"
 ]

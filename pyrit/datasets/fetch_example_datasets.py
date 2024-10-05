@@ -420,6 +420,20 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
 
     return dataset
 
+def fetch_harmful_hf_dataset() -> PromptDataset:
+    data = load_dataset("LLM-LAT/harmful-dataset", "default")
+
+    prompts = [item["prompt"] for item in data["train"]]
+
+    dataset = PromptDataset(
+        name="LLM-LAT/harmful-dataset",
+        source="https://huggingface.co/datasets/LLM-LAT/harmful-dataset",
+        harm_category='',  
+        description='harmful prompts',  
+        prompts=prompts,
+        should_be_blocked=False
+    )
+    return dataset
 
 def fetch_adv_bench_dataset(
     source: str = (
