@@ -25,7 +25,7 @@ class HTTPTarget(PromptTarget):
         response_parse_key (str): this is the path pattern to follow for parsing the output response
             (ie for AOAI this would be choices[0].message.content)
         callback_function (function): function to parse HTTP response.
-            These are the customizeable functions which determine how to parse the output
+            These are the customizable functions which determine how to parse the output
         memory : memory interface
     """
 
@@ -43,6 +43,7 @@ class HTTPTarget(PromptTarget):
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
         self.response_parse_key = response_parse_key
+        #kwargs
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -70,7 +71,7 @@ class HTTPTarget(PromptTarget):
                 request.original_value
             )  # by default doing URL encoding for prompts that go in URL
             formatted_url = re_pattern.sub(prompt_url_safe, url)
-            self.url = formatted_url
+            url = formatted_url
 
         # Add Prompt into request body (if the body takes it)
         if re.search(self.prompt_regex_string, http_body):
@@ -91,7 +92,7 @@ class HTTPTarget(PromptTarget):
             )
 
         if self.callback_function:
-            parsed_response = self.callback_function(response=response, key=self.response_parse_key)
+            parsed_response = self.callback_function(response=response, key=self.response_parse_key) #kwargs instead
 
             response_entry = construct_response_from_request(
                 request=request, response_text_pieces=[str(parsed_response)]
@@ -172,10 +173,31 @@ class HTTPTarget(PromptTarget):
             raise ValueError("This target only supports a single prompt request piece.")
 
 
-def parse_json_http_response(response, key: str):
+# doc NEEDING this response
+def parse_json_http_response(response, key: str): # kwargs here
     json_response = json.loads(response.content)
     data_key = fetch_key(data=json_response, key=key)
     return data_key
+
+
+def parse_html_response(response, key: str):
+    print(response.content)
+    try:
+        #TODO: remove this later, for now saving output in case
+        with open("BIC_OUTPUT_2.html", 'w', encoding='utf-8') as file:
+            file.write(str(response.content))
+        print("Content saved successfully.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    
+    re_pattern = r'\/images\/create\/async\/results\/[^\s"]+' #TODO make this a variable
+    match = re.search(re_pattern, str(response.content))
+    if match:
+        print(match.group())
+        return "https://bing.com" + match.group()
+    else:
+        print("ERROR did not find match")
+        return str(response.content)
 
 
 def fetch_key(data: dict, key: str) -> str:
