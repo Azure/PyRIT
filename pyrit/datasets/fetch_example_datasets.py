@@ -434,7 +434,7 @@ def fetch_tdc23_redteaming_dataset() -> PromptDataset:
     prompts = [item["prompt"] for item in data["train"]]
 
     dataset = PromptDataset(
-        name="LLM-LAT/TDC23-RedTeaming",
+        name="walledai/TDC23-RedTeaming",
         source="https://huggingface.co/datasets/walledai/TDC23-RedTeaming",
         harm_category='',
         description='TDC23-RedTeaming harmful prompts',
