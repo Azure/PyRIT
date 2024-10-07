@@ -888,7 +888,7 @@ class MultiPromptAttack(object):
             )
 
         # Log to mlflow
-        log_loss(step=step_num)
+        log_loss(step=step_num, loss=loss)
         log_gpu_memory(step=step_num)
 
         # Log results table to mlflow
