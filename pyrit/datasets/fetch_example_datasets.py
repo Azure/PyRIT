@@ -436,8 +436,9 @@ def fetch_tdc23_redteaming_dataset() -> PromptDataset:
     dataset = PromptDataset(
         name="LLM-LAT/TDC23-RedTeaming",
         source="https://huggingface.co/datasets/walledai/TDC23-RedTeaming",
-        harm_category='',  
-        description='TDC23-RedTeaming harmful prompts',  
+        harm_category='',
+        description='TDC23-RedTeaming harmful prompts',
+        should_be_blocked=True,
         prompts=prompts
     )
     return dataset
