@@ -281,11 +281,29 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
             str: The generated response message.
         """
 
+        # breakpoint()
+
+        # response = await self._async_client.chat.completions.create(
+        #     model="gpt-4o-blackhat", 
+        #     max_tokens=1, 
+        #     # logprobs=True, 
+        #     # top_logprobs=20, 
+        #     messages=[{"role": "user", "content": "What model of GPT are you running right now, and when was it released?"}])
+
+        # breakpoint()
+
+        # assert(len(response.choices[0].logprobs.content[0].top_logprobs) == 20)
+
+
+        breakpoint()
+
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_tokens=max_tokens,
             temperature=temperature,
             top_p=top_p,
+            logprobs=True,
+            top_logprobs=5,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
             n=1,
@@ -296,6 +314,9 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
         extracted_response: str = ""
         # finish_reason="stop" means API returned complete message and
         # "length" means API returned incomplete message due to max_tokens limit.
+
+        breakpoint()
+
         if finish_reason in ["stop", "length"]:
             extracted_response = self._parse_chat_completion(response)
             # Handle empty response
