@@ -63,8 +63,14 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
     scorer.scorer_type = "true_false"
 
     with pytest.raises(InvalidJsonException):
-        await scorer.send_chat_target_async(
-            prompt_target=chat_target, scorer_llm_request=None, scored_prompt_id="123", category="category", task="task"
+        await scorer._score_value_with_llm(
+            prompt_target=chat_target,
+            system_prompt="system_prompt",
+            prompt_request_value="prompt_request_value",
+            prompt_request_data_type="text",
+            scored_prompt_id="123",
+            category="category",
+            task="task",
         )
 
         assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
@@ -94,8 +100,14 @@ async def test_scorer_send_chat_target_async_good_response():
     scorer = MockScorer()
     scorer.scorer_type = "true_false"
 
-    await scorer.send_chat_target_async(
-        prompt_target=chat_target, scorer_llm_request=None, scored_prompt_id="123", category="category", task="task"
+    await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        prompt_request_value="prompt_request_value",
+        prompt_request_data_type="text",
+        scored_prompt_id="123",
+        category="category",
+        task="task",
     )
 
     assert chat_target.send_prompt_async.call_count == int(1)
