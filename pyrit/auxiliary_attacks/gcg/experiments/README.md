@@ -4,7 +4,9 @@
 
 ## Model Supports
 
-Currently we support 4 models:
+Currently we support 5 models:
+- microsoft/Phi-3-mini-4k-instruct: https://huggingface.co/microsoft/Phi-3-mini-4k-instruct
+
 - lmsys/vicuna-13b-v1.5: https://huggingface.co/lmsys/vicuna-13b-v1.5
 
 - mistralai/Mistral-7B-Instruct-v0.1: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1
