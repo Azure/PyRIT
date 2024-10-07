@@ -25,14 +25,20 @@ prompt_target = AzureOpenAITextChatTarget(
 )
 
 # Initialize the CharSwapGenerator
-char_swap_converter = CharSwapGenerator(max_iterations=5, word_swap_ratio=0.8)
+char_swap_converter = CharSwapGenerator(max_iterations=3, word_swap_ratio=0.8)
 
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
-    prompt_target=prompt_target,  # The target to which the prompt will be sent
-    prompt_converters=[char_swap_converter],  # Stack of converters to apply
+    prompt_target=prompt_target,
+    prompt_converters=[char_swap_converter],
+    verbose=False,
 ) as orchestrator:
-    # Send the prompts asynchronously through the orchestrator
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
-    # Print the conversations
-    orchestrator.print_conversations()
+    # Loop through the iterations
+    for _ in range(char_swap_converter.max_iterations):
+        # Generate the perturbed prompt
+        converter_result = await char_swap_converter.convert_async(prompt=prompts[0])  # type: ignore
+
+        # Send the perturbed prompt to the LLM via the orchestrator
+        await orchestrator.send_prompts_async(prompt_list=[converter_result.output_text])  # type: ignore
+    # Print the conversations after all prompts are sent
+    await orchestrator.print_conversations()  # type: ignore

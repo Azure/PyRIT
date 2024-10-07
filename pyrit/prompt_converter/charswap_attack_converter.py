@@ -81,20 +81,22 @@ class CharSwapGenerator(PromptConverter):
         words = re.findall(r"\w+|\S+", prompt)
         word_list_len = len(words)
         num_perturb_words = max(1, math.ceil(word_list_len * self.word_swap_ratio))
-        result_list = []
 
-        for attempt in range(self.max_iterations):
-            perturbed_word_list = words.copy()
-            # Get random indices of words to undergo swapping
-            random_words_idx = self._get_n_random(0, word_list_len, num_perturb_words)
-            for idx in random_words_idx:
-                perturbed_word_list[idx] = self._perturb_word(perturbed_word_list[idx])
-            new_prompt = " ".join(perturbed_word_list)
-            result_list.append(new_prompt)
+        # Copy the original word list for perturbation
+        perturbed_word_list = words.copy()
 
-        # Join all perturbed prompts with newlines and clean up spaces around punctuation
-        output_text = "\n".join(result_list)
-        output_text = re.sub(r'\s([?.!,\'"])', r"\1", output_text).strip()
+        # Get random indices of words to undergo swapping
+        random_words_idx = self._get_n_random(0, word_list_len, num_perturb_words)
+
+        # Apply perturbation by swapping characters in the selected words
+        for idx in random_words_idx:
+            perturbed_word_list[idx] = self._perturb_word(perturbed_word_list[idx])
+
+        # Join the perturbed words back into a prompt
+        new_prompt = " ".join(perturbed_word_list)
+
+        # Clean up spaces around punctuation
+        output_text = re.sub(r'\s([?.!,\'"])', r"\1", new_prompt).strip()
 
         return ConverterResult(output_text=output_text, output_type="text")
 

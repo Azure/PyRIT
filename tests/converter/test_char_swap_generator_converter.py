@@ -16,7 +16,7 @@ async def test_char_swap_generator_output_count():
     prompt = "This is a test prompt for the char swap generator."
     result = await converter.convert_async(prompt=prompt)
     output_prompts = result.output_text.strip().split("\n")
-    assert len(output_prompts) == 5  # Should generate 5 perturbed prompts
+    assert len(output_prompts) == 1  # Should generate 1 perturbed prompt
 
 
 # Test that words longer than 3 characters are being perturbed
