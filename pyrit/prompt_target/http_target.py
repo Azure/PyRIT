@@ -10,8 +10,13 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 import urllib.parse
 import re
+from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+class ResponseType(Enum):
+    HTML = 0
+    JSON = 1
 
 
 class HTTPTarget(PromptTarget):
@@ -20,10 +25,8 @@ class HTTPTarget(PromptTarget):
     Parameters:
         http_request (str): the header parameters as a request (ie from Burp)
         prompt_regex_string (str): the placeholder for the prompt
-            (defuault is {PROMPT}) which will be replaced by the actual prompt.
+            (default is {PROMPT}) which will be replaced by the actual prompt.
             make sure to modify the http request to have this included, otherwise it will not be properly replaced!
-        response_parse_key (str): this is the path pattern to follow for parsing the output response
-            (ie for AOAI this would be choices[0].message.content)
         callback_function (function): function to parse HTTP response.
             These are the customizable functions which determine how to parse the output
         memory : memory interface
@@ -33,7 +36,6 @@ class HTTPTarget(PromptTarget):
         self,
         http_request: str = None,
         prompt_regex_string: str = "{PROMPT}",
-        response_parse_key: str = "",
         callback_function: Callable = None,
         memory: Union[MemoryInterface, None] = None,
     ) -> None:
@@ -42,8 +44,6 @@ class HTTPTarget(PromptTarget):
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
-        self.response_parse_key = response_parse_key
-        #kwargs
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -90,9 +90,10 @@ class HTTPTarget(PromptTarget):
                 method=http_method,
                 allow_redirects=True,  # using Requests so we can leave this flag on, rather than httpx
             )
-
+        
+        
         if self.callback_function:
-            parsed_response = self.callback_function(response=response, key=self.response_parse_key) #kwargs instead
+            parsed_response = self.callback_function(response=response)
 
             response_entry = construct_response_from_request(
                 request=request, response_text_pieces=[str(parsed_response)]
@@ -103,6 +104,7 @@ class HTTPTarget(PromptTarget):
                 request=request, response_text_pieces=[str(response.content)]
             )
         return response_entry
+        
 
     def parse_raw_http_request(self):
         """
@@ -173,31 +175,50 @@ class HTTPTarget(PromptTarget):
             raise ValueError("This target only supports a single prompt request piece.")
 
 
-# doc NEEDING this response
-def parse_json_http_response(response, key: str): # kwargs here
-    json_response = json.loads(response.content)
-    data_key = fetch_key(data=json_response, key=key)
-    return data_key
+def callback_factory(key: str, response_type: ResponseType) -> Callable:
+    """
+        Purpose: determines proper parsing response function for an HTTP Request
+        Parameters: 
+            key (str): this is the path pattern to follow for parsing the output response
+                (ie for AOAI this would be choices[0].message.content)
+                (for BIC this needs to be a regex pattern for the desired output)
+            response_type (ResponseType): this is the type of response (ie HTML or JSON)
+        Returns: proper output parsing response
+    """
+    def parse_json_http_response(response: requests.Response):
+        """
+            Purpose: parses json outputs
+            Parameters: 
+                response (response): the HTTP Response to parse
+            Returns: parsed output from response given a "key" path to follow
+        """
+        json_response = json.loads(response.content)
+        data_key = fetch_key(data=json_response, key=key)
+        return data_key
 
-
-def parse_html_response(response, key: str):
-    print(response.content)
-    try:
-        #TODO: remove this later, for now saving output in case
-        with open("BIC_OUTPUT_2.html", 'w', encoding='utf-8') as file:
-            file.write(str(response.content))
-        print("Content saved successfully.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    def parse_html_response(response: requests.Response):
+        """
+            Purpose: parses HTML formatted outputs (or non json outputs which just need a regex pattern to follow the structure)
+            Parameters: 
+                response (response): the HTTP Response to parse
+            Returns: parsed output from response given a regex pattern to follow
+        """
+        re_pattern = re.compile(key)
+        match = re.search(re_pattern, str(response.content))
+        if match:
+            print(match.group())
+            return "https://bing.com" + match.group() # TODO: this needs to be variable adding the URL but hard coded for now
+        else:
+            print("ERROR did not find match")
+            return str(response.content)
     
-    re_pattern = r'\/images\/create\/async\/results\/[^\s"]+' #TODO make this a variable
-    match = re.search(re_pattern, str(response.content))
-    if match:
-        print(match.group())
-        return "https://bing.com" + match.group()
+    if response_type == ResponseType.JSON:
+        return parse_json_http_response
+    elif response_type == ResponseType.HTML:
+        return parse_html_response
     else:
-        print("ERROR did not find match")
-        return str(response.content)
+        raise ValueError("this response type is not supported. try with json or html")
+
 
 
 def fetch_key(data: dict, key: str) -> str:

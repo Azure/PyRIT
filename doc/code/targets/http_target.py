@@ -30,7 +30,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import AttackStrategy, PromptRequestPiece, PromptTemplate
 from pyrit.orchestrator import PromptSendingOrchestrator, RedTeamingOrchestrator
 from pyrit.prompt_target import AzureMLChatTarget, AzureOpenAIGPT4OChatTarget, HTTPTarget
-from pyrit.prompt_target.http_target import parse_json_http_response, parse_html_response
+from pyrit.prompt_target.http_target import callback_factory, ResponseType
 from pyrit.score import SelfAskTrueFalseScorer
 # -
 
@@ -63,7 +63,9 @@ raw_http_request = f"""
 
 # +
 # Using orchestrator to send 
-http_prompt_target = HTTPTarget(http_request=raw_http_request, prompt_regex_string="{PROMPT}", response_parse_key="choices[0].message.content", callback_function=parse_json_http_response)
+
+parsing_function = callback_factory(key="choices[0].message.content", response_type=ResponseType.JSON)
+http_prompt_target = HTTPTarget(http_request=raw_http_request, prompt_regex_string="{PROMPT}", callback_function=parsing_function)
 
 with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
@@ -157,8 +159,8 @@ prompt = "saxophone"
 
 response_var = None
 
-with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}", response_parse_key="choices[0].message.content", callback_function=parse_html_response) as target_llm:
-    # Questions: do i need to call converter on prompt before calling target? ie url encode rather than handling in target itself?
+parsing_function = callback_factory(key = r'\/images\/create\/async\/results\/[^\s"]+', response_type=ResponseType.HTML)
+with HTTPTarget(http_request=http_req, prompt_regex_string="{PROMPT}", callback_function=parsing_function) as target_llm:
     request = PromptRequestPiece(
         role="user",
         original_value=prompt,
@@ -176,25 +178,3 @@ http_prompt_target = HTTPTarget(http_request=http_req, prompt_regex_string="{PRO
 with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
     #print(response[0])
-
-# +
-from bs4 import BeautifulSoup
-import re
-
-sample_output = "BIC_OUTPUT_1.html"
-
-try:
-    with open(sample_output, 'r', encoding='utf-8') as file:
-        html_content = file.read()
-    print(f"HTML content read from {sample_output} successfully.")
-except Exception as e:
-    print(f"An error occurred: {e}")
-
-re_pattern = r'\/images\/create\/async\/results\/[^\s"]+'
-match = re.search(re_pattern, html_content)
-if match:
-    print(match.group())
-else:
-    print("ERROR did not find match")
-
-
