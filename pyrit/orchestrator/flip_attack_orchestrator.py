@@ -83,7 +83,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         metadata: Optional[str] = None,
     ) -> list[PromptRequestResponse]:
         """
-        Sends the prompts to the prompt target.
+        Sends the prompts to the prompt target using flip attack.
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
