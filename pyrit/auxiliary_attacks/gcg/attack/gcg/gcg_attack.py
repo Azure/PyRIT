@@ -146,7 +146,7 @@ class GCGMultiPromptAttack(MultiPromptAttack):
         with torch.no_grad():
             control_cand = self.prompts[j].sample_control(
                 grad, batch_size, topk, temp, allow_non_ascii
-            )  # TODO: figure out what this line is doing
+            )
             control_cands.append(
                 self.get_filtered_cands(j, control_cand, filter_cand=filter_cand, curr_control=self.control_str)
             )
