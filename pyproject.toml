@@ -98,7 +98,7 @@ gcg = [
     "numpy<2",
     "mlflow==2.16.2",
     "ml-collections==0.1.1",
-    "azureml-mlflow==1.57.0.post1",
+    "azureml-mlflow==1.57.0",
     "fschat==0.2.36",
     "accelerate==0.34.2",
     "transformers==4.45.1",
