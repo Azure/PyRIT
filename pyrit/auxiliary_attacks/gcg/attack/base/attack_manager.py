@@ -702,7 +702,7 @@ class MultiPromptAttack(object):
         prev_loss=np.infty,
         stop_on_success=True,
         test_steps=50,
-        log_first=True,
+        log_first=False,
         filter_cand=True,
         verbose=True,
     ):
