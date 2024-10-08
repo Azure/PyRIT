@@ -10,14 +10,9 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 import urllib.parse
 import re
-from enum import Enum
+
 
 logger = logging.getLogger(__name__)
-
-class ResponseType(Enum):
-    HTML = 0
-    JSON = 1
-
 
 class HTTPTarget(PromptTarget):
     """
@@ -44,6 +39,9 @@ class HTTPTarget(PromptTarget):
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
+
+        if not self.http_request:
+            raise ValueError("HTTP Request is required for HTTP Target")
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -149,7 +147,6 @@ class HTTPTarget(PromptTarget):
         http_url_beg = ""
         if len(http_req_info_line) > 2:
             http_version = http_req_info_line[2]
-            # TODO: qn use_tls_flag variable instead?
             if "HTTP/2" in http_version:
                 http_url_beg = "https://"
             elif "HTTP/1.1" in http_version:
@@ -173,7 +170,7 @@ class HTTPTarget(PromptTarget):
             raise ValueError("This target only supports a single prompt request piece.")
 
 
-def callback_factory(key: str, response_type: ResponseType) -> Callable:
+def parse_json_factory(key: str) -> Callable:
     """
         Purpose: determines proper parsing response function for an HTTP Request
         Parameters: 
@@ -191,13 +188,17 @@ def callback_factory(key: str, response_type: ResponseType) -> Callable:
             Returns: parsed output from response given a "key" path to follow
         """
         json_response = json.loads(response.content)
-        data_key = fetch_key(data=json_response, key=key)
+        data_key = _fetch_key(data=json_response, key=key)
         return data_key
 
+    return parse_json_http_response
+
+def parse_html_factory(key: str, url: str = None ) -> Callable:
     def parse_html_response(response: requests.Response):
         """
             Purpose: parses HTML formatted outputs (or non json outputs which just need a regex pattern to follow the structure)
             Parameters: 
+                url (optional str): the original URL if this is needed to get a full URL response back (ie BIC)
                 response (response): the HTTP Response to parse
             Returns: parsed output from response given a regex pattern to follow
         """
@@ -205,21 +206,16 @@ def callback_factory(key: str, response_type: ResponseType) -> Callable:
         match = re.search(re_pattern, str(response.content))
         if match:
             print(match.group())
-            return "https://bing.com" + match.group() # TODO: this needs to be variable adding the URL but hard coded for now
+            if url:
+                return url + match.group() # TODO: this needs to be variable adding the URL but hard coded for now
+            else:
+                return match.group()
         else:
-            print("ERROR did not find match")
-            return str(response.content)
-    
-    if response_type == ResponseType.JSON:
-        return parse_json_http_response
-    elif response_type == ResponseType.HTML:
-        return parse_html_response
-    else:
-        raise ValueError("this response type is not supported. try with json or html")
+            return str(response.content)   
+    return parse_html_response
 
 
-
-def fetch_key(data: dict, key: str) -> str:
+def _fetch_key(data: dict, key: str) -> str:
     """
     Credit to @Mayuraggarwal1992
     Fetches the answer from the HTTP JSON response based on the path.

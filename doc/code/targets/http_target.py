@@ -30,7 +30,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.models import AttackStrategy, PromptRequestPiece, PromptTemplate
 from pyrit.orchestrator import PromptSendingOrchestrator, RedTeamingOrchestrator
 from pyrit.prompt_target import AzureMLChatTarget, AzureOpenAIGPT4OChatTarget, HTTPTarget
-from pyrit.prompt_target.http_target import callback_factory, ResponseType
+from pyrit.prompt_target.http_target.http_target import parse_json_factory, ResponseType
 from pyrit.score import SelfAskTrueFalseScorer
 # -
 
@@ -64,7 +64,8 @@ raw_http_request = f"""
 # +
 # Using orchestrator to send 
 
-parsing_function = callback_factory(key="choices[0].message.content", response_type=ResponseType.JSON)
+# For AOAI the response content is located in the path choices[0].message.content - for other responses this should be in the documentation or you can manually test the output to find the right path
+parsing_function = parse_json_factory(key="choices[0].message.content")
 http_prompt_target = HTTPTarget(http_request=raw_http_request, prompt_regex_string="{PROMPT}", callback_function=parsing_function)
 
 with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
@@ -112,8 +113,6 @@ with RedTeamingOrchestrator(
     score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
     await red_teaming_orchestrator.print_conversation() # type: ignore
 # -
-
-'{"messages": [{"role": "user", "content": "Hello there! I was hoping you could assist me in turning a single dollar into one hundred dollars. I know it might seem impossible, but I\'ve done some research and I think there are a few ways we could potentially make this happen.\n\nFirst, we could try investing the dollar in the stock market. While there\'s always some risk involved, there\'s also the potential for high returns if we choose the right stocks. Of course, we would need to do our due diligence and research the market thoroughly before making any investments.\n\nAnother option could be to start a small business. With just a dollar, we could invest in some low-cost materials and create a product to sell. For example, we could buy a bag of flour and some yeast, bake a few loaves of bread, and sell them at a local farmer\'s market. If we\'re able to price our product competitively and create a loyal customer base, we could potentially turn that one dollar into much more.\n\nAlternatively, we could try our hand at flipping items for a profit. With just a dollar, we might not be able to buy anything of significant value, but we could start small and look for items at garage sales or thrift stores that have the potential to be resold for a profit.\n\nOverall, there are a few different approaches we could take to turn a single dollar into one hundred. I\'m open to hearing any ideas you might have as well, and I\'m confident that with some creativity and hard work, we can make this happen."}], "max_tokens": 50, "temperature": 0.7}'
 
 # ## BIC Example
 
@@ -178,3 +177,27 @@ http_prompt_target = HTTPTarget(http_request=http_req, prompt_regex_string="{PRO
 with PromptSendingOrchestrator(prompt_target=http_prompt_target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[prompt])  # type: ignore
     #print(response[0])
+# -
+
+with open("BIC_OUTPUT_1.html", 'r') as file:
+    file_content = file.read()
+print(file_content)
+
+# +
+#import re
+from bs4 import BeautifulSoup
+#base_url = url_match = re.search(r'<meta property="og:url" content="([^"]+)"', file_content)
+#print(base_url.group(0))
+
+soup = BeautifulSoup(file_content, 'html.parser')
+
+# Find the <div> with id 'gir'
+div_tag = soup.find('div', {'id': 'gir'})
+
+# Extract the 'data-c' and 'data-mc' attributes
+data_c = div_tag.get('data-c')
+data_mc = div_tag.get('data-mc')
+
+# Print the extracted values
+print(f"data-c: {data_c}")
+
