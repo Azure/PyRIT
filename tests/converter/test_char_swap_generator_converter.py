@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import pytest
-import random
 
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
 
@@ -93,14 +92,11 @@ async def test_char_swap_generator_random_swapping():
     converter = CharSwapGenerator(max_iterations=1, word_swap_ratio=1.0)
     prompt = "Character swapping test"
 
-    # Ensure the random indices are within the valid range
-    word_count = len(prompt.split())
-
     with patch(
         "random.sample",
         side_effect=[
-            random.sample(range(word_count), min(word_count, 3)),  # First set of random indices
-            random.sample(range(word_count), min(word_count, 3)),  # Second set of random indices
+            [0, 1, 2],  # First set of indices for the first call
+            [2, 1, 0],  # Second set of indices for the second call
         ],
     ):
         result1 = await converter.convert_async(prompt=prompt)
