@@ -75,8 +75,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
 
-
-    def set_prepended_conversation(self, prepended_conversation: list[PromptRequestResponse]):
+    def set_prepended_conversation(self, *, prepended_conversation: list[PromptRequestResponse]):
         """
         Prepends a conversation to the prompt target.
         """
@@ -108,8 +107,6 @@ class PromptSendingOrchestrator(Orchestrator):
         if isinstance(prompt_list, str):
             prompt_list = [prompt_list]
 
-        conversation_id = self._prepare_conversation()
-
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
             requests.append(
@@ -118,7 +115,6 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
                     metadata=metadata,
-                    conversation_id=conversation_id,
                 )
             )
 
@@ -126,7 +122,6 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt_request_list=requests,
             memory_labels=memory_labels,
         )
-
 
     async def send_normalizer_requests_async(
         self,
@@ -208,13 +203,6 @@ class PromptSendingOrchestrator(Orchestrator):
                 for score in scores:
                     print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
-    def _combine_with_global_memory_labels(self, memory_labels: dict[str, str]) -> dict[str, str]:
-        """
-        Combines the global memory labels with the provided memory labels.
-        The passed memory_labels take precedence with collisions.
-        """
-        return {**(self._global_memory_labels or {}), **(memory_labels or {})}
-
     def _prepare_conversation(self):
         """
         Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
@@ -227,3 +215,4 @@ class PromptSendingOrchestrator(Orchestrator):
                     piece.conversation_id = conversation_id
 
                 self._memory.add_request_response_to_memory(request=request)
+        return conversation_id
