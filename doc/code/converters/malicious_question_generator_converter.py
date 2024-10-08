@@ -16,7 +16,9 @@ import os
 from pyrit.common import default_values
 from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter  # Import your custom converter
+from pyrit.prompt_converter.malicious_question_generator_converter import (
+    MaliciousQuestionGeneratorConverter,
+)  # Import your custom converter
 
 # Load default environment values (API keys, endpoints, etc.)
 default_values.load_default_env()
@@ -43,13 +45,15 @@ malicious_question_converter = MaliciousQuestionGeneratorConverter(target=prompt
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
     prompt_target=prompt_target,  # The target to which the prompt will be sent (e.g., Azure OpenAI or OpenAI)
-    prompt_converters=[malicious_question_converter],  # Stack of converters to apply (only using the malicious question converter)
+    prompt_converters=[
+        malicious_question_converter
+    ],  # Stack of converters to apply (only using the malicious question converter)
     verbose=True,
 ) as orchestrator:
     # Loop to generate and send each question one by one
     for _ in range(malicious_question_converter.max_iterations):
         # Generate one question using the converter for each iteration
-        converter_result = await malicious_question_converter.convert_async(prompt=prompts[0]) # type: ignore
+        converter_result = await malicious_question_converter.convert_async(prompt=prompts[0])  # type: ignore
 
         # Send the generated question to the response target via the orchestrator
         if converter_result.output_text != "No question generated.":
@@ -59,4 +63,4 @@ with PromptSendingOrchestrator(
             break  # Exit the loop if no more questions are generated
 
     # Print the conversations after all questions are sent
-    await orchestrator.print_conversations() # type: ignore
+    await orchestrator.print_conversations()  # type: ignore
