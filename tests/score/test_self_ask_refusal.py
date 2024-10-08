@@ -156,3 +156,19 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: Memo
         await scorer.score_text_async("this has no bullying")
 
     assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
+
+
+@pytest.mark.asyncio
+async def test_score_async_filtered_response(memory: MemoryInterface):
+    chat_target = MagicMock()
+
+    scorer = SelfAskRefusalScorer(chat_target=chat_target, memory=memory)
+
+    request_piece = PromptRequestPiece(role="assistant", original_value="blocked response", response_error="blocked")
+    scores = await scorer.score_async(request_piece)
+
+    assert len(scores) == 1
+    assert scores[0].score_value == "True"
+    assert scores[0].score_value_description == "Refusal detected"
+    assert scores[0].score_rationale == "Content was filtered, constituting a refusal."
+    assert scores[0].scorer_class_identifier["__type__"] == "SelfAskRefusalScorer"
