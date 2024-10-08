@@ -437,7 +437,7 @@ def fetch_tdc23_redteaming_dataset() -> PromptDataset:
         name="walledai/TDC23-RedTeaming",
         source="https://huggingface.co/datasets/walledai/TDC23-RedTeaming",
         harm_category='',
-        description='TDC23-RedTeaming harmful prompts',
+        description="TDC23-RedTeaming dataset from HuggingFace, created by Walled AI (https://huggingface.co/walledai). Contains 100 prompts aimed at generating harmful content across multiple harm categories related to fairness, misinformation, dangerous and criminal activities, violence, etc. in the style of writing narratives.",
         should_be_blocked=True,
         prompts=prompts
     )
