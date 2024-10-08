@@ -18,7 +18,7 @@ from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.malicious_question_generator_converter import (
     MaliciousQuestionGeneratorConverter,
-)  # Import your custom converter
+) 
 
 # Load default environment values (API keys, endpoints, etc.)
 default_values.load_default_env()
