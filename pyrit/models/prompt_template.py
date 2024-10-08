@@ -96,3 +96,25 @@ class ManyShotTemplate(PromptTemplate):
         filled_template = jinja_template.render(prompt=prompt, examples=examples)
 
         return filled_template
+
+
+class JailBreakTemplate(PromptTemplate):
+    """
+    Specific type of Prompt Template that makes use of some common parameters
+    {{prompt}} and {{examples}}
+    """
+
+    def get_prompt(self, prompt: str, examples: str = ""):
+        call_dict = {}
+        if "examples" in self.parameters:
+            call_dict["examples"] = examples
+
+        call_dict["prompt"] = prompt
+
+        return self.apply_custom_metaprompt_parameters(**call_dict)
+
+    def get_system_prompt(self, examples: str = ""):
+        """
+        Returns a system prompt, with the {{prompt}} parameter replaced with nothing
+        """
+        return self.get_prompt(prompt="", examples=examples)
