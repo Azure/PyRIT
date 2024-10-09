@@ -21,7 +21,7 @@ class HTTPTarget(PromptTarget):
     Parameters:
         http_request (str): the header parameters as a request (ie from Burp)
         prompt_regex_string (str): the placeholder for the prompt
-            (default is {PLACEHOLDER_PROMPT}) which will be replaced by the actual prompt.
+            (default is {PROMPT}) which will be replaced by the actual prompt.
             make sure to modify the http request to have this included, otherwise it will not be properly replaced!
         callback_function (function): function to parse HTTP response.
             These are the customizable functions which determine how to parse the output
@@ -31,7 +31,7 @@ class HTTPTarget(PromptTarget):
     def __init__(
         self,
         http_request: str = None,
-        prompt_regex_string: str = "{PLACEHOLDER_PROMPT}",
+        prompt_regex_string: str = "{PROMPT}",
         callback_function: Callable = None,
         memory: Union[MemoryInterface, None] = None,
     ) -> None:
@@ -67,11 +67,11 @@ class HTTPTarget(PromptTarget):
         # Add Prompt into URL (if the URL takes it)
         if re.search(self.prompt_regex_string, url):
             # by default doing URL encoding for prompts that go in URL
-            url = re_pattern.sub(urllib.parse.quote(request.original_value), url)
+            url = re_pattern.sub(urllib.parse.quote(request.converted_value), url)
 
         # Add Prompt into request body (if the body takes it)
         if re.search(self.prompt_regex_string, http_body):
-            prompt = request.original_value
+            prompt = request.converted_value
 
             if http_body_json:  # clean prompt of whitespace control characters to ensure still valid json
                 cleaned_prompt = re.sub(r"\s", " ", prompt)
@@ -87,7 +87,7 @@ class HTTPTarget(PromptTarget):
             url=url,
             headers=header_dict,
             data=http_body,
-            follow_redirects=True,  # This is defaulted to true but using requests over httpx for this reason
+            allow_redirects=True,  # This is defaulted to true but using requests over httpx for this reason
         )
 
         if self.callback_function:
