@@ -93,7 +93,7 @@ async def test_azure_content_filter_scorer_score():
     assert score[0].score_value_description is None
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == str(TextCategory.HATE.value)
-    assert score[0].score_metadata == {"azure_severity": "2"}
+    assert score[0].score_metadata == str({"azure_severity": "2"})
     assert score[0].score_rationale is None
     assert "AzureContentFilterScorer" in str(score[0].scorer_class_identifier)
 
