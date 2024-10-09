@@ -59,13 +59,6 @@ async def test_azure_content_filter_scorer_validate_text(text_request_piece: Pro
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_get_azure_severity():
-
-    scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
-    assert scorer.get_azure_severity("0.28571") == 2
-
-
-@pytest.mark.asyncio
 async def test_azure_content_filter_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
 
@@ -100,7 +93,7 @@ async def test_azure_content_filter_scorer_score():
     assert score[0].score_value_description is None
     assert score[0].score_type == "float_scale"
     assert score[0].score_category == str(TextCategory.HATE.value)
-    assert score[0].score_metadata is None
+    assert score[0].score_metadata == {"azure_severity": "2"}
     assert score[0].score_rationale is None
     assert "AzureContentFilterScorer" in str(score[0].scorer_class_identifier)
 
