@@ -420,7 +420,7 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
 
     return dataset
 
-def fetch_llm_latent_adversarial_training_dataset() -> PromptDataset:
+def fetch_llm_latent_adversarial_training_harmful_dataset() -> PromptDataset:
     data = load_dataset("LLM-LAT/harmful-dataset", "default")
 
     prompts = [item["prompt"] for item in data["train"]]
