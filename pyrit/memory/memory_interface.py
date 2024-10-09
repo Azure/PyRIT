@@ -570,6 +570,8 @@ class MemoryInterface(abc.ABC):
             ValueError: If a prompt group does not have at least one prompt.
             ValueError: If prompt group IDs are inconsistent within the same prompt group.
         """
+        if not prompt_groups:
+            raise ValueError("At least one prompt group must be provided.")
         # Validates the prompt group IDs and sets them if possible before leveraging the add_seed_prompts_to_memory method.
         all_prompts = []
         for prompt_group in prompt_groups:
@@ -587,7 +589,7 @@ class MemoryInterface(abc.ABC):
             all_prompts.extend(prompt_group.prompts)
         self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
 
-    def get_prompt_templates(
+    def get_seed_prompt_templates(
         self,
         *,
         value: Optional[str] = None,
@@ -618,17 +620,17 @@ class MemoryInterface(abc.ABC):
         self,
         *,
         dataset_name: Optional[str] = None,
-        data_types: Optional[Sequence[Sequence[str]]]
+        data_types: Optional[Sequence[Sequence[str]]] = None,
+        harm_categories: Optional[Sequence[str]] = None,
+        added_by: Optional[str] = None,
+        authors: Optional[Sequence[str]] = None,
+        groups: Optional[Sequence[str]] = None,
+        source: Optional[str] = None,
     ) -> list[SeedPromptGroup]:
         # TODO for this PR
-        # join prompt tables as many times as the number of data types passed (which also implies the sequence number)
-        # i.e., join on prompt group ID while matching the data type and sequence number
-        # and optionally dataset_name and harm_categories
+        # Get all prompts with the specified filters
+        # and if the prompt group ID is set.
+        # Then group together by group ID, create SeedPromptGroupId objects,
+        # and return.
         raise NotImplementedError("Method not yet implemented.")
     
-    def delete_seed_prompt_entries(self, *, ids: list[str]) -> None:
-        """
-        Deletes seed prompt entries by id.
-        """
-        # TODO
-        raise NotImplementedError("Method not yet implemented.")

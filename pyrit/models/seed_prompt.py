@@ -160,7 +160,10 @@ class SeedPromptGroup(YamlLoadable):
         prompts: List[SeedPrompt],
     ):
         self.prompts = prompts
-        self.prompts.sort(key=lambda prompt: prompt.sequence)
+        if len(prompts) > 1:
+            if any([prompt.sequence is None for prompt in prompts]):
+                raise ValueError("All prompts in a group must have a sequence number.")
+            self.prompts.sort(key=lambda prompt: prompt.sequence)
 
 
 class SeedPromptDataset(YamlLoadable):

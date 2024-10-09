@@ -1008,3 +1008,87 @@ def test_get_seed_prompt_dataset_names_multiple(memory: MemoryInterface):
     memory.add_seed_prompts_to_memory(prompts=seed_prompts)
     assert len(memory.get_seed_prompt_dataset_names()) == 5
     assert sorted(memory.get_seed_prompt_dataset_names()) == sorted(dataset_names)
+    
+def test_add_seed_prompt_groups_to_memory_empty_list(memory: MemoryInterface):
+    prompt_group = SeedPromptGroup(prompts=[])
+    with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
+        memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+
+def test_add_seed_prompt_groups_to_memory_single_element(memory: MemoryInterface):
+    prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text")
+    prompt_group = SeedPromptGroup(prompts=[prompt])
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
+    assert len(memory.get_seed_prompts()) == 1
+
+
+def test_add_seed_prompt_groups_to_memory_multiple_elements(memory: MemoryInterface):
+    prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
+    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
+    prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
+    assert len(memory.get_seed_prompts()) == 2
+    assert len(memory.get_seed_prompt_groups()) == 1
+
+
+def test_add_seed_prompt_groups_to_memory_no_elements(memory: MemoryInterface):
+    with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
+        prompt_group = SeedPromptGroup(prompts=[])
+        memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+
+
+def test_add_seed_prompt_groups_to_memory_single_element_no_added_by(memory: MemoryInterface):
+    prompt = SeedPrompt(value="Test prompt", data_type="text")
+    prompt_group = SeedPromptGroup(prompts=[prompt])
+    with pytest.raises(ValueError, match="The 'added_by' attribute must be set for each prompt."):
+        memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+
+
+def test_add_seed_prompt_groups_to_memory_multiple_elements_no_added_by(memory: MemoryInterface):
+    prompt1 = SeedPrompt(value="Test prompt 1", data_type="text", sequence=0)
+    prompt2 = SeedPrompt(value="Test prompt 2", data_type="text", sequence=1)
+    prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
+    with pytest.raises(ValueError, match="The 'added_by' attribute must be set for each prompt."):
+        memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+
+
+def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(memory: MemoryInterface):
+    prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", prompt_group_id="group1", data_type="text", sequence=0)
+    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", prompt_group_id="group2", data_type="text", sequence=1)
+    prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
+    with pytest.raises(ValueError, match="Inconsistent 'prompt_group_id' attribute between members of the same prompt group."):
+        memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+
+
+def test_add_seed_prompt_groups_to_memory_single_element_with_added_by(memory: MemoryInterface):
+    prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text")
+    prompt_group = SeedPromptGroup(prompts=[prompt])
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+    assert len(memory.get_seed_prompts()) == 1
+
+
+def test_add_seed_prompt_groups_to_memory_multiple_elements_with_added_by(memory: MemoryInterface):
+    prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
+    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
+    prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+    assert len(memory.get_seed_prompts()) == 2
+
+def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(memory: MemoryInterface):
+    prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
+    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
+    prompt3 = SeedPrompt(value="Test prompt 3", added_by="tester", data_type="text", sequence=0)
+    prompt4 = SeedPrompt(value="Test prompt 4", added_by="tester", data_type="text", sequence=1)
+
+    prompt_group1 = SeedPromptGroup(prompts=[prompt1, prompt2])
+    prompt_group2 = SeedPromptGroup(prompts=[prompt3, prompt4])
+
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group1, prompt_group2])
+    assert len(memory.get_seed_prompts()) == 4
+    groups_from_memory = memory.get_seed_prompt_groups()
+    assert len(groups_from_memory) == 2
+    assert groups_from_memory[0].id != groups_from_memory[1].id
+    assert groups_from_memory[0].prompts[0].id == groups_from_memory[0].prompts[1].id
+    assert groups_from_memory[1].prompts[0].id == groups_from_memory[1].prompts[1].id
+
+# TODO: add tests for get_prompt_templates
+# TODO: add tests for get_seed_prompt_groups
