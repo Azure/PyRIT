@@ -39,5 +39,5 @@ __all__ = [
     "limit_requests_per_minute",
     "TextTarget",
     "OllamaChatTarget",
-    "HTTPTarget"
+    "HTTPTarget",
 ]

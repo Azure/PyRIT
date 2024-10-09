@@ -1,21 +1,29 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
-import requests
 from unittest.mock import patch, Mock
-from pyrit.prompt_target.http_target.http_target import HTTPTarget, parse_json_factory, parse_html_factory
+from pyrit.prompt_target.http_target.http_target import HTTPTarget, parse_json_factory, parse_using_regex_text_factory
 from typing import Callable
+
 
 @pytest.fixture
 def mock_callback_function() -> Callable:
     parsing_function = parse_json_factory(key="mock_key")
     return parsing_function
 
+
 @pytest.fixture
 def mock_http_target(mock_callback_function) -> HTTPTarget:
-    return HTTPTarget(
-        http_request="POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{\"prompt\": \"{PLACEHOLDER_PROMPT}\"}",
-        prompt_regex_string="{PLACEHOLDER_PROMPT}",
-        callback_function=mock_callback_function
+    sample_request = (
+        'POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{"prompt": "{PLACEHOLDER_PROMPT}"}'
     )
+    return HTTPTarget(
+        http_request=sample_request,
+        prompt_regex_string="{PLACEHOLDER_PROMPT}",
+        callback_function=mock_callback_function,
+    )
+
 
 @pytest.fixture
 def mock_http_response() -> Mock:
@@ -23,19 +31,26 @@ def mock_http_response() -> Mock:
     mock_response.content = b'{"mock_key": "value1"}'
     return mock_response
 
+
 def test_initilization_no_parameters():
     with pytest.raises(ValueError):
         HTTPTarget()
 
+
 def test_initilization_with_parameters(mock_http_target, mock_callback_function):
-    assert mock_http_target.http_request == "POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{\"prompt\": \"{PLACEHOLDER_PROMPT}\"}"
+    assert (
+        mock_http_target.http_request
+        == 'POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{"prompt": "{PLACEHOLDER_PROMPT}"}'
+    )
     assert mock_http_target.prompt_regex_string == "{PLACEHOLDER_PROMPT}"
     assert mock_http_target.callback_function == mock_callback_function
+
 
 def test_parse_json_response_no_match(mock_http_response):
     parse_json_response = parse_json_factory(key="nonexistant_key")
     result = parse_json_response(mock_http_response)
     assert result == ""
+
 
 def test_parse_json_response_match(mock_http_response, mock_callback_function):
     result = mock_callback_function(mock_http_response)
@@ -43,7 +58,7 @@ def test_parse_json_response_match(mock_http_response, mock_callback_function):
 
 
 @pytest.mark.asyncio
-@patch('requests.request')
+@patch("requests.request")
 async def test_send_prompt_async(mock_request, mock_http_target, mock_http_response):
     prompt_request = Mock()
     prompt_request.request_pieces = [Mock(original_value="test_prompt")]
@@ -53,29 +68,26 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
     assert mock_request.call_count == 1
 
 
-def test_parse_raw_http_request(mock_http_target):    
+def test_parse_raw_http_request(mock_http_target):
     headers, body, url, method = mock_http_target.parse_raw_http_request()
     assert url == "http://example.com/"
     assert method == "POST"
-    assert headers == {
-        "Host": "example.com",
-        "Content-Type": "application/json"
-    }
+    assert headers == {"Host": "example.com", "Content-Type": "application/json"}
 
     assert body == '{"prompt": "{PLACEHOLDER_PROMPT}"}'
 
 
-def test_parse_html_response_no_match():
+def test_parse_regex_response_no_match():
     mock_response = Mock()
-    mock_response.content = b'<html><body>No match here</body></html>'
-    parse_html_function = parse_html_factory(key=r'no_results\/[^\s"]+')
+    mock_response.content = b"<html><body>No match here</body></html>"
+    parse_html_function = parse_using_regex_text_factory(key=r'no_results\/[^\s"]+')
     result = parse_html_function(mock_response)
     assert result == "b'<html><body>No match here</body></html>'"
 
 
-def test_parse_html_response_match():
+def test_parse_regex_response_match():
     mock_response = Mock()
-    mock_response.content = b'<html><body>Match: 1234</body></html>'
-    parse_html_response = parse_html_factory(r"Match: (\d+)")
+    mock_response.content = b"<html><body>Match: 1234</body></html>"
+    parse_html_response = parse_using_regex_text_factory(r"Match: (\d+)")
     result = parse_html_response(mock_response)
     assert result == "Match: 1234"

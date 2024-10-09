@@ -14,6 +14,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
+
 class HTTPTarget(PromptTarget):
     """
     HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt
@@ -82,13 +83,13 @@ class HTTPTarget(PromptTarget):
             http_body = formatted_http_body
 
             response = requests.request(
+                method=http_method,
                 url=url,
                 headers=header_dict,
                 data=http_body,
-                method=http_method,
-                allow_redirects=True,  # using Requests so we can leave this flag on, rather than httpx
+                follow_redirects=True,  # Matches allow_redirects=True
             )
-        
+
         if self.callback_function:
             parsed_response = self.callback_function(response=response)
             response_entry = construct_response_from_request(
@@ -100,7 +101,6 @@ class HTTPTarget(PromptTarget):
                 request=request, response_text_pieces=[str(response.content)]
             )
         return response_entry
-        
 
     def parse_raw_http_request(self):
         """
@@ -172,20 +172,21 @@ class HTTPTarget(PromptTarget):
 
 def parse_json_factory(key: str) -> Callable:
     """
-        Purpose: determines proper parsing response function for an HTTP Request
-        Parameters: 
-            key (str): this is the path pattern to follow for parsing the output response
-                (ie for AOAI this would be choices[0].message.content)
-                (for BIC this needs to be a regex pattern for the desired output)
-            response_type (ResponseType): this is the type of response (ie HTML or JSON)
-        Returns: proper output parsing response
+    Purpose: determines proper parsing response function for an HTTP Request
+    Parameters:
+        key (str): this is the path pattern to follow for parsing the output response
+            (ie for AOAI this would be choices[0].message.content)
+            (for BIC this needs to be a regex pattern for the desired output)
+        response_type (ResponseType): this is the type of response (ie HTML or JSON)
+    Returns: proper output parsing response
     """
+
     def parse_json_http_response(response: requests.Response):
         """
-            Purpose: parses json outputs
-            Parameters: 
-                response (response): the HTTP Response to parse
-            Returns: parsed output from response given a "key" path to follow
+        Purpose: parses json outputs
+        Parameters:
+            response (response): the HTTP Response to parse
+        Returns: parsed output from response given a "key" path to follow
         """
         json_response = json.loads(response.content)
         data_key = _fetch_key(data=json_response, key=key)
@@ -193,26 +194,28 @@ def parse_json_factory(key: str) -> Callable:
 
     return parse_json_http_response
 
-def parse_html_factory(key: str, url: str = None ) -> Callable:
-    def parse_html_response(response: requests.Response):
+
+def parse_using_regex_text_factory(key: str, url: str = None) -> Callable:
+    def parse_using_regex(response: requests.Response):
         """
-            Purpose: parses HTML formatted outputs (or non json outputs which just need a regex pattern to follow the structure)
-            Parameters: 
-                url (optional str): the original URL if this is needed to get a full URL response back (ie BIC)
-                response (response): the HTTP Response to parse
-            Returns: parsed output from response given a regex pattern to follow
+        Purpose: parses text outputs using regex
+        Parameters:
+            url (optional str): the original URL if this is needed to get a full URL response back (ie BIC)
+            key (str): this is the regex pattern to follow for parsing the output response
+            response (response): the HTTP Response to parse
+        Returns: parsed output from response given a regex pattern to follow
         """
         re_pattern = re.compile(key)
         match = re.search(re_pattern, str(response.content))
         if match:
-            print(match.group())
             if url:
-                return url + match.group() # TODO: this needs to be variable adding the URL but hard coded for now
+                return url + match.group()
             else:
                 return match.group()
         else:
-            return str(response.content)   
-    return parse_html_response
+            return str(response.content)
+
+    return parse_using_regex
 
 
 def _fetch_key(data: dict, key: str) -> str:
