@@ -330,6 +330,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (optional).
+            distinct: Flag to return distinct rows (defaults to False).
 
         Returns:
             List of model instances representing the rows fetched from the table.

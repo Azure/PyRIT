@@ -77,7 +77,7 @@ with PromptSendingOrchestrator(prompt_target=target, batch_size=1) as orchestrat
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptDataset
+from pyrit.models import SeedPromptDataset
 from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
 
 from pyrit.common import default_values
@@ -91,7 +91,7 @@ target = AzureOpenAIGPT4OChatTarget()
 
 with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()]) as orchestrator:
 
-    prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
+    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
 
     # this is run in a Jupyter notebook, so we can use await
     await orchestrator.send_prompts_async(prompt_list=prompts.prompts)  # type: ignore

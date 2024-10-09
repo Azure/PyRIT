@@ -9,7 +9,7 @@ from typing import List, Optional
 from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.models.prompt_template import SeedPromptTemplate
+from pyrit.models import SeedPromptTemplate
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import FuzzerConverter
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget

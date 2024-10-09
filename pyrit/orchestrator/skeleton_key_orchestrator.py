@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptDataset, PromptRequestResponse
+from pyrit.models import SeedPromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest

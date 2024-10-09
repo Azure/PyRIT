@@ -114,13 +114,14 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
+    def query_entries(self, model, *, conditions: Optional = None, distinct: bool = False) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (optional).
+            distinct: Whether to return distinct rows only. Defaults to False.
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -455,18 +456,6 @@ class MemoryInterface(abc.ABC):
             file_path = RESULTS_PATH / file_name
 
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
-
-    @abc.abstractmethod
-    def add_prompts_to_memory(self, *, prompts: list[SeedPrompt]) -> None:
-        """
-        Inserts a list of scores into the memory storage.
-        """
-    
-    @abc.abstractmethod
-    def get_prompt_dataset_names(self) -> list[str]:
-        """
-        Returns a list of all prompt dataset names in the memory storage.
-        """
     
     def get_seed_prompts(
         self,
@@ -521,7 +510,7 @@ class MemoryInterface(abc.ABC):
         try:
             return self.query_entries(
                 SeedPromptEntry,
-                conditions=and_(*conditions),
+                conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
@@ -558,11 +547,13 @@ class MemoryInterface(abc.ABC):
         Returns a list of all seed prompt dataset names in the memory storage.
         """
         try:
-            return self.query_entries(
+            entries = self.query_entries(
                 SeedPromptEntry.dataset_name,
                 conditions=and_(SeedPromptEntry.dataset_name != None, SeedPromptEntry.dataset_name != ""),
                 distinct=True,
             )  # type: ignore
+            # return value is list of tuples with a single entry (the dataset name)
+            return [entry[0] for entry in entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             return []
@@ -595,23 +586,6 @@ class MemoryInterface(abc.ABC):
                 prompt.prompt_group_id = prompt_group_id
             all_prompts.extend(prompt_group.prompts)
         self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
-    
-    @abc.abstractmethod
-    def get_seed_prompts(
-        self,
-        *,
-        value: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[Sequence[str]] = None,
-        added_by: Optional[str] = None,
-        authors: Optional[Sequence[str]] = None,
-        groups: Optional[Sequence[str]] = None,
-        source: Optional[str] = None,
-        parameters: Optional[Sequence[str]] = None,
-    ) -> list[SeedPrompt]:
-        """
-        Retrieves a list of SeedPrompt objects based on the specified filters.
-        """
 
     def get_prompt_templates(
         self,

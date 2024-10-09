@@ -272,13 +272,14 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
 
-    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
+    def query_entries(self, model, *, conditions: Optional = None, distinct: bool = False) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (optional).
+            distinct: Flag to return distinct rows (default is False).
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -288,6 +289,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(model)
                 if conditions is not None:
                     query = query.filter(conditions)
+                if distinct:
+                    return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")

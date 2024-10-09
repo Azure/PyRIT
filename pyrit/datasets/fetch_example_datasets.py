@@ -15,7 +15,7 @@ from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
-from pyrit.models import PromptDataset, SeedPromptTemplate, QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
+from pyrit.models import SeedPromptDataset, SeedPromptTemplate, QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
@@ -179,9 +179,9 @@ def fetch_seclists_bias_testing_examples(
     nationality: Optional[str] = None,
     gender: Optional[str] = None,
     skin_color: Optional[str] = None,
-) -> PromptDataset:
+) -> SeedPromptDataset:
     """
-    Fetch SecLists AI LLM Bias Testing examples from a specified source and create a PromptDataset.
+    Fetch SecLists AI LLM Bias Testing examples from a specified source and create a SeedPromptDataset.
     Args:
         source (str): The source from which to fetch examples. Defaults to the SecLists repository Bias_Testing.
         source_type (Literal["public_url"]): The type of source ('public_url').
@@ -195,7 +195,7 @@ def fetch_seclists_bias_testing_examples(
         skin_color (Optional[str]): Specific skin color to use for the placeholder. Defaults to None.
 
     Returns:
-        PromptDataset: A PromptDataset containing the examples with placeholders replaced.
+        SeedPromptDataset: A SeedPromptDataset containing the examples with placeholders replaced.
     """
 
     if random_seed is not None:
@@ -240,8 +240,8 @@ def fetch_seclists_bias_testing_examples(
 
         filled_examples.append(prompt)
 
-    # Create a PromptDataset object with the filled examples
-    dataset = PromptDataset(
+    # Create a SeedPromptDataset object with the filled examples
+    dataset = SeedPromptDataset(
         name="SecLists Bias Testing Examples",
         description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
         harm_category="bias_testing",
@@ -257,9 +257,9 @@ def fetch_xstest_examples(
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-) -> PromptDataset:
+) -> SeedPromptDataset:
     """
-    Fetch XSTest examples and create a PromptDataset.
+    Fetch XSTest examples and create a SeedPromptDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the exaggerated-safety repository.
@@ -268,7 +268,7 @@ def fetch_xstest_examples(
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
-        PromptDataset: A PromptDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -291,8 +291,8 @@ def fetch_xstest_examples(
     # Join all categories into a single comma-separated string
     harm_category_str = ", ".join(filter(None, harm_categories))
 
-    # Create a PromptDataset object with the fetched examples
-    dataset = PromptDataset(
+    # Create a SeedPromptDataset object with the fetched examples
+    dataset = SeedPromptDataset(
         name="XSTest Examples",
         description="A dataset of XSTest examples containing various categories such as violence, drugs, etc.",
         harm_category=harm_category_str,
@@ -311,9 +311,9 @@ def fetch_harmbench_examples(
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-) -> PromptDataset:
+) -> SeedPromptDataset:
     """
-    Fetch HarmBench examples and create a PromptDataset.
+    Fetch HarmBench examples and create a SeedPromptDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the HarmBench repository.
@@ -322,7 +322,7 @@ def fetch_harmbench_examples(
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
-        PromptDataset: A PromptDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -359,8 +359,8 @@ def fetch_harmbench_examples(
         # Use the semantic categories to determine harm categories
         harm_category_str = ", ".join(set(semantic_categories))
 
-    # Create a PromptDataset object with the fetched examples
-    dataset = PromptDataset(
+    # Create a SeedPromptDataset object with the fetched examples
+    dataset = SeedPromptDataset(
         name="HarmBench Examples",
         description=(
             "A dataset of HarmBench examples containing various categories such as chemical,"
@@ -374,16 +374,16 @@ def fetch_harmbench_examples(
     return dataset
 
 
-def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptDataset:
+def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPromptDataset:
     """
-    Fetch PKU-SafeRLHF examples and create a PromptDataset.
+    Fetch PKU-SafeRLHF examples and create a SeedPromptDataset.
 
     Args:
         include_safe_prompts (bool): all prompts in the dataset are returned if True; the dataset has
         RLHF markers for unsafe responses, so if False we only return the unsafe subset
 
     Returns:
-        PromptDataset: A PromptDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -408,7 +408,7 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
     Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
     Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
 
-    dataset = PromptDataset(
+    dataset = SeedPromptDataset(
         name="PKU-SafeRLHF",
         description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their
         helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
@@ -428,9 +428,9 @@ def fetch_adv_bench_dataset(
     source_type: Literal["public_url"] = "public_url",
     cache: bool = True,
     data_home: Optional[Path] = None,
-) -> PromptDataset:
+) -> SeedPromptDataset:
     """
-    Fetch AdvBench examples and create a PromptDataset.
+    Fetch AdvBench examples and create a SeedPromptDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the AdvBench repository.
@@ -439,7 +439,7 @@ def fetch_adv_bench_dataset(
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
-        PromptDataset: A PromptDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -464,7 +464,7 @@ def fetch_adv_bench_dataset(
     Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
     Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse, and more """
 
-    dataset = PromptDataset(
+    dataset = SeedPromptDataset(
         name="AdvBench Dataset",
         description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
         range over the same themes as the harmful strings setting, but the adversary's goal is instead to find
@@ -558,9 +558,9 @@ def fetch_decoding_trust_stereotypes_examples(
     stereotype_topics: Optional[List[str]] = None,
     target_groups: Optional[List[str]] = None,
     system_prompt_type: Literal["benign", "untargeted", "targeted"] = "targeted",
-) -> PromptDataset:
+) -> SeedPromptDataset:
     """
-    Fetch DecodingTrust examples and create a PromptDataset.
+    Fetch DecodingTrust examples and create a SeedPromptDataset.
 
     Args:
         source (str): The source from which to fetch examples. Defaults to the DecodingTrust repository.
@@ -579,7 +579,7 @@ def fetch_decoding_trust_stereotypes_examples(
             Defaults to "targeted".
 
     Returns:
-        PromptDataset: A PromptDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
 
     Note:
         For more information and access to the original dataset and related materials, visit:
@@ -639,8 +639,8 @@ def fetch_decoding_trust_stereotypes_examples(
         )
         prompts.append(prompt)
 
-    # Create a PromptDataset object with the fetched examples
-    dataset = PromptDataset(
+    # Create a SeedPromptDataset object with the fetched examples
+    dataset = SeedPromptDataset(
         name="DecodingTrust Stereotypes Examples",
         description=(
             "A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics and target groups. \

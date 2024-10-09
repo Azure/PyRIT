@@ -763,10 +763,10 @@ def test_get_scores_by_memory_labels(memory: MemoryInterface):
 
 def test_get_seed_prompts_no_filters(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", dataset_name="dataset1"),
-        SeedPrompt(value="prompt2", dataset_name="dataset2"),
+        SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts()
     assert len(result) == 2
@@ -776,22 +776,22 @@ def test_get_seed_prompts_no_filters(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_value_filter(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", dataset_name="dataset1"),
-        SeedPrompt(value="another prompt", dataset_name="dataset2"),
+        SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
+        SeedPrompt(value="another prompt", dataset_name="dataset2", data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
-    result = memory.get_seed_prompts(value="prompt")
+    result = memory.get_seed_prompts(value="prompt1")
     assert len(result) == 1
     assert result[0].value == "prompt1"
 
 
 def test_get_seed_prompts_with_dataset_name_filter(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", dataset_name="dataset1"),
-        SeedPrompt(value="prompt2", dataset_name="dataset2"),
+        SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(dataset_name="dataset1")
     assert len(result) == 1
@@ -800,8 +800,8 @@ def test_get_seed_prompts_with_dataset_name_filter(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_added_by_filter(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1"),
-        SeedPrompt(value="prompt2", dataset_name="dataset2", added_by="user2"),
+        SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="dataset2", added_by="user2", data_type="text"),
     ]
     memory.add_seed_prompts_to_memory(prompts=seed_prompts)
 
@@ -812,10 +812,10 @@ def test_get_seed_prompts_with_added_by_filter(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_source_filter(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", dataset_name="dataset1", source="source1"),
-        SeedPrompt(value="prompt2", dataset_name="dataset2", source="source2"),
+        SeedPrompt(value="prompt1", dataset_name="dataset1", source="source1", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="dataset2", source="source2", data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(source="source1")
     assert len(result) == 1
@@ -824,10 +824,10 @@ def test_get_seed_prompts_with_source_filter(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_harm_categories_filter(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["category1"]),
-        SeedPrompt(value="prompt2", harm_categories=["category2"]),
+        SeedPrompt(value="prompt1", harm_categories=["category1"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=["category2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(harm_categories=["category1"])
     assert len(result) == 1
@@ -836,10 +836,10 @@ def test_get_seed_prompts_with_harm_categories_filter(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_authors_filter(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", authors=["author1"]),
-        SeedPrompt(value="prompt2", authors=["author2"]),
+        SeedPrompt(value="prompt1", authors=["author1"], data_type="text"),
+        SeedPrompt(value="prompt2", authors=["author2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(authors=["author1"])
     assert len(result) == 1
@@ -848,10 +848,10 @@ def test_get_seed_prompts_with_authors_filter(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_groups_filter(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", groups=["group1"]),
-        SeedPrompt(value="prompt2", groups=["group2"]),
+        SeedPrompt(value="prompt1", groups=["group1"], data_type="text"),
+        SeedPrompt(value="prompt2", groups=["group2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(groups=["group1"])
     assert len(result) == 1
@@ -860,10 +860,10 @@ def test_get_seed_prompts_with_groups_filter(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_parameters_filter(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", parameters=["param1"]),
-        SeedPrompt(value="prompt2", parameters=["param2"]),
+        SeedPrompt(value="prompt1", parameters=["param1"], data_type="text"),
+        SeedPrompt(value="prompt2", parameters=["param2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(parameters=["param1"])
     assert len(result) == 1
@@ -872,8 +872,8 @@ def test_get_seed_prompts_with_parameters_filter(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_multiple_filters(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1"),
-        SeedPrompt(value="prompt2", dataset_name="dataset2", added_by="user2"),
+        SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
+        SeedPrompt(value="prompt2", dataset_name="dataset2", added_by="user2", data_type="text"),
     ]
     memory.add_seed_prompts_to_memory(prompts=seed_prompts)
 
@@ -885,10 +885,10 @@ def test_get_seed_prompts_with_multiple_filters(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_empty_list_filters(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["harm1"], authors=["author1"]),
-        SeedPrompt(value="prompt2", harm_categories=["harm2"], authors=["author2"]),
+        SeedPrompt(value="prompt1", harm_categories=["harm1"], authors=["author1"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=["harm2"], authors=["author2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(harm_categories=[], authors=[])
     assert len(result) == 2
@@ -896,10 +896,10 @@ def test_get_seed_prompts_with_empty_list_filters(memory: MemoryInterface):
 
 def test_get_seed_prompts_with_single_element_list_filters(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"]),
-        SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"]),
+        SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(harm_categories=["category1"], authors=["author1"])
     assert len(result) == 1
@@ -909,10 +909,10 @@ def test_get_seed_prompts_with_single_element_list_filters(memory: MemoryInterfa
 
 def test_get_seed_prompts_with_multiple_elements_list_filters(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["category1", "category2"], authors=["author1", "author2"]),
-        SeedPrompt(value="prompt2", harm_categories=["category3"], authors=["author3"]),
+        SeedPrompt(value="prompt1", harm_categories=["category1", "category2"], authors=["author1", "author2"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=["category3"], authors=["author3"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(harm_categories=["category1", "category2"], authors=["author1", "author2"])
     assert len(result) == 1
@@ -921,11 +921,11 @@ def test_get_seed_prompts_with_multiple_elements_list_filters(memory: MemoryInte
 
 def test_get_seed_prompts_with_multiple_elements_list_filters_additional(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["category1", "category2"], authors=["author1", "author2"]),
-        SeedPrompt(value="prompt2", harm_categories=["category3"], authors=["author3"]),
-        SeedPrompt(value="prompt3", harm_categories=["category1", "category3"], authors=["author1", "author3"]),
+        SeedPrompt(value="prompt1", harm_categories=["category1", "category2"], authors=["author1", "author2"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=["category3"], authors=["author3"], data_type="text"),
+        SeedPrompt(value="prompt3", harm_categories=["category1", "category3"], authors=["author1", "author3"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(harm_categories=["category1", "category3"], authors=["author1", "author3"])
     assert len(result) == 1
@@ -934,10 +934,10 @@ def test_get_seed_prompts_with_multiple_elements_list_filters_additional(memory:
 
 def test_get_seed_prompts_with_substring_filters_harm_categories(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"]),
-        SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"]),
+        SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"], data_type="text"),
+        SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(harm_categories=["ory1"])
     assert len(result) == 1
@@ -950,10 +950,10 @@ def test_get_seed_prompts_with_substring_filters_harm_categories(memory: MemoryI
 
 def test_get_seed_prompts_with_substring_filters_groups(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", groups=["group1"]),
-        SeedPrompt(value="prompt2", groups=["group2"]),
+        SeedPrompt(value="prompt1", groups=["group1"], data_type="text"),
+        SeedPrompt(value="prompt2", groups=["group2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(groups=["oup1"])
     assert len(result) == 1
@@ -966,10 +966,10 @@ def test_get_seed_prompts_with_substring_filters_groups(memory: MemoryInterface)
 
 def test_get_seed_prompts_with_substring_filters_parameters(memory: MemoryInterface):
     seed_prompts = [
-        SeedPrompt(value="prompt1", parameters=["param1"]),
-        SeedPrompt(value="prompt2", parameters=["param2"]),
+        SeedPrompt(value="prompt1", parameters=["param1"], data_type="text"),
+        SeedPrompt(value="prompt2", parameters=["param2"], data_type="text"),
     ]
-    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
     result = memory.get_seed_prompts(parameters=["ram1"])
     assert len(result) == 1
@@ -979,3 +979,32 @@ def test_get_seed_prompts_with_substring_filters_parameters(memory: MemoryInterf
     assert len(result) == 2
     assert result[0].parameters == ["param1"]
     assert result[1].parameters == ["param2"]
+
+def test_add_seed_prompts_to_memory_empty_list(memory: MemoryInterface):
+    prompts = []
+    memory.add_seed_prompts_to_memory(prompts=prompts, added_by="tester")
+    stored_prompts = memory.get_seed_prompts(dataset_name="test_dataset")
+    assert len(stored_prompts) == 0
+
+def test_get_seed_prompt_dataset_names_empty(memory: MemoryInterface):
+    assert memory.get_seed_prompt_dataset_names() == []
+
+def test_get_seed_prompt_dataset_names_single(memory: MemoryInterface):
+    dataset_name = "test_dataset"
+    seed_prompt = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
+    memory.add_seed_prompts_to_memory(prompts=[seed_prompt])
+    assert memory.get_seed_prompt_dataset_names() == [dataset_name]
+
+def test_get_seed_prompt_dataset_names_single_dataset_multiple_entries(memory: MemoryInterface):
+    dataset_name = "test_dataset"
+    seed_prompt1 = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
+    seed_prompt2 = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
+    memory.add_seed_prompts_to_memory(prompts=[seed_prompt1, seed_prompt2])
+    assert memory.get_seed_prompt_dataset_names() == [dataset_name]
+
+def test_get_seed_prompt_dataset_names_multiple(memory: MemoryInterface):
+    dataset_names = [f"dataset_{i}" for i in range(5)]
+    seed_prompts = [SeedPrompt(value=f"value_{i}", dataset_name=dataset_name, added_by="tester", data_type="text") for i, dataset_name in enumerate(dataset_names)]
+    memory.add_seed_prompts_to_memory(prompts=seed_prompts)
+    assert len(memory.get_seed_prompt_dataset_names()) == 5
+    assert sorted(memory.get_seed_prompt_dataset_names()) == sorted(dataset_names)
