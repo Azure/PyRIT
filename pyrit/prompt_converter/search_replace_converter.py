@@ -31,8 +31,8 @@ class SearchReplaceConverter(PromptConverter):
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
-        #return ConverterResult(output_text=prompt.replace(self.old_value, self.new_value), output_type="text")
-        return ConverterResult(output_text=re.sub(self.old_value, self.new_value,prompt), output_type="text")
+        # return ConverterResult(output_text=prompt.replace(self.old_value, self.new_value), output_type="text")
+        return ConverterResult(output_text=re.sub(self.old_value, self.new_value, prompt), output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
