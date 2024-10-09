@@ -660,10 +660,9 @@ class MultiPromptAttack(object):
         cands, count = [], 0
         worker = self.workers[worker_index]
 
-        # TODO: temporary solution for phi-3-mini: IndexError('piece id is out of range.')
         print("Masking out of range token_id.")
         vocab_size = worker.tokenizer.vocab_size
-        control_cand[control_cand > vocab_size] = 1738
+        control_cand[control_cand > vocab_size] = worker.tokenizer("!").input_ids[0]
 
         for i in range(control_cand.shape[0]):
             decoded_str = worker.tokenizer.decode(
@@ -1641,7 +1640,7 @@ def get_workers(params, eval=False):
 
     raw_conv_templates = []
     for template in params.conversation_templates:
-        if template in ["llama-2", "mistral", "llama-3", "vicuna"]:
+        if template in ["llama-2", "mistral", "llama-3-8b", "vicuna"]:
             raw_conv_templates.append(get_conversation_template(template)),
         elif template in ["phi-3-mini"]:
             conv_template = Conversation(

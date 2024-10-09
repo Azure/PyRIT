@@ -10,11 +10,11 @@ verbose: True
 allow_non_ascii: False
 num_train_models: 1
 result_prefix: "results/individual_llama3"
-tokenizer_paths: ["Undi95/Meta-Llama-3-8B-hf"]
+tokenizer_paths: ["meta-llama/Meta-Llama-3-8B-Instruct"]
 tokenizer_kwargs: [{"use_fast": False}]
-model_paths: ["Undi95/Meta-Llama-3-8B-hf"]
+model_paths: ["meta-llama/Meta-Llama-3-8B-Instruct"]
 model_kwargs: [{"low_cpu_mem_usage": True, "use_cache": False}]
-conversation_templates: ["llama-3"]
+conversation_templates: ["llama-3-8b"]
 devices: ["cuda:0"]
 train_data: ""
 test_data: ""

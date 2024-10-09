@@ -13,7 +13,7 @@ Currently we support 5 models:
 
 - meta-llama/Llama-2-7b-chat-hf: https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 
-- Undi95/Meta-Llama-3-8B-hf: https://huggingface.co/Undi95/Meta-Llama-3-8B-hf
+- meta-llama/Meta-Llama-3-8B-Instruct: https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct
 
 
 
