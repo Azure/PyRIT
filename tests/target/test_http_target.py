@@ -62,10 +62,10 @@ def test_parse_json_response_match(mock_http_response, mock_callback_function):
 @patch("requests.request")
 async def test_send_prompt_async(mock_request, mock_http_target, mock_http_response):
     prompt_request = Mock()
-    prompt_request.request_pieces = [Mock(original_value="test_prompt")]
+    prompt_request.request_pieces = [Mock(converted_value="test_prompt")]
     mock_request.return_value = mock_http_response
     response = await mock_http_target.send_prompt_async(prompt_request=prompt_request)
-    assert response.request_pieces[0].original_value == "value1"
+    assert response.request_pieces[0].converted_value == "value1"
     assert mock_request.call_count == 1
 
 
