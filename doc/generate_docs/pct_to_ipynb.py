@@ -62,7 +62,7 @@ def find_files(directory, file_extension):
             if file.endswith("_helpers.py"):
                 continue
             if file == "1_auxiliary_attacks.py" or file == "2_gcg_azure_ml.py":
-                continue # skip GCG scripts
+                continue  # skip GCG scripts
             if file.endswith(file_extension):
                 matches.append(os.path.join(root, file))
     return matches
