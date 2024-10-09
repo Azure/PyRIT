@@ -38,15 +38,10 @@ def test_get_homoglyph_variants_no_variants(homoglyph_generator):
 
 def test_generate_perturbed_prompts(homoglyph_generator):
     prompt = "This is a test."
-    perturbed_prompts = homoglyph_generator._generate_perturbed_prompts(prompt)
-    assert isinstance(perturbed_prompts, list)
-    assert len(perturbed_prompts) <= homoglyph_generator.max_iterations
-    # Each perturbed prompt should be different from the original
-    for p_prompt in perturbed_prompts:
-        assert p_prompt != prompt
-        assert isinstance(p_prompt, str)
-    # The number of perturbed prompts should be as expected
-    # Since this depends on the actual homoglyph mappings, we can't assert exact numbers
+    perturbed_prompt = homoglyph_generator._generate_perturbed_prompts(prompt)
+    assert isinstance(perturbed_prompt, str)
+    # Ensure that the perturbed prompt is different from the original
+    assert perturbed_prompt != prompt
 
 
 @pytest.mark.asyncio
@@ -70,14 +65,18 @@ async def test_input_not_supported(homoglyph_generator):
 
 @pytest.mark.asyncio
 async def test_convert_async_non_ascii_word(homoglyph_generator):
-    prompt = "This is a test with non-ASCII character: café."
+    prompt = "café"
     result = await homoglyph_generator.convert_async(prompt=prompt, input_type="text")
+
     assert isinstance(result, ConverterResult)
-    perturbed_prompts = result.output_text.split("\n")
-    for p_prompt in perturbed_prompts:
-        assert isinstance(p_prompt, str)
-        # Ensure the non-ASCII word is handled appropriately
-        assert "café" in p_prompt or "cafe" in p_prompt
+    perturbed_prompt = result.output_text
+
+    # Assert that we are getting perturbed results of the correct type and that it's not the same as original
+    assert isinstance(perturbed_prompt, str)
+    assert perturbed_prompt != prompt, "The perturbed prompt should be different from the original prompt."
+
+    # Check if non-ASCII character 'é' is handled correctly
+    assert "é" in perturbed_prompt or "e" in perturbed_prompt, "The non-ASCII character 'é' should be handled properly."
 
 
 @patch(

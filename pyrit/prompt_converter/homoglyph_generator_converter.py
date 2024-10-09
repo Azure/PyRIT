@@ -17,14 +17,17 @@ logger = logging.getLogger(__name__)
 class HomoglyphGenerator(PromptConverter):
     """
     A PromptConverter that applies homoglyph substitutions to words in the prompt
-    to test adversarial textual robustness.
+    to test adversarial textual robustness by replacing characters with visually similar ones.
     """
 
     def __init__(self, *, max_iterations: int = 20):
         """
         Initializes the HomoglyphGenerator.
+
         Args:
             max_iterations (int): Maximum number of convert_async calls allowed.
+            This parameter controls how many different variations can be generated 
+            before stopping.
         """
         super().__init__()
         self.max_iterations = max_iterations
@@ -38,6 +41,7 @@ class HomoglyphGenerator(PromptConverter):
     def _get_homoglyph_variants(self, word: str) -> list:
         """
         Retrieves homoglyph variants for a given word.
+
         Args:
             word (str): The word to find homoglyphs for.
         Returns:
@@ -59,6 +63,7 @@ class HomoglyphGenerator(PromptConverter):
     def _generate_perturbed_prompts(self, prompt: str) -> str:
         """
         Generates a perturbed prompt by substituting characters with their homoglyph variants.
+
         Args:
             prompt (str): The original prompt.
         Returns:
@@ -85,7 +90,7 @@ class HomoglyphGenerator(PromptConverter):
             perturbed_words.append(perturbed_word)
 
         # Join the perturbed words back into a string
-        new_prompt = ''.join(perturbed_words)
+        new_prompt = "".join(perturbed_words)
         logger.info(f"Final perturbed prompt: {new_prompt}")
 
         return new_prompt
@@ -93,6 +98,7 @@ class HomoglyphGenerator(PromptConverter):
     async def convert_async(self, *, prompt: str, input_type="text") -> ConverterResult:
         """
         Converts the given prompt by applying homoglyph substitutions.
+        
         Args:
             prompt (str): The prompt to be converted.
             input_type (str): The type of input (should be "text").
