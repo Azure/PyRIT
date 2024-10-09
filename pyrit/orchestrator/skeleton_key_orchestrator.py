@@ -13,7 +13,7 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
 from colorama import Style, Fore
@@ -99,32 +99,28 @@ class SkeletonKeyOrchestrator(Orchestrator):
 
         conversation_id = str(uuid4())
 
-        target_skeleton_prompt_obj = NormalizerRequestPiece(
-            request_converters=self._prompt_converters,
-            prompt_data_type="text",
-            prompt_value=self._skeleton_key_prompt,
-            memory=self._memory,
+        target_skeleton_prompt_obj = self._create_normalizer_request(
+            prompt_text=self._skeleton_key_prompt,
+            conversation_id=conversation_id,
+            converters=self._prompt_converters,
         )
 
         await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=NormalizerRequest([target_skeleton_prompt_obj]),
+            normalizer_request=target_skeleton_prompt_obj,
             target=self._prompt_target,
-            conversation_id=conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
 
-        target_prompt_obj = NormalizerRequestPiece(
-            request_converters=self._prompt_converters,
-            prompt_data_type="text",
-            prompt_value=prompt,
-            memory=self._memory,
+        target_prompt_obj = self._create_normalizer_request(
+            prompt_text=prompt,
+            conversation_id=conversation_id,
+            converters=self._prompt_converters,
         )
 
         return await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=NormalizerRequest([target_prompt_obj]),
+            normalizer_request=target_prompt_obj,
             target=self._prompt_target,
-            conversation_id=conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )

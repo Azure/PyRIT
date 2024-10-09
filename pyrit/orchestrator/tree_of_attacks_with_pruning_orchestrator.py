@@ -11,7 +11,7 @@ from treelib import Tree
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common.path import DATASETS_PATH, SCALES_PATH
+from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPromptTemplate
@@ -112,10 +112,10 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                 memory=self._memory,
             )
 
-        scorer_scale_path = Path(SCALES_PATH / "tree_of_attacks_with_pruning_jailbreak.yaml")
         self._scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
-            scale_path=scorer_scale_path,
+            scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
             memory=self._memory,
         )
 
@@ -149,16 +149,20 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
             logger.debug("Using the specified initial red teaming prompt.")
             prompt_text = self._initial_red_teaming_prompt
 
-        red_teaming_prompt_obj = NormalizerRequestPiece(
-            request_converters=[], prompt_value=prompt_text, prompt_data_type="text", memory=self._memory
+        red_teaming_prompt_obj = NormalizerRequest(
+            request_pieces=[
+                NormalizerRequestPiece(
+                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text", memory=self._memory
+                )
+            ],
+            conversation_id=self._red_teaming_chat_conversation_id,
         )
 
         red_teaming_response = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=NormalizerRequest([red_teaming_prompt_obj]),
+                    normalizer_request=red_teaming_prompt_obj,
                     target=self._red_teaming_chat,
-                    conversation_id=self._red_teaming_chat_conversation_id,
                     labels=self._global_memory_labels,
                     orchestrator_identifier=self.get_identifier(),  # the name of the orchestrator
                 )
@@ -201,17 +205,22 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                     prompt_target_conversation_id=self._prompt_target_conversation_id,
                 )
 
-        target_prompt_obj = NormalizerRequestPiece(
-            request_converters=self._prompt_converters,
-            prompt_value=prompt,
-            prompt_data_type="text",
-            memory=self._memory,
+        target_prompt_obj = NormalizerRequest(
+            request_pieces=[
+                NormalizerRequestPiece(
+                    request_converters=self._prompt_converters,
+                    prompt_value=prompt,
+                    prompt_data_type="text",
+                    memory=self._memory,
+                )
+            ],
+            conversation_id=self._prompt_target_conversation_id,
         )
+
         response = (
             await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=NormalizerRequest([target_prompt_obj]),
+                normalizer_request=target_prompt_obj,
                 target=self._prompt_target,
-                conversation_id=self._prompt_target_conversation_id,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self.get_identifier(),
             )
