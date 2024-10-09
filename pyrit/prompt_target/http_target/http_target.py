@@ -66,29 +66,29 @@ class HTTPTarget(PromptTarget):
 
         # Add Prompt into URL (if the URL takes it)
         if re.search(self.prompt_regex_string, url):
-            prompt_url_safe = urllib.parse.quote(
-                request.original_value
-            )  # by default doing URL encoding for prompts that go in URL
-            formatted_url = re_pattern.sub(prompt_url_safe, url)
-            url = formatted_url
+            # by default doing URL encoding for prompts that go in URL
+            url = re_pattern.sub(urllib.parse.quote(request.original_value), url)
 
         # Add Prompt into request body (if the body takes it)
         if re.search(self.prompt_regex_string, http_body):
+            prompt = request.original_value
+
             if http_body_json:  # clean prompt of whitespace control characters to ensure still valid json
-                cleaned_prompt = re.sub(r"\s", " ", request.original_value)
+                cleaned_prompt = re.sub(r"\s", " ", prompt)
                 formatted_http_body = re_pattern.sub(cleaned_prompt, http_body)
+
             else:  # doesn't clean prompt, enters it all in
-                formatted_http_body = re_pattern.sub(request.original_value, http_body)
+                formatted_http_body = re_pattern.sub(prompt, http_body)
 
             http_body = formatted_http_body
 
-            response = requests.request(
-                method=http_method,
-                url=url,
-                headers=header_dict,
-                data=http_body,
-                follow_redirects=True,  # Matches allow_redirects=True
-            )
+        response = requests.request(
+            method=http_method,
+            url=url,
+            headers=header_dict,
+            data=http_body,
+            follow_redirects=True,  # This is defaulted to true but using requests over httpx for this reason
+        )
 
         if self.callback_function:
             parsed_response = self.callback_function(response=response)
