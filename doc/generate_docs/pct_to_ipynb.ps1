@@ -61,3 +61,4 @@ foreach ($file in $files) {
         $file.FullName | Out-File -Append -FilePath $cacheFile
     }
 }
+

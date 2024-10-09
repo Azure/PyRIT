@@ -36,3 +36,4 @@ foreach ($file in $files) {
         Write-Host "Successfully processed $file"
     }
 }
+
