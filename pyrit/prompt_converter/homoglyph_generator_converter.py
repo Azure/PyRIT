@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
+import random
 import re
 
 from confusable_homoglyphs.confusables import is_confusable
@@ -23,7 +24,7 @@ class HomoglyphGenerator(PromptConverter):
         """
         Initializes the HomoglyphGenerator.
         Args:
-            max_iterations (int): Maximum number of perturbed prompts to generate.
+            max_iterations (int): Maximum number of convert_async calls allowed.
         """
         super().__init__()
         self.max_iterations = max_iterations
@@ -46,7 +47,8 @@ class HomoglyphGenerator(PromptConverter):
             # Check for confusable homoglyphs in the word
             confusables = is_confusable(word, greedy=True)
             if confusables:
-                return [item["homoglyphs"][0]["c"] for item in confusables]
+                # Return a list of all homoglyph variants instead of only the first one
+                return [homoglyph["c"] for item in confusables for homoglyph in item["homoglyphs"]]
         except UnicodeDecodeError:
             logger.error(f"Cannot process word '{word}' due to UnicodeDecodeError. Returning empty list.")
             return []
@@ -54,36 +56,39 @@ class HomoglyphGenerator(PromptConverter):
         # Default return if no homoglyphs are found
         return []
 
-    def _generate_perturbed_prompts(self, prompt: str) -> list:
+    def _generate_perturbed_prompts(self, prompt: str) -> str:
         """
-        Generates perturbed prompts by substituting words with their homoglyph variants.
+        Generates a perturbed prompt by substituting characters with their homoglyph variants.
         Args:
             prompt (str): The original prompt.
         Returns:
-            list: A list of perturbed prompts.
+            str: A perturbed prompt with character-level substitutions.
         """
-        result_list = []
-        count = 0
-        word_list = re.findall(r"\w+|\S+", prompt)
-        word_list_len = len(word_list)
+        perturbed_words = []
 
-        for idx in range(word_list_len):
-            if count >= self.max_iterations:
-                break
-            homoglyph_variants = self._get_homoglyph_variants(word_list[idx])
+        # Split the prompt into words and non-word tokens
+        word_list = re.findall(r"\w+|\W+", prompt)
 
-            if homoglyph_variants:
-                for variant in homoglyph_variants:
-                    if count >= self.max_iterations:
-                        break
-                    perturbed_word_list = word_list.copy()
-                    perturbed_word_list[idx] = variant
-                    # Detokenize using join and remove extra spaces before punctuation
-                    new_prompt = " ".join(perturbed_word_list)
-                    new_prompt = re.sub(r'\s([?.!,\'"])', r"\1", new_prompt).strip()
-                    result_list.append(new_prompt)
-                    count += 1
-        return result_list
+        for word in word_list:
+            perturbed_word = ""
+            for char in word:
+                homoglyph_variants = self._get_homoglyph_variants(char)
+                logger.info(f"Character: '{char}', Homoglyphs: {homoglyph_variants}")
+
+                if homoglyph_variants:
+                    # Randomly choose a homoglyph variant instead of always choosing the first one
+                    variant = random.choice(homoglyph_variants)
+                    logger.info(f"Replacing character '{char}' with '{variant}'")
+                    perturbed_word += variant
+                else:
+                    perturbed_word += char
+            perturbed_words.append(perturbed_word)
+
+        # Join the perturbed words back into a string
+        new_prompt = ''.join(perturbed_words)
+        logger.info(f"Final perturbed prompt: {new_prompt}")
+
+        return new_prompt
 
     async def convert_async(self, *, prompt: str, input_type="text") -> ConverterResult:
         """
@@ -97,8 +102,6 @@ class HomoglyphGenerator(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        perturbed_prompts = self._generate_perturbed_prompts(prompt)
+        perturbed_prompt = self._generate_perturbed_prompts(prompt)
 
-        # Combine the perturbed prompts into a single output
-        output_text = "\n".join(perturbed_prompts)
-        return ConverterResult(output_text=output_text, output_type="text")
+        return ConverterResult(output_text=perturbed_prompt, output_type="text")
