@@ -3,6 +3,7 @@
 
 import abc
 import copy
+import logging
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence
 import uuid
@@ -16,10 +17,12 @@ from pyrit.models import (
     group_conversation_request_pieces_by_sequence,
 )
 
-from pyrit.memory.memory_models import EmbeddingData
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, ScoreEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.models.storage_io import StorageIO
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryInterface(abc.ABC):
@@ -33,13 +36,14 @@ class MemoryInterface(abc.ABC):
     """
 
     memory_embedding: MemoryEmbedding = None
-    _storage_io: StorageIO = None
+    storage_io: StorageIO = None
     results_path: str = None
 
     def __init__(self, embedding_model=None):
         self.memory_embedding = embedding_model
         # Initialize the MemoryExporter instance
         self.exporter = MemoryExporter()
+        self._init_storage_io()
 
     def enable_embedding(self, embedding_model=None):
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
@@ -54,9 +58,15 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_all_embeddings(self) -> Sequence[EmbeddingData]:
+    def get_all_embeddings(self) -> Sequence[EmbeddingDataEntry]:
         """
         Loads all EmbeddingData from the memory storage handler.
+        """
+
+    @abc.abstractmethod
+    def _init_storage_io(self):
+        """
+        Initialize the storage IO handler storage_io.
         """
 
     @abc.abstractmethod
@@ -91,22 +101,65 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingDataEntry]) -> None:
         """
         Inserts embedding data into memory storage
         """
 
     @abc.abstractmethod
+    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
+        """
+        Fetches data from the specified table model with optional conditions.
+
+        Args:
+            model: The SQLAlchemy model class corresponding to the table you want to query.
+            conditions: SQLAlchemy filter conditions (optional).
+
+        Returns:
+            List of model instances representing the rows fetched from the table.
+        """
+
+    @abc.abstractmethod
+    def insert_entry(self, entry: Base) -> None:  # type: ignore
+        """
+        Inserts an entry into the Table.
+
+        Args:
+            entry: An instance of a SQLAlchemy model to be added to the Table.
+        """
+
+    @abc.abstractmethod
+    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+        """Inserts multiple entries into the database."""
+
     def add_scores_to_memory(self, *, scores: list[Score]) -> None:
         """
         Inserts a list of scores into the memory storage.
         """
+        for score in scores:
+            if score.prompt_request_response_id:
+                prompt_request_response_id = score.prompt_request_response_id
+                prompt_piece = self.get_prompt_request_pieces_by_id(prompt_ids=[str(prompt_request_response_id)])
+                if not prompt_piece:
+                    logging.error(f"Prompt with ID {prompt_request_response_id} not found in memory.")
+                    continue
+                # auto-link score to the original prompt id if the prompt is a duplicate
+                if prompt_piece[0].original_prompt_id != prompt_piece[0].id:
+                    score.prompt_request_response_id = prompt_piece[0].original_prompt_id
+        self.insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
-    @abc.abstractmethod
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
         """
         Gets a list of scores based on prompt_request_response_ids.
         """
+        prompt_pieces = self.get_prompt_request_pieces_by_id(prompt_ids=prompt_request_response_ids)
+        # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
+        prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
+        entries = self.query_entries(
+            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
+        )
+
+        return [entry.get_score() for entry in entries]
 
     def get_scores_by_orchestrator_id(self, *, orchestrator_id: str) -> list[Score]:
         """
@@ -121,8 +174,29 @@ class MemoryInterface(abc.ABC):
             list[Score]: A list of Score objects associated with the PromptRequestPiece objects
                 which match the specified orchestrator ID.
         """
+        prompt_pieces = self.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator_id)
+        # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
+        prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
+        return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
 
-        prompt_ids = self.get_prompt_ids_by_orchestrator(orchestrator_id=orchestrator_id)
+    def get_scores_by_memory_labels(self, *, memory_labels: dict[str, str]) -> list[Score]:
+        """
+        Retrieves a list of Score objects associated with the PromptRequestPiece objects
+        which have the specified memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
+                These labels can be used to track all prompts sent as part of an operation, score prompts based on
+                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+                Users can define any key-value pairs according to their needs.
+
+        Returns:
+            list[Score]: A list of Score objects associated with the PromptRequestPiece objects
+                which match the specified memory labels.
+        """
+        prompt_pieces = self.get_prompt_request_piece_by_memory_labels(memory_labels=memory_labels)
+        # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
+        prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
 
     def get_conversation(self, *, conversation_id: str) -> MutableSequence[PromptRequestResponse]:
@@ -207,12 +281,12 @@ class MemoryInterface(abc.ABC):
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
         prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
         for piece in prompt_pieces:
+            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
             if piece.orchestrator_identifier["id"] == new_orchestrator_id:
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
             piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
-
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
         return new_conversation_id
 
@@ -233,7 +307,6 @@ class MemoryInterface(abc.ABC):
             The uuid for the new conversation.
         """
         new_conversation_id = str(uuid.uuid4())
-
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
         prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
 
@@ -257,6 +330,7 @@ class MemoryInterface(abc.ABC):
         ]
 
         for piece in prompt_pieces:
+            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
             if new_orchestrator_id:
                 piece.orchestrator_identifier["id"] = new_orchestrator_id
