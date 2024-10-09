@@ -8,7 +8,6 @@ import requests
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
-import urllib.parse
 import re
 
 
@@ -57,30 +56,14 @@ class HTTPTarget(PromptTarget):
 
         # Make the actual HTTP request:
 
-        # Checks if the body is a json object - this matters when we substitute in the prompt for the placeholder
-        try:
-            json.loads(http_body)
-            http_body_json = True
-        except (ValueError, json.JSONDecodeError):
-            http_body_json = False
-
         # Add Prompt into URL (if the URL takes it)
         if re.search(self.prompt_regex_string, url):
             # by default doing URL encoding for prompts that go in URL
-            url = re_pattern.sub(urllib.parse.quote(request.converted_value), url)
+            url = re_pattern.sub(request.converted_value, url)
 
         # Add Prompt into request body (if the body takes it)
         if re.search(self.prompt_regex_string, http_body):
-            prompt = request.converted_value
-
-            if http_body_json:  # clean prompt of whitespace control characters to ensure still valid json
-                cleaned_prompt = re.sub(r"\s", " ", prompt)
-                formatted_http_body = re_pattern.sub(cleaned_prompt, http_body)
-
-            else:  # doesn't clean prompt, enters it all in
-                formatted_http_body = re_pattern.sub(prompt, http_body)
-
-            http_body = formatted_http_body
+            http_body = re_pattern.sub(request.converted_value, http_body)
 
         response = requests.request(
             method=http_method,
