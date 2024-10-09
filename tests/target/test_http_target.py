@@ -4,7 +4,10 @@
 import pytest
 from unittest.mock import patch, Mock
 from pyrit.prompt_target.http_target.http_target import HTTPTarget
-from pyrit.prompt_target.http_target.http_target_callback_functions import get_http_target_json_response_callback_function, get_http_target_regex_matching_callback_function
+from pyrit.prompt_target.http_target.http_target_callback_functions import (
+    get_http_target_json_response_callback_function,
+    get_http_target_regex_matching_callback_function,
+)
 from typing import Callable
 
 
@@ -31,11 +34,6 @@ def mock_http_response() -> Mock:
     mock_response = Mock()
     mock_response.content = b'{"mock_key": "value1"}'
     return mock_response
-
-
-def test_initilization_no_parameters():
-    with pytest.raises(ValueError):
-        HTTPTarget()
 
 
 def test_initilization_with_parameters(mock_http_target, mock_callback_function):
@@ -71,7 +69,7 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
 
 def test_parse_raw_http_request(mock_http_target):
     headers, body, url, method = mock_http_target.parse_raw_http_request()
-    assert url == "http://example.com/"
+    assert url == "https://example.com/"
     assert method == "POST"
     assert headers == {"Host": "example.com", "Content-Type": "application/json"}
 

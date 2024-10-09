@@ -1,5 +1,20 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.4
+#   kernelspec:
+#     display_name: pyrit2
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
-# # This notebook shows how to interact with the HTTP Target:
+# # HTTP Target
+# This notebook shows how to interact with the HTTP Target:
 
 # %%
 import logging
@@ -88,7 +103,7 @@ http_prompt_target = HTTPTarget(
     http_request=raw_http_request, prompt_regex_string="{PROMPT}", callback_function=parsing_function
 )
 
-
+# Note, like above, a converter is used to format the prompt to be json safe without new lines/carriage returns, etc
 with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     red_teaming_chat=red_teaming_chat,
@@ -105,7 +120,7 @@ with RedTeamingOrchestrator(
 # ## BIC Example
 
 # %% [markdown]
-# Bing Image Creator which does not have an API is harder to use than AOAI but shown as an example
+# Bing Image Creator (which does not have an API) is harder to use that AOAI - but is shown as another example of how to interact with the HTTP Target
 #
 # The HTTP request to make needs to be captured and put here in the "http_req" variable (the values you need to get from DevTools or Burp)
 # For Bing Image Creator the cookies contain the authorization in them, which is captured using Devtools/burp/etc

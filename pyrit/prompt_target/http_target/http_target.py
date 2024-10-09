@@ -30,7 +30,7 @@ class HTTPTarget(PromptTarget):
 
     def __init__(
         self,
-        http_request: str = None,
+        http_request: str,
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
         callback_function: Callable = None,
@@ -42,9 +42,6 @@ class HTTPTarget(PromptTarget):
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
         self.use_tls = use_tls
-
-        if not self.http_request:
-            raise ValueError("HTTP Request is required for HTTP Target")
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -61,7 +58,6 @@ class HTTPTarget(PromptTarget):
 
         # Add Prompt into URL (if the URL takes it)
         if re.search(self.prompt_regex_string, url):
-            # by default doing URL encoding for prompts that go in URL
             url = re_pattern.sub(request.converted_value, url)
 
         # Add Prompt into request body (if the body takes it)
@@ -73,19 +69,16 @@ class HTTPTarget(PromptTarget):
             url=url,
             headers=header_dict,
             data=http_body,
-            allow_redirects=True,  # This is defaulted to true but using requests over httpx for this reason
+            allow_redirects=True,
         )
 
-        if self.callback_function:
-            parsed_response = self.callback_function(response=response)
-            response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[str(parsed_response)]
-            )
+        response_content = response.content
 
-        else:
-            response_entry = construct_response_from_request(
-                request=request, response_text_pieces=[str(response.content)]
-            )
+        if self.callback_function:
+            response_content = self.callback_function(response=response)
+
+        response_entry = construct_response_from_request(request=request, response_text_pieces=[str(response_content)])
+
         return response_entry
 
     def parse_raw_http_request(self):
@@ -134,7 +127,7 @@ class HTTPTarget(PromptTarget):
         if len(http_req_info_line) > 2:
             http_version = http_req_info_line[2]
             if "HTTP/2" in http_version or "HTTP/1.1" in http_version:
-                if self.use_tls == True:
+                if self.use_tls is True:
                     http_url_beg = "https://"
                 else:
                     http_url_beg = "http://"
