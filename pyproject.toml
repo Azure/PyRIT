@@ -72,7 +72,8 @@ dependencies = [
     "tqdm>=4.66.2",
     "transformers>=4.40.0",
     "treelib>=1.7.0",
-    "types-requests>=2.31.0.20240406"
+    "types-requests>=2.31.0.20240406",
+    "torch==2.4.1"
 ]
 
 [project.optional-dependencies]
