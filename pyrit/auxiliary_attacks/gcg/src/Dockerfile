@@ -16,7 +16,7 @@ RUN conda env create -p $CONDA_ENVIRONMENT_PATH -f conda_dependencies.yaml -q &&
 
 RUN conda list
 
-RUN git clone -b romanlutz/gcg_azureml https://github.com/blakebullwinkel/PyRIT.git
+RUN git clone https://github.com/Azure/PyRIT.git
 
 RUN cd PyRIT && pip install -e .[dev,gcg] && pip install git+https://github.com/lm-sys/FastChat.git@2c68a13bfe10b86f40e3eefc3fcfacb32c00b02a
 
