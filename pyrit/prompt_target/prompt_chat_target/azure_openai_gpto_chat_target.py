@@ -3,14 +3,16 @@
 
 import logging
 import json
-from typing import MutableSequence, Optional
+from typing import MutableSequence, Optional, Union
+
+from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 
 from openai import AsyncAzureOpenAI
 from openai import BadRequestError
 from openai.types.chat import ChatCompletion
 
 
-from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
+from pyrit.auth.azure_auth import get_token_provider_from_azure_credential
 from pyrit.common import default_values
 from pyrit.exceptions import PyritException, EmptyResponseException
 from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
@@ -43,6 +45,7 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
         api_key: str = None,
         headers: str = None,
         use_aad_auth: bool = False,
+        aad_credential: Union[DefaultAzureCredential, ManagedIdentityCredential, None] = None,
         memory: MemoryInterface = None,
         api_version: str = "2024-02-01",
         max_tokens: int = 1024,
@@ -114,8 +117,12 @@ class AzureOpenAIGPT4OChatTarget(PromptChatTarget):
             logger.info("No headers have been passed, setting empty default headers")
 
         if use_aad_auth:
-            logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
-            token_provider = get_token_provider_from_default_azure_credential()
+            logger.info("Using aad_auth")
+            if aad_credential is None:
+                logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
+                aad_credential = DefaultAzureCredential()
+            
+            token_provider = get_token_provider_from_azure_credential(aad_credential)
 
             self._async_client = AsyncAzureOpenAI(
                 azure_ad_token_provider=token_provider,
