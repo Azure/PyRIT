@@ -3,13 +3,14 @@
 
 import pytest
 from unittest.mock import patch, Mock
-from pyrit.prompt_target.http_target.http_target import HTTPTarget, parse_json_factory, parse_using_regex_text_factory
+from pyrit.prompt_target.http_target.http_target import HTTPTarget
+from pyrit.prompt_target.http_target.http_target_callback_functions import get_http_target_json_response_callback_function, get_http_target_regex_matching_callback_function
 from typing import Callable
 
 
 @pytest.fixture
 def mock_callback_function() -> Callable:
-    parsing_function = parse_json_factory(key="mock_key")
+    parsing_function = get_http_target_json_response_callback_function(key="mock_key")
     return parsing_function
 
 
@@ -47,7 +48,7 @@ def test_initilization_with_parameters(mock_http_target, mock_callback_function)
 
 
 def test_parse_json_response_no_match(mock_http_response):
-    parse_json_response = parse_json_factory(key="nonexistant_key")
+    parse_json_response = get_http_target_json_response_callback_function(key="nonexistant_key")
     result = parse_json_response(mock_http_response)
     assert result == ""
 
@@ -80,7 +81,7 @@ def test_parse_raw_http_request(mock_http_target):
 def test_parse_regex_response_no_match():
     mock_response = Mock()
     mock_response.content = b"<html><body>No match here</body></html>"
-    parse_html_function = parse_using_regex_text_factory(key=r'no_results\/[^\s"]+')
+    parse_html_function = get_http_target_regex_matching_callback_function(key=r'no_results\/[^\s"]+')
     result = parse_html_function(mock_response)
     assert result == "b'<html><body>No match here</body></html>'"
 
@@ -88,6 +89,6 @@ def test_parse_regex_response_no_match():
 def test_parse_regex_response_match():
     mock_response = Mock()
     mock_response.content = b"<html><body>Match: 1234</body></html>"
-    parse_html_response = parse_using_regex_text_factory(r"Match: (\d+)")
+    parse_html_response = get_http_target_regex_matching_callback_function(r"Match: (\d+)")
     result = parse_html_response(mock_response)
     assert result == "Match: 1234"
