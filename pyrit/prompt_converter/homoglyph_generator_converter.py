@@ -26,7 +26,7 @@ class HomoglyphGenerator(PromptConverter):
 
         Args:
             max_iterations (int): Maximum number of convert_async calls allowed.
-            This parameter controls how many different variations can be generated 
+            This parameter controls how many different variations can be generated
             before stopping.
         """
         super().__init__()
@@ -98,7 +98,7 @@ class HomoglyphGenerator(PromptConverter):
     async def convert_async(self, *, prompt: str, input_type="text") -> ConverterResult:
         """
         Converts the given prompt by applying homoglyph substitutions.
-        
+
         Args:
             prompt (str): The prompt to be converted.
             input_type (str): The type of input (should be "text").
