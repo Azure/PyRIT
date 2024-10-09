@@ -256,12 +256,15 @@ class CrescendoOrchestrator(Orchestrator):
                 f"which received a score of {objective_score.score_rationale}\n\n"
             )
 
+        normalizer_request = self._create_normalizer_request(
+            prompt_text=prompt_text, conversation_id=red_team_conversation_id
+        )
+
         response_text = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=self._create_normalizer_request(prompt_text=prompt_text),
+                    normalizer_request=normalizer_request,
                     target=self._red_teaming_chat,
-                    conversation_id=red_team_conversation_id,
                     orchestrator_identifier=self.get_identifier(),
                     labels=self._global_memory_labels,
                 )
@@ -292,11 +295,14 @@ class CrescendoOrchestrator(Orchestrator):
 
     async def _send_prompt_to_target_async(self, *, attack_prompt: str) -> PromptRequestPiece:
         # Sends the attack prompt to the prompt target and returns the response
+        normalizer_request = self._create_normalizer_request(
+            prompt_text=attack_prompt, conversation_id=self._prompt_target_conversation_id
+        )
+
         return (
             await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=self._create_normalizer_request(prompt_text=attack_prompt),
+                normalizer_request=normalizer_request,
                 target=self._prompt_target,
-                conversation_id=self._prompt_target_conversation_id,
                 orchestrator_identifier=self.get_identifier(),
                 labels=self._global_memory_labels,
             )

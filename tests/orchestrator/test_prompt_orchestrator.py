@@ -4,11 +4,12 @@
 import pytest
 import tempfile
 import time
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
 
 from pyrit.memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.score import Score, SubStringScorer
@@ -253,18 +254,6 @@ async def test_orchestrator_send_prompts_async_with_memory_labels_collision(mock
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_conversation(mock_target: MockPromptTarget):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
-    await orchestrator.send_prompt_async(prompt="hello", conversation_id="123456")
-    await orchestrator.send_prompt_async(prompt="hello2", conversation_id="123456")
-
-    entries = orchestrator._memory.get_conversation(conversation_id="123456")
-    assert len(entries) == 4
-    assert entries[0].request_pieces[0].original_value == "hello"
-    assert entries[2].request_pieces[0].original_value == "hello2"
-
-
-@pytest.mark.asyncio
 async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget):
     scorer = AsyncMock()
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
@@ -308,3 +297,35 @@ def test_orchestrator_unique_id(orchestrator_count: int):
         orchestrator_ids.add(id)
 
     assert not duplicate_found
+
+
+def test_prepare_conversation_with_prepended_conversation():
+    with patch("pyrit.orchestrator.prompt_sending_orchestrator.uuid.uuid4") as mock_uuid:
+
+        mock_uuid.return_value = "mocked-uuid"
+        prompt_target_mock = MagicMock()
+        memory_mock = MagicMock()
+        orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target_mock, memory=memory_mock)
+
+        prepended_conversation = [PromptRequestResponse(request_pieces=[MagicMock(conversation_id=None)])]
+        orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
+
+        conversation_id = orchestrator._prepare_conversation()
+
+        assert conversation_id == "mocked-uuid"
+        for request in prepended_conversation:
+            for piece in request.request_pieces:
+                assert piece.conversation_id == "mocked-uuid"
+
+        memory_mock.add_request_response_to_memory.assert_called_with(request=prepended_conversation[0])
+
+
+def test_prepare_conversation_without_prepended_conversation():
+    memory_mock = MagicMock()
+    prompt_target_mock = MagicMock()
+    orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target_mock, memory=memory_mock)
+
+    conversation_id = orchestrator._prepare_conversation()
+
+    assert not conversation_id
+    memory_mock.add_request_response_to_memory.assert_not_called()
