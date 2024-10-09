@@ -4,10 +4,7 @@
 import pytest
 from unittest.mock import patch, Mock
 from pyrit.prompt_target.http_target.http_target import HTTPTarget
-from pyrit.prompt_target.http_target.http_target_callback_functions import (
-    get_http_target_json_response_callback_function,
-    get_http_target_regex_matching_callback_function,
-)
+from pyrit.prompt_target.http_target.http_target_callback_functions import get_http_target_json_response_callback_function, get_http_target_regex_matching_callback_function
 from typing import Callable
 
 
@@ -72,7 +69,6 @@ def test_parse_raw_http_request(mock_http_target):
     assert url == "https://example.com/"
     assert method == "POST"
     assert headers == {"Host": "example.com", "Content-Type": "application/json"}
-
     assert body == '{"prompt": "{PLACEHOLDER_PROMPT}"}'
 
 
