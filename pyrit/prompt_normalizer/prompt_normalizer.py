@@ -27,7 +27,6 @@ class PromptNormalizer(abc.ABC):
         *,
         normalizer_request: NormalizerRequest,
         target: PromptTarget,
-        conversation_id: str = None,
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
@@ -38,7 +37,6 @@ class PromptNormalizer(abc.ABC):
         Args:
             normalizer_request (NormalizerRequest): The request to be sent.
             target (PromptTarget): The target to send the request to.
-            conversation_id (str, optional): The ID of the conversation. Defaults to None.
             sequence (int, optional): The sequence number. Defaults to -1.
             labels (dict[str, str], optional): Additional labels for the request. Defaults to None.
             orchestrator_identifier (dict[str, str], optional): The orchestrator identifier. Defaults to None.
@@ -50,7 +48,6 @@ class PromptNormalizer(abc.ABC):
         request = await self._build_prompt_request_response(
             request=normalizer_request,
             target=target,
-            conversation_id=conversation_id,
             sequence=sequence,
             labels=labels,
             orchestrator_identifier=orchestrator_identifier,
@@ -151,7 +148,6 @@ class PromptNormalizer(abc.ABC):
         *,
         request: NormalizerRequest,
         target: PromptTarget,
-        conversation_id: str = None,
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
@@ -164,7 +160,6 @@ class PromptNormalizer(abc.ABC):
         Args:
             request (NormalizerRequest): The normalizer request object.
             target (PromptTarget): The prompt target object.
-            conversation_id (str, optional): The conversation ID. Defaults to None.
             sequence (int, optional): The sequence number. Defaults to -1.
             labels (dict[str, str], optional): The labels dictionary. Defaults to None.
             orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
@@ -177,7 +172,7 @@ class PromptNormalizer(abc.ABC):
         entries = []
 
         # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
-        conversation_id = conversation_id if conversation_id else str(uuid4())
+        conversation_id = request.conversation_id if request.conversation_id else str(uuid4())
         for request_piece in request.request_pieces:
 
             converted_prompt_text, converted_prompt_type = await self._get_converted_value_and_type(
