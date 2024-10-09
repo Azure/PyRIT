@@ -45,6 +45,7 @@ dependencies = [
     "azure-ai-ml==1.13.0",
     "azure-storage-blob>=12.19.0",
     "confusables==1.2.0",
+    "confusable-homoglyphs==3.3.1",
     "datasets>=3.0.0",
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
