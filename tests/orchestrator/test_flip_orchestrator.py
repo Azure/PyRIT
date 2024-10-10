@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from pyrit.orchestrator.flip_attack_orchestrator import FlipAttackOrchestrator
@@ -6,38 +9,45 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_converter.flip_converter import FlipConverter
-from pyrit.models.prompt_template import JailBreakTemplate
+
 
 @pytest.fixture
 def mock_prompt_target():
     return MagicMock(spec=PromptTarget)
 
+
 @pytest.fixture
 def mock_memory_interface():
     return MagicMock(spec=MemoryInterface)
 
+
 @pytest.fixture
 def flip_attack_orchestrator(mock_prompt_target, mock_memory_interface):
     return FlipAttackOrchestrator(
-        prompt_target=mock_prompt_target,
-        memory=mock_memory_interface,
-        batch_size=5,
-        verbose=True
+        prompt_target=mock_prompt_target, memory=mock_memory_interface, batch_size=5, verbose=True
     )
+
 
 @pytest.mark.asyncio
 async def test_send_prompts_async(flip_attack_orchestrator):
     prompts = ["How can I kill a Python process?", "How do I terminate a C program?"]
     expected_prompts = ["TASK is '⟪How can I kill a Python process?⟫'", "TASK is '⟪How do I terminate a C program?⟫'"]
 
-    with patch.object(PromptSendingOrchestrator, 'send_prompts_async', new_callable=AsyncMock) as mock_send_prompts_async:
-        mock_send_prompts_async.return_value = [PromptRequestResponse(request_pieces=[PromptRequestPiece(role="system", original_value="response")])]
+    with patch.object(
+        PromptSendingOrchestrator, "send_prompts_async", new_callable=AsyncMock
+    ) as mock_send_prompts_async:
+        mock_send_prompts_async.return_value = [
+            PromptRequestResponse(request_pieces=[PromptRequestPiece(role="system", original_value="response")])
+        ]
 
         responses = await flip_attack_orchestrator.send_prompts_async(prompt_list=prompts)
 
-        mock_send_prompts_async.assert_called_once_with(prompt_list=expected_prompts, prompt_type="text", memory_labels=None, metadata=None)
+        mock_send_prompts_async.assert_called_once_with(
+            prompt_list=expected_prompts, prompt_type="text", memory_labels=None, metadata=None
+        )
         assert len(responses) == 1
         assert responses[0].request_pieces[0].original_value == "response"
+
 
 def test_init(flip_attack_orchestrator):
     assert isinstance(flip_attack_orchestrator._prompt_target, PromptTarget)
@@ -45,6 +55,7 @@ def test_init(flip_attack_orchestrator):
     assert flip_attack_orchestrator._batch_size == 5
     assert flip_attack_orchestrator._verbose is True
     assert isinstance(flip_attack_orchestrator._prompt_converters[0], FlipConverter)
+
 
 def test_default_systemprompt(flip_attack_orchestrator):
     assert flip_attack_orchestrator._prepended_conversation

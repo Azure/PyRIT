@@ -49,7 +49,8 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
-                ensure proper rate limit management.
+                ensure proper rate limit management.\
+            verbose (bool, optional): Whether to log debug information. Defaults to False.
         """
 
         super().__init__(
@@ -89,7 +90,6 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
-            prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
                 prompts.
             These labels will be merged with the instance's global memory labels. Defaults to None.
