@@ -106,7 +106,7 @@ class JailBreakTemplate(PromptTemplate):
 
     def get_prompt(self, prompt: str, examples: str = ""):
         call_dict = {}
-        if "examples" in self.parameters:
+        if self.parameters and "examples" in self.parameters:
             call_dict["examples"] = examples
 
         call_dict["prompt"] = prompt

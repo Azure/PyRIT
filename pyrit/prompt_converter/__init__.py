@@ -15,6 +15,7 @@ from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
+from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerConverter,
     FuzzerCrossOverConverter,
@@ -57,6 +58,7 @@ __all__ = [
     "CodeChameleonConverter",
     "ConverterResult",
     "EmojiConverter",
+    "FlipConverter",
     "FuzzerConverter",
     "FuzzerCrossOverConverter",
     "FuzzerExpandConverter",
