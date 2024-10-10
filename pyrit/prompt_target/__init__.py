@@ -19,6 +19,7 @@ from pyrit.prompt_target.azure_openai_completion_target import AzureOpenAIComple
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
 from pyrit.prompt_target.hugging_face_chat_target import HuggingFaceChatTarget
 from pyrit.prompt_target.hugging_face_enpoint_target import HuggingFaceEndpointTarget
+from pyrit.prompt_target.http_target.http_target import HTTPTarget
 
 
 __all__ = [
@@ -42,4 +43,5 @@ __all__ = [
     "limit_requests_per_minute",
     "TextTarget",
     "OllamaChatTarget",
+    "HTTPTarget",
 ]
