@@ -57,7 +57,7 @@ def get_http_target_regex_matching_callback_function(key: str, url: str = None) 
     return parse_using_regex
 
 
-def _fetch_key(data: dict, key: str) -> str:
+def _fetch_key(data: dict, key: str):
     """
     Credit to @Mayuraggarwal1992
     Fetches the answer from the HTTP JSON response based on the path.
