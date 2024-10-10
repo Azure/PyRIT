@@ -65,13 +65,13 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         # This is sent to the target
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
-        system_str = JailBreakTemplate.from_yaml_file(system_prompt_path).get_system_prompt()
+        self.system_prompt = JailBreakTemplate.from_yaml_file(system_prompt_path).get_system_prompt()
 
         system_prompt = PromptRequestResponse(
             request_pieces=[
                 PromptRequestPiece(
                     role="system",
-                    original_value=system_str,
+                    original_value=self.system_prompt,
                 )
             ]
         )
