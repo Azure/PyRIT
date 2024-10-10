@@ -201,11 +201,14 @@ class RedTeamingOrchestrator(Orchestrator):
             memory=self._memory,
         )
 
+        normalizer_request = NormalizerRequest(
+            request_pieces=[target_prompt_obj], conversation_id=self._prompt_target_conversation_id
+        )
+
         response_piece = (
             await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=NormalizerRequest([target_prompt_obj]),
+                normalizer_request=normalizer_request,
                 target=self._prompt_target,
-                conversation_id=self._prompt_target_conversation_id,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self.get_identifier(),
             )
@@ -309,12 +312,15 @@ class RedTeamingOrchestrator(Orchestrator):
                 labels=self._global_memory_labels,
             )
 
+        normalizer_request = self._create_normalizer_request(
+            prompt_text=prompt_text, conversation_id=self._red_teaming_chat_conversation_id
+        )
+
         response_text = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=self._create_normalizer_request(prompt_text=prompt_text),
+                    normalizer_request=normalizer_request,
                     target=self._red_teaming_chat,
-                    conversation_id=self._red_teaming_chat_conversation_id,
                     orchestrator_identifier=self.get_identifier(),
                     labels=self._global_memory_labels,
                 )

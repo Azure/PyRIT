@@ -119,12 +119,16 @@ class AzureContentFilterScorer(Scorer):
             category = score["category"]
             normalized_value = self.scale_value_float(float(value), 0, 7)
 
+            # Severity as defined here
+            # https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?tabs=definitions#severity-levels
+            metadata = {"azure_severity": str(value)}
+
             score = Score(
                 score_type="float_scale",
                 score_value=str(normalized_value),
                 score_value_description=None,
                 score_category=category,
-                score_metadata=None,
+                score_metadata=str(metadata),
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
@@ -157,17 +161,3 @@ class AzureContentFilterScorer(Scorer):
                     f"Unsupported image format: {ext}. Supported formats are: \
                         {AZURE_CONTENT_FILTER_SCORER_SUPPORTED_IMAGE_FORMATS}"
                 )
-
-    def get_azure_severity(self, score_value: str) -> int:
-        """Converts the float value associated with the score to the severity value Azure Content Filter uses
-        Args:
-            score_value: The string representation of the float
-        Returns:
-            Severity as defined here
-            https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?
-            tabs=definitions#severity-levels
-
-            Raises ValueError if converted_value_data_type is not "text"
-        """
-
-        return round(float(score_value) * 7)
