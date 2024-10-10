@@ -167,6 +167,10 @@ cython_debug/
 doc/generate_docs/cache/*
 !doc/generate_docs/cache/.gitkeep
 
+# Jupyterbook build files
+doc/_build/
+doc/_autosummary/
+
 # ignore all VSCode settings
 .vscode/*
 
