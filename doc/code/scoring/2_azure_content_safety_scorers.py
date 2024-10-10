@@ -56,7 +56,7 @@ response = PromptRequestPiece(
 memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 
 scores = await azure_content_filter.score_async(response)  # type: ignore
-assert scores[0].get_value() > 0  # should be value 2 base on the documentation
+assert scores[0].get_value() > 0  # azure_severity should be value 2 base on the documentation
 
 for score in scores:
     # score_metadata contains azure_severity original value
