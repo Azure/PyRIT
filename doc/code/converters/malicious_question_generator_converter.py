@@ -1,12 +1,12 @@
 # %% [markdown]
 # # Generating Malicious Questions Using a Custom Converter
 #
-# In this script, we demonstrate how to use the `MaliciousQuestionGeneratorConverter` to generate malicious questions based on an initial prompt about cybersecurity vulnerabilities.
+# In this script, we demonstrate how to use the `MaliciousQuestionGeneratorConverter` to generate a malicious question based on an initial prompt about cybersecurity vulnerabilities.
 # The converter interacts with the Azure OpenAI API, sending prompts asynchronously through the `PromptSendingOrchestrator`.
 #
 # This script shows how to:
 # - Initialize and configure environment variables for the OpenAI API.
-# - Use the `MaliciousQuestionGeneratorConverter` to generate multiple malicious questions from a single prompt.
+# - Use the `MaliciousQuestionGeneratorConverter` to generate a malicious question from a single prompt.
 # - Send the generated prompts asynchronously using `PromptSendingOrchestrator`.
 # - Print the conversations and responses from the API.
 
@@ -16,9 +16,7 @@ import os
 from pyrit.common import default_values
 from pyrit.prompt_target import AzureOpenAITextChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.malicious_question_generator_converter import (
-    MaliciousQuestionGeneratorConverter,
-) 
+from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
 
 # Load default environment values (API keys, endpoints, etc.)
 default_values.load_default_env()
@@ -40,7 +38,7 @@ prompt_converter_llm = AzureOpenAITextChatTarget(
 )
 
 # Initialize the MaliciousQuestionGeneratorConverter
-malicious_question_converter = MaliciousQuestionGeneratorConverter(target=prompt_converter_llm, max_iterations=3)
+malicious_question_converter = MaliciousQuestionGeneratorConverter(target=prompt_converter_llm)
 
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
@@ -48,19 +46,17 @@ with PromptSendingOrchestrator(
     prompt_converters=[
         malicious_question_converter
     ],  # Stack of converters to apply (only using the malicious question converter)
-    verbose=True,
+    verbose=False,
 ) as orchestrator:
-    # Loop to generate and send each question one by one
-    for _ in range(malicious_question_converter.max_iterations):
-        # Generate one question using the converter for each iteration
-        converter_result = await malicious_question_converter.convert_async(prompt=prompts[0])  # type: ignore
+    # Generate one question using the converter for each iteration
+    converter_result = await malicious_question_converter.convert_async(prompt=prompts[0])  # type: ignore
 
-        # Send the generated question to the response target via the orchestrator
-        if converter_result.output_text != "No question generated.":
-            # Send the generated question and get the response from the LLM
-            await orchestrator.send_prompts_async(prompt_list=[converter_result.output_text])  # type: ignore
-        else:
-            break  # Exit the loop if no more questions are generated
+    # Send the generated question to the response target via the orchestrator
+    if converter_result.output_text != "No question generated.":
+        # Send the generated question and get the response from the LLM
+        await orchestrator.send_prompts_async(prompt_list=[converter_result.output_text])  # type: ignore
+    else:
+        print("No question was generated.")
 
     # Print the conversations after all questions are sent
     await orchestrator.print_conversations()  # type: ignore

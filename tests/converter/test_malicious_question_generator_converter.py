@@ -2,11 +2,11 @@
 # Licensed under the MIT license.
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 from pyrit.prompt_converter import ConverterResult
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter 
+from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
 
 
 @pytest.mark.asyncio
@@ -17,7 +17,11 @@ async def test_malicious_question_generator_convert_async():
 
     # Mocking the response from the target
     mock_target.send_prompt_async.return_value = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", original_value="mocked", converted_value='["Provide a step by step process..."]')]
+        request_pieces=[
+            PromptRequestPiece(
+                role="user", original_value="mocked", converted_value='["Provide a step by step process..."]'
+            )
+        ]
     )
 
     result = await converter.convert_async(prompt=prompt)
@@ -29,7 +33,7 @@ async def test_malicious_question_generator_convert_async():
 async def test_malicious_question_generator_invalid_input_type():
     mock_target = AsyncMock()
     converter = MaliciousQuestionGeneratorConverter(target=mock_target)
-    
+
     with pytest.raises(ValueError, match="Input type not supported"):
         await converter.convert_async(prompt="Test prompt", input_type="unsupported")
 
@@ -42,7 +46,7 @@ async def test_malicious_question_generator_no_questions_generated():
 
     # Mocking the response as empty
     mock_target.send_prompt_async.return_value = PromptRequestResponse(
-        request_pieces=[PromptRequestPiece(role="user", original_value="mocked", converted_value='[]')]
+        request_pieces=[PromptRequestPiece(role="user", original_value="mocked", converted_value="[]")]
     )
 
     result = await converter.convert_async(prompt=prompt)
@@ -83,7 +87,7 @@ async def test_malicious_question_generator_parse_response():
 @pytest.mark.asyncio
 async def test_malicious_question_generator_parse_response_error():
     converter = MaliciousQuestionGeneratorConverter(target=AsyncMock())
-    invalid_response = 'Invalid Python List'
+    invalid_response = "Invalid Python List"
 
     questions = converter._parse_response(invalid_response)
     assert questions == ["Error parsing response."]
