@@ -155,10 +155,10 @@ class PAIROrchestrator(Orchestrator):
                         prompt_data_type="text",
                         memory=self._memory,
                     )
-                ]
+                ],
+                conversation_id=self._last_attacker_conversation_id,
             ),
             target=self._prompt_target,
-            conversation_id=self._last_attacker_conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
@@ -187,10 +187,10 @@ class PAIROrchestrator(Orchestrator):
                         prompt_data_type="text",
                         memory=self._memory,
                     )
-                ]
+                ],
+                conversation_id=curr_conversation_id,
             ),
             target=self._prompt_target,
-            conversation_id=curr_conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
