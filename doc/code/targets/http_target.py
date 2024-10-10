@@ -120,7 +120,7 @@ with RedTeamingOrchestrator(
 # ## BIC Example
 
 # %% [markdown]
-# Bing Image Creator (which does not have an API) is harder to use that AOAI - but is shown as another example of how to interact with the HTTP Target
+# Bing Image Creator (which does not have an API) is harder to use than AOAI - but is shown as another example of how to interact with the HTTP Target
 #
 # The HTTP request to make needs to be captured and put here in the "http_req" variable (the values you need to get from DevTools or Burp)
 # For Bing Image Creator the cookies contain the authorization in them, which is captured using Devtools/burp/etc
