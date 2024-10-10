@@ -5,7 +5,7 @@ import time
 import msal
 import logging
 
-from azure.core.credentials import AccessToken, TokenProvider
+from azure.core.credentials import AccessToken
 from azure.identity import AzureCliCredential
 from azure.identity import ManagedIdentityCredential
 from azure.identity import InteractiveBrowserCredential
@@ -119,23 +119,15 @@ def get_access_token_from_interactive_login(scope: str = AZURE_COGNITIVE_SERVICE
         logger.error(f"Failed to obtain token for '{scope}': {e}")
         raise
 
+
 def get_token_provider_from_default_azure_credential(scope: str = AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE):
     """Connect to an AOAI endpoint via default Azure credential.
 
     Returns:
         Authentication token provider
     """
-    return get_token_provider_from_azure_credential(DefaultAzureCredential(), scope)
-
-
-def get_token_provider_from_azure_credential(credential: TokenProvider, scope: str = AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE):
-    """Connect to an AOAI endpoint via default Azure credential.
-
-    Returns:
-        Authentication token provider
-    """
     try:
-        token_provider = get_bearer_token_provider(credential, scope)
+        token_provider = get_bearer_token_provider(DefaultAzureCredential(), scope)
         return token_provider
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}': {e}")
