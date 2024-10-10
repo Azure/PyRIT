@@ -14,7 +14,7 @@ from pyrit.exceptions.exception_classes import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPromptTemplate
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 
@@ -22,14 +22,14 @@ logger = logging.getLogger(__name__)
 
 
 class TranslationConverter(PromptConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, language: str, prompt_template: PromptTemplate = None):
+    def __init__(self, *, converter_target: PromptChatTarget, language: str, prompt_template: SeedPromptTemplate = None):
         """
         Initializes a TranslationConverter object.
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
-            prompt_template (PromptTemplate, optional): The prompt template for the conversion.
+            prompt_template (SeedPromptTemplate, optional): The prompt template for the conversion.
 
         Raises:
             ValueError: If the language is not provided.
@@ -40,7 +40,7 @@ class TranslationConverter(PromptConverter):
         prompt_template = (
             prompt_template
             if prompt_template
-            else PromptTemplate.from_yaml_file(
+            else SeedPromptTemplate.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "translation_converter.yaml"
             )
         )
@@ -50,7 +50,7 @@ class TranslationConverter(PromptConverter):
 
         self.language = language.lower()
 
-        self.system_prompt = prompt_template.apply_custom_metaprompt_parameters(languages=language)
+        self.system_prompt = prompt_template.apply_parameters(languages=language)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
