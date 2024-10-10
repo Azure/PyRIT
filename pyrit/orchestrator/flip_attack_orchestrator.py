@@ -1,24 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from collections import defaultdict
-from colorama import Fore, Style
+import pathlib
 import logging
 
 from typing import Optional
 
-from pyrit.common.display_response import display_response
+from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestResponse
-from pyrit.orchestrator import Orchestrator
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_template import JailBreakTemplate
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
-from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
-from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
 
 
@@ -27,7 +22,10 @@ logger = logging.getLogger(__name__)
 
 class FlipAttackOrchestrator(PromptSendingOrchestrator):
     """
-    This orchestrator takes a list of prompts and sends them to a target.
+    This orchestrator implements the Flip Attack method found here:
+    https://arxiv.org/html/2410.02832v1.
+
+    Essentially, adds a system prompt to the beginning of the conversation to flip each word in the prompt.
     """
 
     def __init__(
@@ -54,28 +52,32 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
                 ensure proper rate limit management.
         """
 
-        # TODO
         super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+            prompt_target=prompt_target,
+            prompt_converters=[FlipConverter()],
+            scorers=scorers,
+            memory=memory,
+            memory_labels=memory_labels,
+            batch_size=batch_size,
+            verbose=verbose,
         )
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._scorers = scorers
-        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
-        if self._scorers:
-            for scorer in self._scorers:
-                scorer._memory = self._memory
-                if hasattr(scorer, "_prompt_target"):
-                    scorer._prompt_target._memory = self._memory
+        # This is sent to the target
+        system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
+        system_str = JailBreakTemplate.from_yaml_file(system_prompt_path).get_system_prompt()
 
-        self._prompt_target = prompt_target
-        self._prompt_target._memory = self._memory
+        system_prompt = PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="system",
+                    original_value=system_str,
+                )
+            ]
+        )
 
-        self._batch_size = batch_size
+        super().set_prepended_conversation(prepended_conversation=[system_prompt])
 
-        self._system_prompt = "TODO GET FROM TEMPLATRE"
-
-    async def send_prompts_async(
+    async def send_prompts_async(  # type: ignore[override]
         self,
         *,
         prompt_list: list[str],
@@ -97,12 +99,11 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
 
+        # Format follows the paper https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json
 
+        for i in range(0, len(prompt_list)):
+            prompt_list[i] = "TASK is '⟪" + prompt_list[i].replace("'", "") + "⟫'"
 
-    async def send_prompt_async(self):
-        raise NotImplementedError("This method is not supported for this orchestrator.")
-
-    async def send_normalizer_requests_async(self):
-        raise NotImplementedError("This method is not supported for this orchestrator.")
-
-
+        return await super().send_prompts_async(
+            prompt_list=prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
+        )
