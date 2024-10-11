@@ -1,6 +1,7 @@
 import re
 import sys
 import os
+import time
 import requests
 from urllib.parse import urlsplit, urlunsplit
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -39,7 +40,14 @@ def resolve_relative_url(base_path, url):
     return url
 
 
-def check_url(url):
+def check_url(url, retries=2, delay=2):
+    """
+    Check the validity of a URL, with retries if it fails.
+    :param url: URL to check
+    :param retries: Number of retries if the URL check fails
+    :param delay: Delay in seconds between retries
+    :return: A tuple containing the URL and a boolean indicating whether it is valid
+    """
     if (
         "http://localhost:" in url
         or url in skipped_urls
@@ -51,13 +59,22 @@ def check_url(url):
 
     url_without_fragment = strip_fragment(url)
 
-    try:
-        response = requests.head(url_without_fragment, allow_redirects=True, timeout=5)
-        if response.status_code >= 400:
-            return url, False
-        return url, True
-    except requests.RequestException:
-        return url, False
+    attempts = 0
+    while attempts <= retries:
+        try:
+            response = requests.head(url_without_fragment, allow_redirects=True, timeout=5)
+            if response.status_code >= 400:
+                attempts += 1
+                if attempts > retries:
+                    return url, False
+                time.sleep(delay)
+            else:
+                return url, True
+        except requests.RequestException:
+            attempts += 1
+            if attempts > retries:
+                return url, False
+            time.sleep(delay)
 
 
 def check_links_in_file(file_path):
