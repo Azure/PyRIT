@@ -43,11 +43,15 @@ def resolve_relative_url(base_path, url):
 def check_url(url, retries=2, delay=2):
     """
     Check the validity of a URL, with retries if it fails.
-    :param url: URL to check
-    :param retries: Number of retries if the URL check fails
-    :param delay: Delay in seconds between retries
-    :return: A tuple containing the URL and a boolean indicating whether it is valid
+
+    Args:
+        url (str): URL to check.
+        retries (int, optional): Number of retries if the URL check fails. Defaults to 2.
+        delay (int, optional): Delay in seconds between retries. Defaults to 2.
+    Returns:
+        tuple: A tuple containing the URL and a boolean indicating whether it is valid.
     """
+
     if (
         "http://localhost:" in url
         or url in skipped_urls
