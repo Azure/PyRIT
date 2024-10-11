@@ -6,14 +6,12 @@ from __future__ import annotations
 from colorama import Fore, Style
 from dataclasses import dataclass
 import logging
-from pathlib import Path
 import random
 from typing import Optional, Union
 import uuid
 
 import numpy as np
 
-from pyrit.common.path import SCALES_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptTemplate
@@ -218,10 +216,10 @@ class FuzzerOrchestrator(Orchestrator):
         # keeps track of the path that has been currently selected
         self._mcts_selected_path: list[PromptNode] = []  # type: ignore
 
-        scorer_scale_path = Path(SCALES_PATH / "tree_of_attacks_with_pruning_jailbreak.yaml")
         scale_scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
-            scale_path=scorer_scale_path,
+            scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
+            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
             memory=self._memory,
         )
         self._scorer = FloatScaleThresholdScorer(
