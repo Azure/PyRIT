@@ -2,6 +2,7 @@ import re
 import sys
 import os
 import requests
+from urllib.parse import urlsplit, urlunsplit
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -24,6 +25,14 @@ def extract_urls(file_path):
     return urls
 
 
+def strip_fragment(url):
+    """
+    Removes the fragment (#...) from the URL, so the base URL can be checked.
+    """
+    parsed_url = urlsplit(url)
+    return urlunsplit((parsed_url.scheme, parsed_url.netloc, parsed_url.path, parsed_url.query, ""))
+
+
 def resolve_relative_url(base_path, url):
     if not url.startswith(("http://", "https://", "mailto:")):
         return os.path.abspath(os.path.join(os.path.dirname(base_path), url))
@@ -39,8 +48,11 @@ def check_url(url):
         or url.startswith("mailto:")
     ):
         return url, True
+
+    url_without_fragment = strip_fragment(url)
+
     try:
-        response = requests.head(url, allow_redirects=True, timeout=5)
+        response = requests.head(url_without_fragment, allow_redirects=True, timeout=5)
         if response.status_code >= 400:
             return url, False
         return url, True
