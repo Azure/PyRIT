@@ -31,7 +31,6 @@
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 
 # %%
-import asyncio
 import os
 from pyrit.score import AzureContentFilterScorer
 from pyrit.common import default_values
@@ -61,7 +60,7 @@ response = PromptRequestPiece(
 memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 
 # Run the request
-scores = asyncio.run(azure_content_filter.score_async(response))  # type: ignore
+scores = await azure_content_filter.score_async(response)  # type: ignore
 assert scores[0].get_value() > 0  # azure_severity should be value 2 based on the documentation
 
 for score in scores:
