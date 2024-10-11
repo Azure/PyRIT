@@ -54,7 +54,7 @@ class AzureContentFilterScorer(Scorer):
             endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
                 Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
             use_aad_auth (bool, optional): Attempt to use DefaultAzureCredential
-                If set to true, and api_key is None, attempt to use DefaultAzureCredential for auth
+                If set to true, attempt to use DefaultAzureCredential for auth
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.
         """
@@ -64,19 +64,26 @@ class AzureContentFilterScorer(Scorer):
         else:
             self._score_categories = [category.value for category in TextCategory]
 
-        self._api_key = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-        )
         self._endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
+
+        if not use_aad_auth:
+            self._api_key = default_values.get_required_value(
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+            )
+        else:
+            if api_key:
+                raise ValueError("Please specify either use_add_auth or api_key")
+            else:
+                self._api_key = None
 
         if self._api_key is not None and self._endpoint is not None:
             self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
         elif use_aad_auth and self._endpoint is not None:
             self._azure_cf_client = ContentSafetyClient(self._endpoint, credential=DefaultAzureCredential())
         else:
-            raise ValueError("Please provide the Azure Content Safety endpoint, and either set api_key or use_aad_auth")
+            raise ValueError("Please provide the Azure Content Safety endpoint")
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
