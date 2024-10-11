@@ -22,7 +22,7 @@ def extract_urls(file_path):
         content = file.read()
     matches = URL_PATTERN.findall(content)
     # Flatten the list of tuples and filter out empty strings
-    urls = [url for match in matches for url in match if url]
+    urls = [strip_fragment(url) for match in matches for url in match if url]
     return urls
 
 
@@ -61,12 +61,10 @@ def check_url(url, retries=2, delay=2):
     ):
         return url, True
 
-    url_without_fragment = strip_fragment(url)
-
     attempts = 0
     while attempts <= retries:
         try:
-            response = requests.head(url_without_fragment, allow_redirects=True, timeout=5)
+            response = requests.head(url, allow_redirects=True, timeout=5)
             if response.status_code >= 400:
                 attempts += 1
                 if attempts > retries:
