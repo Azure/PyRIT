@@ -1,6 +1,7 @@
 ---
 name: Flip Attack
-description: Prompt obtained from FlipAttack.
+description: System Prompt obtained from FlipAttack.
+ This is sent to target, not red teaming chat, like other system prompt examples.
 harm_category: NA
 source: https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json
 should_be_blocked: true
