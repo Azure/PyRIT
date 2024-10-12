@@ -1,5 +1,9 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from pyrit.prompt_target.http_target.http_target import HTTPTarget
 from pyrit.prompt_target.http_target.http_target_callback_functions import (
     get_http_target_json_response_callback_function,

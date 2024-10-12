@@ -1,12 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+
+import httpx
 import json
 import logging
 import re
-import requests
 from typing import Callable, Union
-import httpx
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
@@ -52,18 +52,14 @@ class HTTPTarget(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        header_dict, http_body, url, http_method, http_version = self.parse_raw_http_request()
+        # Add Prompt into URL (if the URL takes it)
         re_pattern = re.compile(self.prompt_regex_string)
+        if re.search(self.prompt_regex_string, self.http_request):
+            self.http_request = re_pattern.sub(request.converted_value, self.http_request)
+
+        header_dict, http_body, url, http_method, http_version = self.parse_raw_http_request()
 
         # Make the actual HTTP request:
-
-        # Add Prompt into URL (if the URL takes it)
-        if re.search(self.prompt_regex_string, url):
-            url = re_pattern.sub(request.converted_value, url)
-
-        # Add Prompt into request body (if the body takes it)
-        if re.search(self.prompt_regex_string, http_body):
-            http_body = re_pattern.sub(request.converted_value, http_body)  #
 
         # Fix Content-Length if it is in the headers after the prompt is added in:
         if "Content-Length" in header_dict:
