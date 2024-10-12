@@ -6,6 +6,7 @@ import logging
 import re
 import requests
 from typing import Callable, Union
+import httpx
 
 from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
@@ -51,7 +52,7 @@ class HTTPTarget(PromptTarget):
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
 
-        header_dict, http_body, url, http_method = self.parse_raw_http_request()
+        header_dict, http_body, url, http_method, http_version = self.parse_raw_http_request()
         re_pattern = re.compile(self.prompt_regex_string)
 
         # Make the actual HTTP request:
@@ -64,14 +65,22 @@ class HTTPTarget(PromptTarget):
         if re.search(self.prompt_regex_string, http_body):
             http_body = re_pattern.sub(request.converted_value, http_body)  #
 
-        response = requests.request(
-            method=http_method,
-            url=url,
-            headers=header_dict,
-            data=http_body,
-            allow_redirects=True,
-        )
+        # Fix Content-Length if it is in the headers after the prompt is added in:
+        if "Content-Length" in header_dict:
+            header_dict["Content-Length"] = str(len(http_body))
 
+        http2_version = False
+        if http_version and "HTTP/2" in http_version:
+            http2_version = True
+
+        async with httpx.AsyncClient(http2=http2_version) as client:
+            response = await client.request(
+                method=http_method,
+                url=url,
+                headers=header_dict,
+                data=http_body,
+                follow_redirects=True,
+            )
         response_content = response.content
 
         if self.callback_function:
@@ -89,6 +98,7 @@ class HTTPTarget(PromptTarget):
             body (str): string with body data
             url (str): string with URL
             http_method (str): method (ie GET vs POST)
+            http_version (str): HTTP version to use
         """
 
         headers_dict = {}
@@ -117,22 +127,18 @@ class HTTPTarget(PromptTarget):
                 body = json.dumps(body)
             except json.JSONDecodeError:
                 body = request_parts[1]
-            if "Content-Length" in headers_dict:
-                headers_dict["Content-Length"] = str(len(body))
 
         # Capture info from 1st line of raw request
         http_method = http_req_info_line[0]
 
         http_url_beg = ""
+        http_version = ""
         if len(http_req_info_line) > 2:
             http_version = http_req_info_line[2]
-            if "HTTP/2" in http_version or "HTTP/1.1" in http_version:
-                if self.use_tls is True:
-                    http_url_beg = "https://"
-                else:
-                    http_url_beg = "http://"
+            if self.use_tls is True:
+                http_url_beg = "https://"
             else:
-                raise ValueError(f"Unsupported protocol: {http_version}")
+                http_url_beg = "http://"
 
         url = ""
         if http_url_beg and "http" not in http_req_info_line[1]:
@@ -141,7 +147,7 @@ class HTTPTarget(PromptTarget):
             url += headers_dict["Host"]
         url += http_req_info_line[1]
 
-        return headers_dict, body, url, http_method
+        return headers_dict, body, url, http_method, http_version
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         request_pieces: list[PromptRequestPiece] = prompt_request.request_pieces
