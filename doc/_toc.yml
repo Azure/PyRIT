@@ -95,6 +95,7 @@ parts:
     - file: contributing/tests
   - caption: Deployment
     chapters:
+    - file: deployment/README
     - file: deployment/deploy_hf_model_aml
     - file: deployment/download_and_register_hf_model_aml
     - file: deployment/hf_aml_model_endpoint_guide

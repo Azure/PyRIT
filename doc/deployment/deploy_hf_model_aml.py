@@ -206,7 +206,6 @@ workspace_ml_client.begin_create_or_update(endpoint).wait()
 # **Add deployment to an Azure ML endpoint created above**
 #
 # Please be aware that deploying, particularly larger models, may take some time. Once the deployment is finished, the provisioning state will be marked as 'Succeeded', as illustrated in the image below.
-# ![image.png](attachment:image.png)
 # <br> <img src="./../../assets/aml_endpoint_deployment.png" alt="aml_endpoint_deployment.png" height="400"/> <br>
 
 # %%

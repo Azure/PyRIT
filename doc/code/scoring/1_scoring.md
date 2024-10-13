@@ -1,4 +1,4 @@
-# 1 - Scoring
+# Scoring
 
 Scoring is a main component of the PyRIT architecture. It is primarily used to evaluate what happens to a prompt. It can be used to help answer questions like:
 

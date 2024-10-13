@@ -4,14 +4,14 @@ Most of our documentation is located within the `doc` directory. There is no sin
 
 1. [How to Guide](./how_to_guide.ipynb): This provides an overview of the PyRIT framework.
 2. **Installation**: Before diving in, it's useful to have a working version so you can follow along.
-  - [Setup](./setup/): Includes help setting up PyRIT and related resources for users.
+  - [Setup](./setup/install_pyrit.md): Includes help setting up PyRIT and related resources for users.
   - [Contributing](./contributing/README.md): Contains information for people contributing to the project.
 3. [Architecture](./code/architecture.md): This section provides a high-level overview of all the components. Understanding any single component is difficult without some knowledge of the others.
-4. [Orchestrators](./code/orchestrators/README.md): These are the top-level components of PyRIT. Reviewing their usage can help users understand where all components fit.
-5. [Targets](./code/targets/README.md): These are the endpoints that PyRIT sends prompts to. Nearly any scenario where PyRIT is used will need targets. This section dives into what targets are available and how to use them.
-6. [Converters](./code/converters/README.md): These transform prompts from one format to another. This is one of the most powerful capabilities within PyRIT.
+4. [Orchestrators](./code/orchestrators/1_orchestrator.md): These are the top-level components of PyRIT. Reviewing their usage can help users understand where all components fit.
+5. [Targets](./code/targets/1_prompt_targets.md): These are the endpoints that PyRIT sends prompts to. Nearly any scenario where PyRIT is used will need targets. This section dives into what targets are available and how to use them.
+6. [Converters](./code/converters/1_converters.ipynb): These transform prompts from one format to another. This is one of the most powerful capabilities within PyRIT.
 7. [Scorers](./code/scoring/1_scoring.md): These are how PyRIT makes decisions and records output.
-8. [Memory](./code/memory/README.md): This is how PyRIT components communicate about the state of things.
+8. [Memory](./code/memory/1_duck_db_memory.ipynb): This is how PyRIT components communicate about the state of things.
 9. [Auxiliary Attacks](./code/auxiliary_attacks/1_auxiliary_attacks): (Optional) Attacks and techniques that do not fit into the core PyRIT functionality.
 
 Miscellaneous Extra Docs:
