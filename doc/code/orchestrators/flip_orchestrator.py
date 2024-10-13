@@ -13,13 +13,13 @@
 # ---
 
 # %% [markdown]
-# ## Flip Orchestrator
+# # Flip Orchestrator
 #
 # Flip Orchestrator is a simple attack. The paper is available here: https://arxiv.org/html/2410.02832v1.
 #
 # We replicate the ability to send prompts that match this output: https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json. In other words, it sends a system prompt to the target, directing it to unflip the word, and then it flips the malicious prompt.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/install_pyrit.md).
 
 # %%
 from pyrit.orchestrator import FlipAttackOrchestrator
