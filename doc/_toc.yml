@@ -46,6 +46,7 @@ parts:
     - file: code/orchestrators/advbench_prompt_sending_orchestrator
     - file: code/orchestrators/benchmark_orchestrator
     - file: code/orchestrators/decoding_trust_stereotype_testing
+    - file: code/orchestrators/flip_orchestrator
     - file: code/orchestrators/fuzzing_jailbreak_templates
     - file: code/orchestrators/harmbench_testing
     - file: code/orchestrators/many_shot_jailbreak
