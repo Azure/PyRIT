@@ -194,6 +194,7 @@ class Scorer(abc.ABC):
                     role="user",
                     original_value=prompt_request_value,
                     original_value_data_type=prompt_request_data_type,
+                    converted_value_data_type=prompt_request_data_type,
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                 )

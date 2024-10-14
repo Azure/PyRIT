@@ -50,7 +50,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     end = time.time()
 
     print(f"Elapsed time for operation: {end-start}")
-    
+
     orchestrator.print_conversations()
 
 # %% [markdown]
@@ -60,7 +60,9 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 # This variation takes the original example, but converts the text to base64 before sending it to the target.
 
 # %%
-with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()], batch_size=1) as orchestrator:
+with PromptSendingOrchestrator(
+    prompt_target=target, prompt_converters=[Base64Converter()], batch_size=1
+) as orchestrator:
 
     adv_bench_prompts = fetch_adv_bench_dataset()
 

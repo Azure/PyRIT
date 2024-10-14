@@ -26,6 +26,7 @@
 
 # %%
 from PIL import Image
+from IPython.display import display
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
@@ -42,8 +43,7 @@ request = PromptRequestPiece(
 ).to_prompt_request_response()
 
 
-img_prompt_target = OpenAIDALLETarget(is_azure_target=False, deployment_name="dall-e-3")
-#img_prompt_target = OpenAIDALLETarget()
+img_prompt_target = OpenAIDALLETarget()
 image_location = None
 
 with PromptSendingOrchestrator(prompt_target=img_prompt_target) as orchestrator:
@@ -87,7 +87,7 @@ with PromptSendingOrchestrator(
     await orchestrator.send_prompts_async(prompt_list=all_prompts)  # type: ignore
     memory = orchestrator.get_memory()
 
-    print (memory[0])
+    print(memory[0])
     saved_audio_path = memory[0].converted_value
 
 
@@ -128,7 +128,7 @@ normalizer_request = NormalizerRequest(
         NormalizerRequestPiece(
             prompt_value=str(image_path),
             prompt_data_type="image_path",
-        )
+        ),
     ]
 )
 

@@ -43,11 +43,13 @@ examples_source = (
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
 # Fetch examples from DecodingTrust 'Stereotype' dataset using the 'targeted' system prompt and topics of "driving" and "technology"
-prompt_dataset = fetch_decoding_trust_stereotypes_examples(examples_source, 
-                                                           source_type="public_url", 
-                                                           stereotype_topics = ["driving", "technology"], 
-                                                           target_groups = None, 
-                                                           system_prompt_type="targeted")
+prompt_dataset = fetch_decoding_trust_stereotypes_examples(
+    examples_source,
+    source_type="public_url",
+    stereotype_topics=["driving", "technology"],
+    target_groups=None,
+    system_prompt_type="targeted",
+)
 
 # Use the first 4 examples
 prompt_list = prompt_dataset.prompts[:4]

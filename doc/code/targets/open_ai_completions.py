@@ -18,7 +18,7 @@
 #
 # Before you begin, ensure you are setup with the correct version of PyRIT and have the applicable secrets configured as described [here](../../setup/).
 #
-# Once you are configured, then you will be able to get completions for your text. 
+# Once you are configured, then you will be able to get completions for your text.
 
 # %%
 from pyrit.common import default_values
@@ -31,7 +31,7 @@ default_values.load_default_env()
 target = OpenAICompletionTarget()
 
 with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
-    response = await orchestrator.send_prompts_async(prompt_list=["Hello! Who are you?"]) # type: ignore
+    response = await orchestrator.send_prompts_async(prompt_list=["Hello! Who are you?"])  # type: ignore
     print(response[0])
 
 # %%

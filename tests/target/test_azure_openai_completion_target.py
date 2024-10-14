@@ -102,28 +102,28 @@ async def test_azure_complete_async_return(
 
 
 def test_azure_invalid_key_raises():
-    os.environ[OpenAICompletionTarget.API_KEY_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        OpenAICompletionTarget(
-            deployment_name="gpt-4",
-            endpoint="https://mock.azure.com/",
-            api_key="",
-            api_version="some_version",
-        )
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAICompletionTarget(
+                deployment_name="gpt-4",
+                endpoint="https://mock.azure.com/",
+                api_key="",
+                api_version="some_version",
+            )
 
 
 def test_azure_initialization_with_no_deployment_raises():
-    os.environ[OpenAICompletionTarget.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        OpenAICompletionTarget()
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAICompletionTarget()
 
 
 def test_azure_invalid_endpoint_raises():
-    os.environ[OpenAICompletionTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        OpenAICompletionTarget(
-            deployment_name="gpt-4",
-            endpoint="",
-            api_key="xxxxx",
-            api_version="some_version",
-        )
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAICompletionTarget(
+                deployment_name="gpt-4",
+                endpoint="",
+                api_key="xxxxx",
+                api_version="some_version",
+            )

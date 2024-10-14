@@ -30,8 +30,8 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 def test_initialization_with_required_parameters(dalle_target: OpenAIDALLETarget):
     assert dalle_target
-    assert dalle_target.deployment_name == "test"
-    assert dalle_target._image_target is not None
+    assert dalle_target._deployment_name == "test"
+    assert dalle_target._async_client is not None
 
 
 def test_initialization_invalid_num_images():
@@ -50,7 +50,8 @@ async def test_send_prompt_async(dalle_target: OpenAIDALLETarget, sample_convers
     request = sample_conversations[0]
 
     with patch(
-        "pyrit.prompt_target.dall_e_target.DALLETarget._generate_image_response_async", new_callable=AsyncMock
+        "pyrit.prompt_target.openai.openai_dall_e_target.OpenAIDALLETarget._generate_image_response_async",
+        new_callable=AsyncMock,
     ) as mock_gen_img:
         mock_gen_img.return_value = "aGVsbG8="
         resp = await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
@@ -75,7 +76,7 @@ async def test_send_prompt_async_empty_response(
     mock_return = MagicMock()
     # make b64_json value empty to test retries when empty response was returned
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": ""}]}'
-    setattr(dalle_target._image_target._async_client.images, "generate", AsyncMock(return_value=mock_return))
+    setattr(dalle_target._async_client.images, "generate", AsyncMock(return_value=mock_return))
 
     with pytest.raises(EmptyResponseException) as e:
         await dalle_target.send_prompt_async(prompt_request=PromptRequestResponse([request]))
@@ -120,14 +121,18 @@ async def test_send_prompt_async_bad_request_error(
 
 
 @pytest.mark.asyncio
-async def test_dalle_validate_request_length(dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece]):
+async def test_dalle_validate_request_length(
+    dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece]
+):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await dalle_target.send_prompt_async(prompt_request=request)
 
 
 @pytest.mark.asyncio
-async def test_dalle_validate_prompt_type(dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece]):
+async def test_dalle_validate_prompt_type(
+    dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece]
+):
     request_piece = sample_conversations[0]
     request_piece.converted_value_data_type = "image_path"
     request = PromptRequestResponse(request_pieces=[request_piece])
@@ -149,8 +154,8 @@ async def test_dalle_send_prompt_file_save_async() -> None:
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": "dGVzdCBpbWFnZSBkYXRh"}]}'
 
     mock_dalle_target = OpenAIDALLETarget(deployment_name="test", endpoint="test", api_key="test")
-    mock_dalle_target._image_target._async_client.images = MagicMock()
-    mock_dalle_target._image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
+    mock_dalle_target._async_client.images = MagicMock()
+    mock_dalle_target._async_client.images.generate = AsyncMock(return_value=mock_return)
 
     response = await mock_dalle_target.send_prompt_async(prompt_request=request)
     file_path = str(response.request_pieces[0].converted_value)
@@ -184,8 +189,8 @@ async def test_send_prompt_async_empty_response_adds_memory() -> None:
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": ""}]}'
 
     mock_dalle_target = OpenAIDALLETarget(deployment_name="test", endpoint="test", api_key="test", memory=mock_memory)
-    mock_dalle_target._image_target._async_client.images = MagicMock()
-    mock_dalle_target._image_target._async_client.images.generate = AsyncMock(return_value=mock_return)
+    mock_dalle_target._async_client.images = MagicMock()
+    mock_dalle_target._async_client.images.generate = AsyncMock(return_value=mock_return)
     mock_dalle_target._memory = mock_memory
     with pytest.raises(EmptyResponseException) as e:
         await mock_dalle_target.send_prompt_async(prompt_request=request)

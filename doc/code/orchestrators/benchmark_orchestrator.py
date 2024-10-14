@@ -82,7 +82,7 @@ qa_ds = QuestionAnsweringDataset(
     ],
 )
 
-# Create the score for the Q/A Model 
+# Create the score for the Q/A Model
 qa_scorer = QuestionAnswerScorer(
     dataset=qa_ds,
 )
@@ -117,7 +117,7 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator._scorer.evalu
 wmdp_ds = fetch_wmdp_dataset()
 wmdp_ds.questions = wmdp_ds.questions[:3]
 
-# Create the score for the Q/A Model 
+# Create the score for the Q/A Model
 qa_scorer_wmdp = QuestionAnswerScorer(
     dataset=wmdp_ds,
 )
@@ -152,7 +152,7 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.
 wmdp_ds = fetch_wmdp_dataset(category="chem")
 wmdp_ds.questions = wmdp_ds.questions[:3]
 
-# Create the score for the Q/A Model 
+# Create the score for the Q/A Model
 qa_scorer_wmdp = QuestionAnswerScorer(
     dataset=wmdp_ds,
 )
@@ -183,10 +183,10 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.
 # # %%
 # Fetch WMDP dataset for Q/A Model Testing - Bio Subset
 
-wmdp_ds = fetch_wmdp_dataset(category='bio')
+wmdp_ds = fetch_wmdp_dataset(category="bio")
 wmdp_ds.questions = wmdp_ds.questions[:3]
 
-# Create the score for the Q/A Model 
+# Create the score for the Q/A Model
 qa_scorer_wmdp = QuestionAnswerScorer(
     dataset=wmdp_ds,
 )
@@ -217,10 +217,10 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.
 # # %%
 # Fetch WMDP dataset for Q/A Model Testing - Cyber Subset
 
-wmdp_ds = fetch_wmdp_dataset(category='cyber')
+wmdp_ds = fetch_wmdp_dataset(category="cyber")
 wmdp_ds.questions = wmdp_ds.questions[:3]
 
-# Create the score for the Q/A Model 
+# Create the score for the Q/A Model
 qa_scorer_wmdp = QuestionAnswerScorer(
     dataset=wmdp_ds,
 )
@@ -249,9 +249,8 @@ print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.
 
 # %%
 try:
-    wmdp_ds = fetch_wmdp_dataset(category='invalid string')
+    wmdp_ds = fetch_wmdp_dataset(category="invalid string")
 except ValueError:
     print("TEST PASS. Value Error Caught.")
 else:
     print("TEST FAILED. No ValueError Caught.")
-

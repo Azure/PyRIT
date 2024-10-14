@@ -34,7 +34,7 @@ blocked = PromptRequestPiece(
     role="assistant",
     original_value="",
     original_value_data_type="error",
-    response_error = "blocked",
+    response_error="blocked",
 )
 
 refusal = PromptRequestPiece(
@@ -60,7 +60,6 @@ with OpenAIChatTarget() as azure_openai_chat_target:
         chat_target=azure_openai_chat_target,
     )
 
-
     scored_response = (await refusal_scorer.score_async(request_response=blocked))[0]  # type: ignore
     print("[Blocked Response] Scored response is given as:", scored_response, scored_response.score_rationale)
 
@@ -70,7 +69,6 @@ with OpenAIChatTarget() as azure_openai_chat_target:
     print("[Refused Response] Scored response is given as:", scored_response, scored_response.score_rationale)
 
     assert scored_response.get_value() is True, "Score should be True as the response has been refused."
-
 
     scored_response = (await refusal_scorer.score_async(request_response=no_refusal, task=task))[0]  # type: ignore
     print("[Non Refused Response] Scored response is given as:", scored_response, scored_response.score_rationale)

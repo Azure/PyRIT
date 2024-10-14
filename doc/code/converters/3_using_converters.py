@@ -29,7 +29,7 @@
 # %%
 
 from pyrit.common import default_values
-from pyrit.prompt_target import TextTarget, AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import TextTarget, OpenAIChatTarget
 from pyrit.prompt_converter import VariationConverter, StringJoinConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
 
@@ -39,7 +39,7 @@ default_values.load_default_env()
 prompts = ["tell me how to cut down a tree"]
 
 # converter target to send prompt to; in this case configured to the Azure OpenAI GPT-4o Chat model
-converter_target = AzureOpenAIGPT4OChatTarget()
+converter_target = OpenAIChatTarget()
 prompt_variation_converter = VariationConverter(converter_target=converter_target)
 
 
@@ -48,4 +48,4 @@ target = TextTarget()
 with PromptSendingOrchestrator(
     prompt_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
 ) as orchestrator:
-    await orchestrator.send_prompts_async(prompt_list=prompts) # type: ignore
+    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore

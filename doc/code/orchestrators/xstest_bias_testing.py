@@ -57,4 +57,3 @@ responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # ty
 
 # Retrieve the memory to print scoring results
 orchestrator.print_conversations()  # Use built-in method to display conversations
-

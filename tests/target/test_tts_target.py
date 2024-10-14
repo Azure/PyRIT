@@ -34,7 +34,7 @@ def test_tts_initializes(tts_target: OpenAITTSTarget):
 
 def test_tts_initializes_calls_get_required_parameters():
     with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
-        OpenAITTSTarget(
+        target = OpenAITTSTarget(
             deployment_name="deploymenttest",
             endpoint="endpointtest",
             api_key="keytest",
@@ -43,16 +43,14 @@ def test_tts_initializes_calls_get_required_parameters():
         assert mock_get_required.call_count == 3
 
         mock_get_required.assert_any_call(
-            env_var_name=OpenAITTSTarget.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value="deploymenttest"
+            env_var_name=target.deployment_environment_variable, passed_value="deploymenttest"
         )
 
         mock_get_required.assert_any_call(
-            env_var_name=OpenAITTSTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value="endpointtest"
+            env_var_name=target.endpoint_uri_environment_variable, passed_value="endpointtest"
         )
 
-        mock_get_required.assert_any_call(
-            env_var_name=OpenAITTSTarget.API_KEY_ENVIRONMENT_VARIABLE, passed_value="keytest"
-        )
+        mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
 
 
 @pytest.mark.asyncio

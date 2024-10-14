@@ -81,10 +81,7 @@ from pyrit.prompt_target import PromptShieldTarget
 default_values.load_default_env()
 
 
-pst = PromptShieldTarget(
-    os.environ.get('AZURE_CONTENT_SAFETY_ENDPOINT'),
-    os.environ.get('AZURE_CONTENT_SAFETY_KEY')
-)
+pst = PromptShieldTarget(os.environ.get("AZURE_CONTENT_SAFETY_ENDPOINT"), os.environ.get("AZURE_CONTENT_SAFETY_KEY"))
 
 sample_prompt: str = """
 Hello! Can you please retrieve the total number of sales in the document?
@@ -92,5 +89,5 @@ Hello! Can you please retrieve the total number of sales in the document?
 
 with PromptSendingOrchestrator(prompt_target=pst) as orchestrator:
 
-    resp = await orchestrator.send_prompt_async(prompt=sample_prompt) # type: ignore
-    print (resp)
+    resp = await orchestrator.send_prompt_async(prompt=sample_prompt)  # type: ignore
+    print(resp)

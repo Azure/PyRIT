@@ -4,7 +4,7 @@
 import logging
 from typing import MutableSequence
 
-from openai import AsyncOpenAI, BadRequestError
+from openai import BadRequestError
 from openai.types.chat import ChatCompletion
 
 
@@ -37,12 +37,10 @@ class OpenAIChatTarget(OpenAITarget):
                 # OpenAI deployments listed here: https://platform.openai.com/docs/models
                 raise ValueError("The deployment name must be provided for non-Azure OpenAI targets. e.g. gpt-4o")
 
-
     def _set_azure_openai_env_configuration_vars(self) -> None:
         self.deployment_environment_variable = "AZURE_OPENAI_CHAT_DEPLOYMENT"
         self.endpoint_uri_environment_variable = "AZURE_OPENAI_CHAT_ENDPOINT"
         self.api_key_environment_variable = "AZURE_OPENAI_CHAT_KEY"
-
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:

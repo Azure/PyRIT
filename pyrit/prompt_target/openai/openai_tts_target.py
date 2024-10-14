@@ -23,15 +23,15 @@ TTSResponseFormat = Literal["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", 
 class OpenAITTSTarget(OpenAITarget):
 
     def __init__(
-            self,
-            voice: TTSVoice = "alloy",
-            response_format: TTSResponseFormat = "mp3",
-            model: TTSModel = "tts-1",
-            language: str = "en",
-            api_version: str = "2024-03-01-preview",
-            *args,
-            **kwargs
-        ):
+        self,
+        voice: TTSVoice = "alloy",
+        response_format: TTSResponseFormat = "mp3",
+        model: TTSModel = "tts-1",
+        language: str = "en",
+        api_version: str = "2024-03-01-preview",
+        *args,
+        **kwargs,
+    ):
 
         if (kwargs.get("use_aad_auth") is not None) and (kwargs.get("use_aad_auth") is True):
             raise NotImplementedError("AAD authentication not implemented for TTSTarget yet.")
@@ -44,12 +44,10 @@ class OpenAITTSTarget(OpenAITarget):
         self._language = language
         self._api_version = api_version
 
-
     def _set_azure_openai_env_configuration_vars(self):
         self.deployment_environment_variable = "AZURE_OPENAI_TTS_DEPLOYMENT"
         self.endpoint_uri_environment_variable = "AZURE_OPENAI_TTS_ENDPOINT"
         self.api_key_environment_variable = "AZURE_OPENAI_TTS_KEY"
-
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:

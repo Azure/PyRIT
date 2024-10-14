@@ -20,23 +20,28 @@ class OpenAIDALLETarget(OpenAITarget):
     """
 
     def __init__(
-            self,
-            image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024",
-            num_images: int = 1,
-            dalle_version: Literal["dall-e-2", "dall-e-3"] = "dall-e-2",
-            quality: Literal["standard", "hd"] = "standard",
-            style: Literal["natural", "vivid"] = "natural",
-            *args,
-            **kwargs
-        ):
+        self,
+        image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024",
+        num_images: int = 1,
+        dalle_version: Literal["dall-e-2", "dall-e-3"] = "dall-e-2",
+        quality: Literal["standard", "hd"] = "standard",
+        style: Literal["natural", "vivid"] = "natural",
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the DALL-E target with specified parameters.
         Args:
-            image_size (Literal["256x256", "512x512", "1024x1024"], optional): The size of the generated images. Defaults to "1024x1024".
-            num_images (int, optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be between 1 and 10. For DALL-E-3, this must be 1.
-            dalle_version (Literal["dall-e-2", "dall-e-3"], optional): The version of DALL-E to use. Defaults to "dall-e-2".
-            quality (Literal["standard", "hd"], optional): The quality of the generated images. Only applicable for DALL-E-3. Defaults to "standard".
-            style (Literal["natural", "vivid"], optional): The style of the generated images. Only applicable for DALL-E-3. Defaults to "natural".
+            image_size (Literal["256x256", "512x512", "1024x1024"], optional): The size of the generated images.
+                Defaults to "1024x1024".
+            num_images (int, optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be
+                between 1 and 10. For DALL-E-3, this must be 1.
+            dalle_version (Literal["dall-e-2", "dall-e-3"], optional): The version of DALL-E to use. Defaults to
+                "dall-e-2".
+            quality (Literal["standard", "hd"], optional): The quality of the generated images. Only applicable for
+                DALL-E-3. Defaults to "standard".
+            style (Literal["natural", "vivid"], optional): The style of the generated images. Only applicable for
+                DALL-E-3. Defaults to "natural".
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
         Raises:
@@ -63,7 +68,6 @@ class OpenAIDALLETarget(OpenAITarget):
         self.deployment_environment_variable = "AZURE_OPENAI_DALLE_DEPLOYMENT"
         self.endpoint_uri_environment_variable = "AZURE_OPENAI_DALLE_ENDPOINT"
         self.api_key_environment_variable = "AZURE_OPENAI_DALLE_API_KEY"
-
 
     @limit_requests_per_minute
     async def send_prompt_async(

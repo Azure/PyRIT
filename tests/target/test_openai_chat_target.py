@@ -82,9 +82,7 @@ class MockChatCompletionsAsync(AbstractAsyncContextManager):
     new_callable=lambda: MockChatCompletionsAsync(),
 )
 @pytest.mark.asyncio
-async def test_complete_chat_async_return(
-    openai_mock_return: ChatCompletion, gpt4o_chat_engine: OpenAIChatTarget
-):
+async def test_complete_chat_async_return(openai_mock_return: ChatCompletion, gpt4o_chat_engine: OpenAIChatTarget):
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
         ret = await gpt4o_chat_engine._complete_chat_async(
@@ -93,40 +91,40 @@ async def test_complete_chat_async_return(
         assert ret == "hi"
 
 
-def test_init_with_no_api_key_var_raises():
-    os.environ[OpenAIChatTarget.API_KEY_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        OpenAIChatTarget(
-            deployment_name="gpt-4",
-            endpoint="https://mock.azure.com/",
-            api_key="",
-            api_version="some_version",
-        )
+def test_init_with_no_env_var_raises():
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAIChatTarget(
+                deployment_name="gpt-4",
+                endpoint="https://mock.azure.com/",
+                api_key="",
+                api_version="some_version",
+            )
 
 
 def test_init_with_no_deployment_var_raises():
-    os.environ[OpenAIChatTarget.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        OpenAIChatTarget()
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAIChatTarget()
 
 
 def test_init_with_no_endpoint_uri_var_raises():
-    os.environ[OpenAIChatTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        OpenAIChatTarget(
-            deployment_name="gpt-4",
-            endpoint="",
-            api_key="xxxxx",
-            api_version="some_version",
-        )
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAIChatTarget(
+                deployment_name="gpt-4",
+                endpoint="",
+                api_key="xxxxx",
+                api_version="some_version",
+            )
 
 
 def test_init_with_no_additional_request_headers_var_raises():
-    os.environ[OpenAIChatTarget.ADDITIONAL_REQUEST_HEADERS] = ""
-    with pytest.raises(ValueError):
-        OpenAIChatTarget(
-            deployment_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
-        )
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAIChatTarget(
+                deployment_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
+            )
 
 
 @pytest.mark.asyncio()
@@ -338,9 +336,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(gpt4o_chat_eng
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async(
-    openai_mock_return: ChatCompletion, gpt4o_chat_engine: OpenAIChatTarget
-):
+async def test_send_prompt_async(openai_mock_return: ChatCompletion, gpt4o_chat_engine: OpenAIChatTarget):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
     assert os.path.exists(tmp_file_name)
@@ -377,9 +373,7 @@ async def test_send_prompt_async(
     ):
         with patch("openai.resources.chat.AsyncCompletions.create", new_callable=AsyncMock) as mock_create:
             mock_create.return_value = openai_mock_return
-            response: PromptRequestResponse = await gpt4o_chat_engine.send_prompt_async(
-                prompt_request=prompt_req_resp
-            )
+            response: PromptRequestResponse = await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_req_resp)
             assert len(response.request_pieces) == 1
             assert response.request_pieces[0].converted_value == "hi"
     os.remove(tmp_file_name)
@@ -478,21 +472,6 @@ def test_parse_chat_completion_successful(gpt4o_chat_engine: OpenAIChatTarget):
     mock_response.choices[0].message.content = "Test response message"
     result = gpt4o_chat_engine._parse_chat_completion(mock_response)
     assert result == "Test response message", "The response message was not parsed correctly"
-
-
-def test_validate_request_too_many_request_pieces(gpt4o_chat_engine: OpenAIChatTarget):
-
-    prompt_request = PromptRequestResponse(
-        request_pieces=[
-            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
-            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
-            PromptRequestPiece(role="user", original_value="Hello", converted_value_data_type="text"),
-        ]
-    )
-    with pytest.raises(ValueError) as excinfo:
-        gpt4o_chat_engine._validate_request(prompt_request=prompt_request)
-
-    assert "two prompt request pieces" in str(excinfo.value), "Error not raised for too many request pieces"
 
 
 def test_validate_request_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTarget):

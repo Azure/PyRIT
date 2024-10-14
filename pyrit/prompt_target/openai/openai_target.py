@@ -4,19 +4,14 @@
 import json
 import logging
 from abc import abstractmethod
-from typing import Literal, Optional
+from typing import Optional
 
-from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, OpenAI, BadRequestError
-from openai.types.chat import ChatCompletion
+from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.exceptions import EmptyResponseException, PyritException
-from pyrit.exceptions import pyrit_target_retry, handle_bad_request_exception
 from pyrit.memory import MemoryInterface
-from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
-from pyrit.models import construct_response_from_request
-from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
+from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +20,9 @@ class OpenAITarget(PromptChatTarget):
 
     ADDITIONAL_REQUEST_HEADERS: str = "OPENAI_ADDITIONAL_REQUEST_HEADERS"
 
+    deployment_environment_variable: str
+    endpoint_uri_environment_variable: str
+    api_key_environment_variable: str
 
     def __init__(
         self,
@@ -33,7 +31,7 @@ class OpenAITarget(PromptChatTarget):
         endpoint: str = None,
         api_key: str = None,
         headers: str = None,
-        is_azure_target = True,
+        is_azure_target=True,
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
         api_version: str = "2024-06-01",
@@ -90,36 +88,23 @@ class OpenAITarget(PromptChatTarget):
         self._presence_penalty = presence_penalty
 
         self._extra_headers: dict = {}
-        try:
-            request_headers = default_values.get_required_value(
-                env_var_name=self.ADDITIONAL_REQUEST_HEADERS, passed_value=headers
-            )
-            if isinstance(request_headers, str):
-                try:
-                    self._extra_headers = json.loads(request_headers)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error decoding JSON: {e}")
-        except ValueError:
-            logger.info("No headers have been passed, setting empty default headers")
 
+        request_headers = default_values.get_non_required_value(
+            env_var_name=self.ADDITIONAL_REQUEST_HEADERS, passed_value=headers
+        )
 
+        if request_headers and isinstance(request_headers, str):
+            self._extra_headers = json.loads(request_headers)
 
         self._api_version = api_version
         self._is_azure_target = is_azure_target
 
         if self._is_azure_target:
-             self._initialize_azure_vars(deployment_name, endpoint, api_key, use_aad_auth)
+            self._initialize_azure_vars(deployment_name, endpoint, api_key, use_aad_auth)
         else:
             self._initialize_openai_vars(deployment_name, endpoint, api_key)
 
-
-    def _initialize_azure_vars(
-              self,
-              deployment_name: str,
-              endpoint: str,
-              api_key: str,
-              use_aad_auth: bool
-        ):
+    def _initialize_azure_vars(self, deployment_name: str, endpoint: str, api_key: str, use_aad_auth: bool):
         self._set_azure_openai_env_configuration_vars()
 
         self._deployment_name = default_values.get_required_value(
@@ -130,15 +115,15 @@ class OpenAITarget(PromptChatTarget):
         ).rstrip("/")
 
         if use_aad_auth:
-                logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
-                token_provider = get_token_provider_from_default_azure_credential()
+            logger.info("Authenticating with DefaultAzureCredential() for Azure Cognitive Services")
+            token_provider = get_token_provider_from_default_azure_credential()
 
-                self._async_client = AsyncAzureOpenAI(
-                    azure_ad_token_provider=token_provider,
-                    api_version=self._api_version,
-                    azure_endpoint=self._endpoint,
-                    default_headers=self._extra_headers,
-                )
+            self._async_client = AsyncAzureOpenAI(
+                azure_ad_token_provider=token_provider,
+                api_version=self._api_version,
+                azure_endpoint=self._endpoint,
+                default_headers=self._extra_headers,
+            )
         else:
             self._api_key = default_values.get_required_value(
                 env_var_name=self.api_key_environment_variable, passed_value=api_key
@@ -151,15 +136,8 @@ class OpenAITarget(PromptChatTarget):
                 default_headers=self._extra_headers,
             )
 
-    def _initialize_openai_vars(
-              self,
-              deployment_name: str,
-              endpoint: str,
-              api_key: str
-    ):
-        self._api_key = default_values.get_required_value(
-            env_var_name="OPENAI_KEY", passed_value=api_key
-        )
+    def _initialize_openai_vars(self, deployment_name: str, endpoint: str, api_key: str):
+        self._api_key = default_values.get_required_value(env_var_name="OPENAI_KEY", passed_value=api_key)
 
         # Any available model. See https://platform.openai.com/docs/models
         self._deployment_name = default_values.get_required_value(
@@ -168,13 +146,11 @@ class OpenAITarget(PromptChatTarget):
 
         endpoint = endpoint if endpoint else "https://api.openai.com/v1/chat/completions"
 
-        self._async_client = AsyncOpenAI(
+        # Ignoring mypy type error. The OpenAI client and Azure OpenAI client have the same private base class
+        self._async_client = AsyncOpenAI(  # type: ignore
             api_key=self._api_key,
             default_headers=self._extra_headers,
         )
-
-
-
 
     @abstractmethod
     def _set_azure_openai_env_configuration_vars(self) -> None:
