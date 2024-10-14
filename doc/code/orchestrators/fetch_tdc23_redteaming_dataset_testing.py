@@ -28,15 +28,12 @@ prompt_target = TextTarget()
 # Create the orchestrator with scorer without safe prompts included
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
-# %%
 # Fetch only unsafe prompts from tdc23_redteaming dataset
 prompt_dataset = fetch_tdc23_redteaming_dataset()
 
-# %%
 # Use the first 8 examples for red teaming
 prompt_list = prompt_dataset.prompts[:8]
 
-# %%
 # Send prompts using the orchestrator and capture responses
 try:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
