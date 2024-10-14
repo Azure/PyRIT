@@ -84,6 +84,7 @@ def parse_arguments():
     parser.add_argument("--n_steps", type=int, default=100, help="Number of steps")
     parser.add_argument("--batch_size", type=int, default=512, help="Batch size")
     parser.add_argument("--random_seed", type=int, default=None, help="Random seed")
+    parser.add_argument("--control_init", type=str, default="! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !", help="Suffix initialization")
 
     return parser.parse_args()
 
@@ -100,4 +101,5 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         test_steps=1,
         random_seed=args.random_seed,
+        control_init=args.control_init,
     )
