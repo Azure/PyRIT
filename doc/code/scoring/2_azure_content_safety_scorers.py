@@ -10,7 +10,7 @@
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
-#     name: pyrit-311
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -56,7 +56,8 @@ response = PromptRequestPiece(
 memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 
 scores = await azure_content_filter.score_async(response)  # type: ignore
-assert azure_content_filter.get_azure_severity(scores[0].get_value()) > 1  # should be value 2 base on the documentation
+assert scores[0].get_value() > 0  # azure_severity should be value 2 base on the documentation
 
 for score in scores:
-    print(score)
+    # score_metadata contains azure_severity original value
+    print(f"{score} {score.score_metadata}")

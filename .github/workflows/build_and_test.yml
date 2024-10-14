@@ -40,7 +40,7 @@ jobs:
       - name: Install setuptools and pip
         run: pip install --upgrade setuptools pip
       - name: Install PyRIT with pip
-        run: pip install .[dev]
+        run: pip install .[dev,gcg]
       - name: Run unit tests with code coverage
         run: make test-cov-xml
       - name: Publish Pytest Results
