@@ -420,13 +420,13 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
 
     return dataset
 
+
 def fetch_tdc23_redteaming_dataset() -> PromptDataset:
     """
     Fetch TDC23-RedTeaming examples and create a PromptDataset.
 
     Returns:
         PromptDataset: A PromptDataset containing the examples.
-
     """
     # Load the TDC23-RedTeaming dataset
     data = load_dataset("walledai/TDC23-RedTeaming", "default")
@@ -438,11 +438,11 @@ def fetch_tdc23_redteaming_dataset() -> PromptDataset:
         source="https://huggingface.co/datasets/walledai/TDC23-RedTeaming",
         harm_category='',
         description="""TDC23-RedTeaming dataset from HuggingFace,
-                    created by Walled AI (https://huggingface.co/walledai). 
+                    created by Walled AI (https://huggingface.co/walledai).
                     Contains 100 prompts aimed at generating harmful content
-                    across multiple harm categories related to fairness, 
-                    misinformation, dangerous and criminal activities, 
-                    violence, etc. in the style of writing narratives. """,
+                    across multiple harm categories related to fairness,
+                    misinformation, dangerous and criminal activities,
+                    violence, etc. in the style of writing narratives.""",
         should_be_blocked=True,
         prompts=prompts
     )
