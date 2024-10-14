@@ -13,7 +13,7 @@ import os
 from pyrit.common import default_values
 from pyrit.datasets import fetch_xstest_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import AzureOpenAITextChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 
@@ -23,7 +23,7 @@ default_values.load_default_env()
 
 
 # %%
-prompt_target = AzureOpenAITextChatTarget(
+prompt_target = OpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
@@ -58,5 +58,3 @@ responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # ty
 # Retrieve the memory to print scoring results
 orchestrator.print_conversations()  # Use built-in method to display conversations
 
-
-# %%

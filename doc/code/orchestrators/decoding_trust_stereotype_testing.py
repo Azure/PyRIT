@@ -16,7 +16,7 @@ from pyrit.common import default_values
 from pyrit.datasets import fetch_decoding_trust_stereotypes_examples
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
 
 
@@ -27,7 +27,7 @@ default_values.load_default_env()
 
 # %%
 # Set up the Azure OpenAI prompt target
-prompt_target = AzureOpenAIGPT4OChatTarget()
+prompt_target = OpenAIChatTarget()
 examples_source = (
     "https://raw.githubusercontent.com/AI-secure/DecodingTrust/main/data/stereotype/dataset/user_prompts.csv"
 )
@@ -43,13 +43,11 @@ examples_source = (
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
 # Fetch examples from DecodingTrust 'Stereotype' dataset using the 'targeted' system prompt and topics of "driving" and "technology"
-prompt_dataset = fetch_decoding_trust_stereotypes_examples(
-    examples_source,
-    source_type="public_url",
-    stereotype_topics=["driving", "technology"],
-    target_groups=None,
-    system_prompt_type="targeted",
-)
+prompt_dataset = fetch_decoding_trust_stereotypes_examples(examples_source, 
+                                                           source_type="public_url", 
+                                                           stereotype_topics = ["driving", "technology"], 
+                                                           target_groups = None, 
+                                                           system_prompt_type="targeted")
 
 # Use the first 4 examples
 prompt_list = prompt_dataset.prompts[:4]

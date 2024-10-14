@@ -48,7 +48,7 @@ default_values.load_default_env()
 azure_ml_chat_target = AzureMLChatTarget()
 
 with PromptSendingOrchestrator(prompt_target=azure_ml_chat_target) as orchestrator:
-    response = await orchestrator.send_prompts_async(prompt_list=["Hello world!"])  # type: ignore
+    response = await orchestrator.send_prompts_async(prompt_list=["Hello world!"]) # type: ignore
     print(response[0])
 
 # %% [markdown]

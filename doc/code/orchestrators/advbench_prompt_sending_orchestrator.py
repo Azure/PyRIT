@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # AdvBench PromptSendingOrchestrator
 #
@@ -12,7 +27,7 @@
 import time
 import uuid
 
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
@@ -20,7 +35,7 @@ from pyrit.datasets import fetch_adv_bench_dataset
 
 
 default_values.load_default_env()
-target = AzureOpenAIGPT4OChatTarget()
+target = OpenAIChatTarget()
 
 # %%
 # You could optionally pass memory labels to orchestrators, which will be associated with each prompt and assist in retrieving or scoring later.
@@ -35,7 +50,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     end = time.time()
 
     print(f"Elapsed time for operation: {end-start}")
-
+    
     orchestrator.print_conversations()
 
 # %% [markdown]
@@ -45,9 +60,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 # This variation takes the original example, but converts the text to base64 before sending it to the target.
 
 # %%
-with PromptSendingOrchestrator(
-    prompt_target=target, prompt_converters=[Base64Converter()], batch_size=1
-) as orchestrator:
+with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()], batch_size=1) as orchestrator:
 
     adv_bench_prompts = fetch_adv_bench_dataset()
 

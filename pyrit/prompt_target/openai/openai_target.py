@@ -158,12 +158,12 @@ class OpenAITarget(PromptChatTarget):
               api_key: str
     ):
         self._api_key = default_values.get_required_value(
-            env_var_name="OPENAI_CHAT_KEY", passed_value=api_key
+            env_var_name="OPENAI_KEY", passed_value=api_key
         )
 
         # Any available model. See https://platform.openai.com/docs/models
         self._deployment_name = default_values.get_required_value(
-            env_var_name="OPENAI_CHAT_DEPLOYMENT", passed_value=deployment_name
+            env_var_name="OPENAI_DEPLOYMENT", passed_value=deployment_name
         )
 
         endpoint = endpoint if endpoint else "https://api.openai.com/v1/chat/completions"
