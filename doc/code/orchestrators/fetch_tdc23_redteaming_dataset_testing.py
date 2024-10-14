@@ -10,6 +10,10 @@ default_values.load_default_env()
 # Set up the Azure OpenAI prompt target
 prompt_target = TextTarget()
 
+# Note:
+# The dataset sources can be found at:
+# - HuggingFace source: https://huggingface.co/datasets/walledai/TDC23-RedTeaming
+
 # Create the orchestrator with scorer without safe prompts included
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
