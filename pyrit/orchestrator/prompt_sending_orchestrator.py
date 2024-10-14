@@ -5,6 +5,7 @@ from collections import defaultdict
 import uuid
 from colorama import Fore, Style
 import logging
+from dataclasses import dataclass
 
 from typing import Optional
 
@@ -88,6 +89,8 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
         metadata: Optional[str] = None,
+        retry_on_false_scorer: Scorer = None,
+        max_retry_on_false_scorer: int = 3,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
@@ -121,6 +124,8 @@ class PromptSendingOrchestrator(Orchestrator):
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
             memory_labels=memory_labels,
+            retry_on_false_scorer=retry_on_false_scorer,
+            max_retry_on_false_scorer=max_retry_on_false_scorer,
         )
 
     async def send_normalizer_requests_async(
@@ -128,9 +133,12 @@ class PromptSendingOrchestrator(Orchestrator):
         *,
         prompt_request_list: list[NormalizerRequest],
         memory_labels: Optional[dict[str, str]] = None,
+        retry_on_false_scorer: Scorer = None,
+        max_retry_on_false_scorer: int = 3,
     ) -> list[PromptRequestResponse]:
         """
         Sends the normalized prompts to the prompt target.
+        TODO: add documentation describing retry logic
         """
         for request in prompt_request_list:
             request.validate()
@@ -150,16 +158,72 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
+        if retry_on_false_scorer:
+            retry_count = 0
+            scores = await self._score_retry_async(
+                prompt_list=prompt_request_list, 
+                response_list=responses, 
+                scorer=retry_on_false_scorer
+            )
+            retry_result_list = [
+                RetryResult(prompt, response, score.get_value()) 
+                for prompt, response, score in zip(prompt_request_list, responses, scores)
+            ]
+
+            while any([retry_result.should_retry for retry_result in retry_result_list]) and retry_count < max_retry_on_false_scorer:
+                print(f"At least one response scored as 'should retry' (retry {retry_count+1}/{max_retry_on_false_scorer})")
+                retry_idx = [idx for idx, retry_result in enumerate(retry_result_list) if retry_result.should_retry]
+                retry_prompts = [retry_result.prompt for retry_result in retry_result_list if retry_result.should_retry]
+
+                retry_responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
+                    requests=retry_prompts,
+                    target=self._prompt_target,
+                    labels=self._combine_with_global_memory_labels(memory_labels),
+                    orchestrator_identifier=self.get_identifier(),
+                    batch_size=self._batch_size,
+                )
+
+                retry_scores = await self._score_retry_async(
+                    prompt_list=retry_prompts, 
+                    response_list=retry_responses, 
+                    scorer=retry_on_false_scorer
+                )
+                for idx, response, score in zip(retry_idx, retry_responses, retry_scores):
+                    retry_result_list[idx].response = response
+                    retry_result_list[idx].should_retry = score.get_value()
+                
+                retry_count += 1
+
+            responses = [retry_result.response for retry_result in retry_result_list]
+
         if self._scorers:
             response_ids = []
             for response in responses:
                 for piece in response.request_pieces:
                     id = str(piece.id)
                     response_ids.append(id)
-
             await self._score_responses_async(response_ids)
 
         return responses
+    
+    async def _score_retry_async(
+            self, 
+            prompt_list: list[NormalizerRequest], 
+            response_list: list[PromptRequestResponse], 
+            scorer: Scorer,
+        ):
+        first_prompt = prompt_list[0]
+        text_idx = None
+        for idx, prompt_piece in enumerate(first_prompt.request_pieces):
+            if prompt_piece.prompt_data_type == "text":
+                text_idx = idx
+        if text_idx is not None:
+            tasks = [p.request_pieces[text_idx].prompt_value for p in prompt_list]
+        else:
+            tasks = None
+        response_pieces = [p.request_pieces[0] for p in response_list]
+        scores = await scorer.score_prompts_batch_async(request_responses=response_pieces, tasks=tasks)
+        return scores
 
     async def _score_responses_async(self, prompt_ids: list[str]):
         with ScoringOrchestrator(
@@ -202,7 +266,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
                 for score in scores:
                     print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
-
+        
     def _prepare_conversation(self):
         """
         Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
@@ -216,3 +280,9 @@ class PromptSendingOrchestrator(Orchestrator):
 
                 self._memory.add_request_response_to_memory(request=request)
         return conversation_id
+
+@dataclass
+class RetryResult:
+    prompt: str
+    response: str
+    should_retry: bool
