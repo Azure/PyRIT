@@ -38,3 +38,4 @@ sphinx:
   - 'sphinx.ext.autosummary'
   config:
     autosummary_generate: True
+    suppress_warnings: ["etoc.toctree"]

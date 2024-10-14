@@ -1,8 +1,9 @@
 format: jb-book
-root: reading_order
+root: index
 parts:
   - caption: Introduction
     chapters:
+    - file: reading_order
     - file: how_to_guide
       title: Introduction
     - file: code/architecture

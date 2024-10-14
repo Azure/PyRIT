@@ -13,13 +13,13 @@
 # ---
 
 # %% [markdown]
-# ## Using Prompt Converters
+# # Using Prompt Converters
 #
 # Although converters can be used on their own, they should be thought of as a piece in the pipeine. Typically any orchestrator will have arguments so that prompts can be converted before being sent to the target. They can be stacked, use LLMs, and are a powerful tool.
 #
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 #
-# ### Stacking Converters with PromptSendingOrchestrator
+# ## Stacking Converters with PromptSendingOrchestrator
 #
 # In the following example, a TextTarget is used so these prompts are simply printed and added to memory. This can be useful if you are red teaming something and need to manually enter prompts. However, the target can be replaced with any other [target](../targets/README.md. E.g., if you have API access you can add a target there.
 #
