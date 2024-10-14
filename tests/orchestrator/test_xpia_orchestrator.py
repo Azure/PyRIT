@@ -5,7 +5,7 @@ from typing import Generator
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget
 from pyrit.score import Score, Scorer
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.orchestrator import (

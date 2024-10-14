@@ -4,7 +4,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from pyrit.prompt_target.hugging_face_chat_target import HuggingFaceChatTarget
+from pyrit.prompt_target import HuggingFaceChatTarget
 from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
 
 

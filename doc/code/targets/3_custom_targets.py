@@ -138,7 +138,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
-from pyrit.prompt_target.prompt_chat_target.openai_chat_target import AzureOpenAITextChatTarget
+from pyrit.prompt_target.openai.openai_chat_target import AzureOpenAITextChatTarget
 from pyrit.models import AttackStrategy
 
 from pyrit.prompt_target import CrucibleTarget

@@ -3,66 +3,47 @@
 import json
 import logging
 
-from typing import Literal, Optional, Dict, Any
+from typing import Literal, Dict, Any
 from openai import BadRequestError
 
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
-from pyrit.prompt_target import AzureOpenAITextChatTarget, PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
 
-class DALLETarget(PromptTarget):
+class OpenAIDALLETarget(OpenAITarget):
     """
     The Dalle3Target takes a prompt and generates images
     This class initializes a DALL-E image target
-
-    Args:
-        deployment_name (str): The name of the deployment.
-        endpoint (str): The endpoint URL for the service.
-        api_key (str): The API key for accessing the service.
-        use_aad_auth (bool, optional): When set to True, user authentication is used
-            instead of API Key. DefaultAzureCredential is taken for
-            https://cognitiveservices.azure.com/.default. Please run `az login` locally
-            to leverage user AuthN.
-        api_version (str, optional): The API version. Defaults to "2024-02-01".
-        image_size (str, optional): The size of the image to output, must be a value of VALID_SIZES.
-            Defaults to 1024x1024.
-        num_images (int, optional): The number of output images to generate.
-            Defaults to 1. For DALLE-3, can only be 1, for DALLE-2 max is 10 images.
-        dalle_version (int, optional): Version of DALLE service. Defaults to 3.
-        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
-        headers (dict, optional): Headers of the endpoint.
-        quality (str, optional): picture quality. Defaults to standard
-        style (str, optional): image style. Defaults to natural
-        max_requests_per_minute (int, optional): Number of requests the target can handle per
-            minute before hitting a rate limit. The number of requests sent to the target
-            will be capped at the value provided.
     """
 
     def __init__(
-        self,
-        *,
-        deployment_name: str = None,
-        endpoint: str = None,
-        api_key: str = None,
-        use_aad_auth: bool = False,
-        api_version: str = "2024-02-01",
-        image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024",
-        num_images: int = 1,
-        dalle_version: Literal["dall-e-2", "dall-e-3"] = "dall-e-2",
-        memory: MemoryInterface | None = None,
-        headers: Optional[dict[str, str]] = None,
-        quality: Literal["standard", "hd"] = "standard",
-        style: Literal["natural", "vivid"] = "natural",
-        max_requests_per_minute: Optional[int] = None,
-    ):
+            self,
+            image_size: Literal["256x256", "512x512", "1024x1024"] = "1024x1024",
+            num_images: int = 1,
+            dalle_version: Literal["dall-e-2", "dall-e-3"] = "dall-e-2",
+            quality: Literal["standard", "hd"] = "standard",
+            style: Literal["natural", "vivid"] = "natural",
+            *args,
+            **kwargs
+        ):
+        """
+        Initialize the DALL-E target with specified parameters.
+        Args:
+            image_size (Literal["256x256", "512x512", "1024x1024"], optional): The size of the generated images. Defaults to "1024x1024".
+            num_images (int, optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be between 1 and 10. For DALL-E-3, this must be 1.
+            dalle_version (Literal["dall-e-2", "dall-e-3"], optional): The version of DALL-E to use. Defaults to "dall-e-2".
+            quality (Literal["standard", "hd"], optional): The quality of the generated images. Only applicable for DALL-E-3. Defaults to "standard".
+            style (Literal["natural", "vivid"], optional): The style of the generated images. Only applicable for DALL-E-3. Defaults to "natural".
+            *args: Additional positional arguments to be passed to AzureOpenAITarget.
+            **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
+        Raises:
+            ValueError: If `num_images` is not 1 for DALL-E-3.
+            ValueError: If `num_images` is less than 1 or greater than 10 for DALL-E-2.
+        """
 
-        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
-
-        # make sure number of images and headers are allowed by Dall-e version
         self.dalle_version = dalle_version
         if dalle_version == "dall-e-3":
             if num_images != 1:
@@ -74,21 +55,15 @@ class DALLETarget(PromptTarget):
                 raise ValueError("DALL-E-2 can generate only up to 10 images at a time.")
 
         self.image_size = image_size
-        self.n = num_images
+        self.num_images = num_images
 
-        self.deployment_name = deployment_name
-        self.headers = headers
+        super().__init__(*args, **kwargs)
 
-        target_kwargs: Dict[str, Any] = {
-            "deployment_name": deployment_name,
-            "endpoint": endpoint,
-            "api_version": api_version,
-        }
-        if use_aad_auth:
-            target_kwargs["use_aad_auth"] = True
-        else:
-            target_kwargs["api_key"] = api_key
-        self._image_target = AzureOpenAITextChatTarget(**target_kwargs)
+    def _set_azure_openai_env_configuration_vars(self):
+        self.deployment_environment_variable = "AZURE_OPENAI_DALLE_DEPLOYMENT"
+        self.endpoint_uri_environment_variable = "AZURE_OPENAI_DALLE_ENDPOINT"
+        self.api_key_environment_variable = "AZURE_OPENAI_DALLE_API_KEY"
+
 
     @limit_requests_per_minute
     async def send_prompt_async(
@@ -108,9 +83,9 @@ class DALLETarget(PromptTarget):
         prompt = request.converted_value
 
         image_generation_args: Dict[str, Any] = {
-            "model": self.deployment_name,
+            "model": self._deployment_name,
             "prompt": prompt,
-            "n": self.n,
+            "n": self.num_images,
             "size": self.image_size,
             "response_format": "b64_json",
         }
@@ -153,7 +128,7 @@ class DALLETarget(PromptTarget):
             RateLimitError: If the rate limit is exceeded and the maximum number of retries is exhausted.
             EmptyResponseException: If the response is empty after exhausting the maximum number of retries.
         """
-        result = await self._image_target._async_client.images.generate(**image_generation_args)
+        result = await self._async_client.images.generate(**image_generation_args)
         json_response = json.loads(result.model_dump_json())
         b64_data = json_response["data"][0]["b64_json"]
         # Handle empty response using retry
