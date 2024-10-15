@@ -179,7 +179,6 @@ class RedTeamingOrchestrator(Orchestrator):
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
         Args:
-            conversation_id (str): The conversation ID for the prompt target.
             prompt (str, optional): The prompt to send to the target.
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
