@@ -114,7 +114,7 @@ class AddTextImageConverter(PromptConverter):
         Converter that adds text to an image
 
         Args:
-            prompt (str): The prompt to be added to the image.
+            prompt (str): The filename of the image to add text to.
             input_type (PromptDataType): type of data
         Returns:
             ConverterResult: The filename of the converted image as a ConverterResult Object
