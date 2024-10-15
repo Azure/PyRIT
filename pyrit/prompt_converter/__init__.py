@@ -25,6 +25,7 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerSimilarConverter,
 )
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
+from pyrit.prompt_converter.image_overlay_converter import ImageOverlayConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
@@ -43,7 +44,7 @@ from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusabl
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
-from pyrit.prompt_converter.image_overlay_converter import ImageOverlayConverter
+
 
 
 __all__ = [
@@ -67,6 +68,7 @@ __all__ = [
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
+    "ImageOverlayConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MorseConverter",
@@ -87,5 +89,4 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
-    "ImageOverlayConverter",
 ]
