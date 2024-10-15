@@ -17,6 +17,9 @@ from pyrit.prompt_target.dall_e_target import DALLETarget
 from pyrit.prompt_target.prompt_chat_target.ollama_chat_target import OllamaChatTarget
 from pyrit.prompt_target.azure_openai_completion_target import AzureOpenAICompletionTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
+from pyrit.prompt_target.hugging_face_chat_target import HuggingFaceChatTarget
+from pyrit.prompt_target.hugging_face_enpoint_target import HuggingFaceEndpointTarget
+from pyrit.prompt_target.http_target.http_target import HTTPTarget
 
 
 __all__ = [
@@ -31,6 +34,8 @@ __all__ = [
     "GandalfTarget",
     "GandalfLevel",
     "DALLETarget",
+    "HuggingFaceChatTarget",
+    "HuggingFaceEndpointTarget",
     "OpenAIChatTarget",
     "PromptChatTarget",
     "PromptShieldTarget",
@@ -38,4 +43,5 @@ __all__ = [
     "limit_requests_per_minute",
     "TextTarget",
     "OllamaChatTarget",
+    "HTTPTarget",
 ]
