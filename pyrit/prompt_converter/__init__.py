@@ -43,6 +43,7 @@ from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusabl
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
+from pyrit.prompt_converter.image_overlay_converter import ImageOverlayConverter
 
 
 __all__ = [
@@ -86,4 +87,5 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
+    "ImageOverlayConverter",
 ]
