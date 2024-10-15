@@ -76,8 +76,8 @@ class RedTeamingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target._memory = self._memory
-        self._prompt_target_conversation_id = None # Initialized at the beginning of conversation
-        self._red_teaming_chat_conversation_id = None # Initialized at the beginning of conversation
+        self._prompt_target_conversation_id = None  # Initialized at the beginning of conversation
+        self._red_teaming_chat_conversation_id = None  # Initialized at the beginning of conversation
         self._red_teaming_chat = red_teaming_chat
         self._red_teaming_chat._memory = self._memory
         self._attack_strategy = str(attack_strategy)
@@ -228,9 +228,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
     async def print_conversation(self, conversation_id: str):
         """Prints the conversation between the prompt target and the red teaming bot."""
-        target_messages = self._memory._get_prompt_pieces_with_conversation_id(
-            conversation_id=conversation_id
-        )
+        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
 
         if not target_messages or len(target_messages) == 0:
             print("No conversation with the target")
@@ -248,7 +246,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
                 await display_response(message, self._memory)
 
-            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
+            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
             if scores and len(scores) > 0:
                 score = scores[0]
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")

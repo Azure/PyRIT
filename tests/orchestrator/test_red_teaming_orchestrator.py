@@ -375,6 +375,7 @@ async def test_is_conversation_complete_scoring_non_bool():
     with pytest.raises(ValueError):
         await orchestrator._check_conversation_complete_async()
 
+
 @pytest.mark.asyncio
 async def test_apply_attack_strategy_until_completion_async(
     prompt_target: PromptTarget,
@@ -401,7 +402,9 @@ async def test_apply_attack_strategy_until_completion_async(
             mock_send_prompt.return_value = Mock(response_error="none")
             mock_check_complete.return_value = MagicMock(get_value=Mock(return_value=True))
 
-            conversation_id = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=max_turns)
+            conversation_id = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(
+                max_turns=max_turns
+            )
             red_teaming_chat_conversation_id = red_teaming_orchestrator._red_teaming_chat_conversation_id
 
             assert conversation_id == red_teaming_orchestrator._prompt_target_conversation_id
@@ -409,6 +412,8 @@ async def test_apply_attack_strategy_until_completion_async(
             assert mock_send_prompt.call_count <= max_turns
             assert mock_check_complete.call_count <= max_turns
 
-            conversation_id2 = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=max_turns)
+            conversation_id2 = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(
+                max_turns=max_turns
+            )
             assert conversation_id2 != conversation_id
             assert red_teaming_orchestrator._red_teaming_chat_conversation_id != red_teaming_chat_conversation_id
