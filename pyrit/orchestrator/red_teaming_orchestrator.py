@@ -76,8 +76,8 @@ class RedTeamingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target._memory = self._memory
-        self._prompt_target_conversation_id = str(uuid4())
-        self._red_teaming_chat_conversation_id = str(uuid4())
+        self._prompt_target_conversation_id = None # Initialized at the beginning of conversation
+        self._red_teaming_chat_conversation_id = None # Initialized at the beginning of conversation
         self._red_teaming_chat = red_teaming_chat
         self._red_teaming_chat._memory = self._memory
         self._attack_strategy = str(attack_strategy)
@@ -94,7 +94,11 @@ class RedTeamingOrchestrator(Orchestrator):
             if hasattr(self._scorer, "_prompt_target"):
                 self._scorer._prompt_target._memory = self._memory
 
-    async def check_conversation_complete_async(self) -> Union[Score, None]:
+    def _set_conversation_ids(self):
+        self._prompt_target_conversation_id = str(uuid4())
+        self._red_teaming_chat_conversation_id = str(uuid4())
+
+    async def _check_conversation_complete_async(self) -> Union[Score, None]:
         """
         Returns the scoring result of the conversation.
         This function uses the scorer to classify the last response.
@@ -114,7 +118,7 @@ class RedTeamingOrchestrator(Orchestrator):
             raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
         return score
 
-    async def apply_attack_strategy_until_completion_async(self, *, max_turns: int = 5) -> Score:
+    async def apply_attack_strategy_until_completion_async(self, *, max_turns: int = 5) -> str:
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
@@ -123,7 +127,13 @@ class RedTeamingOrchestrator(Orchestrator):
                 If the conversation is not complete after the maximum number of turns,
                 the orchestrator stops and returns the last score.
                 The default value is 5.
+
+        Returns:
+            self._prompt_target_conversation_id: The conversation ID.
         """
+        # Set conversation IDs for prompt target and red teaming chat at the beginning of the conversation.
+        self._set_conversation_ids()
+
         turn = 1
         self._achieved_objective = False
         score: Score | None = None
@@ -134,10 +144,10 @@ class RedTeamingOrchestrator(Orchestrator):
             if self._use_score_as_feedback and score:
                 send_prompt_kwargs["feedback"] = score.score_rationale
 
-            response = await self.send_prompt_async(**send_prompt_kwargs)
+            response = await self._send_prompt_async(**send_prompt_kwargs)
 
             if response.response_error == "none":
-                score = await self.check_conversation_complete_async()
+                score = await self._check_conversation_complete_async()
                 if bool(score.get_value()):
                     self._achieved_objective = True
                     logger.info(
@@ -157,9 +167,9 @@ class RedTeamingOrchestrator(Orchestrator):
                 f"number of turns ({max_turns}).",
             )
 
-        return score
+        return self._prompt_target_conversation_id
 
-    async def send_prompt_async(
+    async def _send_prompt_async(
         self,
         *,
         prompt: Optional[str] = None,
@@ -169,6 +179,7 @@ class RedTeamingOrchestrator(Orchestrator):
         Either sends a user-provided prompt or generates a prompt to send to the prompt target.
 
         Args:
+            conversation_id (str): The conversation ID for the prompt target.
             prompt (str, optional): The prompt to send to the target.
                 If no prompt is specified the orchestrator contacts the red teaming target
                 to generate a prompt and forwards it to the prompt target.
@@ -216,10 +227,10 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return response_piece
 
-    async def print_conversation(self):
+    async def print_conversation(self, conversation_id: str):
         """Prints the conversation between the prompt target and the red teaming bot."""
         target_messages = self._memory._get_prompt_pieces_with_conversation_id(
-            conversation_id=self._prompt_target_conversation_id
+            conversation_id=conversation_id
         )
 
         if not target_messages or len(target_messages) == 0:

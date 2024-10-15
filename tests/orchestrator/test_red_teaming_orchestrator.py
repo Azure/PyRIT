@@ -108,12 +108,14 @@ async def test_send_prompt_twice(
         scorer=scorer,
     )
 
+    red_teaming_orchestrator._set_conversation_ids()
+
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
             mock_rt.return_value = "First red teaming chat response"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = await red_teaming_orchestrator.send_prompt_async()
+            target_response = await red_teaming_orchestrator._send_prompt_async()
             assert target_response.converted_value == expected_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
@@ -124,7 +126,7 @@ async def test_send_prompt_twice(
             second_target_response = "Second target response"
             mock_rt.return_value = "Second red teaming chat response"
             mock_target.return_value = second_target_response
-            target_response = await red_teaming_orchestrator.send_prompt_async()
+            target_response = await red_teaming_orchestrator._send_prompt_async()
             assert target_response.converted_value == second_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
@@ -154,12 +156,14 @@ async def test_send_fixed_prompt_then_generated_prompt(
         scorer=scorer,
     )
 
+    red_teaming_orchestrator._set_conversation_ids()
+
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_responses = "First target response"
             mock_target.return_value = expected_target_responses
-            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
+            target_response = await red_teaming_orchestrator._send_prompt_async(prompt=fixed_input_prompt)
             assert target_response.converted_value == expected_target_responses
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
@@ -173,7 +177,7 @@ async def test_send_fixed_prompt_then_generated_prompt(
             mock_rt.return_value = expected_generated_red_teaming_response
             mock_target.return_value = expected_target_response
 
-            target_response = await red_teaming_orchestrator.send_prompt_async()
+            target_response = await red_teaming_orchestrator._send_prompt_async()
             assert target_response.converted_value == expected_target_response
 
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
@@ -210,7 +214,7 @@ async def test_send_fixed_prompt_memory_labels(
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_responses = "First target response"
             mock_target.return_value = expected_target_responses
-            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
+            target_response = await red_teaming_orchestrator._send_prompt_async(prompt=fixed_input_prompt)
             assert target_response.labels == labels
 
 
@@ -238,12 +242,14 @@ async def test_send_fixed_prompt_beyond_first_iteration_failure(
         scorer=scorer,
     )
 
+    red_teaming_orchestrator._set_conversation_ids()
+
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
             fixed_input_prompt = "First prompt to target - set by user"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = await red_teaming_orchestrator.send_prompt_async(prompt=fixed_input_prompt)
+            target_response = await red_teaming_orchestrator._send_prompt_async(prompt=fixed_input_prompt)
             assert target_response.converted_value == expected_target_response
             _check_orchestrator_memory_if_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
 
@@ -254,7 +260,7 @@ async def test_send_fixed_prompt_beyond_first_iteration_failure(
             expected_target_response = "Second target response"
             mock_target.return_value = expected_target_response
             with pytest.raises(ValueError):
-                target_response = await red_teaming_orchestrator.send_prompt_async(prompt=second_fixed_input_prompt)
+                target_response = await red_teaming_orchestrator._send_prompt_async(prompt=second_fixed_input_prompt)
             mock_rt.assert_not_called()
 
 
@@ -296,7 +302,7 @@ async def test_is_conversation_complete_scoring(score, message_count):
     orchestrator._memory.get_conversation = MagicMock(return_value=simulated_messages)
     # conversation is complete if the last message is from the target
     # and the score is True
-    actual_result = await orchestrator.check_conversation_complete_async()
+    actual_result = await orchestrator._check_conversation_complete_async()
     is_failure = not bool(actual_result) or not actual_result.score_value
     assert not is_failure == (len(simulated_messages) > 0 and score)
 
@@ -367,4 +373,4 @@ async def test_is_conversation_complete_scoring_non_bool():
         ]
     )
     with pytest.raises(ValueError):
-        await orchestrator.check_conversation_complete_async()
+        await orchestrator._check_conversation_complete_async()
