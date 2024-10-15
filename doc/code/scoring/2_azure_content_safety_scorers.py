@@ -44,8 +44,8 @@ memory = DuckDBMemory()
 # Set up the Azure Content Filter
 azure_content_filter = AzureContentFilterScorer(
     # Comment out either api_key or use_aad_auth
-    # api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
-    use_aad_auth=True,
+    api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
+    # use_aad_auth=True,
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
     memory=memory,
 )
