@@ -63,3 +63,4 @@ def test_variation_converter_input_supported():
     prompt_target = MockPromptTarget()
     converter = VariationConverter(converter_target=prompt_target)
     assert converter.input_supported("audio_path") is False
+    assert converter.input_supported("text") is True
