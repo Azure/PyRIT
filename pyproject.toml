@@ -49,6 +49,7 @@ dependencies = [
     "datasets>=3.0.0",
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
+    "httpx[http2]>=0.27.2",
     "jsonpickle>=3.0.4",
     "jupyter>=1.0.0",
     "ipykernel>=6.29.4",

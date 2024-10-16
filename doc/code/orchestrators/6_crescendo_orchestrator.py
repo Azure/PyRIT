@@ -45,7 +45,7 @@ with CrescendoOrchestrator(
 ) as orchestrator:
 
     # For five turns this can take a couple minutes depending on LLM latency
-    score = await orchestrator.apply_crescendo_attack_async(max_rounds=10, max_backtracks=5)  # type: ignore
+    score = await orchestrator.apply_crescendo_attack_async(max_turns=10, max_backtracks=5)  # type: ignore
     orchestrator.print_conversation()
 
     print(f"{score} {score.score_metadata} {score.score_rationale} ")

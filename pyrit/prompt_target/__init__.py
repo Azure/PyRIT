@@ -13,15 +13,15 @@ from pyrit.prompt_target.openai.openai_tts_target import OpenAITTSTarget
 from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIDALLETarget
 from pyrit.prompt_target.openai.openai_completion_target import OpenAICompletionTarget
 
-from pyrit.prompt_target.gandalf_target import GandalfTarget, GandalfLevel
 from pyrit.prompt_target.crucible_target import CrucibleTarget
-from pyrit.prompt_target.text_target import TextTarget
-
-from pyrit.prompt_target.ollama_chat_target import OllamaChatTarget
-
-from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
+from pyrit.prompt_target.gandalf_target import GandalfTarget, GandalfLevel
+from pyrit.prompt_target.http_target.http_target import HTTPTarget
 from pyrit.prompt_target.hugging_face.hugging_face_chat_target import HuggingFaceChatTarget
 from pyrit.prompt_target.hugging_face.hugging_face_enpoint_target import HuggingFaceEndpointTarget
+from pyrit.prompt_target.ollama_chat_target import OllamaChatTarget
+from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
+from pyrit.prompt_target.text_target import TextTarget
+
 
 
 __all__ = [
@@ -30,6 +30,7 @@ __all__ = [
     "CrucibleTarget",
     "GandalfLevel",
     "GandalfTarget",
+    "HTTPTarget",
     "HuggingFaceChatTarget",
     "HuggingFaceEndpointTarget",
     "limit_requests_per_minute",
@@ -42,6 +43,7 @@ __all__ = [
     "OpenAIGPT4Target",
     "OpenAITTSTarget",
     "OpenAITarget",
+    "OllamaChatTarget",
     "PromptChatTarget",
     "PromptShieldTarget",
     "PromptTarget",
