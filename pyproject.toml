@@ -63,6 +63,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "segno>=1.6.1",
     "scikit-learn>=1.4.2",
+    "scipy">="1.14.1",
     "SQLAlchemy==2.0.28",
     "sqlalchemy-stubs==0.4",
     "termcolor>=2.4.0",
