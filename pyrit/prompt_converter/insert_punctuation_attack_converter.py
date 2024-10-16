@@ -41,8 +41,7 @@ class InsertPunctuationGenerator(PromptConverter):
             punctuation_list (List[str]): List of punctuations to validate.
         Raise an ValueError if args or invalid punctuation.
         """
-        if not punctuation_list or not all(str in string.punctuation for str in punctuation_list):
-            raise ValueError(f"punctuation_list must only include single punctuations within {string.punctuation}")
+        return bool(punctuation_list) and all(str in string.punctuation for str in punctuation_list)
 
     async def convert_async(
         self, *, prompt: str, input_type: PromptDataType = "text", punctuation_list: Optional[List[str]] = None
@@ -62,8 +61,9 @@ class InsertPunctuationGenerator(PromptConverter):
         # initialize default punctuation list
         if not punctuation_list:
             punctuation_list = [",", ".", "!", "?", ":", ";", "-"]
-        else:
-            self._is_valid_punctuation(punctuation_list)
+        elif not self._is_valid_punctuation(punctuation_list):
+            raise ValueError(f"punctuation_list must only include single punctuations within {string.punctuation}")
+
         # generate number of max_iterations modified prompts with punctuation insertions.
         modified_prompts = [self._insert_punctuation(prompt, punctuation_list) for _ in range(self.max_iterations)]
         # combine all modified prompts into a single result
