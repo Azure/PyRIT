@@ -65,7 +65,6 @@ class RedTeamingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target._memory = self._memory
-        self._red_teaming_chat_conversation_id = None  # Initialized at the beginning of conversation
         self._red_teaming_chat = red_teaming_chat
         self._red_teaming_chat._memory = self._memory
         self._use_score_as_feedback = use_score_as_feedback
@@ -77,31 +76,6 @@ class RedTeamingOrchestrator(Orchestrator):
             self._scorer._memory = self._memory
             if hasattr(self._scorer, "_prompt_target"):
                 self._scorer._prompt_target._memory = self._memory
-
-
-    def _get_messages_by_conversation_id(self, conversation_id: str):
-        return self._memory.get_conversation(conversation_id=conversation_id)
-
-
-    async def _check_conversation_complete_async(self, conversation_id: str) -> Union[Score, None]:
-        """
-        Returns the scoring result of the conversation.
-        This function uses the scorer to classify the last response.
-        """
-        prompt_request_responses = self._get_messages_by_conversation_id(conversation_id=conversation_id)
-        if not prompt_request_responses:
-            # If there are no messages, then the conversation is not complete.
-            return None
-        if prompt_request_responses[-1].request_pieces[0].role in ["user", "system"]:
-            # If the last message is a system or red teaming chat message,
-            # then the conversation is not yet complete.
-            return None
-
-        score = (await self._scorer.score_async(request_response=prompt_request_responses[-1].request_pieces[0]))[0]
-
-        if score.score_type != "true_false":
-            raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
-        return score
 
     async def apply_attack_strategy_until_completion_async(self, *, attack_strategy: Union[str, AttackStrategy], initial_prompt: str = "Begin Conversation", max_turns: int = 5) -> str:
         """
@@ -149,7 +123,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
                 logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
                 prompt = await self._get_prompt_from_red_teaming_target(
-                    target_conversation_id=prompt_target_conversation_id,
+                    prompt_target_conversation_id=prompt_target_conversation_id,
                     red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
                     attack_strategy=str(attack_strategy),
                     feedback=feedback)
@@ -181,43 +155,13 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return prompt_target_conversation_id
 
-    async def _send_prompt_async(
-        self,
-        *,
-        conversation_id: str,
-        prompt: Optional[str],
-    ) -> PromptRequestPiece:
-        """
-        Sends a prompt to the prompt target.
-
+    async def print_conversation(self, prompt_target_conversation_id: str):
+        """Prints the conversation between the prompt target and the red teaming bot.
+        
         Args:
-            prompt (str, optional): The prompt to send to the target.
+            prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
-        target_prompt_obj = NormalizerRequestPiece(
-            request_converters=self._prompt_converters,
-            prompt_value=prompt,
-            prompt_data_type="text",
-            memory=self._memory,
-        )
-
-        normalizer_request = NormalizerRequest(
-            request_pieces=[target_prompt_obj], conversation_id=conversation_id,
-        )
-
-        response_piece = (
-            await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=normalizer_request,
-                target=self._prompt_target,
-                labels=self._global_memory_labels,
-                orchestrator_identifier=self.get_identifier(),
-            )
-        ).request_pieces[0]
-
-        return response_piece
-
-    async def print_conversation(self, conversation_id: str):
-        """Prints the conversation between the prompt target and the red teaming bot."""
-        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=prompt_target_conversation_id)
 
         if not target_messages or len(target_messages) == 0:
             print("No conversation with the target")
@@ -239,6 +183,64 @@ class RedTeamingOrchestrator(Orchestrator):
             if scores and len(scores) > 0:
                 score = scores[0]
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
+
+    async def _send_prompt_async(
+        self,
+        *,
+        prompt_target_conversation_id: str,
+        prompt: Optional[str],
+    ) -> PromptRequestPiece:
+        """
+        Sends a prompt to the prompt target.
+
+        Args:
+            prompt_target_conversation_id (str): the conversation ID for the prompt target.
+            prompt (str, optional): The prompt to send to the target.
+        """
+        target_prompt_obj = NormalizerRequestPiece(
+            request_converters=self._prompt_converters,
+            prompt_value=prompt,
+            prompt_data_type="text",
+            memory=self._memory,
+        )
+
+        normalizer_request = NormalizerRequest(
+            request_pieces=[target_prompt_obj], conversation_id=prompt_target_conversation_id,
+        )
+
+        response_piece = (
+            await self._prompt_normalizer.send_prompt_async(
+                normalizer_request=normalizer_request,
+                target=self._prompt_target,
+                labels=self._global_memory_labels,
+                orchestrator_identifier=self.get_identifier(),
+            )
+        ).request_pieces[0]
+
+        return response_piece
+
+    async def _check_conversation_complete_async(self, prompt_target_conversation_id: str) -> Union[Score, None]:
+        """
+        Returns the scoring result of the conversation.
+        This function uses the scorer to classify the last response.
+
+        Args:
+            prompt_target_conversation_id (str): the conversation ID for the prompt target.
+        """
+        prompt_request_responses = self._memory.get_conversation(conversation_id=prompt_target_conversation_id)
+        if not prompt_request_responses:
+            # If there are no messages, then the conversation is not complete.
+            return None
+        if prompt_request_responses[-1].request_pieces[0].role in ["user", "system"]:
+            # If the last message is a system or red teaming chat message,
+            # then the conversation is not yet complete.
+            return None
+
+        score = (await self._scorer.score_async(request_response=prompt_request_responses[-1].request_pieces[0]))[0]
+
+        if score.score_type != "true_false":
+            raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")
+        return score
 
     def _handle_text_response(self, last_response_from_attack_target, feedback) -> str:
         # If the attack target responds with text we can use that as the new prompt
@@ -282,9 +284,13 @@ class RedTeamingOrchestrator(Orchestrator):
             raise ValueError(f"{base_error_message}" "However, no scoring rationale was provided by the scorer.")
         return feedback
 
-    def _get_prompt_for_red_teaming_chat(self, *, target_conversation_id: str, feedback: str | None) -> str:
+    def _get_prompt_for_red_teaming_chat(self, *, prompt_target_conversation_id: str, feedback: str | None) -> str:
         """
+        If we have previously exchanged messages with the attack target, use the last message from the attack
+        target as the new prompt for the red teaming chat.
+
         Args:
+            prompt_target_conversation_id (str): the conversation ID for the prompt target.
             feedback (str, optional): feedback from a previous iteration of the conversation.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
@@ -293,20 +299,33 @@ class RedTeamingOrchestrator(Orchestrator):
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
         """
-        # If we have previously exchanged messages with the attack target
-        # we can use the last message from the attack target as the new
-        # prompt for the red teaming chat.
-        last_response_from_attack_target = self._get_last_attack_target_response(target_conversation_id=target_conversation_id)
+        last_response_from_attack_target = self._get_last_attack_target_response(prompt_target_conversation_id=prompt_target_conversation_id)
 
         if last_response_from_attack_target.converted_value_data_type in ["text", "error"]:
             return self._handle_text_response(last_response_from_attack_target, feedback)
 
         return self._handle_file_response(last_response_from_attack_target, feedback)
 
-    async def _get_prompt_from_red_teaming_target(self, *, target_conversation_id: str, red_teaming_chat_conversation_id: str, attack_strategy: str, feedback: Optional[str] = None) -> str:
-        prompt_text = self._get_prompt_for_red_teaming_chat(target_conversation_id=target_conversation_id, feedback=feedback)
+    async def _get_prompt_from_red_teaming_target(self, *, prompt_target_conversation_id: str, red_teaming_chat_conversation_id: str, attack_strategy: str, feedback: Optional[str] = None) -> str:
+        """
+        Send a prompt to the red teaming chat to generate a new prompt for the prompt target.
 
-        if self._is_first_turn_with_red_teaming_chat(red_teaming_chat_conversation_id):
+        Args:
+            prompt_target_conversation_id (str): the conversation ID for the prompt target.
+            red_teaming_chat_conversation_id (str): the conversation ID for the red teaming chat.
+            attack_strategy (str): the attack strategy for the red teaming bot to follow.
+            feedback (str, optional): feedback from a previous iteration of the conversation.
+                This can either be a score if the request completed, or a short prompt to rewrite
+                the input if the request was blocked.
+                The feedback is passed back to the red teaming chat to improve the next prompt.
+                For text-to-image applications, for example, there is no immediate text output
+                that can be passed back to the red teaming chat, so the scorer rationale is the
+                only way to generate feedback.
+        """
+        prompt_text = self._get_prompt_for_red_teaming_chat(prompt_target_conversation_id=prompt_target_conversation_id, feedback=feedback)
+
+        if len(self._memory.get_conversation(conversation_id=red_teaming_chat_conversation_id)) == 0:
+            # Set system prompt for the first turn with red teaming chat
             self._red_teaming_chat.set_system_prompt(
                 system_prompt=attack_strategy,
                 conversation_id=red_teaming_chat_conversation_id,
@@ -333,11 +352,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
         return response_text
 
-    def _get_last_attack_target_response(self, target_conversation_id: str) -> PromptRequestPiece | None:
-        target_messages = self._get_messages_by_conversation_id(conversation_id=target_conversation_id)
+    def _get_last_attack_target_response(self, prompt_target_conversation_id: str) -> PromptRequestPiece | None:
+        target_messages = self._memory.get_conversation(conversation_id=prompt_target_conversation_id)
         assistant_responses = [m.request_pieces[0] for m in target_messages if m.request_pieces[0].role == "assistant"]
         return assistant_responses[-1] if len(assistant_responses) > 0 else None
-
-    def _is_first_turn_with_red_teaming_chat(self, red_teaming_chat_conversation_id: str):
-        red_teaming_chat_messages = self._get_messages_by_conversation_id(conversation_id=red_teaming_chat_conversation_id)
-        return len(red_teaming_chat_messages) == 0
