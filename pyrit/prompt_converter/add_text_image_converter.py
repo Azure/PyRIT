@@ -100,7 +100,7 @@ class AddTextImageConverter(PromptConverter):
         wrapped_text = textwrap.fill(self._text_to_add, width=max_chars_per_line)
 
         # Add wrapped text to image
-        y_offset = self._y_pos
+        y_offset = float(self._y_pos)
         for line in wrapped_text.split("\n"):
             draw.text((self._x_pos, y_offset), line, font=self._font, fill=self._color)
             bbox = draw.textbbox((self._x_pos, y_offset), line, font=self._font)
