@@ -57,3 +57,9 @@ async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
             await prompt_variation.convert_async(prompt="testing", input_type="text")
 
         assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+
+
+def test_variation_converter_input_supported():
+    prompt_target = MockPromptTarget()
+    converter = VariationConverter(converter_target=prompt_target)
+    assert converter.input_supported("audio_path") is False

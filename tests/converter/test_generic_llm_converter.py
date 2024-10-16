@@ -32,3 +32,10 @@ def test_tense_converter_sets_system_prompt() -> None:
     target = MagicMock()
     converter = TenseConverter(tense="past", converter_target=target)
     assert "past" in converter.system_prompt
+
+
+def test_generic_llm_converter_input_supported() -> None:
+    target = MagicMock()
+    converter = NoiseConverter(converter_target=target)
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("audio_path") is False
