@@ -107,7 +107,7 @@ ALTER ROLE db_datawriter ADD MEMBER [user@domain.com];
 3. Verify the permissions by running the above **Checking If a Corporate Email Address Exists** query again in the Query Editor.
 
 ## 6. Configure Local Environment
- 
+
 Connecting PyRIT to an Azure SQL Server database requires ODBC, PyODBC and Microsoft's [ODBC Driver for SQL Server](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver16) to be installed in your local environment. Consult PyODBC's [documentation](https://github.com/mkleehammer/pyodbc/wiki) for detailed instruction on.
 
 ## 7. Testing
