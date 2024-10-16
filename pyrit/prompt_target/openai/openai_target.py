@@ -43,7 +43,7 @@ class OpenAITarget(PromptChatTarget):
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
-        Abstract class that initializes an Azure OpenAI chat target.
+        Abstract class that initializes an Azure or non-Azure OpenAI chat target.
 
         Read more about the various models here:
         https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models.
@@ -57,6 +57,7 @@ class OpenAITarget(PromptChatTarget):
             api_key (str, optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
             headers (str, optional): Headers of the endpoint (JSON).
+            is_azure_target (bool, optional): Whether the target is an Azure target.
             use_aad_auth (bool, optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
@@ -64,7 +65,7 @@ class OpenAITarget(PromptChatTarget):
             memory (MemoryInterface, optional): An instance of the MemoryInterface class
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
-                "2024-02-01".
+                "2024-06-01".
             max_tokens (int, optional): The maximum number of tokens to generate in the response.
                 Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
@@ -102,7 +103,10 @@ class OpenAITarget(PromptChatTarget):
         if self._is_azure_target:
             self._initialize_azure_vars(deployment_name, endpoint, api_key, use_aad_auth)
         else:
-            self._initialize_openai_vars(deployment_name, endpoint, api_key)
+            if not self._deployment_name:
+                # OpenAI deployments listed here: https://platform.openai.com/docs/models
+                raise ValueError("The deployment name must be provided for non-Azure OpenAI targets. e.g. gpt-4o")
+            self._initialize_non_azure_vars(deployment_name, endpoint, api_key)
 
     def _initialize_azure_vars(self, deployment_name: str, endpoint: str, api_key: str, use_aad_auth: bool):
         self._set_azure_openai_env_configuration_vars()
@@ -136,7 +140,10 @@ class OpenAITarget(PromptChatTarget):
                 default_headers=self._extra_headers,
             )
 
-    def _initialize_openai_vars(self, deployment_name: str, endpoint: str, api_key: str):
+    def _initialize_non_azure_vars(self, deployment_name: str, endpoint: str, api_key: str):
+        """
+        Initializes variables to communicate with the (non-Azure) OpenAI API
+        """
         self._api_key = default_values.get_required_value(env_var_name="OPENAI_KEY", passed_value=api_key)
 
         # Any available model. See https://platform.openai.com/docs/models
@@ -158,4 +165,4 @@ class OpenAITarget(PromptChatTarget):
         Sets deployment_environment_variable, endpoint_uri_environment_variable, and api_key_environment_variable
         which are read from .env
         """
-        pass
+        raise NotImplementedError

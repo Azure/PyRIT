@@ -23,7 +23,6 @@ from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
 from pyrit.prompt_target.text_target import TextTarget
 
 
-
 __all__ = [
     "AzureBlobStorageTarget",
     "AzureMLChatTarget",

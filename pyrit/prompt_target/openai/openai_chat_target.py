@@ -32,11 +32,6 @@ class OpenAIChatTarget(OpenAITarget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if not self._is_azure_target:
-            if not self._deployment_name:
-                # OpenAI deployments listed here: https://platform.openai.com/docs/models
-                raise ValueError("The deployment name must be provided for non-Azure OpenAI targets. e.g. gpt-4o")
-
     def _set_azure_openai_env_configuration_vars(self) -> None:
         self.deployment_environment_variable = "AZURE_OPENAI_CHAT_DEPLOYMENT"
         self.endpoint_uri_environment_variable = "AZURE_OPENAI_CHAT_ENDPOINT"
