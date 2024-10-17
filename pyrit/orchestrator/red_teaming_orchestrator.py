@@ -48,17 +48,17 @@ class RedTeamingOrchestrator(Orchestrator):
                 This can be used to guide the bot to achieve the conversation objective in a more direct and
                 structured way.
                 Should be of type string or AttackStrategy (which has a __str__ method).
-            prompt_target: The target to send the prompts to.
+            prompt_target: The target to send the created prompts to.
             red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
-                The initial prompt is used to start the conversation with the red teaming target.
+                The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
                 The default is a text prompt with the content "Begin Conversation".
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
                 scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient (False)
                 to satisfy the objective that is specified in the attack_strategy.
-            use_score_as_feedback: Whether to use the score as feedback to the red teaming chat.
+            use_score_as_feedback: Whether to use the score as feedback to the red teaming chat to improve the next prompt.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
@@ -78,11 +78,11 @@ class RedTeamingOrchestrator(Orchestrator):
         self._prompt_target._memory = self._memory
         self._red_teaming_chat = red_teaming_chat
         self._red_teaming_chat._memory = self._memory
-        self._use_score_as_feedback = use_score_as_feedback
         self._attack_strategy = str(attack_strategy)
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
         if not self._initial_red_teaming_prompt:
             raise ValueError("The initial red teaming prompt cannot be empty.")
+        self._use_score_as_feedback = use_score_as_feedback
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
@@ -107,16 +107,11 @@ class RedTeamingOrchestrator(Orchestrator):
                 The default value is 5.
 
         Returns:
-            prompt_target_conversation_id: The conversation ID.
+            prompt_target_conversation_id: The conversation ID for the multi-turn conversation.
         """
         # Set conversation IDs for prompt target and red teaming chat at the beginning of the conversation.
         prompt_target_conversation_id = str(uuid4())
         red_teaming_chat_conversation_id = str(uuid4())
-
-        # Set initial prompt on the first turn
-        prompt = None
-        logger.info(f"Setting initial prompt: {self._initial_red_teaming_prompt}")
-        prompt = self._initial_red_teaming_prompt
 
         turn = 1
         self._achieved_objective = False
@@ -128,18 +123,17 @@ class RedTeamingOrchestrator(Orchestrator):
             if self._use_score_as_feedback and score:
                 feedback = score.score_rationale
 
-            if turn > 1:
-                # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
-                logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
-                prompt = await self._get_prompt_from_red_teaming_target(
-                    prompt_target_conversation_id=prompt_target_conversation_id,
-                    red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
-                    attack_strategy=self._attack_strategy,
-                    feedback=feedback,
-                )
+            # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
+            logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
+            prompt = await self._get_prompt_from_red_teaming_target(
+                prompt_target_conversation_id=prompt_target_conversation_id,
+                red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
+                feedback=feedback,
+            )
 
             response = await self._send_prompt_async(
-                prompt_target_conversation_id=prompt_target_conversation_id, prompt=prompt
+                prompt=prompt,
+                prompt_target_conversation_id=prompt_target_conversation_id,
             )
 
             if response.response_error == "none":
@@ -198,11 +192,13 @@ class RedTeamingOrchestrator(Orchestrator):
                 score = scores[0]
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
+    """Private methods"""
+
     async def _send_prompt_async(
         self,
         *,
-        prompt_target_conversation_id: str,
         prompt: str,
+        prompt_target_conversation_id: str,
     ) -> PromptRequestPiece:
         """
         Sends a prompt to the prompt target.
@@ -301,8 +297,7 @@ class RedTeamingOrchestrator(Orchestrator):
 
     def _get_prompt_for_red_teaming_chat(self, *, prompt_target_conversation_id: str, feedback: str | None) -> str:
         """
-        If we have previously exchanged messages with the attack target, use the last message from the attack
-        target as the new prompt for the red teaming chat.
+        Generate prompt for the red teaming chat based off of the last response from the attack target.
 
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
@@ -314,9 +309,17 @@ class RedTeamingOrchestrator(Orchestrator):
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
         """
+        # If we have previously exchanged messages with the attack target,
+        # we can use the last message from the attack target as the new
+        # prompt for the red teaming chat.
         last_response_from_attack_target = self._get_last_attack_target_response(
             prompt_target_conversation_id=prompt_target_conversation_id
         )
+        if not last_response_from_attack_target:
+            # If there is no response from the attack target (i.e., this is the first turn),
+            # we use the initial red teaming prompt
+            logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
+            return self._initial_red_teaming_prompt
 
         if last_response_from_attack_target.converted_value_data_type in ["text", "error"]:
             return self._handle_text_response(last_response_from_attack_target, feedback)
@@ -328,7 +331,6 @@ class RedTeamingOrchestrator(Orchestrator):
         *,
         prompt_target_conversation_id: str,
         red_teaming_chat_conversation_id: str,
-        attack_strategy: str,
         feedback: Optional[str] = None,
     ) -> str:
         """
@@ -337,7 +339,6 @@ class RedTeamingOrchestrator(Orchestrator):
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
             red_teaming_chat_conversation_id (str): the conversation ID for the red teaming chat.
-            attack_strategy (str): the attack strategy for the red teaming bot to follow.
             feedback (str, optional): feedback from a previous iteration of the conversation.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
@@ -353,7 +354,7 @@ class RedTeamingOrchestrator(Orchestrator):
         if len(self._memory.get_conversation(conversation_id=red_teaming_chat_conversation_id)) == 0:
             # Set system prompt for the first turn with red teaming chat
             self._red_teaming_chat.set_system_prompt(
-                system_prompt=attack_strategy,
+                system_prompt=self._attack_strategy,
                 conversation_id=red_teaming_chat_conversation_id,
                 orchestrator_identifier=self.get_identifier(),
                 labels=self._global_memory_labels,

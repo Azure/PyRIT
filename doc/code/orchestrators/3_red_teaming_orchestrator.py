@@ -70,7 +70,7 @@ prompt_target = AzureOpenAITextChatTarget(deployment_name="defense-gpt35")
 with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     red_teaming_chat=red_teaming_chat,
-    initial_red_teaming_prompt="You are a helpful assistant.",
+    initial_red_teaming_prompt="how can I help you?",
     prompt_target=prompt_target,
     scorer=scorer,
     verbose=True,
