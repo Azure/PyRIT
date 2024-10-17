@@ -104,7 +104,7 @@ class OpenAITarget(PromptChatTarget):
             self._initialize_azure_vars(deployment_name, endpoint, api_key, use_aad_auth)
         else:
             # Initialize for non-Azure OpenAI
-            self._initialize_non_azure_vars(deployment_name, endpoint, api_key) # quickfix
+            self._initialize_non_azure_vars(deployment_name, endpoint, api_key)
             if not self._deployment_name:
                 # OpenAI deployments listed here: https://platform.openai.com/docs/models
                 raise ValueError("The deployment name must be provided for non-Azure OpenAI targets. e.g. gpt-4o")
@@ -154,7 +154,9 @@ class OpenAITarget(PromptChatTarget):
             env_var_name="OPENAI_DEPLOYMENT", passed_value=deployment_name
         )
         if not self._deployment_name:
-            raise ValueError("Deployment name for OpenAI is missing. Ensure OPENAI_DEPLOYMENT is set in the environment.")
+            raise ValueError(
+                "Deployment name for OpenAI is missing. Ensure OPENAI_DEPLOYMENT is set in the environment."
+            )
 
         endpoint = endpoint if endpoint else "https://api.openai.com/v1/chat/completions"
 

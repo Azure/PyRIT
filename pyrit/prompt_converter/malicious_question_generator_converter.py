@@ -40,17 +40,21 @@ class MaliciousQuestionGeneratorConverter(LLMGenericTextConverter):
             input_type (PromptDataType): The input data type (default is "text").
         """
 
-        # Call the parent class's convert_async to handle the prompt conversion
-        result = await super().convert_async(prompt=prompt, input_type=input_type)
+        try:
+            # Call the parent class's convert_async to handle the prompt conversion
+            result = await super().convert_async(prompt=prompt, input_type=input_type)
 
-        # Clean and parse the result output_text (the LLM's response)
-        cleaned_response = self._clean_response(result.output_text)
-        parsed_questions = self._parse_response(cleaned_response)
+            # Clean and parse the result output_text (the LLM's response)
+            cleaned_response = self._clean_response(result.output_text)
+            parsed_questions = self._parse_response(cleaned_response)
 
-        # Return the parsed result as a ConverterResult object
-        return ConverterResult(
-            output_text=parsed_questions[0] if parsed_questions else "No question generated.", output_type="text"
-        )
+            # Return the parsed result as a ConverterResult object
+            return ConverterResult(
+                output_text=parsed_questions[0] if parsed_questions else "No question generated.", output_type="text"
+            )
+        except Exception as e:
+            logger.error(f"Error in MaliciousQuestionGeneratorConverter: {e}")
+            raise
 
     def _clean_response(self, response: str) -> str:
         """Cleans the LLM response by removing code block markers and extraneous text."""
