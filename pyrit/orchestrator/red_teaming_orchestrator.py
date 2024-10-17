@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Union
 from uuid import uuid4
 from colorama import Fore, Style
 
@@ -29,8 +29,10 @@ class RedTeamingOrchestrator(Orchestrator):
     def __init__(
         self,
         *,
+        attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
         red_teaming_chat: PromptChatTarget,
+        initial_red_teaming_prompt: Optional[str] = "Begin conversation",
         prompt_converters: Optional[list[PromptConverter]] = None,
         scorer: Scorer,
         use_score_as_feedback: bool = False,
@@ -41,8 +43,17 @@ class RedTeamingOrchestrator(Orchestrator):
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
 
         Args:
+            attack_strategy: The attack strategy for the red teaming bot to follow.
+                It is used as the metaprompt in the conversation with the red teaming bot.
+                This can be used to guide the bot to achieve the conversation objective in a more direct and
+                structured way.
+                Should be of type string or AttackStrategy (which has a __str__ method).
             prompt_target: The target to send the prompts to.
             red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
+            initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
+                The attack_strategy only provides the strategy, but not the starting point of the conversation.
+                The initial_prompt is used to start the conversation with the red teaming target.
+                The default is a text prompt with the content "Begin Conversation".
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
                 scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient (False)
@@ -68,6 +79,10 @@ class RedTeamingOrchestrator(Orchestrator):
         self._red_teaming_chat = red_teaming_chat
         self._red_teaming_chat._memory = self._memory
         self._use_score_as_feedback = use_score_as_feedback
+        self._attack_strategy = str(attack_strategy)
+        self._initial_red_teaming_prompt = initial_red_teaming_prompt
+        if not self._initial_red_teaming_prompt:
+            raise ValueError("The initial red teaming prompt cannot be empty.")
         if scorer.scorer_type != "true_false":
             raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {scorer.scorer_type}.")
         self._scorer = scorer
@@ -80,27 +95,16 @@ class RedTeamingOrchestrator(Orchestrator):
     async def apply_attack_strategy_until_completion_async(
         self,
         *,
-        attack_strategy: Union[str, AttackStrategy],
-        initial_prompt: str = "Begin Conversation",
         max_turns: int = 5,
     ) -> str:
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
         Args:
-            attack_strategy: The attack strategy for the red teaming bot to follow.
-                It is used as the metaprompt in the conversation with the red teaming bot.
-                This can be used to guide the bot to achieve the conversation objective in a more direct and
-                structured way.
-                Should be of type string or AttackStrategy (which has a __str__ method).
             max_turns: The maximum number of turns to apply the attack strategy.
                 If the conversation is not complete after the maximum number of turns,
                 the orchestrator stops and returns the last score.
                 The default value is 5.
-            initial_prompt: The initial prompt to send to the red teaming target.
-                The attack_strategy only provides the strategy, but not the starting point of the conversation.
-                The initial_prompt is used to start the conversation with the red teaming target.
-                The default is a text prompt with the content "Begin Conversation".
 
         Returns:
             prompt_target_conversation_id: The conversation ID.
@@ -111,9 +115,8 @@ class RedTeamingOrchestrator(Orchestrator):
 
         # Set initial prompt on the first turn
         prompt = None
-        if initial_prompt:
-            logger.info(f"Setting initial prompt: {initial_prompt}")
-            prompt = initial_prompt
+        logger.info(f"Setting initial prompt: {self._initial_red_teaming_prompt}")
+        prompt = self._initial_red_teaming_prompt
 
         turn = 1
         self._achieved_objective = False
@@ -131,7 +134,7 @@ class RedTeamingOrchestrator(Orchestrator):
                 prompt = await self._get_prompt_from_red_teaming_target(
                     prompt_target_conversation_id=prompt_target_conversation_id,
                     red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
-                    attack_strategy=str(attack_strategy),
+                    attack_strategy=self._attack_strategy,
                     feedback=feedback,
                 )
 
@@ -199,14 +202,14 @@ class RedTeamingOrchestrator(Orchestrator):
         self,
         *,
         prompt_target_conversation_id: str,
-        prompt: Optional[str],
+        prompt: str,
     ) -> PromptRequestPiece:
         """
         Sends a prompt to the prompt target.
 
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
-            prompt (str, optional): The prompt to send to the target.
+            prompt (str): The prompt to send to the target.
         """
         target_prompt_obj = NormalizerRequestPiece(
             request_converters=self._prompt_converters,

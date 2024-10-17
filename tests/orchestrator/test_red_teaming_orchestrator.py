@@ -7,6 +7,7 @@ import pytest
 
 from typing import Dict, Generator, List, Union
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
 from pyrit.prompt_target import PromptTarget, AzureOpenAITextChatTarget
@@ -103,19 +104,20 @@ async def test_send_prompt_twice(
         red_teaming_chat=chat_completion_engine,
         memory=memory_interface,
         attack_strategy=attack_strategy,
-        initial_red_teaming_prompt="how can I help you?",
         prompt_target=prompt_target,
         scorer=scorer,
     )
 
-    red_teaming_orchestrator._set_conversation_ids()
-
+    prompt_target_conversation_id = str(uuid4())
     with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
             mock_rt.return_value = "First red teaming chat response"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
-            target_response = await red_teaming_orchestrator._send_prompt_async()
+            target_response = await red_teaming_orchestrator._send_prompt_async(
+                prompt_target_conversation_id=prompt_target_conversation_id,
+                prompt="how can I help you?",
+            )
             assert target_response.converted_value == expected_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=1)
@@ -126,7 +128,10 @@ async def test_send_prompt_twice(
             second_target_response = "Second target response"
             mock_rt.return_value = "Second red teaming chat response"
             mock_target.return_value = second_target_response
-            target_response = await red_teaming_orchestrator._send_prompt_async()
+            target_response = await red_teaming_orchestrator._send_prompt_async(
+                prompt_target_conversation_id=prompt_target_conversation_id,
+                prompt=expected_target_response,
+            )
             assert target_response.converted_value == second_target_response
 
             _check_orchestrator_memory_if_no_original_prompt(memory=red_teaming_orchestrator._memory, num_turns=2)
