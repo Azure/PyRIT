@@ -54,3 +54,13 @@ async def test_encode_decode_notags():
     assert isinstance(decoded_reults, ConverterResult)
     assert decoded_reults.output_type == "text"
     assert decoded_reults.output_text == base_string
+
+
+# Test for the input_supported method
+def test_input_supported():
+    converter = AsciiSmugglerConverter()
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("image") is False
+    assert converter.input_supported("audio") is False
+    assert converter.input_supported("video") is False
+    assert converter.input_supported("other") is False
