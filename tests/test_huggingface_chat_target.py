@@ -4,7 +4,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from pyrit.prompt_target.hugging_face_chat_target import HuggingFaceChatTarget
+from pyrit.prompt_target import HuggingFaceChatTarget
 from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
 
 
@@ -13,7 +13,8 @@ from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRe
 def mock_get_required_value(request):
     if request.node.name != "test_init_with_no_token_var_raises":
         with patch(
-            "pyrit.prompt_target.hugging_face_chat_target.default_values.get_required_value", return_value="dummy_token"
+            "pyrit.prompt_target.hugging_face.hugging_face_chat_target.default_values.get_required_value",
+            return_value="dummy_token",
         ):
             yield
     else:

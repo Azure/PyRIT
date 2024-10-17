@@ -3,17 +3,14 @@
 
 import logging
 from httpx import HTTPStatusError
-from typing import Literal, Optional
-
-from pyrit.common import default_values
-from pyrit.exceptions import RateLimitException
-from pyrit.exceptions import handle_bad_request_exception
-from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestResponse
-from pyrit.models import data_serializer_factory, construct_response_from_request
-from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from typing import Literal
 
 from pyrit.common import net_utility
+from pyrit.exceptions import RateLimitException
+from pyrit.exceptions import handle_bad_request_exception
+from pyrit.models import PromptRequestResponse
+from pyrit.models import data_serializer_factory, construct_response_from_request
+from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 
 logger = logging.getLogger(__name__)
@@ -23,48 +20,34 @@ TTSVoice = Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
 TTSResponseFormat = Literal["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", "wav", "webm"]
 
 
-class AzureTTSTarget(PromptTarget):
-    API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_TTS_KEY"
-    ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_TTS_ENDPOINT"
-    DEPLOYMENT_ENVIRONMENT_VARIABLE: str = "AZURE_TTS_DEPLOYMENT"
+class OpenAITTSTarget(OpenAITarget):
 
     def __init__(
         self,
-        *,
-        deployment_name: str = None,
-        endpoint: str = None,
-        api_key: str = None,
-        memory: MemoryInterface = None,
         voice: TTSVoice = "alloy",
         response_format: TTSResponseFormat = "mp3",
         model: TTSModel = "tts-1",
         language: str = "en",
-        temperature: float = 0.0,
         api_version: str = "2024-03-01-preview",
-        max_requests_per_minute: Optional[int] = None,
-    ) -> None:
+        *args,
+        **kwargs,
+    ):
 
-        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
+        if (kwargs.get("use_aad_auth") is not None) and (kwargs.get("use_aad_auth") is True):
+            raise NotImplementedError("AAD authentication not implemented for TTSTarget yet.")
+
+        super().__init__(*args, **kwargs)
 
         self._voice = voice
         self._model = model
         self._response_format = response_format
         self._language = language
-        self._temperature = temperature
-
-        self._deployment_name = deployment_name
-        self._api_key = api_key
         self._api_version = api_version
 
-        self._deployment_name = default_values.get_required_value(
-            env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
-        )
-        self._endpoint = default_values.get_required_value(
-            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
-        )
-        self._api_key = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-        )
+    def _set_azure_openai_env_configuration_vars(self):
+        self.deployment_environment_variable = "AZURE_OPENAI_TTS_DEPLOYMENT"
+        self.endpoint_uri_environment_variable = "AZURE_OPENAI_TTS_ENDPOINT"
+        self.api_key_environment_variable = "AZURE_OPENAI_TTS_KEY"
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
@@ -82,9 +65,7 @@ class AzureTTSTarget(PromptTarget):
             "temperature": self._temperature,
         }
 
-        headers = {
-            "api-key": self._api_key,
-        }
+        self._extra_headers["api-key"] = self._api_key
 
         response_entry = None
         try:
@@ -93,7 +74,7 @@ class AzureTTSTarget(PromptTarget):
                 endpoint_uri=f"{self._endpoint}/openai/deployments/{self._deployment_name}/"
                 f"audio/speech?api-version={self._api_version}",
                 method="POST",
-                headers=headers,
+                headers=self._extra_headers,
                 request_body=body,
             )
         except HTTPStatusError as hse:
