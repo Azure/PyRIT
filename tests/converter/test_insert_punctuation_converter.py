@@ -3,7 +3,7 @@
 
 import re
 import pytest
-from pyrit.prompt_converter.insert_punctuation_attack_converter import InsertPunctuationGenerator
+from pyrit.prompt_converter.insert_punctuation_attack_converter import InsertPunctuationConverter
 
 
 # Test for correctness
@@ -25,11 +25,13 @@ from pyrit.prompt_converter.insert_punctuation_attack_converter import InsertPun
 async def test_max_iteration_ratio(
     input_prompt, between_words, punctuation_list, max_iterations, word_swap_ratio, expected_punctuation_count
 ):
-    converter = InsertPunctuationGenerator(
+    converter = InsertPunctuationConverter(
         max_iterations=max_iterations, word_swap_ratio=word_swap_ratio, between_words=between_words
     )
     result = await converter.convert_async(prompt=input_prompt, punctuation_list=punctuation_list)
+    print(result)
     modified_prompts = result.output_text.split("\n")
+    print(type(modified_prompts))
     assert (
         len(modified_prompts) == max_iterations
     ), f"Expected {max_iterations} modified prompts, got {len(modified_prompts)}"
@@ -49,7 +51,7 @@ async def test_max_iteration_ratio(
 )
 @pytest.mark.asyncio
 async def test_default_interation_swap(input_prompt, expected_punctuation_count):
-    converter = InsertPunctuationGenerator()
+    converter = InsertPunctuationConverter()
     result = await converter.convert_async(prompt=input_prompt)
     modified_prompts = result.output_text.split("\n")
     assert len(modified_prompts) == 10, f"Expected 10 modified prompts, got {len(modified_prompts)}"
@@ -70,7 +72,7 @@ async def test_default_interation_swap(input_prompt, expected_punctuation_count)
 @pytest.mark.asyncio
 async def test_invalid_word_swap_ratio(word_swap_ratio):
     with pytest.raises(ValueError):
-        InsertPunctuationGenerator(word_swap_ratio=word_swap_ratio)
+        InsertPunctuationConverter(word_swap_ratio=word_swap_ratio)
 
 
 # test value error raising for invalid punctuations
@@ -81,5 +83,5 @@ async def test_invalid_word_swap_ratio(word_swap_ratio):
 @pytest.mark.asyncio
 async def test_invalid_punctuation_list(punctuation_list):
     with pytest.raises(ValueError):
-        converter = InsertPunctuationGenerator()
+        converter = InsertPunctuationConverter()
         await converter.convert_async(prompt="prompt", punctuation_list=[punctuation_list])

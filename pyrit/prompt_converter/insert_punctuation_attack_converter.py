@@ -9,7 +9,7 @@ from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
-class InsertPunctuationGenerator(PromptConverter):
+class InsertPunctuationConverter(PromptConverter):
     """
     Inserts punctuation into a prompt to test robustness.
     Punctuation insertion: inserting single punctuations in string.punctuation.
@@ -39,7 +39,8 @@ class InsertPunctuationGenerator(PromptConverter):
         Space, letters, numbers, double punctuations are all invalid.
         Args:
             punctuation_list (List[str]): List of punctuations to validate.
-        Raise an ValueError if args or invalid punctuation.
+        Returns:
+            bool: valid list and valid punctuations
         """
         return bool(punctuation_list) and all(str in string.punctuation for str in punctuation_list)
 
@@ -82,14 +83,14 @@ class InsertPunctuationGenerator(PromptConverter):
         """
         # words list contains single spaces, single word without punctuations, single punctuations
         words = re.findall(r"\w+|[^\w\s]|\s", prompt)
-        # maintains indicies for actual "words", i.e. letters and numbers not divided by punctuations
+        # maintains indices for actual "words", i.e. letters and numbers not divided by punctuations
         word_indices = [i for i in range(0, len(words)) if not re.match(r"\W", words[i])]
-        # calculate the number of insertion
+        # calculate the number of insertions
         num_insertions = max(
             1, round(len(word_indices) * self.word_swap_ratio)
         )  # Ensure at least one punctuation is inserted
 
-        # intert between words if between_words = True
+        # insert between words if between_words = True
         if self.between_words:
             # if there's no actual word without punctuations in the list, insert random punctuation at position 0
             return (
@@ -115,7 +116,7 @@ class InsertPunctuationGenerator(PromptConverter):
             str: The modified prompt with inserted punctuation.
         """
         insert_indices = random.sample(word_indices, num_insertions)
-        # randomly choose num_insertions indicies from actual word indicies.
+        # randomly choose num_insertions indices from actual word indices.
         for index in insert_indices:
             # either insert random punctuation before or at the end of random actual word in words list.
             if random.randint(0, 1):
@@ -127,7 +128,7 @@ class InsertPunctuationGenerator(PromptConverter):
 
     def _insert_within_words(self, prompt: str, num_insertions: int, punctuation_list: List[str]) -> str:
         """
-        Insert punctuation at any indicies in the prompt, can insert into a word.
+        Insert punctuation at any indices in the prompt, can insert into a word.
         Args:
             promp str: The prompt string
             num_insertions (int): Number of punctuations to insert.
@@ -137,7 +138,7 @@ class InsertPunctuationGenerator(PromptConverter):
         """
         # list of chars in the prompt string
         prompt_list = list(prompt)
-        # store random indicies of prompt_list into insert_indicies
+        # store random indices of prompt_list into insert_indices
         # if the prompt has only 0 or 1 chars, insert at the end of the prompt
         insert_indices = (
             [1] if len(prompt_list) <= num_insertions else random.sample(range(0, len(prompt_list) - 1), num_insertions)
