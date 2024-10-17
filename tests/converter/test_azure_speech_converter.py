@@ -54,4 +54,10 @@ async def test_send_prompt_to_audio_file_raises_value_error() -> None:
     # testing empty space string
     prompt = "     "
     with pytest.raises(ValueError):
-        assert await converter.convert_async(prompt=prompt, input_type="text")  # type: ignore
+        await converter.convert_async(prompt=prompt, input_type="text")  # type: ignore
+
+
+def test_azure_speech_audio_text_converter_input_supported():
+    converter = AzureSpeechTextToAudioConverter()
+    assert converter.input_supported("audio_path") is False
+    assert converter.input_supported("text") is True

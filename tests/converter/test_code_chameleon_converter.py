@@ -222,3 +222,9 @@ def decryption(encrypted_problem):
         in output.output_text
     )
     assert output.output_type == "text"
+
+
+def test_codechameleon_converter_input_supported() -> None:
+    converter = CodeChameleonConverter(encrypt_type="length")
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("image_path") is False
