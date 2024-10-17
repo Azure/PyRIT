@@ -85,6 +85,9 @@ def _check_two_conversation_ids(conversations):
     ), "There should be two conversation threads, one with target and one with rt target"
 
 
+# TODO: If we keep the change to remove the code of setting initial prompt from send_prompt_async()
+# ...then we need to modify this test accordingly. This is written under the assumption that
+# _get_prompt_from_red_teaming_target() is called from send_prompt_async() - which it would not be.
 @pytest.mark.asyncio
 @pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_prompt_twice(
