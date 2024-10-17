@@ -10,7 +10,7 @@ from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.models.prompt_template import PromptTemplate
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import FuzzerConverter
 from pyrit.prompt_converter.prompt_converter import ConverterResult
-from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget
 
 
 class FuzzerExpandConverter(FuzzerConverter):
