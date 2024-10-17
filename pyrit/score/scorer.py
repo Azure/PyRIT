@@ -11,7 +11,7 @@ from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.literals import PromptDataType
-from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.models import ScoreType, Score, UnvalidatedScore
 from pyrit.memory import MemoryInterface
 
@@ -194,6 +194,7 @@ class Scorer(abc.ABC):
                     role="user",
                     original_value=prompt_request_value,
                     original_value_data_type=prompt_request_data_type,
+                    converted_value_data_type=prompt_request_data_type,
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                 )
