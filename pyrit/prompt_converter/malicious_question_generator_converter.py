@@ -3,13 +3,11 @@
 
 import ast
 import logging
-import pathlib
 
 
 from pyrit.prompt_converter import LLMGenericTextConverter, ConverterResult
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptTemplate
+from pyrit.models import PromptTemplate
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.path import DATASETS_PATH
 
 
 # Use logger
@@ -51,8 +49,7 @@ class MaliciousQuestionGeneratorConverter(LLMGenericTextConverter):
 
         # Return the parsed result as a ConverterResult object
         return ConverterResult(
-            output_text=parsed_questions[0] if parsed_questions else "No question generated.",
-            output_type="text"
+            output_text=parsed_questions[0] if parsed_questions else "No question generated.", output_type="text"
         )
 
     def _clean_response(self, response: str) -> str:
