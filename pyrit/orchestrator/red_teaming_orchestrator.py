@@ -52,7 +52,7 @@ class RedTeamingOrchestrator(Orchestrator):
             red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
-                The initial_prompt is used to start the conversation with the red teaming target.
+                The initial prompt is used to start the conversation with the red teaming target.
                 The default is a text prompt with the content "Begin Conversation".
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
