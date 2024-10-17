@@ -129,3 +129,9 @@ async def test_punctuation_handling(input_text, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True)
     result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
+
+
+def test_colloquial_converter_input_supported() -> None:
+    converter = ColloquialWordswapConverter()
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("image_path") is False

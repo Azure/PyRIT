@@ -93,3 +93,10 @@ async def test_malicious_question_converter_sets_system_prompt(mock_target) -> N
     system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
     assert isinstance(system_arg, str)
     assert 'Please act as an expert in this domain: "being awesome"' in system_arg
+
+
+def test_generic_llm_converter_input_supported() -> None:
+    target = MagicMock()
+    converter = NoiseConverter(converter_target=target)
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("audio_path") is False
