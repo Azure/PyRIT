@@ -10,7 +10,7 @@
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
-#     name: pyrit-311
+#     name: python3
 # ---
 
 # %% [markdown]

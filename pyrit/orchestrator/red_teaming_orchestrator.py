@@ -58,7 +58,8 @@ class RedTeamingOrchestrator(Orchestrator):
                 target. The converters are not applied on messages to the red teaming target.
                 scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient (False)
                 to satisfy the objective that is specified in the attack_strategy.
-            use_score_as_feedback: Whether to use the score as feedback to the red teaming chat to improve the next prompt.
+            use_score_as_feedback: Whether to use the score as feedback to the red teaming chat to improve the
+                next prompt.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
