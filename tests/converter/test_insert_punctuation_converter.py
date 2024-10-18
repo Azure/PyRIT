@@ -48,7 +48,7 @@ async def test_max_iteration_ratio(
     [("count 1 2 3 4 5 6 7 8 9 and 10.", 3), ("Aha!", 2)],
 )
 @pytest.mark.asyncio
-async def test_default_interation_swap(input_prompt, expected_punctuation_count):
+async def test_default_iteration_swap(input_prompt, expected_punctuation_count):
     converter = InsertPunctuationConverter()
     result = await converter.convert_async(prompt=input_prompt)
     modified_prompts = result.output_text.split("\n")
