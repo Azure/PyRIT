@@ -7,6 +7,7 @@ source: https://github.com/BCG-X-Official/artkit
 should_be_blocked: false
 parameters:
   - tone
+  - prompt
 template: |
   # Instructions
   - Please rewrite the prompts to have the following tone: {{ tone }}.

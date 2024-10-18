@@ -8,6 +8,7 @@ should_be_blocked: false
 parameters:
   - noise
   - number_errors
+  - prompt
 template: |
   # Instructions
   - Please inject user input errors of type: {{ noise }}.

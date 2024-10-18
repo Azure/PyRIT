@@ -11,6 +11,7 @@ skipped_urls = [
     "https://cognitiveservices.azure.com/.default",
     "https://gandalf.lakera.ai/api/send-message",
     "https://code.visualstudio.com/Download",  # This will block python requests
+    "https://platform.openai.com/docs/api-reference/introduction",  # blocks python requests
 ]
 
 # Updated regex pattern to capture URLs from Markdown and HTML
