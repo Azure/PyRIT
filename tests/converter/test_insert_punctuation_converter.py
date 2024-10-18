@@ -22,24 +22,19 @@ from pyrit.prompt_converter.insert_punctuation_attack_converter import InsertPun
     ],
 )
 @pytest.mark.asyncio
-async def test_max_iteration_ratio(
+async def test_word_swap_ratio(
     input_prompt, between_words, punctuation_list, max_iterations, word_swap_ratio, expected_punctuation_count
 ):
     converter = InsertPunctuationConverter(
         max_iterations=max_iterations, word_swap_ratio=word_swap_ratio, between_words=between_words
     )
     result = await converter.convert_async(prompt=input_prompt, punctuation_list=punctuation_list)
-    modified_prompts = result.output_text.split("\n")
+    modified_prompt = result.output_text
     assert (
-        len(modified_prompts) == max_iterations
-    ), f"Expected {max_iterations} modified prompts, got {len(modified_prompts)}"
-
-    for modified_prompt in modified_prompts:
-        assert (
-            punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
-        ) == expected_punctuation_count, (
-            f"Expect {expected_punctuation_count} punctuations found in prompt: {punctuation_count}"
-        )
+        punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
+    ) == expected_punctuation_count, (
+        f"Expect {expected_punctuation_count} punctuations found in prompt: {punctuation_count}"
+    )
 
 
 # Test default max_iterations =10, and swap ratio = 0.2
@@ -51,15 +46,12 @@ async def test_max_iteration_ratio(
 async def test_default_iteration_swap(input_prompt, expected_punctuation_count):
     converter = InsertPunctuationConverter()
     result = await converter.convert_async(prompt=input_prompt)
-    modified_prompts = result.output_text.split("\n")
-    assert len(modified_prompts) == 10, f"Expected 10 modified prompts, got {len(modified_prompts)}"
-
-    for modified_prompt in modified_prompts:
-        assert (
-            punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
-        ) == expected_punctuation_count, (
-            f"Expect {expected_punctuation_count} punctuations found in prompt: {punctuation_count}"
-        )
+    modified_prompt = result.output_text
+    assert (
+        punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
+    ) == expected_punctuation_count, (
+        f"Expect {expected_punctuation_count} punctuations found in prompt: {punctuation_count}"
+    )
 
 
 # Test value error raising for invalid swap ratio

@@ -62,7 +62,7 @@ class InsertPunctuationConverter(PromptConverter):
             input_type (PromptDataType): The type of input data.
             punctuation_list (Optional[List[str]]): List of punctuations to use for insertion.
         Returns:
-            ConverterResult: A ConverterResult containing the interations of modified prompts.
+            ConverterResult: A ConverterResult containing a interation of modified prompts.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -79,12 +79,8 @@ class InsertPunctuationConverter(PromptConverter):
                 f" Only single characters from {string.punctuation} are allowed."
             )
 
-        # Generate number of max_iterations modified prompts with punctuation insertions.
-        modified_prompts = [self._insert_punctuation(prompt, punctuation_list) for _ in range(self._max_iterations)]
-        # Combine all modified prompts into a single result
-        final_prompt = "\n".join(modified_prompts)
-
-        return ConverterResult(output_text=final_prompt, output_type="text")
+        modified_prompt = self._insert_punctuation(prompt, punctuation_list)
+        return ConverterResult(output_text=modified_prompt, output_type="text")
 
     def _insert_punctuation(self, prompt: str, punctuation_list: List[str]) -> str:
         """
