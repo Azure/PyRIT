@@ -60,9 +60,9 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._memory = memory or DuckDBMemory()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "audio_path"
+        return input_type == "text"
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
