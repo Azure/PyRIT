@@ -6,6 +6,12 @@
 # The goal is to identify vulnerabilities, inappropriate responses, or weaknesses in the model's handling of harmful or ethically sensitive prompts.
 
 # %%
+import asyncio
+import nest_asyncio
+
+nest_asyncio.apply()  # Apply the patch
+
+# %%
 from pyrit.common import default_values
 from pyrit.datasets import fetch_tdc23_redteaming_dataset
 from pyrit.orchestrator import PromptSendingOrchestrator
@@ -34,11 +40,16 @@ prompt_dataset = fetch_tdc23_redteaming_dataset()
 # Use the first 8 examples for red teaming
 prompt_list = prompt_dataset.prompts[:8]
 
+
+async def print_conversations():
+    await orchestrator.print_conversations()  # Retrieve the memory to print scoring results
+
+
 # Send prompts using the orchestrator and capture responses
 try:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
     if responses:
-        await orchestrator.print_conversations() # Retrieve the memory to print scoring results
+        result = asyncio.run(print_conversations())  # Retrieve the memory to print scoring results
     else:
         print("No valid responses were received from the orchestrator.")
 except Exception as e:
