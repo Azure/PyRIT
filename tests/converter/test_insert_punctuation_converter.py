@@ -35,7 +35,6 @@ async def test_max_iteration_ratio(
     ), f"Expected {max_iterations} modified prompts, got {len(modified_prompts)}"
 
     for modified_prompt in modified_prompts:
-        print(modified_prompt)
         assert (
             punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
         ) == expected_punctuation_count, (
@@ -43,7 +42,7 @@ async def test_max_iteration_ratio(
         )
 
 
-# test default max_iteration=10, and swap ratio = 0.2
+# Test default max_iterations =10, and swap ratio = 0.2
 @pytest.mark.parametrize(
     "input_prompt, expected_punctuation_count",
     [("count 1 2 3 4 5 6 7 8 9 and 10.", 3), ("Aha!", 2)],
@@ -56,7 +55,6 @@ async def test_default_interation_swap(input_prompt, expected_punctuation_count)
     assert len(modified_prompts) == 10, f"Expected 10 modified prompts, got {len(modified_prompts)}"
 
     for modified_prompt in modified_prompts:
-        print(modified_prompt)
         assert (
             punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
         ) == expected_punctuation_count, (
@@ -64,7 +62,7 @@ async def test_default_interation_swap(input_prompt, expected_punctuation_count)
         )
 
 
-# test value error raising for invalid swap ratio
+# Test value error raising for invalid swap ratio
 @pytest.mark.parametrize(
     "word_swap_ratio",
     [-0.1, 1.5],
@@ -75,7 +73,7 @@ async def test_invalid_word_swap_ratio(word_swap_ratio):
         InsertPunctuationConverter(word_swap_ratio=word_swap_ratio)
 
 
-# test value error raising for invalid punctuations
+# Test value error raising for invalid punctuations
 @pytest.mark.parametrize(
     "punctuation_list",
     ["~~", " ", "1", "a", "//"],
