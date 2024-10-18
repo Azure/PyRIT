@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit2
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
@@ -15,28 +15,29 @@
 # %% [markdown]
 # # HTTP Target:
 # This notebook shows how to interact with the HTTP Target:
+#
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+#
+
+# %% [markdown]
+# ## AOAI Example
 
 # %%
 import logging
 import os
 from pathlib import Path
 
-from pyrit.chat_message_normalizer import GenericSystemSquash
 from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import AttackStrategy
 from pyrit.orchestrator import PromptSendingOrchestrator, RedTeamingOrchestrator
-from pyrit.prompt_target import AzureMLChatTarget, AzureOpenAIGPT4OChatTarget, HTTPTarget
+from pyrit.prompt_target import OpenAIChatTarget, HTTPTarget
 from pyrit.prompt_target.http_target.http_target_callback_functions import (
     get_http_target_json_response_callback_function,
     get_http_target_regex_matching_callback_function,
 )
 from pyrit.score import SelfAskTrueFalseScorer
 
-# %% [markdown]
-# ## AOAI Example
-
-# %%
 default_values.load_default_env()
 
 deployment_name = os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT")
@@ -92,19 +93,10 @@ attack_strategy = AttackStrategy(
 )
 
 # The red_teaming_chat is used to generate prompts that are sent to the target.
-red_teaming_chat = AzureMLChatTarget(chat_message_normalizer=GenericSystemSquash())
-
-"""
-# We use Azure OpenAI GPT4-o here as an example target LLM endpoint.
-target_llm = AzureOpenAIGPT4OChatTarget(
-    deployment_name=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_ENDPOINT"),
-    api_key=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_KEY"),
-)
-"""
+red_teaming_chat = OpenAIChatTarget()
 
 scorer = SelfAskTrueFalseScorer(
-    chat_target=AzureOpenAIGPT4OChatTarget(),
+    chat_target=OpenAIChatTarget(),
     true_false_question_path=Path("../../../assets/demo_scorer_definitions/check_fraud_classifier.yaml"),
 )
 

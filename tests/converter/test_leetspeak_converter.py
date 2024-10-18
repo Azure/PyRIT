@@ -92,3 +92,9 @@ def test_leetspeak_empty_custom_substitutions(input_text, expected_output):
     converter = LeetspeakConverter(deterministic=True, custom_substitutions={})
     result = asyncio.run(converter.convert_async(prompt=input_text))
     assert result.output_text == expected_output
+
+
+def test_leetspeak_input_supported():
+    converter = LeetspeakConverter()
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("audio_path") is False

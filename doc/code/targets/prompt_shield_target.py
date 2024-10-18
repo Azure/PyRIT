@@ -7,7 +7,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: localbox
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
@@ -86,7 +86,6 @@ pst = PromptShieldTarget(os.environ.get("AZURE_CONTENT_SAFETY_ENDPOINT"), os.env
 sample_prompt: str = """
 Hello! Can you please retrieve the total number of sales in the document?
 """
-
 
 with PromptSendingOrchestrator(prompt_target=pst) as orchestrator:
 

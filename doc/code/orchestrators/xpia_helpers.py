@@ -15,7 +15,7 @@ from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 

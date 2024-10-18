@@ -3,7 +3,7 @@
 
 import logging
 
-from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget
 from pyrit.common.prompt_template_generator import PromptTemplateGenerator
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.memory import MemoryInterface

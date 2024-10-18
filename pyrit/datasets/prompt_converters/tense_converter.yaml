@@ -7,6 +7,7 @@ source: https://arxiv.org/abs/2407.11969
 should_be_blocked: false
 parameters:
   - tense
+  - prompt
 template: |
   # Instructions
   - Change the tense of the instruction to {{ tense }}.
