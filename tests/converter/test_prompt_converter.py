@@ -10,6 +10,7 @@ from pyrit.prompt_converter import (
     CaesarConverter,
     CharacterSpaceConverter,
     EmojiConverter,
+    FlipConverter,
     LeetspeakConverter,
     MorseConverter,
     RandomCapitalLettersConverter,
@@ -357,3 +358,52 @@ async def test_url_converter() -> None:
     output = await converter.convert_async(prompt="Test Prompt")
     assert output.output_type == "text"
     assert output.output_text == "Test%20Prompt"
+
+
+@pytest.mark.asyncio
+async def test_convert_async():
+    converter = FlipConverter()
+    prompt = "hello me"
+    expected_output = "em olleh"
+
+    result = await converter.convert_async(prompt=prompt, input_type="text")
+
+    assert result.output_text == expected_output
+    assert result.output_type == "text"
+
+
+@pytest.mark.asyncio
+async def test_convert_async_unsupported_input_type():
+    converter = FlipConverter()
+    prompt = "hello me"
+
+    with pytest.raises(ValueError, match="Input type not supported"):
+        await converter.convert_async(prompt=prompt, input_type="image_path")
+
+
+@pytest.mark.parametrize(
+    "converter_class",
+    [
+        AsciiArtConverter(),
+        AtbashConverter(),
+        Base64Converter(),
+        CaesarConverter(caesar_offset=3),
+        CharacterSpaceConverter(),
+        EmojiConverter(),
+        FlipConverter(),
+        LeetspeakConverter(),
+        MorseConverter(),
+        RandomCapitalLettersConverter(),
+        ROT13Converter(),
+        SearchReplaceConverter(old_value=" ", new_value="_"),
+        StringJoinConverter(),
+        SuffixAppendConverter(suffix="!!!"),
+        UnicodeSubstitutionConverter(),
+        UnicodeConfusableConverter(),
+        UrlConverter(),
+    ],
+)
+def test_input_supported_text_only(converter_class):
+    converter = converter_class
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("image_path") is False

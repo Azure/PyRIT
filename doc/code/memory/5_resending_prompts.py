@@ -24,13 +24,13 @@
 # %%
 import uuid
 
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 default_values.load_default_env()
 
-target = AzureOpenAIGPT4OChatTarget()
+target = OpenAIChatTarget()
 
 group1 = str(uuid.uuid4())
 memory_labels = {"prompt_group": group1}

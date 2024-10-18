@@ -1,21 +1,19 @@
 # %% [markdown]
 # # HuggingFace Chat Target Testing
 #
-# This notebook demonstrates the process of testing the HuggingFace Chat Target using various prompts.
-# The target model will be loaded and interacted with using different prompts to examine its responses.
+# This notebook is designed to demonstrate **instruction models** that use a **chat template**, allowing users to experiment with structured chat-based interactions.  Non-instruct models are excluded to ensure consistency and reliability in the chat-based interactions. More instruct models can be explored on Hugging Face.
 #
 # ### Key Points:
 #
 # 1. **Supported Instruction Models**:
-#    - This notebook supports the following **instruct models** that follow a structured chat template.
-#      These are examples, and more instruct models are available on Hugging Face:
+#    - This notebook supports the following **instruct models** that follow a structured chat template. These are examples, and more instruct models are available on Hugging Face:
 #      - `HuggingFaceTB/SmolLM-360M-Instruct`
 #      - `microsoft/Phi-3-mini-4k-instruct`
+#
 #      - `...`
 #
 # 2. **Excluded Models**:
-#    - Non-instruct models (e.g., `"google/gemma-2b"`, `"princeton-nlp/Sheared-LLaMA-1.3B-ShareGPT"`)
-#      are **not included** in this demo, as they do not follow the structured chat template required for the current local Hugging Face model support.
+#    - Non-instruct models (e.g., `"google/gemma-2b"`, `"princeton-nlp/Sheared-LLaMA-1.3B-ShareGPT"`) are **not included** in this demo, as they do not follow the structured chat template required for the current local Hugging Face model support.
 #
 # 3. **Model Response Times**:
 #    - The tests were conducted using a CPU, and the following are the average response times for each model:
@@ -28,10 +26,6 @@
 #      - `stabilityai/stablelm-2-zephyr-1_6b`: 5.31 seconds
 #      - `stabilityai/stablelm-zephyr-3b`: 8.37 seconds
 #
-# 4. **Model Output Behavior**:
-#      - During testing, it's been observed that some models may continue generating responses even after answering the prompt.
-#        This can result in incomplete or truncated responses due to the max_new_token limit setting, which restricts the number of tokens generated.
-#        When interacting with these models, it's important to be aware that responses might get cut off if the output exceeds the token limit.
 
 
 # %%
