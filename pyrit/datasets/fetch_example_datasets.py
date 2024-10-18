@@ -420,6 +420,7 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> PromptData
 
     return dataset
 
+
 def fetch_llm_latent_adversarial_training_harmful_dataset() -> PromptDataset:
     data = load_dataset("LLM-LAT/harmful-dataset", "default")
 
@@ -428,12 +429,13 @@ def fetch_llm_latent_adversarial_training_harmful_dataset() -> PromptDataset:
     dataset = PromptDataset(
         name="LLM-LAT/harmful-dataset",
         source="https://huggingface.co/datasets/LLM-LAT/harmful-dataset",
-        harm_category='',  
-        description='This dataset contains prompts used to assess and analyze harmful behaviors in large language models',  
+        harm_category="",
+        description="This dataset contains prompts used to assess and analyze harmful behaviors in llm",
         prompts=prompts,
-        should_be_blocked=True
+        should_be_blocked=True,
     )
     return dataset
+
 
 def fetch_adv_bench_dataset(
     source: str = (

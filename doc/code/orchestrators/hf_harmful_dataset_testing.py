@@ -37,7 +37,7 @@ prompt_target = TextTarget()
 example_source = "https://huggingface.co/datasets/LLM-LAT/harmful-dataset"
 
 # %%
-# Create the orchestrator with scorer 
+# Create the orchestrator with scorer
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
 # Fetch prompt column from harmful-datasets
