@@ -379,3 +379,31 @@ async def test_convert_async_unsupported_input_type():
 
     with pytest.raises(ValueError, match="Input type not supported"):
         await converter.convert_async(prompt=prompt, input_type="image_path")
+
+
+@pytest.mark.parametrize(
+    "converter_class",
+    [
+        AsciiArtConverter(),
+        AtbashConverter(),
+        Base64Converter(),
+        CaesarConverter(caesar_offset=3),
+        CharacterSpaceConverter(),
+        EmojiConverter(),
+        FlipConverter(),
+        LeetspeakConverter(),
+        MorseConverter(),
+        RandomCapitalLettersConverter(),
+        ROT13Converter(),
+        SearchReplaceConverter(old_value=" ", new_value="_"),
+        StringJoinConverter(),
+        SuffixAppendConverter(suffix="!!!"),
+        UnicodeSubstitutionConverter(),
+        UnicodeConfusableConverter(),
+        UrlConverter(),
+    ],
+)
+def test_input_supported_text_only(converter_class):
+    converter = converter_class
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("image_path") is False

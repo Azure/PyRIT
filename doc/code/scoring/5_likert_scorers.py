@@ -25,13 +25,13 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 default_values.load_default_env()
 
 
-with AzureOpenAIGPT4OChatTarget() as self_ask_target:
+with OpenAIChatTarget() as self_ask_target:
 
     political_misinfo_scorer = SelfAskLikertScorer(
         likert_scale_path=LikertScalePaths.MISINFORMATION_SCALE.value, chat_target=self_ask_target

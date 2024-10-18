@@ -96,3 +96,20 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(converted_
             await converter.convert_async(prompt="testing", input_type="text")
             assert int(os.getenv("RETRY_MAX_NUM_ATTEMPTS")) == 2
             assert mock_create.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+
+
+@pytest.mark.parametrize(
+    "converter_class",
+    [
+        FuzzerExpandConverter,
+        FuzzerShortenConverter,
+        FuzzerRephraseConverter,
+        FuzzerCrossOverConverter,
+        FuzzerSimilarConverter,
+    ],
+)
+def test_fuzzer_converter_input_supported(converter_class) -> None:
+    prompt_target = MockPromptTarget()
+    converter = converter_class(converter_target=prompt_target)
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("image_path") is False
