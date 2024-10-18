@@ -3,7 +3,6 @@
 
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
-
 from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverter
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
@@ -43,6 +42,7 @@ from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusabl
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
+from pyrit.prompt_converter.pdf_converter import PDFConverter
 
 
 __all__ = [
@@ -86,4 +86,5 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
+    "PDFConverter"
 ]
