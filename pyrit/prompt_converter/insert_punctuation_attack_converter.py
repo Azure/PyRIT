@@ -5,6 +5,7 @@ import random
 import string
 import re
 from typing import List, Optional
+
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
@@ -17,6 +18,8 @@ class InsertPunctuationConverter(PromptConverter):
     "a1b2c3" is a word; "a1 2" are 2 words; "a1,b,3" are 3 words.
     """
 
+    default_punctuation_list = [",", ".", "!", "?", ":", ";", "-"]
+
     def __init__(self, max_iterations: int = 10, word_swap_ratio: float = 0.2, between_words: bool = True) -> None:
         """
         Initialize the converter with optional max iterations and word swap ratio.
@@ -28,10 +31,15 @@ class InsertPunctuationConverter(PromptConverter):
         """
         # swap ratio cannot be 0 or larger than 1
         if not 0 < word_swap_ratio <= 1:
-            raise ValueError("word_swap_ratio must be between 0 and 1")
-        self.max_iterations = max_iterations
-        self.word_swap_ratio = word_swap_ratio
-        self.between_words = between_words
+            raise ValueError("word_swap_ratio must be between 0 to 1, as (0, 1].")
+
+        # max iterations should be at least 1
+        if max_iterations < 1:
+            raise ValueError("max_iterations must be greater than 0.")
+
+        self._max_iterations = max_iterations
+        self._word_swap_ratio = word_swap_ratio
+        self._between_words = between_words
 
     def _is_valid_punctuation(self, punctuation_list: List[str]) -> bool:
         """
@@ -42,7 +50,7 @@ class InsertPunctuationConverter(PromptConverter):
         Returns:
             bool: valid list and valid punctuations
         """
-        return bool(punctuation_list) and all(str in string.punctuation for str in punctuation_list)
+        return all(str in string.punctuation for str in punctuation_list)
 
     async def convert_async(
         self, *, prompt: str, input_type: PromptDataType = "text", punctuation_list: Optional[List[str]] = None
@@ -60,13 +68,21 @@ class InsertPunctuationConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         # initialize default punctuation list
-        if not punctuation_list:
-            punctuation_list = [",", ".", "!", "?", ":", ";", "-"]
+        # if not specified, defaults to defaul_punctuation_list
+        if punctuation_list is None:
+            punctuation_list = self.default_punctuation_list
+        # if empty, raise ValueError
+        elif not punctuation_list:
+            raise ValueError("punctuation_list cannot be empty")
+        # check if provided punctuations are valid
         elif not self._is_valid_punctuation(punctuation_list):
-            raise ValueError(f"punctuation_list must only include single punctuations within {string.punctuation}")
+            raise ValueError(
+                f"Invalid punctuations: {punctuation_list}.\
+                    Only single characters from {string.punctuation} are allowed."
+            )
 
         # generate number of max_iterations modified prompts with punctuation insertions.
-        modified_prompts = [self._insert_punctuation(prompt, punctuation_list) for _ in range(self.max_iterations)]
+        modified_prompts = [self._insert_punctuation(prompt, punctuation_list) for _ in range(self._max_iterations)]
         # combine all modified prompts into a single result
         final_prompt = "\n".join(modified_prompts)
 
@@ -87,17 +103,15 @@ class InsertPunctuationConverter(PromptConverter):
         word_indices = [i for i in range(0, len(words)) if not re.match(r"\W", words[i])]
         # calculate the number of insertions
         num_insertions = max(
-            1, round(len(word_indices) * self.word_swap_ratio)
+            1, round(len(word_indices) * self._word_swap_ratio)
         )  # Ensure at least one punctuation is inserted
 
-        # insert between words if between_words = True
-        if self.between_words:
-            # if there's no actual word without punctuations in the list, insert random punctuation at position 0
-            return (
-                self._insert_between_words(words, word_indices, num_insertions, punctuation_list)
-                if len(word_indices) > 0
-                else random.choice(punctuation_list) + prompt
-            )
+        # if there's no actual word without punctuations in the list, insert random punctuation at position 0
+        if not word_indices:
+            return random.choice(punctuation_list) + prompt
+        # insert between words if _between_words = True
+        if self._between_words:
+            return self._insert_between_words(words, word_indices, num_insertions, punctuation_list)
         else:
             return self._insert_within_words(prompt, num_insertions, punctuation_list)
 
@@ -116,10 +130,12 @@ class InsertPunctuationConverter(PromptConverter):
             str: The modified prompt with inserted punctuation.
         """
         insert_indices = random.sample(word_indices, num_insertions)
+        INSERT_BEFORE = 0
+        INSERT_AFTER = 1
         # randomly choose num_insertions indices from actual word indices.
         for index in insert_indices:
             # either insert random punctuation before or at the end of random actual word in words list.
-            if random.randint(0, 1):
+            if random.randint(INSERT_BEFORE, INSERT_AFTER) == INSERT_AFTER:
                 words[index] += random.choice(punctuation_list)
             else:
                 words[index] = random.choice(punctuation_list) + words[index]

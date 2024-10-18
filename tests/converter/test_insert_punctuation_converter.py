@@ -29,14 +29,13 @@ async def test_max_iteration_ratio(
         max_iterations=max_iterations, word_swap_ratio=word_swap_ratio, between_words=between_words
     )
     result = await converter.convert_async(prompt=input_prompt, punctuation_list=punctuation_list)
-    print(result)
     modified_prompts = result.output_text.split("\n")
-    print(type(modified_prompts))
     assert (
         len(modified_prompts) == max_iterations
     ), f"Expected {max_iterations} modified prompts, got {len(modified_prompts)}"
 
     for modified_prompt in modified_prompts:
+        print(modified_prompt)
         assert (
             punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
         ) == expected_punctuation_count, (
@@ -57,6 +56,7 @@ async def test_default_interation_swap(input_prompt, expected_punctuation_count)
     assert len(modified_prompts) == 10, f"Expected 10 modified prompts, got {len(modified_prompts)}"
 
     for modified_prompt in modified_prompts:
+        print(modified_prompt)
         assert (
             punctuation_count := len(re.findall(r"[^\w\s]", modified_prompt))
         ) == expected_punctuation_count, (
