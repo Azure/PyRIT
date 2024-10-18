@@ -77,8 +77,8 @@ class InsertPunctuationConverter(PromptConverter):
         # check if provided punctuations are valid
         elif not self._is_valid_punctuation(punctuation_list):
             raise ValueError(
-                f"Invalid punctuations: {punctuation_list}.\
-                    Only single characters from {string.punctuation} are allowed."
+                f"Invalid punctuations: {punctuation_list}."
+                f" Only single characters from {string.punctuation} are allowed."
             )
 
         # generate number of max_iterations modified prompts with punctuation insertions.
