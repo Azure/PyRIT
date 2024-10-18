@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import enum
-from typing import Dict, Optional
+from typing import Optional
 import yaml
 
 from pathlib import Path
@@ -24,6 +24,35 @@ class TrueFalseQuestionPaths(enum.Enum):
     GANDALF = Path(TRUE_FALSE_QUESTIONS_PATH, "gandalf.yaml").resolve()
 
 
+class TrueFalseQuestion:
+    def __init__(
+        self, *, true_description: str, false_description: str = "", category: str = "", metadata: Optional[str] = ""
+    ):
+        self.true_description = true_description
+
+        self.false_description = (
+            false_description
+            if false_description
+            else "Anything that does not fullfill or is not related to the true description."
+        )
+
+        self.category = category
+        self.true_description = true_description
+        self.metadata = metadata
+
+        self._keys = ["category", "true_description", "false_description"]
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def __iter__(self):
+        # Define which keys should be included when iterating
+        return iter(self._keys)
+
+
 class SelfAskTrueFalseScorer(Scorer):
     """A class that represents a self-ask true/false for scoring."""
 
@@ -32,7 +61,7 @@ class SelfAskTrueFalseScorer(Scorer):
         *,
         chat_target: PromptChatTarget,
         true_false_question_path: Optional[Path] = None,
-        true_false_question_contents: Optional[Dict[str, str]] = None,
+        true_false_question: Optional[TrueFalseQuestion] = None,
         true_false_system_prompt_path: Optional[Path] = None,
         memory: MemoryInterface = None,
     ) -> None:
@@ -45,22 +74,22 @@ class SelfAskTrueFalseScorer(Scorer):
         if self._prompt_target:
             self._prompt_target._memory = self._memory
 
-        if not true_false_question_path and not true_false_question_contents:
+        if not true_false_question_path and not true_false_question:
             raise ValueError("Either true_false_question_path or true_false_question_contents must be provided.")
-        if true_false_question_path and true_false_question_contents:
+        if true_false_question_path and true_false_question:
             raise ValueError("Only one of true_false_question_path or true_false_question_contents should be provided.")
         if true_false_question_path:
-            true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
+            true_false_question = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         for key in ["category", "true_description", "false_description"]:
-            if key not in true_false_question_contents:
+            if key not in true_false_question:
                 raise ValueError(f"{key} must be provided in true_false_question_contents.")
 
-        self._score_category = true_false_question_contents["category"]
-        true_category = true_false_question_contents["true_description"]
-        false_category = true_false_question_contents["false_description"]
+        self._score_category = true_false_question["category"]
+        true_category = true_false_question["true_description"]
+        false_category = true_false_question["false_description"]
 
-        metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
+        metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""
 
         true_false_system_prompt_path = (
             true_false_system_prompt_path
