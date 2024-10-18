@@ -1,13 +1,29 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.4
+#   kernelspec:
+#     display_name: base
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
-# # TDC-23 Red Teaming Dataset
+# # LLM-LAT/harmful-dataset testing
 #
-# This notebook demonstrates the process of using examples from the TDC-23 Red Teaming dataset to perform AI red teaming on a target language model (LLM).
-# It involves fetching potentially harmful behavior prompts from the HugginFace source, sending them to the LLM, and analyzing the responses.
-# The goal is to identify vulnerabilities, inappropriate responses, or weaknesses in the model's handling of harmful or ethically sensitive prompts.
+# This notebook demonstrates the testing of import of huggingface dataset "https://huggingface.co/datasets/LLM-LAT/harmful-dataset"
+
+# %% [markdown]
+#
 
 # %%
+# Import necessary packages
 from pyrit.common import default_values
-from pyrit.datasets import fetch_tdc23_redteaming_dataset
+from pyrit.datasets import fetch_llm_latent_adversarial_training_harmful_dataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
@@ -18,22 +34,17 @@ default_values.load_default_env()
 # %%
 # Set up the Azure OpenAI prompt target
 prompt_target = TextTarget()
+example_source = "https://huggingface.co/datasets/LLM-LAT/harmful-dataset"
 
 # %%
-# Note:
-# The dataset sources can be found at:
-# - HuggingFace source: https://huggingface.co/datasets/walledai/TDC23-RedTeaming
-
-# %%
-# Create the orchestrator with scorer without safe prompts included
+# Create the orchestrator with scorer
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
-# Fetch only unsafe prompts from tdc23_redteaming dataset
-prompt_dataset = fetch_tdc23_redteaming_dataset()
+# Fetch prompt column from harmful-datasets
+prompt_dataset = fetch_llm_latent_adversarial_training_harmful_dataset()
 
 # Use the first 8 examples for red teaming
 prompt_list = prompt_dataset.prompts[:8]
-
 
 # Send prompts using the orchestrator and capture responses
 try:
@@ -44,3 +55,5 @@ try:
         print("No valid responses were received from the orchestrator.")
 except Exception as e:
     print(f"An error occurred while sending prompts: {e}")
+
+# %%
