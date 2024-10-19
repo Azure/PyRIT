@@ -68,8 +68,8 @@ with RedTeamingOrchestrator(
     scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
-    score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)
-    await red_teaming_orchestrator.print_conversation()
+    score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    await red_teaming_orchestrator.print_conversation()  # type: ignore
 
 # %% [markdown]
 # ### Image Target Example

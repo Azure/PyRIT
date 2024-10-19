@@ -25,19 +25,22 @@ class TrueFalseQuestionPaths(enum.Enum):
 
 
 class TrueFalseQuestion:
+    """
+    A class that represents a true/false question.
+
+    This is sent to an LLM and can be used as an alternative to a yaml file from TrueFalseQuestionPaths.
+    """
+
     def __init__(
         self, *, true_description: str, false_description: str = "", category: str = "", metadata: Optional[str] = ""
     ):
         self.true_description = true_description
 
         self.false_description = (
-            false_description
-            if false_description
-            else "Anything that does not fullfill or is not related to the true description."
+            false_description or "Anything that does not fulfill or is not related to the true description."
         )
 
         self.category = category
-        self.true_description = true_description
         self.metadata = metadata
 
         self._keys = ["category", "true_description", "false_description"]
@@ -75,15 +78,15 @@ class SelfAskTrueFalseScorer(Scorer):
             self._prompt_target._memory = self._memory
 
         if not true_false_question_path and not true_false_question:
-            raise ValueError("Either true_false_question_path or true_false_question_contents must be provided.")
+            raise ValueError("Either true_false_question_path or true_false_question must be provided.")
         if true_false_question_path and true_false_question:
-            raise ValueError("Only one of true_false_question_path or true_false_question_contents should be provided.")
+            raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
         if true_false_question_path:
             true_false_question = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         for key in ["category", "true_description", "false_description"]:
             if key not in true_false_question:
-                raise ValueError(f"{key} must be provided in true_false_question_contents.")
+                raise ValueError(f"{key} must be provided in true_false_question.")
 
         self._score_category = true_false_question["category"]
         true_category = true_false_question["true_description"]
