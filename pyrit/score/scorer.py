@@ -8,7 +8,7 @@ from typing import Optional, Sequence
 import uuid
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
+from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target import PromptChatTarget
@@ -205,6 +205,8 @@ class Scorer(abc.ABC):
 
         try:
             response_json = response.request_pieces[0].converted_value
+
+            response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
 
             category_response = parsed_response.get("category")
