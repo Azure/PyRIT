@@ -28,12 +28,14 @@ class ImageOverlayConverter(PromptConverter):
     """
 
     def __init__(
-            self,
-            base_image_path: str,
-            x_pos: Optional[int] = 0,
-            y_pos: Optional[int] = 0,
-            memory: Optional[MemoryInterface] = None,
+        self,
+        base_image_path: str,
+        x_pos: Optional[int] = 0,
+        y_pos: Optional[int] = 0,
+        memory: Optional[MemoryInterface] = None,
     ):
+        if not base_image_path:
+            raise ValueError("Please provide valid image path")
 
         self._base_image_path = base_image_path
         self._x_pos = x_pos
@@ -43,6 +45,9 @@ class ImageOverlayConverter(PromptConverter):
     def _add_overlay_image(self, overlay_image: Image.Image) -> Image.Image:
         """
         Embed the second image onto the base image
+
+        Args:
+            overlay_image(Image.Image): The second image to lay on the base one.
 
         Returns:
             Image.Image: The combined image with overlay.
@@ -65,8 +70,9 @@ class ImageOverlayConverter(PromptConverter):
         Converter the base image to embed the second image onto it.
 
         Args:
-            prompt (str): The filename of the base image
-            input_type (PromptDataType): type of data, should be image
+            prompt (str): The filename of the second image
+            input_type (PromptDataType): type of data, should be image_path
+
         Returns:
             ConverterResult: converted image with file path
         """
