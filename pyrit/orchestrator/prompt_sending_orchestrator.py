@@ -7,11 +7,12 @@ from colorama import Fore, Style
 import logging
 
 from typing import Optional
+from dataclasses import dataclass
 
 from pyrit.common.display_response import display_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataType
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestResponse, Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -22,6 +23,14 @@ from pyrit.score import Scorer, SelfAskRefusalScorer
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RetryResult:
+    "Class to keep track of whether a prompt/response pair should be retried."
+    prompt: NormalizerRequest
+    response: PromptRequestResponse = None
+    should_retry: bool = True
 
 
 class PromptSendingOrchestrator(Orchestrator):
@@ -39,6 +48,7 @@ class PromptSendingOrchestrator(Orchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
+        retry_scorer: SelfAskRefusalScorer = None,
     ) -> None:
         """
         Args:
@@ -55,6 +65,8 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
+            retry_scorer (SelfAskRefusalScorer, optional): The Scorer used to optionally determine whether a
+                response is a refusal and the prompt should be retried.
         """
         super().__init__(
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
@@ -68,6 +80,10 @@ class PromptSendingOrchestrator(Orchestrator):
                 scorer._memory = self._memory
                 if hasattr(scorer, "_prompt_target"):
                     scorer._prompt_target._memory = self._memory
+
+        self._retry_scorer = (
+            SelfAskRefusalScorer(chat_target=OpenAIChatTarget()) if retry_scorer is None else retry_scorer
+        )
 
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
@@ -88,7 +104,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
         metadata: Optional[str] = None,
-        max_retries: int = 0,
+        max_retries_on_refusal: int = 0,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
@@ -100,7 +116,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 prompts.
             These labels will be merged with the instance's global memory labels. Defaults to None.
             metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
-            max_retries (int): The maximum number of times to re-send prompts while at least one response is
+            max_retries_on_refusal (int): The maximum number of times to re-send prompts while at least one response is
                 scored as a refusal. Defaults to 0.
 
         Returns:
@@ -124,7 +140,7 @@ class PromptSendingOrchestrator(Orchestrator):
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
             memory_labels=memory_labels,
-            max_retries=max_retries,
+            max_retries_on_refusal=max_retries_on_refusal,
         )
 
     async def send_normalizer_requests_async(
@@ -132,7 +148,7 @@ class PromptSendingOrchestrator(Orchestrator):
         *,
         prompt_request_list: list[NormalizerRequest],
         memory_labels: Optional[dict[str, str]] = None,
-        max_retries: int = 0,
+        max_retries_on_refusal: int = 0,
     ) -> list[PromptRequestResponse]:
         """
         Sends the normalized prompts to the prompt target. Optionally re-sends the normalized prompts to the target
@@ -146,8 +162,10 @@ class PromptSendingOrchestrator(Orchestrator):
         for prompt in prompt_request_list:
             prompt.conversation_id = conversation_id
 
-        responses = await self._handle_retries(
-            prompt_request_list=prompt_request_list, memory_labels=memory_labels, max_retries=max_retries
+        responses = await self._handle_retries_with_refusal(
+            prompt_request_list=prompt_request_list,
+            memory_labels=memory_labels,
+            max_retries_on_refusal=max_retries_on_refusal,
         )
 
         if self._scorers:
@@ -156,16 +174,16 @@ class PromptSendingOrchestrator(Orchestrator):
                 for piece in response.request_pieces:
                     id = str(piece.id)
                     response_ids.append(id)
-            await self._score_responses_async(response_ids)
+            await self._score_final_responses_async(response_ids)
 
         return responses
 
-    async def _handle_retries(
+    async def _handle_retries_with_refusal(
         self,
         *,
         prompt_request_list: list[NormalizerRequest],
         memory_labels: Optional[dict[str, str]] = None,
-        max_retries: int = 0,
+        max_retries_on_refusal: int = 0,
     ) -> list[PromptRequestResponse]:
         """
         Helper function to handle the retry logic for PromptSendingOrchestrator. By default, the function
@@ -175,11 +193,16 @@ class PromptSendingOrchestrator(Orchestrator):
 
         # Initialize retry count and list of results
         retry_count = 0
-        retry_result_list = [[prompt, None, True] for prompt in prompt_request_list]
+        retry_result_list = [RetryResult(prompt=prompt) for prompt in prompt_request_list]
 
-        while any([retry_result[2] for retry_result in retry_result_list]) and retry_count <= max_retries:
-            idx_list = [idx for idx, retry_result in enumerate(retry_result_list) if retry_result[2]]
-            prompt_request_list = [retry_result[0] for retry_result in retry_result_list if retry_result[2]]
+        while (
+            any([retry_result.should_retry for retry_result in retry_result_list])
+            and retry_count <= max_retries_on_refusal
+        ):
+            idx_list = [idx for idx, retry_result in enumerate(retry_result_list) if retry_result.should_retry]
+            prompt_request_list = [
+                retry_result.prompt for retry_result in retry_result_list if retry_result.should_retry
+            ]
 
             # Normalizer is responsible for storing the requests in memory
             # The labels parameter may allow me to stash class information for each kind of prompt.
@@ -191,29 +214,78 @@ class PromptSendingOrchestrator(Orchestrator):
                 batch_size=self._batch_size,
             )
             for idx, response in zip(idx_list, responses):
-                retry_result_list[idx][1] = response
+                retry_result_list[idx].response = response
 
             # If max retries is zero, we don't need to score for retries and should break
-            if max_retries == 0:
+            if max_retries_on_refusal == 0:
                 break
 
-            scores = await self._score_retry_async(
+            retry_scores = await self._get_should_retry_score_async(
                 prompt_list=prompt_request_list,
                 response_list=responses,
             )
-            for idx, response, score in zip(idx_list, responses, scores):
-                retry_result_list[idx][2] = score.get_value()
+            for idx, response, retry_score in zip(idx_list, responses, retry_scores):
+                retry_result_list[idx].should_retry = retry_score.get_value()
 
             retry_count += 1
 
-        responses = [retry_result[1] for retry_result in retry_result_list]
+        responses = [retry_result.response for retry_result in retry_result_list]
         return responses
 
-    async def _score_retry_async(
+    # async def _handle_retries_with_refusal_old(
+    #     self,
+    #     *,
+    #     prompt_request_list: list[NormalizerRequest],
+    #     memory_labels: Optional[dict[str, str]] = None,
+    #     max_retries_on_refusal: int = 0,
+    # ) -> list[PromptRequestResponse]:
+    #     """
+    #     Helper function to handle the retry logic for PromptSendingOrchestrator. By default, the function
+    #     gets responses only once (no retries). Otherwise, a SelfAskRefusalScorer is used to determine whether
+    #     to re-send prompts to the target, up to a maximum number of retries.
+    #     """
+
+    #     # Initialize retry count and list of results
+    #     retry_count = 0
+    #     retry_result_list = [[prompt, None, True] for prompt in prompt_request_list]
+
+    #     while any([retry_result[2] for retry_result in retry_result_list]) and retry_count <= max_retries_on_refusal:
+    #         idx_list = [idx for idx, retry_result in enumerate(retry_result_list) if retry_result[2]]
+    #         prompt_request_list = [retry_result[0] for retry_result in retry_result_list if retry_result[2]]
+
+    #         # Normalizer is responsible for storing the requests in memory
+    #         # The labels parameter may allow me to stash class information for each kind of prompt.
+    #         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
+    #             requests=prompt_request_list,
+    #             target=self._prompt_target,
+    #             labels=self._combine_with_global_memory_labels(memory_labels),
+    #             orchestrator_identifier=self.get_identifier(),
+    #             batch_size=self._batch_size,
+    #         )
+    #         for idx, response in zip(idx_list, responses):
+    #             retry_result_list[idx][1] = response
+
+    #         # If max retries is zero, we don't need to score for retries and should break
+    #         if max_retries_on_refusal == 0:
+    #             break
+
+    #         retry_scores = await self._get_should_retry_score_async(
+    #             prompt_list=prompt_request_list,
+    #             response_list=responses,
+    #         )
+    #         for idx, response, retry_score in zip(idx_list, responses, retry_scores):
+    #             retry_result_list[idx][2] = retry_score.get_value()
+
+    #         retry_count += 1
+
+    #     responses = [retry_result[1] for retry_result in retry_result_list]
+    #     return responses
+
+    async def _get_should_retry_score_async(
         self,
         prompt_list: list[NormalizerRequest],
         response_list: list[PromptRequestResponse],
-    ):
+    ) -> list[Score]:
         """
         Helper function that scores a list of responses to determine whether they should be re-sent to the prompt
         target. The responses are scored with a SelfAskRefusalScorer, which uses the original prompt to determine
@@ -230,11 +302,10 @@ class PromptSendingOrchestrator(Orchestrator):
             tasks = None
         response_pieces = [p.request_pieces[0] for p in response_list]
 
-        scorer = SelfAskRefusalScorer(chat_target=OpenAIChatTarget())
-        scores = await scorer.score_prompts_batch_async(request_responses=response_pieces, tasks=tasks)
+        scores = await self._retry_scorer.score_prompts_batch_async(request_responses=response_pieces, tasks=tasks)
         return scores
 
-    async def _score_responses_async(self, prompt_ids: list[str]):
+    async def _score_final_responses_async(self, prompt_ids: list[str]):
         """Helper function to score the final responses using a list of scorers."""
         with ScoringOrchestrator(
             memory=self._memory,
