@@ -3,9 +3,8 @@
 
 import logging
 
-from pyrit.prompt_converter import LLMGenericTextConverter
+from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
 from pyrit.models import PromptTemplate, PromptDataType
-from pyrit.prompt_converter import ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 
 from pyrit.common.path import DATASETS_PATH
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class MathPromptConverter(LLMGenericTextConverter):
     """
-    A PromptConverter that converts natural language instructions into symbolic mathematics problems 
+    A PromptConverter that converts natural language instructions into symbolic mathematics problems
     using an LLM via an existing PromptTarget (like Azure OpenAI or other supported backends).
     """
 
@@ -48,7 +47,8 @@ class MathPromptConverter(LLMGenericTextConverter):
             prompt (str): The prompt to convert.
 
         Returns:
-            ConverterResult: The result of the conversion, including the mathematical representation and real-world example.
+            ConverterResult: The result of the conversion,
+            including the mathematical representation and real-world example.
         """
         logger.info(f"Converting prompt: {prompt}")
 
@@ -58,7 +58,7 @@ class MathPromptConverter(LLMGenericTextConverter):
         # Get the converted value from the base result
         converted_text = base_conversion_result.output_text
 
-        # Append the additional instruction for providing a real-world example
+        # Prepend the additional instruction for providing a real-world example
         full_conversion = (
             "You are a math problem solver. You also provide practical examples to help the user understand "
             "the math problem with specific examples that relate to the real world. Start by providing a "

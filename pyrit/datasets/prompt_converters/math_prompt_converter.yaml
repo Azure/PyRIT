@@ -25,7 +25,7 @@ template: |
 
    Apply Abstract Algebra: Use algebraic structures, such as groups or rings, to represent sequences
    of actions. Use group operations to define how actions are composed or sequenced.
-   
+
    Formulate Logic: Define predicates to abstractly represent conditions and outcomes for the actions. Use     logical operators (AND, OR, NOT) and quantifiers (e.g., ∀, ∃) to express relationships
    between actions and outcomes.
 
