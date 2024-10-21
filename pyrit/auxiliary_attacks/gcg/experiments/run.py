@@ -70,6 +70,20 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
 
 
 def parse_arguments():
+    """
+    Command line argument parser to run the adversarial suffix trainer.
+
+    Args:
+        n_train_data (int): The number of examples to use for generating the suffix
+        n_test_data (int): The number of examples to use for testing
+        n_steps (int): The number of iterations to run GCG for. Default is 100, although more
+            steps may be required for the loss to converge.
+        batch_size (int): The batch size to use for training. Default is 512, and memory usage
+            scales with this value. 
+        random_seed (int): Random seed for reproducible training runs.
+        control_init (str): The initial GCG suffix to use at the start of training. Default is
+            all exclamation points, which was used in the original GCG paper.
+    """
     parser = argparse.ArgumentParser(description="Script to run the adversarial suffix trainer")
     parser.add_argument("--model_name", type=str, help="The name of the model")
     parser.add_argument(
