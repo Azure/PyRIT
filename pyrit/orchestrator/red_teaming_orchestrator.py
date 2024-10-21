@@ -6,7 +6,7 @@ from typing import Optional, Union, Dict, Any
 from uuid import uuid4
 from colorama import Fore, Style
 
-from pyrit.common.display_response import display_response
+from pyrit.common.display_response import display_image_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
@@ -32,10 +32,10 @@ class RedTeamingOrchestrator(Orchestrator):
         attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
         red_teaming_chat: PromptChatTarget,
-        initial_red_teaming_prompt: Optional[str] = "Begin conversation",
+        initial_red_teaming_prompt: Optional[str] = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
         scorer: Scorer,
-        use_score_as_feedback: bool = False,
+        use_score_as_feedback: bool = True,
         memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
@@ -232,11 +232,14 @@ class RedTeamingOrchestrator(Orchestrator):
             print("The red teaming orchestrator has not achieved the objective.")
 
         for message in target_messages:
-            if message.role == "user":
-                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+            if message.role == "user:":
+                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}")
+                if message.converted_value != message.original_value:
+                    print(f"Original value: {message.original_value}")
+                print(f"Converted value: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                await display_response(message, self._memory)
+                await display_image_response(message, self._memory)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
             if scores and len(scores) > 0:

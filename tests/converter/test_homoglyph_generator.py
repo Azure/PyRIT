@@ -6,12 +6,12 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.prompt_converter import ConverterResult
-from pyrit.prompt_converter.homoglyph_generator_converter import HomoglyphGenerator
+from pyrit.prompt_converter.homoglyph_generator_converter import HomoglyphGeneratorConverter
 
 
 @pytest.fixture
 def homoglyph_generator():
-    return HomoglyphGenerator(max_iterations=5)
+    return HomoglyphGeneratorConverter(max_iterations=5)
 
 
 def test_input_supported(homoglyph_generator):

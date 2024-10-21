@@ -8,7 +8,7 @@ import logging
 
 from typing import Optional
 
-from pyrit.common.display_response import display_response
+from pyrit.common.display_response import display_image_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestResponse
@@ -197,7 +197,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    await display_response(message, self._memory)
+                    await display_image_response(message, self._memory)
 
                 scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
                 for score in scores:

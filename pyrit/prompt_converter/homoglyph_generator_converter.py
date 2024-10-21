@@ -14,7 +14,7 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 logger = logging.getLogger(__name__)
 
 
-class HomoglyphGenerator(PromptConverter):
+class HomoglyphGeneratorConverter(PromptConverter):
     """
     A PromptConverter that applies homoglyph substitutions to words in the prompt
     to test adversarial textual robustness by replacing characters with visually similar ones.
