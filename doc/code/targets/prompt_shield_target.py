@@ -7,7 +7,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: localbox
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
@@ -87,8 +87,7 @@ sample_prompt: str = """
 Hello! Can you please retrieve the total number of sales in the document?
 """
 
-
 with PromptSendingOrchestrator(prompt_target=pst) as orchestrator:
 
-    resp = await orchestrator.send_prompt_async(prompt=sample_prompt)  # type: ignore
-    print(resp)
+    resp = await orchestrator.send_prompts_async(prompt_list=[sample_prompt])  # type: ignore
+    await orchestrator.print_conversations()  # type: ignore

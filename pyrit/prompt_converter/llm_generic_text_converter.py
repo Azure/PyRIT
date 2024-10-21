@@ -22,8 +22,9 @@ class LLMGenericTextConverter(PromptConverter):
             kwargs: Additional parameters for the prompt template.
 
         """
-        self.converter_target = converter_target
-        self.system_prompt = prompt_template.apply_parameters(**kwargs)
+        self._converter_target = converter_target
+        self._prompt_template = prompt_template
+        self._prompt_kwargs = kwargs
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -42,8 +43,13 @@ class LLMGenericTextConverter(PromptConverter):
 
         conversation_id = str(uuid.uuid4())
 
-        self.converter_target.set_system_prompt(
-            system_prompt=self.system_prompt,
+        kwargs = self._prompt_kwargs.copy()
+        kwargs["prompt"] = prompt
+
+        system_prompt = self._prompt_template.apply_custom_metaprompt_parameters(**kwargs)
+
+        self._converter_target.set_system_prompt(
+            system_prompt=system_prompt,
             conversation_id=conversation_id,
             orchestrator_identifier=None,
         )
@@ -59,7 +65,7 @@ class LLMGenericTextConverter(PromptConverter):
                     converted_value=prompt,
                     conversation_id=conversation_id,
                     sequence=1,
-                    prompt_target_identifier=self.converter_target.get_identifier(),
+                    prompt_target_identifier=self._converter_target.get_identifier(),
                     original_value_data_type=input_type,
                     converted_value_data_type=input_type,
                     converter_identifiers=[self.get_identifier()],
@@ -67,7 +73,7 @@ class LLMGenericTextConverter(PromptConverter):
             ]
         )
 
-        response = await self.converter_target.send_prompt_async(prompt_request=request)
+        response = await self._converter_target.send_prompt_async(prompt_request=request)
         return ConverterResult(output_text=response.request_pieces[0].converted_value, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

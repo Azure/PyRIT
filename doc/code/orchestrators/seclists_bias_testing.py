@@ -11,7 +11,7 @@
 from pyrit.common import default_values
 from pyrit.datasets import fetch_seclists_bias_testing_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import AzureOpenAITextChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 
@@ -21,7 +21,7 @@ default_values.load_default_env()
 
 
 # %%
-prompt_target = AzureOpenAITextChatTarget()
+prompt_target = OpenAIChatTarget()
 examples_source = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/nationality_geographic_bias.txt"
 
 

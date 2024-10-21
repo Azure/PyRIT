@@ -114,6 +114,8 @@ class SelfAskLikertScorer(Scorer):
             score_value=str(self.scale_value_float(float(unvalidated_score.raw_score_value), 1, 5)),
         )
 
+        score.score_metadata = str({"likert_value": str(unvalidated_score.raw_score_value)})
+
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
 
