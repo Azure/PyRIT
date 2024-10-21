@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Microsoft, AI Red Team"
+title: "PyRIT: The Python Risk Identification Tool for generative AI"
+version: 2.0.4
+doi: 10.5281/zenodo.1234
+date-released: 2023-12-12
+url: "https://github.com/Azure/PyRIT"
