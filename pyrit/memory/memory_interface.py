@@ -508,10 +508,11 @@ class MemoryInterface(abc.ABC):
         self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
 
         try:
-            return self.query_entries(
+            memory_entries = self.query_entries(
                 SeedPromptEntry,
                 conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
+            return [memory_entry.get_seed_prompt() for memory_entry in memory_entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             return []
@@ -604,7 +605,7 @@ class MemoryInterface(abc.ABC):
         if not parameters:
             raise ValueError("Prompt templates must have parameters. Please specify at least one.")
         return [
-            prompt.to_prompt_template() for prompt in self.get_prompts(
+            prompt.to_prompt_template() for prompt in self.get_seed_prompts(
                 value=value,
                 dataset_name=dataset_name,
                 harm_categories=harm_categories,

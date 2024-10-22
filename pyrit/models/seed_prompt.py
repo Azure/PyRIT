@@ -137,7 +137,7 @@ class SeedPromptTemplate(SeedPrompt):
             sequence=sequence,
         )
     
-    def apply_parameters(self, **kwargs) -> SeedPrompt:
+    def apply_parameters(self, **kwargs) -> str:
         if not self.parameters:
             raise ValueError("SeedPromptTemplate must have parameters to apply.")
         if not all(param in kwargs for param in self.parameters):
