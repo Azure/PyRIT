@@ -17,7 +17,7 @@ from pyrit.exceptions.exception_classes import (
     remove_markdown_json,
 )
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
-from pyrit.prompt_converter import PromptConverter, ConverterResult, config, utils, prompt_openai, exemplars
+from pyrit.prompt_converter import PromptConverter, ConverterResult, config, utils, prompt_openai, exemplars, components
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -169,7 +169,31 @@ class ClaimConverter(PromptConverter):
         generations_df = pd.DataFrame(generations, columns=["claim", "inst"]).drop_duplicates(subset="inst")
         logger.info(f"TestGenie generated {len(generations_df)} statements.")
 
-        response_msg = generations_df["inst"].iloc[0]
+        tokenizer = components.load_tokenizer("gpt2")
+        spacy_model = components.load_spacy()
+
+        insts = generations_df["inst"]
+        claims = generations_df['claim']
+
+        truncation_strategies = {
+            "half": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=0.5),
+            "3_toks": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=-3),
+            "root": lambda insts, _: components.truncate_text_by_root(insts, spacy_model),
+            "gpt3": lambda insts, claims: components.truncate_text_with_gpt3(insts, claims, engine=config["openai_engine"]),
+            # TODO: truncate based on classifier probability
+        }
+
+        selected_truncation = ["half", "3_toks", "root", "gpt3"]
+        test_data = []
+        for name in selected_truncation:
+            truncator = truncation_strategies[name]
+            prompts_and_targets = truncator(insts, claims)
+            test_data.extend(zip(claims, prompts_and_targets))
+
+        logger.info(f"Created {len(test_data)} tests/prompts. We show 10 random prompts below.")
+        test_prompts = [prompt for _, (prompt, _) in test_data]
+
+        response_msg = test_prompts[0]
 
         # response_msg = await self.send_variation_prompt_async(request)
 

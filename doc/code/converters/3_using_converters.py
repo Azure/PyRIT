@@ -69,6 +69,8 @@ prompt_variation_converter = ClaimConverter(converter_target=converter_target)
 target = TextTarget()
 
 with PromptSendingOrchestrator(
-    prompt_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
+    prompt_target=target, prompt_converters=[prompt_variation_converter]
 ) as orchestrator:
     await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+
+# %%
