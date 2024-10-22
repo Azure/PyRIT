@@ -38,8 +38,8 @@ class OpenAITarget(PromptChatTarget):
         max_tokens: int = 2048,
         temperature: float = 1.0,
         top_p: float = 1.0,
-        frequency_penalty: float = 0.,
-        presence_penalty: float = 0.,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
