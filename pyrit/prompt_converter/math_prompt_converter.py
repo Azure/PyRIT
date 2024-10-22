@@ -68,7 +68,7 @@ class MathPromptConverter(LLMGenericTextConverter):
             f"{converted_text}"
         )
 
-        logger.info(f"Full conversion: {full_conversion}")
+        logger.info(f"Math Converted Prompt: {full_conversion}")
 
         # Return the full conversion as a ConverterResult
         return ConverterResult(output_text=full_conversion, output_type="text")
