@@ -38,8 +38,8 @@ class OpenAITarget(PromptChatTarget):
         max_tokens: int = 2048,
         temperature: float = 1.0,
         top_p: float = 1.0,
-        frequency_penalty: float = 0.5,
-        presence_penalty: float = 0.5,
+        frequency_penalty: float = 0.,
+        presence_penalty: float = 0.,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
@@ -73,9 +73,9 @@ class OpenAITarget(PromptChatTarget):
             top_p (float, optional): The top-p parameter for controlling the diversity of the
                 response. Defaults to 1.0.
             frequency_penalty (float, optional): The frequency penalty parameter for penalizing
-                frequently generated tokens. Defaults to 0.5.
+                frequently generated tokens. Defaults to 0.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
-                tokens that are already present in the conversation history. Defaults to 0.5.
+                tokens that are already present in the conversation history. Defaults to 0.
             max_requests_per_minute (int, optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.

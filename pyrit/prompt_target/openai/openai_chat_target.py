@@ -169,8 +169,8 @@ class OpenAIChatTarget(OpenAITarget):
         max_tokens: int = 1024,
         temperature: float = 1.0,
         top_p: float = 1.0,
-        frequency_penalty: float = 0.5,
-        presence_penalty: float = 0.5,
+        frequency_penalty: float = 0.,
+        presence_penalty: float = 0.,
     ) -> str:
         """
         Completes asynchronous chat request.
@@ -186,9 +186,9 @@ class OpenAIChatTarget(OpenAITarget):
             top_p (float, optional): Controls diversity of the response generation.
                 Defaults to 1.0.
             frequency_penalty (float, optional): Controls the frequency of generating the same lines of text.
-                Defaults to 0.5.
+                Defaults to 0.
             presence_penalty (float, optional): Controls the likelihood to talk about new topics.
-                Defaults to 0.5.
+                Defaults to 0.
 
         Returns:
             str: The generated response message.
@@ -196,7 +196,7 @@ class OpenAIChatTarget(OpenAITarget):
 
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
             temperature=temperature,
             top_p=top_p,
             frequency_penalty=frequency_penalty,
