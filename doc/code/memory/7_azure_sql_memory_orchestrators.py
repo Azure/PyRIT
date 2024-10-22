@@ -134,9 +134,9 @@ logging.basicConfig(level=logging.WARNING)
 default_values.load_default_env()
 
 img_prompt_target = OpenAIDALLETarget(
-    deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
-    api_key=os.environ.get("AZURE_DALLE_API_KEY"),
+    deployment_name=os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT"),
+    endpoint=os.environ.get("AZURE_OPENAI_DALLE_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_DALLE_API_KEY"),
 )
 red_teaming_llm = OpenAIChatTarget()
 memory = AzureSQLMemory()
