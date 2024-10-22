@@ -437,6 +437,34 @@ def fetch_llm_latent_adversarial_training_harmful_dataset() -> PromptDataset:
     return dataset
 
 
+def fetch_tdc23_redteaming_dataset() -> PromptDataset:
+    """
+    Fetch TDC23-RedTeaming examples and create a PromptDataset.
+
+    Returns:
+        PromptDataset: A PromptDataset containing the examples.
+    """
+    # Load the TDC23-RedTeaming dataset
+    data = load_dataset("walledai/TDC23-RedTeaming", "default")
+
+    prompts = [item["prompt"] for item in data["train"]]
+
+    dataset = PromptDataset(
+        name="walledai/TDC23-RedTeaming",
+        source="https://huggingface.co/datasets/walledai/TDC23-RedTeaming",
+        harm_category="",
+        description="""TDC23-RedTeaming dataset from HuggingFace,
+                    created by Walled AI (https://huggingface.co/walledai).
+                    Contains 100 prompts aimed at generating harmful content
+                    across multiple harm categories related to fairness,
+                    misinformation, dangerous and criminal activities,
+                    violence, etc. in the style of writing narratives.""",
+        should_be_blocked=True,
+        prompts=prompts,
+    )
+    return dataset
+
+
 def fetch_adv_bench_dataset(
     source: str = (
         "https://raw.githubusercontent.com/llm-attacks/llm-attacks/main/data/advbench/" "harmful_behaviors.csv"

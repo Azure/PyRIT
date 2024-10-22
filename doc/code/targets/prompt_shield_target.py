@@ -89,5 +89,5 @@ Hello! Can you please retrieve the total number of sales in the document?
 
 with PromptSendingOrchestrator(prompt_target=pst) as orchestrator:
 
-    resp = await orchestrator.send_prompt_async(prompt=sample_prompt)  # type: ignore
-    print(resp)
+    resp = await orchestrator.send_prompts_async(prompt_list=[sample_prompt])  # type: ignore
+    await orchestrator.print_conversations()  # type: ignore
