@@ -16,7 +16,7 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 logger = logging.getLogger(__name__)
 
 
-class ConfusableConverter(PromptConverter):
+class UnicodeConfusableConverter(PromptConverter):
     """
     A PromptConverter that applies substitutions to words in the prompt
     to test adversarial textual robustness by replacing characters with visually similar ones.
@@ -29,7 +29,7 @@ class ConfusableConverter(PromptConverter):
         deterministic: bool = False,
     ):
         """
-        Initializes the ConfusableGenerator.
+        Initializes the UnicodeConfusableConverter.
 
         Args:
             source_package: The package to use for homoglyph generation. Can be either "confusable_homoglyphs"
@@ -41,9 +41,11 @@ class ConfusableConverter(PromptConverter):
                 has more possible substitutions.
             deterministic: This argument is for unittesting only.
         """
-        super().__init__()
         if source_package not in ["confusable_homoglyphs", "confusables"]:
-            raise ValueError("Invalid source package. Please choose either 'confusable_homoglyphs' or 'confusables'")
+            raise ValueError(
+                f"Invalid source package: {source_package}. Please choose either 'confusable_homoglyphs' \
+                or 'confusables'"
+            )
         self._source_package = source_package
         self._deterministic = deterministic
 

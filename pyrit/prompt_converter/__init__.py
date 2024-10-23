@@ -14,7 +14,6 @@ from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
-from pyrit.prompt_converter.confusable_converter import ConfusableConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_converter.fuzzer_converter import (
@@ -42,6 +41,7 @@ from pyrit.prompt_converter.suffix_append_converter import SuffixAppendConverter
 from pyrit.prompt_converter.tense_converter import TenseConverter
 from pyrit.prompt_converter.tone_converter import ToneConverter
 from pyrit.prompt_converter.translation_converter import TranslationConverter
+from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
@@ -58,7 +58,6 @@ __all__ = [
     "CaesarConverter",
     "CharacterSpaceConverter",
     "CodeChameleonConverter",
-    "ConfusableConverter",
     "ConverterResult",
     "EmojiConverter",
     "FlipConverter",
@@ -87,6 +86,7 @@ __all__ = [
     "TenseConverter",
     "ToneConverter",
     "TranslationConverter",
+    "UnicodeConfusableConverter",
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",

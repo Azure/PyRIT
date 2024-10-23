@@ -7,17 +7,17 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.prompt_converter import ConverterResult
-from pyrit.prompt_converter.confusable_converter import ConfusableConverter
+from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
 
 
 @pytest.fixture
 def homoglyphs_converter():
-    return ConfusableConverter(source_package="confusable_homoglyphs")
+    return UnicodeConfusableConverter(source_package="confusable_homoglyphs")
 
 
 @pytest.fixture
 def confusables_converter():
-    return ConfusableConverter(source_package="confusables")
+    return UnicodeConfusableConverter(source_package="confusables")
 
 
 def test_input_supported(homoglyphs_converter):
@@ -98,7 +98,7 @@ async def test_convert_async_non_ascii_word(homoglyphs_converter, confusables_co
 
 
 @patch(
-    "pyrit.prompt_converter.confusable_converter.is_confusable",
+    "pyrit.prompt_converter.unicode_confusable_converter.is_confusable",
     side_effect=UnicodeDecodeError("codec", b"", 0, 1, "reason"),
 )
 def test_get_homoglyph_variants_unicode_error(mock_is_confusable, homoglyphs_converter):
