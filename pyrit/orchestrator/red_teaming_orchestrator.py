@@ -200,7 +200,14 @@ class RedTeamingOrchestrator(Orchestrator):
 
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
-            prompt (str): The prompt to send to the target.
+            red_teaming_chat_conversation_id (str): the conversation ID for the red teaming chat.
+            feedback (str, optional): feedback from a previous iteration of the conversation.
+                This can either be a score if the request completed, or a short prompt to rewrite
+                the input if the request was blocked.
+                The feedback is passed back to the red teaming chat to improve the next prompt.
+                For text-to-image applications, for example, there is no immediate text output
+                that can be passed back to the red teaming chat, so the scorer rationale is the
+                only way to generate feedback.
         """
         # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
         logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
