@@ -39,7 +39,7 @@ def test_get_homoglyph_variants(homoglyphs_converter):
 def test_get_homoglyph_variants_no_variants(homoglyphs_converter):
     word = "xxxx"  # A word with no expected homoglyphs
     variants = homoglyphs_converter._get_homoglyph_variants(word)
-    assert len(variants) == 0 or "᙮" in variants
+    assert len(variants) == 0 or "᙮" in variants  # noqa
 
 
 def test_generate_perturbed_prompts(homoglyphs_converter):
