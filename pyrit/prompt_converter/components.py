@@ -23,7 +23,7 @@ from transformers import pipeline, AutoTokenizer
 from transformers.generation.stopping_criteria import StoppingCriteria
 
 from pyrit.prompt_converter import prompt_openai, exemplars
-# from classifiers import ClaimClassifierCE, ClaimClassifierSF
+from pyrit.prompt_converter.classifiers import ClaimClassifierCE, ClaimClassifierSF
 # from prompt_openai import make_prompt, complete_prompt, _OPENAI_MAX_PROMPTS
 # from exemplars import FEW_SHOT_INTERNAL
 
@@ -245,37 +245,37 @@ def load_fasttext():
     return fasttext.load_model("./cc.en.300.bin")
 
 
-# def load_classifier(
-#     classifier_type,
-#     classifier_encoder_model,
-#     use_differentiable_head=False,
-#     num_iterations=20,
-#     body_learning_rate=1e-5,
-#     batch_size=20,
-# ):
-#     """
-#     Initialize classifier or load it from the session state.
-#     We do not use `@st.cache_resource` because model parameters are updated
-#     and therefore not thread-safe
-#     """
-#     if "claim_classifier" not in st.session_state:
-#         if classifier_type == "cross_encoder":
-#             st.session_state["claim_classifier"] = ClaimClassifierCE(
-#                 model_type=classifier_encoder_model,
-#                 predict_without_fit=True,
-#             )
-#         elif classifier_type == "setfit":
-#             st.session_state["claim_classifier"] = ClaimClassifierSF(
-#                 model_type=classifier_encoder_model,
-#                 use_differentiable_head=use_differentiable_head,
-#                 num_iterations=num_iterations,
-#                 body_learning_rate=body_learning_rate,
-#                 batch_size=batch_size,
-#                 predict_without_fit=True,
-#             )
-#         else:
-#             raise NotImplementedError("Classifier type must be either `setfit` or `cross_encoder`")
-#     return st.session_state["claim_classifier"]
+def load_classifier(
+    classifier_type,
+    classifier_encoder_model,
+    use_differentiable_head=False,
+    num_iterations=20,
+    body_learning_rate=1e-5,
+    batch_size=20,
+):
+    """
+    Initialize classifier or load it from the session state.
+    We do not use `@st.cache_resource` because model parameters are updated
+    and therefore not thread-safe
+    """
+    if "claim_classifier" not in st.session_state:
+        if classifier_type == "cross_encoder":
+            st.session_state["claim_classifier"] = ClaimClassifierCE(
+                model_type=classifier_encoder_model,
+                predict_without_fit=True,
+            )
+        elif classifier_type == "setfit":
+            st.session_state["claim_classifier"] = ClaimClassifierSF(
+                model_type=classifier_encoder_model,
+                use_differentiable_head=use_differentiable_head,
+                num_iterations=num_iterations,
+                body_learning_rate=body_learning_rate,
+                batch_size=batch_size,
+                predict_without_fit=True,
+            )
+        else:
+            raise NotImplementedError("Classifier type must be either `setfit` or `cross_encoder`")
+    return st.session_state["claim_classifier"]
 
 
 @st.cache_resource

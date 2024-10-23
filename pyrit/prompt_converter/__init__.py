@@ -73,6 +73,7 @@ __all__ = [
     "VariationConverter",
     "ClaimConverter",
     "prompt_openai",
+    "classifiers",
     "components",
     "exemplars",
     "config",

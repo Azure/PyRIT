@@ -8,6 +8,7 @@ import logging
 import uuid
 import pathlib
 
+import numpy as np
 import pandas as pd
 
 from pyrit.common.path import DATASETS_PATH
@@ -17,7 +18,7 @@ from pyrit.exceptions.exception_classes import (
     remove_markdown_json,
 )
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
-from pyrit.prompt_converter import PromptConverter, ConverterResult, config, utils, prompt_openai, exemplars, components
+from pyrit.prompt_converter import PromptConverter, ConverterResult, config, utils, prompt_openai, exemplars, components, classifiers
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,18 @@ logger.setLevel(logging.INFO)
 
 config_path = pathlib.Path(__file__).parent / '_default.yaml'
 config = config.load_config(config_path)
+
+clf_config = config["classifier"]
+
+claim_classifier = components.load_classifier(
+    classifier_type=clf_config["type"],
+    classifier_encoder_model=clf_config["encoder_model"],
+    use_differentiable_head=clf_config["setfit"]["use_differentiable_head"],
+    num_iterations=clf_config["setfit"]["num_iterations"],
+    body_learning_rate=clf_config["setfit"]["body_learning_rate"],
+    batch_size=clf_config["setfit"]["batch_size"],
+)
+
 sections = [
     "utterances_to_claims",
     "claims_to_inferences",
@@ -206,6 +219,14 @@ class ClaimConverter(PromptConverter):
 
         # Build dataframe to label and retrieve existing annotations
         completion_df = components.build_completion_df(test_data, completions, target_model)
+        completion_df["label"] = True # FIXME
+        # Predict which completions are failures
+        completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=True)
+
+        # calculate margin from random (closer to 0.5->more uncertain)
+        completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
+        # ignore already-labeled data
+        completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
 
         response_msg = completion_df["completion"][0]
 
