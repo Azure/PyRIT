@@ -108,19 +108,17 @@ class UnicodeConfusableConverter(PromptConverter):
         word_list = re.findall(r"\w+|\W+", prompt)
 
         for word in word_list:
-            perturbed_word = ""
+            perturbed_chars = []
             for char in word:
                 homoglyph_variants = self._get_homoglyph_variants(char)
-                logger.info(f"Character: '{char}', Homoglyphs: {homoglyph_variants}")
-
                 if homoglyph_variants:
                     # Randomly choose a homoglyph variant
                     variant = random.choice(homoglyph_variants) if not self._deterministic else homoglyph_variants[-1]
-                    logger.info(f"Replacing character '{char}' with '{variant}'")
-                    perturbed_word += variant
+                    logger.debug(f"Replacing character '{char}' with '{variant}'")
+                    perturbed_chars.append(variant)
                 else:
-                    perturbed_word += char
-            perturbed_words.append(perturbed_word)
+                    perturbed_chars.append(char)
+            perturbed_words.append("".join(perturbed_chars))
 
         # Join the perturbed words back into a string
         new_prompt = "".join(perturbed_words)
