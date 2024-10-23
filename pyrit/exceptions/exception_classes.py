@@ -77,7 +77,11 @@ def handle_bad_request_exception(
     is_content_filter=False,
 ) -> PromptRequestResponse:
 
-    if "content_filter" in response_text or is_content_filter:
+    if (
+        "content_filter" in response_text
+        or "Invalid prompt: your prompt was flagged as potentially violating our usage policy." in response_text
+        or is_content_filter
+    ):
         # Handle bad request error when content filter system detects harmful content
         bad_request_exception = BadRequestException(400, message=response_text)
         resp_text = bad_request_exception.process_exception()
