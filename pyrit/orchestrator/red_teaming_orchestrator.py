@@ -124,17 +124,10 @@ class RedTeamingOrchestrator(Orchestrator):
             if self._use_score_as_feedback and score:
                 feedback = score.score_rationale
 
-            # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
-            logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
-            prompt = await self._get_prompt_from_red_teaming_target(
+            response = await self._send_prompt_async(
                 prompt_target_conversation_id=prompt_target_conversation_id,
                 red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
                 feedback=feedback,
-            )
-
-            response = await self._send_prompt_async(
-                prompt=prompt,
-                prompt_target_conversation_id=prompt_target_conversation_id,
             )
 
             if response.response_error == "none":
@@ -198,16 +191,25 @@ class RedTeamingOrchestrator(Orchestrator):
     async def _send_prompt_async(
         self,
         *,
-        prompt: str,
         prompt_target_conversation_id: str,
+        red_teaming_chat_conversation_id: str,
+        feedback: Optional[str] = None,
     ) -> PromptRequestPiece:
         """
-        Sends a prompt to the prompt target.
+        Generates and sends a prompt to the prompt target.
 
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
             prompt (str): The prompt to send to the target.
         """
+        # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
+        logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
+        prompt = await self._get_prompt_from_red_teaming_target(
+            prompt_target_conversation_id=prompt_target_conversation_id,
+            red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
+            feedback=feedback,
+        )
+
         target_prompt_obj = NormalizerRequestPiece(
             request_converters=self._prompt_converters,
             prompt_value=prompt,
