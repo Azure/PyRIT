@@ -193,7 +193,21 @@ class ClaimConverter(PromptConverter):
         logger.info(f"Created {len(test_data)} tests/prompts. We show 10 random prompts below.")
         test_prompts = [prompt for _, (prompt, _) in test_data]
 
-        response_msg = test_prompts[0]
+        target_model = "gpt3/"+config["openai_engine"]
+        num_generations = 1
+        completion_data = []
+        if target_model.startswith("gpt3"):
+            engine = target_model.split("/")[1]
+            completions = components.generate_from_prompts_gpt3(test_prompts, engine, num_generations)
+        else: # implies a huggingface model
+            generator = components.load_hf_generator(target_model)
+            logger.info("Using target model to complete the prompts...")
+            completions = components.generate_from_prompts_hf(test_prompts, generator, num_generations)
+
+        # Build dataframe to label and retrieve existing annotations
+        completion_df = components.build_completion_df(test_data, completions, target_model)
+
+        response_msg = completion_df["completion"][0]
 
         # response_msg = await self.send_variation_prompt_async(request)
 
