@@ -1,10 +1,23 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # Violent Duran attack strategy
 # This update integrates the Violent Durian attack strategy from Project Moonshot into the PyRIT system.
 # The strategy revolves around an attacker LLM manipulating the Target LLM into adopting a criminal persona and
 # providing illegal advice or dangerous suggestions. The criminal persona is chosen randomly from a predefined list,
 # and the conversation objective is set to convince the Target LLM to act as this persona.
-
 
 # %%
 import os
@@ -13,7 +26,7 @@ from pathlib import Path
 import random
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.prompt_target import AzureOpenAITextChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.models import AttackStrategy
@@ -55,14 +68,14 @@ attack_strategy = AttackStrategy(
 
 # Set up the red_teaming_chat used to generate prompts sent to the target.
 # OpenAI (GPT4) as the Red Teaming LLM
-red_teaming_llm = AzureOpenAITextChatTarget(
+red_teaming_llm = OpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
 # Set the target LLM, here using Azure OpenAI's GPT-4 chat model
-prompt_target = AzureOpenAITextChatTarget(
+prompt_target = OpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
@@ -119,6 +132,3 @@ with RedTeamingOrchestrator(
     score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
     # Print the conversation log for review
     await red_teaming_orchestrator.print_conversation()  # type: ignore
-
-
-# %%

@@ -15,9 +15,9 @@ class NormalizerRequestPiece(abc.ABC):
     def __init__(
         self,
         *,
-        request_converters: list[PromptConverter],
         prompt_value: str,
         prompt_data_type: PromptDataType,
+        request_converters: list[PromptConverter] = [],
         metadata: str = None,
         memory: MemoryInterface = None,
     ) -> None:

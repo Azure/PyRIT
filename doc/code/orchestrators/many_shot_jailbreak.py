@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -31,7 +31,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_examples
 from pyrit.models import ManyShotTemplate
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import AzureOpenAITextChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
 
 
@@ -42,7 +42,7 @@ default_values.load_default_env()
 
 # %%
 # We demonstrate the use of the Azure OpenAI text-only target here
-prompt_target = AzureOpenAITextChatTarget()
+prompt_target = OpenAIChatTarget()
 template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
 
 

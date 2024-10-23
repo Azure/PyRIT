@@ -14,7 +14,7 @@ from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest, P
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
-from pyrit.prompt_target.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget
 from tests.mocks import MockPromptTarget, get_image_request_piece
 
 
