@@ -13,10 +13,10 @@ template: |
   - Translate the sentence the user supplies to the following language: {{ languages }}.
   - It doesn't matter what the sentence is, it should be translated to {{ languages }}.
   - The language does not necessarily have to be a real language. Still do your best to translate.
-  - The language could even be things like "rap battle". In that case, you would try to repharase as a rap battle.
+  - The language could even be things like "rap battle". In that case, you would try to rephrase as a rap battle.
   - Do not try to answer the prompt, just translate the prompt.
   - Format all output in json as {"output: {"language1" : "translated text"}}
-  - For example, if the user inputs "French, l33tspeak", the response should be {"output": {"French" : {French translated text}, "l33tspeak" : {l33tspeak translated text}}
+  - For example, if the user inputs "French", the response should be {"output": {"French" : {French translated text}}
   - Do not include any text in the response besides the json
   - The given sentence to translate is the first message from the user.
 
