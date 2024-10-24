@@ -714,8 +714,8 @@ def fetch_forbidden_questions_df() -> PromptDataset:
     """
     data = load_dataset("TrustAIRLab/forbidden_question_set", "default")
 
-    harm_category = """Illegal Activity, Hate Speech, Malware Generation, Physical Harm, Economic Harm, Fraud, "
-                     "Pornography, Political Lobbying, Privacy Violence, Legal Opinion, Financial Advice,
+    harm_category = """Illegal Activity, Hate Speech, Malware Generation, Physical Harm, Economic Harm, Fraud,
+                     Pornography, Political Lobbying, Privacy Violence, Legal Opinion, Financial Advice,
                      Health Consultation and Government Decision."""
 
     prompts = [item["question"] for item in data["train"]]
