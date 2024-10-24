@@ -6,7 +6,7 @@ import copy
 from datetime import datetime
 import logging
 from pathlib import Path
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from typing import MutableSequence, Optional, Sequence
 import uuid
@@ -15,6 +15,7 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.models import (
     ChatMessage,
     group_conversation_request_pieces_by_sequence,
+    group_seed_prompts_by_prompt_group_id,
     SeedPrompt,
     PromptRequestResponse,
     PromptRequestPiece,
@@ -621,17 +622,53 @@ class MemoryInterface(abc.ABC):
         self,
         *,
         dataset_name: Optional[str] = None,
-        data_types: Optional[Sequence[Sequence[str]]] = None,
+        data_types: Optional[Sequence[str]] = None,
         harm_categories: Optional[Sequence[str]] = None,
         added_by: Optional[str] = None,
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
     ) -> list[SeedPromptGroup]:
-        # TODO for this PR
-        # Get all prompts with the specified filters
-        # and if the prompt group ID is set.
-        # Then group together by group ID, create SeedPromptGroupId objects,
-        # and return.
-        raise NotImplementedError("Method not yet implemented.")
+        """Retrieves groups of seed prompts based on the provided filtering criteria._summary_
+
+        Args:
+            dataset_name (Optional[str], optional): Name of the dataset to filter seed prompts.
+            data_types (Optional[Sequence[str]], optional): List of data types to filter seed prompts by (e.g., text, image_path).
+            harm_categories (Optional[Sequence[str]], optional): List of harm categories to filter seed prompts by.
+            added_by (Optional[str], optional): The user who added the seed prompt groups to filter by.
+            authors (Optional[Sequence[str]], optional): List of authors to filter seed prompt groups by.
+            groups (Optional[Sequence[str]], optional): List of groups to filter seed prompt groups by.
+            source (Optional[str], optional): The source from which the seed prompts originated.
+
+        Returns:
+            list[SeedPromptGroup]: A list of `SeedPromptGroup` objects that match the filtering criteria.
+        """
+        conditions = []
+        
+        # Apply basic filters if provided
+        if dataset_name:
+            conditions.append(SeedPromptEntry.dataset_name == dataset_name)
+        if added_by:
+            conditions.append(SeedPromptEntry.added_by == added_by)
+        if source:
+            conditions.append(SeedPromptEntry.source == source)
+        if data_types:
+            data_type_conditions = SeedPromptEntry.data_type.in_(data_types)
+            conditions.append(data_type_conditions)
+
+        # Add conditions for lists: harm categories, authors, and groups
+        self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
+        self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
+        self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
+        
+        # Query DB for matching entries
+        memory_entries = self.query_entries(
+                SeedPromptEntry,
+                conditions=and_(*conditions) if conditions else None,
+            )  # type: ignore
+        
+        # Extract seed prompts and group them by prompt group ID
+        seed_prompts = [memory_entry.get_seed_prompt() for memory_entry in memory_entries]
+        seed_prompt_groups = group_seed_prompts_by_prompt_group_id(seed_prompts)
+        return seed_prompt_groups
     

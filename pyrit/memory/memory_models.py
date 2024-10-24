@@ -6,7 +6,7 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 from pyrit.models import PromptDataType, SeedPrompt
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
+from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
 from sqlalchemy.types import Uuid  # type: ignore
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
 from sqlalchemy.orm import Mapped  # type: ignore
@@ -258,7 +258,7 @@ class SeedPromptEntry(Base):
     __tablename__ = "SeedPromptEntries"
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid, nullable=False, primary_key=True)
-    value = Column(String, nullable=False)
+    value = Column(Unicode, nullable=False)
     data_type: Mapped[PromptDataType] = Column(String, nullable=False)
     name = Column(String, nullable=True)
     dataset_name = Column(String, nullable=True)
