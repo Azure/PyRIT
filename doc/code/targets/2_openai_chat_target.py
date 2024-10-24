@@ -59,11 +59,11 @@ with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
 #
 # ### A Note on Providing Max Token Values
 # The `OpenAIChatTarget` class will accept values for either a `max_tokens` or `max_completion_tokens`.
-# The difference between the two is primarily dependent on the model you are using.
+# The difference between the two is primarily dependent on the model series you are interacting with.
 #
-# For *all* `o1` models, you must provide `max_completion_tokens` to specify the maximum number of tokens to generate in the completion.
+# For `o1` series models, use `max_completion_tokens` to specify the maximum number of tokens to generate in the completion.
 # For all other models, `max_tokens` should be used.
-# By default, the assumption is that a non-o1 model is used, and `max_tokens` is set to 4096.
+# By default, `max_tokens` and `max_completion_tokens` are not set.
 
 # %%
 # Example of setting the max_tokens for a non-o1 model

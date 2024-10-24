@@ -32,25 +32,31 @@ class OpenAIChatTarget(OpenAITarget):
     def __init__(
         self,
         max_completion_tokens: Optional[int] | NotGiven = NOT_GIVEN,
+        max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
         *args,
         **kwargs,
     ):
         """
         Args:
-            max_completion_tokens (int, optional): An upper bound for the number of tokens
-                that can be generated for a completion, including visible output tokens and reasoning tokens.
-                NOTE: Specify this value when using an o1 model.
+            max_completion_tokens (int, optional): An upper bound for the number of tokens that
+                can be generated for a completion, including visible output tokens and
+                reasoning tokens.
+
+                NOTE: Specify this value when using an o1 series model.
+            max_tokens (int, optional): The maximum number of tokens that can be
+                generated in the chat completion. This value can be used to control
+                costs for text generated via API.
+
+                This value is now deprecated in favor of `max_completion_tokens`, and IS NOT
+                COMPATIBLE with o1 series models.
         """
         super().__init__(*args, **kwargs)
 
-        if max_completion_tokens and self._max_tokens != NOT_GIVEN:
+        if max_completion_tokens is not NOT_GIVEN and max_tokens is not NOT_GIVEN:
             raise ValueError("Cannot provide both max_tokens and max_completion_tokens.")
-        elif max_completion_tokens == NOT_GIVEN and self._max_tokens == NOT_GIVEN:
-            # Set default value of 4096 for max_tokens
-            # Assumes the model being used is not part of the o1 series
-            self._max_tokens = 4096
 
         self._max_completion_tokens = max_completion_tokens
+        self._max_tokens = max_tokens
 
     def _set_azure_openai_env_configuration_vars(self) -> None:
         self.deployment_environment_variable = "AZURE_OPENAI_CHAT_DEPLOYMENT"
@@ -188,8 +194,8 @@ class OpenAIChatTarget(OpenAITarget):
     async def _complete_chat_async(
         self,
         messages: list[ChatMessageListDictContent],
-        max_completion_tokens: Optional[int] | NotGiven,
-        max_tokens: Optional[int] | NotGiven,
+        max_completion_tokens: Optional[int] | NotGiven = NOT_GIVEN,
+        max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
         temperature: float = 1.0,
         top_p: float = 1.0,
         frequency_penalty: float = 0.0,
@@ -204,7 +210,6 @@ class OpenAIChatTarget(OpenAITarget):
             messages (list[ChatMessageListDictContent]): The chat message objects containing the role and content.
             max_completion_tokens (int, optional): An upper bound for the number of tokens to generate.
             max_tokens (int, optional): The maximum number of tokens to generate.
-                Defaults to 4096.
             temperature (float, optional): Controls randomness in the response generation.
                 Defaults to 1.0.
             top_p (float, optional): Controls diversity of the response generation.

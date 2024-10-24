@@ -6,7 +6,7 @@ import logging
 from abc import abstractmethod
 from typing import Optional
 
-from openai import AsyncAzureOpenAI, AsyncOpenAI, NotGiven, NOT_GIVEN
+from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
@@ -35,7 +35,6 @@ class OpenAITarget(PromptChatTarget):
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
         api_version: str = "2024-06-01",
-        max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
         temperature: float = 1.0,
         top_p: float = 1.0,
         frequency_penalty: float = 0.0,
@@ -66,8 +65,6 @@ class OpenAITarget(PromptChatTarget):
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
                 "2024-06-01".
-            max_tokens (int, optional): The maximum number of tokens that can be generated in the chat
-                completion. This value can be used to control costs for text generated via API.
             temperature (float, optional): The temperature parameter for controlling the
                 randomness of the response. Defaults to 1.0.
             top_p (float, optional): The top-p parameter for controlling the diversity of the
@@ -82,7 +79,6 @@ class OpenAITarget(PromptChatTarget):
         """
         PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
-        self._max_tokens = max_tokens
         self._temperature = temperature
         self._top_p = top_p
         self._frequency_penalty = frequency_penalty
