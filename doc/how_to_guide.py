@@ -79,9 +79,9 @@ with OpenAIChatTarget(
 
 # %%
 
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPromptTemplate
 
-template = PromptTemplate(
+template = SeedPromptTemplate(
     template="I recently had {{ food_item }} in {{ food_location }} and it was absolutely terrible. What do you think about {{ food_item }}?",
     parameters=["food_item", "food_location"],
 )
@@ -93,7 +93,7 @@ template = PromptTemplate(
 
 # %%
 
-prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_location="Italy")
+prompt = template.apply_parameters(food_item="pizza", food_location="Italy")
 
 # %% [markdown]
 # ## Generate prompts automatically with red teaming orchestrators
