@@ -24,7 +24,6 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerShortenConverter,
     FuzzerSimilarConverter,
 )
-from pyrit.prompt_converter.homoglyph_generator_converter import HomoglyphGeneratorConverter
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
@@ -68,7 +67,6 @@ __all__ = [
     "FuzzerRephraseConverter",
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
-    "HomoglyphGeneratorConverter",
     "HumanInTheLoopConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
