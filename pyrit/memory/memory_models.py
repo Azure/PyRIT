@@ -5,6 +5,7 @@ import uuid
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
 from pyrit.models import PromptDataType, SeedPrompt
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
 from sqlalchemy.types import Uuid  # type: ignore
@@ -71,13 +72,13 @@ class PromptMemoryEntry(Base):
     original_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = Column(
         String, nullable=False
     )
-    original_value = Column(String, nullable=False)
+    original_value = Column(Unicode, nullable=False)
     original_value_sha256 = Column(String)
 
     converted_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = Column(
         String, nullable=False
     )
-    converted_value = Column(String)
+    converted_value = Column(Unicode)
     converted_value_sha256 = Column(String)
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
