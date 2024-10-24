@@ -57,3 +57,17 @@ with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
 #
 # There is an option to use the DefaultAzureCredential for User Authentication as well, for all AOAI Chat Targets. When `use_aad_auth=True`, ensure the user has 'Cognitive Service OpenAI User' role assigned on the AOAI Resource and `az login` is used to authenticate with the correct identity.
 #
+# ### A Note on Providing Max Token Values
+# The `OpenAIChatTarget` class will accept values for either a `max_tokens` or `max_completion_tokens`.
+# The difference between the two is primarily dependent on the model you are using.
+#
+# For *all* `o1` models, you must provide `max_completion_tokens` to specify the maximum number of tokens to generate in the completion.
+# For all other models, `max_tokens` should be used.
+# By default, the assumption is that a non-o1 model is used, and `max_tokens` is set to 4096.
+
+# %%
+# Example of setting the max_tokens for a non-o1 model
+target = OpenAIChatTarget(max_tokens=4096)
+
+# Example of setting the max_completion_tokens for an o1 model
+target = OpenAIChatTarget(max_completion_tokens=4096)
