@@ -38,8 +38,8 @@ class OpenAITarget(PromptChatTarget):
         max_tokens: int = 2048,
         temperature: float = 1.0,
         top_p: float = 1.0,
-        frequency_penalty: float = 0.5,
-        presence_penalty: float = 0.5,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
@@ -73,9 +73,9 @@ class OpenAITarget(PromptChatTarget):
             top_p (float, optional): The top-p parameter for controlling the diversity of the
                 response. Defaults to 1.0.
             frequency_penalty (float, optional): The frequency penalty parameter for penalizing
-                frequently generated tokens. Defaults to 0.5.
+                frequently generated tokens. Defaults to 0.
             presence_penalty (float, optional): The presence penalty parameter for penalizing
-                tokens that are already present in the conversation history. Defaults to 0.5.
+                tokens that are already present in the conversation history. Defaults to 0.
             max_requests_per_minute (int, optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -103,10 +103,11 @@ class OpenAITarget(PromptChatTarget):
         if self._is_azure_target:
             self._initialize_azure_vars(deployment_name, endpoint, api_key, use_aad_auth)
         else:
+            # Initialize for non-Azure OpenAI
+            self._initialize_non_azure_vars(deployment_name, endpoint, api_key)
             if not self._deployment_name:
                 # OpenAI deployments listed here: https://platform.openai.com/docs/models
                 raise ValueError("The deployment name must be provided for non-Azure OpenAI targets. e.g. gpt-4o")
-            self._initialize_non_azure_vars(deployment_name, endpoint, api_key)
 
     def _initialize_azure_vars(self, deployment_name: str, endpoint: str, api_key: str, use_aad_auth: bool):
         self._set_azure_openai_env_configuration_vars()
@@ -145,11 +146,17 @@ class OpenAITarget(PromptChatTarget):
         Initializes variables to communicate with the (non-Azure) OpenAI API
         """
         self._api_key = default_values.get_required_value(env_var_name="OPENAI_KEY", passed_value=api_key)
+        if not self._api_key:
+            raise ValueError("API key for OpenAI is missing. Ensure OPENAI_KEY is set in the environment.")
 
         # Any available model. See https://platform.openai.com/docs/models
         self._deployment_name = default_values.get_required_value(
             env_var_name="OPENAI_DEPLOYMENT", passed_value=deployment_name
         )
+        if not self._deployment_name:
+            raise ValueError(
+                "Deployment name for OpenAI is missing. Ensure OPENAI_DEPLOYMENT is set in the environment."
+            )
 
         endpoint = endpoint if endpoint else "https://api.openai.com/v1/chat/completions"
 

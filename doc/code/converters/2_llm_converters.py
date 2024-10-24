@@ -46,7 +46,13 @@ with OpenAIChatTarget() as attack_llm:
 
 # %%
 
-from pyrit.prompt_converter import ToneConverter, TranslationConverter, NoiseConverter, TenseConverter
+from pyrit.prompt_converter import (
+    ToneConverter,
+    TranslationConverter,
+    NoiseConverter,
+    TenseConverter,
+    MaliciousQuestionGeneratorConverter,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 
 from pyrit.common import default_values
@@ -69,3 +75,6 @@ with OpenAIChatTarget() as attack_llm:
 
     tense_converter = TenseConverter(converter_target=attack_llm, tense="far future")
     print(f"future tense: {await tense_converter.convert_async(prompt=prompt)}")  # type: ignore
+
+    malicious_question = MaliciousQuestionGeneratorConverter(converter_target=attack_llm)
+    print(f"malicious question: {await malicious_question.convert_async(prompt=prompt)}")  # type: ignore

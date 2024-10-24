@@ -11,7 +11,12 @@ from .fetch_example_datasets import (
     fetch_pku_safe_rlhf_dataset,
     fetch_adv_bench_dataset,
     fetch_wmdp_dataset,
+<<<<<<< HEAD
     fetch_forbidden_questions_df,
+=======
+    fetch_llm_latent_adversarial_training_harmful_dataset,
+    fetch_tdc23_redteaming_dataset,
+>>>>>>> origin/main
 )
 
 __all__ = [
@@ -24,5 +29,10 @@ __all__ = [
     "fetch_pku_safe_rlhf_dataset",
     "fetch_adv_bench_dataset",
     "fetch_wmdp_dataset",
+<<<<<<< HEAD
     "fetch_forbidden_questions_df",
+=======
+    "fetch_llm_latent_adversarial_training_harmful_dataset",
+    "fetch_tdc23_redteaming_dataset",
+>>>>>>> origin/main
 ]
