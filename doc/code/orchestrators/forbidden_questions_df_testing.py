@@ -29,7 +29,7 @@ prompt_target = TextTarget()
 example_source = "https://huggingface.co/datasets/TrustAIRLab/forbidden_question_set"
 
 # %%
-# Create the orchestrator with scorer 
+# Create the orchestrator with scorer
 orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
 # Fetch prompt column from harmful-datasets
@@ -42,7 +42,7 @@ prompt_list = prompt_dataset.prompts[:8]
 try:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
     if responses:
-        await orchestrator.print_conversations()  # Retrieve the memory to print scoring results
+        orchestrator.print_conversations()  # Retrieve the memory to print scoring results
     else:
         print("No valid responses were received from the orchestrator.")
 except Exception as e:
