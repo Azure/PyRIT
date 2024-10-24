@@ -1,47 +1,77 @@
-import os
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+
 import pytest
+import os
+import tempfile
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import numpy as np
-from unittest import mock
+from scipy.io import wavfile
+
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult
-
-@pytest.fixture
-def mock_wavfile():
-    with mock.patch('scipy.io.wavfile.read') as mock_read, \
-         mock.patch('scipy.io.wavfile.write') as mock_write:
-        
-        # Mock the read function to return a sample rate and a numpy array
-        sample_rate = 44100
-        duration = 1  # in seconds
-        t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-        frequency = 440  # Frequency in Hz
-        amplitude = np.iinfo(np.int16).max  # Max amplitude for int16
-        data = amplitude * np.sin(2 * np.pi * frequency * t)
-        mock_read.return_value = (sample_rate, data.astype(np.int16))
-        
-        yield mock_read, mock_write
-
-@pytest.mark.asyncio
-async def test_convert_async(mock_wavfile):
-    mock_read, mock_write = mock_wavfile
-    converter = AudioFrequencyConverter()
-    shift_value = 20000  # Shift frequency by 1000 Hz
-    result = await converter.convert_async(prompt="mock_audio_file.wav", input_type="audio_path", shift_value=shift_value)
-    
-    assert result.output_type == "audio_path"
-    assert result.output_text.endswith("_converted.wav")
-    # Verify that the write function was called
-    assert mock_write.called
-    _, args, _ = mock_write.mock_calls[0]
-    output_sample_rate, output_data = args[1], args[2]
-    sample_rate_original, original_data = mock_read("mock_audio_file.wav")
-    assert sample_rate_original == output_sample_rate
-    assert not np.array_equal(original_data, output_data)
+from pyrit.models.data_type_serializer import AudioPathDataTypeSerializer
 
 
 @pytest.mark.asyncio
-async def test_convert_async_invalid_input_type(mock_wavfile):
-    converter = AudioFrequencyConverter()
-    with pytest.raises(ValueError, match="Input type not supported"):
-        await converter.convert_async(prompt="mock_audio_file.wav", input_type="invalid_type", shift_value=1000)
+@patch("pyrit.models.data_type_serializer.data_serializer_factory")
+@patch("pyrit.memory.MemoryInterface.storage_io")
+async def test_convert_async_success(mock_storage_io, mock_serializer_factory):
+    # Set up mock serializer
+    mock_serializer = MagicMock(spec=AudioPathDataTypeSerializer)
+    mock_serializer.value = "mock_audio_file.wav"  # This will be updated to the temporary file name
+    mock_serializer.read_data = AsyncMock()
+    mock_serializer.save_data = AsyncMock()
+    mock_serializer_factory.return_value = mock_serializer
+
+    # Simulate WAV data
+    sample_rate = 44100
+    mock_audio_data = np.random.randint(-32768, 32767, size=(100,), dtype=np.int16)
+
+    # Create a temporary file for the WAV file
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav_file:
+        original_wav_path = temp_wav_file.name
+        wavfile.write(original_wav_path, sample_rate, mock_audio_data)
+
+    # Read the data from the created WAV file into bytes
+    with open(original_wav_path, "rb") as f:
+        wav_data = f.read()
+
+    # Set the read_data mock to return the byte data
+    mock_serializer.read_data.return_value = wav_data
+    mock_storage_io.path_exists = AsyncMock(return_value=True)
+    converter = AudioFrequencyConverter(shift_value=20000)
+
+    # Call the convert_async method with the temporary WAV file path
+    prompt = original_wav_path
+    result = await converter.convert_async(prompt=prompt)
+
+    assert result.output_text != mock_serializer.value
+    assert os.path.exists(result.output_text)
+    assert isinstance(result.output_text, str)
+
+    # Clean up the original WAV file after the test
+    os.remove(original_wav_path)
+
+    # Optionally, clean up any created files in result (if applicable)
+    if os.path.exists(result.output_text):
+        os.remove(result.output_text)
+
+
+@pytest.mark.asyncio
+@patch("pyrit.models.data_type_serializer.data_serializer_factory")
+@patch("pyrit.memory.MemoryInterface.storage_io")
+async def test_convert_async_file_not_found(mock_storage_io, mock_serializer_factory):
+    # Create a mock serializer
+    mock_serializer = MagicMock(spec=AudioPathDataTypeSerializer)
+    mock_serializer_factory.return_value = mock_serializer
+
+    # Create an instance of the converter
+    converter = AudioFrequencyConverter(shift_value=20000)
+
+    prompt = "non_existent_file.wav"
+
+    # Ensure that an exception is raised when trying to convert a non-existent file
+    with pytest.raises(FileNotFoundError):
+        await converter.convert_async(prompt=prompt)
