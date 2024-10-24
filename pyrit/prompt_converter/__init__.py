@@ -15,6 +15,7 @@ from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
 from pyrit.prompt_converter.emoji_converter import EmojiConverter
+from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerConverter,
     FuzzerCrossOverConverter,
@@ -26,6 +27,8 @@ from pyrit.prompt_converter.fuzzer_converter import (
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
+from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
+from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
 from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
 from pyrit.prompt_converter.qr_code_converter import QRCodeConverter
@@ -57,6 +60,7 @@ __all__ = [
     "CodeChameleonConverter",
     "ConverterResult",
     "EmojiConverter",
+    "FlipConverter",
     "FuzzerConverter",
     "FuzzerCrossOverConverter",
     "FuzzerExpandConverter",
@@ -66,6 +70,8 @@ __all__ = [
     "HumanInTheLoopConverter",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
+    "MaliciousQuestionGeneratorConverter",
+    "MathPromptConverter",
     "MorseConverter",
     "NoiseConverter",
     "PersuasionConverter",

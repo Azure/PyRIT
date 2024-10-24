@@ -10,7 +10,7 @@ from openai.types.completion import Completion
 from openai.types.completion_choice import CompletionChoice
 from openai.types.completion_usage import CompletionUsage
 
-from pyrit.prompt_target import AzureOpenAICompletionTarget
+from pyrit.prompt_target import OpenAICompletionTarget
 from tests.mocks import get_sample_conversations
 
 
@@ -38,8 +38,8 @@ def openai_mock_return() -> Completion:
 
 
 @pytest.fixture
-def azure_completion_target() -> AzureOpenAICompletionTarget:
-    return AzureOpenAICompletionTarget(
+def azure_completion_target() -> OpenAICompletionTarget:
+    return OpenAICompletionTarget(
         deployment_name="gpt-35-turbo",
         endpoint="https://mock.azure.com/",
         api_key="mock-api-key",
@@ -54,7 +54,7 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_request_length(
-    azure_completion_target: AzureOpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
 ):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
@@ -63,7 +63,7 @@ async def test_azure_completion_validate_request_length(
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_prompt_type(
-    azure_completion_target: AzureOpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     request_piece.converted_value_data_type = "image_path"
@@ -74,7 +74,7 @@ async def test_azure_completion_validate_prompt_type(
 
 @pytest.mark.asyncio
 async def test_azure_completion_validate_prev_convs(
-    azure_completion_target: AzureOpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
+    azure_completion_target: OpenAICompletionTarget, sample_conversations: list[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     azure_completion_target._memory.add_request_response_to_memory(
@@ -89,7 +89,7 @@ async def test_azure_completion_validate_prev_convs(
 @pytest.mark.asyncio
 async def test_azure_complete_async_return(
     openai_mock_return: Completion,
-    azure_completion_target: AzureOpenAICompletionTarget,
+    azure_completion_target: OpenAICompletionTarget,
     sample_conversations: list[PromptRequestPiece],
 ):
     request_piece = sample_conversations[0]
@@ -102,28 +102,28 @@ async def test_azure_complete_async_return(
 
 
 def test_azure_invalid_key_raises():
-    os.environ[AzureOpenAICompletionTarget.API_KEY_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        AzureOpenAICompletionTarget(
-            deployment_name="gpt-4",
-            endpoint="https://mock.azure.com/",
-            api_key="",
-            api_version="some_version",
-        )
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAICompletionTarget(
+                deployment_name="gpt-4",
+                endpoint="https://mock.azure.com/",
+                api_key="",
+                api_version="some_version",
+            )
 
 
 def test_azure_initialization_with_no_deployment_raises():
-    os.environ[AzureOpenAICompletionTarget.DEPLOYMENT_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        AzureOpenAICompletionTarget()
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAICompletionTarget()
 
 
 def test_azure_invalid_endpoint_raises():
-    os.environ[AzureOpenAICompletionTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
-    with pytest.raises(ValueError):
-        AzureOpenAICompletionTarget(
-            deployment_name="gpt-4",
-            endpoint="",
-            api_key="xxxxx",
-            api_version="some_version",
-        )
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAICompletionTarget(
+                deployment_name="gpt-4",
+                endpoint="",
+                api_key="xxxxx",
+                api_version="some_version",
+            )

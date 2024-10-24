@@ -83,6 +83,8 @@ Alternatively, you can run the tool directly on Windows using PowerShell.
 
 #### Running Jupyter Notebooks in VS Code
 
+_note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [tests.md](./tests.md#notebooks) for more details.
+
 ##### Selecting a Kernel
 
 With a Jupyter Notebook (.ipynb file) window open, in the top search bar of VS Code, type `>Notebook: Select Notebook Kernel` > `Python Environments...` to choose the `pyrit-dev` kernel when executing code in the notebooks, like those in `examples`. You can also choose a kernel with the "Select Kernel" button on the top-right corner of a Notebook.

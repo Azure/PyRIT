@@ -106,3 +106,10 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
         raised = True  # There should be no KeyError
 
     assert raised is False
+
+
+def test_translation_converter_input_supported():
+    prompt_target = MockPromptTarget()
+    translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
+    assert translation_converter.input_supported("text") is True
+    assert translation_converter.input_supported("image_path") is False

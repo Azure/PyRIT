@@ -15,9 +15,9 @@ class NormalizerRequestPiece(abc.ABC):
     def __init__(
         self,
         *,
-        request_converters: list[PromptConverter],
         prompt_value: str,
         prompt_data_type: PromptDataType,
+        request_converters: list[PromptConverter] = [],
         metadata: str = None,
         memory: MemoryInterface = None,
     ) -> None:
@@ -70,6 +70,7 @@ class NormalizerRequest:
         self,
         request_pieces: list[NormalizerRequestPiece],
         response_converters: list[PromptResponseConverterConfiguration] = [],
+        conversation_id: str = None,
     ):
         """
         Represents a normalizer request.
@@ -79,6 +80,7 @@ class NormalizerRequest:
 
         self.request_pieces = request_pieces
         self.response_converters = response_converters
+        self.conversation_id = conversation_id
 
     def validate(self):
         if not self.request_pieces or len(self.request_pieces) == 0:

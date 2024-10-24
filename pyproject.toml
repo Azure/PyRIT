@@ -45,9 +45,11 @@ dependencies = [
     "azure-ai-ml==1.13.0",
     "azure-storage-blob>=12.19.0",
     "confusables==1.2.0",
+    "confusable-homoglyphs==3.3.1",
     "datasets>=3.0.0",
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
+    "httpx[http2]>=0.27.2",
     "jsonpickle>=3.0.4",
     "jupyter>=1.0.0",
     "ipykernel>=6.29.4",
@@ -72,7 +74,8 @@ dependencies = [
     "tqdm>=4.66.2",
     "transformers>=4.40.0",
     "treelib>=1.7.0",
-    "types-requests>=2.31.0.20240406"
+    "types-requests>=2.31.0.20240406",
+    "torch==2.4.1"
 ]
 
 [project.optional-dependencies]
@@ -90,6 +93,18 @@ dev = [
     "respx>=0.20.2",
     "semantic-kernel==0.9.4b1",
     "types-PyYAML>=6.0.12.9",
+]
+torch = [
+    "torch>=2.3.0"
+]
+gcg = [
+    "numpy<2",
+    "mlflow==2.16.2",
+    "ml-collections==0.1.1",
+    "azureml-mlflow==1.57.0",
+    "accelerate==0.34.2",
+    "transformers==4.45.1",
+    "sentencepiece==0.2.0",
 ]
 
 [tool.pytest.ini_options]
