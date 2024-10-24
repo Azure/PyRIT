@@ -13,7 +13,7 @@ from pyrit.memory import MemoryInterface
 logger = logging.getLogger(__name__)
 
 
-async def display_response(response_piece: PromptRequestPiece, memory: MemoryInterface) -> None:
+async def display_image_response(response_piece: PromptRequestPiece, memory: MemoryInterface) -> None:
     """Displays response images if running in notebook environment.
 
     Args:
