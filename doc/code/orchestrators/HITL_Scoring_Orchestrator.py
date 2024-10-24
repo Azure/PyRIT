@@ -52,17 +52,13 @@ from pyrit.score import (
 # we need the id from the previous run to score all prompts from the orchestrator
 id = prompt_sending_orchestrator_id
 
-# The scorer is interchangeable with other scorers
-# scorer = AzureContentFilterScorer()
-
-# EG SCORE PROMPTS 1st using automatic scorer
-scorer = SelfAskCategoryScorer(
+# This is the scorer we will use to score the prompts and to rescore the prompts
+self_ask_scorer = SelfAskCategoryScorer(
     chat_target=OpenAIChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
 )
-
-memory = DuckDBMemory()
-scores = []
+scorer = HumanInTheLoopScorer(scorer=self_ask_scorer, re_scorer=[self_ask_scorer]) # PASS IN THE SCORER YOU WANT TO USE
 with ScoringOrchestrator() as scoring_orchestrator:
+    memory = DuckDBMemory()
     start = time.time()
     scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[id], responses_only=False
@@ -77,23 +73,4 @@ with ScoringOrchestrator() as scoring_orchestrator:
         ].original_value
         print(f"{score} : {prompt_text}")
 
-
-# %%
-# THEN CALL HITL SCORER to edit these scores
-scorer = HumanInTheLoopScorer()  # PASS IN THE SCORER YOU WANT TO USE
-with ScoringOrchestrator() as scoring_orchestrator:
-    start = time.time()
-    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
-        scorer=scorer, orchestrator_ids=[id], responses_only=False
-    )
-    end = time.time()
-
-    print(f"Elapsed time for operation: {end-start}")
-
-    for score in scores:
-        prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
-            0
-        ].original_value
-        print(f"{score} : {prompt_text}")
-
-memory.dispose_engine()
+# memory.dispose_engine()
