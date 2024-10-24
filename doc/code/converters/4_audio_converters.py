@@ -68,8 +68,8 @@ logger.setLevel(logging.DEBUG)
 assert os.path.exists(audio_convert_result.output_text)
 prompt = str(pathlib.Path(RESULTS_PATH) / "dbdata" / "audio" / audio_convert_result.output_text)
 
-speech_text_converter = AudioFrequencyConverter()
-converted_audio_file = await speech_text_converter.convert_async(prompt=prompt)  # type: ignore
+audio_frequency_converter = AudioFrequencyConverter()
+converted_audio_file = await audio_frequency_converter.convert_async(prompt=prompt)  # type: ignore
 
 print(converted_audio_file)
 
