@@ -33,6 +33,11 @@ class OpenAIChatTarget(OpenAITarget):
         self,
         max_completion_tokens: Optional[int] | NotGiven = NOT_GIVEN,
         max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
+        seed: Optional[int] = None,
         *args,
         **kwargs,
     ):
@@ -49,6 +54,16 @@ class OpenAIChatTarget(OpenAITarget):
 
                 This value is now deprecated in favor of `max_completion_tokens`, and IS NOT
                 COMPATIBLE with o1 series models.
+            temperature (float, optional): The temperature parameter for controlling the
+                randomness of the response. Defaults to 1.0.
+            top_p (float, optional): The top-p parameter for controlling the diversity of the
+                response. Defaults to 1.0.
+            frequency_penalty (float, optional): The frequency penalty parameter for penalizing
+                frequently generated tokens. Defaults to 0.
+            presence_penalty (float, optional): The presence penalty parameter for penalizing
+                tokens that are already present in the conversation history. Defaults to 0.
+            seed (int, optional): If specified, openAI will make a best effort to sample deterministically,
+                such that repeated requests with the same seed and parameters should return the same result.
         """
         super().__init__(*args, **kwargs)
 
@@ -57,6 +72,11 @@ class OpenAIChatTarget(OpenAITarget):
 
         self._max_completion_tokens = max_completion_tokens
         self._max_tokens = max_tokens
+        self._temperature = temperature
+        self._top_p = top_p
+        self._frequency_penalty = frequency_penalty
+        self._presence_penalty = presence_penalty
+        self._seed = seed
 
     def _set_azure_openai_env_configuration_vars(self) -> None:
         self.deployment_environment_variable = "AZURE_OPENAI_CHAT_DEPLOYMENT"
@@ -83,15 +103,7 @@ class OpenAIChatTarget(OpenAITarget):
 
         messages = await self._build_chat_messages(prompt_req_res_entries)
         try:
-            resp_text = await self._complete_chat_async(
-                messages=messages,
-                max_completion_tokens=self._max_completion_tokens,
-                max_tokens=self._max_tokens,
-                top_p=self._top_p,
-                temperature=self._temperature,
-                frequency_penalty=self._frequency_penalty,
-                presence_penalty=self._presence_penalty,
-            )
+            resp_text = await self._complete_chat_async(messages=messages)
 
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
@@ -193,13 +205,7 @@ class OpenAIChatTarget(OpenAITarget):
     @pyrit_target_retry
     async def _complete_chat_async(
         self,
-        messages: list[ChatMessageListDictContent],
-        max_completion_tokens: Optional[int] | NotGiven = NOT_GIVEN,
-        max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
-        temperature: float = 1.0,
-        top_p: float = 1.0,
-        frequency_penalty: float = 0.0,
-        presence_penalty: float = 0.0,
+        messages: list[ChatMessageListDictContent]
     ) -> str:
         """
         Completes asynchronous chat request.
@@ -208,16 +214,6 @@ class OpenAIChatTarget(OpenAITarget):
 
         Args:
             messages (list[ChatMessageListDictContent]): The chat message objects containing the role and content.
-            max_completion_tokens (int, optional): An upper bound for the number of tokens to generate.
-            max_tokens (int, optional): The maximum number of tokens to generate.
-            temperature (float, optional): Controls randomness in the response generation.
-                Defaults to 1.0.
-            top_p (float, optional): Controls diversity of the response generation.
-                Defaults to 1.0.
-            frequency_penalty (float, optional): Controls the frequency of generating the same lines of text.
-                Defaults to 0.
-            presence_penalty (float, optional): Controls the likelihood to talk about new topics.
-                Defaults to 0.
 
         Returns:
             str: The generated response message.
@@ -225,14 +221,15 @@ class OpenAIChatTarget(OpenAITarget):
 
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
-            max_completion_tokens=max_completion_tokens,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty,
+            max_completion_tokens=self._max_completion_tokens,
+            max_tokens=self._max_tokens,
+            temperature=self._temperature,
+            top_p=self._top_p,
+            frequency_penalty=self._frequency_penalty,
+            presence_penalty=self._presence_penalty,
             n=1,
             stream=False,
+            seed=self._seed,
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
         )
         finish_reason = response.choices[0].finish_reason
