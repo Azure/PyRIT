@@ -87,5 +87,5 @@ with RedTeamingOrchestrator(
     use_score_as_feedback=True,
     verbose=True,
 ) as red_teaming_orchestrator:
-    score = await red_teaming_orchestrator.apply_attack_async(max_turns=3)  # type: ignore
+    score = await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await red_teaming_orchestrator.print_conversation()  # type: ignore

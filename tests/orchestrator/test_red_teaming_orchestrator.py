@@ -262,7 +262,7 @@ async def test_apply_attack_strategy_async(
         mock_send_prompt.return_value = MagicMock(response_error="none")
         mock_check_complete.return_value = MagicMock(get_value=MagicMock(return_value=True))
 
-        conversation_id = await red_teaming_orchestrator.apply_attack_async(max_turns=max_turns)
+        conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=max_turns)
 
         assert conversation_id is not None
         assert red_teaming_orchestrator._achieved_objective is True
@@ -290,7 +290,7 @@ async def test_apply_attack_strategy_async_blocked_response(
     with patch.object(red_teaming_orchestrator, "_retrieve_and_send_prompt_async") as mock_send_prompt:
         mock_send_prompt.return_value = MagicMock(response_error="blocked")
 
-        conversation_id = await red_teaming_orchestrator.apply_attack_async(max_turns=5)
+        conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=5)
 
         assert conversation_id is not None
         assert red_teaming_orchestrator._achieved_objective is False
@@ -298,7 +298,7 @@ async def test_apply_attack_strategy_async_blocked_response(
 
 
 @pytest.mark.asyncio
-async def test_apply_apply_attack_async_runtime_error(
+async def test_apply_run_attack_async_runtime_error(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
@@ -318,4 +318,4 @@ async def test_apply_apply_attack_async_runtime_error(
         mock_send_prompt.return_value = MagicMock(response_error="unexpected_error")
 
         with pytest.raises(RuntimeError):
-            await red_teaming_orchestrator.apply_attack_async(max_turns=5)
+            await red_teaming_orchestrator.run_attack_async(max_turns=5)

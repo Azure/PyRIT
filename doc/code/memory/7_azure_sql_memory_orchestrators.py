@@ -164,7 +164,7 @@ with RedTeamingOrchestrator(
     verbose=True,
     memory=memory,
 ) as orchestrator:
-    score = await orchestrator.apply_attack_async(max_turns=3)  # type: ignore
+    score = await orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await orchestrator.print_conversation()  # type: ignore
     id = orchestrator.get_identifier()
     print("identifier", id)

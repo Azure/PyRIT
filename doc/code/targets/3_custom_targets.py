@@ -83,7 +83,7 @@ with RedTeamingOrchestrator(
 ) as red_teaming_orchestrator:
 
     # Once the agents are set up, we can start the conversation.
-    await red_teaming_orchestrator.apply_attack_async(max_turns=3)  # type: ignore
+    await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await red_teaming_orchestrator.print_conversation()  # type: ignore
 
 
@@ -178,7 +178,7 @@ with (
 
     # Once the agents are set up, we can start the conversation.
     # In reality you probably want to use more than one turn.
-    await red_teaming_orchestrator.apply_attack_async(max_turns=3)  # type: ignore
+    await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await red_teaming_orchestrator.print_conversation()  # type: ignore
 
 # %% [markdown]

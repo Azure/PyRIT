@@ -81,7 +81,7 @@ class MultiTurnOrchestrator(Orchestrator):
                 self._objective_scorer._prompt_target._memory = self._memory
 
     @abstractmethod
-    async def apply_attack_async(
+    async def run_attack_async(
         self,
         *,
         max_turns: int = 5,

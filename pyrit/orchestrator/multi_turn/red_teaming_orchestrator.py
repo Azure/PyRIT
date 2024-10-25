@@ -78,7 +78,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
         self._use_score_as_feedback = use_score_as_feedback
 
-    async def apply_attack_async(
+    async def run_attack_async(
         self,
         *,
         max_turns: int = 5,

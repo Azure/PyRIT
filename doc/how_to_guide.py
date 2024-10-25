@@ -177,7 +177,7 @@ with RedTeamingOrchestrator(
 
     # Apply the attack strategy until the conversation objective is reached
     # or the maximum number of turns is reached.
-    await red_teaming_orchestrator.apply_attack_async(max_turns=5)  # type: ignore
+    await red_teaming_orchestrator.run_attack_async(max_turns=5)  # type: ignore
 
     # Alternatively, use send_prompt_async() to generate just a single turn of the attack strategy.
 
