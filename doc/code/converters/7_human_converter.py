@@ -83,9 +83,9 @@ with RedTeamingOrchestrator(
     prompt_converters=[hitl_converter],
     red_teaming_chat=red_teaming_chat,
     prompt_target=prompt_target,
-    scorer=scorer,
+    objective_scorer=scorer,
     use_score_as_feedback=True,
     verbose=True,
 ) as red_teaming_orchestrator:
-    score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    score = await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await red_teaming_orchestrator.print_conversation()  # type: ignore
