@@ -52,6 +52,8 @@ class MathPromptConverter(LLMGenericTextConverter):
         """
         logger.info(f"Converting prompt: {prompt}")
 
+        self._prompt_kwargs["prompt"] = prompt
+        
         # Get the base conversion from the parent class
         base_conversion_result = await super().convert_async(prompt=prompt, input_type=input_type)
 

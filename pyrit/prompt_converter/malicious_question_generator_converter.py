@@ -3,8 +3,8 @@
 
 import logging
 
-from pyrit.prompt_converter import LLMGenericTextConverter
-from pyrit.models import SeedPromptTemplate
+from pyrit.prompt_converter import LLMGenericTextConverter, ConverterResult
+from pyrit.models import PromptDataType, SeedPromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 
 from pyrit.common.path import DATASETS_PATH
@@ -37,3 +37,8 @@ class MaliciousQuestionGeneratorConverter(LLMGenericTextConverter):
         )
 
         super().__init__(converter_target=converter_target, prompt_template=prompt_template)
+
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        # Add the prompt to _prompt_kwargs before calling the base method
+        self._prompt_kwargs["prompt"] = prompt
+        return await super().convert_async(prompt=prompt, input_type=input_type)

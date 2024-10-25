@@ -44,9 +44,8 @@ class LLMGenericTextConverter(PromptConverter):
         conversation_id = str(uuid.uuid4())
 
         kwargs = self._prompt_kwargs.copy()
-        kwargs["prompt"] = prompt
 
-        system_prompt = self._prompt_template.apply_custom_metaprompt_parameters(**kwargs)
+        system_prompt = self._prompt_template.apply_parameters(**kwargs)
 
         self._converter_target.set_system_prompt(
             system_prompt=system_prompt,
