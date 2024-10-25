@@ -32,9 +32,9 @@ def data_serializer_factory(
         if data_type == "text":
             return TextDataTypeSerializer(prompt_text=value, memory=memory)
         elif data_type == "image_path":
-            return ImagePathDataTypeSerializer(prompt_text=value, memory=memory)
+            return ImagePathDataTypeSerializer(prompt_text=value, memory=memory, extension=extension)
         elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(prompt_text=value, memory=memory)
+            return AudioPathDataTypeSerializer(prompt_text=value, memory=memory, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value, memory=memory)
         elif data_type == "url":

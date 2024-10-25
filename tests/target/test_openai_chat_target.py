@@ -170,7 +170,7 @@ async def test_convert_image_to_data_url_success(
     assert "data:image/jpeg;base64,encoded_base64_string" in result
 
     # Assertions for the mocks
-    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name, memory=duckdb_in_memory)
+    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name, memory=duckdb_in_memory, extension=".jpg")
     mock_serializer_instance.read_data_base64.assert_called_once()
 
     os.remove(tmp_file_name)
