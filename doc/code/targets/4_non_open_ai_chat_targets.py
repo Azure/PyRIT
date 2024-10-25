@@ -32,7 +32,8 @@
 # 1. **Set the Environment Variable:**
 #    - Add the obtained API key to an environment variable named `AZURE_ML_KEY`. This is the default API key when the target is instantiated.
 #    - Add the obtained endpoint URI to an environment variable named `AZURE_ML_MANAGED_ENDPOINT`. This is the default endpoint URI when the target is instantiated.
-#    - If you'd like, feel free to make additional API key and endpoint URI environment variables in your .env file for different deployed models (e.g. Llama, Phi-3, Mistral, etc.)
+#    - If you'd like, feel free to make additional API key and endpoint URI environment variables in your .env file for different deployed models (e.g. mistralai-Mixtral-8x7B-Instruct-v01,
+#      Phi-3.5-MoE-instruct, Llama-3.2-3B-Instruct, etc.)
 #      and pass them in as arguments to the `_set_env_configuration_vars` function to interact with those models.
 #
 #

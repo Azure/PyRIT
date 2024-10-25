@@ -24,8 +24,10 @@ def sample_conversations() -> list[PromptRequestPiece]:
 @pytest.fixture
 def aml_online_chat() -> AzureMLChatTarget:
     aml_online_chat = AzureMLChatTarget(
-        endpoint_uri="http://aml-test-endpoint.com",
+        endpoint="http://aml-test-endpoint.com",
         api_key="valid_api_key",
+        extra_param1="sample",
+        extra_param2=1.0,
     )
     return aml_online_chat
 
@@ -33,18 +35,65 @@ def aml_online_chat() -> AzureMLChatTarget:
 def test_initialization_with_required_parameters(
     aml_online_chat: AzureMLChatTarget,
 ):
-    assert aml_online_chat.endpoint_uri == "http://aml-test-endpoint.com"
-    assert aml_online_chat.api_key == "valid_api_key"
+    assert aml_online_chat._endpoint == "http://aml-test-endpoint.com"
+    assert aml_online_chat._api_key == "valid_api_key"
+
+
+def test_initialization_with_extra_model_parameters(aml_online_chat: AzureMLChatTarget):
+    assert aml_online_chat._extra_parameters == {"extra_param1": "sample", "extra_param2": 1.0}
+
+
+def test_set_env_configuration_vars_with_default_env_vars(aml_online_chat: AzureMLChatTarget):
+    aml_online_chat._set_env_configuration_vars()
+    assert aml_online_chat.endpoint_uri_environment_variable == "AZURE_ML_MANAGED_ENDPOINT"
+    assert aml_online_chat.api_key_environment_variable == "AZURE_ML_KEY"
+
+
+def test_set_env_configuration_vars_initializes_vars(aml_online_chat: AzureMLChatTarget):
+    with patch("pyrit.prompt_target.azure_ml_chat_target.AzureMLChatTarget._initialize_vars") as mock_initialize_vars:
+        aml_online_chat._set_env_configuration_vars(
+            endpoint_uri_environment_variable="CUSTOM_ENDPOINT_ENV_VAR",
+            api_key_environment_variable="CUSTOM_API_KEY_ENV_VAR",
+        )
+        mock_initialize_vars.assert_called_once_with()
+
+
+def test_set_model_parameters_with_defaults(aml_online_chat: AzureMLChatTarget):
+    aml_online_chat._set_model_parameters()
+    assert aml_online_chat._max_new_tokens == 400
+    assert aml_online_chat._temperature == 1.0
+    assert aml_online_chat._top_p == 1.0
+    assert aml_online_chat._repetition_penalty == 1.0
+
+
+def test_set_model_parameters_with_custom_values(aml_online_chat: AzureMLChatTarget):
+    aml_online_chat._set_model_parameters(
+        max_new_tokens=500, temperature=0.8, top_p=0.9, repetition_penalty=1.2, custom_param="custom_value"
+    )
+    assert aml_online_chat._max_new_tokens == 500
+    assert aml_online_chat._temperature == 0.8
+    assert aml_online_chat._top_p == 0.9
+    assert aml_online_chat._repetition_penalty == 1.2
+    assert aml_online_chat._extra_parameters == {"custom_param": "custom_value"}
+
+
+def test_set_model_parameters_partial_update(aml_online_chat: AzureMLChatTarget):
+    aml_online_chat._set_model_parameters(temperature=0.5, custom_param="custom_value")
+    assert aml_online_chat._max_new_tokens == 400
+    assert aml_online_chat._temperature == 0.5
+    assert aml_online_chat._top_p == 1.0
+    assert aml_online_chat._repetition_penalty == 1.0
+    assert aml_online_chat._extra_parameters == {"custom_param": "custom_value"}
 
 
 def test_initialization_with_no_key_raises():
-    os.environ[AzureMLChatTarget.API_KEY_ENVIRONMENT_VARIABLE] = ""
+    os.environ[AzureMLChatTarget.api_key_environment_variable] = ""
     with pytest.raises(ValueError):
         AzureMLChatTarget(endpoint_uri="http://aml-test-endpoint.com")
 
 
 def test_initialization_with_no_api_raises():
-    os.environ[AzureMLChatTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
+    os.environ[AzureMLChatTarget.endpoint_uri_environment_variable] = ""
     with pytest.raises(ValueError):
         AzureMLChatTarget(api_key="xxxxx")
 

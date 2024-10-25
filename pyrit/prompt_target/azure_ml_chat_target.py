@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 class AzureMLChatTarget(PromptChatTarget):
 
-    endpoint_uri_environment_variable: str
-    api_key_environment_variable: str
+    endpoint_uri_environment_variable: str = "AZURE_ML_MANAGED_ENDPOINT"
+    api_key_environment_variable: str = "AZURE_ML_KEY"
 
     def __init__(
         self,
@@ -68,15 +68,12 @@ class AzureMLChatTarget(PromptChatTarget):
             **param_kwargs: Additional parameters to pass to the model for generating responses. Example
                 parameters can be found here: https://huggingface.co/docs/api-inference/tasks/text-generation.
                 Note that the link above may not be comprehensive, and specific acceptable parameters may be
-                model-dependent. If a model does not accept a certain parameter that is passed in, it will be ignored
+                model-dependent. If a model does not accept a certain parameter that is passed in, it will be skipped
                 without throwing an error.
         """
         PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
-        if endpoint and api_key:
-            self._initialize_vars(endpoint=endpoint, api_key=api_key)
-        else:
-            self._set_env_configuration_vars()
+        self._initialize_vars(endpoint=endpoint, api_key=api_key)
 
         self.chat_message_normalizer = chat_message_normalizer
         self._max_new_tokens = max_new_tokens
