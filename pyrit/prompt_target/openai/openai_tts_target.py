@@ -56,13 +56,12 @@ class OpenAITTSTarget(OpenAITarget):
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        body = {
+        body: dict[str, object] = {
             "model": self._model,
             "input": request.converted_value,
             "voice": self._voice,
             "file": self._response_format,
             "language": self._language,
-            "temperature": self._temperature,
         }
 
         self._extra_headers["api-key"] = self._api_key
