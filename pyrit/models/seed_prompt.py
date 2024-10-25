@@ -120,7 +120,7 @@ class SeedPromptTemplate(SeedPrompt):
         prompt_group_id: Optional[uuid.UUID] = None,
         sequence: Optional[int] = None,
     ):
-        if data_type != PromptDataType.TEXT:
+        if data_type != 'text':
             raise ValueError("SeedPromptTemplate must have data_type 'text'.")
         if not parameters:
             raise ValueError("SeedPromptTemplate must have parameters. Please provide at least one.")
@@ -150,7 +150,7 @@ class SeedPromptTemplate(SeedPrompt):
         if not all(param in kwargs for param in self.parameters):
             raise ValueError("Not all parameters were provided.")
         
-        return apply_parameters_to_template(self.value, **kwargs)
+        return apply_parameters_to_template(self.value, self.parameters, **kwargs)
 
 
 class SeedPromptGroup(YamlLoadable):
@@ -174,7 +174,7 @@ class SeedPromptGroup(YamlLoadable):
             self.prompts = prompts
         
         # Check sequence and sort the prompts in the same loop
-        if len(self.prompts) > 1:
+        if len(self.prompts) >= 1:
             self.prompts = sorted(
                 self.prompts, 
                 key=lambda prompt: self._validate_and_get_sequence(prompt)
