@@ -68,6 +68,6 @@ gcg_suffix_converter = SuffixAppendConverter(suffix=suffix)
 with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[gcg_suffix_converter]) as orchestrator:
     await orchestrator.send_prompts_async(  # type: ignore
         prompt_list=prompt_list,
-        max_retries=5,
+        max_retries_on_refusal=5,
     )
     await orchestrator.print_conversations()  # type: ignore
