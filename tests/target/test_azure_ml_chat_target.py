@@ -44,9 +44,11 @@ def test_initialization_with_extra_model_parameters(aml_online_chat: AzureMLChat
 
 
 def test_set_env_configuration_vars_with_default_env_vars(aml_online_chat: AzureMLChatTarget):
-    aml_online_chat._set_env_configuration_vars()
-    assert aml_online_chat.endpoint_uri_environment_variable == "AZURE_ML_MANAGED_ENDPOINT"
-    assert aml_online_chat.api_key_environment_variable == "AZURE_ML_KEY"
+    with patch("pyrit.prompt_target.azure_ml_chat_target.AzureMLChatTarget._initialize_vars") as mock_initialize_vars:
+        aml_online_chat._set_env_configuration_vars()
+        assert aml_online_chat.endpoint_uri_environment_variable == "AZURE_ML_MANAGED_ENDPOINT"
+        assert aml_online_chat.api_key_environment_variable == "AZURE_ML_KEY"
+        mock_initialize_vars.assert_called_once_with()
 
 
 def test_set_env_configuration_vars_initializes_vars(aml_online_chat: AzureMLChatTarget):
