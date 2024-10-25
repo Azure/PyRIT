@@ -16,15 +16,15 @@ logger = logging.getLogger(__name__)
 class OpenAICompletionTarget(OpenAITarget):
 
     def __init__(
-            self,
-            max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
-            temperature: float = 1.0,
-            top_p: float = 1.0,
-            frequency_penalty: float = 0.0,
-            presence_penalty: float = 0.0,
-            *args,
-            **kwargs
-        ):
+        self,
+        max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
+        *args,
+        **kwargs,
+    ):
         """
         Args:
             max_tokens (int, optional): The maximum number of tokens that can be generated in the

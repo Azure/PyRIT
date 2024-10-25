@@ -203,10 +203,7 @@ class OpenAIChatTarget(OpenAITarget):
         return response_message
 
     @pyrit_target_retry
-    async def _complete_chat_async(
-        self,
-        messages: list[ChatMessageListDictContent]
-    ) -> str:
+    async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
         """
         Completes asynchronous chat request.
 
