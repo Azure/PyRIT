@@ -31,11 +31,5 @@ def apply_parameters_to_template(
         #  {{   key    }}
         #  ^^^^^^^^^^^^^^
         regex = f"{{{{ *{key} *}}}}"
-        matches = re.findall(pattern=regex, string=final_prompt)
-        if not matches:
-            raise ValueError(
-                f"No parameters matched, they might be missing in the template. "
-                f'[expected="{parameters}", actual="{kwargs}"]'
-            )
         final_prompt = re.sub(pattern=regex, string=final_prompt, repl=str(value))
     return final_prompt
