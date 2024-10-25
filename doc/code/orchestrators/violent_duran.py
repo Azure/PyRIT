@@ -125,10 +125,10 @@ with RedTeamingOrchestrator(
     red_teaming_chat=red_teaming_llm,
     prompt_target=prompt_target,
     initial_red_teaming_prompt=initial_prompt,  # The first prompt introduces the Violent Durian persona
-    scorer=scorer,
+    objective_scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
     # Run the multi-turn attack strategy
-    score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    score = await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
     # Print the conversation log for review
     await red_teaming_orchestrator.print_conversation()  # type: ignore
