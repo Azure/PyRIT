@@ -28,7 +28,8 @@ from pyrit.prompt_target import OpenAICompletionTarget
 
 default_values.load_default_env()
 
-target = OpenAICompletionTarget()
+# Note that max_tokens will default to 16 for completions, so you may want to set the upper limit of allowed tokens for a longer response.
+target = OpenAICompletionTarget(max_tokens=2048)
 
 with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=["Hello! Who are you?"])  # type: ignore
