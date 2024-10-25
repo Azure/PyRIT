@@ -122,8 +122,6 @@ class SeedPromptTemplate(SeedPrompt):
     ):
         if data_type != 'text':
             raise ValueError("SeedPromptTemplate must have data_type 'text'.")
-        if not parameters:
-            raise ValueError("SeedPromptTemplate must have parameters. Please provide at least one.")
         super().__init__(
             id=id,
             value=value,

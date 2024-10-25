@@ -54,13 +54,6 @@ def test_seed_prompt_template_initialization():
             parameters=["param1"]
         )
 
-    with pytest.raises(ValueError, match="SeedPromptTemplate must have parameters. Please provide at least one."):
-        SeedPromptTemplate(
-            value="Test Template",
-            data_type='text',
-            parameters=[]  # No parameters provided
-        )
-
 
 def test_seed_prompt_template_apply_parameters_success(seed_prompt_fixture):
     seed_prompt_fixture.value = 'Test prompt with param1={{ param1 }}'

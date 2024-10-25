@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import AsyncMock
 
 from pyrit.prompt_converter import ConverterResult
-from pyrit.models import PromptTemplate, PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 
 

@@ -421,12 +421,12 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPrompt
     return dataset
 
 
-def fetch_llm_latent_adversarial_training_harmful_dataset() -> PromptDataset:
+def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedPromptDataset:
     data = load_dataset("LLM-LAT/harmful-dataset", "default")
 
     prompts = [item["prompt"] for item in data["train"]]
 
-    dataset = PromptDataset(
+    dataset = SeedPromptDataset(
         name="LLM-LAT/harmful-dataset",
         source="https://huggingface.co/datasets/LLM-LAT/harmful-dataset",
         harm_category="",
@@ -437,19 +437,19 @@ def fetch_llm_latent_adversarial_training_harmful_dataset() -> PromptDataset:
     return dataset
 
 
-def fetch_tdc23_redteaming_dataset() -> PromptDataset:
+def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
     """
-    Fetch TDC23-RedTeaming examples and create a PromptDataset.
+    Fetch TDC23-RedTeaming examples and create a SeedPromptDataset.
 
     Returns:
-        PromptDataset: A PromptDataset containing the examples.
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
     """
     # Load the TDC23-RedTeaming dataset
     data = load_dataset("walledai/TDC23-RedTeaming", "default")
 
     prompts = [item["prompt"] for item in data["train"]]
 
-    dataset = PromptDataset(
+    dataset = SeedPromptDataset(
         name="walledai/TDC23-RedTeaming",
         source="https://huggingface.co/datasets/walledai/TDC23-RedTeaming",
         harm_category="",

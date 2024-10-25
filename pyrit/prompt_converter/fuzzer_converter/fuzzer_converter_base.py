@@ -42,7 +42,7 @@ class FuzzerConverter(PromptConverter):
 
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPromptTemplate = None):
         self.converter_target = converter_target
-        self.system_prompt = prompt_template.template
+        self.system_prompt = prompt_template.value
         self.template_label = "TEMPLATE"
 
     def update(self, **kwargs) -> None:

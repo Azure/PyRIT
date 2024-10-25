@@ -1084,6 +1084,7 @@ def test_add_seed_prompt_groups_to_memory_multiple_elements_with_added_by(memory
     memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
     assert len(memory.get_seed_prompts()) == 2
 
+
 def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(memory: MemoryInterface):
     prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
     prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
@@ -1101,5 +1102,104 @@ def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(memory: 
     assert groups_from_memory[0].prompts[0].prompt_group_id == groups_from_memory[0].prompts[1].prompt_group_id
     assert groups_from_memory[1].prompts[0].prompt_group_id == groups_from_memory[1].prompts[1].prompt_group_id
 
-# TODO: add tests for get_prompt_templates
-# TODO: add tests for get_seed_prompt_groups
+
+def test_get_seed_prompt_templates_no_parameters(memory: MemoryInterface):
+    with pytest.raises(ValueError, match="Prompt templates must have parameters. Please specify at least one."):
+        memory.get_seed_prompt_templates(parameters=[])
+        
+
+def test_get_seed_prompt_templates_with_value_filter(memory: MemoryInterface):
+    template_value = "Test template {{param1}}"
+    dataset_name = "dataset_1"
+    parameters = ["param1"]
+    template = SeedPromptTemplate(value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text")
+    memory.add_seed_prompts_to_memory(prompts=[template])
+
+    templates = memory.get_seed_prompt_templates(value=template_value, parameters=parameters)
+    assert len(templates) == 1
+    assert templates[0].value == template_value
+
+
+def test_get_seed_prompt_templates_with_multiple_filters(memory: MemoryInterface):
+    template_value = "Test template {{param1}}"
+    dataset_name = "dataset_1"
+    harm_categories = ["category1"]
+    added_by = "tester"
+    parameters = ["param1"]
+    template = SeedPromptTemplate(value=template_value, dataset_name=dataset_name, parameters=parameters, harm_categories=harm_categories, added_by=added_by, data_type="text")
+    memory.add_seed_prompts_to_memory(prompts=[template])
+
+    templates = memory.get_seed_prompt_templates(
+        value=template_value,
+        dataset_name=dataset_name,
+        harm_categories=harm_categories,
+        added_by=added_by,
+        parameters=parameters,
+    )
+    assert len(templates) == 1
+    assert templates[0].value == template_value
+
+
+def test_get_seed_prompt_groups_empty(memory: MemoryInterface):
+    assert memory.get_seed_prompt_groups() == []
+
+
+def test_get_seed_prompt_groups_with_dataset_name(memory: MemoryInterface):
+    dataset_name = "test_dataset"
+    prompt_group = SeedPromptGroup(prompts=[
+        SeedPrompt(value="Test prompt", dataset_name=dataset_name, added_by="tester", data_type="text", sequence=0)
+    ])
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
+
+    groups = memory.get_seed_prompt_groups(dataset_name=dataset_name)
+    assert len(groups) == 1
+    assert groups[0].prompts[0].dataset_name == dataset_name
+
+
+def test_get_seed_prompt_groups_with_multiple_filters(memory: MemoryInterface):
+    dataset_name = "dataset_1"
+    data_types = ["text"]
+    harm_categories = ["category1"]
+    added_by = "tester"
+    group = SeedPromptGroup(prompts=[
+        SeedPrompt(value="Test prompt", dataset_name=dataset_name, harm_categories=harm_categories, added_by=added_by, sequence=0, data_type="text")
+    ])
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[group])
+
+    groups = memory.get_seed_prompt_groups(
+        dataset_name=dataset_name,
+        data_types=data_types,
+        harm_categories=harm_categories,
+        added_by=added_by,
+    )
+    assert len(groups) == 1
+    assert groups[0].prompts[0].dataset_name == dataset_name
+    assert groups[0].prompts[0].added_by == added_by
+
+
+def test_get_seed_prompt_groups_multiple_groups(memory: MemoryInterface):
+    group1 = SeedPromptGroup(prompts=[
+        SeedPrompt(value="Prompt 1", dataset_name="dataset_1", added_by="user1", sequence=0, data_type="text")
+    ])
+    group2 = SeedPromptGroup(prompts=[
+        SeedPrompt(value="Prompt 2", dataset_name="dataset_2", added_by="user2", sequence=0, data_type="text")
+    ])
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[group1, group2])
+
+    groups = memory.get_seed_prompt_groups()
+    assert len(groups) == 2
+
+
+def test_get_seed_prompt_groups_multiple_groups_with_unique_ids(memory: MemoryInterface):
+    group1 = SeedPromptGroup(prompts=[
+        SeedPrompt(value="Prompt 1", dataset_name="dataset_1", added_by="user1", sequence=0, data_type="text")
+    ])
+    group2 = SeedPromptGroup(prompts=[
+        SeedPrompt(value="Prompt 2", dataset_name="dataset_2", added_by="user2", sequence=0, data_type="text")
+    ])
+    memory.add_seed_prompt_groups_to_memory(prompt_groups=[group1, group2])
+
+    groups = memory.get_seed_prompt_groups()
+    assert len(groups) == 2
+    # Check that each group has a unique prompt_group_id
+    assert groups[0].prompts[0].prompt_group_id != groups[1].prompts[0].prompt_group_id
