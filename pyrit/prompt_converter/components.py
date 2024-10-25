@@ -12,7 +12,7 @@ import spacy
 import yaml
 import numpy as np
 import pandas as pd
-import streamlit as st
+# import streamlit as st
 from scipy.spatial.distance import cosine
 import nltk
 from nltk.corpus import wordnet
@@ -53,40 +53,42 @@ def set_seeds(seed):
 
 def _init_styling(annotate_unrelated_failures=True):
     # Styling
-    st.markdown("""
-        <style>
-            .streamlit-wide
-            .appview-container
-            .main
-            .block-container {
-                max-width: 70%;
-            }
+    pass
+    # st.markdown("""
+    #     <style>
+    #         .streamlit-wide
+    #         .appview-container
+    #         .main
+    #         .block-container {
+    #             max-width: 70%;
+    #         }
             
-            textarea {
-                font-family: "Source Code Pro", monospace !important;
-            }
-        </style>""",
-        unsafe_allow_html=True
-    )
+    #         textarea {
+    #             font-family: "Source Code Pro", monospace !important;
+    #         }
+    #     </style>""",
+    #     unsafe_allow_html=True
+    # )
 
     if annotate_unrelated_failures:
         annotator_css = Path("./annotator.css").read_text() # TODO: memoize?
-        st.markdown(f"<style>{annotator_css}</style>", unsafe_allow_html=True)
+        # st.markdown(f"<style>{annotator_css}</style>", unsafe_allow_html=True)
 
 
 def _init_state():
     # Init states
-    if "max_completed_step" not in st.session_state:
-        st.session_state["max_completed_step"] = 0
-    if "do_fit" not in st.session_state:
-        st.session_state["do_fit"] = True
-    if "num_prior_annotations" not in st.session_state:
-        st.session_state["num_prior_annotations"] = 0
-    if "session_id" not in st.session_state:
-        st.session_state["session_id"] = datetime.now().isoformat(timespec="minutes", sep="-").replace(":", "")
+    pass
+    # if "max_completed_step" not in st.session_state:
+    #     st.session_state["max_completed_step"] = 0
+    # if "do_fit" not in st.session_state:
+    #     st.session_state["do_fit"] = True
+    # if "num_prior_annotations" not in st.session_state:
+    #     st.session_state["num_prior_annotations"] = 0
+    # if "session_id" not in st.session_state:
+    #     st.session_state["session_id"] = datetime.now().isoformat(timespec="minutes", sep="-").replace(":", "")
 
 
-@st.cache_data(show_spinner=False)
+# @st.cache_data(show_spinner=False)
 def init_output_dir(output_dir, utterance, session_id, config):
     """
     Create a new output directory
@@ -118,49 +120,50 @@ def init_output_dir(output_dir, utterance, session_id, config):
 # will advance (i.e., increment by 1) both the `max_completed_step` and `CURRENT_STEP`
 def _reset_to_step(step):
     def _reset_max_step():
-        st.session_state["max_completed_step"] = step
+        pass
+        # st.session_state["max_completed_step"] = step
     return _reset_max_step
 
-def _proceed_to_next_step(current_step, label="Continue"):
-    before_last_completed_step = current_step < st.session_state["max_completed_step"]
-    proceed = st.button(
-        label,
-        on_click=_reset_to_step(current_step+1),
-        disabled=before_last_completed_step,
-        key=f"continue_from_step_{current_step}",
-    )
-    if proceed or before_last_completed_step:
-        return current_step + 1
-    else:
-        st.stop()
+# def _proceed_to_next_step(current_step, label="Continue"):
+#     before_last_completed_step = current_step < st.session_state["max_completed_step"]
+#     proceed = st.button(
+#         label,
+#         on_click=_reset_to_step(current_step+1),
+#         disabled=before_last_completed_step,
+#         key=f"continue_from_step_{current_step}",
+#     )
+#     if proceed or before_last_completed_step:
+#         return current_step + 1
+#     else:
+#         st.stop()
 
-def _submit_form_and_proceed_to_next_step(current_step):
-    before_last_completed_step = current_step < st.session_state["max_completed_step"]
-    proceed = st.form_submit_button(
-        "Submit",
-        on_click=_reset_to_step(current_step+1),
-    )
-    if proceed or before_last_completed_step:
-        return current_step + 1
-    else:
-        st.stop()
+# def _submit_form_and_proceed_to_next_step(current_step):
+#     before_last_completed_step = current_step < st.session_state["max_completed_step"]
+#     proceed = st.form_submit_button(
+#         "Submit",
+#         on_click=_reset_to_step(current_step+1),
+#     )
+#     if proceed or before_last_completed_step:
+#         return current_step + 1
+#     else:
+#         st.stop()
 
 ####################
 # Interface elements
 ####################
-def few_shot_editor(label, few_shot_exemplars, **kwargs):
-    """
-    Edit few-shot model examples in the interface
-    """
-    if "height" not in kwargs:
-        kwargs["height"] = len(few_shot_exemplars) * 24
-    few_shot_str = json.dumps(few_shot_exemplars, indent=2)
-    few_shot_edited = st.text_area(label, few_shot_str, **kwargs)
-    try:
-        return json.loads(few_shot_edited)
-    except json.JSONDecodeError:
-        st.error("json decoding failed. Is there a trailing comma?")
-        st.stop()
+# def few_shot_editor(label, few_shot_exemplars, **kwargs):
+#     """
+#     Edit few-shot model examples in the interface
+#     """
+#     if "height" not in kwargs:
+#         kwargs["height"] = len(few_shot_exemplars) * 24
+#     few_shot_str = json.dumps(few_shot_exemplars, indent=2)
+#     few_shot_edited = st.text_area(label, few_shot_str, **kwargs)
+#     try:
+#         return json.loads(few_shot_edited)
+#     except json.JSONDecodeError:
+#         st.error("json decoding failed. Is there a trailing comma?")
+#         st.stop()
 
 
 # def build_annotator_aggrid(df, pre_selected_idx=None, cols_to_display=None):
@@ -198,52 +201,53 @@ def few_shot_editor(label, few_shot_exemplars, **kwargs):
 #     return df
 
 
-def build_annotator_radio(df, text_row="inst", show_claim=True):
-    """
-    Annotate a dataframe with st.radio. Need to load `annotator.css` for improved
-    display
-    """
-    row_buttons = []
-    failure_opts = {0: "✔️", 1: "❌", 2: "❓"}
-    with st.container():
-        st.write(
-            f"Label examples. Use {failure_opts[0]} for a **passing** test, "
-            f"{failure_opts[1]} for a **related failing test**, and"
-            f"{failure_opts[2]} for an **unrelated failing test**."
-        )
-        for idx, row in df.iterrows():
-            if show_claim:
-                label = f"*{row.claim}* → {row[text_row]}"
-            else:
-                label = row[text_row]
-            row_buttons.append(
-                st.radio(
-                    label=label,
-                    index=int(getattr(row, "pred", 0)),
-                    options=failure_opts, 
-                    format_func=lambda x: failure_opts[x],
-                    horizontal=True,
-                )
-            )
-    df["label"] = row_buttons
-    return df
+# def build_annotator_radio(df, text_row="inst", show_claim=True):
+#     """
+#     Annotate a dataframe with st.radio. Need to load `annotator.css` for improved
+#     display
+#     """
+#     row_buttons = []
+#     failure_opts = {0: "✔️", 1: "❌", 2: "❓"}
+#     with st.container():
+#         st.write(
+#             f"Label examples. Use {failure_opts[0]} for a **passing** test, "
+#             f"{failure_opts[1]} for a **related failing test**, and"
+#             f"{failure_opts[2]} for an **unrelated failing test**."
+#         )
+#         for idx, row in df.iterrows():
+#             if show_claim:
+#                 label = f"*{row.claim}* → {row[text_row]}"
+#             else:
+#                 label = row[text_row]
+#             row_buttons.append(
+#                 st.radio(
+#                     label=label,
+#                     index=int(getattr(row, "pred", 0)),
+#                     options=failure_opts, 
+#                     format_func=lambda x: failure_opts[x],
+#                     horizontal=True,
+#                 )
+#             )
+#     df["label"] = row_buttons
+#     return df
 
 
 ################
 # Loaders
 ################
-@st.cache_resource
+# @st.cache_resource
 def load_spacy(spacy_model="en_core_web_sm"):
     return spacy.load(spacy_model)
 
 
-@st.cache_resource
+# @st.cache_resource
 def load_fasttext():
     if not Path(f"cc.en.300.bin").exists():
-        st.write("One-time download of fasttext model...")
+        # st.write("One-time download of fasttext model...")
         fasttext.util.download_model('en', if_exists='ignore')
     return fasttext.load_model("./cc.en.300.bin")
 
+session_state = {}
 
 def load_classifier(
     classifier_type,
@@ -258,14 +262,14 @@ def load_classifier(
     We do not use `@st.cache_resource` because model parameters are updated
     and therefore not thread-safe
     """
-    if "claim_classifier" not in st.session_state:
+    if "claim_classifier" not in session_state:
         if classifier_type == "cross_encoder":
-            st.session_state["claim_classifier"] = ClaimClassifierCE(
+            session_state["claim_classifier"] = ClaimClassifierCE(
                 model_type=classifier_encoder_model,
                 predict_without_fit=True,
             )
         elif classifier_type == "setfit":
-            st.session_state["claim_classifier"] = ClaimClassifierSF(
+            session_state["claim_classifier"] = ClaimClassifierSF(
                 model_type=classifier_encoder_model,
                 use_differentiable_head=use_differentiable_head,
                 num_iterations=num_iterations,
@@ -275,10 +279,10 @@ def load_classifier(
             )
         else:
             raise NotImplementedError("Classifier type must be either `setfit` or `cross_encoder`")
-    return st.session_state["claim_classifier"]
+    return session_state["claim_classifier"]
 
 
-@st.cache_resource
+# @st.cache_resource
 def load_tokenizer(model_type):
     return AutoTokenizer.from_pretrained(model_type)
 
@@ -294,7 +298,7 @@ class EOSStoppingCriteria(StoppingCriteria):
         return any(t in last_token for t in self.eos_tokens)
 
 
-@st.cache_resource(show_spinner="Loading target generator...")
+# @st.cache_resource(show_spinner="Loading target generator...")
 def load_hf_generator(model_type):
     tokenizer = load_tokenizer(model_type)
     eos_stopping_criteria = EOSStoppingCriteria(["\n", "."], tokenizer)
@@ -319,7 +323,7 @@ def load_hf_generator(model_type):
 ##################
 # Data processing
 ##################
-@st.cache_data
+# @st.cache_data
 def _store_annotations(gen_df, target_model, is_test=True):
     """
     Store the labels in the streamlit session state, `is_test` is an indicator
@@ -330,14 +334,14 @@ def _store_annotations(gen_df, target_model, is_test=True):
         gen_df.dropna(subset=["label"]) # drop any unlabeled data
               .assign(is_test=is_test, target_model=target_model)
     )
-    if "annotated" not in st.session_state:
-        st.session_state["annotated"] = gen_df
-    else:
-        # add annotations to a persistent state
-        st.session_state["annotated"] = (
-            pd.concat([st.session_state["annotated"], gen_df])
-              .drop_duplicates(subset=["claim", "inst"], keep="last")
-        )
+    # if "annotated" not in st.session_state:
+    #     st.session_state["annotated"] = gen_df
+    # else:
+    #     # add annotations to a persistent state
+    #     st.session_state["annotated"] = (
+    #         pd.concat([st.session_state["annotated"], gen_df])
+    #           .drop_duplicates(subset=["claim", "inst"], keep="last")
+    #     )
 
 
 def store_annotations(gen_df, target_model, is_test=True):
@@ -357,14 +361,14 @@ def build_completion_df(test_data, completions, target_model):
         columns=["claim", "inst", "completion", "target"],
     )
     completion_df = completion_df.drop_duplicates(subset=["claim", "inst"])
-    if "annotated" in st.session_state:
-        # TODO: merging is probably slow---see if possible to speed up (poss w/ index)
-        annotated_df = st.session_state["annotated"]
-        completion_df["is_test"] = True
-        completion_df["target_model"] = target_model
-        completion_df = completion_df.merge(
-            annotated_df, how="outer", on=["claim", "inst", "is_test", "target_model"]
-        )
+    # if "annotated" in st.session_state:
+    #     # TODO: merging is probably slow---see if possible to speed up (poss w/ index)
+    #     annotated_df = st.session_state["annotated"]
+    #     completion_df["is_test"] = True
+    #     completion_df["target_model"] = target_model
+    #     completion_df = completion_df.merge(
+    #         annotated_df, how="outer", on=["claim", "inst", "is_test", "target_model"]
+    #     )
     
     return completion_df
 
@@ -441,7 +445,7 @@ def generate_inferences(claim, predicates, grammars):
 
  
 # Based on similar words
-@st.cache_data
+# @st.cache_data
 def find_related_claims(claim, predicates, _ft_model=None, subj=True, obj=True, k=10):
     
     # extract the triple
@@ -474,7 +478,7 @@ def find_related_words(word, ft_model=None, ft_k=10, wn_k=20):
     # populate nearest vectors
     nns = []
     k_attempt = ft_k
-    punct = re.compile("[\.,!\-]")
+    punct = re.compile(r"[\.,!\-]")
     while len(nns) < ft_k and k_attempt < 10_000:
         nns = [
             w for _, w in ft_model.get_nearest_neighbors(word, k=k_attempt)
@@ -498,7 +502,7 @@ def find_related_words(word, ft_model=None, ft_k=10, wn_k=20):
     return data
 
 
-@st.cache_data
+# @st.cache_data
 def correct_grammar_with_gpt3(phrase, seed=11235, engine="gpt-3.5-turbo-instruct"):
     """Render a phrase grammatically correct w/ GPT-3"""
     grammar_cmd = "Change the language of the statement to standard English:"
@@ -516,7 +520,7 @@ def correct_grammar_with_gpt3(phrase, seed=11235, engine="gpt-3.5-turbo-instruct
 #####################
 # Test creation
 #####################
-@st.cache_data(show_spinner="Creating tests with GPT-3...")
+# @st.cache_data(show_spinner="Creating tests with GPT-3...")
 def truncate_text_by_length(texts, _tokenizer=None, n=0.5, by_tokens=True):
     """
     Truncate input text to create a prompt. If `n` is an integer, used
@@ -540,7 +544,7 @@ def truncate_text_by_length(texts, _tokenizer=None, n=0.5, by_tokens=True):
     return prompts_and_targets
 
 
-@st.cache_data
+# @st.cache_data
 def truncate_text_by_root(texts, _spacy_model="en_core_web_sm", use_last_root=True):
     """
     Truncate input text based on the root verb to create a prompt.
@@ -563,7 +567,7 @@ def truncate_text_by_root(texts, _spacy_model="en_core_web_sm", use_last_root=Tr
     return prompts_and_targets
 
 
-@st.cache_data(show_spinner="Truncating with GPT-3...")
+# @st.cache_data(show_spinner="Truncating with GPT-3...")
 def truncate_text_with_gpt3(
     texts, claims, instruction=None, few_shot_exemplars=None, engine="text-danvinci-002"
     ):
@@ -597,7 +601,7 @@ def truncate_text_with_gpt3(
     return prompts_and_targets
 
 
-@st.cache_data(show_spinner="Generating tests...")
+# @st.cache_data(show_spinner="Generating tests...")
 def generate_from_prompts_hf(prompts, _generator, repeats=1):
     """
     Generate text from `_generator` using the prompts
@@ -617,13 +621,13 @@ def generate_from_prompts_gpt3(prompts, engine, repeats=1, use_pb=True):
     # TODO: move to `prompt_openai.py`, clean up
     batch_size = prompt_openai._OPENAI_MAX_PROMPTS
     completions = []
-    if use_pb:
-        pb = st.progress(0.)
+    # if use_pb:
+    #     pb = st.progress(0.)
     for idx in range(0, len(prompts), batch_size):
         test_batch = prompts[idx:idx+batch_size]
         completions.extend(prompt_openai.complete_prompt(test_batch, n=repeats, top_p=0.95, max_tokens=50, engine=engine))
-        if use_pb:
-            pb.progress((min(len(prompts), idx+batch_size))/len(prompts))
+        # if use_pb:
+        #     pb.progress((min(len(prompts), idx+batch_size))/len(prompts))
     return [
         tuple(c for c, logp in completions[j:j+repeats])
         for j in range(0, len(completions), repeats)

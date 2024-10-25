@@ -22,7 +22,7 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult, config, uti
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 config_path = pathlib.Path(__file__).parent / '_default.yaml'
 config = config.load_config(config_path)
@@ -219,16 +219,17 @@ class ClaimConverter(PromptConverter):
 
         # Build dataframe to label and retrieve existing annotations
         completion_df = components.build_completion_df(test_data, completions, target_model)
-        completion_df["label"] = True # FIXME
+       
         # Predict which completions are failures
-        completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=True)
+        # completion_df["label"] = None
+        # completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
 
         # calculate margin from random (closer to 0.5->more uncertain)
-        completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
+        # completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
         # ignore already-labeled data
-        completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
+        # completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
 
-        response_msg = completion_df["completion"][0]
+        response_msg = completion_df["inst"][0]
 
         # response_msg = await self.send_variation_prompt_async(request)
 
