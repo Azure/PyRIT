@@ -237,7 +237,7 @@ async def test_is_conversation_complete_scoring_non_bool():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("max_turns", [1, 3, 5])
-async def test_apply_attack_strategy_until_completion_async(
+async def test_apply_attack_strategy_async(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
@@ -262,9 +262,7 @@ async def test_apply_attack_strategy_until_completion_async(
         mock_send_prompt.return_value = MagicMock(response_error="none")
         mock_check_complete.return_value = MagicMock(get_value=MagicMock(return_value=True))
 
-        conversation_id = await red_teaming_orchestrator.apply_attack_async(
-            max_turns=max_turns
-        )
+        conversation_id = await red_teaming_orchestrator.apply_attack_async(max_turns=max_turns)
 
         assert conversation_id is not None
         assert red_teaming_orchestrator._achieved_objective is True
@@ -273,7 +271,7 @@ async def test_apply_attack_strategy_until_completion_async(
 
 
 @pytest.mark.asyncio
-async def test_apply_attack_strategy_until_completion_async_blocked_response(
+async def test_apply_attack_strategy_async_blocked_response(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,
@@ -300,7 +298,7 @@ async def test_apply_attack_strategy_until_completion_async_blocked_response(
 
 
 @pytest.mark.asyncio
-async def test_apply_attack_strategy_until_completion_async_runtime_error(
+async def test_apply_apply_attack_async_runtime_error(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
     simple_attack_strategy: AttackStrategy,

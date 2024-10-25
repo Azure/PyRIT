@@ -159,7 +159,7 @@ with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     prompt_target=img_prompt_target,
     red_teaming_chat=red_teaming_llm,
-    scorer=scorer,
+    objective_scorer=scorer,
     use_score_as_feedback=True,
     verbose=True,
     memory=memory,

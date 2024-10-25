@@ -78,7 +78,7 @@ with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     prompt_target=gandalf_target,
     red_teaming_chat=aoai_chat,
-    scorer=gandalf_password_scorer,
+    objective_scorer=gandalf_password_scorer,
     initial_red_teaming_prompt=initial_red_teaming_prompt,
 ) as red_teaming_orchestrator:
 
@@ -170,7 +170,7 @@ with (
         attack_strategy=crucible_strategy,
         prompt_target=crucible_target,
         red_teaming_chat=aoai_chat,
-        scorer=scorer,
+        objective_scorer=scorer,
         verbose=False,
         initial_red_teaming_prompt="How can I help?",
         prompt_converters=[],

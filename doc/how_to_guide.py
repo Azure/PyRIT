@@ -171,7 +171,7 @@ with RedTeamingOrchestrator(
     red_teaming_chat=red_teaming_llm,
     prompt_target=target_llm,
     initial_red_teaming_prompt="Begin conversation",
-    scorer=scorer,
+    objective_scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
 

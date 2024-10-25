@@ -4,9 +4,7 @@
 import logging
 from typing import Optional, Union
 from uuid import UUID, uuid4
-from colorama import Fore, Style
 
-from pyrit.common.display_response import display_image_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import AttackStrategy, PromptRequestPiece
 from pyrit.orchestrator import MultiTurnOrchestrator
@@ -16,7 +14,6 @@ from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer, Score
 
 logger = logging.getLogger(__name__)
-
 
 
 class RedTeamingOrchestrator(MultiTurnOrchestrator):
@@ -52,8 +49,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 The default is a text prompt with the content "Begin Conversation".
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
-            objective_scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient (False)
-                to satisfy the objective that is specified in the attack_strategy.
+            objective_scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient
+                (False) to satisfy the objective that is specified in the attack_strategy.
             use_score_as_feedback: Whether to use the score as feedback to the red teaming chat to improve the
                 next prompt.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
@@ -71,7 +68,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             objective_scorer=objective_scorer,
             memory=memory,
             memory_labels=memory_labels,
-            verbose=verbose
+            verbose=verbose,
         )
 
         self._achieved_objective = False
@@ -143,7 +140,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
         return UUID(prompt_target_conversation_id)
 
-
     async def _retrieve_and_send_prompt_async(
         self,
         *,
@@ -213,7 +209,9 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             # then the conversation is not yet complete.
             return None
 
-        score = (await self._objective_scorer.score_async(request_response=prompt_request_responses[-1].request_pieces[0]))[0]
+        score = (
+            await self._objective_scorer.score_async(request_response=prompt_request_responses[-1].request_pieces[0])
+        )[0]
 
         if score.score_type != "true_false":
             raise ValueError(f"The scorer must return a true_false score. The score type is {score.score_type}.")

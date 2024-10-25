@@ -3,18 +3,17 @@
 
 from abc import abstractmethod
 import logging
-from typing import Optional, Union
-from uuid import UUID, uuid4
+from typing import Optional
+from uuid import UUID
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import MemoryInterface
-from pyrit.models import AttackStrategy, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.score import Scorer, Score
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +44,8 @@ class MultiTurnOrchestrator(Orchestrator):
                 The default is a text prompt with the content "Begin Conversation".
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
-            objective_scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient (False)
-                to satisfy the objective that is specified in the attack_strategy.
+            objective_scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient
+                (False) to satisfy the objective that is specified in the attack_strategy.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
                 These labels can be used to track all prompts sent as part of an operation, score prompts based on
@@ -68,10 +67,11 @@ class MultiTurnOrchestrator(Orchestrator):
         self._red_teaming_chat._memory = self._memory
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
         if not self._initial_red_teaming_prompt:
-            raise ValueError("The initial red teaming prompt cannot be empty.")\
-
+            raise ValueError("The initial red teaming prompt cannot be empty.")
         if objective_scorer.scorer_type != "true_false":
-            raise ValueError(f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}.")
+            raise ValueError(
+                f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
+            )
         self._objective_scorer = objective_scorer
 
         # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
