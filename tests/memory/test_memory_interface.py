@@ -919,6 +919,7 @@ def test_get_seed_prompts_with_multiple_elements_list_filters(memory: MemoryInte
     assert result[0].harm_categories == ["category1", "category2"]
     assert result[0].authors == ["author1", "author2"]
 
+
 def test_get_seed_prompts_with_multiple_elements_list_filters_additional(memory: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", harm_categories=["category1", "category2"], authors=["author1", "author2"], data_type="text"),
@@ -931,6 +932,7 @@ def test_get_seed_prompts_with_multiple_elements_list_filters_additional(memory:
     assert len(result) == 1
     assert result[0].harm_categories == ["category1", "category3"]
     assert result[0].authors == ["author1", "author3"]
+
 
 def test_get_seed_prompts_with_substring_filters_harm_categories(memory: MemoryInterface):
     seed_prompts = [
@@ -948,6 +950,7 @@ def test_get_seed_prompts_with_substring_filters_harm_categories(memory: MemoryI
     assert result[0].authors == ["author1"]
     assert result[1].authors == ["author2"]
 
+
 def test_get_seed_prompts_with_substring_filters_groups(memory: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", groups=["group1"], data_type="text"),
@@ -963,6 +966,7 @@ def test_get_seed_prompts_with_substring_filters_groups(memory: MemoryInterface)
     assert len(result) == 2
     assert result[0].groups == ["group1"]
     assert result[1].groups == ["group2"]
+
 
 def test_get_seed_prompts_with_substring_filters_parameters(memory: MemoryInterface):
     seed_prompts = [
@@ -980,20 +984,24 @@ def test_get_seed_prompts_with_substring_filters_parameters(memory: MemoryInterf
     assert result[0].parameters == ["param1"]
     assert result[1].parameters == ["param2"]
 
+
 def test_add_seed_prompts_to_memory_empty_list(memory: MemoryInterface):
     prompts = []
     memory.add_seed_prompts_to_memory(prompts=prompts, added_by="tester")
     stored_prompts = memory.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 0
 
+
 def test_get_seed_prompt_dataset_names_empty(memory: MemoryInterface):
     assert memory.get_seed_prompt_dataset_names() == []
+
 
 def test_get_seed_prompt_dataset_names_single(memory: MemoryInterface):
     dataset_name = "test_dataset"
     seed_prompt = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
     memory.add_seed_prompts_to_memory(prompts=[seed_prompt])
     assert memory.get_seed_prompt_dataset_names() == [dataset_name]
+
 
 def test_get_seed_prompt_dataset_names_single_dataset_multiple_entries(memory: MemoryInterface):
     dataset_name = "test_dataset"
@@ -1002,6 +1010,7 @@ def test_get_seed_prompt_dataset_names_single_dataset_multiple_entries(memory: M
     memory.add_seed_prompts_to_memory(prompts=[seed_prompt1, seed_prompt2])
     assert memory.get_seed_prompt_dataset_names() == [dataset_name]
 
+
 def test_get_seed_prompt_dataset_names_multiple(memory: MemoryInterface):
     dataset_names = [f"dataset_{i}" for i in range(5)]
     seed_prompts = [SeedPrompt(value=f"value_{i}", dataset_name=dataset_name, added_by="tester", data_type="text") for i, dataset_name in enumerate(dataset_names)]
@@ -1009,13 +1018,15 @@ def test_get_seed_prompt_dataset_names_multiple(memory: MemoryInterface):
     assert len(memory.get_seed_prompt_dataset_names()) == 5
     assert sorted(memory.get_seed_prompt_dataset_names()) == sorted(dataset_names)
     
+    
 def test_add_seed_prompt_groups_to_memory_empty_list(memory: MemoryInterface):
     prompt_group = SeedPromptGroup(prompts=[])
     with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
         memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
+
 def test_add_seed_prompt_groups_to_memory_single_element(memory: MemoryInterface):
-    prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text")
+    prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)
     prompt_group = SeedPromptGroup(prompts=[prompt])
     memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group], added_by="tester")
     assert len(memory.get_seed_prompts()) == 1
@@ -1037,7 +1048,7 @@ def test_add_seed_prompt_groups_to_memory_no_elements(memory: MemoryInterface):
 
 
 def test_add_seed_prompt_groups_to_memory_single_element_no_added_by(memory: MemoryInterface):
-    prompt = SeedPrompt(value="Test prompt", data_type="text")
+    prompt = SeedPrompt(value="Test prompt", data_type="text", sequence=0)
     prompt_group = SeedPromptGroup(prompts=[prompt])
     with pytest.raises(ValueError, match="The 'added_by' attribute must be set for each prompt."):
         memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
@@ -1060,7 +1071,7 @@ def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(memory: MemoryI
 
 
 def test_add_seed_prompt_groups_to_memory_single_element_with_added_by(memory: MemoryInterface):
-    prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text")
+    prompt = SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)
     prompt_group = SeedPromptGroup(prompts=[prompt])
     memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
     assert len(memory.get_seed_prompts()) == 1
@@ -1086,9 +1097,9 @@ def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(memory: 
     assert len(memory.get_seed_prompts()) == 4
     groups_from_memory = memory.get_seed_prompt_groups()
     assert len(groups_from_memory) == 2
-    assert groups_from_memory[0].id != groups_from_memory[1].id
-    assert groups_from_memory[0].prompts[0].id == groups_from_memory[0].prompts[1].id
-    assert groups_from_memory[1].prompts[0].id == groups_from_memory[1].prompts[1].id
+    assert groups_from_memory[0].prompts[0].id != groups_from_memory[1].prompts[1].id
+    assert groups_from_memory[0].prompts[0].prompt_group_id == groups_from_memory[0].prompts[1].prompt_group_id
+    assert groups_from_memory[1].prompts[0].prompt_group_id == groups_from_memory[1].prompts[1].prompt_group_id
 
 # TODO: add tests for get_prompt_templates
 # TODO: add tests for get_seed_prompt_groups
