@@ -35,7 +35,6 @@ class OpenAITarget(PromptChatTarget):
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
         api_version: str = "2024-06-01",
-        max_tokens: int = 2048,
         temperature: float = 1.0,
         top_p: float = 1.0,
         frequency_penalty: float = 0.0,
@@ -66,8 +65,6 @@ class OpenAITarget(PromptChatTarget):
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
                 "2024-06-01".
-            max_tokens (int, optional): The maximum number of tokens to generate in the response.
-                Defaults to 1024.
             temperature (float, optional): The temperature parameter for controlling the
                 randomness of the response. Defaults to 1.0.
             top_p (float, optional): The top-p parameter for controlling the diversity of the
@@ -82,7 +79,6 @@ class OpenAITarget(PromptChatTarget):
         """
         PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
-        self._max_tokens = max_tokens
         self._temperature = temperature
         self._top_p = top_p
         self._frequency_penalty = frequency_penalty
