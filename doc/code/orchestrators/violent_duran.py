@@ -129,6 +129,6 @@ with RedTeamingOrchestrator(
     verbose=True,
 ) as red_teaming_orchestrator:
     # Run the multi-turn attack strategy
-    score = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    score = await red_teaming_orchestrator.apply_attack_async(max_turns=3)  # type: ignore
     # Print the conversation log for review
     await red_teaming_orchestrator.print_conversation()  # type: ignore

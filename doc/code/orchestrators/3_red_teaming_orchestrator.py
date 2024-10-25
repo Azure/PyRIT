@@ -67,7 +67,7 @@ with RedTeamingOrchestrator(
     scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
-    conversation_id = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    conversation_id = await red_teaming_orchestrator.apply_attack_async(max_turns=3)  # type: ignore
     await red_teaming_orchestrator.print_conversation(conversation_id)  # type: ignore
 
 # %% [markdown]
@@ -123,5 +123,5 @@ with RedTeamingOrchestrator(
     use_score_as_feedback=True,
     verbose=True,
 ) as orchestrator:
-    conversation_id = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    conversation_id = await orchestrator.apply_attack_async(max_turns=3)  # type: ignore
     await orchestrator.print_conversation(conversation_id)  # type: ignore

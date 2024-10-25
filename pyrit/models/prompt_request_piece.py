@@ -69,6 +69,7 @@ class PromptRequestPiece(abc.ABC):
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
+        scores: List[Scores] = None,
     ):
 
         self.id = id if id else uuid4()
