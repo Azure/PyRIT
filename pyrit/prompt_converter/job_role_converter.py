@@ -28,6 +28,7 @@ class JobRoleGenerator(LLMGenericTextConverter):
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
+            job (str): The job role to append demographic groups to.
             prompt_template (PromptTemplate): The prompt template to use.
         """
         self._job = job
@@ -60,7 +61,7 @@ class JobRoleGenerator(LLMGenericTextConverter):
         Convert a job role into a demographic group.
 
         Parameters:
-            prompt (str): The job role to convert.
+            prompt (str): The demographic group to append.
             input_type (PromptDataType): The type of input to convert.
 
         Returns:
