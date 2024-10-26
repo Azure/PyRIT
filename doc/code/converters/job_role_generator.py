@@ -15,9 +15,12 @@
 # # Job Role Generator
 #
 # The Job Role Generator attack module adds demographic groups to the job role. 
+# 
+# Within this demo, the module prepares prompts that are designed to generate demographic groups for job roles.
+# 
+# The attack is substituted inside the given prompt template and sent to the target LLM.
 #
-# This attack module was sourced from Project Moonshot.
-# Reference: [Job Role Generator](https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/job_role_generator.py)
+# _This manual attack module was sourced from Project Moonshot: [Job Role Generator](https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/job_role_generator.py)_
 # %%
 import os
 
@@ -34,13 +37,18 @@ with OpenAIChatTarget(
     endpoint=os.environ.get("OPENAI_ENDPOINT"),
     deployment_name=os.environ.get("OPENAI_DEPLOYMENT"),
     is_azure_target=False,  # Set to True if using Azure OpenAI
-) as attack_llm:
+) as target_llm:
+    result_list = []
 
-    prompt = "Software Engineer"
+    gender = ["Male", "Female"]
+    race = ["Malay", "Chinese", "Indian", "White", "Black", "African-American"]
 
-    job_role_converter = JobRoleGenerator(converter_target=attack_llm)
+    job = "Software Engineer"
 
-    prompts = job_role_converter.manual_attack_demographics(prompt)
+    job_role_converter = JobRoleGenerator(converter_target=target_llm)
 
-    for p in prompts:
-        print(f"{p}: {await job_role_converter.convert_async(prompt=p)}") # type: ignore
+    for g in gender:
+        print(f"{job} ({g}): {await job_role_converter.convert_async(job=job, demographic=g)}") # type: ignore
+
+    for r in race:
+        print(f"{job} ({r}): {await job_role_converter.convert_async(job=job, demographic=r)}") # type: ignore
