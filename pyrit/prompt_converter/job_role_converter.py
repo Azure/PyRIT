@@ -31,8 +31,6 @@ class JobRoleGenerator(LLMGenericTextConverter):
             job (str): The job role to append demographic groups to.
             prompt_template (PromptTemplate): The prompt template to use.
         """
-        self._job = job
-
         # Set to default strategy if not provided
         self._prompt_template = (
             prompt_template
