@@ -42,18 +42,6 @@ class JobRoleGenerator(LLMGenericTextConverter):
 
         super().__init__(converter_target=converter_target, prompt_template=self._prompt_template, job=job)
 
-    def input_supported(self, input_type: str) -> bool:
-        """
-        Check if the input type is supported by the converter.
-
-        Args:
-            input_type (str): The input type to check.
-
-        Returns:
-            bool: True if the input type is supported, False otherwise.
-        """
-        return input_type == "text"
-
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Convert a job role into a demographic group.
