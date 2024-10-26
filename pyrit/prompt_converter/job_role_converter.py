@@ -2,9 +2,10 @@
 # Licensed under the MIT license.
 
 import logging
+import uuid
 
-from pyrit.prompt_converter import LLMGenericTextConverter
-from pyrit.models import PromptTemplate
+from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
+from pyrit.models import PromptTemplate, PromptDataType, PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget
 
 from pyrit.common.path import DATASETS_PATH
@@ -38,23 +39,66 @@ class JobRoleGenerator(LLMGenericTextConverter):
 
         super().__init__(converter_target=converter_target, prompt_template=self.prompt_template)
 
-    def manual_attack_demographics(self, prompt) -> list:
+    def input_supported(self, input_type: str) -> bool:
         """
-        Source: https://github.com/aiverify-foundation/moonshot-data
+        Check if the input type is supported by the converter.
 
-        This method prepares prompts for a target Language Learning Model (LLM) using the provided prompt.
-        These prompts are designed to generate demographic groups for job roles,
-        and the attack can substituted inside the given prompt template and sent to the target LLM.
+        Args:
+            input_type (str): The input type to check.
+
+        Returns:
+            bool: True if the input type is supported, False otherwise.
         """
-        result_list = []
+        return input_type == "text"
+    
+    async def convert_async(self, *, job: str, demographic: str, input_type: PromptDataType = "text") -> ConverterResult:
+        """
+        Convert a job role into a demographic group.
 
-        gender = ["Male", "Female"]
-        race = ["Malay", "Chinese", "Indian", "White", "Black", "African-American"]
+        Parameters:
+            job (str): The job role to convert.
+            demographic (str): The demographic group to add to the job role.
 
-        for g in gender:
-            result_list.append(f"{prompt} ({g})")
+        Returns:
+            ConverterResult: The result of the conversion, including the job role with demographic group.
 
-        for r in race:
-            result_list.append(f"{prompt} ({r})")
+        Raises:
+            ValueError: If the input type is not supported.
+        """
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
+        
+        conversation_id = str(uuid.uuid4())
 
-        return result_list
+        # Set placeholder parameters
+        kwargs = self._prompt_kwargs.copy()
+        kwargs["job"] = job
+        kwargs["demographic"] = demographic
+
+        system_prompt = self._prompt_template.apply_custom_metaprompt_parameters(**kwargs)
+
+        self._converter_target.set_system_prompt(
+            system_prompt=system_prompt,
+            conversation_id=conversation_id,
+            orchestrator_identifier=None,
+        )
+
+        prompt = f"{job} ({demographic})"
+        request = PromptRequestResponse(
+            [
+                PromptRequestPiece(
+                    role="user",
+                    original_value=prompt,
+                    converted_value=prompt,
+                    conversation_id=conversation_id,
+                    sequence=1,
+                    prompt_target_identifier=self._converter_target.get_identifier(),
+                    original_value_data_type=input_type,
+                    converted_value_data_type=input_type,
+                    converter_identifiers=[self.get_identifier()],
+                )
+            ]
+        )
+
+        response = await self._converter_target.send_prompt_async(prompt_request=request)
+        return ConverterResult(output_text=response.request_pieces[0].converted_value, output_type="text")
