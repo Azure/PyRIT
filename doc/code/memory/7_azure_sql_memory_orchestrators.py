@@ -134,9 +134,9 @@ logging.basicConfig(level=logging.WARNING)
 default_values.load_default_env()
 
 img_prompt_target = OpenAIDALLETarget(
-    deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
-    api_key=os.environ.get("AZURE_DALLE_API_KEY"),
+    deployment_name=os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT"),
+    endpoint=os.environ.get("AZURE_OPENAI_DALLE_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_DALLE_API_KEY"),
 )
 red_teaming_llm = OpenAIChatTarget()
 memory = AzureSQLMemory()
@@ -159,12 +159,12 @@ with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     prompt_target=img_prompt_target,
     red_teaming_chat=red_teaming_llm,
-    scorer=scorer,
+    objective_scorer=scorer,
     use_score_as_feedback=True,
     verbose=True,
     memory=memory,
 ) as orchestrator:
-    score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    score = await orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await orchestrator.print_conversation()  # type: ignore
     id = orchestrator.get_identifier()
     print("identifier", id)
