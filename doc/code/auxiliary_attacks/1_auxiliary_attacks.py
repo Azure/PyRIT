@@ -39,7 +39,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 default_values.load_default_env()
 
 target = AzureMLChatTarget(
-    endpoint_uri=os.environ.get("PHI3_MINI_ENDPOINT"),
+    endpoint=os.environ.get("PHI3_MINI_ENDPOINT"),
     api_key=os.environ.get("PHI3_MINI_KEY"),
     temperature=1.0,
 )
