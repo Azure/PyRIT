@@ -18,7 +18,7 @@ from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.models import ChatMessageListContent
+from pyrit.models import ChatMessageListDictContent
 
 from tests.mocks import get_image_request_piece
 
@@ -86,7 +86,7 @@ async def test_complete_chat_async_return(openai_mock_return: ChatCompletion, gp
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
         ret = await gpt4o_chat_engine._complete_chat_async(
-            messages=[ChatMessageListContent(role="user", content=[{"text": "hello"}])]
+            messages=[ChatMessageListDictContent(role="user", content=[{"text": "hello"}])]
         )
         assert ret == "hi"
 
@@ -170,7 +170,7 @@ async def test_convert_image_to_data_url_success(
     assert "data:image/jpeg;base64,encoded_base64_string" in result
 
     # Assertions for the mocks
-    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name, memory=duckdb_in_memory)
+    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name, memory=duckdb_in_memory, extension=".jpg")
     mock_serializer_instance.read_data_base64.assert_called_once()
 
     os.remove(tmp_file_name)
