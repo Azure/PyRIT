@@ -6,6 +6,7 @@ Alternatively, create a conda environment as follows
 ```
 conda create -y -n <environment-name> python=3.11
 ```
+
 followed by `conda activate <environment-name>`
 
 Once the environment with the correct Python version is set up, run
@@ -30,6 +31,7 @@ To check your PyRIT version run `pip freeze` from a terminal or
 import pyrit
 pyrit.__version__
 ```
+
 in the Python REPL.
 
 ## Other Resources
