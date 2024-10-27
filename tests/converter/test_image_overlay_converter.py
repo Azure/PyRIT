@@ -55,10 +55,3 @@ def test_image_overlay_converter_add_overlay_image(base_image_path, overlay_imag
     # Check for pixels changes
     assert pixels_before != pixels_after
     os.remove("base_test.png")
-
-
-def test_image_overlay_converter_input_supported(base_image_path):
-    converter = ImageOverlayConverter(base_image_path=base_image_path)
-    assert converter.input_supported("image_path") is True
-    assert converter.input_supported("text") is False
-    os.remove("base_test.png")

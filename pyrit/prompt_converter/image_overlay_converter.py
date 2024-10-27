@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
 import base64
 from typing import Optional
 
@@ -12,8 +11,6 @@ from pyrit.models import data_serializer_factory
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.memory import MemoryInterface, DuckDBMemory
-
-logger = logging.getLogger(__name__)
 
 
 class ImageOverlayConverter(PromptConverter):
@@ -28,11 +25,11 @@ class ImageOverlayConverter(PromptConverter):
     """
 
     def __init__(
-        self,
-        base_image_path: str,
-        x_pos: Optional[int] = 0,
-        y_pos: Optional[int] = 0,
-        memory: Optional[MemoryInterface] = None,
+            self,
+            base_image_path: str,
+            x_pos: Optional[int] = 0,
+            y_pos: Optional[int] = 0,
+            memory: Optional[MemoryInterface] = None,
     ):
         if not base_image_path:
             raise ValueError("Please provide valid image path")
