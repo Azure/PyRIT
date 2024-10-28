@@ -76,7 +76,7 @@ class MultiTurnOrchestrator(Orchestrator):
         if not os.path.isfile(red_team_target_system_prompt_path):
             raise FileNotFoundError(f"The file '{red_team_target_system_prompt_path}' does not exist.")
 
-        # TODO validate it doesn't have any parameters besides conversation_objective (or it can be blank)
+        # TODO validate the yaml doesn't have any parameters besides conversation_objective (or it can be blank)
 
         self._red_team_target_system_prompt_path = red_team_target_system_prompt_path
 
@@ -86,7 +86,7 @@ class MultiTurnOrchestrator(Orchestrator):
         self._red_team_target._memory = self._memory
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
 
-        if max_turns < 0:
+        if max_turns <= 0:
             raise ValueError("The maximum number of turns must be greater than or equal to 0.")
 
         self._max_turns = max_turns

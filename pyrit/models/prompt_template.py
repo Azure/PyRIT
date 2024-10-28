@@ -23,7 +23,7 @@ class PromptTemplate(YamlLoadable):
     source: str = ""
     parameters: list[str] = field(default_factory=list)
 
-    def apply_custom_metaprompt_parameters(self, **kwargs) -> str:
+    def apply_custom_metaprompt_parameters(self, ignore_missing_key = False, **kwargs) -> str:
         """Builds a new prompts from the metaprompt template.
         Args:
             **kwargs: the key value for the metaprompt template inputs
@@ -34,6 +34,8 @@ class PromptTemplate(YamlLoadable):
         final_prompt = self.template
         for key, value in kwargs.items():
             if key not in self.parameters:
+                if ignore_missing_key:
+                    continue
                 raise ValueError(f'Invalid parameters passed. [expected="{self.parameters}", actual="{kwargs}"]')
             # Matches field names within brackets {{ }}
             #  {{   key    }}
@@ -48,12 +50,14 @@ class PromptTemplate(YamlLoadable):
 class SystemPromptWithObjective:
     def __init__(self, *, path: Union[Path | str], objective: str = "", **kwargs):
         self.objective = objective
-        self.system_prompt_template = PromptTemplate.from_yaml_file(path)
+        self.system_prompt_template = PromptTemplate.from_yaml_file(Path(path))
         self.kwargs = kwargs
 
     def __str__(self):
         """Returns a string representation of the system prompt."""
-        return self.system_prompt_template.apply_custom_metaprompt_parameters(objective=self.objective, **self.kwargs)
+        return self.system_prompt_template.apply_custom_metaprompt_parameters(
+            objective=self.objective,
+            **self.kwargs)
 
 
 @dataclass

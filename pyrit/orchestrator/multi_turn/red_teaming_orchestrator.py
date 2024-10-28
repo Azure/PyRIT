@@ -5,7 +5,7 @@ import enum
 import logging
 from pathlib import Path
 from typing import Optional, Union
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.memory import MemoryInterface
@@ -85,7 +85,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
         self._use_score_as_feedback = use_score_as_feedback
 
-    async def run_attack_async(self, *, objective: str) -> UUID:
+    async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 

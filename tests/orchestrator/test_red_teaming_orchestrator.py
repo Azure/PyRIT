@@ -227,7 +227,7 @@ async def test_is_conversation_complete_scoring_non_bool():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("max_turns", [1, 3, 5])
-async def test_run_attack_strategy_async(
+async def test_run_attack_async(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
     red_team_system_prompt_path: SystemPromptWithObjective,
@@ -241,6 +241,7 @@ async def test_run_attack_strategy_async(
         memory=memory_interface,
         red_team_target_system_prompt_path=red_team_system_prompt_path,
         prompt_target=prompt_target,
+        max_turns=max_turns,
         objective_scorer=scorer,
     )
 
@@ -252,10 +253,11 @@ async def test_run_attack_strategy_async(
         mock_send_prompt.return_value = MagicMock(response_error="none")
         mock_check_complete.return_value = MagicMock(get_value=MagicMock(return_value=True))
 
-        conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=max_turns, objective="objective")
+        result = await red_teaming_orchestrator.run_attack_async(objective="objective")
 
-        assert conversation_id is not None
-        assert red_teaming_orchestrator._achieved_objective is True
+        assert result is not None
+        assert result.conversation_id is not None
+        assert result.achieved_objective is True
         assert mock_send_prompt.call_count <= max_turns
         assert mock_check_complete.call_count <= max_turns
 
@@ -275,12 +277,13 @@ async def test_run_attack_async_blocked_response(
         red_team_target_system_prompt_path=red_team_system_prompt_path,
         prompt_target=prompt_target,
         objective_scorer=scorer,
+        max_turns=5,
     )
 
     with patch.object(red_teaming_orchestrator, "_retrieve_and_send_prompt_async") as mock_send_prompt:
         mock_send_prompt.return_value = MagicMock(response_error="blocked")
 
-        conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=5, objective="objective")
+        conversation_id = await red_teaming_orchestrator.run_attack_async(objective="objective")
 
         assert conversation_id is not None
         assert red_teaming_orchestrator._achieved_objective is False
@@ -300,10 +303,11 @@ async def test_apply_run_attack_async_runtime_error(
         memory=memory_interface,
         prompt_target=prompt_target,
         objective_scorer=scorer,
+        max_turns=5,
     )
 
     with patch.object(red_teaming_orchestrator, "_retrieve_and_send_prompt_async") as mock_send_prompt:
         mock_send_prompt.return_value = MagicMock(response_error="unexpected_error")
 
         with pytest.raises(RuntimeError):
-            await red_teaming_orchestrator.run_attack_async(max_turns=5, objective="objective")
+            await red_teaming_orchestrator.run_attack_async(objective="objective")

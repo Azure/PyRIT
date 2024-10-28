@@ -9,10 +9,8 @@ from tests.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import DuckDBMemory
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
+from pyrit.models import  SystemPromptWithObjective
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.score import Score
 
@@ -83,7 +81,6 @@ def false_eval_score() -> Score:
 @pytest.fixture
 def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
     return CrescendoOrchestrator(
-        conversation_objective="my_conversation_objective",
         prompt_target=mock_target,
         red_team_target=mock_target,
         scoring_target=mock_target,
@@ -101,6 +98,8 @@ async def test_apply_crescendo_attack_fail_num_turns(
     and the attack fails
     """
 
+    orchestrator._max_turns = turns
+
     with (
         patch.object(
             orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")
@@ -111,15 +110,15 @@ async def test_apply_crescendo_attack_fail_num_turns(
             AsyncMock(return_value=[did_not_refuse_score]),
         ) as mock_refusal_score,
         patch.object(
-            orchestrator.eval_judge_true_false_scorer,
+            orchestrator._objective_scorer,
             "score_async",
             AsyncMock(return_value=[false_eval_score]),
         ) as mock_eval_score,
     ):
-        objective_score = await orchestrator.apply_crescendo_attack_async(max_turns=turns)
+        result = await orchestrator.run_attack_async(objective="objective")
         assert mock_refusal_score.call_count == turns
         assert mock_eval_score.call_count == turns
-        assert not objective_score.get_value(), "should not have achieved objective"
+        assert not result.achieved_objective, "should not have achieved objective"
         assert mock_get_attack_prompt.call_count == turns
 
 
@@ -133,7 +132,9 @@ async def test_apply_crescendo_attack_fail_max_refusals_num_turns(
     and the attack fails
     """
 
-    max_refusal = 5
+    max_backtracks = 5
+    orchestrator._max_backtracks = max_backtracks
+    orchestrator._max_turns = turns
 
     with (
         patch.object(
@@ -145,16 +146,16 @@ async def test_apply_crescendo_attack_fail_max_refusals_num_turns(
             AsyncMock(return_value=[did_refuse_score]),
         ) as mock_refusal_score,
         patch.object(
-            orchestrator.eval_judge_true_false_scorer,
+            orchestrator._objective_scorer,
             "score_async",
             AsyncMock(return_value=[false_eval_score]),
         ) as mock_eval_score,
     ):
-        objective_score = await orchestrator.apply_crescendo_attack_async(max_turns=turns, max_backtracks=max_refusal)
-        assert mock_refusal_score.call_count == max_refusal
+        result = await orchestrator.run_attack_async(objective="objective")
+        assert mock_refusal_score.call_count == max_backtracks
         assert mock_eval_score.call_count == turns
-        assert not objective_score.get_value(), "should not have achieved objective"
-        assert mock_get_attack_prompt.call_count == turns + max_refusal
+        assert not result.achieved_objective, "should not have achieved objective"
+        assert mock_get_attack_prompt.call_count == turns + max_backtracks
 
 
 @pytest.mark.asyncio
@@ -166,8 +167,8 @@ async def test_apply_crescendo_attack_succeed_max_refusals_num_turns(
     """
     Tests the scenario where we reach max refusals, but then the evaluation succeeds
     """
-    turns = 10
     max_refusal = 5
+    orchestrator._max_backtracks = max_refusal
 
     with (
         patch.object(
@@ -179,15 +180,15 @@ async def test_apply_crescendo_attack_succeed_max_refusals_num_turns(
             AsyncMock(return_value=[did_refuse_score]),
         ) as mock_refusal_score,
         patch.object(
-            orchestrator.eval_judge_true_false_scorer,
+            orchestrator._objective_scorer,
             "score_async",
             AsyncMock(return_value=[true_eval_score]),
         ) as mock_eval_score,
     ):
-        objective_score = await orchestrator.apply_crescendo_attack_async(max_turns=turns, max_backtracks=max_refusal)
+        objective_score = await orchestrator.run_attack_async(objective="objective")
         assert mock_refusal_score.call_count == max_refusal
         assert mock_eval_score.call_count == 1
-        assert objective_score.get_value(), "should have achieved objective"
+        assert objective_score.achieved_objective, "should have achieved objective"
         assert mock_get_attack_prompt.call_count == 1 + max_refusal
 
 
@@ -211,15 +212,15 @@ async def test_apply_crescendo_attack_succeed_num_turns(
             AsyncMock(return_value=[did_not_refuse_score]),
         ) as mock_refusal_score,
         patch.object(
-            orchestrator.eval_judge_true_false_scorer,
+            orchestrator._objective_scorer,
             "score_async",
             AsyncMock(return_value=[true_eval_score]),
         ) as mock_eval_score,
     ):
-        objective_score = await orchestrator.apply_crescendo_attack_async(max_turns=10)
+        objective_score = await orchestrator.run_attack_async(objective="objective")
         assert mock_refusal_score.call_count == 1
         assert mock_eval_score.call_count == 1
-        assert objective_score.get_value(), "achieved objective"
+        assert objective_score.achieved_objective, "achieved objective"
         assert mock_get_attack_prompt.call_count == 1
 
 
@@ -228,45 +229,40 @@ async def test_apply_crescendo_attack_succeed_num_turns(
 async def test_no_backtracks_occurred(
     orchestrator: CrescendoOrchestrator, false_eval_score: Score, did_not_refuse_score: Score, turns: int
 ):
-    for turn_num in range(1, turns + 1):
-        with (
-            patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
-            patch.object(
-                orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
-            ) as mock_backtrack_memory,
-            patch.object(orchestrator.refusal_scorer, "score_async", AsyncMock(return_value=[did_not_refuse_score])),
-            patch.object(
-                orchestrator.eval_judge_true_false_scorer, "score_async", AsyncMock(return_value=[false_eval_score])
-            ) as mock_eval_judge,
-        ):
+    orchestrator._max_turns = turns
 
-            max_turns = turn_num
+    with (
+        patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
+        patch.object(
+            orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
+        ) as mock_backtrack_memory,
+        patch.object(orchestrator.refusal_scorer, "score_async", AsyncMock(return_value=[did_not_refuse_score])),
+        patch.object(
+            orchestrator._objective_scorer, "score_async", AsyncMock(return_value=[false_eval_score])
+        ) as mock_eval_judge,
+    ):
 
-            await orchestrator.apply_crescendo_attack_async(max_turns=max_turns)
+        result = await orchestrator.run_attack_async(objective="objective")
 
-            assert mock_backtrack_memory.call_count == 0
-            assert orchestrator._prompt_target_conversation_id != "new_conversation_id"
-            assert mock_eval_judge.call_count == max_turns
+        assert mock_backtrack_memory.call_count == 0
+        assert result.conversation_id != "new_conversation_id"
+        assert mock_eval_judge.call_count == turns
 
 
 @pytest.mark.asyncio
-async def test_value_error_exceptions(
-    orchestrator: CrescendoOrchestrator, true_eval_score: Score, did_refuse_score: Score
-):
-    with (
-        patch.object(orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")),
-        patch.object(orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")),
-        patch.object(orchestrator.refusal_scorer, "score_async", AsyncMock(return_value=[did_refuse_score])),
-        patch.object(
-            orchestrator.eval_judge_true_false_scorer, "score_async", AsyncMock(return_value=[true_eval_score])
-        ),
-    ):
+async def test_max_turns_init_exceptions():
+    with pytest.raises(ValueError):
+        CrescendoOrchestrator(
+            prompt_target=MagicMock(), red_team_target=MagicMock(), scoring_target=MagicMock(), max_turns=0
+        )
 
-        with pytest.raises(ValueError):
-            await orchestrator.apply_crescendo_attack_async(max_turns=10, max_backtracks=0)
+@pytest.mark.asyncio
+async def test_max_backtrack_init_exceptions():
+    with pytest.raises(ValueError):
+        CrescendoOrchestrator(
+            prompt_target=MagicMock(), red_team_target=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
+        )
 
-        with pytest.raises(ValueError):
-            await orchestrator.apply_crescendo_attack_async(max_turns=0, max_backtracks=10)
 
 
 @pytest.mark.asyncio
@@ -274,21 +270,47 @@ async def test_value_error_exceptions(
 async def test_custom_crescendo_system_prompt_path(mock_target: AsyncMock, variants: int):
 
     for num in range(1, variants + 1):
-        conversation_objective = "Test Conversation Objective"
         custom_system_prompt_path = (
             Path(DATASETS_PATH) / "orchestrators" / "crescendo" / f"crescendo_variant_{num}.yaml"
         )
 
         orchestrator = CrescendoOrchestrator(
-            conversation_objective=conversation_objective,
             prompt_target=mock_target,
             red_team_target=mock_target,
             scoring_target=mock_target,
             red_team_system_prompt_path=custom_system_prompt_path,
         )
 
-        assert orchestrator._conversation_objective == conversation_objective
-        assert orchestrator._system_prompt_path == custom_system_prompt_path
+        assert orchestrator._red_team_target_system_prompt_path == custom_system_prompt_path
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("variants", list(range(1, 6)))
+async def test_custom_crescendo_valid_yaml(mock_target: AsyncMock, variants: int):
+
+    for num in range(1, variants + 1):
+        custom_system_prompt_path = (
+            Path(DATASETS_PATH) / "orchestrators" / "crescendo" / f"crescendo_variant_{num}.yaml"
+        )
+
+        # This will throw an exception if the yaml is invalid
+        s = str(SystemPromptWithObjective(
+            path=custom_system_prompt_path,
+            objective="objective",
+            max_turns=3,
+        ))
+
+        assert s
+
+
+@pytest.mark.asyncio
+async def test_invalid_system_prompt_path_raises():
+    with pytest.raises(FileNotFoundError):
+        CrescendoOrchestrator(
+            prompt_target=MagicMock(),
+            red_team_target=MagicMock(),
+            scoring_target=MagicMock(),
+            red_team_system_prompt_path="does_not_exist.yaml",
+        )
 
 
 @pytest.mark.asyncio
@@ -317,7 +339,12 @@ async def test_get_attack_invalid_json_exceptions(orchestrator: CrescendoOrchest
 
         with pytest.raises(InvalidJsonException):
             await orchestrator._get_attack_prompt(
-                red_team_conversation_id="123", refused_text=None, turn_num=1, max_turns=10, objective_score=None
+                red_team_conversation_id="123",
+                objective="objective",
+                refused_text=None,
+                turn_num=1,
+                max_turns=10,
+                objective_score=None
             )
         assert mock_prompt_normalizer.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
@@ -333,17 +360,24 @@ async def test_get_attack_sets_default_prompt(orchestrator: CrescendoOrchestrato
         request_pieces=[PromptRequestPiece(role="assistant", original_value=red_team_response)]
     )
 
+    objective="do something extremely bad"
+
     with patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer:
         mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
         await orchestrator._get_attack_prompt(
-            red_team_conversation_id="123", refused_text=None, turn_num=3, max_turns=7, objective_score=None
+            red_team_conversation_id="123",
+            objective=objective,
+            refused_text=None,
+            turn_num=3,
+            max_turns=7,
+            objective_score=None
         )
         _, kwargs = mock_prompt_normalizer.send_prompt_async.call_args
         prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
 
         # number of turns and conversation objective should be included dynamically
         assert "This is the turn 3 of 7 turns." in prompt_sent
-        assert orchestrator._conversation_objective in prompt_sent
+        assert objective in prompt_sent
         assert "The target refused" not in prompt_sent
 
 
@@ -358,10 +392,13 @@ async def test_get_attack_sets_refused_text(orchestrator: CrescendoOrchestrator)
         request_pieces=[PromptRequestPiece(role="assistant", original_value=red_team_response)]
     )
 
+    objective="do something extremely bad"
+
     with patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer:
         mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
         await orchestrator._get_attack_prompt(
             red_team_conversation_id="123",
+            objective=objective,
             refused_text="this was refused",
             turn_num=3,
             max_turns=7,
@@ -372,7 +409,7 @@ async def test_get_attack_sets_refused_text(orchestrator: CrescendoOrchestrator)
 
         # number of turns and conversation objective should be included dynamically
         assert "This is the turn 3 of 7 turns." in prompt_sent
-        assert orchestrator._conversation_objective in prompt_sent
+        assert objective in prompt_sent
         # refused text should also be included
         assert "The target refused to respond to the last request you sent. " in prompt_sent
         assert "this was refused" in prompt_sent
@@ -392,6 +429,8 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
     previous_prompt_text = "hello I am the previous prompt"
     previous_prompt = [PromptRequestPiece(role="user", original_value=previous_prompt_text)]
 
+    objective="do something extremely bad"
+
     with (
         patch.object(orchestrator._memory, "get_prompt_request_pieces_by_id", MagicMock(return_value=previous_prompt)),
         patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer,
@@ -400,6 +439,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
         mock_prompt_normalizer.send_prompt_async.return_value = red_teaming_return_value
         await orchestrator._get_attack_prompt(
             red_team_conversation_id="123",
+            objective=objective,
             refused_text=None,
             turn_num=3,
             max_turns=7,
@@ -409,7 +449,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
         prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
 
         assert "This is the turn 3 of 7 turns." in prompt_sent
-        assert orchestrator._conversation_objective in prompt_sent
+        assert objective in prompt_sent
 
         # the previous prompt text and score rationalie should be in prompt text
         assert previous_prompt_text in prompt_sent

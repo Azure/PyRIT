@@ -194,4 +194,3 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
         after=after_log(logger, logging.ERROR),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
-
