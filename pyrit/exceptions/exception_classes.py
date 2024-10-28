@@ -12,9 +12,9 @@ from typing import Callable
 from pyrit.exceptions.exceptions_helpers import extract_json_from_string, remove_end_md_json, remove_start_md_json
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 
-RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 5))
-RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 1))
-RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 60))
+RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 10))
+RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 5))
+RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 220))
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ def pyrit_target_retry(func: Callable) -> Callable:
         reraise=True,
         retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
-        after=after_log(logger, logging.INFO),
+        after=after_log(logger, logging.ERROR),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
 
@@ -139,7 +139,7 @@ def pyrit_json_retry(func: Callable) -> Callable:
         reraise=True,
         retry=retry_if_exception_type(InvalidJsonException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
-        after=after_log(logger, logging.INFO),
+        after=after_log(logger, logging.ERROR),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
 
@@ -191,6 +191,7 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
     return retry(
         reraise=True,
         retry=retry_if_exception_type(MissingPromptPlaceholderException),
-        after=after_log(logger, logging.INFO),
+        after=after_log(logger, logging.ERROR),
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
+

@@ -85,7 +85,7 @@ def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
     return CrescendoOrchestrator(
         conversation_objective="my_conversation_objective",
         prompt_target=mock_target,
-        red_teaming_chat=mock_target,
+        red_team_target=mock_target,
         scoring_target=mock_target,
         memory=MagicMock(),
     )
@@ -282,9 +282,9 @@ async def test_custom_crescendo_system_prompt_path(mock_target: AsyncMock, varia
         orchestrator = CrescendoOrchestrator(
             conversation_objective=conversation_objective,
             prompt_target=mock_target,
-            red_teaming_chat=mock_target,
+            red_team_target=mock_target,
             scoring_target=mock_target,
-            system_prompt_path=custom_system_prompt_path,
+            red_team_system_prompt_path=custom_system_prompt_path,
         )
 
         assert orchestrator._conversation_objective == conversation_objective

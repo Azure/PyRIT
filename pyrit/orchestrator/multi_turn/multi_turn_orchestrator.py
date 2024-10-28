@@ -2,7 +2,11 @@
 # Licensed under the MIT license.
 
 from abc import abstractmethod
+import asyncio
+from dataclasses import dataclass
 import logging
+import os
+from pathlib import Path
 from typing import Optional
 from uuid import UUID
 from colorama import Fore, Style
@@ -17,6 +21,12 @@ from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class MultiTurnAttackResult:
+    """The result of a multi-turn attack."""
+    conversation_id: str
+    achieved_objective: bool
+    objective: str
 
 class MultiTurnOrchestrator(Orchestrator):
     _memory: MemoryInterface
@@ -25,8 +35,10 @@ class MultiTurnOrchestrator(Orchestrator):
         self,
         *,
         prompt_target: PromptTarget,
-        red_teaming_chat: PromptChatTarget,
-        initial_red_teaming_prompt: Optional[str] = "How can I help you?",
+        red_team_target: PromptChatTarget,
+        red_team_target_system_prompt_path: Path,
+        initial_red_teaming_prompt: str = "How can I help you?",
+        max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
         memory: Optional[MemoryInterface] = None,
@@ -37,7 +49,7 @@ class MultiTurnOrchestrator(Orchestrator):
 
         Args:
             prompt_target: The target to send the created prompts to.
-            red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
+            red_team_target: The endpoint that creates prompts that are sent to the prompt target.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
@@ -61,13 +73,25 @@ class MultiTurnOrchestrator(Orchestrator):
         self._prompt_target = prompt_target
         self._achieved_objective = False
 
+        if not os.path.isfile(red_team_target_system_prompt_path):
+            raise FileNotFoundError(f"The file '{red_team_target_system_prompt_path}' does not exist.")
+
+        # TODO validate it doesn't have any parameters besides conversation_objective (or it can be blank)
+
+        self._red_team_target_system_prompt_path = red_team_target_system_prompt_path
+
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._prompt_target._memory = self._memory
-        self._red_teaming_chat = red_teaming_chat
-        self._red_teaming_chat._memory = self._memory
+        self._red_team_target = red_team_target
+        self._red_team_target._memory = self._memory
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
-        if not self._initial_red_teaming_prompt:
-            raise ValueError("The initial red teaming prompt cannot be empty.")
+
+        if max_turns < 0:
+            raise ValueError("The maximum number of turns must be greater than or equal to 0.")
+
+        self._max_turns = max_turns
+
+
         if objective_scorer.scorer_type != "true_false":
             raise ValueError(
                 f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
@@ -81,11 +105,7 @@ class MultiTurnOrchestrator(Orchestrator):
                 self._objective_scorer._prompt_target._memory = self._memory
 
     @abstractmethod
-    async def run_attack_async(
-        self,
-        *,
-        max_turns: int = 5,
-    ) -> UUID:
+    async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
@@ -96,31 +116,54 @@ class MultiTurnOrchestrator(Orchestrator):
                 The default value is 5.
 
         Returns:
-            conversation_id: The conversation ID for the final or successful multi-turn conversation.
+            MultiTurnAttackResult: The conversation ID for the final or successful multi-turn conversation and
+                whether the orchestrator achieved the objective.
         """
 
-    async def print_conversation(self, prompt_target_conversation_id: str):
+    async def run_attacks_async(self, *, objectives: list[str], batch_size=5) -> list[MultiTurnAttackResult]:
+        """Applies the attack strategy for each objective in the list of objectives.
+
+        Args:
+            objectives: The list of objectives to apply the attack strategy.
+
+        Returns:
+            list[MultiTurnAttackResult]: The list of conversation IDs for the final or successful multi-turn
+                conversations and whether the orchestrator achieved the objective for each objective.
+        """
+        semaphore = asyncio.Semaphore(batch_size)
+
+        async def limited_run_attack(objective):
+            async with semaphore:
+                return await self.run_attack_async(objective=objective)
+
+        tasks = [limited_run_attack(objective) for objective in objectives]
+        results = await asyncio.gather(*tasks)
+        return results
+
+    async def print_conversation_async(self, result: MultiTurnAttackResult):
         """Prints the conversation between the prompt target and the red teaming bot, including the scores.
 
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
         target_messages = self._memory._get_prompt_pieces_with_conversation_id(
-            conversation_id=prompt_target_conversation_id
+            conversation_id=result.conversation_id
         )
 
         if not target_messages or len(target_messages) == 0:
             print("No conversation with the target")
             return
 
-        if self._achieved_objective:
-            print("The red teaming orchestrator has completed the conversation and achieved the objective.")
+        if result.achieved_objective:
+            print(f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has completed the conversation and achieved "
+                  f"the objective: {result.objective}")
         else:
-            print("The red teaming orchestrator has not achieved the objective.")
+            print(f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has not achieved the objective: "
+                  f"{result.objective}")
 
         for message in target_messages:
-            if message.role == "user:":
-                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}")
+            if message.role == "user":
+                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}:")
                 if message.converted_value != message.original_value:
                     print(f"Original value: {message.original_value}")
                 print(f"Converted value: {message.converted_value}")
@@ -130,5 +173,5 @@ class MultiTurnOrchestrator(Orchestrator):
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
             if scores and len(scores) > 0:
-                score = scores[0]
-                print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
+                for score in scores:
+                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")

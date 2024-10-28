@@ -1,19 +1,29 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import enum
 import logging
+from pathlib import Path
 from typing import Optional, Union
 from uuid import UUID, uuid4
 
+from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.memory import MemoryInterface
-from pyrit.models import AttackStrategy, PromptRequestPiece
-from pyrit.orchestrator import MultiTurnOrchestrator
+from pyrit.models import SystemPromptWithObjective, PromptRequestPiece
+from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer, Score
 
 logger = logging.getLogger(__name__)
+
+class RTOSystemPromptPaths(enum.Enum):
+    TEXT_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "text_generation.yaml").resolve()
+    IMAGE_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "image_generation.yaml").resolve()
+    NAIVE_CRESCENDO = Path(RED_TEAM_ORCHESTRATOR_PATH, "naive_crescendo.yaml").resolve()
+    VIOLENT_DURIAN = Path(RED_TEAM_ORCHESTRATOR_PATH, "violent_durian.yaml").resolve()
+    CRUCIBLE = Path(RED_TEAM_ORCHESTRATOR_PATH, "crucible.yaml").resolve()
 
 
 class RedTeamingOrchestrator(MultiTurnOrchestrator):
@@ -22,11 +32,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
     def __init__(
         self,
         *,
-        attack_strategy: Union[str, AttackStrategy],
         prompt_target: PromptTarget,
-        red_teaming_chat: PromptChatTarget,
+        red_team_target: PromptChatTarget,
+        red_team_target_system_prompt_path: Path = RTOSystemPromptPaths.TEXT_GENERATION.value,
         initial_red_teaming_prompt: Optional[str] = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
+        max_turns: int = 5,
         objective_scorer: Scorer,
         use_score_as_feedback: bool = True,
         memory: Optional[MemoryInterface] = None,
@@ -36,13 +47,9 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
 
         Args:
-            attack_strategy: The attack strategy for the red teaming bot to follow.
-                It is used as the metaprompt in the conversation with the red teaming bot.
-                This can be used to guide the bot to achieve the conversation objective in a more direct and
-                structured way.
-                Should be of type string or AttackStrategy (which has a __str__ method).
             prompt_target: The target to send the created prompts to.
             red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
+            system_prompt_path: The yaml file that contains the attack strategy to use for the red teaming orchestrator.
             initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
                 The attack_strategy only provides the strategy, but not the starting point of the conversation.
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
@@ -63,7 +70,9 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
         super().__init__(
             prompt_target=prompt_target,
-            red_teaming_chat=red_teaming_chat,
+            red_team_target=red_team_target,
+            red_team_target_system_prompt_path=red_team_target_system_prompt_path,
+            max_turns=max_turns,
             prompt_converters=prompt_converters,
             objective_scorer=objective_scorer,
             memory=memory,
@@ -71,26 +80,17 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             verbose=verbose,
         )
 
-        self._achieved_objective = False
-
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._attack_strategy = str(attack_strategy)
+
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
         self._use_score_as_feedback = use_score_as_feedback
 
-    async def run_attack_async(
-        self,
-        *,
-        max_turns: int = 5,
-    ) -> UUID:
+    async def run_attack_async(self, *, objective: str) -> UUID:
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
         Args:
-            max_turns: The maximum number of turns to apply the attack strategy.
-                If the conversation is not complete after the maximum number of turns,
-                the orchestrator stops and returns the last score.
-                The default value is 5.
+            objective: The objective the red teaming orchestrator is trying to achieve.
 
         Returns:
             prompt_target_conversation_id: The conversation ID for the multi-turn conversation.
@@ -100,9 +100,9 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         red_teaming_chat_conversation_id = str(uuid4())
 
         turn = 1
-        self._achieved_objective = False
+        achieved_objective = False
         score: Score | None = None
-        while turn <= max_turns:
+        while turn <= self._max_turns:
             logger.info(f"Applying the attack strategy for turn {turn}.")
 
             feedback = None
@@ -110,6 +110,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 feedback = score.score_rationale
 
             response = await self._retrieve_and_send_prompt_async(
+                objective=objective,
                 prompt_target_conversation_id=prompt_target_conversation_id,
                 red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
                 feedback=feedback,
@@ -120,7 +121,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                     prompt_target_conversation_id=prompt_target_conversation_id,
                 )
                 if bool(score.get_value()):
-                    self._achieved_objective = True
+                    achieved_objective = True
                     logger.info(
                         "The red teaming orchestrator has completed the conversation and achieved the objective.",
                     )
@@ -132,17 +133,22 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
             turn += 1
 
-        if not self._achieved_objective:
+        if not achieved_objective:
             logger.info(
                 "The red teaming orchestrator has not achieved the objective after the maximum "
-                f"number of turns ({max_turns}).",
+                f"number of turns ({self._max_turns}).",
             )
 
-        return UUID(prompt_target_conversation_id)
+        return MultiTurnAttackResult(
+            conversation_id=prompt_target_conversation_id,
+            achieved_objective=achieved_objective,
+            objective=objective,
+        )
 
     async def _retrieve_and_send_prompt_async(
         self,
         *,
+        objective: str,
         prompt_target_conversation_id: str,
         red_teaming_chat_conversation_id: str,
         feedback: Optional[str] = None,
@@ -164,6 +170,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
         logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
         prompt = await self._get_prompt_from_red_teaming_target(
+            objective=objective,
             prompt_target_conversation_id=prompt_target_conversation_id,
             red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
             feedback=feedback,
@@ -293,6 +300,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
     async def _get_prompt_from_red_teaming_target(
         self,
         *,
+        objective: str,
         prompt_target_conversation_id: str,
         red_teaming_chat_conversation_id: str,
         feedback: Optional[str] = None,
@@ -317,8 +325,13 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
         if len(self._memory.get_conversation(conversation_id=red_teaming_chat_conversation_id)) == 0:
             # Set system prompt for the first turn with red teaming chat
-            self._red_teaming_chat.set_system_prompt(
-                system_prompt=self._attack_strategy,
+            system_prompt = SystemPromptWithObjective(
+                path=self._red_team_target_system_prompt_path,
+                objective=objective,
+            )
+
+            self._red_team_target.set_system_prompt(
+                system_prompt=str(system_prompt),
                 conversation_id=red_teaming_chat_conversation_id,
                 orchestrator_identifier=self.get_identifier(),
                 labels=self._global_memory_labels,
@@ -332,7 +345,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             (
                 await self._prompt_normalizer.send_prompt_async(
                     normalizer_request=normalizer_request,
-                    target=self._red_teaming_chat,
+                    target=self._red_team_target,
                     orchestrator_identifier=self.get_identifier(),
                     labels=self._global_memory_labels,
                 )

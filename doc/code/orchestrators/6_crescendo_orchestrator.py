@@ -39,13 +39,13 @@ scorer_target = OpenAIChatTarget()
 with CrescendoOrchestrator(
     conversation_objective=conversation_objective,
     prompt_target=prompt_target,
-    red_teaming_chat=red_teaming_chat,
+    red_team_target=red_teaming_chat,
     scoring_target=scorer_target,
     verbose=False,
 ) as orchestrator:
 
     # For five turns this can take a couple minutes depending on LLM latency
     score = await orchestrator.apply_crescendo_attack_async(max_turns=10, max_backtracks=5)  # type: ignore
-    orchestrator.print_conversation()
+    orchestrator.print_conversation_async()
 
     print(f"{score} {score.score_metadata} {score.score_rationale} ")

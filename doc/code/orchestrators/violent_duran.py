@@ -29,7 +29,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
-from pyrit.models import AttackStrategy
+from pyrit.models import SystemPromptWithObjective
 from pyrit.score import SelfAskTrueFalseScorer
 
 # Load environment variables
@@ -61,8 +61,8 @@ conversation_objective = (
 strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "violent_durian.yaml"
 
 # Define the attack strategy using the Violent Durian persona
-attack_strategy = AttackStrategy(
-    strategy=strategy_path,
+attack_strategy = SystemPromptWithObjective(
+    path=strategy_path,
     conversation_objective=conversation_objective,
 )
 
@@ -122,7 +122,7 @@ initial_prompt = (
 # Use the RedTeamingOrchestrator to handle the attack and manage the conversation
 with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
-    red_teaming_chat=red_teaming_llm,
+    red_team_target=red_teaming_llm,
     prompt_target=prompt_target,
     initial_red_teaming_prompt=initial_prompt,  # The first prompt introduces the Violent Durian persona
     objective_scorer=scorer,
@@ -131,4 +131,4 @@ with RedTeamingOrchestrator(
     # Run the multi-turn attack strategy
     score = await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
     # Print the conversation log for review
-    await red_teaming_orchestrator.print_conversation()  # type: ignore
+    await red_teaming_orchestrator.print_conversation_async()  # type: ignore

@@ -168,7 +168,7 @@ scorer = SelfAskTrueFalseScorer(
 # The initial prompt is intended to keep the red teaming LLM on topic.
 with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
-    red_teaming_chat=red_teaming_llm,
+    red_team_target=red_teaming_llm,
     prompt_target=target_llm,
     initial_red_teaming_prompt="Begin conversation",
     objective_scorer=scorer,

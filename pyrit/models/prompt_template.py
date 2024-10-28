@@ -45,17 +45,15 @@ class PromptTemplate(YamlLoadable):
 
 
 @dataclass
-class AttackStrategy:
-    def __init__(self, *, strategy: Union[Path | str], **kwargs):
+class SystemPromptWithObjective:
+    def __init__(self, *, path: Union[Path | str], objective: str = "", **kwargs):
+        self.objective = objective
+        self.system_prompt_template = PromptTemplate.from_yaml_file(path)
         self.kwargs = kwargs
-        if isinstance(strategy, Path):
-            self.strategy = PromptTemplate.from_yaml_file(strategy)
-        else:
-            self.strategy = PromptTemplate(template=strategy, parameters=list(kwargs.keys()))
 
     def __str__(self):
-        """Returns a string representation of the attack strategy."""
-        return self.strategy.apply_custom_metaprompt_parameters(**self.kwargs)
+        """Returns a string representation of the system prompt."""
+        return self.system_prompt_template.apply_custom_metaprompt_parameters(objective=self.objective, **self.kwargs)
 
 
 @dataclass

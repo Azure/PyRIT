@@ -12,7 +12,7 @@ from uuid import uuid4
 from pyrit.memory import MemoryInterface
 from pyrit.prompt_target import PromptTarget, OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.models import AttackStrategy
+from pyrit.models import SystemPromptWithObjective
 from pyrit.score import Score, Scorer
 from pyrit.common.path import DATASETS_PATH
 
@@ -40,11 +40,8 @@ def prompt_target(memory_interface) -> OpenAIChatTarget:
 
 
 @pytest.fixture
-def simple_attack_strategy() -> AttackStrategy:
-    return AttackStrategy(
-        strategy=pathlib.Path(DATASETS_PATH) / "orchestrators" / "red_teaming" / "text_generation.yaml",
-        conversation_objective="Do bad stuff",
-    )
+def red_team_system_prompt_path() -> pathlib.Path:
+    return pathlib.Path(DATASETS_PATH) / "orchestrators" / "red_teaming" / "text_generation.yaml"
 
 
 def _check_orchestrator_memory(memory, num_turns: int):
@@ -71,36 +68,30 @@ def _check_two_conversation_ids(conversations):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("attack_strategy_as_str", [True, False])
 async def test_send_prompt_twice(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
-    simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
-    attack_strategy_as_str: bool,
 ):
-    attack_strategy: Union[str | AttackStrategy] = (
-        str(simple_attack_strategy) if attack_strategy_as_str else simple_attack_strategy
-    )
 
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat=chat_completion_engine,
+        red_team_target=chat_completion_engine,
         memory=memory_interface,
-        attack_strategy=attack_strategy,
         prompt_target=prompt_target,
         objective_scorer=scorer,
     )
 
     prompt_target_conversation_id = str(uuid4())
     red_teaming_chat_conversation_id = str(uuid4())
-    with patch.object(red_teaming_orchestrator._red_teaming_chat, "_complete_chat_async") as mock_rt:
+    with patch.object(red_teaming_orchestrator._red_team_target, "_complete_chat_async") as mock_rt:
         with patch.object(red_teaming_orchestrator._prompt_target, "_complete_chat_async") as mock_target:
             mock_rt.return_value = "First red teaming chat response"
             expected_target_response = "First target response"
             mock_target.return_value = expected_target_response
             target_response = await red_teaming_orchestrator._retrieve_and_send_prompt_async(
+                objective="some objective",
                 prompt_target_conversation_id=prompt_target_conversation_id,
                 red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
             )
@@ -115,6 +106,7 @@ async def test_send_prompt_twice(
             mock_rt.return_value = "Second red teaming chat response"
             mock_target.return_value = second_target_response
             target_response = await red_teaming_orchestrator._retrieve_and_send_prompt_async(
+                objective="some objective",
                 prompt_target_conversation_id=prompt_target_conversation_id,
                 red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
             )
@@ -137,8 +129,7 @@ async def test_is_conversation_complete_scoring(score, message_count):
     mock_scorer.score_async = AsyncMock(return_value=[mock_score])
 
     orchestrator = RedTeamingOrchestrator(
-        attack_strategy="some strategy",
-        red_teaming_chat=Mock(),
+        red_team_target=Mock(),
         prompt_target=Mock(),
         memory=Mock(),
         objective_scorer=mock_scorer,
@@ -177,8 +168,7 @@ async def test_is_conversation_complete_scoring_non_bool():
     scorer.score_text_async = AsyncMock(return_value=[mock_score])
 
     orchestrator = RedTeamingOrchestrator(
-        attack_strategy="some strategy",
-        red_teaming_chat=Mock(),
+        red_team_target=Mock(),
         prompt_target=Mock(),
         memory=Mock(),
         objective_scorer=scorer,
@@ -237,19 +227,19 @@ async def test_is_conversation_complete_scoring_non_bool():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("max_turns", [1, 3, 5])
-async def test_apply_attack_strategy_async(
+async def test_run_attack_strategy_async(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
-    simple_attack_strategy: AttackStrategy,
+    red_team_system_prompt_path: SystemPromptWithObjective,
     memory_interface: MemoryInterface,
     max_turns: int,
 ):
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat=chat_completion_engine,
+        red_team_target=chat_completion_engine,
         memory=memory_interface,
-        attack_strategy=simple_attack_strategy,
+        red_team_target_system_prompt_path=red_team_system_prompt_path,
         prompt_target=prompt_target,
         objective_scorer=scorer,
     )
@@ -262,7 +252,7 @@ async def test_apply_attack_strategy_async(
         mock_send_prompt.return_value = MagicMock(response_error="none")
         mock_check_complete.return_value = MagicMock(get_value=MagicMock(return_value=True))
 
-        conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=max_turns)
+        conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=max_turns, objective="objective")
 
         assert conversation_id is not None
         assert red_teaming_orchestrator._achieved_objective is True
@@ -271,18 +261,18 @@ async def test_apply_attack_strategy_async(
 
 
 @pytest.mark.asyncio
-async def test_apply_attack_strategy_async_blocked_response(
+async def test_run_attack_async_blocked_response(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
-    simple_attack_strategy: AttackStrategy,
+    red_team_system_prompt_path: pathlib.Path,
     memory_interface: MemoryInterface,
 ):
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat=chat_completion_engine,
+        red_team_target=chat_completion_engine,
         memory=memory_interface,
-        attack_strategy=simple_attack_strategy,
+        red_team_target_system_prompt_path=red_team_system_prompt_path,
         prompt_target=prompt_target,
         objective_scorer=scorer,
     )
@@ -290,7 +280,7 @@ async def test_apply_attack_strategy_async_blocked_response(
     with patch.object(red_teaming_orchestrator, "_retrieve_and_send_prompt_async") as mock_send_prompt:
         mock_send_prompt.return_value = MagicMock(response_error="blocked")
 
-        conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=5)
+        conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=5, objective="objective")
 
         assert conversation_id is not None
         assert red_teaming_orchestrator._achieved_objective is False
@@ -301,15 +291,13 @@ async def test_apply_attack_strategy_async_blocked_response(
 async def test_apply_run_attack_async_runtime_error(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
-    simple_attack_strategy: AttackStrategy,
     memory_interface: MemoryInterface,
 ):
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     red_teaming_orchestrator = RedTeamingOrchestrator(
-        red_teaming_chat=chat_completion_engine,
+        red_team_target=chat_completion_engine,
         memory=memory_interface,
-        attack_strategy=simple_attack_strategy,
         prompt_target=prompt_target,
         objective_scorer=scorer,
     )
@@ -318,4 +306,4 @@ async def test_apply_run_attack_async_runtime_error(
         mock_send_prompt.return_value = MagicMock(response_error="unexpected_error")
 
         with pytest.raises(RuntimeError):
-            await red_teaming_orchestrator.run_attack_async(max_turns=5)
+            await red_teaming_orchestrator.run_attack_async(max_turns=5, objective="objective")

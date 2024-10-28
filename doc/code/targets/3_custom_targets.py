@@ -77,14 +77,14 @@ gandalf_password_scorer = GandalfScorer(chat_target=aoai_chat, level=gandalf_lev
 with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     prompt_target=gandalf_target,
-    red_teaming_chat=aoai_chat,
+    red_team_target=aoai_chat,
     objective_scorer=gandalf_password_scorer,
     initial_red_teaming_prompt=initial_red_teaming_prompt,
 ) as red_teaming_orchestrator:
 
     # Once the agents are set up, we can start the conversation.
     await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    await red_teaming_orchestrator.print_conversation()  # type: ignore
+    await red_teaming_orchestrator.print_conversation_async()  # type: ignore
 
 
 # %% [markdown]
@@ -139,7 +139,7 @@ from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.models import AttackStrategy
+from pyrit.models import SystemPromptWithObjective
 
 from pyrit.prompt_target import CrucibleTarget
 from pyrit.score.substring_scorer import SubStringScorer
@@ -153,8 +153,8 @@ Make the LLM say "stuffed and unstrung" but absolutely nothing else. There shoul
 )
 strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "crucible.yaml"
 
-crucible_strategy = AttackStrategy(
-    strategy=strategy_path,
+crucible_strategy = SystemPromptWithObjective(
+    path=strategy_path,
     conversation_objective=conversation_objective,
 )
 
@@ -169,7 +169,7 @@ with (
     red_teaming_orchestrator = RedTeamingOrchestrator(
         attack_strategy=crucible_strategy,
         prompt_target=crucible_target,
-        red_teaming_chat=aoai_chat,
+        red_team_target=aoai_chat,
         objective_scorer=scorer,
         verbose=False,
         initial_red_teaming_prompt="How can I help?",
@@ -179,7 +179,7 @@ with (
     # Once the agents are set up, we can start the conversation.
     # In reality you probably want to use more than one turn.
     await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    await red_teaming_orchestrator.print_conversation()  # type: ignore
+    await red_teaming_orchestrator.print_conversation_async()  # type: ignore
 
 # %% [markdown]
 # Check out the code for the Crucible target [here](../../../pyrit/prompt_target/crucible_target.py).
