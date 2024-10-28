@@ -1,16 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Union
 
 from pyrit.common.apply_parameters_to_template import apply_parameters_to_template
-from pyrit.common.yaml_loadable import YamlLoadable
 
 
 @dataclass
-class AttackStrategy(YamlLoadable):
+class AttackStrategy:
     template: str
     parameters: List[str]
     kwargs: Dict[str, str]
@@ -18,8 +19,9 @@ class AttackStrategy(YamlLoadable):
     def __init__(self, *, strategy: Union[Path | str], **kwargs):
         self.kwargs = kwargs
         if isinstance(strategy, Path):
-            strategy_data = YamlLoadable.from_yaml_file(strategy)
-            self.template = strategy_data.template
+            from pyrit.models import SeedPromptTemplate
+            strategy_data = SeedPromptTemplate.from_yaml_file(strategy)
+            self.template = strategy_data.value
             self.parameters = strategy_data.parameters
         else:
             self.template = strategy
@@ -27,4 +29,4 @@ class AttackStrategy(YamlLoadable):
 
     def __str__(self):
         """Returns a string representation of the attack strategy."""
-        return apply_parameters_to_template(**self.kwargs)
+        return apply_parameters_to_template(template=self.template, parameters=self.parameters, **self.kwargs)
