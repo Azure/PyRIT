@@ -68,18 +68,18 @@ class ClaimConverter(PromptConverter):
         self.converter_target = converter_target
 
         # set to default strategy if not provided
-        prompt_template = (
-            prompt_template
-            if prompt_template
-            else PromptTemplate.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "claim_converter.yaml"
-            )
-        )
-        self.number_variations = 1
+        # prompt_template = (
+        #     prompt_template
+        #     if prompt_template
+        #     else PromptTemplate.from_yaml_file(
+        #         pathlib.Path(DATASETS_PATH) / "prompt_converters" / "claim_converter.yaml"
+        #     )
+        # )
+        # self.number_variations = 1
 
-        self.system_prompt = str(
-            prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(self.number_variations))
-        )
+        # self.system_prompt = str(
+        #     prompt_template.apply_custom_metaprompt_parameters(number_iterations=str(self.number_variations))
+        # )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -94,11 +94,11 @@ class ClaimConverter(PromptConverter):
 
         conversation_id = str(uuid.uuid4())
 
-        self.converter_target.set_system_prompt(
-            system_prompt=self.system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
-        )
+        # self.converter_target.set_system_prompt(
+        #     system_prompt=self.system_prompt,
+        #     conversation_id=conversation_id,
+        #     orchestrator_identifier=None,
+        # )
 
         # prompt = dedent(
         #     f"Create {self.number_variations} variation of the seed prompt given by the user between the "
