@@ -229,7 +229,7 @@ class ClaimConverter(PromptConverter):
         # ignore already-labeled data
         # completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
 
-        response_msg = completion_df["inst"][0]
+        response_msg = generations_df['inst'][0] #completion_df["inst"][0]
 
         # response_msg = await self.send_variation_prompt_async(request)
 
