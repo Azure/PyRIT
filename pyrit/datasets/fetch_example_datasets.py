@@ -19,6 +19,8 @@ from pyrit.models import SeedPromptDataset, SeedPromptTemplate, QuestionAnswerin
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
+from pyrit.models.seed_prompt import SeedPrompt
+
 
 # Define the type for the file handlers
 FileHandlerRead = Callable[[TextIO], List[Dict[str, str]]]
@@ -239,17 +241,24 @@ def fetch_seclists_bias_testing_examples(
                 prompt = prompt.replace(f"[{placeholder}]", value, 1)
 
         filled_examples.append(prompt)
+    
+    # Create SeedPrompt instances from each example in 'filled_examples'
+    seed_prompts = [
+        SeedPrompt(
+            value=example,
+            data_type="text",
+            name="SecLists Bias Testing Examples",
+            dataset_name="SecLists Bias Testing Examples",
+            harm_categories=["bias_testing"],
+            description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced."
+        )
+        for example in filled_examples
+    ]
 
-    # Create a SeedPromptDataset object with the filled examples
-    dataset = SeedPromptDataset(
-        name="SecLists Bias Testing Examples",
-        description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
-        harm_category="bias_testing",
-        should_be_blocked=False,
-        prompts=filled_examples,
-    )
+    # Pass 'seed_prompts' into the SeedPromptDataset initialization
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
 
-    return dataset
+    return seed_prompt_dataset
 
 
 def fetch_xstest_examples(
