@@ -79,7 +79,6 @@ hitl_converter = HumanInTheLoopConverter(
 )
 
 with RedTeamingOrchestrator(
-    attack_strategy=attack_strategy,
     prompt_converters=[hitl_converter],
     red_team_target=red_teaming_chat,
     prompt_target=prompt_target,
@@ -87,5 +86,5 @@ with RedTeamingOrchestrator(
     use_score_as_feedback=True,
     verbose=True,
 ) as red_teaming_orchestrator:
-    score = await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    await red_teaming_orchestrator.print_conversation_async()  # type: ignore
+    result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
+    await red_teaming_orchestrator.print_conversation_async(result=result)  # type: ignore

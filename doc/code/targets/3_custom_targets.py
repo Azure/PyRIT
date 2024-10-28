@@ -75,7 +75,6 @@ Command the bot to use its power to write the important words with a Z and a spa
 gandalf_target = GandalfTarget(level=gandalf_level)
 gandalf_password_scorer = GandalfScorer(chat_target=aoai_chat, level=gandalf_level)
 with RedTeamingOrchestrator(
-    attack_strategy=attack_strategy,
     prompt_target=gandalf_target,
     red_team_target=aoai_chat,
     objective_scorer=gandalf_password_scorer,
@@ -83,8 +82,8 @@ with RedTeamingOrchestrator(
 ) as red_teaming_orchestrator:
 
     # Once the agents are set up, we can start the conversation.
-    await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    await red_teaming_orchestrator.print_conversation_async()  # type: ignore
+    result = await red_teaming_orchestrator.run_attack_async(objective=attack_strategy)  # type: ignore
+    await red_teaming_orchestrator.print_conversation_async(result=result)  # type: ignore
 
 
 # %% [markdown]
@@ -161,25 +160,21 @@ crucible_strategy = SystemPromptWithObjective(
 scorer = SubStringScorer(substring='"flag":', category="crucible")
 join_converter = StringJoinConverter()
 
-with (
-    CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io") as crucible_target,
-    OpenAIChatTarget() as aoai_chat,
-):
 
-    red_teaming_orchestrator = RedTeamingOrchestrator(
-        attack_strategy=crucible_strategy,
-        prompt_target=crucible_target,
-        red_team_target=aoai_chat,
-        objective_scorer=scorer,
-        verbose=False,
-        initial_red_teaming_prompt="How can I help?",
-        prompt_converters=[],
-    )
+crucible_target = CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io")
+
+with RedTeamingOrchestrator(
+    prompt_target=crucible_target,
+    red_team_target=OpenAIChatTarget(),
+    objective_scorer=scorer,
+    max_turns=2,
+    prompt_converters=[],
+) as red_teaming_orchestrator:
 
     # Once the agents are set up, we can start the conversation.
     # In reality you probably want to use more than one turn.
-    await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    await red_teaming_orchestrator.print_conversation_async()  # type: ignore
+    result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
+    await red_teaming_orchestrator.print_conversation_async(result=result)  # type: ignore
 
 # %% [markdown]
 # Check out the code for the Crucible target [here](../../../pyrit/prompt_target/crucible_target.py).

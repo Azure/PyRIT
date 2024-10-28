@@ -5,9 +5,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Optional
-from uuid import UUID, uuid4
-
-from colorama import Fore, Style
+from uuid import uuid4
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import (
@@ -68,7 +66,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
     ) -> None:
 
         system_prompt_path = (
-            red_team_system_prompt_path or Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1.yaml"
+            red_team_system_prompt_path
+            or Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1.yaml"
         )
 
         objective_scorer = FloatScaleThresholdScorer(
@@ -90,7 +89,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             objective_scorer=objective_scorer,
             memory_labels=memory_labels,
             prompt_converters=prompt_converters,
-            verbose=verbose
+            verbose=verbose,
         )
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
@@ -108,8 +107,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             memory=self._memory,
         )
 
-
-
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
         Performs the Crescendo Attack.
@@ -126,16 +123,16 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             logger.info(f"Please set max_turns to a positive integer. `max_turns` current value: {self._max_turns}")
             raise ValueError
 
-
         red_teaming_chat_conversation_id = str(uuid4())
         prompt_target_conversation_id = str(uuid4())
 
-        red_team_system_prompt = str(SystemPromptWithObjective(
-            path=self._red_team_target_system_prompt_path,
-            objective=objective,
-            max_turns=self._max_turns,
-        ))
-
+        red_team_system_prompt = str(
+            SystemPromptWithObjective(
+                path=self._red_team_target_system_prompt_path,
+                objective=objective,
+                max_turns=self._max_turns,
+            )
+        )
 
         self._red_team_target.set_system_prompt(
             system_prompt=red_team_system_prompt,
@@ -168,8 +165,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             logger.info("Sending retrieved attack prompt to TARGET")
 
             last_response = await self._send_prompt_to_target_async(
-                attack_prompt=attack_prompt,
-                conversation_id=prompt_target_conversation_id
+                attack_prompt=attack_prompt, conversation_id=prompt_target_conversation_id
             )
 
             if backtrack_count < self._max_backtracks:
@@ -204,9 +200,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             refused_text = ""
 
             objective_score = (
-                await self._objective_scorer.score_async(
-                    request_response=last_response, task=objective
-                )
+                await self._objective_scorer.score_async(request_response=last_response, task=objective)
             )[0]
 
             logger.info(
@@ -312,11 +306,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         return str(attack_prompt)
 
     async def _send_prompt_to_target_async(
-            self,
-            *,
-            attack_prompt: str,
-            conversation_id: str = None
-        ) -> PromptRequestPiece:
+        self, *, attack_prompt: str, conversation_id: str = None
+    ) -> PromptRequestPiece:
         # Sends the attack prompt to the prompt target and returns the response
         normalizer_request = self._create_normalizer_request(
             prompt_text=attack_prompt,

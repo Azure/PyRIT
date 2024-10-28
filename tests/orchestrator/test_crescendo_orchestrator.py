@@ -2,15 +2,17 @@
 # Licensed under the MIT license.
 
 import os
-from pathlib import Path
 import pytest
 import tempfile
+
+from pathlib import Path
 from tests.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.exceptions import InvalidJsonException
 from pyrit.memory import DuckDBMemory
-from pyrit.models import  SystemPromptWithObjective
+from pyrit.models import SystemPromptWithObjective, PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.score import Score
 
@@ -256,13 +258,13 @@ async def test_max_turns_init_exceptions():
             prompt_target=MagicMock(), red_team_target=MagicMock(), scoring_target=MagicMock(), max_turns=0
         )
 
+
 @pytest.mark.asyncio
 async def test_max_backtrack_init_exceptions():
     with pytest.raises(ValueError):
         CrescendoOrchestrator(
             prompt_target=MagicMock(), red_team_target=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
         )
-
 
 
 @pytest.mark.asyncio
@@ -283,6 +285,7 @@ async def test_custom_crescendo_system_prompt_path(mock_target: AsyncMock, varia
 
         assert orchestrator._red_team_target_system_prompt_path == custom_system_prompt_path
 
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("variants", list(range(1, 6)))
 async def test_custom_crescendo_valid_yaml(mock_target: AsyncMock, variants: int):
@@ -293,11 +296,13 @@ async def test_custom_crescendo_valid_yaml(mock_target: AsyncMock, variants: int
         )
 
         # This will throw an exception if the yaml is invalid
-        s = str(SystemPromptWithObjective(
-            path=custom_system_prompt_path,
-            objective="objective",
-            max_turns=3,
-        ))
+        s = str(
+            SystemPromptWithObjective(
+                path=custom_system_prompt_path,
+                objective="objective",
+                max_turns=3,
+            )
+        )
 
         assert s
 
@@ -344,7 +349,7 @@ async def test_get_attack_invalid_json_exceptions(orchestrator: CrescendoOrchest
                 refused_text=None,
                 turn_num=1,
                 max_turns=10,
-                objective_score=None
+                objective_score=None,
             )
         assert mock_prompt_normalizer.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
@@ -360,7 +365,7 @@ async def test_get_attack_sets_default_prompt(orchestrator: CrescendoOrchestrato
         request_pieces=[PromptRequestPiece(role="assistant", original_value=red_team_response)]
     )
 
-    objective="do something extremely bad"
+    objective = "do something extremely bad"
 
     with patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer:
         mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
@@ -370,7 +375,7 @@ async def test_get_attack_sets_default_prompt(orchestrator: CrescendoOrchestrato
             refused_text=None,
             turn_num=3,
             max_turns=7,
-            objective_score=None
+            objective_score=None,
         )
         _, kwargs = mock_prompt_normalizer.send_prompt_async.call_args
         prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
@@ -392,7 +397,7 @@ async def test_get_attack_sets_refused_text(orchestrator: CrescendoOrchestrator)
         request_pieces=[PromptRequestPiece(role="assistant", original_value=red_team_response)]
     )
 
-    objective="do something extremely bad"
+    objective = "do something extremely bad"
 
     with patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer:
         mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
@@ -429,7 +434,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
     previous_prompt_text = "hello I am the previous prompt"
     previous_prompt = [PromptRequestPiece(role="user", original_value=previous_prompt_text)]
 
-    objective="do something extremely bad"
+    objective = "do something extremely bad"
 
     with (
         patch.object(orchestrator._memory, "get_prompt_request_pieces_by_id", MagicMock(return_value=previous_prompt)),

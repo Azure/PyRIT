@@ -18,6 +18,7 @@ from pyrit.score import Scorer, Score
 
 logger = logging.getLogger(__name__)
 
+
 class RTOSystemPromptPaths(enum.Enum):
     TEXT_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "text_generation.yaml").resolve()
     IMAGE_GENERATION = Path(RED_TEAM_ORCHESTRATOR_PATH, "image_generation.yaml").resolve()

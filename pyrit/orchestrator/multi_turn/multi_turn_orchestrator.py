@@ -8,7 +8,6 @@ import logging
 import os
 from pathlib import Path
 from typing import Optional
-from uuid import UUID
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
@@ -21,12 +20,15 @@ from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class MultiTurnAttackResult:
     """The result of a multi-turn attack."""
+
     conversation_id: str
     achieved_objective: bool
     objective: str
+
 
 class MultiTurnOrchestrator(Orchestrator):
     _memory: MemoryInterface
@@ -91,7 +93,6 @@ class MultiTurnOrchestrator(Orchestrator):
 
         self._max_turns = max_turns
 
-
         if objective_scorer.scorer_type != "true_false":
             raise ValueError(
                 f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
@@ -146,20 +147,22 @@ class MultiTurnOrchestrator(Orchestrator):
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
-        target_messages = self._memory._get_prompt_pieces_with_conversation_id(
-            conversation_id=result.conversation_id
-        )
+        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=result.conversation_id)
 
         if not target_messages or len(target_messages) == 0:
             print("No conversation with the target")
             return
 
         if result.achieved_objective:
-            print(f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has completed the conversation and achieved "
-                  f"the objective: {result.objective}")
+            print(
+                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has completed the conversation and achieved "
+                f"the objective: {result.objective}"
+            )
         else:
-            print(f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has not achieved the objective: "
-                  f"{result.objective}")
+            print(
+                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has not achieved the objective: "
+                f"{result.objective}"
+            )
 
         for message in target_messages:
             if message.role == "user":

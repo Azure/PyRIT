@@ -5,14 +5,13 @@ import pathlib
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 import pytest
 
-from typing import Dict, Generator, List, Union
+from typing import Dict, Generator, List
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
 from pyrit.prompt_target import PromptTarget, OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.models import SystemPromptWithObjective
 from pyrit.score import Score, Scorer
 from pyrit.common.path import DATASETS_PATH
 
@@ -230,7 +229,7 @@ async def test_is_conversation_complete_scoring_non_bool():
 async def test_run_attack_async(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
-    red_team_system_prompt_path: SystemPromptWithObjective,
+    red_team_system_prompt_path: pathlib.Path,
     memory_interface: MemoryInterface,
     max_turns: int,
 ):

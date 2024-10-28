@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnOrchestrator,MultiTurnAttackResult
+from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 
 from pyrit.orchestrator.multi_turn.crescendo_orchestrator import CrescendoOrchestrator
 from pyrit.orchestrator.flip_attack_orchestrator import FlipAttackOrchestrator
