@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPromptDataset, SeedPromptTemplate
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPromptDataset, SeedPromptTemplate, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, FuzzerConverter, FuzzerShortenConverter
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
@@ -21,7 +21,7 @@ def scoring_target(memory) -> MockPromptTarget:
 
 
 @pytest.fixture
-def simple_prompts() -> list[str]:
+def simple_prompts() -> list[SeedPrompt]:
     """sample prompts"""
     prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     return prompts.prompts

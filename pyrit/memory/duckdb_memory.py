@@ -12,11 +12,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, SeedPromptEntry, PromptMemoryEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
-from pyrit.models import DiskStorageIO, PromptRequestPiece, SeedPrompt
+from pyrit.models import DiskStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
 
@@ -273,8 +273,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 raise
 
     def query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False
-    ) -> list[Base]:  # type: ignore
+        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+    ) -> list[Base]:
         """
         Fetches data from the specified table model with optional conditions.
 
@@ -296,6 +296,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
+                return []
 
     def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
@@ -361,9 +362,3 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Base.metadata.drop_all(self.engine)
         # Recreate the tables
         Base.metadata.create_all(self.engine, checkfirst=True)
-
-    def add_prompts_to_memory(self, *, prompts: list[SeedPrompt]) -> None:
-        """
-        Inserts a list of prompts into the memory storage.
-        """
-        self._insert_entries(entries=[SeedPromptEntry(entry=prompt) for prompt in prompts])

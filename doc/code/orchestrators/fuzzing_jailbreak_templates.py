@@ -54,7 +54,7 @@ prompt_template3 = SeedPromptTemplate.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "anti_gpt.yaml"
 )
 
-prompt_templates = [prompt_template1.template, prompt_template2.template, prompt_template3.template]
+prompt_templates = [prompt_template1.value, prompt_template2.value, prompt_template3.value]
 
 load_default_env()
 

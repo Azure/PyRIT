@@ -115,7 +115,7 @@ class MemoryInterface(abc.ABC):
 
     @abc.abstractmethod
     def query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False
+        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
     ) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
@@ -464,12 +464,12 @@ class MemoryInterface(abc.ABC):
         *,
         value: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        harm_categories: Optional[Sequence[str]] = None,
+        harm_categories: Optional[list[str]] = None,
         added_by: Optional[str] = None,
-        authors: Optional[Sequence[str]] = None,
-        groups: Optional[Sequence[str]] = None,
+        authors: Optional[list[str]] = None,
+        groups: Optional[list[str]] = None,
         source: Optional[str] = None,
-        parameters: Optional[Sequence[str]] = None,
+        parameters: Optional[list[str]] = None,
     ) -> list[SeedPrompt]:
         """
         Retrieves a list of seed prompts based on the specified filters.
@@ -634,11 +634,11 @@ class MemoryInterface(abc.ABC):
         self,
         *,
         dataset_name: Optional[str] = None,
-        data_types: Optional[Sequence[str]] = None,
-        harm_categories: Optional[Sequence[str]] = None,
+        data_types: Optional[list[str]] = None,
+        harm_categories: Optional[list[str]] = None,
         added_by: Optional[str] = None,
-        authors: Optional[Sequence[str]] = None,
-        groups: Optional[Sequence[str]] = None,
+        authors: Optional[list[str]] = None,
+        groups: Optional[list[str]] = None,
         source: Optional[str] = None,
     ) -> list[SeedPromptGroup]:
         """Retrieves groups of seed prompts based on the provided filtering criteria._summary_

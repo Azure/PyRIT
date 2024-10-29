@@ -12,7 +12,7 @@ ScoreType = Literal["true_false", "float_scale"]
 
 class Score:
 
-    id: uuid.UUID
+    id: uuid.UUID | str
 
     # The value the scorer ended up with; e.g. True (if true_false) or 0 (if float_scale)
     score_value: str

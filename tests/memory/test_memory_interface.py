@@ -4,7 +4,7 @@
 from typing import Generator, Literal
 from unittest.mock import MagicMock, patch
 from pathlib import Path
-from uuid import uuid4
+from uuid import uuid4, UUID
 import pytest
 import random
 from string import ascii_lowercase
@@ -1008,7 +1008,7 @@ def test_get_seed_prompts_with_substring_filters_parameters(memory: MemoryInterf
 
 
 def test_add_seed_prompts_to_memory_empty_list(memory: MemoryInterface):
-    prompts = []
+    prompts: list[SeedPrompt] = []
     memory.add_seed_prompts_to_memory(prompts=prompts, added_by="tester")
     stored_prompts = memory.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 0
@@ -1089,15 +1089,13 @@ def test_add_seed_prompt_groups_to_memory_multiple_elements_no_added_by(memory: 
 
 def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(memory: MemoryInterface):
     prompt1 = SeedPrompt(
-        value="Test prompt 1", added_by="tester", prompt_group_id="group1", data_type="text", sequence=0
+        value="Test prompt 1", added_by="tester", prompt_group_id=UUID("group1"), data_type="text", sequence=0
     )
     prompt2 = SeedPrompt(
-        value="Test prompt 2", added_by="tester", prompt_group_id="group2", data_type="text", sequence=1
+        value="Test prompt 2", added_by="tester", prompt_group_id=UUID("group1"), data_type="text", sequence=1
     )
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
-    with pytest.raises(
-        ValueError
-    ):
+    with pytest.raises(ValueError):
         memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
 

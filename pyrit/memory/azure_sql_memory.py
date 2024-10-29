@@ -324,8 +324,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         return self.SessionFactory()
 
     def query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False
-    ) -> list[Base]:  # type: ignore
+        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+    ) -> list[Base]:
         """
         Fetches data from the specified table model with optional conditions.
 
@@ -347,6 +347,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
+                return []
 
     def reset_database(self):
         """Drop and recreate existing tables"""

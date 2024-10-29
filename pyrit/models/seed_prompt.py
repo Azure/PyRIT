@@ -4,7 +4,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 import uuid
 
 from collections import defaultdict
@@ -18,7 +18,7 @@ from pyrit.models.literals import PromptDataType
 class SeedPrompt(YamlLoadable):
     """Represents a seed prompt with various attributes and metadata."""
 
-    id: Optional[Union[uuid.UUID, str]]
+    id: Optional[uuid.UUID]
     value: str
     data_type: PromptDataType
     name: Optional[str]
@@ -32,7 +32,7 @@ class SeedPrompt(YamlLoadable):
     added_by: Optional[str]
     metadata: Optional[Dict[str, str]]
     parameters: Optional[List[str]]
-    prompt_group_id: Optional[Union[uuid.UUID, str]]
+    prompt_group_id: Optional[uuid.UUID]
     sequence: Optional[int]
 
     def __init__(
@@ -170,7 +170,7 @@ class SeedPromptGroup(YamlLoadable):
     ):
         self.prompts = prompts
         if self.prompts and isinstance(self.prompts[0], dict):
-            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in self.prompts]
+            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in self.prompts]  # type: ignore
         else:
             self.prompts = prompts
 
@@ -206,7 +206,7 @@ class SeedPromptDataset(YamlLoadable):
 
     def __init__(self, prompts: List[SeedPrompt]):
         if prompts and isinstance(prompts[0], dict):
-            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in prompts]
+            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in prompts]  # type: ignore
         else:
             self.prompts = prompts
 

@@ -424,10 +424,27 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPrompt
             if (item["is_response_0_safe"] is False or item["is_response_1_safe"] is False)
         ]
 
-    harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior,
-    Endangering Public Health, Copyright Issues, Violence, Drugs, Privacy Violation, Economic Crime,
-    Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
-    Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
+    harm_categories = [
+        "Endangering National Security",
+        "Insulting Behavior",
+        "Discriminatory Behavior",
+        "Endangering Public Health",
+        "Copyright Issues",
+        "Violence",
+        "Drugs",
+        "Privacy Violation",
+        "Economic Crime",
+        "Mental Manipulation",
+        "Human Trafficking",
+        "Physical Harm",
+        "Sexual Content",
+        "Cybercrime",
+        "Disrupting Public Order",
+        "Environmental Damage",
+        "Psychological Harm",
+        "White-Collar Crime",
+        "Animal Abuse",
+    ]
 
     # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
@@ -545,10 +562,27 @@ def fetch_adv_bench_dataset(
     # Extract and append the data to respective containers
     prompts = [item["goal"] for item in examples if "goal" in item]
 
-    harm_categories = """Endangering National Security, Insulting Behavior, Discriminatory Behavior,
-    Endangering Public Health, Copyright Issues, Violence, Drugs, Privacy Violation, Economic Crime,
-    Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
-    Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse, and more """
+    harm_categories = [
+        "Endangering National Security",
+        "Insulting Behavior",
+        "Discriminatory Behavior",
+        "Endangering Public Health",
+        "Copyright Issues",
+        "Violence",
+        "Drugs",
+        "Privacy Violation",
+        "Economic Crime",
+        "Mental Manipulation",
+        "Human Trafficking",
+        "Physical Harm",
+        "Sexual Content",
+        "Cybercrime",
+        "Disrupting Public Order",
+        "Environmental Damage",
+        "Psychological Harm",
+        "White-Collar Crime",
+        "Animal Abuse",
+    ]
 
     # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
