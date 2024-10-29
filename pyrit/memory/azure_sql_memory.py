@@ -323,7 +323,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def query_entries(self, model, *, conditions: Optional = None, distinct: bool = False) -> list[Base]:  # type: ignore
+    def query_entries(
+        self, model, *, conditions: Optional = None, distinct: bool = False
+    ) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 

@@ -16,7 +16,6 @@ from pyrit.models import (
     ChatMessage,
     group_conversation_request_pieces_by_sequence,
     group_seed_prompts_by_prompt_group_id,
-    SeedPrompt,
     PromptRequestResponse,
     PromptRequestPiece,
     Score,
@@ -26,7 +25,7 @@ from pyrit.models import (
     StorageIO,
 )
 
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, ScoreEntry, SeedPrompt, SeedPromptEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, ScoreEntry, SeedPromptEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 
@@ -115,7 +114,9 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def query_entries(self, model, *, conditions: Optional = None, distinct: bool = False) -> list[Base]:  # type: ignore
+    def query_entries(
+        self, model, *, conditions: Optional = None, distinct: bool = False
+    ) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 
@@ -476,7 +477,8 @@ class MemoryInterface(abc.ABC):
         Args:
             value (str): The value to match by substring. If None, all values are returned.
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
-            harm_categories (list[str]): A list of harm categories to filter by. If None, all harm categories are considered.
+            harm_categories (list[str]): A list of harm categories to filter by. If None, 
+            all harm categories are considered.
                 Specifying multiple harm categories returns only prompts that are marked with all harm categories.
             added_by (str): The user who added the prompts.
             authors (list[str]): A list of authors to filter by.
@@ -538,7 +540,8 @@ class MemoryInterface(abc.ABC):
                 prompt.added_by = added_by
             if not prompt.added_by:
                 raise ValueError(
-                    "The 'added_by' attribute must be set for each prompt. Set it explicitly or pass a value to the 'added_by' parameter."
+                    """The 'added_by' attribute must be set for each prompt. 
+                    Set it explicitly or pass a value to the 'added_by' parameter."""
                 )
             if prompt.date_added is None:
                 prompt.date_added = current_time
@@ -553,7 +556,7 @@ class MemoryInterface(abc.ABC):
         try:
             entries = self.query_entries(
                 SeedPromptEntry.dataset_name,
-                conditions=and_(SeedPromptEntry.dataset_name != None, SeedPromptEntry.dataset_name != ""),
+                conditions=and_(SeedPromptEntry.dataset_name is not None, SeedPromptEntry.dataset_name != ""),
                 distinct=True,
             )  # type: ignore
             # return value is list of tuples with a single entry (the dataset name)
@@ -578,7 +581,8 @@ class MemoryInterface(abc.ABC):
         """
         if not prompt_groups:
             raise ValueError("At least one prompt group must be provided.")
-        # Validates the prompt group IDs and sets them if possible before leveraging the add_seed_prompts_to_memory method.
+        # Validates the prompt group IDs and sets them if possible before leveraging 
+        # the add_seed_prompts_to_memory method.
         all_prompts = []
         for prompt_group in prompt_groups:
             if not prompt_group.prompts:
@@ -589,7 +593,8 @@ class MemoryInterface(abc.ABC):
             group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
             if len(group_id_set) > 1:
                 raise ValueError(
-                    f"Inconsistent 'prompt_group_id' attribute between members of the same prompt group. Found {group_id_set}"
+                    f"""Inconsistent 'prompt_group_id' attribute between members of the 
+                    same prompt group. Found {group_id_set}"""
                 )
             prompt_group_id = group_id_set.pop() or str(uuid.uuid4())
             for prompt in prompt_group.prompts:
@@ -640,7 +645,8 @@ class MemoryInterface(abc.ABC):
 
         Args:
             dataset_name (Optional[str], optional): Name of the dataset to filter seed prompts.
-            data_types (Optional[Sequence[str]], optional): List of data types to filter seed prompts by (e.g., text, image_path).
+            data_types (Optional[Sequence[str]], optional): List of data types to filter seed prompts by 
+            (e.g., text, image_path).
             harm_categories (Optional[Sequence[str]], optional): List of harm categories to filter seed prompts by.
             added_by (Optional[str], optional): The user who added the seed prompt groups to filter by.
             authors (Optional[Sequence[str]], optional): List of authors to filter seed prompt groups by.

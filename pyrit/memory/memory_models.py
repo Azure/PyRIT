@@ -7,7 +7,6 @@ from typing import List, Literal, Optional
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
 from pyrit.models import PromptDataType, SeedPrompt
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
 from sqlalchemy.types import Uuid  # type: ignore
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
 from sqlalchemy.orm import Mapped  # type: ignore

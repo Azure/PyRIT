@@ -272,7 +272,9 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
 
-    def query_entries(self, model, *, conditions: Optional = None, distinct: bool = False) -> list[Base]:  # type: ignore
+    def query_entries(
+        self, model, *, conditions: Optional = None, distinct: bool = False
+    ) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
 

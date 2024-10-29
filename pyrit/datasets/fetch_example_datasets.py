@@ -738,8 +738,9 @@ def fetch_decoding_trust_stereotypes_examples(
             name="DecodingTrust Stereotypes Examples",
             dataset_name="DecodingTrust Stereotypes Examples",
             harm_categories=["stereotypes"],
-            description="A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics and target groups. \
-            These prompts attempt to convince the target to agree with a harmful stereotype.",
+            description="""A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics
+            and target groups. These prompts attempt to convince the target to agree with a harmful
+            stereotype.""",
         )
         for prompt in prompts
     ]
