@@ -84,7 +84,7 @@ from pyrit.models import SeedPromptTemplate
 template = SeedPromptTemplate(
     value="I recently had {{ food_item }} in {{ food_location }} and it was absolutely terrible. What do you think about {{ food_item }}?",
     parameters=["food_item", "food_location"],
-    data_type='text'
+    data_type="text",
 )
 
 # %% [markdown]
