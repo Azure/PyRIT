@@ -477,7 +477,7 @@ class MemoryInterface(abc.ABC):
         Args:
             value (str): The value to match by substring. If None, all values are returned.
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
-            harm_categories (list[str]): A list of harm categories to filter by. If None, 
+            harm_categories (list[str]): A list of harm categories to filter by. If None,
             all harm categories are considered.
                 Specifying multiple harm categories returns only prompts that are marked with all harm categories.
             added_by (str): The user who added the prompts.
@@ -540,7 +540,7 @@ class MemoryInterface(abc.ABC):
                 prompt.added_by = added_by
             if not prompt.added_by:
                 raise ValueError(
-                    """The 'added_by' attribute must be set for each prompt. 
+                    """The 'added_by' attribute must be set for each prompt.
                     Set it explicitly or pass a value to the 'added_by' parameter."""
                 )
             if prompt.date_added is None:
@@ -581,7 +581,7 @@ class MemoryInterface(abc.ABC):
         """
         if not prompt_groups:
             raise ValueError("At least one prompt group must be provided.")
-        # Validates the prompt group IDs and sets them if possible before leveraging 
+        # Validates the prompt group IDs and sets them if possible before leveraging
         # the add_seed_prompts_to_memory method.
         all_prompts = []
         for prompt_group in prompt_groups:
@@ -593,7 +593,7 @@ class MemoryInterface(abc.ABC):
             group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
             if len(group_id_set) > 1:
                 raise ValueError(
-                    f"""Inconsistent 'prompt_group_id' attribute between members of the 
+                    f"""Inconsistent 'prompt_group_id' attribute between members of the
                     same prompt group. Found {group_id_set}"""
                 )
             prompt_group_id = group_id_set.pop() or str(uuid.uuid4())
@@ -645,7 +645,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             dataset_name (Optional[str], optional): Name of the dataset to filter seed prompts.
-            data_types (Optional[Sequence[str]], optional): List of data types to filter seed prompts by 
+            data_types (Optional[Sequence[str]], optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
             harm_categories (Optional[Sequence[str]], optional): List of harm categories to filter seed prompts by.
             added_by (Optional[str], optional): The user who added the seed prompt groups to filter by.
