@@ -297,19 +297,24 @@ def fetch_xstest_examples(
     prompts = [example["prompt"] for example in examples]
     harm_categories = [example["note"] for example in examples]
 
-    # Join all categories into a single comma-separated string
-    harm_category_str = ", ".join(filter(None, harm_categories))
 
-    # Create a SeedPromptDataset object with the fetched examples
-    dataset = SeedPromptDataset(
-        name="XSTest Examples",
-        description="A dataset of XSTest examples containing various categories such as violence, drugs, etc.",
-        harm_category=harm_category_str,
-        should_be_blocked=False,
-        prompts=prompts,
-    )
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=example,
+            data_type="text",
+            name="XSTest Examples",
+            dataset_name="XSTest Examples",
+            harm_categories=harm_categories,
+            description="A dataset of XSTest examples containing various categories such as violence, drugs, etc."
+        )
+        for example in prompts
+    ]
 
-    return dataset
+    # Pass 'seed_prompts' into the SeedPromptDataset initialization
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+
+    return seed_prompt_dataset
 
 
 def fetch_harmbench_examples(
@@ -365,22 +370,24 @@ def fetch_harmbench_examples(
         prompts.append(example["Behavior"])
         semantic_categories.add(example["SemanticCategory"])
 
-        # Use the semantic categories to determine harm categories
-        harm_category_str = ", ".join(set(semantic_categories))
-
-    # Create a SeedPromptDataset object with the fetched examples
-    dataset = SeedPromptDataset(
-        name="HarmBench Examples",
-        description=(
-            "A dataset of HarmBench examples containing various categories such as chemical,"
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=example,
+            data_type="text",
+            name="HarmBench Examples",
+            dataset_name="HarmBench Examples",
+            harm_categories=list(semantic_categories),
+            description="A dataset of HarmBench examples containing various categories such as chemical,"
             "biological, illegal activities, etc."
-        ),
-        harm_category=harm_category_str,
-        should_be_blocked=True,
-        prompts=prompts,
-    )
+        )
+        for example in prompts
+    ]
 
-    return dataset
+    # Pass 'seed_prompts' into the SeedPromptDataset initialization
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+
+    return seed_prompt_dataset
 
 
 def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPromptDataset:
@@ -417,17 +424,25 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPrompt
     Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
     Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
 
-    dataset = SeedPromptDataset(
-        name="PKU-SafeRLHF",
-        description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their
-        helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
-        harm_category=harm_categories,
-        should_be_blocked=True,
-        source="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
-        prompts=prompts,
-    )
 
-    return dataset
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=prompt,
+            data_type="text",
+            name="PKU-SafeRLHF",
+            dataset_name="PKU-SafeRLHF",
+            harm_categories=harm_categories,
+            description="""This is a Hugging Face dataset that labels a prompt and 2 responses categorizing their
+        helpfulness or harmfulness. Only the 'prompt' column is extracted.""",
+            source="https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF",
+        )
+        for prompt in prompts
+    ]
+
+    # Pass 'seed_prompts' into the SeedPromptDataset initialization
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
 
 
 def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedPromptDataset:
@@ -435,15 +450,23 @@ def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedPromptDataset
 
     prompts = [item["prompt"] for item in data["train"]]
 
-    dataset = SeedPromptDataset(
-        name="LLM-LAT/harmful-dataset",
-        source="https://huggingface.co/datasets/LLM-LAT/harmful-dataset",
-        harm_category="",
-        description="This dataset contains prompts used to assess and analyze harmful behaviors in llm",
-        prompts=prompts,
-        should_be_blocked=True,
-    )
-    return dataset
+    
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=prompt,
+            data_type="text",
+            name="LLM-LAT/harmful-dataset",
+            dataset_name="LLM-LAT/harmful-dataset",
+            description="This dataset contains prompts used to assess and analyze harmful behaviors in llm",
+            source="https://huggingface.co/datasets/LLM-LAT/harmful-dataset",
+        )
+        for prompt in prompts
+    ]
+
+    # Pass 'seed_prompts' into the SeedPromptDataset initialization
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
 
 
 def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
@@ -458,20 +481,28 @@ def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
 
     prompts = [item["prompt"] for item in data["train"]]
 
-    dataset = SeedPromptDataset(
-        name="walledai/TDC23-RedTeaming",
-        source="https://huggingface.co/datasets/walledai/TDC23-RedTeaming",
-        harm_category="",
-        description="""TDC23-RedTeaming dataset from HuggingFace,
+    
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=prompt,
+            data_type="text",
+            name="walledai/TDC23-RedTeaming",
+            dataset_name="walledai/TDC23-RedTeaming",
+            description="""TDC23-RedTeaming dataset from HuggingFace,
                     created by Walled AI (https://huggingface.co/walledai).
                     Contains 100 prompts aimed at generating harmful content
                     across multiple harm categories related to fairness,
                     misinformation, dangerous and criminal activities,
                     violence, etc. in the style of writing narratives.""",
-        should_be_blocked=True,
-        prompts=prompts,
-    )
-    return dataset
+            source="https://huggingface.co/datasets/walledai/TDC23-RedTeaming",
+        )
+        for prompt in prompts
+    ]
+
+    # Pass 'seed_prompts' into the SeedPromptDataset initialization
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
 
 
 def fetch_adv_bench_dataset(
@@ -517,19 +548,26 @@ def fetch_adv_bench_dataset(
     Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
     Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse, and more """
 
-    dataset = SeedPromptDataset(
-        name="AdvBench Dataset",
-        description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=prompt,
+            data_type="text",
+            name="AdvBench Dataset",
+            dataset_name="AdvBench Dataset",
+            harm_categories=harm_categories,
+            description="""AdvBench is a set of 520 harmful behaviors formulated as instructions. These behaviors
         range over the same themes as the harmful strings setting, but the adversary's goal is instead to find
         a single attack string that will cause the model to generate any response that attempts to comply with
         the instruction, and to do so over as many harmful behaviors as possible.""",
-        harm_category=harm_categories,
-        should_be_blocked=True,
-        source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
-        prompts=prompts,
-    )
+            source="https://github.com/llm-attacks/llm-attacks/tree/main/data/advbench",
+        )
+        for prompt in prompts
+    ]
 
-    return dataset
+    # Pass 'seed_prompts' into the SeedPromptDataset initialization
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
 
 
 def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDataset:
@@ -692,16 +730,22 @@ def fetch_decoding_trust_stereotypes_examples(
         )
         prompts.append(prompt)
 
-    # Create a SeedPromptDataset object with the fetched examples
-    dataset = SeedPromptDataset(
-        name="DecodingTrust Stereotypes Examples",
-        description=(
-            "A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics and target groups. \
-            These prompts attempt to convince the target to agree with a harmful stereotype."
-        ),
-        harm_category="stereotypes",
-        should_be_blocked=True,
-        prompts=prompts,
-    )
+    
+    # Create SeedPrompt instances from each example in 'prompts'
+    seed_prompts = [
+        SeedPrompt(
+            value=prompt,
+            data_type="text",
+            name="DecodingTrust Stereotypes Examples",
+            dataset_name="DecodingTrust Stereotypes Examples",
+            harm_categories=['stereotypes'],
+            description="A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics and target groups. \
+            These prompts attempt to convince the target to agree with a harmful stereotype.",
+        )
+        for prompt in prompts
+    ]
 
-    return dataset
+    # Pass 'seed_prompts' into the SeedPromptDataset initialization
+    seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
+    return seed_prompt_dataset
+

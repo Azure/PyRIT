@@ -23,7 +23,7 @@ def scoring_target(memory) -> MockPromptTarget:
 @pytest.fixture
 def simple_prompts() -> list[str]:
     """sample prompts"""
-    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
+    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     return prompts.prompts
 
 
@@ -53,10 +53,10 @@ def simple_prompt_templates():
     )
 
     prompt_templates = [
-        prompt_template1.template,
-        prompt_template2.template,
-        prompt_template3.template,
-        prompt_template4.template,
+        prompt_template1.value,
+        prompt_template2.value,
+        prompt_template3.value,
+        prompt_template4.value,
     ]
 
     return prompt_templates
@@ -245,7 +245,7 @@ async def test_apply_template_converter(simple_prompts: list, simple_prompt_temp
             return_value=ConverterResult(output_text=new_template, output_type="text")
         )
         generated_template = await fuzzer_orchestrator._apply_template_converter(
-            template=prompt_template, other_templates=[prompt_template.template]
+            template=prompt_template, other_templates=[prompt_template.value]
         )
         TEMPLATE_PLACEHOLDER = "{{ prompt }}"
         assert TEMPLATE_PLACEHOLDER in generated_template

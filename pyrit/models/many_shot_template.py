@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from jinja2 import Template
 from pathlib import Path
 from typing import Dict, List
@@ -9,6 +9,16 @@ import yaml
 
 @dataclass
 class ManyShotTemplate:
+    template: str
+    name: str = ""
+    description: str = ""
+    should_be_blocked: bool = False
+    harm_category: str = ""
+    author: str = ""
+    group: str = ""
+    source: str = ""
+    parameters: list[str] = field(default_factory=list)
+    
     @classmethod
     def from_yaml_file(cls, file_path: Path):
         """
