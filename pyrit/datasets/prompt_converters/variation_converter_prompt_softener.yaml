@@ -1,9 +1,9 @@
 name: prompt_softener
 description: |
   A general strategy for softening the prompt implicitly describing the orignial prompt without use of explicit or harmful language
-authors: 
+authors:
   - AI Red Team
-groups: 
+groups:
   - AI Red Team
 source: AI Red Team
 parameters:

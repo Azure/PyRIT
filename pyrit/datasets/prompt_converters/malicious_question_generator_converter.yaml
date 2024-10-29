@@ -1,9 +1,9 @@
 name: expert adversary prompt
 description: |
   A prompt that encourages the assistant to act as an expert in a domain and generate questions that seem less malicious.
-harm_categories: 
+harm_categories:
   - Disallowed content
-groups: 
+groups:
   - Project Moonshot
 source: https://github.com/aiverify-foundation/moonshot-data
 parameters:

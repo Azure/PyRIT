@@ -228,7 +228,7 @@ class SeedPromptEntry(Base):
     Note: This is different from the PromptMemoryEntry which is the processed prompt data.
     SeedPrompt merely reflects basic prompts before plugging into orchestrators,
     running through models with corresponding attack strategies, and applying converters.
-    PromptMemoryEntry captures the processed prompt data before and after the above steps. 
+    PromptMemoryEntry captures the processed prompt data before and after the above steps.
 
     Attributes:
         __tablename__ (str): The name of the database table.
@@ -255,7 +255,8 @@ class SeedPromptEntry(Base):
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
-    """    
+    """
+
     __tablename__ = "SeedPromptEntries"
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid, nullable=False, primary_key=True)
@@ -292,7 +293,7 @@ class SeedPromptEntry(Base):
         self.parameters = entry.parameters
         self.prompt_group_id = entry.prompt_group_id
         self.sequence = entry.sequence
-    
+
     def get_seed_prompt(self) -> SeedPrompt:
         return SeedPrompt(
             id=self.id,
@@ -310,5 +311,5 @@ class SeedPromptEntry(Base):
             metadata=self.prompt_metadata,
             parameters=self.parameters,
             prompt_group_id=self.prompt_group_id,
-            sequence=self.sequence
+            sequence=self.sequence,
         )

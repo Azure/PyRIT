@@ -1,7 +1,7 @@
 name: mathprompt
 description: |
   A prompt that encourages the assistant to act as a mathematics expert who encodes potentially harmful instructions into symbolic mathematics problems.
-harm_categories: 
+harm_categories:
   - Disallowed content
 authors:
   - Emet Bethany
@@ -9,7 +9,7 @@ authors:
   - Juan Arturo Nolazco Flores
   - Sumit Kumar Jha
   - Peyman Najafirad
-groups: 
+groups:
   - Secure AI and Autonomy Lab, University of Texas at San Antonio
   - Data Science Hub & CoreLab Data Science, Tecnológico de Monterrey
   - Computer Science Department, Florida International University

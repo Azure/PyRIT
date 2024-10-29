@@ -1,11 +1,11 @@
 name: Crescendo Variant 4
 description: |
   A variant of the crescendo attack technique
-authors: 
+authors:
   - Mark Russinovich
   - Ahmed Salem
   - Ronen Eldan
-groups: 
+groups:
   - Microsoft
 source: https://crescendo-the-multiturn-jailbreak.github.io/
 parameters:

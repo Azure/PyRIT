@@ -29,7 +29,9 @@ def test_random_seed_consistency(mock_fetch_examples):
     seed = 1337
     dataset1 = fetch_seclists_bias_testing_examples(random_seed=seed)
     dataset2 = fetch_seclists_bias_testing_examples(random_seed=seed)
-    assert dataset1.prompts[0].value == dataset2.prompts[0].value, "Outputs should be consistent when using the same seed"
+    assert (
+        dataset1.prompts[0].value == dataset2.prompts[0].value
+    ), "Outputs should be consistent when using the same seed"
 
 
 @patch("pyrit.datasets.fetch_examples", return_value=MOCKED_EXAMPLES)
@@ -71,7 +73,9 @@ def test_default_random_behavior(mock_fetch_examples):
     dataset2 = fetch_seclists_bias_testing_examples()
 
     # Check for different outputs due to randomness
-    assert dataset1.prompts[0].value != dataset2.prompts[0].value, "Outputs should differ due to randomness without a seed"
+    assert (
+        dataset1.prompts[0].value != dataset2.prompts[0].value
+    ), "Outputs should differ due to randomness without a seed"
 
 
 @patch("pyrit.datasets.fetch_examples", return_value=MOCKED_EXAMPLES)

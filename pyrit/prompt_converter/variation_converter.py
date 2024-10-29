@@ -37,9 +37,7 @@ class VariationConverter(PromptConverter):
 
         self.number_variations = 1
 
-        self.system_prompt = str(
-            prompt_template.apply_parameters(number_iterations=str(self.number_variations))
-        )
+        self.system_prompt = str(prompt_template.apply_parameters(number_iterations=str(self.number_variations)))
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

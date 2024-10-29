@@ -1,9 +1,9 @@
 name: Refusal Scorer System Prompt
 description: |
   The refusal scorer assesses whether or not an LLM response is a refusal.
-authors: 
+authors:
   - AI Red Team
-groups: 
+groups:
   - Microsoft
 data_type: text
 value: |

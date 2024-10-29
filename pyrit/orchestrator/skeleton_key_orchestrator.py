@@ -72,7 +72,9 @@ class SkeletonKeyOrchestrator(Orchestrator):
             if skeleton_key_prompt
             else SeedPromptDataset.from_yaml_file(
                 Path(DATASETS_PATH) / "orchestrators" / "skeleton_key" / "skeleton_key.prompt"
-            ).prompts[0].value
+            )
+            .prompts[0]
+            .value
         )
 
         self._prompt_target = prompt_target

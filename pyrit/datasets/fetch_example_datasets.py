@@ -15,7 +15,13 @@ from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
-from pyrit.models import SeedPromptDataset, SeedPromptTemplate, QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
+from pyrit.models import (
+    SeedPromptDataset,
+    SeedPromptTemplate,
+    QuestionAnsweringDataset,
+    QuestionAnsweringEntry,
+    QuestionChoice,
+)
 
 from typing import Callable, Dict, List, Optional, Literal, TextIO
 
@@ -241,7 +247,7 @@ def fetch_seclists_bias_testing_examples(
                 prompt = prompt.replace(f"[{placeholder}]", value, 1)
 
         filled_examples.append(prompt)
-    
+
     # Create SeedPrompt instances from each example in 'filled_examples'
     seed_prompts = [
         SeedPrompt(
@@ -250,7 +256,7 @@ def fetch_seclists_bias_testing_examples(
             name="SecLists Bias Testing Examples",
             dataset_name="SecLists Bias Testing Examples",
             harm_categories=["bias_testing"],
-            description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced."
+            description="A dataset of SecLists AI LLM Bias Testing examples with placeholders replaced.",
         )
         for example in filled_examples
     ]
@@ -297,7 +303,6 @@ def fetch_xstest_examples(
     prompts = [example["prompt"] for example in examples]
     harm_categories = [example["note"] for example in examples]
 
-
     # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
@@ -306,7 +311,7 @@ def fetch_xstest_examples(
             name="XSTest Examples",
             dataset_name="XSTest Examples",
             harm_categories=harm_categories,
-            description="A dataset of XSTest examples containing various categories such as violence, drugs, etc."
+            description="A dataset of XSTest examples containing various categories such as violence, drugs, etc.",
         )
         for example in prompts
     ]
@@ -379,7 +384,7 @@ def fetch_harmbench_examples(
             dataset_name="HarmBench Examples",
             harm_categories=list(semantic_categories),
             description="A dataset of HarmBench examples containing various categories such as chemical,"
-            "biological, illegal activities, etc."
+            "biological, illegal activities, etc.",
         )
         for example in prompts
     ]
@@ -424,7 +429,6 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPrompt
     Mental Manipulation, Human Trafficking, Physical Harm, Sexual Content, Cybercrime, Disrupting Public Order,
     Environmental Damage, Psychological Harm, White-Collar Crime, Animal Abuse"""
 
-
     # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
@@ -450,7 +454,6 @@ def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedPromptDataset
 
     prompts = [item["prompt"] for item in data["train"]]
 
-    
     # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
@@ -481,7 +484,6 @@ def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
 
     prompts = [item["prompt"] for item in data["train"]]
 
-    
     # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
@@ -722,15 +724,12 @@ def fetch_decoding_trust_stereotypes_examples(
             continue
 
         prompt = (
-            system_prompt.apply_parameters(
-                prompt=example["user_prompt"], target_group=example["target_group"]
-            )
+            system_prompt.apply_parameters(prompt=example["user_prompt"], target_group=example["target_group"])
             if is_targeted
             else system_prompt.apply_parameters(prompt=example["user_prompt"])
         )
         prompts.append(prompt)
 
-    
     # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
@@ -738,7 +737,7 @@ def fetch_decoding_trust_stereotypes_examples(
             data_type="text",
             name="DecodingTrust Stereotypes Examples",
             dataset_name="DecodingTrust Stereotypes Examples",
-            harm_categories=['stereotypes'],
+            harm_categories=["stereotypes"],
             description="A dataset of Decoding Trust 'Stereotypes' example prompts across many different topics and target groups. \
             These prompts attempt to convince the target to agree with a harmful stereotype.",
         )
@@ -748,4 +747,3 @@ def fetch_decoding_trust_stereotypes_examples(
     # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
-

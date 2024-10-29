@@ -1,7 +1,7 @@
 name: logical_appeal_persuasion
 description: |
   A persuasion technique from https://arxiv.org/abs/2401.06373
-authors: 
+authors:
   - Zeng et al.
 source: https://github.com/CHATS-lab/persuasive_jailbreaker/blob/main/PAP_Better_Incontext_Sample/mutation_utils.py
 data_type: text

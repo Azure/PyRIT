@@ -1,7 +1,7 @@
 name: morse code cipher
 description: |
   An international Morse code cipher description for prepending.
-authors: 
+authors:
   - Youliang Yuan
   - Wenxiang Jiao
   - Wenxuan Wang
@@ -11,7 +11,7 @@ authors:
   - Zhaopeng Tu
 groups:
   - School of Data Science, The Chinese University of Hong Kong, Shenzhen, China
-  - Tencent AI Lab 
+  - Tencent AI Lab
 source: https://github.com/RobustNLP/CipherChat/blob/main/prompts_and_demonstrations.py
 parameters:
   - prompt

@@ -5,11 +5,7 @@ import re
 from typing import List
 
 
-def apply_parameters_to_template(
-    template: str,
-    parameters: List[str],
-    **kwargs
-) -> str:
+def apply_parameters_to_template(template: str, parameters: List[str], **kwargs) -> str:
     """Inserts parameters into template.
 
     Args:
@@ -19,7 +15,7 @@ def apply_parameters_to_template(
 
     Returns:
         A new prompt following the template
-    
+
     Raises:
         ValueError: If the parameters are invalid or missing in the template
     """

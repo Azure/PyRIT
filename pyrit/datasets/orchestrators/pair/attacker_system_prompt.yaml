@@ -1,6 +1,6 @@
 name: pair_attacker_system_prompt
 description: Builds the system prompts for the attacker in the PAIR scenario.
-authors: 
+authors:
   - Patrick Chao
   - Alexander Robey
   - Edgar Dobriban

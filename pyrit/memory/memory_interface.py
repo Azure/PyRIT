@@ -6,7 +6,7 @@ import copy
 from datetime import datetime
 import logging
 from pathlib import Path
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from typing import MutableSequence, Optional, Sequence
 import uuid
@@ -23,7 +23,7 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptGroup,
     SeedPromptTemplate,
-    StorageIO
+    StorageIO,
 )
 
 from pyrit.memory.memory_models import Base, EmbeddingDataEntry, ScoreEntry, SeedPrompt, SeedPromptEntry
@@ -457,7 +457,7 @@ class MemoryInterface(abc.ABC):
             file_path = RESULTS_PATH / file_name
 
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
-    
+
     def get_seed_prompts(
         self,
         *,
@@ -502,7 +502,7 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedPromptEntry.added_by == added_by)
         if source:
             conditions.append(SeedPromptEntry.source == source)
-        
+
         self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
         self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
         self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
@@ -517,13 +517,13 @@ class MemoryInterface(abc.ABC):
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
             return []
-    
+
     def _add_list_conditions(self, field: InstrumentedAttribute, values: Optional[list[str]], conditions: list) -> None:
         if values:
             for value in values:
                 conditions.append(field.contains(value))
 
-    def add_seed_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str]=None) -> None:
+    def add_seed_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str] = None) -> None:
         """
         Inserts a list of prompts into the memory storage.
 
@@ -537,13 +537,15 @@ class MemoryInterface(abc.ABC):
             if added_by:
                 prompt.added_by = added_by
             if not prompt.added_by:
-                raise ValueError("The 'added_by' attribute must be set for each prompt. Set it explicitly or pass a value to the 'added_by' parameter.")
+                raise ValueError(
+                    "The 'added_by' attribute must be set for each prompt. Set it explicitly or pass a value to the 'added_by' parameter."
+                )
             if prompt.date_added is None:
                 prompt.date_added = current_time
             entries.append(SeedPromptEntry(entry=prompt))
 
         self.insert_entries(entries=entries)
-    
+
     def get_seed_prompt_dataset_names(self) -> list[str]:
         """
         Returns a list of all seed prompt dataset names in the memory storage.
@@ -560,14 +562,16 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve dataset names with error {e}")
             return []
 
-    def add_seed_prompt_groups_to_memory(self, *, prompt_groups: list[SeedPromptGroup], added_by: Optional[str]=None) -> None:
+    def add_seed_prompt_groups_to_memory(
+        self, *, prompt_groups: list[SeedPromptGroup], added_by: Optional[str] = None
+    ) -> None:
         """
         Inserts a list of seed prompt groups into the memory storage.
 
         Args:
             prompt_groups (list[SeedPromptGroup]): A list of prompt groups to insert.
             added_by (str): The user who added the prompt groups.
-        
+
         Raises:
             ValueError: If a prompt group does not have at least one prompt.
             ValueError: If prompt group IDs are inconsistent within the same prompt group.
@@ -584,7 +588,9 @@ class MemoryInterface(abc.ABC):
             # Inconsistent prompt group IDs will raise an error.
             group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
             if len(group_id_set) > 1:
-                raise ValueError(f"Inconsistent 'prompt_group_id' attribute between members of the same prompt group. Found {group_id_set}")
+                raise ValueError(
+                    f"Inconsistent 'prompt_group_id' attribute between members of the same prompt group. Found {group_id_set}"
+                )
             prompt_group_id = group_id_set.pop() or str(uuid.uuid4())
             for prompt in prompt_group.prompts:
                 prompt.prompt_group_id = prompt_group_id
@@ -606,7 +612,8 @@ class MemoryInterface(abc.ABC):
         if not parameters:
             raise ValueError("Prompt templates must have parameters. Please specify at least one.")
         return [
-            prompt.to_prompt_template() for prompt in self.get_seed_prompts(
+            prompt.to_prompt_template()
+            for prompt in self.get_seed_prompts(
                 value=value,
                 dataset_name=dataset_name,
                 harm_categories=harm_categories,
@@ -617,7 +624,7 @@ class MemoryInterface(abc.ABC):
                 parameters=parameters,
             )
         ]
-    
+
     def get_seed_prompt_groups(
         self,
         *,
@@ -644,7 +651,7 @@ class MemoryInterface(abc.ABC):
             list[SeedPromptGroup]: A list of `SeedPromptGroup` objects that match the filtering criteria.
         """
         conditions = []
-        
+
         # Apply basic filters if provided
         if dataset_name:
             conditions.append(SeedPromptEntry.dataset_name == dataset_name)
@@ -660,15 +667,14 @@ class MemoryInterface(abc.ABC):
         self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
         self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
         self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
-        
+
         # Query DB for matching entries
         memory_entries = self.query_entries(
-                SeedPromptEntry,
-                conditions=and_(*conditions) if conditions else None,
-            )  # type: ignore
-        
+            SeedPromptEntry,
+            conditions=and_(*conditions) if conditions else None,
+        )  # type: ignore
+
         # Extract seed prompts and group them by prompt group ID
         seed_prompts = [memory_entry.get_seed_prompt() for memory_entry in memory_entries]
         seed_prompt_groups = group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups
-    

@@ -2,12 +2,12 @@ name: fuzzer_shorten_converter
 description: |
   A general strategy for shortening prompts adapted from
   https://arxiv.org/abs/2309.10253 by J. Yu et al.
-authors: 
+authors:
   - Jiahao Yu
   - Xingwei Lin
   - Zheng Yu
   - Xinyu Xing
-groups: 
+groups:
   - Northwestern University
   - Ant Group
 source: https://github.com/sherdencooper/GPTFuzz/blob/master/gptfuzzer/fuzzer/mutator.py

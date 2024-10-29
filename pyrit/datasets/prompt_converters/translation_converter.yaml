@@ -1,9 +1,9 @@
 name: translation_converter
 description: |
   A general strategy for translating prompts to other languages
-authors: 
+authors:
   - AI Red Team
-groups: 
+groups:
   - AI Red Team
 source: AI Red Team
 parameters:

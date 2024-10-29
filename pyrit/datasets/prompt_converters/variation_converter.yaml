@@ -1,9 +1,9 @@
 name: prompt_variation
 description: |
   A general strategy for varying prompts to generate a diverse set of outputs.
-authors: 
+authors:
   - AI Red Team
-groups: 
+groups:
   - AI Red Team
 source: AI Red Team
 parameters:

@@ -1,6 +1,6 @@
 name: tree_of_attacks_with_pruning_prompt_template
 description: Based on the paper 'Tree of Attacks Jailbreaking Black-Box LLMs Automatically' (https://arxiv.org/abs/2312.02119). This template is designed to craft adversarial jailbreaking prompts based on the methodology described in the paper.
-authors: 
+authors:
   - Anay Mehrotra
   - Manolis Zampetakis
   - Paul Kassianik
@@ -8,7 +8,7 @@ authors:
   - Hyrum Anderson
   - Yaron Singer
   - Amin Karbasi
-groups: 
+groups:
   - Yale University
   - Robust Intelligence
   - Google Research

@@ -23,7 +23,6 @@
 # benefits of sharing with other users and persisting data.
 
 # %%
-import os
 
 from pyrit.common import default_values
 from pyrit.memory import AzureSQLMemory
@@ -70,7 +69,9 @@ print(prompts[0].__dict__)
 # %%
 from pyrit.models import SeedPromptGroup
 
-seed_prompt_group = SeedPromptGroup.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt")
+seed_prompt_group = SeedPromptGroup.from_yaml_file(
+    pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt"
+)
 
 azure_memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")
 

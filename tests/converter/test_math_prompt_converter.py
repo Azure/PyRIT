@@ -17,8 +17,10 @@ async def test_math_prompt_converter_convert_async():
     template_value = "Solve the following problem: {{ prompt }}"
     dataset_name = "dataset_1"
     parameters = ["prompt"]
-    mock_prompt_template = SeedPromptTemplate(value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text")
-    
+    mock_prompt_template = SeedPromptTemplate(
+        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
+    )
+
     # Create the MathPromptConverter instance
     converter = MathPromptConverter(converter_target=mock_converter_target, prompt_template=mock_prompt_template)
 
@@ -69,8 +71,10 @@ async def test_math_prompt_converter_handles_disallowed_content():
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
     parameters = ["prompt"]
-    mock_prompt_template = SeedPromptTemplate(value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text")
-    
+    mock_prompt_template = SeedPromptTemplate(
+        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
+    )
+
     # Create the MathPromptConverter instance
     converter = MathPromptConverter(converter_target=mock_converter_target, prompt_template=mock_prompt_template)
 
@@ -118,8 +122,10 @@ async def test_math_prompt_converter_invalid_input_type():
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
     parameters = ["prompt"]
-    mock_prompt_template = SeedPromptTemplate(value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text")
-    
+    mock_prompt_template = SeedPromptTemplate(
+        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
+    )
+
     # Create the MathPromptConverter instance
     converter = MathPromptConverter(converter_target=mock_converter_target, prompt_template=mock_prompt_template)
 
@@ -136,7 +142,9 @@ async def test_math_prompt_converter_error_handling():
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
     parameters = ["prompt"]
-    mock_prompt_template = SeedPromptTemplate(value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text")
+    mock_prompt_template = SeedPromptTemplate(
+        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
+    )
 
     # Create the MathPromptConverter instance
     converter = MathPromptConverter(converter_target=mock_converter_target, prompt_template=mock_prompt_template)

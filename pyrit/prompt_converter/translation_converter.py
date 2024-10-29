@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 class TranslationConverter(PromptConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, language: str, prompt_template: SeedPromptTemplate = None):
+    def __init__(
+        self, *, converter_target: PromptChatTarget, language: str, prompt_template: SeedPromptTemplate = None
+    ):
         """
         Initializes a TranslationConverter object.
 

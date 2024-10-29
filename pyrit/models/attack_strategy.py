@@ -20,6 +20,7 @@ class AttackStrategy:
         self.kwargs = kwargs
         if isinstance(strategy, Path):
             from pyrit.models import SeedPromptTemplate
+
             strategy_data = SeedPromptTemplate.from_yaml_file(strategy)
             self.template = strategy_data.value
             self.parameters = strategy_data.parameters

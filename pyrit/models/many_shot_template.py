@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List
 import yaml
 
+
 @dataclass
 class ManyShotTemplate:
     template: str
@@ -18,7 +19,7 @@ class ManyShotTemplate:
     group: str = ""
     source: str = ""
     parameters: list[str] = field(default_factory=list)
-    
+
     @classmethod
     def from_yaml_file(cls, file_path: Path):
         """

@@ -1,7 +1,7 @@
 name: tone_converter
 description: |
   A general strategy for changing the tone of a prompt.
-authors: 
+authors:
   - AI Red Team
 source: https://github.com/BCG-X-Official/artkit
 parameters:

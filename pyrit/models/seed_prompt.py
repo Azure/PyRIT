@@ -17,6 +17,7 @@ from pyrit.models.literals import PromptDataType
 @dataclass
 class SeedPrompt(YamlLoadable):
     """Represents a seed prompt with various attributes and metadata."""
+
     id: Optional[Union[uuid.UUID, str]]
     value: str
     data_type: PromptDataType
@@ -75,7 +76,7 @@ class SeedPrompt(YamlLoadable):
         """Convert the SeedPrompt instance to a SeedPromptTemplate."""
         if not self.parameters:
             raise ValueError("SeedPrompt must have parameters to convert to a SeedPromptTemplate.")
-        
+
         return SeedPromptTemplate(
             id=self.id,
             value=self.value,
@@ -98,6 +99,7 @@ class SeedPrompt(YamlLoadable):
 
 class SeedPromptTemplate(SeedPrompt):
     """Represents a template of a seed prompt with required parameters."""
+
     parameters: List[str]
 
     def __init__(
@@ -120,7 +122,7 @@ class SeedPromptTemplate(SeedPrompt):
         prompt_group_id: Optional[uuid.UUID] = None,
         sequence: Optional[int] = None,
     ):
-        if data_type != 'text':
+        if data_type != "text":
             raise ValueError("SeedPromptTemplate must have data_type 'text'.")
         super().__init__(
             id=id,
@@ -140,14 +142,14 @@ class SeedPromptTemplate(SeedPrompt):
             prompt_group_id=prompt_group_id,
             sequence=sequence,
         )
-    
+
     def apply_parameters(self, **kwargs) -> str:
         """Applies parameters to the seed prompt template and returns the formatted string."""
         if not self.parameters:
             raise ValueError("SeedPromptTemplate must have parameters to apply.")
         if not all(param in kwargs for param in self.parameters):
             raise ValueError("Not all parameters were provided.")
-        
+
         return apply_parameters_to_template(self.value, self.parameters, **kwargs)
 
 
@@ -155,9 +157,10 @@ class SeedPromptGroup(YamlLoadable):
     """
     A group of prompts that need to be sent together.
 
-    This class is useful when a target requires multiple (multimodal) prompt pieces to be grouped 
+    This class is useful when a target requires multiple (multimodal) prompt pieces to be grouped
     and sent together. All prompts in the group should share the same `prompt_group_id`.
     """
+
     prompts: List[SeedPrompt]
 
     def __init__(
@@ -170,14 +173,11 @@ class SeedPromptGroup(YamlLoadable):
             self.prompts = [SeedPrompt(**prompt_args) for prompt_args in self.prompts]
         else:
             self.prompts = prompts
-        
+
         # Check sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
-            self.prompts = sorted(
-                self.prompts, 
-                key=lambda prompt: self._validate_and_get_sequence(prompt)
-            )
-    
+            self.prompts = sorted(self.prompts, key=lambda prompt: self._validate_and_get_sequence(prompt))
+
     def _validate_and_get_sequence(self, prompt: SeedPrompt) -> int:
         """
         Validates the sequence of a prompt and returns it.
@@ -194,14 +194,14 @@ class SeedPromptGroup(YamlLoadable):
         if prompt.sequence is None:
             raise ValueError("All prompts in a group must have a sequence number.")
         return prompt.sequence
-    
+
     def __repr__(self):
         return f"<SeedPromptGroup(prompts={len(self.prompts)} prompts)>"
 
 
 class SeedPromptDataset(YamlLoadable):
-    """A dataset consisting of a list of seed prompts.
-    """
+    """A dataset consisting of a list of seed prompts."""
+
     prompts: List[SeedPrompt]
 
     def __init__(self, prompts: List[SeedPrompt]):
@@ -209,7 +209,7 @@ class SeedPromptDataset(YamlLoadable):
             self.prompts = [SeedPrompt(**prompt_args) for prompt_args in prompts]
         else:
             self.prompts = prompts
-    
+
     def __repr__(self):
         return f"<SeedPromptDataset(prompts={len(self.prompts)} prompts)>"
 
