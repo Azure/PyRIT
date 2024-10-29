@@ -4,7 +4,7 @@
 from typing import Generator, Literal
 from unittest.mock import MagicMock, patch
 from pathlib import Path
-from uuid import uuid4, UUID
+from uuid import uuid4
 import pytest
 import random
 from string import ascii_lowercase
@@ -1089,10 +1089,10 @@ def test_add_seed_prompt_groups_to_memory_multiple_elements_no_added_by(memory: 
 
 def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(memory: MemoryInterface):
     prompt1 = SeedPrompt(
-        value="Test prompt 1", added_by="tester", prompt_group_id=UUID("group1"), data_type="text", sequence=0
+        value="Test prompt 1", added_by="tester", prompt_group_id=uuid4(), data_type="text", sequence=0
     )
     prompt2 = SeedPrompt(
-        value="Test prompt 2", added_by="tester", prompt_group_id=UUID("group1"), data_type="text", sequence=1
+        value="Test prompt 2", added_by="tester", prompt_group_id=uuid4(), data_type="text", sequence=1
     )
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
     with pytest.raises(ValueError):

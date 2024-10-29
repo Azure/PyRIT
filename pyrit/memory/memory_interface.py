@@ -596,7 +596,7 @@ class MemoryInterface(abc.ABC):
                     f"""Inconsistent 'prompt_group_id' attribute between members of the
                     same prompt group. Found {group_id_set}"""
                 )
-            prompt_group_id = group_id_set.pop() or str(uuid.uuid4())
+            prompt_group_id = group_id_set.pop() or uuid.uuid4()
             for prompt in prompt_group.prompts:
                 prompt.prompt_group_id = prompt_group_id
             all_prompts.extend(prompt_group.prompts)
@@ -607,12 +607,12 @@ class MemoryInterface(abc.ABC):
         *,
         value: Optional[str] = None,
         dataset_name: Optional[str] = None,
-        harm_categories: Optional[Sequence[str]] = None,
+        harm_categories: Optional[list[str]] = None,
         added_by: Optional[str] = None,
-        authors: Optional[Sequence[str]] = None,
-        groups: Optional[Sequence[str]] = None,
+        authors: Optional[list[str]] = None,
+        groups: Optional[list[str]] = None,
         source: Optional[str] = None,
-        parameters: Optional[Sequence[str]] = None,
+        parameters: Optional[list[str]] = None,
     ) -> list[SeedPromptTemplate]:
         if not parameters:
             raise ValueError("Prompt templates must have parameters. Please specify at least one.")
