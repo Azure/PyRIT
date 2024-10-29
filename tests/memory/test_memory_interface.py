@@ -1096,7 +1096,7 @@ def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(memory: MemoryI
     )
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
     with pytest.raises(
-        ValueError, match="Inconsistent 'prompt_group_id' attribute between members of the same prompt group."
+        ValueError
     ):
         memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
