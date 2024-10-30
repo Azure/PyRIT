@@ -144,10 +144,8 @@ def scorer_category_response_bullying() -> PromptRequestPiece:
 
 
 @pytest.mark.asyncio
-@patch("builtins.input", side_effect=["1"])
-async def test_scorer_keep_score(
-    mock_input, memory: MemoryInterface, scorer_category_response_bullying: PromptRequestPiece
-):
+@patch("tkinter.simpledialog.askstring", side_effect=["1"])
+async def test_scorer_keep_score(mock_input, scorer_category_response_bullying: PromptRequestPiece):
     scorer = MagicMock()
     mock_score = Score(
         score_value="0.8",
@@ -162,7 +160,7 @@ async def test_scorer_keep_score(
     scorer.score_async = AsyncMock(return_value=[mock_score])
 
     # Initialize HumanInTheLoopScorer
-    hitl_scorer = HumanInTheLoopScorer(scorer=scorer, memory=memory, re_scorers=[scorer])
+    hitl_scorer = HumanInTheLoopScorer(scorer=scorer, re_scorers=[scorer])
 
     # Test the scoring
     scores = await hitl_scorer.score_async(scorer_category_response_bullying)
