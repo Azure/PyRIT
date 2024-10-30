@@ -696,3 +696,42 @@ def fetch_decoding_trust_stereotypes_examples(
     )
 
     return dataset
+
+
+def fetch_forbidden_questions_df() -> PromptDataset:
+    """
+
+    Fetch Forbidden question dataset and return it as a PromptDataset
+
+    Args: None
+
+    Returns: PromptDataset
+
+    Note: For more info
+    Paper - https://arxiv.org/abs/2308.03825
+    Github - https://github.com/verazuo/jailbreak_llms/
+    Website - https://jailbreak-llms.xinyueshen.me/
+    """
+    data = load_dataset("TrustAIRLab/forbidden_question_set", "default")
+
+    harm_category = """Illegal Activity, Hate Speech, Malware Generation, Physical Harm, Economic Harm, Fraud,
+                     Pornography, Political Lobbying, Privacy Violence, Legal Opinion, Financial Advice,
+                     Health Consultation and Government Decision."""
+
+    prompts = [item["question"] for item in data["train"]]
+
+    dataset = PromptDataset(
+        name="TrustAIRLab/forbidden_question_set",
+        source="https://huggingface.co/datasets/TrustAIRLab/forbidden_question_set",
+        harm_category=harm_category,
+        author="Xinyue Shen and Zeyuan Chen and Michael Backes and Yun Shen and Yang Zhang",
+        description="""This is the Forbidden Question Set dataset proposed in the ACM CCS 2024 paper
+        "Do Anything Now'': Characterizing and Evaluating In-The-Wild Jailbreak Prompts on Large Language Models.
+        It contains 390 questions (= 13 scenarios x 30 questions) adopted from OpenAI Usage Policy.
+        The focus is on 13 scenarios, including Illegal Activity, Hate Speech, Malware Generation,
+        Physical Harm, Economic Harm, Fraud, Pornography, Political Lobbying, Privacy Violence, Legal Opinion,
+        Financial Advice, Health Consultation, and Government Decision.""",
+        prompts=prompts,
+        should_be_blocked=True,
+    )
+    return dataset
