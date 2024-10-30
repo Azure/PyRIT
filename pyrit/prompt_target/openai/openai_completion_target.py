@@ -2,7 +2,9 @@
 # Licensed under the MIT license.
 
 import logging
+from openai import NotGiven, NOT_GIVEN
 from openai.types.completion import Completion
+from typing import Optional
 
 from pyrit.models import PromptResponse, PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target import limit_requests_per_minute, OpenAITarget
@@ -13,8 +15,30 @@ logger = logging.getLogger(__name__)
 
 class OpenAICompletionTarget(OpenAITarget):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        max_tokens: Optional[int] | NotGiven = NOT_GIVEN,
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
+        *args,
+        **kwargs,
+    ):
+        """
+        Args:
+            max_tokens (int, optional): The maximum number of tokens that can be generated in the
+              completion. The token count of your prompt plus `max_tokens` cannot exceed the model's
+              context length.
+        """
+
         super().__init__(*args, **kwargs)
+
+        self._max_tokens = max_tokens
+        self._temperature = temperature
+        self._top_p = top_p
+        self._frequency_penalty = frequency_penalty
+        self._presence_penalty = presence_penalty
 
     def _set_azure_openai_env_configuration_vars(self):
         self.deployment_environment_variable = "AZURE_OPENAI_COMPLETION_DEPLOYMENT"

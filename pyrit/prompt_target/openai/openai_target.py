@@ -35,11 +35,6 @@ class OpenAITarget(PromptChatTarget):
         use_aad_auth: bool = False,
         memory: MemoryInterface = None,
         api_version: str = "2024-06-01",
-        max_tokens: int = 2048,
-        temperature: float = 1.0,
-        top_p: float = 1.0,
-        frequency_penalty: float = 0.0,
-        presence_penalty: float = 0.0,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
         """
@@ -66,27 +61,11 @@ class OpenAITarget(PromptChatTarget):
                 for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
                 "2024-06-01".
-            max_tokens (int, optional): The maximum number of tokens to generate in the response.
-                Defaults to 1024.
-            temperature (float, optional): The temperature parameter for controlling the
-                randomness of the response. Defaults to 1.0.
-            top_p (float, optional): The top-p parameter for controlling the diversity of the
-                response. Defaults to 1.0.
-            frequency_penalty (float, optional): The frequency penalty parameter for penalizing
-                frequently generated tokens. Defaults to 0.
-            presence_penalty (float, optional): The presence penalty parameter for penalizing
-                tokens that are already present in the conversation history. Defaults to 0.
             max_requests_per_minute (int, optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
         """
         PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
-
-        self._max_tokens = max_tokens
-        self._temperature = temperature
-        self._top_p = top_p
-        self._frequency_penalty = frequency_penalty
-        self._presence_penalty = presence_penalty
 
         self._extra_headers: dict = {}
 
