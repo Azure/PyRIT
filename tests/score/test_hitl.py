@@ -155,7 +155,7 @@ async def test_scorer_keep_score(mock_askstring, scorer_category_response_bullyi
         score_category="bullying",
         score_rationale="Identified as harmful",
         score_metadata="metadata example",
-        scorer_class_identifier="HumanInTheLoopScorer",
+        scorer_class_identifier={"score_name": "HumanInTheLoopScorer"},
         prompt_request_response_id="test_id",
     )
     scorer.score_async = AsyncMock(return_value=[mock_score])
