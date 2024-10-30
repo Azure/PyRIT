@@ -200,7 +200,9 @@ class SeedPromptGroup(YamlLoadable):
 
 
 class SeedPromptDataset(YamlLoadable):
-    """A dataset consisting of a list of seed prompts."""
+    """SeedPromptDataset class helps to read a list of seed prompts, which can be loaded from a YAML file.
+    This class manages individual seed prompts, groups them by `prompt_group_id` if specified, 
+    and provides structured access to grouped prompt data."""
 
     prompts: List[SeedPrompt]
 
