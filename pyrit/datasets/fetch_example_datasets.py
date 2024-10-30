@@ -786,9 +786,21 @@ def fetch_forbidden_questions_df() -> SeedPromptDataset:
     """
     data = load_dataset("TrustAIRLab/forbidden_question_set", "default")
 
-    harm_categories = ["Illegal Activity", "Hate Speech", "Malware Generation", "Physical Harm", "Economic Harm", "Fraud",
-                     "Pornography", "Political Lobbying", "Privacy Violence", "Legal Opinion", "Financial Advice",
-                     "Health Consultation", "Government Decision"]
+    harm_categories = [
+        "Illegal Activity",
+        "Hate Speech",
+        "Malware Generation",
+        "Physical Harm",
+        "Economic Harm",
+        "Fraud",
+        "Pornography",
+        "Political Lobbying",
+        "Privacy Violence",
+        "Legal Opinion",
+        "Financial Advice",
+        "Health Consultation",
+        "Government Decision",
+    ]
     authors = ["Xinyue Shen", "Zeyuan Chen", "Michael Backes", "Yun Shen", "Yang Zhang"]
     prompts = [item["question"] for item in data["train"]]
 

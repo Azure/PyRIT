@@ -94,9 +94,7 @@ async def test_char_swap_generator_random_swapping():
 
     with patch(
         "random.sample",
-        side_effect=[
-            [0, 1, 2]
-        ],
+        side_effect=[[0, 1, 2]],
     ):
         result1 = await converter.convert_async(prompt=prompt)
 
