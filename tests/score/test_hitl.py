@@ -145,7 +145,8 @@ def scorer_category_response_bullying() -> PromptRequestPiece:
 
 @pytest.mark.asyncio
 @patch("tkinter.simpledialog.askstring", side_effect=["1"])
-async def test_scorer_keep_score(mock_input, scorer_category_response_bullying: PromptRequestPiece):
+@patch("tkinter.Tk", MagicMock())  # Mock Tkinter root window
+async def test_scorer_keep_score(mock_askstring, scorer_category_response_bullying: PromptRequestPiece):
     scorer = MagicMock()
     mock_score = Score(
         score_value="0.8",
