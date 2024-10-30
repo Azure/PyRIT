@@ -4,7 +4,6 @@
 from pyrit.models.chat_message import (
     ALLOWED_CHAT_MESSAGE_ROLES,
     ChatMessage,
-    ChatMessageListContent,
     ChatMessageListDictContent,
     ChatMessagesDataset,
 )
@@ -39,7 +38,6 @@ __all__ = [
     "ChatMessage",
     "ChatMessagesDataset",
     "ChatMessageRole",
-    "ChatMessageListContent",
     "ChatMessageListDictContent",
     "construct_response_from_request",
     "DataTypeSerializer",
