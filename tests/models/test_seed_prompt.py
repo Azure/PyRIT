@@ -9,7 +9,6 @@ from pyrit.models import (
     SeedPromptTemplate,
     SeedPromptGroup,
     SeedPromptDataset,
-    group_seed_prompts_by_prompt_group_id,
 )
 
 
@@ -99,7 +98,7 @@ def test_group_seed_prompts_by_prompt_group_id(seed_prompt_fixture):
         value="Another prompt", data_type="text", prompt_group_id=seed_prompt_fixture.prompt_group_id, sequence=2
     )
 
-    groups = group_seed_prompts_by_prompt_group_id([seed_prompt_fixture, prompt_2])
+    groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id([seed_prompt_fixture, prompt_2])
     assert len(groups) == 1
     assert len(groups[0].prompts) == 2
     assert groups[0].prompts[0].sequence < groups[0].prompts[1].sequence

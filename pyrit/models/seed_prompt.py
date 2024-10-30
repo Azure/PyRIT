@@ -210,34 +210,34 @@ class SeedPromptDataset(YamlLoadable):
         else:
             self.prompts = prompts
 
+    @staticmethod
+    def group_seed_prompts_by_prompt_group_id(seed_prompts: List[SeedPrompt]) -> List[SeedPromptGroup]:
+        """
+        Groups the given list of SeedPrompts by their prompt_group_id and creates
+        SeedPromptGroup instances.
+
+        Args:
+            seed_prompts: A list of SeedPrompt objects.
+
+        Returns:
+            A list of SeedPromptGroup objects, with prompts grouped by prompt_group_id.
+        """
+        # Group seed prompts by `prompt_group_id`
+        grouped_prompts = defaultdict(list)
+        for prompt in seed_prompts:
+            if prompt.prompt_group_id:
+                grouped_prompts[prompt.prompt_group_id].append(prompt)
+
+        # Create SeedPromptGroup instances from grouped prompts
+        seed_prompt_groups = []
+        for group_prompts in grouped_prompts.values():
+            if len(group_prompts) > 1:
+                group_prompts.sort(key=lambda prompt: prompt.sequence)
+
+            seed_prompt_group = SeedPromptGroup(prompts=group_prompts)
+            seed_prompt_groups.append(seed_prompt_group)
+
+        return seed_prompt_groups
+
     def __repr__(self):
         return f"<SeedPromptDataset(prompts={len(self.prompts)} prompts)>"
-
-
-def group_seed_prompts_by_prompt_group_id(seed_prompts: list[SeedPrompt]) -> list[SeedPromptGroup]:
-    """
-    Groups the given list of SeedPrompts by their prompt_group_id and creates
-    SeedPromptGroup instances.
-
-    Args:
-        seed_prompts: A list of SeedPrompt objects.
-
-    Returns:
-        A list of SeedPromptGroup objects, with prompts grouped by prompt_group_id.
-    """
-    # Group seed prompts by `prompt_group_id`
-    grouped_prompts = defaultdict(list)
-    for prompt in seed_prompts:
-        if prompt.prompt_group_id:
-            grouped_prompts[prompt.prompt_group_id].append(prompt)
-
-    # Create SeedPromptGroup instances from grouped prompts
-    seed_prompt_groups = []
-    for group_prompts in grouped_prompts.values():
-        if len(group_prompts) > 1:
-            group_prompts.sort(key=lambda prompt: prompt.sequence)
-
-        seed_prompt_group = SeedPromptGroup(prompts=group_prompts)
-        seed_prompt_groups.append(seed_prompt_group)
-
-    return seed_prompt_groups

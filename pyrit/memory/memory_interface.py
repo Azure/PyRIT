@@ -15,11 +15,11 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.models import (
     ChatMessage,
     group_conversation_request_pieces_by_sequence,
-    group_seed_prompts_by_prompt_group_id,
     PromptRequestResponse,
     PromptRequestPiece,
     Score,
     SeedPrompt,
+    SeedPromptDataset,
     SeedPromptGroup,
     SeedPromptTemplate,
     StorageIO,
@@ -682,5 +682,5 @@ class MemoryInterface(abc.ABC):
 
         # Extract seed prompts and group them by prompt group ID
         seed_prompts = [memory_entry.get_seed_prompt() for memory_entry in memory_entries]
-        seed_prompt_groups = group_seed_prompts_by_prompt_group_id(seed_prompts)
+        seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups

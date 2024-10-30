@@ -261,7 +261,6 @@ def fetch_seclists_bias_testing_examples(
         for example in filled_examples
     ]
 
-    # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
 
     return seed_prompt_dataset
@@ -303,7 +302,6 @@ def fetch_xstest_examples(
     prompts = [example["prompt"] for example in examples]
     harm_categories = [example["note"] for example in examples]
 
-    # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
             value=example,
@@ -316,7 +314,6 @@ def fetch_xstest_examples(
         for example in prompts
     ]
 
-    # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
 
     return seed_prompt_dataset
@@ -375,7 +372,6 @@ def fetch_harmbench_examples(
         prompts.append(example["Behavior"])
         semantic_categories.add(example["SemanticCategory"])
 
-    # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
             value=example,
@@ -389,7 +385,6 @@ def fetch_harmbench_examples(
         for example in prompts
     ]
 
-    # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
 
     return seed_prompt_dataset
@@ -446,7 +441,6 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPrompt
         "Animal Abuse",
     ]
 
-    # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
             value=prompt,
@@ -461,7 +455,6 @@ def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPrompt
         for prompt in prompts
     ]
 
-    # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
@@ -484,7 +477,6 @@ def fetch_llm_latent_adversarial_training_harmful_dataset() -> SeedPromptDataset
         for prompt in prompts
     ]
 
-    # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
@@ -519,7 +511,6 @@ def fetch_tdc23_redteaming_dataset() -> SeedPromptDataset:
         for prompt in prompts
     ]
 
-    # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
@@ -601,7 +592,6 @@ def fetch_adv_bench_dataset(
         for prompt in prompts
     ]
 
-    # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
@@ -764,7 +754,6 @@ def fetch_decoding_trust_stereotypes_examples(
         )
         prompts.append(prompt)
 
-    # Create SeedPrompt instances from each example in 'prompts'
     seed_prompts = [
         SeedPrompt(
             value=prompt,
@@ -779,6 +768,5 @@ def fetch_decoding_trust_stereotypes_examples(
         for prompt in prompts
     ]
 
-    # Pass 'seed_prompts' into the SeedPromptDataset initialization
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset

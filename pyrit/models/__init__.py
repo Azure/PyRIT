@@ -25,7 +25,6 @@ from pyrit.models.seed_prompt import (
     SeedPromptTemplate,
     SeedPrompt,
     SeedPromptGroup,
-    group_seed_prompts_by_prompt_group_id,
 )
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import (
@@ -58,7 +57,6 @@ __all__ = [
     "EmbeddingUsageInformation",
     "ErrorDataTypeSerializer",
     "group_conversation_request_pieces_by_sequence",
-    "group_seed_prompts_by_prompt_group_id",
     "Identifier",
     "ImagePathDataTypeSerializer",
     "ManyShotTemplate",
