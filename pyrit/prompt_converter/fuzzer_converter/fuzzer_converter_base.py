@@ -8,7 +8,7 @@ import uuid
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.exceptions.exception_classes import (
     InvalidJsonException,
@@ -36,13 +36,13 @@ class FuzzerConverter(PromptConverter):
     converter_target: PromptChatTarget
         Chat target used to perform fuzzing on user prompt
 
-    prompt_template: PromptTemplate, default=None
+    prompt_template: SeedPromptTemplate, default=None
         Template to be used instead of the default system prompt with instructions for the chat target.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPromptTemplate = None):
         self.converter_target = converter_target
-        self.system_prompt = prompt_template.template
+        self.system_prompt = prompt_template.value
         self.template_label = "TEMPLATE"
 
     def update(self, **kwargs) -> None:

@@ -132,6 +132,8 @@ def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
     # Verify that tables are created as expected
     assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
     assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
+    assert "ScoreEntries" in inspector.get_table_names(), "ScoreEntries table not created."
+    assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
 
     yield duckdb_memory
     duckdb_memory.dispose_engine()

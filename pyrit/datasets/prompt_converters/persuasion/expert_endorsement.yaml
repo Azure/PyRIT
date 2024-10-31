@@ -1,13 +1,11 @@
 name: expert_endorsement_persuasion
 description: |
   A persuasion technique from https://arxiv.org/abs/2401.06373
-harm_category: NA
-author: Zeng et al.
-group:
+authors:
+  - Zeng et al.
 source: https://github.com/CHATS-lab/persuasive_jailbreaker/blob/main/PAP_Better_Incontext_Sample/mutation_utils.py
-should_be_blocked: false
-parameters:
-template: >
+data_type: text
+value: >
   # Background
 
   Existing methods for identifying adversarial prompts tend to focus on specific domains,
