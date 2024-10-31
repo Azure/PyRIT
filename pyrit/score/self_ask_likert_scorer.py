@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
 import yaml
 import enum
 
@@ -12,7 +11,7 @@ from typing import Dict, Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, SeedPromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import LIKERT_SCALES_PATH
 
@@ -52,8 +51,10 @@ class SelfAskLikertScorer(Scorer):
 
         likert_scale = self._likert_scale_description_to_string(likert_scale["scale_descriptions"])
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(LIKERT_SCALES_PATH / "likert_system_prompt.yaml")
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
+        scoring_instructions_template = SeedPromptTemplate.from_yaml_file(
+            LIKERT_SCALES_PATH / "likert_system_prompt.yaml"
+        )
+        self._system_prompt = scoring_instructions_template.apply_parameters(
             likert_scale=likert_scale, category=self._score_category
         )
 
@@ -101,28 +102,11 @@ class SelfAskLikertScorer(Scorer):
         """
         self.validate(request_response, task=task)
 
-        conversation_id = str(uuid.uuid4())
-
-        self._prompt_target.set_system_prompt(
-            system_prompt=self._system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
-        )
-
-        request = PromptRequestResponse(
-            [
-                PromptRequestPiece(
-                    role="user",
-                    original_value=request_response.converted_value,
-                    conversation_id=conversation_id,
-                    prompt_target_identifier=self._prompt_target.get_identifier(),
-                )
-            ]
-        )
-
-        unvalidated_score: UnvalidatedScore = await self.send_chat_target_async(
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
-            scorer_llm_request=request,
+            system_prompt=self._system_prompt,
+            prompt_request_value=request_response.converted_value,
+            prompt_request_data_type=request_response.converted_value_data_type,
             scored_prompt_id=request_response.id,
             category=self._score_category,
             task=task,
@@ -131,6 +115,8 @@ class SelfAskLikertScorer(Scorer):
         score = unvalidated_score.to_score(
             score_value=str(self.scale_value_float(float(unvalidated_score.raw_score_value), 1, 5)),
         )
+
+        score.score_metadata = str({"likert_value": str(unvalidated_score.raw_score_value)})
 
         self._memory.add_scores_to_memory(scores=[score])
         return [score]

@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-kernel
+#     language: python
+#     name: pyrit-kernel
+# ---
+
 # %% [markdown]
 # # Azure SQL Memory
 #
@@ -11,15 +26,10 @@
 #
 # Please log in to your Azure account before running this notebook:
 #
-# - Use the default login:
+# - Log in with the proper scope to obtain the correct access token:
 #   ```bash
-#   az login
+#   az login --scope https://database.windows.net//.default
 #   ```
-# - Or, use device code login
-#   ```bash
-#   az login --use-device-code
-#   ```
-#
 # ### Environment Variables
 #
 # Please set the following environment variables to run AzureSQLMemory interactions:

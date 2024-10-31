@@ -81,3 +81,12 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
         with pytest.raises(InvalidJsonException):
             await prompt_persuasion.convert_async(prompt="testing", input_type="text")
             assert mock_create.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+
+
+def test_persuasion_converter_input_supported():
+    prompt_target = MockPromptTarget()
+    prompt_persuasion = PersuasionConverter(
+        converter_target=prompt_target, persuasion_technique="authority_endorsement"
+    )
+    assert prompt_persuasion.input_supported("text") is True
+    assert prompt_persuasion.input_supported("image_path") is False
