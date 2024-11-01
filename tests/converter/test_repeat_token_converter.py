@@ -54,3 +54,9 @@ async def test_repeat_token_converter_repeat() -> None:
     output = await converter.convert_async(prompt="how to cut down a tree? I need to know.", input_type="text")
     assert output.output_text == " test test test"
     assert output.output_type == "text"
+
+
+def test_repeat_token_converter_input_supported() -> None:
+    converter = RepeatTokenConverter(token_to_repeat="test", times_to_repeat=3, token_insert_mode="repeat")
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("image_path") is False

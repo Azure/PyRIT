@@ -15,7 +15,7 @@ from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
-from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +172,7 @@ class AzureStoragePlugin:
         self._sas_token = sas_token
         self._storage_client: AsyncContainerClient = None
 
-    async def _create_container_client_async(self):
+    async def _create_container_client_async(self) -> None:
         """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the
         AZURE_STORAGE_ACCOUNT_SAS_TOKEN environment variable or the init sas_token parameter, it will be used
         for authentication. Otherwise, a delegation SAS token will be created using Entra ID authentication."""

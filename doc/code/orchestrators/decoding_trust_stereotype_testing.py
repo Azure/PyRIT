@@ -16,7 +16,7 @@ from pyrit.common import default_values
 from pyrit.datasets import fetch_decoding_trust_stereotypes_examples
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
 
 
@@ -27,7 +27,7 @@ default_values.load_default_env()
 
 # %%
 # Set up the Azure OpenAI prompt target
-prompt_target = AzureOpenAIGPT4OChatTarget()
+prompt_target = OpenAIChatTarget()
 examples_source = (
     "https://raw.githubusercontent.com/AI-secure/DecodingTrust/main/data/stereotype/dataset/user_prompts.csv"
 )

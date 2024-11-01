@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # PromptSendingOrchestrator with Azure SQL Memory
 #
@@ -14,7 +29,7 @@
 import time
 import uuid
 
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.memory.azure_sql_memory import AzureSQLMemory
@@ -22,7 +37,7 @@ from pyrit.memory.azure_sql_memory import AzureSQLMemory
 
 default_values.load_default_env()
 
-target = AzureOpenAIGPT4OChatTarget()
+target = OpenAIChatTarget()
 memory = AzureSQLMemory()
 
 # You could optionally pass memory labels to orchestrators, which will be associated with each prompt and assist in retrieving or scoring later.
@@ -46,18 +61,18 @@ with PromptSendingOrchestrator(prompt_target=target, memory=memory, memory_label
 # This example shows how to pass in a list of scorers to the orchestrator.
 
 # %%
-from azure.ai.contentsafety.models import TextCategory
-
 from pyrit.common import default_values
 from pyrit.memory.azure_sql_memory import AzureSQLMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer, SelfAskLikertScorer, LikertScalePaths
+
+from azure.ai.contentsafety.models import TextCategory
 
 
 default_values.load_default_env()
 
-target = AzureOpenAIGPT4OChatTarget()
+target = OpenAIChatTarget()
 memory = AzureSQLMemory()
 
 # Set up the Azure Content Filter Scorer
@@ -111,21 +126,21 @@ from pyrit.models import AttackStrategy
 from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget, DALLETarget, AzureOpenAIGPTVChatTarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 from pyrit.memory.azure_sql_memory import AzureSQLMemory
 
 logging.basicConfig(level=logging.WARNING)
 
 default_values.load_default_env()
 
-img_prompt_target = DALLETarget(
-    deployment_name=os.environ.get("AZURE_DALLE_DEPLOYMENT"),
-    endpoint=os.environ.get("AZURE_DALLE_ENDPOINT"),
-    api_key=os.environ.get("AZURE_DALLE_API_KEY"),
+img_prompt_target = OpenAIDALLETarget(
+    deployment_name=os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT"),
+    endpoint=os.environ.get("AZURE_OPENAI_DALLE_ENDPOINT"),
+    api_key=os.environ.get("AZURE_OPENAI_DALLE_API_KEY"),
 )
-red_teaming_llm = AzureOpenAIGPT4OChatTarget()
+red_teaming_llm = OpenAIChatTarget()
 memory = AzureSQLMemory()
-scoring_target = AzureOpenAIGPTVChatTarget()
+scoring_target = OpenAIChatTarget()
 
 scorer = SelfAskTrueFalseScorer(
     true_false_question_path=Path("../../../assets/demo_scorer_definitions/molotov_cocktail_image_classifier.yaml"),
@@ -144,12 +159,12 @@ with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     prompt_target=img_prompt_target,
     red_teaming_chat=red_teaming_llm,
-    scorer=scorer,
+    objective_scorer=scorer,
     use_score_as_feedback=True,
     verbose=True,
     memory=memory,
 ) as orchestrator:
-    score = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    score = await orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await orchestrator.print_conversation()  # type: ignore
     id = orchestrator.get_identifier()
     print("identifier", id)

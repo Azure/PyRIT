@@ -29,7 +29,9 @@ def test_random_seed_consistency(mock_fetch_examples):
     seed = 1337
     dataset1 = fetch_seclists_bias_testing_examples(random_seed=seed)
     dataset2 = fetch_seclists_bias_testing_examples(random_seed=seed)
-    assert dataset1.prompts == dataset2.prompts, "Outputs should be consistent when using the same seed"
+    assert (
+        dataset1.prompts[0].value == dataset2.prompts[0].value
+    ), "Outputs should be consistent when using the same seed"
 
 
 @patch("pyrit.datasets.fetch_examples", return_value=MOCKED_EXAMPLES)
@@ -51,16 +53,17 @@ def test_custom_parameters_override_randomness(mock_fetch_examples):
 
     # Check correct replacements
     for prompt in dataset.prompts:
-        if "[Country]" in prompt:
-            assert specific_country in prompt, "Country placeholder not replaced correctly"
-        if "[Region]" in prompt:
-            assert specific_region in prompt, "Region placeholder not replaced correctly"
-        if "[Nationality]" in prompt:
-            assert specific_nationality in prompt, "Nationality placeholder not replaced correctly"
-        if "[GENDER]" in prompt:
-            assert specific_gender in prompt, "Gender placeholder not replaced correctly"
-        if "[SKIN_COLOR]" in prompt:
-            assert specific_skin_color in prompt, "Skin color placeholder not replaced correctly"
+        prompt_value = prompt.value
+        if "[Country]" in prompt_value:
+            assert specific_country in prompt_value, "Country placeholder not replaced correctly"
+        if "[Region]" in prompt_value:
+            assert specific_region in prompt_value, "Region placeholder not replaced correctly"
+        if "[Nationality]" in prompt_value:
+            assert specific_nationality in prompt_value, "Nationality placeholder not replaced correctly"
+        if "[GENDER]" in prompt_value:
+            assert specific_gender in prompt_value, "Gender placeholder not replaced correctly"
+        if "[SKIN_COLOR]" in prompt_value:
+            assert specific_skin_color in prompt_value, "Skin color placeholder not replaced correctly"
 
 
 @patch("pyrit.datasets.fetch_examples", return_value=MOCKED_EXAMPLES)
@@ -70,7 +73,9 @@ def test_default_random_behavior(mock_fetch_examples):
     dataset2 = fetch_seclists_bias_testing_examples()
 
     # Check for different outputs due to randomness
-    assert dataset1.prompts != dataset2.prompts, "Outputs should differ due to randomness without a seed"
+    assert (
+        dataset1.prompts[0].value != dataset2.prompts[0].value
+    ), "Outputs should differ due to randomness without a seed"
 
 
 @patch("pyrit.datasets.fetch_examples", return_value=MOCKED_EXAMPLES)
@@ -78,8 +83,9 @@ def test_placeholder_replacement(mock_fetch_examples):
     """Ensure that placeholders are replaced."""
     dataset = fetch_seclists_bias_testing_examples()
     for prompt in dataset.prompts:
-        assert "[Country]" not in prompt
-        assert "[Region]" not in prompt
-        assert "[Nationality]" not in prompt
-        assert "[GENDER]" not in prompt
-        assert "[SKIN_COLOR]" not in prompt
+        prompt_value = prompt.value
+        assert "[Country]" not in prompt_value
+        assert "[Region]" not in prompt_value
+        assert "[Nationality]" not in prompt_value
+        assert "[GENDER]" not in prompt_value
+        assert "[SKIN_COLOR]" not in prompt_value

@@ -23,14 +23,14 @@
 
 # %%
 from pyrit.orchestrator import FlipAttackOrchestrator
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 
 from pyrit.common import default_values
 
 
 default_values.load_default_env()
 
-target = AzureOpenAIGPT4OChatTarget()
+target = OpenAIChatTarget()
 
 with FlipAttackOrchestrator(prompt_target=target) as orchestrator:
     print("==== System Prompt ====")

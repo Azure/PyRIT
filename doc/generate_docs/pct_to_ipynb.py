@@ -4,6 +4,12 @@
 import argparse, os, subprocess
 from pathlib import Path
 
+skip_files = {
+    "1_auxiliary_attacks.py",
+    "2_gcg_azure_ml.py",
+    "7_human_converter.py",
+}
+
 exec_dir = Path(os.getcwd())
 file_type = ".py"
 excluded_dir = {"deployment", "generate_docs"}
@@ -36,6 +42,9 @@ def main():
         if file in processed_files:
             print("Skipping already processed file: {file}")
             continue
+        if file in skip_files:
+            print("Skipping configured skipped file: {file}")
+            continue
         print(f"Processing {file}")
         result = subprocess.run(
             ["jupytext", "--execute", "--set-kernel", args.kernel_name, "--to", "notebook", file],
@@ -61,8 +70,6 @@ def find_files(directory, file_extension):
         for file in files:
             if file.endswith("_helpers.py"):
                 continue
-            if file == "1_auxiliary_attacks.py" or file == "2_gcg_azure_ml.py":
-                continue  # skip GCG scripts
             if file.endswith(file_extension):
                 matches.append(os.path.join(root, file))
     return matches

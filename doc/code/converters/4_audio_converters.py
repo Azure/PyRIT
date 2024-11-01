@@ -46,6 +46,34 @@ transcript = await speech_text_converter.convert_async(prompt=prompt)  # type: i
 print(transcript)
 
 # %% [markdown]
+# # Audio Frequency Converter
+#
+# The **Audio Frequency Converter** increases the frequency of a given audio file, enabling the probing of audio modality targets with heightened frequencies.
+#
+
+# %%
+import os
+
+from pyrit.prompt_converter import AudioFrequencyConverter
+from pyrit.common import default_values
+from pyrit.common.path import RESULTS_PATH
+import pathlib
+import logging
+
+default_values.load_default_env()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Use audio file created above
+assert os.path.exists(audio_convert_result.output_text)
+prompt = str(pathlib.Path(RESULTS_PATH) / "dbdata" / "audio" / audio_convert_result.output_text)
+
+audio_frequency_converter = AudioFrequencyConverter()
+converted_audio_file = await audio_frequency_converter.convert_async(prompt=prompt)  # type: ignore
+
+print(converted_audio_file)
+
+# %% [markdown]
 # ## Audio Converters with Azure SQL Memory
 #
 # Converters can also be multi-modal. Because it's an abstract function used interchangeably on a single `PromptRequestPiece`, it can only deal with one input value and type per time, and have one output value and type per time. Below is an example of using `AzureSpeechTextToAudioConverter`, which has an input type of `text` and an output type of `audio_path`.
