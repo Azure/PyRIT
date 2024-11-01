@@ -225,7 +225,6 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     gpt4o_chat_engine._memory = mock_memory
 
@@ -273,7 +272,6 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
                 gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(
                     request=prompt_req_resp
                 )
-                gpt4o_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
             assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
 
 
@@ -284,7 +282,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     gpt4o_chat_engine._memory = mock_memory
 
@@ -302,7 +299,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
         await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_request)
         gpt4o_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
         gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-        gpt4o_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
 
     assert str(rle.value) == "Rate Limit Reached"
 
@@ -312,7 +308,6 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(gpt4o_chat_eng
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     gpt4o_chat_engine._memory = mock_memory
 
@@ -330,7 +325,6 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(gpt4o_chat_eng
         await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_request)
         gpt4o_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
         gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-        gpt4o_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
 
     assert str(bre.value) == "Bad Request"
 
