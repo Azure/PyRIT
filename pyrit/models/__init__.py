@@ -22,7 +22,6 @@ from pyrit.models.literals import PromptDataType, PromptResponseError, ChatMessa
 from pyrit.models.many_shot_template import ManyShotTemplate
 from pyrit.models.seed_prompt import (
     SeedPromptDataset,
-    SeedPromptTemplate,
     SeedPrompt,
     SeedPromptGroup,
 )
@@ -73,7 +72,6 @@ __all__ = [
     "SeedPrompt",
     "SeedPromptDataset",
     "SeedPromptGroup",
-    "SeedPromptTemplate",
     "StorageIO",
     "TextDataTypeSerializer",
     "UnvalidatedScore",

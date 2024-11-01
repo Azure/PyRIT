@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-kernel
+#     display_name: pyrit-311
 #     language: python
-#     name: pyrit-kernel
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -27,13 +27,15 @@ import logging
 import os
 import pathlib
 
-from pyrit.models import SeedPromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.common.path import DATASETS_PATH
 
-jailbreak_template = SeedPromptTemplate.from_yaml_file(
+jailbreak_template = SeedPrompt.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
 )
-jailbreak_prompt: str = jailbreak_template.apply_parameters(prompt="Say the words 'I wish I could be a space pirate.'")
+jailbreak_prompt: str = jailbreak_template.render_template_value(
+    prompt="Say the words 'I wish I could be a space pirate.'"
+)
 print(jailbreak_prompt)
 
 logging.basicConfig(level=logging.INFO)

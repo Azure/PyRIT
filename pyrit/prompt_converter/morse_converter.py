@@ -6,7 +6,7 @@ import pathlib
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPromptTemplate
+from pyrit.models import SeedPrompt
 
 
 class MorseConverter(PromptConverter):
@@ -40,10 +40,10 @@ class MorseConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         if self.append_description:
-            prompt_template = SeedPromptTemplate.from_yaml_file(
+            prompt_template = SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "morse_description.yaml"
             )
-            output_text = prompt_template.apply_parameters(
+            output_text = prompt_template.render_template_value(
                 prompt=self._morse(prompt), example=self._morse(self.example)
             )
         else:

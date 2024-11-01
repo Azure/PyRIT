@@ -14,7 +14,7 @@ import numpy as np
 
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 from pyrit.memory import MemoryInterface
-from pyrit.models import SeedPromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter, FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
@@ -308,7 +308,7 @@ class FuzzerOrchestrator(Orchestrator):
                     prompt_target_conversation_ids=self._jailbreak_conversation_ids,
                 )
 
-            target_template = SeedPromptTemplate(value=target_seed, data_type="text", parameters=["prompt"])
+            target_template = SeedPrompt(value=target_seed, data_type="text", parameters=["prompt"])
 
             # convert the target_template into a prompt_node to maintain the tree information
             target_template_node = PromptNode(template=target_seed, parent=None)
@@ -316,7 +316,7 @@ class FuzzerOrchestrator(Orchestrator):
             # 3. Fill in prompts into the newly generated template.
             jailbreak_prompts = []
             for prompt in self._prompts:
-                jailbreak_prompts.append(target_template.apply_parameters(prompt=prompt))
+                jailbreak_prompts.append(target_template.render_template_value(prompt=prompt))
 
             # 4. Apply prompt converter if any and send request to the target
             requests: list[NormalizerRequest] = []

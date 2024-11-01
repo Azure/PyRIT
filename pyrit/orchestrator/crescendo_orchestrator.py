@@ -16,7 +16,7 @@ from pyrit.exceptions.exception_classes import (
     remove_markdown_json,
 )
 from pyrit.memory import MemoryInterface
-from pyrit.models import Score, SeedPromptTemplate
+from pyrit.models import Score, SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -71,7 +71,7 @@ class CrescendoOrchestrator(Orchestrator):
             system_prompt_path or Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1.yaml"
         )
 
-        self._system_prompt_template = SeedPromptTemplate.from_yaml_file(self._system_prompt_path)
+        self._system_prompt_template = SeedPrompt.from_yaml_file(self._system_prompt_path)
 
         self._prompt_target = prompt_target
         self._prompt_target_conversation_id = str(uuid4())
@@ -122,7 +122,7 @@ class CrescendoOrchestrator(Orchestrator):
 
         red_teaming_chat_conversation_id = str(uuid4())
 
-        red_team_system_prompt = self._system_prompt_template.apply_parameters(
+        red_team_system_prompt = self._system_prompt_template.render_template_value(
             conversation_objective=self._conversation_objective,
             max_turns=max_turns,
         )
