@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataset, PromptTemplate
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPromptDataset, SeedPromptTemplate, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, FuzzerConverter, FuzzerShortenConverter
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
@@ -21,9 +21,9 @@ def scoring_target(memory) -> MockPromptTarget:
 
 
 @pytest.fixture
-def simple_prompts() -> list[str]:
+def simple_prompts() -> list[SeedPrompt]:
     """sample prompts"""
-    prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
+    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
     return prompts.prompts
 
 
@@ -39,24 +39,24 @@ def simple_templateconverter() -> list[FuzzerConverter]:
 @pytest.fixture
 def simple_prompt_templates():
     """sample prompt templates that can be given as input"""
-    prompt_template1 = PromptTemplate.from_yaml_file(
+    prompt_template1 = SeedPromptTemplate.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
     )
-    prompt_template2 = PromptTemplate.from_yaml_file(
+    prompt_template2 = SeedPromptTemplate.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aim.yaml"
     )
-    prompt_template3 = PromptTemplate.from_yaml_file(
+    prompt_template3 = SeedPromptTemplate.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "aligned.yaml"
     )
-    prompt_template4 = PromptTemplate.from_yaml_file(
+    prompt_template4 = SeedPromptTemplate.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "axies.yaml"
     )
 
     prompt_templates = [
-        prompt_template1.template,
-        prompt_template2.template,
-        prompt_template3.template,
-        prompt_template4.template,
+        prompt_template1.value,
+        prompt_template2.value,
+        prompt_template3.value,
+        prompt_template4.value,
     ]
 
     return prompt_templates
@@ -221,7 +221,7 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list):
 
 @pytest.mark.asyncio
 async def test_apply_template_converter(simple_prompts: list, simple_prompt_templates: list):
-    prompt_template = PromptTemplate.from_yaml_file(
+    prompt_template = SeedPromptTemplate.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
     )
 
@@ -245,7 +245,7 @@ async def test_apply_template_converter(simple_prompts: list, simple_prompt_temp
             return_value=ConverterResult(output_text=new_template, output_type="text")
         )
         generated_template = await fuzzer_orchestrator._apply_template_converter(
-            template=prompt_template, other_templates=[prompt_template.template]
+            template=prompt_template, other_templates=[prompt_template.value]
         )
         TEMPLATE_PLACEHOLDER = "{{ prompt }}"
         assert TEMPLATE_PLACEHOLDER in generated_template

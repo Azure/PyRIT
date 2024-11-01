@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestPiece, PromptTemplate
+from pyrit.models import PromptRequestPiece, SeedPromptTemplate
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Score, Scorer, UnvalidatedScore
 
@@ -100,9 +100,9 @@ class SelfAskTrueFalseScorer(Scorer):
             else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(true_false_system_prompt_path)
+        scoring_instructions_template = SeedPromptTemplate.from_yaml_file(true_false_system_prompt_path)
 
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
+        self._system_prompt = scoring_instructions_template.apply_parameters(
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 

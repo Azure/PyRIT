@@ -55,7 +55,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptDataset
+from pyrit.models import SeedPromptDataset
 from pyrit.prompt_target import OpenAIChatTarget
 
 from pyrit.common import default_values
@@ -69,7 +69,7 @@ target = OpenAIChatTarget()
 
 with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()]) as orchestrator:
 
-    prompts = PromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
+    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
 
     # this is run in a Jupyter notebook, so we can use await
     await orchestrator.send_prompts_async(prompt_list=prompts.prompts)  # type: ignore
@@ -162,7 +162,7 @@ import pathlib
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.models.prompt_template import JailBreakTemplate
+from pyrit.models import SeedPromptTemplate
 from pyrit.prompt_target import OpenAIChatTarget
 
 from pyrit.common import default_values
@@ -176,7 +176,7 @@ target = OpenAIChatTarget()
 
 jailbreak_path = pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dan_1.yaml"
 
-system_prompt_str = JailBreakTemplate.from_yaml_file(jailbreak_path).get_system_prompt()
+system_prompt_str = SeedPromptTemplate.from_yaml_file(jailbreak_path).value
 
 # this is sent as the system prompt to prompt_target before any prompt
 print(f"System Prompt: {system_prompt_str}")

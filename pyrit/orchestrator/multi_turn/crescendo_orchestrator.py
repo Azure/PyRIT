@@ -14,13 +14,14 @@ from pyrit.exceptions.exception_classes import (
     remove_markdown_json,
 )
 from pyrit.models import Score
+from pyrit.memory import MemoryInterface
+from pyrit.models import Score, SeedPromptTemplate
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_template import SystemPromptWithObjective
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from pyrit.memory import MemoryInterface
 from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
