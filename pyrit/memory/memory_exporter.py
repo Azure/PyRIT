@@ -29,8 +29,8 @@ class MemoryExporter:
         }
 
     def export_data(
-            self, data: Union[List[Base], List[Dict]], *, file_path: Path = None, export_type: str = "json"
-            ):  # type: ignore
+        self, data: Union[List[Base], List[Dict]], *, file_path: Path = None, export_type: str = "json"
+    ):  # type: ignore
         """
         Exports the provided data to a file in the specified format.
 

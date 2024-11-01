@@ -19,9 +19,9 @@ from pyrit.common import default_values
 from pathlib import Path
 
 default_values.load_default_env()
-    
+
 memory = AzureSQLMemory()
-    
+
 # Define file path for export
 json_file_path = Path("conversation_and_scores_json_example")
 # csv_file_path = Path(\"conversation_and_scores_csv_example\")
@@ -29,8 +29,8 @@ json_file_path = Path("conversation_and_scores_json_example")
 # Export the data to a JSON file
 conversation_with_scores = memory.export_all_conversations_with_scores(file_path=json_file_path, export_type="json")
 print(f"Exported conversation with scores to JSON: {json_file_path}")
-#conversation_with_scores = memory.export_all_conversations_with_scores(file_path=json_file_path, export_type="csv")
-#print(f"Exported conversation with scores to CSV: {csv_file_path}")
+# conversation_with_scores = memory.export_all_conversations_with_scores(file_path=json_file_path, export_type="csv")
+# print(f"Exported conversation with scores to CSV: {csv_file_path}")
 
 # %% [markdown]
 # ## Importing Data as NumPy DataFrame
@@ -38,7 +38,7 @@ print(f"Exported conversation with scores to JSON: {json_file_path}")
 # You can use the exported JSON or CSV files to import the data as a NumPy DataFrame. This can be useful for various data manipulation and analysis tasks.
 
 # %%
-import pandas as pd #type: ignore
+import pandas as pd  # type: ignore
 
 df = pd.read_json(json_file_path)
 df.head()
