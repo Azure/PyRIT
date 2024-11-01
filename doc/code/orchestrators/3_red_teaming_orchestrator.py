@@ -71,7 +71,7 @@ with RedTeamingOrchestrator(
     await red_teaming_orchestrator.print_conversation(conversation_id)  # type: ignore
 
 # %% [markdown]
-# ### Image Target Example
+# ## Image Target Example
 #
 # One of the most powerful things about PyRIT is its ability to generalize. You can use images
 # in most places instead of text, and vice versa. In this example, we'll try to convince an image generation model to generate a harmful image.

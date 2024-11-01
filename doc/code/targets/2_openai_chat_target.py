@@ -47,7 +47,7 @@ with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
 
 
 # %% [markdown]
-# ### OpenAI Configuration
+# ## OpenAI Configuration
 #
 # All `OpenAITarget`s can communicate either to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference) or [OpenAI](https://platform.openai.com/docs/api-reference/introduction).
 #

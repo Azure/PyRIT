@@ -19,7 +19,7 @@
 #
 # Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
 #
-# ### Gandalf Target
+# ## Gandalf Target
 #
 # Gandalf is similar to a real-world application you might be using PyRIT to test. The code for PyRIT's Gandalf target can be found [here](../../../pyrit/prompt_target/gandalf_target.py) and is similar to the code you would use to connect PyRIT to a real-world custom endpoint.
 #
@@ -88,7 +88,7 @@ with RedTeamingOrchestrator(
 
 
 # %% [markdown]
-# ### Crucible Target
+# ## Crucible Target
 #
 # The Defcon AI CTF challenges are a fun way to get into AI Red Teaming. Similar to Gandalf, we've added a Crucible target so you can make use of PyRIT. PyRIT certainly won't be able to solve all these challenges for you, but it can be used as a tool to help you solve the challenges yourself (much like how PyRIT acts as a tool in real red team engagements!).
 #

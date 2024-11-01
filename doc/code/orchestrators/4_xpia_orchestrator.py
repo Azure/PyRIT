@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ## Cross-domain Prompt Injection Attacks (XPIA)
+# # Cross-domain Prompt Injection Attacks (XPIA)
 #
 # Orchestrators can be used for various scenarios that are tangential to the model.
 #

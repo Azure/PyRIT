@@ -54,7 +54,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     orchestrator.print_conversations()
 
 # %% [markdown]
-# ### Adding Converters
+# ## Adding Converters
 #
 # Additionally, we can make it more interesting by initializing the orchestrator with different types of prompt converters.
 # This variation takes the original example, but converts the text to base64 before sending it to the target.

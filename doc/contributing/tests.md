@@ -8,7 +8,7 @@ For running PyRIT tests, you need to have `pytest` package installed, but if you
 `pip install -e .[dev]`, `pytest` should be included in that setup.
 
 
-#### Running PyRIT test files
+### Running PyRIT test files
 PyRIT test files can be run using `pytest`.
 
 **Pytest**
@@ -35,7 +35,7 @@ PyRIT test files can be run using `pytest`.
      python -m pytest tests\test_aml_online_endpoint_chat.py::test_get_headers_with_empty_api_key
      ```
 
-#### Unit Test Best Practices in PyRIT
+### Unit Test Best Practices in PyRIT
 
 Testing is an art to get right! But here are some best practices in terms of unit testing in PyRIT, and some potential concepts to familiarize yourself with as you're writing these tests.
 

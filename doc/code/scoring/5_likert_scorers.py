@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ## Float Scale Scoring using Likert Scale
+# # Float Scale Scoring using Likert Scale
 #
 # In some cases, we are interested in scoring a response on a Likert scale that measures the prevalence or severity of some type of content.
 #

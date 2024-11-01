@@ -46,7 +46,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
-# ### Adding Converters
+# ## Adding Converters
 #
 # Additionally, we can make it more interesting by initializing the orchestrator with different types of prompt converters.
 # This variation takes the original example, but converts the text to base64 before sending it to the target.
@@ -77,7 +77,7 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
     await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
-# ### Multi-Modal
+# ## Multi-Modal
 #
 # The targets sent do not have to be text prompts. You can also use multi-modal prompts. The below example takes a list of paths to local images, and sends that list of images to the target.
 
@@ -107,7 +107,7 @@ with PromptSendingOrchestrator(prompt_target=text_target) as orchestrator:
         print(entry)
 
 # %% [markdown]
-# ### Automatic Scoring
+# ## Automatic Scoring
 #
 # The `PromptSendingOrchestrator` also has built-in support to score prompt responses in parallel.
 # This example shows how to pass in a list of scorers to the orchestrator.
@@ -151,7 +151,7 @@ with PromptSendingOrchestrator(
                 )
 
 # %% [markdown]
-# ### Prepending Conversations
+# ## Prepending Conversations
 #
 # If you prepend all or part of a conversation with `PromptSendingOrchestrator`, that is also supported. You can call `set_prepended_conversation` to customize the beginning part of any message. For example, you could use this to do a multi-turn conversation. Below sets the system prompt for many messages.
 

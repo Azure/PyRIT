@@ -1,5 +1,5 @@
 # %% [markdown]
-# ## Score Azure ML Managed Online Endpoint
+# # Score Azure ML Managed Online Endpoint
 #
 # This notebook demonstrates testing the Azure Machine Learning (Azure ML) models that have been deployed to Azure ML managed online endpoints.
 #
@@ -11,7 +11,7 @@
 # 2. Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/setup_azure.md)
 #
 #
-# ### Environment Variables
+# ## Environment Variables
 #
 # Below are the environment variables that needs to be set in `.env` file:
 #

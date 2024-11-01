@@ -15,7 +15,7 @@
 
 # %% [markdown]
 #
-# ## Float Scale Scoring using Azure Content Safety API
+# # Float Scale Scoring using Azure Content Safety API
 #
 # The Azure Content Safety API is one of our most reliable scorers for detecting harms. Although it isn't very flexible, it's extremely fast and reliable and can be used to score images or text.
 #
