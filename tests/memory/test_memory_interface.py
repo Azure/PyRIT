@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import tempfile
 from typing import Generator, Literal
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -766,6 +767,68 @@ def test_get_scores_by_memory_labels(memory: MemoryInterface):
     assert db_score[0].score_metadata == score.score_metadata
     assert db_score[0].scorer_class_identifier == score.scorer_class_identifier
     assert db_score[0].prompt_request_response_id == prompt_id
+
+
+def test_export_all_conversations_with_scores_file_created(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+        with (
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
+        ):
+            file_path = Path(temp_file.name)
+
+            mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
+            mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
+            memory.export_all_conversations_with_scores(file_path=file_path)
+
+            assert file_path.exists()
+
+
+def test_export_all_conversations_with_scores_correct_data(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
+    expected_data = [
+        {
+            "prompt_request_response_id": "1234",
+            "conversation": ["sample piece"],
+            "score_value": 10,
+        }
+    ]
+
+    with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
+        with (
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
+            patch.object(memory.exporter, "export_data") as mock_export_data,
+        ):
+            file_path = Path(temp_file.name)
+
+            mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
+            mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
+
+            memory.export_all_conversations_with_scores(file_path=file_path)
+
+            mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
+            assert mock_export_data.call_args[0][0] == expected_data
+
+
+def test_export_all_conversations_with_scores_empty_data(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
+    expected_data: list = []
+    with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
+        with (
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
+            patch.object(memory.exporter, "export_data") as mock_export_data,
+        ):
+            file_path = Path(temp_file.name)
+
+            mock_get_pieces.return_value = []
+            mock_get_scores.return_value = []
+
+            memory.export_all_conversations_with_scores(file_path=file_path)
+            mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
 
 
 def test_get_seed_prompts_no_filters(memory: MemoryInterface):
