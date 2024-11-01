@@ -14,7 +14,7 @@ from pyrit.models import (
 @pytest.fixture
 def seed_prompt_fixture():
     return SeedPrompt(
-        value="Test prompt",
+        template="Test prompt",
         data_type="text",
         name="Test Name",
         dataset_name="Test Dataset",
@@ -33,14 +33,14 @@ def seed_prompt_fixture():
 
 def test_seed_prompt_initialization(seed_prompt_fixture):
     assert isinstance(seed_prompt_fixture.id, uuid.UUID)
-    assert seed_prompt_fixture.value == "Test prompt"
+    assert seed_prompt_fixture.template == "Test prompt"
     assert seed_prompt_fixture.data_type == "text"
     assert seed_prompt_fixture.parameters == ["param1"]
 
 
 def test_seed_prompt_apply_parameters_success(seed_prompt_fixture):
-    seed_prompt_fixture.value = "Test prompt with param1={{ param1 }}"
-    result = seed_prompt_fixture.apply_parameters(param1="value1")
+    seed_prompt_fixture.template = "Test prompt with param1={{ param1 }}"
+    result = seed_prompt_fixture.render(param1="value1")
 
     # Assert the result is formatted as expected (change expected_output accordingly)
     expected_output = "Test prompt with param1=value1"
@@ -60,7 +60,7 @@ def test_seed_prompt_template_missing_param(seed_prompt_fixture):
 
     # Attempt to apply only one of the required parameters
     with pytest.raises(ValueError, match="Parameters are required:"):
-        seed_prompt_fixture.apply_parameters(param1="value1")  # Missing param2
+        seed_prompt_fixture.render(param1="value1")  # Missing param2
 
 
 def test_seed_prompt_group_initialization(seed_prompt_fixture):

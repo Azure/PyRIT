@@ -80,7 +80,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
 
         self._initial_red_teaming_prompt = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "initial_prompt.yaml")
-        ).apply_parameters(conversation_objective=self._conversation_objective)
+        ).render(conversation_objective=self._conversation_objective)
 
         self._red_teaming_prompt_template = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "red_teaming_prompt_template.yaml")
@@ -88,7 +88,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
 
         self._attack_strategy = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "red_teaming_system_prompt.yaml")
-        ).apply_parameters(conversation_objective=self._conversation_objective)
+        ).render(conversation_objective=self._conversation_objective)
 
         self._red_teaming_chat_conversation_id = str(uuid4())
         self._red_teaming_chat = red_teaming_chat
@@ -140,7 +140,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                 score = scores[0].get_value()
             else:
                 score = "unavailable"
-            prompt_text = self._red_teaming_prompt_template.apply_parameters(
+            prompt_text = self._red_teaming_prompt_template.render(
                 target_response=target_response_piece.converted_value,
                 conversation_objective=self._conversation_objective,
                 score=str(score),

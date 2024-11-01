@@ -46,7 +46,7 @@ class AtbashConverter(PromptConverter):
             prompt_template = SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "atbash_description.yaml"
             )
-            output_text = prompt_template.apply_parameters(
+            output_text = prompt_template.render(
                 prompt=self._atbash(prompt), example=self._atbash(self.example)
             )
         else:

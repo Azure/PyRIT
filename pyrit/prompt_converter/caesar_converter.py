@@ -51,7 +51,7 @@ class CaesarConverter(PromptConverter):
             prompt_template = SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "caesar_description.yaml"
             )
-            output_text = prompt_template.apply_parameters(
+            output_text = prompt_template.render(
                 prompt=self._caesar(prompt), example=self._caesar(self.example), offset=str(self.caesar_offset)
             )
         else:

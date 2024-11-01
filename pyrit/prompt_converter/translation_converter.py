@@ -50,7 +50,7 @@ class TranslationConverter(PromptConverter):
 
         self.language = language.lower()
 
-        self.system_prompt = prompt_template.apply_parameters(languages=language)
+        self.system_prompt = prompt_template.render(languages=language)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

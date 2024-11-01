@@ -58,7 +58,7 @@ class SelfAskCategoryScorer(Scorer):
             CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
 
-        self._system_prompt = scoring_instructions_template.apply_parameters(
+        self._system_prompt = scoring_instructions_template.render(
             categories=categories_as_string,
             no_category_found=self._no_category_found_category,
         )

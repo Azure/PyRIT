@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
+from jinja2 import Template, StrictUndefined
 
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
@@ -17,7 +18,7 @@ class SeedPrompt(YamlLoadable):
     """Represents a seed prompt with various attributes and metadata."""
 
     id: Optional[uuid.UUID]
-    value: str
+    template: str
     data_type: PromptDataType
     name: Optional[str]
     dataset_name: Optional[str]
@@ -37,7 +38,7 @@ class SeedPrompt(YamlLoadable):
         self,
         *,
         id: Optional[uuid.UUID] = None,
-        value: str,
+        template: str,
         data_type: PromptDataType,
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
@@ -54,7 +55,7 @@ class SeedPrompt(YamlLoadable):
         sequence: Optional[int] = None,
     ):
         self.id = id if id else uuid.uuid4()
-        self.value = value
+        self.template = template
         self.data_type = data_type
         self.name = name
         self.dataset_name = dataset_name
@@ -70,8 +71,8 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
 
-    def apply_parameters(self, **kwargs) -> str:
-        """Gets a value, applying provided parameters in `parameter_values`.
+    def render(self, **kwargs) -> str:
+        """Gets a value, applying provided parameters in kwargs
 
         Args:
             kwargs:Key-value pairs to replace in the SeedPrompt value.
@@ -83,26 +84,16 @@ class SeedPrompt(YamlLoadable):
             ValueError: If parameters are missing or invalid in the template.
         """
 
-        if len(self.parameters) != len(kwargs.keys()):
-            missing_parameters = ", ".join(self.parameters)
-            raise ValueError(f"Parameters are required: {missing_parameters}.")
 
-        if not kwargs:
-            return self.value
-
-        if self.data_type != "text":
+        if self.data_type != "text" and self.parameters:
             raise ValueError(f"Cannot apply parameters to a prompt with data type {self.data_type}")
 
-        final_prompt = self.value
-        for key, value in kwargs.items():
-            if key not in self.parameters:
-                raise ValueError(
-                    f'Invalid parameters provided. [expected="{self.parameters}", actual="{kwargs.keys()}"]'
-                )
-            # Replace placeholders ({{ key }}) with corresponding values
-            regex = f"{{{{ *{key} *}}}}"
-            final_prompt = re.sub(pattern=regex, string=final_prompt, repl=str(value))
-        return final_prompt
+        jinja_template = Template(self.template, undefined=StrictUndefined)
+
+        try:
+            return jinja_template.render(**kwargs)
+        except Exception as e:
+            raise ValueError(f"Error applying parameters: {str(e)}")
 
 
 class SeedPromptGroup(YamlLoadable):

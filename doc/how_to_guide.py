@@ -94,7 +94,7 @@ template = SeedPrompt(
 
 # %%
 
-prompt = template.apply_parameters(food_item="pizza", food_location="Italy")
+prompt = template.render(food_item="pizza", food_location="Italy")
 
 # %% [markdown]
 # ## Generate prompts automatically with red teaming orchestrators
