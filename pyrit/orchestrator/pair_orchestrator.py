@@ -139,7 +139,7 @@ class PAIROrchestrator(Orchestrator):
         """
         if start_new_conversation:
             self._last_attacker_conversation_id = str(uuid.uuid4())
-            attacker_system_prompt = self._attacker_prompt_template.render(
+            attacker_system_prompt = self._attacker_prompt_template.render_template(
                 goal=self._conversation_objective, target_str=self._desired_target_response_prefix
             )
             self._adversarial_target.set_system_prompt(

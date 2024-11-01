@@ -102,7 +102,7 @@ class SelfAskTrueFalseScorer(Scorer):
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt_path)
 
-        self._system_prompt = scoring_instructions_template.render(
+        self._system_prompt = scoring_instructions_template.render_template(
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 

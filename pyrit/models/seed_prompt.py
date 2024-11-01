@@ -71,8 +71,8 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
 
-    def render(self, **kwargs) -> str:
-        """Gets a value, applying provided parameters in kwargs
+    def render_template(self, **kwargs) -> str:
+        """Renders the template, applying provided parameters in kwargs
 
         Args:
             kwargs:Key-value pairs to replace in the SeedPrompt value.

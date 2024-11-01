@@ -102,7 +102,7 @@ class CodeChameleonConverter(PromptConverter):
             pathlib.Path(DATASETS_PATH) / "prompt_converters" / "codechameleon_converter.yaml"
         )
 
-        formatted_prompt = seed_prompt.render(
+        formatted_prompt = seed_prompt.render_template(
             encoded_prompt=encoded_prompt, decrypt_function=self.decrypt_function
         )
 

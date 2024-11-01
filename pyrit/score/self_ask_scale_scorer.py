@@ -60,7 +60,7 @@ class SelfAskScaleScorer(Scorer):
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(system_prompt_path)
 
-        self._system_prompt = scoring_instructions_template.render(**scale_args)
+        self._system_prompt = scoring_instructions_template.render_template(**scale_args)
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """

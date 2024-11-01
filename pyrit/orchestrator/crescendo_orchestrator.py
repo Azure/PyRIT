@@ -122,7 +122,7 @@ class CrescendoOrchestrator(Orchestrator):
 
         red_teaming_chat_conversation_id = str(uuid4())
 
-        red_team_system_prompt = self._system_prompt_template.render(
+        red_team_system_prompt = self._system_prompt_template.render_template(
             conversation_objective=self._conversation_objective,
             max_turns=max_turns,
         )

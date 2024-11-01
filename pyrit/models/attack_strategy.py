@@ -30,4 +30,4 @@ class AttackStrategy:
 
     def __str__(self):
         """Returns a string representation of the attack strategy."""
-        return self.seedprompt.render(**self.kwargs)
+        return self.seedprompt.render_template(**self.kwargs)

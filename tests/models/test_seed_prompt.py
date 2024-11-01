@@ -40,7 +40,7 @@ def test_seed_prompt_initialization(seed_prompt_fixture):
 
 def test_seed_prompt_apply_parameters_success(seed_prompt_fixture):
     seed_prompt_fixture.template = "Test prompt with param1={{ param1 }}"
-    result = seed_prompt_fixture.render(param1="value1")
+    result = seed_prompt_fixture.render_template(param1="value1")
 
     # Assert the result is formatted as expected (change expected_output accordingly)
     expected_output = "Test prompt with param1=value1"
@@ -48,19 +48,19 @@ def test_seed_prompt_apply_parameters_success(seed_prompt_fixture):
 
 
 def test_seed_prompt_template_no_match(seed_prompt_fixture):
-    seed_prompt_fixture.value = "Test prompt with {{ param1 }}"
+    seed_prompt_fixture.template = "Test prompt with {{ param1 }}"
 
-    with pytest.raises(ValueError, match="Invalid parameters provided."):
-        seed_prompt_fixture.apply_parameters(param2="value2")  # Using an invalid param
+    with pytest.raises(ValueError, match="Error applying parameters"):
+        seed_prompt_fixture.render_template(param2="value2")  # Using an invalid param
 
 
 def test_seed_prompt_template_missing_param(seed_prompt_fixture):
-    seed_prompt_fixture.value = "Test prompt with {{ param1 }} and {{ param2 }}"
+    seed_prompt_fixture.template = "Test prompt with {{ param1 }} and {{ param2 }}"
     seed_prompt_fixture.parameters = ["param1", "param2"]  # Add both parameters
 
     # Attempt to apply only one of the required parameters
-    with pytest.raises(ValueError, match="Parameters are required:"):
-        seed_prompt_fixture.render(param1="value1")  # Missing param2
+    with pytest.raises(ValueError, match="Error applying parameters"):
+        seed_prompt_fixture.render_template(param1="value1")  # Missing param2
 
 
 def test_seed_prompt_group_initialization(seed_prompt_fixture):
@@ -70,7 +70,7 @@ def test_seed_prompt_group_initialization(seed_prompt_fixture):
 
 
 def test_seed_prompt_group_sequence_validation():
-    prompt = SeedPrompt(value="Test prompt", data_type="text")
+    prompt = SeedPrompt(template="Test prompt", data_type="text")
     with pytest.raises(ValueError, match="All prompts in a group must have a sequence number."):
         SeedPromptGroup(prompts=[prompt])
 
@@ -78,7 +78,7 @@ def test_seed_prompt_group_sequence_validation():
 def test_group_seed_prompts_by_prompt_group_id(seed_prompt_fixture):
     # Grouping two prompts
     prompt_2 = SeedPrompt(
-        value="Another prompt", data_type="text", prompt_group_id=seed_prompt_fixture.prompt_group_id, sequence=2
+        template="Another prompt", data_type="text", prompt_group_id=seed_prompt_fixture.prompt_group_id, sequence=2
     )
 
     groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id([seed_prompt_fixture, prompt_2])
@@ -90,4 +90,4 @@ def test_group_seed_prompts_by_prompt_group_id(seed_prompt_fixture):
 def test_seed_prompt_dataset_initialization(seed_prompt_fixture):
     dataset = SeedPromptDataset(prompts=[seed_prompt_fixture])
     assert len(dataset.prompts) == 1
-    assert dataset.prompts[0].value == "Test prompt"
+    assert dataset.prompts[0].template == "Test prompt"
