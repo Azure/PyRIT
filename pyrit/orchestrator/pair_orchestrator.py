@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import pyrit_json_retry, InvalidJsonException
 from pyrit.memory import MemoryInterface
-from pyrit.models import SeedPromptTemplate, PromptRequestResponse, PromptRequestPiece, Score
+from pyrit.models import SeedPrompt, PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer, NormalizerRequest, NormalizerRequestPiece
@@ -110,7 +110,7 @@ class PAIROrchestrator(Orchestrator):
         self._desired_target_response_prefix = desired_target_response_prefix
 
         # Load the prompt templates for the attacker
-        self._attacker_prompt_template = SeedPromptTemplate.from_yaml_file(
+        self._attacker_prompt_template = SeedPrompt.from_yaml_file(
             file=DATASETS_PATH / "orchestrators" / "pair" / "attacker_system_prompt.yaml"
         )
 

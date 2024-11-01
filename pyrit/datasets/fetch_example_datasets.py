@@ -17,7 +17,6 @@ from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
 from pyrit.models import (
     SeedPromptDataset,
-    SeedPromptTemplate,
     QuestionAnsweringDataset,
     QuestionAnsweringEntry,
     QuestionChoice,
@@ -711,15 +710,15 @@ def fetch_decoding_trust_stereotypes_examples(
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
     if system_prompt_type == "targeted":
-        system_prompt = SeedPromptTemplate.from_yaml_file(
+        system_prompt = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_targeted.yaml"
         )
     elif system_prompt_type == "untargeted":
-        system_prompt = SeedPromptTemplate.from_yaml_file(
+        system_prompt = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_untargeted.yaml"
         )
     else:
-        system_prompt = SeedPromptTemplate.from_yaml_file(
+        system_prompt = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_benign.yaml"
         )
 

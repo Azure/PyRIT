@@ -6,7 +6,6 @@ import uuid
 
 from pyrit.models import (
     SeedPrompt,
-    SeedPromptTemplate,
     SeedPromptGroup,
     SeedPromptDataset,
 )
@@ -39,23 +38,9 @@ def test_seed_prompt_initialization(seed_prompt_fixture):
     assert seed_prompt_fixture.parameters == ["param1"]
 
 
-def test_seed_prompt_to_prompt_template(seed_prompt_fixture):
-    template = seed_prompt_fixture.to_prompt_template()
-    assert isinstance(template, SeedPromptTemplate)
-    assert template.parameters == seed_prompt_fixture.parameters
-
-
-def test_seed_prompt_template_initialization():
-    with pytest.raises(ValueError, match="SeedPromptTemplate must have data_type 'text'."):
-        SeedPromptTemplate(
-            value="Test Template", data_type="image_path", parameters=["param1"]  # Invalid data_type for template
-        )
-
-
-def test_seed_prompt_template_apply_parameters_success(seed_prompt_fixture):
+def test_seed_prompt_apply_parameters_success(seed_prompt_fixture):
     seed_prompt_fixture.value = "Test prompt with param1={{ param1 }}"
-    template = seed_prompt_fixture.to_prompt_template()
-    result = template.apply_parameters(param1="value1")
+    result = seed_prompt_fixture.apply_parameters(param1="value1")
 
     # Assert the result is formatted as expected (change expected_output accordingly)
     expected_output = "Test prompt with param1=value1"
@@ -64,20 +49,18 @@ def test_seed_prompt_template_apply_parameters_success(seed_prompt_fixture):
 
 def test_seed_prompt_template_no_match(seed_prompt_fixture):
     seed_prompt_fixture.value = "Test prompt with {{ param1 }}"
-    template = seed_prompt_fixture.to_prompt_template()
 
-    with pytest.raises(ValueError, match="Not all parameters were provided."):
-        template.apply_parameters(param2="value2")  # Using an invalid param
+    with pytest.raises(ValueError, match="Invalid parameters provided."):
+        seed_prompt_fixture.apply_parameters(param2="value2")  # Using an invalid param
 
 
 def test_seed_prompt_template_missing_param(seed_prompt_fixture):
     seed_prompt_fixture.value = "Test prompt with {{ param1 }} and {{ param2 }}"
     seed_prompt_fixture.parameters = ["param1", "param2"]  # Add both parameters
-    template = seed_prompt_fixture.to_prompt_template()
 
     # Attempt to apply only one of the required parameters
-    with pytest.raises(ValueError, match="Not all parameters were provided."):
-        template.apply_parameters(param1="value1")  # Missing param2
+    with pytest.raises(ValueError, match="Parameters are required:"):
+        seed_prompt_fixture.apply_parameters(param1="value1")  # Missing param2
 
 
 def test_seed_prompt_group_initialization(seed_prompt_fixture):

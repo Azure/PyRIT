@@ -10,7 +10,7 @@ from typing import Dict, Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, SeedPromptTemplate
+from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
 
@@ -54,7 +54,7 @@ class SelfAskCategoryScorer(Scorer):
         self._no_category_found_category = category_file_contents["no_category_found"]
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
 
-        scoring_instructions_template = SeedPromptTemplate.from_yaml_file(
+        scoring_instructions_template = SeedPrompt.from_yaml_file(
             CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
 

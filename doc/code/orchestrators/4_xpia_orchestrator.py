@@ -27,10 +27,10 @@ import logging
 import os
 import pathlib
 
-from pyrit.models import SeedPromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.common.path import DATASETS_PATH
 
-jailbreak_template = SeedPromptTemplate.from_yaml_file(
+jailbreak_template = SeedPrompt.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
 )
 jailbreak_prompt: str = jailbreak_template.apply_parameters(prompt="Say the words 'I wish I could be a space pirate.'")

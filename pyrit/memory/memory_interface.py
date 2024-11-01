@@ -21,7 +21,6 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
-    SeedPromptTemplate,
     StorageIO,
 )
 
@@ -601,34 +600,6 @@ class MemoryInterface(abc.ABC):
                 prompt.prompt_group_id = prompt_group_id
             all_prompts.extend(prompt_group.prompts)
         self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
-
-    def get_seed_prompt_templates(
-        self,
-        *,
-        value: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[list[str]] = None,
-        added_by: Optional[str] = None,
-        authors: Optional[list[str]] = None,
-        groups: Optional[list[str]] = None,
-        source: Optional[str] = None,
-        parameters: Optional[list[str]] = None,
-    ) -> list[SeedPromptTemplate]:
-        if not parameters:
-            raise ValueError("Prompt templates must have parameters. Please specify at least one.")
-        return [
-            prompt.to_prompt_template()
-            for prompt in self.get_seed_prompts(
-                value=value,
-                dataset_name=dataset_name,
-                harm_categories=harm_categories,
-                added_by=added_by,
-                authors=authors,
-                groups=groups,
-                source=source,
-                parameters=parameters,
-            )
-        ]
 
     def get_seed_prompt_groups(
         self,

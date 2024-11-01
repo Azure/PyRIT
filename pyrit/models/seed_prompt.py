@@ -1,15 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import re
+import uuid
 
-from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
-import uuid
-
 from collections import defaultdict
 
-from pyrit.common.apply_parameters_to_template import apply_parameters_to_template
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
 
@@ -72,85 +70,39 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
 
-    def to_prompt_template(self) -> SeedPromptTemplate:
-        """Convert the SeedPrompt instance to a SeedPromptTemplate."""
-        if not self.parameters:
-            raise ValueError("SeedPrompt must have parameters to convert to a SeedPromptTemplate.")
-
-        return SeedPromptTemplate(
-            id=self.id,
-            value=self.value,
-            data_type=self.data_type,
-            name=self.name,
-            dataset_name=self.dataset_name,
-            harm_categories=self.harm_categories,
-            description=self.description,
-            authors=self.authors,
-            groups=self.groups,
-            source=self.source,
-            date_added=self.date_added,
-            added_by=self.added_by,
-            metadata=self.metadata,
-            parameters=self.parameters,
-            prompt_group_id=self.prompt_group_id,
-            sequence=self.sequence,
-        )
-
-
-class SeedPromptTemplate(SeedPrompt):
-    """Represents a template of a seed prompt with required parameters."""
-
-    parameters: List[str]
-
-    def __init__(
-        self,
-        *,
-        id: Optional[uuid.UUID] = None,
-        value: str,
-        data_type: PromptDataType,
-        name: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[List[str]] = None,
-        description: Optional[str] = None,
-        authors: Optional[List[str]] = None,
-        groups: Optional[List[str]] = None,
-        source: Optional[str] = None,
-        date_added: Optional[datetime] = datetime.now(),
-        added_by: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-        parameters: List[str],
-        prompt_group_id: Optional[uuid.UUID] = None,
-        sequence: Optional[int] = None,
-    ):
-        if data_type != "text":
-            raise ValueError("SeedPromptTemplate must have data_type 'text'.")
-        super().__init__(
-            id=id,
-            value=value,
-            data_type=data_type,
-            name=name,
-            dataset_name=dataset_name,
-            harm_categories=harm_categories,
-            description=description,
-            authors=authors,
-            groups=groups,
-            source=source,
-            date_added=date_added,
-            added_by=added_by,
-            metadata=metadata,
-            parameters=parameters,
-            prompt_group_id=prompt_group_id,
-            sequence=sequence,
-        )
-
     def apply_parameters(self, **kwargs) -> str:
-        """Applies parameters to the seed prompt template and returns the formatted string."""
-        if not self.parameters:
-            raise ValueError("SeedPromptTemplate must have parameters to apply.")
-        if not all(param in kwargs for param in self.parameters):
-            raise ValueError("Not all parameters were provided.")
+        """Gets a value, applying provided parameters in `parameter_values`.
 
-        return apply_parameters_to_template(self.value, self.parameters, **kwargs)
+        Args:
+            kwargs:Key-value pairs to replace in the SeedPrompt value.
+
+        Returns:
+            A new prompt with the parameters applied.
+
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
+
+        if len(self.parameters) != len(kwargs.keys()):
+            missing_parameters = ", ".join(self.parameters)
+            raise ValueError(f"Parameters are required: {missing_parameters}.")
+
+        if not kwargs:
+            return self.value
+
+        if self.data_type != "text":
+            raise ValueError(f"Cannot apply parameters to a prompt with data type {self.data_type}")
+
+        final_prompt = self.value
+        for key, value in kwargs.items():
+            if key not in self.parameters:
+                raise ValueError(
+                    f'Invalid parameters provided. [expected="{self.parameters}", actual="{kwargs.keys()}"]'
+                )
+            # Replace placeholders ({{ key }}) with corresponding values
+            regex = f"{{{{ *{key} *}}}}"
+            final_prompt = re.sub(pattern=regex, string=final_prompt, repl=str(value))
+        return final_prompt
 
 
 class SeedPromptGroup(YamlLoadable):

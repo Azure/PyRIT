@@ -14,7 +14,7 @@ from uuid import uuid4
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.memory import MemoryInterface
-from pyrit.models import SeedPromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
@@ -78,15 +78,15 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         self._prompt_target_conversation_id = str(uuid4())
         self._conversation_objective = conversation_objective
 
-        self._initial_red_teaming_prompt = SeedPromptTemplate.from_yaml_file(
+        self._initial_red_teaming_prompt = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "initial_prompt.yaml")
         ).apply_parameters(conversation_objective=self._conversation_objective)
 
-        self._red_teaming_prompt_template = SeedPromptTemplate.from_yaml_file(
+        self._red_teaming_prompt_template = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "red_teaming_prompt_template.yaml")
         )
 
-        self._attack_strategy = SeedPromptTemplate.from_yaml_file(
+        self._attack_strategy = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "red_teaming_system_prompt.yaml")
         ).apply_parameters(conversation_objective=self._conversation_objective)
 

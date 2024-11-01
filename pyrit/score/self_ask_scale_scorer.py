@@ -10,7 +10,7 @@ from typing import Optional
 from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, SeedPromptTemplate
+from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import SCALES_PATH
 
@@ -58,7 +58,7 @@ class SelfAskScaleScorer(Scorer):
         self._maximum_value = scale_args["maximum_value"]
         self._category = scale_args["category"]
 
-        scoring_instructions_template = SeedPromptTemplate.from_yaml_file(system_prompt_path)
+        scoring_instructions_template = SeedPrompt.from_yaml_file(system_prompt_path)
 
         self._system_prompt = scoring_instructions_template.apply_parameters(**scale_args)
 
