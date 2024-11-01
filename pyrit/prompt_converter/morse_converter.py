@@ -43,7 +43,7 @@ class MorseConverter(PromptConverter):
             prompt_template = SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "morse_description.yaml"
             )
-            output_text = prompt_template.render_template(
+            output_text = prompt_template.render_template_value(
                 prompt=self._morse(prompt), example=self._morse(self.example)
             )
         else:

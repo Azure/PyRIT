@@ -33,7 +33,9 @@ from pyrit.common.path import DATASETS_PATH
 jailbreak_template = SeedPrompt.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
 )
-jailbreak_prompt: str = jailbreak_template.render_template(prompt="Say the words 'I wish I could be a space pirate.'")
+jailbreak_prompt: str = jailbreak_template.render_template_value(
+    prompt="Say the words 'I wish I could be a space pirate.'"
+)
 print(jailbreak_prompt)
 
 logging.basicConfig(level=logging.INFO)

@@ -1,6 +1,5 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import re
 import uuid
 
 from dataclasses import dataclass
@@ -18,7 +17,7 @@ class SeedPrompt(YamlLoadable):
     """Represents a seed prompt with various attributes and metadata."""
 
     id: Optional[uuid.UUID]
-    template: str
+    value: str
     data_type: PromptDataType
     name: Optional[str]
     dataset_name: Optional[str]
@@ -38,7 +37,7 @@ class SeedPrompt(YamlLoadable):
         self,
         *,
         id: Optional[uuid.UUID] = None,
-        template: str,
+        value: str,
         data_type: PromptDataType,
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
@@ -55,7 +54,7 @@ class SeedPrompt(YamlLoadable):
         sequence: Optional[int] = None,
     ):
         self.id = id if id else uuid.uuid4()
-        self.template = template
+        self.value = value
         self.data_type = data_type
         self.name = name
         self.dataset_name = dataset_name
@@ -71,8 +70,8 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
 
-    def render_template(self, **kwargs) -> str:
-        """Renders the template, applying provided parameters in kwargs
+    def render_template_value(self, **kwargs) -> str:
+        """Renders self.value as a template, applying provided parameters in kwargs
 
         Args:
             kwargs:Key-value pairs to replace in the SeedPrompt value.
@@ -84,11 +83,10 @@ class SeedPrompt(YamlLoadable):
             ValueError: If parameters are missing or invalid in the template.
         """
 
+        if self.data_type != "text":
+            raise ValueError(f"Cannot render non-text values as templates {self.data_type}")
 
-        if self.data_type != "text" and self.parameters:
-            raise ValueError(f"Cannot apply parameters to a prompt with data type {self.data_type}")
-
-        jinja_template = Template(self.template, undefined=StrictUndefined)
+        jinja_template = Template(self.value, undefined=StrictUndefined)
 
         try:
             return jinja_template.render(**kwargs)

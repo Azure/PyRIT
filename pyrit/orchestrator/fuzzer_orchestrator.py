@@ -316,7 +316,7 @@ class FuzzerOrchestrator(Orchestrator):
             # 3. Fill in prompts into the newly generated template.
             jailbreak_prompts = []
             for prompt in self._prompts:
-                jailbreak_prompts.append(target_template.render_template(prompt=prompt))
+                jailbreak_prompts.append(target_template.render_template_value(prompt=prompt))
 
             # 4. Apply prompt converter if any and send request to the target
             requests: list[NormalizerRequest] = []

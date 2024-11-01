@@ -747,9 +747,9 @@ def fetch_decoding_trust_stereotypes_examples(
             continue
 
         prompt = (
-            system_prompt.render_template(prompt=example["user_prompt"], target_group=example["target_group"])
+            system_prompt.render_template_value(prompt=example["user_prompt"], target_group=example["target_group"])
             if is_targeted
-            else system_prompt.render_template(prompt=example["user_prompt"])
+            else system_prompt.render_template_value(prompt=example["user_prompt"])
         )
         prompts.append(prompt)
 
