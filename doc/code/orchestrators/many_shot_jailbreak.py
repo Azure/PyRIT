@@ -74,7 +74,7 @@ filled_prompt = template.render_template_value(prompt=malicious_prompt, examples
 await orchestrator.send_prompts_async(prompt_list=[filled_prompt])  # type: ignore
 
 # Use the orchestrator's method to print conversations
-await orchestrator.print_conversations()
+await orchestrator.print_conversations() # type: ignore
 
 
 # %%
