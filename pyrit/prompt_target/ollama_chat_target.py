@@ -23,7 +23,7 @@ class OllamaChatTarget(PromptChatTarget):
     def __init__(
         self,
         *,
-        endpoint_uri: str = None,
+        endpoint: str = None,
         model_name: str = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         memory: MemoryInterface = None,
@@ -31,8 +31,8 @@ class OllamaChatTarget(PromptChatTarget):
     ) -> None:
         PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
 
-        self.endpoint_uri = endpoint_uri or default_values.get_required_value(
-            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint_uri
+        self.endpoint = endpoint or default_values.get_required_value(
+            env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
         self.model_name = model_name or default_values.get_required_value(
             env_var_name=self.MODEL_NAME_ENVIRONMENT_VARIABLE, passed_value=model_name
@@ -67,7 +67,7 @@ class OllamaChatTarget(PromptChatTarget):
         payload = self._construct_http_body(messages)
 
         response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=self.endpoint_uri, method="POST", request_body=payload, headers=headers
+            endpoint_uri=self.endpoint, method="POST", request_body=payload, headers=headers
         )
 
         return response.json()["message"]["content"]
