@@ -37,7 +37,7 @@ def ollama_mock_return() -> dict:
 @pytest.fixture
 def ollama_chat_engine() -> OllamaChatTarget:
     return OllamaChatTarget(
-        endpoint_uri="http://mock.ollama.com:11434/api/chat",
+        endpoint="http://mock.ollama.com:11434/api/chat",
         model_name="mistral",
     )
 
@@ -68,16 +68,16 @@ def test_ollama_invalid_model_raises():
     os.environ[OllamaChatTarget.MODEL_NAME_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
         OllamaChatTarget(
-            endpoint_uri="http://mock.ollama.com:11434/api/chat",
+            endpoint="http://mock.ollama.com:11434/api/chat",
             model_name="",
         )
 
 
-def test_ollama_invalid_endpoint_uri_raises():
+def test_ollama_invalid_endpoint_raises():
     os.environ[OllamaChatTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE] = ""
     with pytest.raises(ValueError):
         OllamaChatTarget(
-            endpoint_uri="",
+            endpoint="",
             model_name="mistral",
         )
 

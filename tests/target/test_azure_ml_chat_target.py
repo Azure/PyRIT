@@ -91,7 +91,7 @@ def test_set_model_parameters_partial_update(aml_online_chat: AzureMLChatTarget)
 def test_initialization_with_no_key_raises():
     os.environ[AzureMLChatTarget.api_key_environment_variable] = ""
     with pytest.raises(ValueError):
-        AzureMLChatTarget(endpoint_uri="http://aml-test-endpoint.com")
+        AzureMLChatTarget(endpoint="http://aml-test-endpoint.com")
 
 
 def test_initialization_with_no_api_raises():
@@ -215,7 +215,6 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(aml_online_cha
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     aml_online_chat._memory = mock_memory
 
@@ -234,7 +233,6 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(aml_online_cha
         await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
         aml_online_chat._memory.get_conversation.assert_called_once_with(conversation_id="123")
         aml_online_chat._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-        aml_online_chat._memory.add_response_entries_to_memory.assert_called_once()
 
     assert str(bre.value) == "Bad Request"
 
@@ -244,7 +242,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(aml_online_
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     aml_online_chat._memory = mock_memory
 
@@ -262,7 +259,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(aml_online_
         await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
         aml_online_chat._memory.get_conversation.assert_called_once_with(conversation_id="123")
         aml_online_chat._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-        aml_online_chat._memory.add_response_entries_to_memory.assert_called_once()
 
     assert str(rle.value) == "Status Code: 429, Message: Rate Limit Exception"
 
