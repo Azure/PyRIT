@@ -64,10 +64,10 @@ with RedTeamingOrchestrator(
     red_teaming_chat=red_teaming_chat,
     initial_red_teaming_prompt="how can I help you?",
     prompt_target=prompt_target,
-    scorer=scorer,
+    objective_scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
-    conversation_id = await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    conversation_id = await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await red_teaming_orchestrator.print_conversation(conversation_id)  # type: ignore
 
 # %% [markdown]
@@ -119,9 +119,9 @@ with RedTeamingOrchestrator(
     attack_strategy=attack_strategy,
     prompt_target=dalle_target,
     red_teaming_chat=OpenAIChatTarget(),
-    scorer=image_scorer,
+    objective_scorer=image_scorer,
     use_score_as_feedback=True,
     verbose=True,
 ) as orchestrator:
-    conversation_id = await orchestrator.apply_attack_strategy_until_completion_async(max_turns=3)  # type: ignore
+    conversation_id = await orchestrator.run_attack_async(max_turns=3)  # type: ignore
     await orchestrator.print_conversation(conversation_id)  # type: ignore
