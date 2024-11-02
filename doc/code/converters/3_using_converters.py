@@ -17,7 +17,7 @@
 #
 # Although converters can be used on their own, they should be thought of as a piece in the pipeine. Typically any orchestrator will have arguments so that prompts can be converted before being sent to the target. They can be stacked, use LLMs, and are a powerful tool.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
 # ## Stacking Converters with PromptSendingOrchestrator
 #

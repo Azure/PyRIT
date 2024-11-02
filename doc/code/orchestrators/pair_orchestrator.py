@@ -23,7 +23,7 @@
 #
 # This notebook demonstrates how to use the PyRIT's PAIR implementation.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
 #
 # ## Orchestrator Initialization

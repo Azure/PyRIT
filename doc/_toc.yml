@@ -85,9 +85,7 @@ parts:
     - file: code/targets/6_multi_modal_targets
     - file: code/targets/7_rate_limiting
     - file: code/targets/8_http_target
-    - file: code/targets/azure_completions
-    - file: code/targets/gpt_v_target
-    - file: code/targets/openai_completions
+    - file: code/targets/open_ai_completions
     - file: code/targets/prompt_shield_target
   - caption: Auxiliary attacks
     chapters:

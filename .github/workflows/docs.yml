@@ -27,9 +27,8 @@ jobs:
       with:
         python-version: 3.11
 
-    - name: Install dependencies
-      run: |
-        pip install -U jupyter-book
+    - name: Install PyRIT with pip
+      run: pip install .[dev]
     # Build the book
     - name: Build the book
       run: |
@@ -41,6 +40,6 @@ jobs:
         path: "doc/_build/html"
 
     # Deploy the book's HTML to GitHub Pages
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+    # - name: Deploy to GitHub Pages
+    #   id: deployment
+    #   uses: actions/deploy-pages@v4

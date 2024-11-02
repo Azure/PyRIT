@@ -83,7 +83,7 @@ Alternatively, you can run the tool directly on Windows using PowerShell.
 
 ### Running Jupyter Notebooks in VS Code
 
-_note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [tests.md](./tests.md#notebooks) for more details.
+_note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [tests.md](./tests.md#Notebooks) for more details.
 
 #### Selecting a Kernel
 

@@ -32,7 +32,7 @@
 #      pip install azure-ai-ml
 #      pip install azure-identity
 #   ```
-# - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/setup_azure.md)
+# - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section [here](../setup/populating_secrets.md)
 
 # %% [markdown]
 # ## 1. Connect to Azure Machine Learning Workspace

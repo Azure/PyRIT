@@ -19,7 +19,7 @@
 # This demo is about when you have a list of prompts you want to try against a target. It includes the ways you can send the prompts,
 # how you can modify the prompts, and how you can view results. Before starting, import the necessary libraries.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
 # The first example is as simple as it gets.
 

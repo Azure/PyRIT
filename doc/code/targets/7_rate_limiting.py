@@ -20,6 +20,7 @@
 #
 # Note `batch_size` has to be set to 1 for this to work properly.
 #
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
 import time

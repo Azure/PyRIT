@@ -39,3 +39,4 @@ sphinx:
   config:
     autosummary_generate: True
     suppress_warnings: ["etoc.toctree"]
+    myst_heading_anchors: 4
