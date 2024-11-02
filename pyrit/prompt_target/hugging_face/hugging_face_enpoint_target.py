@@ -4,7 +4,6 @@
 import logging
 
 from pyrit.prompt_target import PromptTarget
-from pyrit.common.prompt_template_generator import PromptTemplateGenerator
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
@@ -50,9 +49,6 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.top_p = top_p
-
-        # Initialize the PromptTemplateGenerator
-        self.prompt_template_generator = PromptTemplateGenerator()
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """

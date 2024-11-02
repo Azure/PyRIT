@@ -4,7 +4,7 @@
 import logging
 import uuid
 
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPromptTemplate
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPrompt
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 
@@ -12,13 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 class LLMGenericTextConverter(PromptConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPromptTemplate, **kwargs):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt, **kwargs):
         """
         Generic LLM converter that expects text to be transformed (e.g. no JSON parsing or format)
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt
-            prompt_template (SeedPromptTemplate, optional): The prompt template to set as the system prompt.
+            prompt_template (SeedPrompt, optional): The prompt template to set as the system prompt.
             kwargs: Additional parameters for the prompt template.
 
         """
@@ -45,7 +45,7 @@ class LLMGenericTextConverter(PromptConverter):
 
         kwargs = self._prompt_kwargs.copy()
 
-        system_prompt = self._prompt_template.apply_parameters(**kwargs)
+        system_prompt = self._prompt_template.render_template_value(**kwargs)
 
         self._converter_target.set_system_prompt(
             system_prompt=system_prompt,

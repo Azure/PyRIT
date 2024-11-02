@@ -7,27 +7,27 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Union
 
-from pyrit.common.apply_parameters_to_template import apply_parameters_to_template
-
 
 @dataclass
 class AttackStrategy:
-    template: str
+    """
+    This is deprecated and will be removed soon.
+    Probably the next PR. But waiting to avoid conflicts.
+    """
+
+    value: str
     parameters: List[str]
     kwargs: Dict[str, str]
 
     def __init__(self, *, strategy: Union[Path | str], **kwargs):
+        from pyrit.models import SeedPrompt
+
         self.kwargs = kwargs
         if isinstance(strategy, Path):
-            from pyrit.models import SeedPromptTemplate
-
-            strategy_data = SeedPromptTemplate.from_yaml_file(strategy)
-            self.template = strategy_data.value
-            self.parameters = strategy_data.parameters
+            self.seedprompt = SeedPrompt.from_yaml_file(strategy)
         else:
-            self.template = strategy
-            self.parameters = list(kwargs.keys())
+            self.seedprompt = SeedPrompt(value=strategy, data_type="text", parameters=list(kwargs.keys()))
 
     def __str__(self):
         """Returns a string representation of the attack strategy."""
-        return apply_parameters_to_template(template=self.template, parameters=self.parameters, **self.kwargs)
+        return self.seedprompt.render_template_value(**self.kwargs)

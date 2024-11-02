@@ -42,11 +42,11 @@ class ManyShotTemplate:
         except yaml.YAMLError as e:
             raise ValueError(f"Error parsing YAML file: {e}")
 
-        if "template" not in content or "parameters" not in content:
+        if "value" not in content or "parameters" not in content:
             raise ValueError("YAML file must contain 'template' and 'parameters' keys.")
 
         # Return an instance of the class with loaded parameters
-        return cls(template=content["template"], parameters=content["parameters"])
+        return cls(template=content["value"], parameters=content["parameters"])
 
     def apply_parameters(self, prompt: str, examples: List[Dict[str, str]]) -> str:
         # Create a Jinja2 template from the template string

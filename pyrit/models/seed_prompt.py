@@ -1,15 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+import uuid
 
-from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
-import uuid
-
 from collections import defaultdict
+from jinja2 import Template, StrictUndefined
 
-from pyrit.common.apply_parameters_to_template import apply_parameters_to_template
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
 
@@ -72,85 +70,28 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
 
-    def to_prompt_template(self) -> SeedPromptTemplate:
-        """Convert the SeedPrompt instance to a SeedPromptTemplate."""
-        if not self.parameters:
-            raise ValueError("SeedPrompt must have parameters to convert to a SeedPromptTemplate.")
+    def render_template_value(self, **kwargs) -> str:
+        """Renders self.value as a template, applying provided parameters in kwargs
 
-        return SeedPromptTemplate(
-            id=self.id,
-            value=self.value,
-            data_type=self.data_type,
-            name=self.name,
-            dataset_name=self.dataset_name,
-            harm_categories=self.harm_categories,
-            description=self.description,
-            authors=self.authors,
-            groups=self.groups,
-            source=self.source,
-            date_added=self.date_added,
-            added_by=self.added_by,
-            metadata=self.metadata,
-            parameters=self.parameters,
-            prompt_group_id=self.prompt_group_id,
-            sequence=self.sequence,
-        )
+        Args:
+            kwargs:Key-value pairs to replace in the SeedPrompt value.
 
+        Returns:
+            A new prompt with the parameters applied.
 
-class SeedPromptTemplate(SeedPrompt):
-    """Represents a template of a seed prompt with required parameters."""
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
 
-    parameters: List[str]
+        if self.data_type != "text":
+            raise ValueError(f"Cannot render non-text values as templates {self.data_type}")
 
-    def __init__(
-        self,
-        *,
-        id: Optional[uuid.UUID] = None,
-        value: str,
-        data_type: PromptDataType,
-        name: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[List[str]] = None,
-        description: Optional[str] = None,
-        authors: Optional[List[str]] = None,
-        groups: Optional[List[str]] = None,
-        source: Optional[str] = None,
-        date_added: Optional[datetime] = datetime.now(),
-        added_by: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-        parameters: List[str],
-        prompt_group_id: Optional[uuid.UUID] = None,
-        sequence: Optional[int] = None,
-    ):
-        if data_type != "text":
-            raise ValueError("SeedPromptTemplate must have data_type 'text'.")
-        super().__init__(
-            id=id,
-            value=value,
-            data_type=data_type,
-            name=name,
-            dataset_name=dataset_name,
-            harm_categories=harm_categories,
-            description=description,
-            authors=authors,
-            groups=groups,
-            source=source,
-            date_added=date_added,
-            added_by=added_by,
-            metadata=metadata,
-            parameters=parameters,
-            prompt_group_id=prompt_group_id,
-            sequence=sequence,
-        )
+        jinja_template = Template(self.value, undefined=StrictUndefined)
 
-    def apply_parameters(self, **kwargs) -> str:
-        """Applies parameters to the seed prompt template and returns the formatted string."""
-        if not self.parameters:
-            raise ValueError("SeedPromptTemplate must have parameters to apply.")
-        if not all(param in kwargs for param in self.parameters):
-            raise ValueError("Not all parameters were provided.")
-
-        return apply_parameters_to_template(self.value, self.parameters, **kwargs)
+        try:
+            return jinja_template.render(**kwargs)
+        except Exception as e:
+            raise ValueError(f"Error applying parameters: {str(e)}")
 
 
 class SeedPromptGroup(YamlLoadable):
