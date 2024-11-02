@@ -21,11 +21,23 @@ class DiacriticConverter(PromptConverter):
         Args:
             target_chars (str): Characters to apply the diacritic to. Defaults to "aeiou".
             accent (str): Type of diacritic to apply (default is 'acute').
+
+             Available options are:
+            - 'acute': ´
+            - 'grave': `
+            - 'tilde': ˜
+            - 'umlaut': ¨
+
+        Raises:
+            ValueError: If `target_chars` is empty.
         """
         super().__init__()
 
-        self.target_chars = target_chars
-        self.accent = accent
+        if not target_chars:
+            raise ValueError("target_chars cannot be empty.")
+
+        self._target_chars = set(target_chars)
+        self._accent = accent
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         """
@@ -51,10 +63,10 @@ class DiacriticConverter(PromptConverter):
             # Add other accents as needed
         }
 
-        if self.accent not in diacritics:
-            raise ValueError(f"Accent '{self.accent}' not recognized. Choose from {list(diacritics.keys())}.")
+        if self._accent not in diacritics:
+            raise ValueError(f"Accent '{self._accent}' not recognized. Choose from {list(diacritics.keys())}.")
 
-        return diacritics[self.accent]
+        return diacritics[self._accent]
 
     def _add_diacritic(self, text: str) -> str:
         """
@@ -70,7 +82,7 @@ class DiacriticConverter(PromptConverter):
 
         # Apply accent to each target character in the string
         return "".join(
-            unicodedata.normalize("NFC", char + accent_mark) if char in self.target_chars else char for char in text
+            unicodedata.normalize("NFC", char + accent_mark) if char in self._target_chars else char for char in text
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

@@ -24,14 +24,6 @@ async def test_convert_async_custom_target_chars():
 
 
 @pytest.mark.asyncio
-async def test_convert_async_empty_target_chars():
-    converter = DiacriticConverter(target_chars="")
-    text = "Hello, world!"
-    result = await converter.convert_async(prompt=text)
-    assert result.output_text == text  # No modifications should occur
-
-
-@pytest.mark.asyncio
 async def test_convert_async_no_matching_chars():
     converter = DiacriticConverter(target_chars="xyz")
     text = "Hello, world!"
@@ -75,6 +67,31 @@ def test_get_accent_mark_invalid():
     assert "Accent 'invalid' not recognized" in str(excinfo.value)
 
 
-def test_default_target_chars():
-    converter = DiacriticConverter(target_chars="")
-    assert converter.target_chars == ""  # target_chars should remain empty if explicitly set to ""
+@pytest.mark.asyncio
+async def test_convert_async_single_character():
+    converter = DiacriticConverter()
+    text = "o"
+    result = await converter.convert_async(prompt=text)
+    assert result.output_text == "ó"  # 'o' with acute accent
+
+
+@pytest.mark.asyncio
+async def test_convert_async_whitespace_handling():
+    converter = DiacriticConverter()
+    text = "     "
+    result = await converter.convert_async(prompt=text)
+    assert result.output_text == text  # Whitespace should remain unchanged
+
+
+@pytest.mark.asyncio
+async def test_convert_async_empty_prompt():
+    converter = DiacriticConverter()
+    text = ""
+    result = await converter.convert_async(prompt=text)
+    assert result.output_text == ""  # Output should be empty if input is empty
+
+
+def test_empty_target_chars():
+    with pytest.raises(ValueError) as excinfo:
+        DiacriticConverter(target_chars="")
+    assert "target_chars cannot be empty." in str(excinfo.value)
