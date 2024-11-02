@@ -54,3 +54,26 @@ def test_input_supported_text():
 def test_input_supported_non_text():
     converter = ZeroWidthConverter()
     assert converter.input_supported("non-text") is False  # Should not support non-'text' input types
+
+
+@pytest.mark.asyncio
+async def test_convert_async_single_character():
+    converter = ZeroWidthConverter()
+    text = "A"  # Single character input
+    expected_output = "A"  # Should remain unchanged without zero-width spaces
+    result = await converter.convert_async(prompt=text)
+    assert result.output_text == expected_output
+
+
+@pytest.mark.asyncio
+async def test_convert_async_multiple_whitespace():
+    converter = ZeroWidthConverter()
+    text = "   "  # Input with multiple whitespace characters
+
+    # Converter Behavior: The ZeroWidthConverter inserts zero-width spaces between each character,
+    # resulting in N - 1 zero-width spaces for an input of length N.
+    # For three spaces, there will be two zero-width spaces between them.
+    expected_output = " \u200B \u200B "
+
+    result = await converter.convert_async(prompt=text)
+    assert result.output_text == expected_output, f"Unexpected output: {result.output_text}"
