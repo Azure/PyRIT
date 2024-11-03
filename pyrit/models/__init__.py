@@ -19,10 +19,8 @@ from pyrit.models.data_type_serializer import (
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import PromptDataType, PromptResponseError, ChatMessageRole
-from pyrit.models.many_shot_template import ManyShotTemplate
 from pyrit.models.seed_prompt import (
     SeedPromptDataset,
-    SeedPromptTemplate,
     SeedPrompt,
     SeedPromptGroup,
 )
@@ -60,7 +58,6 @@ __all__ = [
     "group_conversation_request_pieces_by_sequence",
     "Identifier",
     "ImagePathDataTypeSerializer",
-    "ManyShotTemplate",
     "PromptRequestPiece",
     "PromptResponse",
     "PromptResponseError",
@@ -74,7 +71,6 @@ __all__ = [
     "SeedPrompt",
     "SeedPromptDataset",
     "SeedPromptGroup",
-    "SeedPromptTemplate",
     "StorageIO",
     "TextDataTypeSerializer",
     "UnvalidatedScore",

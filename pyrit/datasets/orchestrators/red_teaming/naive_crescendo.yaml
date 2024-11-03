@@ -8,7 +8,7 @@ source: AI Red Team
 should_be_blocked: false
 parameters:
   - objective
-template: |
+value: |
   # Instructions
 
   Follow the detailed guidelines below to understand and respond appropriately to user inquiries. These instructions will help you maintain the intended flow and further the conversation objective when interacting with users:

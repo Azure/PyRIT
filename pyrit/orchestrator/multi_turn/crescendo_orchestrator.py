@@ -15,7 +15,7 @@ from pyrit.exceptions.exception_classes import (
 )
 from pyrit.models import Score
 from pyrit.memory import MemoryInterface
-from pyrit.models import Score, SeedPromptTemplate
+from pyrit.models import Score, SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_template import SystemPromptWithObjective
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
@@ -71,7 +71,25 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             or Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1.yaml"
         )
 
+<<<<<<< HEAD:pyrit/orchestrator/multi_turn/crescendo_orchestrator.py
         objective_scorer = FloatScaleThresholdScorer(
+=======
+        self._system_prompt_template = SeedPrompt.from_yaml_file(self._system_prompt_path)
+
+        self._prompt_target = prompt_target
+        self._prompt_target_conversation_id = str(uuid4())
+        self._prompt_target._memory = self._memory
+
+        self._red_teaming_chat = red_teaming_chat
+        self._red_teaming_chat._memory = self._memory
+
+        self.refusal_scorer = SelfAskRefusalScorer(
+            chat_target=scoring_target,
+            memory=self._memory,
+        )
+
+        self.eval_judge_true_false_scorer = FloatScaleThresholdScorer(
+>>>>>>> main:pyrit/orchestrator/crescendo_orchestrator.py
             scorer=SelfAskScaleScorer(
                 chat_target=scoring_target,
                 scale_arguments_path=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
@@ -103,9 +121,15 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         self._max_backtracks = max_backtracks
 
+<<<<<<< HEAD:pyrit/orchestrator/multi_turn/crescendo_orchestrator.py
         self.refusal_scorer = SelfAskRefusalScorer(
             chat_target=scoring_target,
             memory=self._memory,
+=======
+        red_team_system_prompt = self._system_prompt_template.render_template_value(
+            conversation_objective=self._conversation_objective,
+            max_turns=max_turns,
+>>>>>>> main:pyrit/orchestrator/crescendo_orchestrator.py
         )
 
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
