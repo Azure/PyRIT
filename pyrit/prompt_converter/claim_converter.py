@@ -17,7 +17,7 @@ from pyrit.exceptions.exception_classes import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter, ConverterResult, config, utils, prompt_openai, exemplars, components, classifiers
 from pyrit.prompt_target import PromptChatTarget
 
@@ -64,7 +64,7 @@ for section in sections:
             few_shot_sources[section][source] = data
 
 class ClaimConverter(PromptConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template=None):
         self.converter_target = converter_target
 
         # set to default strategy if not provided
@@ -124,6 +124,9 @@ class ClaimConverter(PromptConverter):
         #     ]
         # )
 
+        ######################
+        # Statements to claims
+        ######################
         produced_claims = prompt_openai.run_pipeline_per_source(
             instance=prompt, #utterances[0],
             target_n=20,
@@ -131,9 +134,25 @@ class ClaimConverter(PromptConverter):
             engine=config["openai_engine"],
         )
 
-        # select initial claim
-        initial_claim = produced_claims[0][0]
+        options = [p.capitalize() for p, _ in produced_claims]
+        options = [f"[{i}] " + " " + o for i, o in enumerate(options)]
+        selected = input("Select a claim from automatically extracted claims from the example statement.\n" + "\n".join(options))
 
+        # select initial claim        
+        # initial_claim = st.text_input(
+        #     label=(
+        #         "If needed, you can use this field to edit the claim you just selected. "
+        #         "For example, you may want to change `People think COVID is a conspiracy` to "
+        #         "`COVID is a conspiracy.`"
+        #     ),
+        #     value=initial_claim,
+        #     on_change=_reset_to_step(CURRENT_STEP),
+        # )
+        initial_claim = produced_claims[int(selected)][0]
+
+        ########################
+        # Claims to inferences
+        ########################
         # Generate from GPT-3
         inference_methods = ["pragmatic", "entailment", "paraphrase"]
         inference_sources = []
