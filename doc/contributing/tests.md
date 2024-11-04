@@ -63,6 +63,7 @@ pre-commit run --all-files
 pre-commit run --files <file_name>
 ```
 
+(notebook_tests)=
 ## Notebooks
 
 While we don't exactly have integration tests, we do dynamically generate the `ipynb` notebooks in this document section. These help to document, but also connect to actual endpoints and help ensure broad functionality is working as expected.
@@ -79,3 +80,4 @@ Here are contributor guidelines:
   - Maintainers (bonus if contributors do this also): If there are big changes, re-generate all notebooks by using [pct_to_ipynb.py](../generate_docs/pct_to_ipynb.py). Because this executes against real systems, it can detect many issues.
 - Some contributors use jupytext to generate `.py` files from `.ipynb` files. This is also acceptable.
 - Please do not re-commit updated generated `.ipynb` files with slight changes if nothing has changed in the source
+- We use [Jupyter-Book](https://jupyterbook.org/en/stable/intro.html) with [Markedly Structured Text (MyST)](https://jupyterbook.org/en/stable/content/myst.html).

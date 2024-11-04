@@ -5,7 +5,6 @@ parts:
     chapters:
     - file: reading_order
     - file: how_to_guide
-      title: Introduction
     - file: code/architecture
       title: Architecture
   - caption: Setup
@@ -14,6 +13,16 @@ parts:
     - file: setup/jupyter_setup
     - file: setup/populating_secrets
     - file: setup/use_azure_sql_db
+  - caption: Contributing
+    chapters:
+    - file: contributing/README
+    - file: contributing/exception
+    - file: contributing/git
+    - file: contributing/incorporating_research
+    - file: contributing/installation
+    - file: contributing/release_process
+    - file: contributing/style_guide
+    - file: contributing/tests
   - caption: Converters
     numbered: True
     chapters:
@@ -91,16 +100,6 @@ parts:
     chapters:
     - file: code/auxiliary_attacks/1_auxiliary_attacks
     - file: code/auxiliary_attacks/2_gcg_azure_ml
-  - caption: Contributing
-    chapters:
-    - file: contributing/README
-    - file: contributing/exception
-    - file: contributing/git
-    - file: contributing/incorporating_research
-    - file: contributing/installation
-    - file: contributing/release_process
-    - file: contributing/style_guide
-    - file: contributing/tests
   - caption: Deployment
     chapters:
     - file: deployment/README
