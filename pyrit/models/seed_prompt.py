@@ -1,14 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import uuid
 
+from pathlib import Path
+import uuid
+import yaml
+
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 from collections import defaultdict
 from jinja2 import Template, StrictUndefined
 
-from pyrit.common.yaml_loadable import YamlLoadable
+from pyrit.common.yaml_loadable import YamlLoadable, T
 from pyrit.models.literals import PromptDataType
 
 
@@ -184,3 +188,38 @@ class SeedPromptDataset(YamlLoadable):
 
     def __repr__(self):
         return f"<SeedPromptDataset(prompts={len(self.prompts)} prompts)>"
+    
+    @classmethod
+    def from_yaml_file_with_uniform_metadata(cls: Type[T], file: Path, data_type="text") -> T:
+        """
+        Creates a new object from a YAML file.
+
+        In the past, PyRIT supported dataset loading from YAML with uniform metadata.
+        That means, every prompt in a dataset had to have the same harm categories,
+        same authors, same groups, etc. This method is a helper to load such datasets.
+
+        Args:
+            file: The input file path.
+            data_type: The data type of the prompts.
+
+        Returns:
+            A new object of type T.
+
+        Raises:
+            FileNotFoundError: If the input YAML file path does not exist.
+            ValueError: If the YAML file is invalid.
+        """
+        if not file.exists():
+            raise FileNotFoundError(f"File '{file}' does not exist.")
+        try:
+            yaml_data = yaml.safe_load(file.read_text("utf-8"))
+        except yaml.YAMLError as exc:
+            raise ValueError(f"Invalid YAML file '{file}': {exc}")
+        non_prompt_data = deepcopy(yaml_data)
+        del non_prompt_data["prompts"]
+        non_prompt_data["data_type"] = data_type
+        seed_prompts = []
+        for prompt_text in yaml_data["prompts"]:
+            seed_prompts.append(SeedPrompt(value=prompt_text, **non_prompt_data))
+        data_object = cls(prompts=seed_prompts)
+        return data_object
