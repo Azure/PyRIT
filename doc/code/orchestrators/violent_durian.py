@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Violent Duran attack strategy
+# # Violent Durian attack strategy
 # This update integrates the Violent Durian attack strategy from Project Moonshot into the PyRIT system.
 # The strategy revolves around an attacker LLM manipulating the Target LLM into adopting a criminal persona and
 # providing illegal advice or dangerous suggestions. The criminal persona is chosen randomly from a predefined list,

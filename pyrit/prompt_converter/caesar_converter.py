@@ -7,7 +7,7 @@ import pathlib
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPrompt
 
 
 class CaesarConverter(PromptConverter):
@@ -48,10 +48,10 @@ class CaesarConverter(PromptConverter):
             raise ValueError("Input type not supported")
 
         if self.append_description:
-            prompt_template = PromptTemplate.from_yaml_file(
+            prompt_template = SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "caesar_description.yaml"
             )
-            output_text = prompt_template.apply_custom_metaprompt_parameters(
+            output_text = prompt_template.render_template_value(
                 prompt=self._caesar(prompt), example=self._caesar(self.example), offset=str(self.caesar_offset)
             )
         else:

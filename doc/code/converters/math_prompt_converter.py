@@ -17,7 +17,7 @@ from pyrit.common import default_values
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.common.path import DATASETS_PATH
 import pathlib
 
@@ -38,7 +38,7 @@ prompt_target = OpenAIChatTarget(
 
 # Load the YAML template for the malicious question generation
 prompt_template_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "math_prompt_converter.yaml"
-prompt_template = PromptTemplate.from_yaml_file(prompt_template_path)
+prompt_template = SeedPrompt.from_yaml_file(prompt_template_path)
 
 # Initialize the MaliciousQuestionGeneratorConverter
 math_prompt_converter = MathPromptConverter(
