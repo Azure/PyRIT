@@ -158,10 +158,8 @@ with RedTeamingOrchestrator(
     verbose=True,
     memory=memory,
 ) as orchestrator:
-    result = await orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    await orchestrator.print_conversation_async(result=result)  # type: ignore
-    id = orchestrator.get_identifier()
-    print("identifier", id)
+    result = await orchestrator.run_attack_async(objective=image_objective)  # type: ignore
+    await result.print_conversation_async()  # type: ignore
 
 
 # %%

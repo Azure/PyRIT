@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.memory import MemoryInterface
-from pyrit.models import SeedPrompt, PromptRequestPiece
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
