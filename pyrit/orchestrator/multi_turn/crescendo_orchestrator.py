@@ -8,22 +8,19 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import (
+from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
 )
 from pyrit.models import Score
 from pyrit.memory import MemoryInterface
-from pyrit.models import Score, SeedPrompt
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models import Score, PromptRequestPiece
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
-from pyrit.prompt_converter.prompt_converter import PromptConverter
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
-from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
-from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
+from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer, SelfAskScaleScorer
 
 
 logger = logging.getLogger(__name__)

@@ -4,6 +4,7 @@
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 
+
 def test_system_prompt_from_file():
     strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml"
     with open(strategy_path, "r") as strategy_file:

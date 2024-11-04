@@ -66,7 +66,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             ValueError: If max_turns ≤ 0 or if objective_scorer is not binary.
         """
 
-
         super().__init__(
             objective_target=objective_target,
             adversarial_chat=adversarial_chat,

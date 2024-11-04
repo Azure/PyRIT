@@ -1,17 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from abc import abstractmethod
 import asyncio
-from dataclasses import dataclass
 import logging
-import os
+
+from abc import abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -26,9 +26,55 @@ logger = logging.getLogger(__name__)
 class MultiTurnAttackResult:
     """The result of a multi-turn attack."""
 
-    conversation_id: str
-    achieved_objective: bool
-    objective: str
+    def __init__(
+        self,
+        conversation_id: str,
+        achieved_objective: bool,
+        objective: str,
+        memory: MemoryInterface = None,
+    ):
+        self.conversation_id = conversation_id
+        self.achieved_objective = achieved_objective
+        self.objective = objective
+        self._memory = memory or DuckDBMemory()
+
+    async def print_conversation_async(self):
+        """Prints the conversation between the objective target and the adversarial chat, including the scores.
+
+        Args:
+            prompt_target_conversation_id (str): the conversation ID for the prompt target.
+        """
+        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=self.conversation_id)
+
+        if not target_messages or len(target_messages) == 0:
+            print("No conversation with the target")
+            return
+
+        if self.achieved_objective:
+            print(
+                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has completed the conversation and achieved "
+                f"the objective: {self.objective}"
+            )
+        else:
+            print(
+                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has not achieved the objective: "
+                f"{self.objective}"
+            )
+
+        for message in target_messages:
+            if message.role == "user":
+                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}:")
+                if message.converted_value != message.original_value:
+                    print(f"Original value: {message.original_value}")
+                print(f"Converted value: {message.converted_value}")
+            else:
+                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                await display_image_response(message, self._memory)
+
+            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
+            if scores and len(scores) > 0:
+                for score in scores:
+                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
 
 class MultiTurnOrchestrator(Orchestrator):
@@ -90,9 +136,7 @@ class MultiTurnOrchestrator(Orchestrator):
         self._adversarial_chat_system_seed_prompt = SeedPrompt.from_yaml_file(adversarial_chat_system_prompt_path)
 
         if "objective" not in self._adversarial_chat_system_seed_prompt.parameters:
-            raise ValueError(
-                f"Adversarial seed prompt must have an objective: '{adversarial_chat_system_prompt_path}'"
-            )
+            raise ValueError(f"Adversarial seed prompt must have an objective: '{adversarial_chat_system_prompt_path}'")
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._objective_target._memory = self._memory
@@ -152,41 +196,3 @@ class MultiTurnOrchestrator(Orchestrator):
         tasks = [limited_run_attack(objective) for objective in objectives]
         results = await asyncio.gather(*tasks)
         return results
-
-    async def print_conversation_async(self, result: MultiTurnAttackResult):
-        """Prints the conversation between the objective target and the adversarial chat, including the scores.
-
-        Args:
-            prompt_target_conversation_id (str): the conversation ID for the prompt target.
-        """
-        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=result.conversation_id)
-
-        if not target_messages or len(target_messages) == 0:
-            print("No conversation with the target")
-            return
-
-        if result.achieved_objective:
-            print(
-                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has completed the conversation and achieved "
-                f"the objective: {result.objective}"
-            )
-        else:
-            print(
-                f"{Style.BRIGHT}{Fore.RED}The multi-turn orchestrator has not achieved the objective: "
-                f"{result.objective}"
-            )
-
-        for message in target_messages:
-            if message.role == "user":
-                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}:")
-                if message.converted_value != message.original_value:
-                    print(f"Original value: {message.original_value}")
-                print(f"Converted value: {message.converted_value}")
-            else:
-                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                await display_image_response(message, self._memory)
-
-            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
-            if scores and len(scores) > 0:
-                for score in scores:
-                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
