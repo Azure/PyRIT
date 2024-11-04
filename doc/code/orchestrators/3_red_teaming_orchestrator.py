@@ -110,4 +110,4 @@ with RedTeamingOrchestrator(
     verbose=True,
 ) as orchestrator:
     result = await orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
-    await orchestrator.print_conversation_async(result=result)  # type: ignore
+    await result.print_conversation_async(result=result)  # type: ignore
