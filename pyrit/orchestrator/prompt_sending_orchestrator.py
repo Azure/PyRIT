@@ -2,12 +2,13 @@
 # Licensed under the MIT license.
 
 from collections import defaultdict
+import uuid
 from colorama import Fore, Style
 import logging
 
 from typing import Optional
 
-from pyrit.common.display_response import display_response
+from pyrit.common.display_response import display_image_response
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestResponse
@@ -52,6 +53,8 @@ class PromptSendingOrchestrator(Orchestrator):
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+                Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
+                ensure proper rate limit management.
         """
         super().__init__(
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
@@ -59,11 +62,24 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._scorers = scorers
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
+        if self._scorers:
+            for scorer in self._scorers:
+                scorer._memory = self._memory
+                if hasattr(scorer, "_prompt_target"):
+                    scorer._prompt_target._memory = self._memory
 
         self._prompt_target = prompt_target
         self._prompt_target._memory = self._memory
 
         self._batch_size = batch_size
+        self._prepended_conversation: list[PromptRequestResponse] = None
+
+    def set_prepended_conversation(self, *, prepended_conversation: list[PromptRequestResponse]):
+        """
+        Prepends a conversation to the prompt target.
+        """
+        self._prepended_conversation = prepended_conversation
 
     async def send_prompts_async(
         self,
@@ -98,49 +114,13 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_text=prompt,
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
-                    metadata=metadata if metadata else None,  # NOTE added
+                    metadata=metadata,
                 )
             )
 
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
             memory_labels=memory_labels,
-        )
-
-    async def send_prompt_async(
-        self,
-        *,
-        prompt: str,
-        prompt_type: PromptDataType = "text",
-        memory_labels: Optional[dict[str, str]] = None,
-        conversation_id: Optional[str] = None,
-    ) -> PromptRequestResponse:
-        """
-        Sends a single prompts to the prompt target. Can be used for multi-turn using conversation_id.
-
-        Args:
-            prompt (list[str]): The prompt to be sent.
-            prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
-            memory_labels (dict[str, str], optional): A free-form dictionary of extra labels to apply to the prompts.
-                These labels will be merged with the instance's global memory labels. Defaults to None.
-            conversation_id (str, optional): The conversation ID to use for multi-turn conversation. Defaults to None.
-
-        Returns:
-            list[PromptRequestResponse]: The responses from sending the prompts.
-        """
-
-        normalizer_request = self._create_normalizer_request(
-            prompt_text=prompt,
-            prompt_type=prompt_type,
-            converters=self._prompt_converters,
-        )
-
-        return await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=normalizer_request,
-            target=self._prompt_target,
-            conversation_id=conversation_id,
-            labels=self._combine_with_global_memory_labels(memory_labels),
-            orchestrator_identifier=self.get_identifier(),
         )
 
     async def send_normalizer_requests_async(
@@ -155,6 +135,11 @@ class PromptSendingOrchestrator(Orchestrator):
         for request in prompt_request_list:
             request.validate()
 
+        conversation_id = self._prepare_conversation()
+
+        for prompt in prompt_request_list:
+            prompt.conversation_id = conversation_id
+
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
@@ -164,9 +149,6 @@ class PromptSendingOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
-
-        # These are the responses from the target
-        # print(responses[0].request_pieces)
 
         if self._scorers:
             response_ids = []
@@ -192,7 +174,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     responses_only=True,
                 )
 
-    def print_conversations(self):
+    async def print_conversations(self):
         """Prints the conversation between the prompt target and the red teaming bot."""
         all_messages = self.get_memory()
 
@@ -215,15 +197,22 @@ class PromptSendingOrchestrator(Orchestrator):
                     print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    display_response(message)
+                    await display_image_response(message, self._memory)
 
                 scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
                 for score in scores:
                     print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
-    def _combine_with_global_memory_labels(self, memory_labels: dict[str, str]) -> dict[str, str]:
+    def _prepare_conversation(self):
         """
-        Combines the global memory labels with the provided memory labels.
-        The passed memory_leabels take prcedence with collisions.
+        Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
         """
-        return {**(self._global_memory_labels or {}), **(memory_labels or {})}
+        conversation_id = None
+        if self._prepended_conversation:
+            conversation_id = uuid.uuid4()
+            for request in self._prepended_conversation:
+                for piece in request.request_pieces:
+                    piece.conversation_id = conversation_id
+
+                self._memory.add_request_response_to_memory(request=request)
+        return conversation_id

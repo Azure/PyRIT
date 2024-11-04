@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -50,10 +50,10 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
 
 # %%
 # pylint: disable=W0611
-
+import time
 from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import ScoringOrchestrator
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskCategoryScorer,
@@ -65,14 +65,20 @@ from pyrit.score import (
 id = prompt_sending_orchestrator_id
 
 # The scorer is interchangeable with other scorers
-scorer = AzureContentFilterScorer()
+# scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
-# scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
+scorer = SelfAskCategoryScorer(
+    chat_target=OpenAIChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
+)
 
 with ScoringOrchestrator() as scoring_orchestrator:
+    start = time.time()
     scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[id], responses_only=False
     )
+    end = time.time()
+
+    print(f"Elapsed time for operation: {end-start}")
 
     memory = DuckDBMemory()
 
@@ -81,7 +87,6 @@ with ScoringOrchestrator() as scoring_orchestrator:
             0
         ].original_value
         print(f"{score} : {prompt_text}")
-
 
 # %% [markdown]
 # # Scoring Using Memory Labels
@@ -94,7 +99,7 @@ import uuid
 
 from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import ScoringOrchestrator
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.common import default_values
@@ -104,7 +109,7 @@ default_values.load_default_env()
 
 # First insert the prompts into the database (remember this is often automatic) along with memory labels
 
-prompt_target = AzureOpenAIGPT4OChatTarget()
+prompt_target = OpenAIChatTarget()
 
 # You could optionally pass memory labels to orchestrators, which will be associated with each prompt and assist in retrieving or scoring later.
 test_op_name = str(uuid.uuid4())
@@ -116,9 +121,11 @@ with PromptSendingOrchestrator(prompt_target=prompt_target, memory_labels=memory
     await orchestrator.send_prompts_async(prompt_list=all_prompts)  # type: ignore
 
 # The scorer is interchangeable with other scorers
-scorer = AzureContentFilterScorer()
+# scorer = AzureContentFilterScorer()
 # scorer = HumanInTheLoopScorer()
-# scorer = SelfAskCategoryScorer(chat_target=AzureOpenAIGPT4OChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value)
+scorer = SelfAskCategoryScorer(
+    chat_target=OpenAIChatTarget(), content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value
+)
 
 # Scoring prompt responses based on user provided memory labels
 with ScoringOrchestrator() as scoring_orchestrator:

@@ -2,18 +2,18 @@
 # Licensed under the MIT license.
 
 import logging
-import asyncio
 from pathlib import Path
 
 from typing import Optional
 from uuid import uuid4
 
 
+from pyrit.common.batch_helper import batch_task_async
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptDataset, PromptRequestResponse
+from pyrit.models import SeedPromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
 from colorama import Style, Fore
@@ -57,6 +57,8 @@ class SkeletonKeyOrchestrator(Orchestrator):
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+                Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
+                ensure proper rate limit management.
             verbose (bool, optional): If set to True, verbose output will be enabled. Defaults to False.
         """
         super().__init__(
@@ -68,9 +70,11 @@ class SkeletonKeyOrchestrator(Orchestrator):
         self._skeleton_key_prompt = (
             skeleton_key_prompt
             if skeleton_key_prompt
-            else PromptDataset.from_yaml_file(
+            else SeedPromptDataset.from_yaml_file(
                 Path(DATASETS_PATH) / "orchestrators" / "skeleton_key" / "skeleton_key.prompt"
-            ).prompts[0]
+            )
+            .prompts[0]
+            .value
         )
 
         self._prompt_target = prompt_target
@@ -97,30 +101,28 @@ class SkeletonKeyOrchestrator(Orchestrator):
 
         conversation_id = str(uuid4())
 
-        target_skeleton_prompt_obj = NormalizerRequestPiece(
-            request_converters=self._prompt_converters,
-            prompt_data_type="text",
-            prompt_value=self._skeleton_key_prompt,
+        target_skeleton_prompt_obj = self._create_normalizer_request(
+            prompt_text=self._skeleton_key_prompt,
+            conversation_id=conversation_id,
+            converters=self._prompt_converters,
         )
 
         await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=NormalizerRequest([target_skeleton_prompt_obj]),
+            normalizer_request=target_skeleton_prompt_obj,
             target=self._prompt_target,
-            conversation_id=conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
 
-        target_prompt_obj = NormalizerRequestPiece(
-            request_converters=self._prompt_converters,
-            prompt_data_type="text",
-            prompt_value=prompt,
+        target_prompt_obj = self._create_normalizer_request(
+            prompt_text=prompt,
+            conversation_id=conversation_id,
+            converters=self._prompt_converters,
         )
 
         return await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=NormalizerRequest([target_prompt_obj]),
+            normalizer_request=target_prompt_obj,
             target=self._prompt_target,
-            conversation_id=conversation_id,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
@@ -141,24 +143,13 @@ class SkeletonKeyOrchestrator(Orchestrator):
             list[PromptRequestResponse]: The responses from the prompt target.
         """
 
-        responses = []
-        for prompts_batch in self._chunked_prompts(prompt_list, self._batch_size):
-            tasks = []
-            for prompt in prompts_batch:
-                tasks.append(
-                    self.send_skeleton_key_with_prompt_async(
-                        prompt=prompt,
-                    )
-                )
-
-            batch_results = await asyncio.gather(*tasks)
-            responses.extend(batch_results)
-
-        return responses
-
-    def _chunked_prompts(self, prompts: list[str], size: int):
-        for i in range(0, len(prompts), size):
-            yield prompts[i : i + size]
+        return await batch_task_async(
+            task_func=self.send_skeleton_key_with_prompt_async,
+            task_arguments=["prompt"],
+            prompt_target=self._prompt_target,
+            batch_size=self._batch_size,
+            items_to_batch=[prompt_list],
+        )
 
     def print_conversation(self) -> None:
         """Prints all the conversations that have occured with the prompt target."""

@@ -8,6 +8,7 @@ repos:
         exclude: NOTICE.txt
       - id: check-yaml
       - id: check-added-large-files
+        args: ["--maxkb=3072"]  # Set limit to 3072 KB (3 MB) for displaying images in notebooks
       - id: detect-private-key
 
   # https://black.readthedocs.io/en/stable/integrations/source_version_control.html
@@ -33,7 +34,7 @@ repos:
       language: python
       files: ^.*\.(py|md)$
       additional_dependencies: ['requests']
-      exclude: (release_process.md|git.md|^doc/deployment/|tests|pyrit/prompt_converter/morse_converter.py|.github|pyrit/prompt_converter/emoji_converter.py|pyrit/score/markdown_injection.py|pyrit/datasets/fetch_example_datasets.py)
+      exclude: (release_process.md|git.md|^doc/deployment/|tests|pyrit/prompt_converter/morse_converter.py|.github|pyrit/prompt_converter/emoji_converter.py|pyrit/score/markdown_injection.py|pyrit/datasets/fetch_example_datasets.py|^pyrit/auxiliary_attacks/gcg/)
 
   - repo: https://github.com/pycqa/pylint
     rev: v3.0.3

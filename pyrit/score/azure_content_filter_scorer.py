@@ -12,6 +12,7 @@ from pyrit.memory.memory_interface import MemoryInterface
 from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, TextCategory, ImageData
 from azure.ai.contentsafety import ContentSafetyClient
 from azure.core.credentials import AzureKeyCredential
+from azure.identity import DefaultAzureCredential
 
 
 # Supported image formats for Azure as per https://learn.microsoft.com/en-us/azure/ai-services/content-safety/
@@ -38,6 +39,7 @@ class AzureContentFilterScorer(Scorer):
         *,
         endpoint: str = None,
         api_key: str = None,
+        use_aad_auth: bool = False,
         harm_categories: list[TextCategory] = None,
         memory: MemoryInterface = None,
     ) -> None:
@@ -51,28 +53,37 @@ class AzureContentFilterScorer(Scorer):
                 Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
             endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
                 Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
+            use_aad_auth (bool, optional): Attempt to use DefaultAzureCredential
+                If set to true, attempt to use DefaultAzureCredential for auth
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.
         """
-
-        super().__init__()
 
         if harm_categories:
             self._score_categories = [category.value for category in harm_categories]
         else:
             self._score_categories = [category.value for category in TextCategory]
 
-        self._api_key = default_values.get_required_value(
-            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-        )
         self._endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint
         )
 
+        if not use_aad_auth:
+            self._api_key = default_values.get_required_value(
+                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+            )
+        else:
+            if api_key:
+                raise ValueError("Please specify either use_add_auth or api_key")
+            else:
+                self._api_key = None
+
         if self._api_key is not None and self._endpoint is not None:
             self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
+        elif use_aad_auth and self._endpoint is not None:
+            self._azure_cf_client = ContentSafetyClient(self._endpoint, credential=DefaultAzureCredential())
         else:
-            raise ValueError("Please provide the Azure Content Safety API key and endpoint")
+            raise ValueError("Please provide the Azure Content Safety endpoint")
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
@@ -106,10 +117,10 @@ class AzureContentFilterScorer(Scorer):
             filter_result = self._azure_cf_client.analyze_text(text_request_options)  # type: ignore
 
         elif request_response.converted_value_data_type == "image_path":
-            base64_encoded_data = self._get_base64_image_data(request_response)
+            base64_encoded_data = await self._get_base64_image_data(request_response)
             image_data = ImageData(content=base64_encoded_data)
             image_request_options = AnalyzeImageOptions(
-                image=image_data, categories=self._score_categories, output_type="EightSeverityLevels"
+                image=image_data, categories=self._score_categories, output_type="FourSeverityLevels"
             )
             filter_result = self._azure_cf_client.analyze_image(image_request_options)  # type: ignore
 
@@ -121,12 +132,16 @@ class AzureContentFilterScorer(Scorer):
             category = score["category"]
             normalized_value = self.scale_value_float(float(value), 0, 7)
 
+            # Severity as defined here
+            # https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?tabs=definitions#severity-levels
+            metadata = {"azure_severity": str(value)}
+
             score = Score(
                 score_type="float_scale",
                 score_value=str(normalized_value),
                 score_value_description=None,
                 score_category=category,
-                score_metadata=None,
+                score_metadata=str(metadata),
                 score_rationale=None,
                 scorer_class_identifier=self.get_identifier(),
                 prompt_request_response_id=request_response.id,
@@ -137,11 +152,13 @@ class AzureContentFilterScorer(Scorer):
 
         return scores
 
-    def _get_base64_image_data(self, request_response: PromptRequestPiece):
+    async def _get_base64_image_data(self, request_response: PromptRequestPiece):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
-        base64_encoded_data = image_serializer.read_data_base64()
+        image_serializer = data_serializer_factory(
+            value=image_path, data_type="image_path", extension=ext, memory=self._memory
+        )
+        base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
@@ -157,17 +174,3 @@ class AzureContentFilterScorer(Scorer):
                     f"Unsupported image format: {ext}. Supported formats are: \
                         {AZURE_CONTENT_FILTER_SCORER_SUPPORTED_IMAGE_FORMATS}"
                 )
-
-    def get_azure_severity(self, score_value: str) -> int:
-        """Converts the float value associated with the score to the severity value Azure Content Filter uses
-        Args:
-            score_value: The string representation of the float
-        Returns:
-            Severity as defined here
-            https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?
-            tabs=definitions#severity-levels
-
-            Raises ValueError if converted_value_data_type is not "text"
-        """
-
-        return round(float(score_value) * 7)

@@ -12,12 +12,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.engine.base import Engine
 from contextlib import closing
 
-from pyrit.memory.memory_models import EmbeddingData, PromptMemoryEntry, Base, ScoreEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
-from pyrit.models import PromptRequestPiece
-from pyrit.models import Score
+from pyrit.models import DiskStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +43,15 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             self.db_path: Union[Path, str] = ":memory:"
         else:
             self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
+        self.results_path = str(RESULTS_PATH)
 
         self.engine = self._create_engine(has_echo=verbose)
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
+
+    def _init_storage_io(self):
+        # Handles disk-based storage for DuckDB local memory.
+        self.storage_io = DiskStorageIO()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
         """Creates the SQLAlchemy engine for DuckDB.
@@ -88,11 +92,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
         return result
 
-    def get_all_embeddings(self) -> list[EmbeddingData]:
+    def get_all_embeddings(self) -> list[EmbeddingDataEntry]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result: list[EmbeddingData] = self.query_entries(EmbeddingData)
+        result: list[EmbeddingDataEntry] = self.query_entries(EmbeddingDataEntry)
         return result
 
     def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
@@ -106,9 +110,10 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
         """
         try:
-            result: list[PromptRequestPiece] = self.query_entries(
+            entries = self.query_entries(
                 PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
-            )  # type: ignore
+            )
+            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
             return result
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
@@ -122,13 +127,15 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             prompt_ids (list[str]): The prompt IDs to match.
 
         Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
+            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified prompt ID.
         """
         try:
-            return self.query_entries(
+            entries = self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )  # type: ignore
+            )
+            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            return result
         except Exception as e:
             logger.exception(
                 f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
@@ -153,9 +160,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         try:
             conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
             query_condition = and_(*conditions)
-            result: list[PromptRequestPiece] = self.query_entries(
-                PromptMemoryEntry, conditions=query_condition
-            )  # type: ignore
+            entries = self.query_entries(PromptMemoryEntry, conditions=query_condition)
+            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
             return result
         except Exception as e:
             logger.exception(
@@ -175,10 +181,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
         """
         try:
-            result: list[PromptRequestPiece] = self.query_entries(
+            entries = self.query_entries(
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id,
             )  # type: ignore
+            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
             return result
         except Exception as e:
             logger.exception(
@@ -191,29 +198,13 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Inserts a list of prompt request pieces into the memory storage.
 
         """
-        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self.insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
-    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingData]) -> None:
+    def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingDataEntry]) -> None:
         """
         Inserts embedding data into memory storage
         """
-        self._insert_entries(entries=embedding_data)
-
-    def add_scores_to_memory(self, *, scores: list[Score]) -> None:
-        """
-        Inserts a list of scores into the memory storage.
-        """
-        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
-
-    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
-        """
-        Gets a list of scores based on prompt_request_response_ids.
-        """
-        entries = self.query_entries(
-            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
-        )
-
-        return [entry.get_score() for entry in entries]
+        self.insert_entries(entries=embedding_data)
 
     def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
         """
@@ -255,7 +246,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
+    def insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -270,7 +261,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
 
-    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:
@@ -281,13 +272,16 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
 
-    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
+    def query_entries(
+        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+    ) -> list[Base]:
         """
         Fetches data from the specified table model with optional conditions.
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (optional).
+            distinct: Flag to return distinct rows (default is False).
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -297,9 +291,12 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(model)
                 if conditions is not None:
                     query = query.filter(conditions)
+                if distinct:
+                    return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
+                return []
 
     def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """

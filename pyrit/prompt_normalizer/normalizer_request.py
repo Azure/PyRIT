@@ -6,6 +6,7 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import data_serializer_factory, PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
+from pyrit.memory import DuckDBMemory
 
 
 class NormalizerRequestPiece(abc.ABC):
@@ -14,10 +15,11 @@ class NormalizerRequestPiece(abc.ABC):
     def __init__(
         self,
         *,
-        request_converters: list[PromptConverter],
         prompt_value: str,
         prompt_data_type: PromptDataType,
+        request_converters: list[PromptConverter] = [],
         metadata: str = None,
+        memory: MemoryInterface = None,
     ) -> None:
         """
         Represents a piece of a normalizer request.
@@ -40,6 +42,7 @@ class NormalizerRequestPiece(abc.ABC):
         self.prompt_value = prompt_value
         self.prompt_data_type = prompt_data_type
         self.metadata = metadata
+        self._memory = memory or DuckDBMemory()
 
         self.validate()
 
@@ -59,7 +62,7 @@ class NormalizerRequestPiece(abc.ABC):
             raise ValueError("prompt_converters must be a PromptConverter List")
 
         # this validates the media exists, if needed
-        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_value)
+        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_value, memory=self._memory)
 
 
 class NormalizerRequest:
@@ -67,6 +70,7 @@ class NormalizerRequest:
         self,
         request_pieces: list[NormalizerRequestPiece],
         response_converters: list[PromptResponseConverterConfiguration] = [],
+        conversation_id: str = None,
     ):
         """
         Represents a normalizer request.
@@ -76,6 +80,7 @@ class NormalizerRequest:
 
         self.request_pieces = request_pieces
         self.response_converters = response_converters
+        self.conversation_id = conversation_id
 
     def validate(self):
         if not self.request_pieces or len(self.request_pieces) == 0:

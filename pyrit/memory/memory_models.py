@@ -2,15 +2,17 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import Literal
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY
+from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
+from pyrit.models import PromptDataType, SeedPrompt
 from sqlalchemy.types import Uuid  # type: ignore
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
 from sqlalchemy.orm import Mapped  # type: ignore
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.score import Score
 
 
 class Base(DeclarativeBase):
@@ -46,6 +48,7 @@ class PromptMemoryEntry(Base):
         converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         idx_conversation_id (Index): The index for the conversation ID.
+        original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -68,16 +71,18 @@ class PromptMemoryEntry(Base):
     original_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = Column(
         String, nullable=False
     )
-    original_value = Column(String, nullable=False)
+    original_value = Column(Unicode, nullable=False)
     original_value_sha256 = Column(String)
 
     converted_value_data_type: Mapped[Literal["text", "image_path", "audio_path", "url", "error"]] = Column(
         String, nullable=False
     )
-    converted_value = Column(String)
+    converted_value = Column(Unicode)
     converted_value_sha256 = Column(String)
 
     idx_conversation_id = Index("idx_conversation_id", "conversation_id")
+
+    original_prompt_id = Column(Uuid, nullable=False)
 
     def __init__(self, *, entry: PromptRequestPiece):
         self.id = entry.id
@@ -101,6 +106,8 @@ class PromptMemoryEntry(Base):
 
         self.response_error = entry.response_error
 
+        self.original_prompt_id = entry.original_prompt_id
+
     def get_prompt_request_piece(self) -> PromptRequestPiece:
         return PromptRequestPiece(
             role=self.role,
@@ -117,6 +124,7 @@ class PromptMemoryEntry(Base):
             original_value_data_type=self.original_value_data_type,
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,
+            original_prompt_id=self.original_prompt_id,
         )
 
     def __str__(self):
@@ -125,7 +133,7 @@ class PromptMemoryEntry(Base):
         return f": {self.role}: {self.converted_value}"
 
 
-class EmbeddingData(Base):  # type: ignore
+class EmbeddingDataEntry(Base):  # type: ignore
     """
     Represents the embedding data associated with conversation entries in the database.
     Each embedding is linked to a specific conversation entry via an id
@@ -165,7 +173,7 @@ class ScoreEntry(Base):  # type: ignore
     score_metadata = Column(String, nullable=True)
     scorer_class_identifier: Mapped[dict[str, str]] = Column(JSON)
     prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
-    date_time = Column(DateTime, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
     task = Column(String, nullable=True)
 
     def __init__(self, *, entry: Score):
@@ -178,7 +186,7 @@ class ScoreEntry(Base):  # type: ignore
         self.score_metadata = entry.score_metadata
         self.scorer_class_identifier = entry.scorer_class_identifier
         self.prompt_request_response_id = entry.prompt_request_response_id if entry.prompt_request_response_id else None
-        self.date_time = entry.date_time
+        self.timestamp = entry.timestamp
         self.task = entry.task
 
     def get_score(self) -> Score:
@@ -192,7 +200,7 @@ class ScoreEntry(Base):  # type: ignore
             score_metadata=self.score_metadata,
             scorer_class_identifier=self.scorer_class_identifier,
             prompt_request_response_id=self.prompt_request_response_id,
-            date_time=self.date_time,
+            timestamp=self.timestamp,
             task=self.task,
         )
 
@@ -210,3 +218,97 @@ class EmbeddingMessageWithSimilarity(BaseModel):
     uuid: uuid.UUID
     metric: str
     score: float = 0.0
+
+
+class SeedPromptEntry(Base):
+    """
+    Represents the raw prompt or prompt template data as found in open datasets.
+
+    Note: This is different from the PromptMemoryEntry which is the processed prompt data.
+    SeedPrompt merely reflects basic prompts before plugging into orchestrators,
+    running through models with corresponding attack strategies, and applying converters.
+    PromptMemoryEntry captures the processed prompt data before and after the above steps.
+
+    Attributes:
+        __tablename__ (str): The name of the database table.
+        __table_args__ (dict): Additional arguments for the database table.
+        id (Uuid): The unique identifier for the memory entry.
+        value (str): The value of the seed prompt.
+        data_type (PromptDataType): The data type of the seed prompt.
+        dataset_name (str): The name of the dataset the seed prompt belongs to.
+        harm_categories (List[str]): The harm categories associated with the seed prompt.
+        description (str): The description of the seed prompt.
+        authors (List[str]): The authors of the seed prompt.
+        groups (List[str]): The groups involved in authoring the seed prompt (if any).
+        source (str): The source of the seed prompt.
+        date_added (DateTime): The date the seed prompt was added.
+        added_by (str): The user who added the seed prompt.
+        prompt_metadata (dict[str, str]): The metadata associated with the seed prompt.
+        parameters (List[str]): The parameters included in the value.
+            Note that seed prompts do not have parameters, only prompt templates do.
+            However, they are stored in the same table.
+        prompt_group_id (uuid.UUID): The ID of a group the seed prompt may optionally belong to.
+            Groups are used to organize prompts for multi-turn conversations or multi-modal prompts.
+        sequence (int): The turn of the seed prompt in a group. When entire multi-turn conversations
+            are stored, this is used to order the prompts.
+
+    Methods:
+        __str__(): Returns a string representation of the memory entry.
+    """
+
+    __tablename__ = "SeedPromptEntries"
+    __table_args__ = {"extend_existing": True}
+    id = Column(Uuid, nullable=False, primary_key=True)
+    value = Column(Unicode, nullable=False)
+    data_type: Mapped[PromptDataType] = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    dataset_name = Column(String, nullable=True)
+    harm_categories: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+    description = Column(String, nullable=True)
+    authors: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+    groups: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+    source = Column(String, nullable=True)
+    date_added = Column(DateTime, nullable=False)
+    added_by = Column(String, nullable=False)
+    prompt_metadata: Mapped[dict[str, str]] = Column(JSON, nullable=True)
+    parameters: Mapped[Optional[List[str]]] = Column(JSON, nullable=True)
+    prompt_group_id: Mapped[Optional[uuid.UUID]] = Column(Uuid, nullable=True)
+    sequence: Mapped[Optional[int]] = Column(INTEGER, nullable=True)
+
+    def __init__(self, *, entry: SeedPrompt):
+        self.id = entry.id
+        self.value = entry.value
+        self.data_type = entry.data_type
+        self.name = entry.name
+        self.dataset_name = entry.dataset_name
+        self.harm_categories = entry.harm_categories
+        self.description = entry.description
+        self.authors = entry.authors
+        self.groups = entry.groups
+        self.source = entry.source
+        self.date_added = entry.date_added
+        self.added_by = entry.added_by
+        self.prompt_metadata = entry.metadata
+        self.parameters = entry.parameters
+        self.prompt_group_id = entry.prompt_group_id
+        self.sequence = entry.sequence
+
+    def get_seed_prompt(self) -> SeedPrompt:
+        return SeedPrompt(
+            id=self.id,
+            value=self.value,
+            data_type=self.data_type,
+            name=self.name,
+            dataset_name=self.dataset_name,
+            harm_categories=self.harm_categories,
+            description=self.description,
+            authors=self.authors,
+            groups=self.groups,
+            source=self.source,
+            date_added=self.date_added,
+            added_by=self.added_by,
+            metadata=self.prompt_metadata,
+            parameters=self.parameters,
+            prompt_group_id=self.prompt_group_id,
+            sequence=self.sequence,
+        )

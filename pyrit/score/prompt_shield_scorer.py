@@ -30,10 +30,12 @@ class PromptShieldScorer(Scorer):
         prompt_shield_target: PromptShieldTarget,
         memory: Union[MemoryInterface, None] = None,
     ) -> None:
-
+        self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
         self._memory = memory if memory else DuckDBMemory()
-        self._prompt_shield_target: PromptShieldTarget = prompt_shield_target
+        # Ensure _prompt_target uses the same memory interface as the scorer.
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
 
     async def score_async(
         self, request_response: PromptRequestPiece | PromptMemoryEntry, *, task: Optional[str] = None
@@ -51,13 +53,13 @@ class PromptShieldScorer(Scorer):
                     original_value=body,
                     prompt_metadata=request_response.prompt_metadata,
                     conversation_id=self._conversation_id,
-                    prompt_target_identifier=self._prompt_shield_target.get_identifier(),
+                    prompt_target_identifier=self._prompt_target.get_identifier(),
                 )
             ]
         )
 
         # The body of the Prompt Shield response
-        target_response = await self._prompt_shield_target.send_prompt_async(prompt_request=request)
+        target_response = await self._prompt_target.send_prompt_async(prompt_request=request)
 
         response: str = target_response.request_pieces[0].converted_value
 

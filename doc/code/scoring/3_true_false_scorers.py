@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
@@ -20,12 +20,12 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 
 default_values.load_default_env()
-with AzureOpenAIGPT4OChatTarget() as azure_openai_chat_target:
+with OpenAIChatTarget() as azure_openai_chat_target:
     true_false_classifier = SelfAskTrueFalseScorer(
         true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=azure_openai_chat_target
     )

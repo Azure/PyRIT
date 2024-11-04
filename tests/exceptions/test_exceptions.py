@@ -3,7 +3,14 @@
 
 import json
 import logging
-from pyrit.exceptions import PyritException, BadRequestException, RateLimitException, EmptyResponseException
+from pyrit.exceptions import (
+    PyritException,
+    BadRequestException,
+    RateLimitException,
+    EmptyResponseException,
+    MissingPromptPlaceholderException,
+    InvalidJsonException,
+)
 
 
 def test_pyrit_exception_initialization():
@@ -42,6 +49,13 @@ def test_empty_response_exception_initialization():
     assert str(ex) == "Status Code: 204, Message: No Content"
 
 
+def test_invalid_json_exception_initialization():
+    ex = InvalidJsonException()
+    assert ex.status_code == 500
+    assert ex.message == "Invalid JSON Response"
+    assert str(ex) == "Status Code: 500, Message: Invalid JSON Response"
+
+
 def test_bad_request_exception_process_exception(caplog):
     ex = BadRequestException()
     with caplog.at_level(logging.ERROR):
@@ -64,3 +78,21 @@ def test_empty_response_exception_process_exception(caplog):
         result = ex.process_exception()
     assert json.loads(result) == {"status_code": 204, "message": "No Content"}
     assert "EmptyResponseException encountered: Status Code: 204, Message: No Content" in caplog.text
+
+
+def test_empty_prompt_placeholder_exception(caplog):
+    ex = MissingPromptPlaceholderException()
+    with caplog.at_level(logging.ERROR):
+        result = ex.process_exception()
+    assert json.loads(result) == {"status_code": 500, "message": "No prompt placeholder"}
+    assert (
+        "MissingPromptPlaceholderException encountered: Status Code: 500, Message: No prompt placeholder" in caplog.text
+    )
+
+
+def test_remove_markdown_json_exception(caplog):
+    ex = InvalidJsonException()
+    with caplog.at_level(logging.ERROR):
+        result = ex.process_exception()
+    assert json.loads(result) == {"status_code": 500, "message": "Invalid JSON Response"}
+    assert "InvalidJsonException encountered: Status Code: 500, Message: Invalid JSON Response" in caplog.text

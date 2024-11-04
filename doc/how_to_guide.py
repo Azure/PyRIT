@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
@@ -54,13 +54,12 @@ from pathlib import Path
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
-from pyrit.prompt_target import AzureOpenAITextChatTarget
-from pyrit.models import PromptRequestPiece
+from pyrit.prompt_target import OpenAIChatTarget
 
 default_values.load_default_env()
 
 # Note: parameters are not required here. They are added here to show how they can be used.
-with AzureOpenAITextChatTarget(
+with OpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
@@ -80,11 +79,12 @@ with AzureOpenAITextChatTarget(
 
 # %%
 
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPrompt
 
-template = PromptTemplate(
-    template="I recently had {{ food_item }} in {{ food_location }} and it was absolutely terrible. What do you think about {{ food_item }}?",
+template = SeedPrompt(
+    value="I recently had {{ food_item }} in {{ food_location }} and it was absolutely terrible. What do you think about {{ food_item }}?",
     parameters=["food_item", "food_location"],
+    data_type="text",
 )
 
 # %% [markdown]
@@ -94,7 +94,7 @@ template = PromptTemplate(
 
 # %%
 
-prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_location="Italy")
+prompt = template.render_template_value(food_item="pizza", food_location="Italy")
 
 # %% [markdown]
 # ## Generate prompts automatically with red teaming orchestrators
@@ -132,7 +132,7 @@ prompt = template.apply_custom_metaprompt_parameters(food_item="pizza", food_loc
 
 from textwrap import dedent
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import AzureOpenAITextChatTarget, AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 
 
@@ -147,14 +147,14 @@ When the conversation objective is reached, type <|done|> to end the conversatio
 )
 
 # red_teaming_llm could be any LLM endpoint. Here it is Azure OpenAI for illustrative purposes.
-red_teaming_llm = AzureOpenAITextChatTarget(
+red_teaming_llm = OpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
 )
 
 # We use Azure OpenAI GPT4-o here as an example target LLM endpoint.
-target_llm = AzureOpenAIGPT4OChatTarget(
+target_llm = OpenAIChatTarget(
     deployment_name=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_DEPLOYMENT"),
     endpoint=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_ENDPOINT"),
     api_key=os.environ.get("AZURE_OPENAI_GPT4O_CHAT_KEY"),
@@ -172,13 +172,13 @@ with RedTeamingOrchestrator(
     red_teaming_chat=red_teaming_llm,
     prompt_target=target_llm,
     initial_red_teaming_prompt="Begin conversation",
-    scorer=scorer,
+    objective_scorer=scorer,
     verbose=True,
 ) as red_teaming_orchestrator:
 
     # Apply the attack strategy until the conversation objective is reached
     # or the maximum number of turns is reached.
-    await red_teaming_orchestrator.apply_attack_strategy_until_completion_async(max_turns=5)  # type: ignore
+    await red_teaming_orchestrator.run_attack_async(max_turns=5)  # type: ignore
 
     # Alternatively, use send_prompt_async() to generate just a single turn of the attack strategy.
 

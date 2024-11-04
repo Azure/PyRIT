@@ -63,6 +63,11 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
         self._chat_model_under_evaluation = chat_model_under_evaluation
         self._scorer = scorer
+        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
+        if self._scorer:
+            self._scorer._memory = self._memory
+            if hasattr(self._scorer, "_prompt_target"):
+                self._scorer._prompt_target._memory = self._memory
         self._conversation_id = str(uuid4())
         self._normalizer = PromptNormalizer(memory=self._memory)
 
@@ -85,12 +90,13 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
         for idx, (question_entry, question_prompt) in enumerate(self._scorer.get_next_question_prompt_pair()):
 
-            request = self._create_normalizer_request(question_prompt, "text")
+            request = self._create_normalizer_request(
+                prompt_text=question_prompt, conversation_id=self._conversation_id
+            )
 
             response = await self._normalizer.send_prompt_async(
                 normalizer_request=request,
                 target=self._chat_model_under_evaluation,
-                conversation_id=self._conversation_id,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self.get_identifier(),
             )

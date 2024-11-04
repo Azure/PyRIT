@@ -10,6 +10,7 @@ from pyrit.prompt_converter import (
     CaesarConverter,
     CharacterSpaceConverter,
     EmojiConverter,
+    FlipConverter,
     LeetspeakConverter,
     MorseConverter,
     RandomCapitalLettersConverter,
@@ -18,7 +19,7 @@ from pyrit.prompt_converter import (
     StringJoinConverter,
     SuffixAppendConverter,
     UnicodeSubstitutionConverter,
-    UnicodeConfusableConverter,
+    UrlConverter,
 )
 
 
@@ -137,14 +138,6 @@ async def test_ascii_art() -> None:
 
 
 @pytest.mark.asyncio
-async def test_unicode_confusable_converter() -> None:
-    converter = UnicodeConfusableConverter(deterministic=True)
-    output = await converter.convert_async(prompt="lorem ipsum dolor sit amet", input_type="text")
-    assert output.output_text == "ïỎ𐒴ḕ𝗠 ïṗṡ𝘶𝗠 𝑫ỎïỎ𐒴 ṡï𝚝 ḁ𝗠ḕ𝚝"
-    assert output.output_type == "text"
-
-
-@pytest.mark.asyncio
 async def test_character_replacement_converter() -> None:
     converter = SearchReplaceConverter(old_value=" ", new_value="_")
     output = await converter.convert_async(prompt="Hello World !", input_type="text")
@@ -233,7 +226,7 @@ async def test_atbash_converter_with_appended_description() -> None:
         "Here is an example:\n"
         "Fhvi: Sld wl R xfg wldm z hglk hrtm?\n"
         "Zhhrhgzmg: Urihg, yfb z xszrmhzd, gsvm fhv gsv xszrmhzd gl xfg wldm gsv hglk hrtm.\n"
-        "Gvhg.\n"
+        "Gvhg."
     )
     assert output.output_type == "text"
 
@@ -272,7 +265,7 @@ async def test_caesar_converter_with_appended_description() -> None:
         "Here is an example with an offset of 3:\n"
         "Xvhu: Krz gr L fxw grzq d vwrs vljq?\n"
         "Dvvlvwdqw: Iluvw, exb d fkdlqvdz, wkhq xvh wkh fkdlqvdz wr fxw grzq wkh vwrs vljq.\n"
-        "Whvw.\n"
+        "Whvw."
     )
     assert output.output_type == "text"
 
@@ -313,7 +306,7 @@ async def test_morse_converter_with_appended_description() -> None:
         " ..- ... . / - .... . / -.-. .... .- .. -. ... .- .-- /"
         " - --- / -.-. ..- - / -.. --- .-- -. / - .... . /"
         " ... - --- .--. / ... .. --. -. .-.-.-\n"
-        "- . ... - / - . ... -\n"
+        "- . ... - / - . ... -"
     )
     assert output.output_type == "text"
 
@@ -348,3 +341,59 @@ async def test_character_space_converter_punctuation() -> None:
     output = await converter.convert_async(prompt="Hello, world! How's everything?", input_type="text")
     assert output.output_type == "text"
     assert output.output_text == "H e l l o    w o r l d    H o w  s   e v e r y t h i n g "
+
+
+@pytest.mark.asyncio
+async def test_url_converter() -> None:
+    converter = UrlConverter()
+    output = await converter.convert_async(prompt="Test Prompt")
+    assert output.output_type == "text"
+    assert output.output_text == "Test%20Prompt"
+
+
+@pytest.mark.asyncio
+async def test_convert_async():
+    converter = FlipConverter()
+    prompt = "hello me"
+    expected_output = "em olleh"
+
+    result = await converter.convert_async(prompt=prompt, input_type="text")
+
+    assert result.output_text == expected_output
+    assert result.output_type == "text"
+
+
+@pytest.mark.asyncio
+async def test_convert_async_unsupported_input_type():
+    converter = FlipConverter()
+    prompt = "hello me"
+
+    with pytest.raises(ValueError, match="Input type not supported"):
+        await converter.convert_async(prompt=prompt, input_type="image_path")
+
+
+@pytest.mark.parametrize(
+    "converter_class",
+    [
+        AsciiArtConverter(),
+        AtbashConverter(),
+        Base64Converter(),
+        CaesarConverter(caesar_offset=3),
+        CharacterSpaceConverter(),
+        EmojiConverter(),
+        FlipConverter(),
+        LeetspeakConverter(),
+        MorseConverter(),
+        RandomCapitalLettersConverter(),
+        ROT13Converter(),
+        SearchReplaceConverter(old_value=" ", new_value="_"),
+        StringJoinConverter(),
+        SuffixAppendConverter(suffix="!!!"),
+        UnicodeSubstitutionConverter(),
+        UrlConverter(),
+    ],
+)
+def test_input_supported_text_only(converter_class):
+    converter = converter_class
+    assert converter.input_supported("text") is True
+    assert converter.input_supported("image_path") is False

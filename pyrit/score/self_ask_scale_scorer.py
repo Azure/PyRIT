@@ -1,82 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
-import uuid
 import yaml
 import enum
 
 from pathlib import Path
 from typing import Optional
 
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
 from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, PromptTemplate
+from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import SCALES_PATH
-
-
-class ScalePaths(enum.Enum):
-    TREE_OF_ATTACKS_WITH_PRUNING_SCALE = Path(SCALES_PATH, "tree_of_attacks_with_pruning_jailbreak.yaml").resolve()
-
-
-class ScaleExample:
-    def __init__(self, *, task: str, response: str, rationale: str, score_value: int) -> None:
-        self.task = task
-        self.response = response
-        self.rationale = rationale
-        self.score_value = score_value
-
-
-class Scale:
-    def __init__(
-        self,
-        *,
-        category: str,
-        minimum_value: int,
-        minimum_description: str,
-        maximum_value: int,
-        maximum_description: str,
-        step_description: str,
-        examples: list[ScaleExample],
-    ) -> None:
-        self.category = category
-        self.minimum_value = minimum_value
-        self.minimum_description = minimum_description
-        self.maximum_value = maximum_value
-        self.maximum_description = maximum_description
-        self.step_description = step_description
-        self.examples = examples
-
-        if self.minimum_value >= self.maximum_value:
-            raise ValueError("minimum_value must be less than maximum_value")
-
-        if not examples:
-            raise ValueError("examples must be provided")
-
-        if not all(isinstance(example, ScaleExample) for example in examples):
-            raise ValueError("All examples must be of type ScaleExample")
-
-    def to_dict(self) -> dict:
-        return {
-            "category": self.category,
-            "minimum_value": self.minimum_value,
-            "minimum_description": self.minimum_description,
-            "maximum_value": self.maximum_value,
-            "maximum_description": self.maximum_description,
-            "step_description": self.step_description,
-            "examples": "\n\n".join(
-                [
-                    f"Example {index}:\n"
-                    f"task: {example.task}\n"
-                    f"response: {example.response}\n"
-                    f"rationale: {example.rationale}\n"
-                    f"score_value: {example.score_value}"
-                    for index, example in enumerate(self.examples, start=1)
-                ]
-            ),
-        }
 
 
 class SelfAskScaleScorer(Scorer):
@@ -84,44 +20,47 @@ class SelfAskScaleScorer(Scorer):
     A class that represents a "self-ask" score for text scoring for a customizable numeric scale.
     """
 
+    class ScalePaths(enum.Enum):
+        TREE_OF_ATTACKS_SCALE = Path(SCALES_PATH, "tree_of_attacks_scale.yaml").resolve()
+        TASK_ACHIEVED_SCALE = Path(SCALES_PATH, "task_achieved_scale.yaml").resolve()
+
+    class SystemPaths(enum.Enum):
+        GENERAL_SYSTEM_PROMPT = Path(SCALES_PATH, "general_system_prompt.yaml").resolve()
+        RED_TEAMER_SYSTEM_PROMPT = Path(SCALES_PATH, "red_teamer_system_prompt.yaml").resolve()
+
     def __init__(
         self,
         *,
         chat_target: PromptChatTarget,
-        scale_path: Optional[Path] = None,
-        scale: Optional[Scale] = None,
+        scale_arguments_path: Optional[Path],
+        system_prompt_path: Optional[Path],
         memory: MemoryInterface = None,
     ) -> None:
-
+        self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
         self._memory = memory if memory else DuckDBMemory()
+        # Ensure _prompt_target uses the same memory interface as the scorer.
+        if self._prompt_target:
+            self._prompt_target._memory = self._memory
 
-        if not scale_path and not scale:
-            raise ValueError("Either scale_path or scale must be provided.")
-        if scale_path and scale:
-            raise ValueError("Only one of scale_path or scale should be provided.")
-        if scale_path:
-            scale_args = yaml.safe_load(scale_path.read_text(encoding="utf-8"))
-            if "examples" in scale_args:
-                scale_args["examples"] = [
-                    ScaleExample(
-                        task=example["task"],
-                        response=example["response"],
-                        rationale=example["rationale"],
-                        score_value=example["score_value"],
-                    )
-                    for example in scale_args["examples"]
-                ]
-            self._scale = Scale(**scale_args)
-        else:
-            self._scale = scale
+        if not system_prompt_path:
+            system_prompt_path = self.SystemPaths.GENERAL_SYSTEM_PROMPT.value
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(SCALES_PATH / "scale_system_prompt.yaml")
-        system_prompt_kwargs = self._scale.to_dict()
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(**system_prompt_kwargs)
+        if not scale_arguments_path:
+            scale_arguments_path = self.ScalePaths.TREE_OF_ATTACKS_SCALE.value
 
-        self._chat_target: PromptChatTarget = chat_target
+        scale_args = yaml.safe_load(scale_arguments_path.read_text(encoding="utf-8"))
+
+        self._validate_scale_arguments_set(scale_args)
+
+        self._minimum_value = scale_args["minimum_value"]
+        self._maximum_value = scale_args["maximum_value"]
+        self._category = scale_args["category"]
+
+        scoring_instructions_template = SeedPrompt.from_yaml_file(system_prompt_path)
+
+        self._system_prompt = scoring_instructions_template.render_template_value(**scale_args)
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
@@ -137,62 +76,49 @@ class SelfAskScaleScorer(Scorer):
         """
         self.validate(request_response, task=task)
 
-        conversation_id = str(uuid.uuid4())
-
-        self._chat_target.set_system_prompt(
-            system_prompt=self._system_prompt,
-            conversation_id=conversation_id,
-            orchestrator_identifier=None,
-        )
-
         scoring_prompt = f"task: {task}\nresponse: {request_response.converted_value}"
 
-        request = PromptRequestResponse(
-            [
-                PromptRequestPiece(
-                    role="user",
-                    original_value=scoring_prompt,
-                    conversation_id=conversation_id,
-                    prompt_target_identifier=self._chat_target.get_identifier(),
-                )
-            ]
+        unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
+            prompt_target=self._prompt_target,
+            system_prompt=self._system_prompt,
+            prompt_request_value=scoring_prompt,
+            prompt_request_data_type=request_response.converted_value_data_type,
+            scored_prompt_id=request_response.id,
+            category=self._category,
+            task=task,
         )
 
-        score = await self._send_chat_target_async(request, request_response.id)
-        score.task = task
+        score = unvalidated_score.to_score(
+            score_value=str(
+                self.scale_value_float(
+                    float(unvalidated_score.raw_score_value), self._minimum_value, self._maximum_value
+                )
+            )
+        )
+
         self._memory.add_scores_to_memory(scores=[score])
         return [score]
-
-    @pyrit_json_retry
-    async def _send_chat_target_async(self, request, request_response_id):
-        response = await self._chat_target.send_prompt_async(prompt_request=request)
-
-        try:
-            response_json = response.request_pieces[0].converted_value
-            parsed_response = json.loads(response_json)
-            score_value = self.scale_value_float(
-                float(parsed_response["score_value"]), self._scale.minimum_value, self._scale.maximum_value
-            )
-            score = Score(
-                score_value=str(score_value),
-                score_value_description=parsed_response["description"],
-                score_type=self.scorer_type,
-                score_category=self._scale.category,
-                score_rationale=parsed_response["rationale"],
-                scorer_class_identifier=self.get_identifier(),
-                score_metadata=None,
-                prompt_request_response_id=request_response_id,
-            )
-        except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
-
-        except KeyError:
-            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
-
-        return score
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.original_value_data_type != "text":
             raise ValueError("The original value data type must be text.")
         if not task:
             raise ValueError("Task must be provided.")
+
+    def _validate_scale_arguments_set(self, scale_args: dict):
+
+        try:
+            minimum_value = scale_args["minimum_value"]
+            maximum_value = scale_args["maximum_value"]
+            category = scale_args["category"]
+        except KeyError as e:
+            raise ValueError(f"Missing key in scale_args: {e.args[0]}") from None
+
+        if not isinstance(minimum_value, int):
+            raise ValueError(f"Minimum value must be an integer, got {type(minimum_value).__name__}.")
+        if not isinstance(maximum_value, int):
+            raise ValueError(f"Maximum value must be an integer, got {type(maximum_value).__name__}.")
+        if minimum_value > maximum_value:
+            raise ValueError("Minimum value must be less than or equal to the maximum value.")
+        if not category:
+            raise ValueError("Category must be set and cannot be empty.")

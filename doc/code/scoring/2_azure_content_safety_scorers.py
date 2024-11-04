@@ -10,7 +10,7 @@
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
-#     name: pyrit-311
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -22,7 +22,9 @@
 # In order to use this API, you need to configure a few environment variables:
 #
 # - AZURE_CONTENT_SAFETY_API_ENDPOINT: The endpoint for the Azure Content Safety API
-# - AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API
+# - AZURE_CONTENT_SAFETY_API_KEY: The API key for the Azure Content Safety API (if not using AAD Auth)
+#
+# As an alternative to key-based authentication, you may set `use_aad_auth=True` and use identity-based authentication.
 #
 # Note that this api returns a value between 0 and 7. This is different from likert scales, which return a value between 1 and 5. Because both are `float_scale` scores, these values are all normalized to floating point values between 0.0 and 1.0 and can be directly compared. This is sometimes interesting as an operator e.g. if there are scenarios where a `SelfAskLikertScorer` and `AzureContentFilterScorer` produce very different values.
 #
@@ -41,7 +43,9 @@ memory = DuckDBMemory()
 
 # Set up the Azure Content Filter
 azure_content_filter = AzureContentFilterScorer(
+    # Comment out either api_key or use_aad_auth
     api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
+    # use_aad_auth=True,
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
     memory=memory,
 )
@@ -55,8 +59,12 @@ response = PromptRequestPiece(
 # need to write it manually to memory as score table has a foreign key constraint
 memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 
+# Run the request
 scores = await azure_content_filter.score_async(response)  # type: ignore
-assert azure_content_filter.get_azure_severity(scores[0].get_value()) > 1  # should be value 2 base on the documentation
+assert scores[0].get_value() > 0  # azure_severity should be value 2 based on the documentation
 
 for score in scores:
-    print(score)
+    # score_metadata contains azure_severity original value
+    print(f"{score} {score.score_metadata}")
+
+# %%

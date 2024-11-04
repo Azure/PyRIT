@@ -12,9 +12,9 @@ import pytest
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import AzureTTSTarget
+from pyrit.prompt_target import OpenAITTSTarget
 
-from pyrit.prompt_target.tts_target import TTSResponseFormat
+from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
 from tests.mocks import get_sample_conversations
 
 
@@ -24,17 +24,17 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 
 @pytest.fixture
-def tts_target() -> AzureTTSTarget:
-    return AzureTTSTarget(deployment_name="test", endpoint="test", api_key="test")
+def tts_target() -> OpenAITTSTarget:
+    return OpenAITTSTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
-def test_tts_initializes(tts_target: AzureTTSTarget):
+def test_tts_initializes(tts_target: OpenAITTSTarget):
     assert tts_target
 
 
 def test_tts_initializes_calls_get_required_parameters():
     with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
-        AzureTTSTarget(
+        target = OpenAITTSTarget(
             deployment_name="deploymenttest",
             endpoint="endpointtest",
             api_key="keytest",
@@ -43,27 +43,25 @@ def test_tts_initializes_calls_get_required_parameters():
         assert mock_get_required.call_count == 3
 
         mock_get_required.assert_any_call(
-            env_var_name=AzureTTSTarget.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value="deploymenttest"
+            env_var_name=target.deployment_environment_variable, passed_value="deploymenttest"
         )
 
         mock_get_required.assert_any_call(
-            env_var_name=AzureTTSTarget.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value="endpointtest"
+            env_var_name=target.endpoint_uri_environment_variable, passed_value="endpointtest"
         )
 
-        mock_get_required.assert_any_call(
-            env_var_name=AzureTTSTarget.API_KEY_ENVIRONMENT_VARIABLE, passed_value="keytest"
-        )
+        mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
 
 
 @pytest.mark.asyncio
-async def test_tts_validate_request_length(tts_target: AzureTTSTarget, sample_conversations: list[PromptRequestPiece]):
+async def test_tts_validate_request_length(tts_target: OpenAITTSTarget, sample_conversations: list[PromptRequestPiece]):
     request = PromptRequestResponse(request_pieces=sample_conversations)
     with pytest.raises(ValueError, match="This target only supports a single prompt request piece."):
         await tts_target.send_prompt_async(prompt_request=request)
 
 
 @pytest.mark.asyncio
-async def test_tts_validate_prompt_type(tts_target: AzureTTSTarget, sample_conversations: list[PromptRequestPiece]):
+async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget, sample_conversations: list[PromptRequestPiece]):
     request_piece = sample_conversations[0]
     request_piece.converted_value_data_type = "image_path"
     request = PromptRequestResponse(request_pieces=[request_piece])
@@ -73,7 +71,7 @@ async def test_tts_validate_prompt_type(tts_target: AzureTTSTarget, sample_conve
 
 @pytest.mark.asyncio
 async def test_tts_validate_previous_conversations(
-    tts_target: AzureTTSTarget, sample_conversations: list[PromptRequestPiece]
+    tts_target: OpenAITTSTarget, sample_conversations: list[PromptRequestPiece]
 ):
     request_piece = sample_conversations[0]
     tts_target._memory.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=[request_piece]))
@@ -89,7 +87,7 @@ async def test_tts_send_prompt_file_save_async(
     sample_conversations: list[PromptRequestPiece], response_format: TTSResponseFormat
 ) -> None:
 
-    tts_target = AzureTTSTarget(
+    tts_target = OpenAITTSTarget(
         deployment_name="test", endpoint="test", api_key="test", response_format=response_format
     )
 
@@ -119,7 +117,7 @@ testdata = [(400, "Bad Request", HTTPStatusError), (429, "Rate Limit Reached", R
 @pytest.mark.asyncio
 @pytest.mark.parametrize("status_code, error_text, exception_class", testdata)
 async def test_tts_send_prompt_async_exception_adds_to_memory(
-    tts_target: AzureTTSTarget,
+    tts_target: OpenAITTSTarget,
     sample_conversations: list[PromptRequestPiece],
     status_code: int,
     error_text: str,
@@ -128,7 +126,6 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     tts_target._memory = mock_memory
 
@@ -150,14 +147,13 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
         tts_target._memory.get_conversation.assert_called_once_with(conversation_id=request_piece.conversation_id)
 
         tts_target._memory.add_request_response_to_memory.assert_called_once_with(request=request)
-        tts_target._memory.add_response_entries_to_memory.assert_called_once()
 
         assert response.text in str(exc.value)
 
 
 @pytest.mark.asyncio
 async def test_tts_send_prompt_async_rate_limit_exception_retries(
-    tts_target: AzureTTSTarget, sample_conversations: list[PromptRequestPiece]
+    tts_target: OpenAITTSTarget, sample_conversations: list[PromptRequestPiece]
 ):
     response = MagicMock()
     response.status_code = 429
