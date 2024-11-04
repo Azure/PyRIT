@@ -35,8 +35,8 @@ html:
 
 sphinx:
   extra_extensions:
-  - 'sphinx.ext.autodoc'
-  - 'sphinx.ext.autosummary'
+    - 'sphinx.ext.autodoc'
+    - 'sphinx.ext.autosummary'
   config:
     autosummary_generate: True
     suppress_warnings: ["etoc.toctree"]
