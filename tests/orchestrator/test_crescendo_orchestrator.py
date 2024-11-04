@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import InvalidJsonException
 from pyrit.memory import DuckDBMemory
-from pyrit.models import SystemPromptWithObjective, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.score import Score
 
@@ -83,8 +83,8 @@ def false_eval_score() -> Score:
 @pytest.fixture
 def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
     return CrescendoOrchestrator(
-        prompt_target=mock_target,
-        red_team_target=mock_target,
+        objective_target=mock_target,
+        adversarial_chat=mock_target,
         scoring_target=mock_target,
         memory=MagicMock(),
     )
@@ -107,7 +107,7 @@ async def test_apply_crescendo_attack_fail_num_turns(
             orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")
         ) as mock_get_attack_prompt,
         patch.object(
-            orchestrator.refusal_scorer,
+            orchestrator._refusal_scorer,
             "score_async",
             AsyncMock(return_value=[did_not_refuse_score]),
         ) as mock_refusal_score,
@@ -143,7 +143,7 @@ async def test_apply_crescendo_attack_fail_max_refusals_num_turns(
             orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")
         ) as mock_get_attack_prompt,
         patch.object(
-            orchestrator.refusal_scorer,
+            orchestrator._refusal_scorer,
             "score_async",
             AsyncMock(return_value=[did_refuse_score]),
         ) as mock_refusal_score,
@@ -177,7 +177,7 @@ async def test_apply_crescendo_attack_succeed_max_refusals_num_turns(
             orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")
         ) as mock_get_attack_prompt,
         patch.object(
-            orchestrator.refusal_scorer,
+            orchestrator._refusal_scorer,
             "score_async",
             AsyncMock(return_value=[did_refuse_score]),
         ) as mock_refusal_score,
@@ -209,7 +209,7 @@ async def test_apply_crescendo_attack_succeed_num_turns(
             orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")
         ) as mock_get_attack_prompt,
         patch.object(
-            orchestrator.refusal_scorer,
+            orchestrator._refusal_scorer,
             "score_async",
             AsyncMock(return_value=[did_not_refuse_score]),
         ) as mock_refusal_score,
@@ -238,7 +238,7 @@ async def test_no_backtracks_occurred(
         patch.object(
             orchestrator, "_backtrack_memory", AsyncMock(return_value="new_conversation_id")
         ) as mock_backtrack_memory,
-        patch.object(orchestrator.refusal_scorer, "score_async", AsyncMock(return_value=[did_not_refuse_score])),
+        patch.object(orchestrator._refusal_scorer, "score_async", AsyncMock(return_value=[did_not_refuse_score])),
         patch.object(
             orchestrator._objective_scorer, "score_async", AsyncMock(return_value=[false_eval_score])
         ) as mock_eval_judge,
@@ -255,7 +255,7 @@ async def test_no_backtracks_occurred(
 async def test_max_turns_init_exceptions():
     with pytest.raises(ValueError):
         CrescendoOrchestrator(
-            prompt_target=MagicMock(), red_team_target=MagicMock(), scoring_target=MagicMock(), max_turns=0
+            objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_turns=0
         )
 
 
@@ -263,58 +263,36 @@ async def test_max_turns_init_exceptions():
 async def test_max_backtrack_init_exceptions():
     with pytest.raises(ValueError):
         CrescendoOrchestrator(
-            prompt_target=MagicMock(), red_team_target=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
+            objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
         )
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("variants", list(range(1, 6)))
-async def test_custom_crescendo_system_prompt_path(mock_target: AsyncMock, variants: int):
+async def test_custom_crescendo_system_prompt_path_variants(mock_target: AsyncMock, variants: int):
 
     for num in range(1, variants + 1):
         custom_system_prompt_path = (
             Path(DATASETS_PATH) / "orchestrators" / "crescendo" / f"crescendo_variant_{num}.yaml"
         )
 
-        orchestrator = CrescendoOrchestrator(
-            prompt_target=mock_target,
-            red_team_target=mock_target,
+        # This will throw an exception if the yaml is invalid or if there is no objective.
+        CrescendoOrchestrator(
+            objective_target=mock_target,
+            adversarial_chat=mock_target,
             scoring_target=mock_target,
-            red_team_system_prompt_path=custom_system_prompt_path,
+            adversarial_chat_system_prompt_path=custom_system_prompt_path,
         )
-
-        assert orchestrator._red_team_target_system_prompt_path == custom_system_prompt_path
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("variants", list(range(1, 6)))
-async def test_custom_crescendo_valid_yaml(mock_target: AsyncMock, variants: int):
-
-    for num in range(1, variants + 1):
-        custom_system_prompt_path = (
-            Path(DATASETS_PATH) / "orchestrators" / "crescendo" / f"crescendo_variant_{num}.yaml"
-        )
-
-        # This will throw an exception if the yaml is invalid
-        s = str(
-            SystemPromptWithObjective(
-                path=custom_system_prompt_path,
-                objective="objective",
-                max_turns=3,
-            )
-        )
-
-        assert s
 
 
 @pytest.mark.asyncio
 async def test_invalid_system_prompt_path_raises():
     with pytest.raises(FileNotFoundError):
         CrescendoOrchestrator(
-            prompt_target=MagicMock(),
-            red_team_target=MagicMock(),
+            objective_target=MagicMock(),
+            adversarial_chat=MagicMock(),
             scoring_target=MagicMock(),
-            red_team_system_prompt_path="does_not_exist.yaml",
+            adversarial_chat_system_prompt_path="does_not_exist.yaml",
         )
 
 

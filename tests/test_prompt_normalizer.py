@@ -113,8 +113,6 @@ async def test_send_prompt_async_request_response_added_to_memory(normalizer_pie
 @pytest.mark.asyncio
 async def test_send_prompt_async_exception(normalizer_piece: NormalizerRequestPiece):
     prompt_target = AsyncMock()
-    prompt_target.send_prompt_async = AsyncMock(side_effect=ValueError("test_exception"))
-
     memory = MagicMock()
 
     normalizer = PromptNormalizer(memory=memory)

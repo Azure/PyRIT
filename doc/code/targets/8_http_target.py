@@ -98,8 +98,8 @@ http_prompt_target = HTTPTarget(
 
 # Note, like above, a converter is used to format the prompt to be json safe without new lines/carriage returns, etc
 orchestrator = RedTeamingOrchestrator(
-    red_team_target=red_teaming_chat,
-    prompt_target=http_prompt_target,
+    adversarial_chat=red_teaming_chat,
+    objective_target=http_prompt_target,
     objective_scorer=scorer,
     verbose=True,
     prompt_converters=[SearchReplaceConverter(old_value=r"(?! )\s", new_value="")],

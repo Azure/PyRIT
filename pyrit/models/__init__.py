@@ -31,7 +31,6 @@ from pyrit.models.prompt_request_response import (
     construct_response_from_request,
 )
 from pyrit.models.prompt_response import PromptResponse
-from pyrit.models.prompt_template import PromptTemplate, SystemPromptWithObjective, ManyShotTemplate
 from pyrit.models.question_answering import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.models.score import Score, ScoreType, UnvalidatedScore
 from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
@@ -39,7 +38,6 @@ from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
     "ALLOWED_CHAT_MESSAGE_ROLES",
-    "SystemPromptWithObjective",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
     "ChatMessage",

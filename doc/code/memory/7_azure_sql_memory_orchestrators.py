@@ -151,9 +151,9 @@ strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "image_generat
 
 
 with RedTeamingOrchestrator(
-    red_team_target_system_prompt_path=strategy_path,
-    red_team_target=red_teaming_llm,
-    prompt_target=img_prompt_target,
+    adversarial_chat_system_prompt_path=strategy_path,
+    adversarial_chat=red_teaming_llm,
+    objective_target=img_prompt_target,
     objective_scorer=scorer,
     verbose=True,
     memory=memory,

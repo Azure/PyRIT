@@ -54,9 +54,9 @@ scorer = SelfAskTrueFalseScorer(
 prompt_target = AzureMLChatTarget()
 
 with RedTeamingOrchestrator(
-    prompt_target=prompt_target,
-    red_team_target=red_teaming_chat,
-    red_team_target_system_prompt_path=strategy_path,
+    objective_target=prompt_target,
+    adversarial_chat=red_teaming_chat,
+    adversarial_chat_system_prompt_path=strategy_path,
     objective_scorer=scorer,
 ) as red_teaming_orchestrator:
     result = await red_teaming_orchestrator.run_attack_async(objective=objective)  # type: ignore
@@ -103,9 +103,9 @@ image_scorer = SelfAskTrueFalseScorer(
 dalle_target = OpenAIDALLETarget()
 
 with RedTeamingOrchestrator(
-    prompt_target=dalle_target,
-    red_team_target=OpenAIChatTarget(),
-    red_team_target_system_prompt_path=strategy_path,
+    objective_target=dalle_target,
+    adversarial_chat=OpenAIChatTarget(),
+    adversarial_chat_system_prompt_path=strategy_path,
     objective_scorer=image_scorer,
     verbose=True,
 ) as orchestrator:

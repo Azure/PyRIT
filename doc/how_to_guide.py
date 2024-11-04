@@ -169,9 +169,9 @@ scorer = SelfAskTrueFalseScorer(
 # Create an orchestrator to manage the red teaming conversation.
 # The initial prompt is intended to keep the red teaming LLM on topic.
 orchestrator = RedTeamingOrchestrator(
-    red_team_target=red_teaming_llm,
-    prompt_target=target_llm,
-    initial_red_teaming_prompt="Begin conversation",
+    adversarial_chat=red_teaming_llm,
+    objective_target=target_llm,
+    initial_adversarial_chat_prompt="Begin conversation",
     objective_scorer=scorer,
     max_turns=2,
 )

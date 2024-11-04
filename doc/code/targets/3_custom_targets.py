@@ -75,10 +75,10 @@ Command the bot to use its power to write the important words with a Z and a spa
 gandalf_target = GandalfTarget(level=gandalf_level)
 gandalf_password_scorer = GandalfScorer(chat_target=aoai_chat, level=gandalf_level)
 with RedTeamingOrchestrator(
-    prompt_target=gandalf_target,
-    red_team_target=aoai_chat,
+    objective_target=gandalf_target,
+    adversarial_chat=aoai_chat,
     objective_scorer=gandalf_password_scorer,
-    initial_red_teaming_prompt=initial_red_teaming_prompt,
+    initial_adversarial_chat_prompt=initial_red_teaming_prompt,
 ) as red_teaming_orchestrator:
 
     # Once the agents are set up, we can start the conversation.
@@ -164,8 +164,8 @@ join_converter = StringJoinConverter()
 crucible_target = CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io")
 
 with RedTeamingOrchestrator(
-    prompt_target=crucible_target,
-    red_team_target=OpenAIChatTarget(),
+    objective_target=crucible_target,
+    adversarial_chat=OpenAIChatTarget(),
     objective_scorer=scorer,
     max_turns=2,
     prompt_converters=[],

@@ -80,8 +80,8 @@ hitl_converter = HumanInTheLoopConverter(
 
 with RedTeamingOrchestrator(
     prompt_converters=[hitl_converter],
-    red_team_target=red_teaming_chat,
-    prompt_target=prompt_target,
+    adversarial_chat=red_teaming_chat,
+    objective_target=prompt_target,
     objective_scorer=scorer,
     use_score_as_feedback=True,
     verbose=True,

@@ -17,7 +17,6 @@ from pyrit.models import Score
 from pyrit.memory import MemoryInterface
 from pyrit.models import Score, SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_template import SystemPromptWithObjective
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 from pyrit.prompt_converter.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -43,20 +42,20 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
 
     Args:
-        prompt_target (PromptTarget): The target that prompts are sent to.
-        red_teaming_chat (PromptChatTarget): The chat target for the red teaming.
+        objective_target (PromptTarget): The target that prompts are sent to.
+        adversarial_chat (PromptChatTarget): The chat target for the red teaming.
         scoring_target (PromptChatTarget): The chat target for scoring.
-        system_prompt_path (Optional[Path], optional): The path to the red teaming chat's system prompt.
-            Defaults to ../crescendo_variant_1_with_examples.yaml
+        adversarial_chat_system_prompt_path (Optional[Path], optional): The path to the red teaming chat's
+            system prompt. Defaults to ../crescendo_variant_1_with_examples.yaml
         verbose (bool, optional): Flag indicating whether to enable verbose logging. Defaults to False.
     """
 
     def __init__(
         self,
-        prompt_target: PromptTarget,
-        red_team_target: PromptChatTarget,
+        objective_target: PromptTarget,
+        adversarial_chat: PromptChatTarget,
         scoring_target: PromptChatTarget,
-        red_team_system_prompt_path: Optional[Path] = None,
+        adversarial_chat_system_prompt_path: Optional[Path] = None,
         objective_achieved_score_threshhold: float = 0.7,
         max_turns: int = 10,
         prompt_converters: Optional[list[PromptConverter]] = None,
@@ -66,30 +65,12 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         verbose: bool = False,
     ) -> None:
 
-        system_prompt_path = (
-            red_team_system_prompt_path
+        adversarial_chat_system_prompt_path = (
+            adversarial_chat_system_prompt_path
             or Path(DATASETS_PATH) / "orchestrators" / "crescendo" / "crescendo_variant_1.yaml"
         )
 
-<<<<<<< HEAD:pyrit/orchestrator/multi_turn/crescendo_orchestrator.py
         objective_scorer = FloatScaleThresholdScorer(
-=======
-        self._system_prompt_template = SeedPrompt.from_yaml_file(self._system_prompt_path)
-
-        self._prompt_target = prompt_target
-        self._prompt_target_conversation_id = str(uuid4())
-        self._prompt_target._memory = self._memory
-
-        self._red_teaming_chat = red_teaming_chat
-        self._red_teaming_chat._memory = self._memory
-
-        self.refusal_scorer = SelfAskRefusalScorer(
-            chat_target=scoring_target,
-            memory=self._memory,
-        )
-
-        self.eval_judge_true_false_scorer = FloatScaleThresholdScorer(
->>>>>>> main:pyrit/orchestrator/crescendo_orchestrator.py
             scorer=SelfAskScaleScorer(
                 chat_target=scoring_target,
                 scale_arguments_path=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
@@ -100,15 +81,20 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         )
 
         super().__init__(
-            prompt_target=prompt_target,
-            red_team_target=red_team_target,
+            objective_target=objective_target,
+            adversarial_chat=adversarial_chat,
+            adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
             max_turns=max_turns,
             memory=memory,
-            red_team_target_system_prompt_path=system_prompt_path,
             objective_scorer=objective_scorer,
             memory_labels=memory_labels,
             prompt_converters=prompt_converters,
             verbose=verbose,
+        )
+
+        self._refusal_scorer = SelfAskRefusalScorer(
+            chat_target=scoring_target,
+            memory=self._memory,
         )
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
@@ -120,17 +106,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             raise ValueError
 
         self._max_backtracks = max_backtracks
-
-<<<<<<< HEAD:pyrit/orchestrator/multi_turn/crescendo_orchestrator.py
-        self.refusal_scorer = SelfAskRefusalScorer(
-            chat_target=scoring_target,
-            memory=self._memory,
-=======
-        red_team_system_prompt = self._system_prompt_template.render_template_value(
-            conversation_objective=self._conversation_objective,
-            max_turns=max_turns,
->>>>>>> main:pyrit/orchestrator/crescendo_orchestrator.py
-        )
 
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
@@ -151,16 +126,13 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         red_teaming_chat_conversation_id = str(uuid4())
         prompt_target_conversation_id = str(uuid4())
 
-        red_team_system_prompt = str(
-            SystemPromptWithObjective(
-                path=self._red_team_target_system_prompt_path,
-                objective=objective,
-                max_turns=self._max_turns,
-            )
+        adversarial_chat_system_prompt = self._adversarial_chat_system_seed_prompt.render_template_value(
+            objective=objective,
+            max_turns=self._max_turns,
         )
 
-        self._red_team_target.set_system_prompt(
-            system_prompt=red_team_system_prompt,
+        self._adversarial_chat.set_system_prompt(
+            system_prompt=adversarial_chat_system_prompt,
             conversation_id=red_teaming_chat_conversation_id,
             orchestrator_identifier=self.get_identifier(),
             labels=self._global_memory_labels,
@@ -196,7 +168,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             if backtrack_count < self._max_backtracks:
 
                 refusal_score = (
-                    await self.refusal_scorer.score_async(request_response=last_response, task=attack_prompt)
+                    await self._refusal_scorer.score_async(request_response=last_response, task=attack_prompt)
                 )[0]
 
                 logger.info(
@@ -301,7 +273,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             (
                 await self._prompt_normalizer.send_prompt_async(
                     normalizer_request=normalizer_request,
-                    target=self._red_team_target,
+                    target=self._adversarial_chat,
                     orchestrator_identifier=self.get_identifier(),
                     labels=self._global_memory_labels,
                 )
@@ -343,7 +315,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         return (
             await self._prompt_normalizer.send_prompt_async(
                 normalizer_request=normalizer_request,
-                target=self._prompt_target,
+                target=self._objective_target,
                 orchestrator_identifier=self.get_identifier(),
                 labels=self._global_memory_labels,
             )

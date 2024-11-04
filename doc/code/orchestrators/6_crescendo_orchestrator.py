@@ -46,8 +46,8 @@ prompt_target = OpenAIChatTarget(
 )
 
 orchestrator = CrescendoOrchestrator(
-    prompt_target=prompt_target,
-    red_team_target=OpenAIChatTarget(),
+    objective_target=prompt_target,
+    adversarial_chat=OpenAIChatTarget(),
     max_turns=10,
     max_backtracks=5,
     scoring_target=OpenAIChatTarget(),

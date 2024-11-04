@@ -12,6 +12,7 @@ from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import MemoryInterface
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
@@ -31,15 +32,46 @@ class MultiTurnAttackResult:
 
 
 class MultiTurnOrchestrator(Orchestrator):
+    """
+    The `MultiTurnOrchestrator` is an interface that coordinates attacks and conversations between
+    a adversarial_chat target and an objective_target.
+
+    Args:
+        objective_target (PromptTarget): The target to send the created prompts to.
+        adversarial_chat (PromptChatTarget): The endpoint that creates prompts that are sent to the
+            objective_target.
+        adversarial_chat_system_prompt_path (Path): The initial prompt to send to adversarial_chat.
+        initial_adversarial_chat_prompt (str, optional): The initial prompt to start the adversarial chat.
+            Defaults to "How can I help you?".
+        max_turns (int, optional): The maximum number of turns for the conversation. Must be greater than or equal
+            to 0. Defaults to 5.
+        prompt_converters (Optional[list[PromptConverter]], optional): The prompt converters to use to convert the
+            prompts before sending them to the prompt target. Defaults to None.
+        objective_scorer (Scorer): The scorer classifies the prompt target outputs as sufficient (True) or
+            insufficient (False) to satisfy the objective that is specified in the attack_strategy.
+        memory (Optional[MemoryInterface], optional): The memory to use to store the chat messages. If not
+            provided, a DuckDBMemory will be used. Defaults to None.
+        memory_labels (Optional[dict[str, str]], optional): A free-form dictionary for tagging prompts with custom
+            labels. These labels can be used to track all prompts sent as part of an operation, score prompts based
+            on the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+            Users can define any key-value pairs according to their needs. Defaults to None.
+        verbose (bool, optional): Whether to print debug information. Defaults to False.
+
+    Raises:
+        FileNotFoundError: If the file specified by adversarial_chat_system_prompt_path does not exist.
+        ValueError: If max_turns is less than or equal to 0.
+        ValueError: If the objective_scorer is not a true/false scorer.
+    """
+
     _memory: MemoryInterface
 
     def __init__(
         self,
         *,
-        prompt_target: PromptTarget,
-        red_team_target: PromptChatTarget,
-        red_team_target_system_prompt_path: Path,
-        initial_red_teaming_prompt: str = "How can I help you?",
+        objective_target: PromptTarget,
+        adversarial_chat: PromptChatTarget,
+        adversarial_chat_system_prompt_path: Path,
+        initial_adversarial_chat_prompt: str = "How can I help you?",
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
@@ -47,46 +79,26 @@ class MultiTurnOrchestrator(Orchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
-        """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
-
-        Args:
-            prompt_target: The target to send the created prompts to.
-            red_team_target: The endpoint that creates prompts that are sent to the prompt target.
-            initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
-                The attack_strategy only provides the strategy, but not the starting point of the conversation.
-                The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
-                The default is a text prompt with the content "Begin Conversation".
-            prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
-                target. The converters are not applied on messages to the red teaming target.
-            objective_scorer: The scorer classifies the prompt target outputs as sufficient (True) or insufficient
-                (False) to satisfy the objective that is specified in the attack_strategy.
-            memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
-                These labels can be used to track all prompts sent as part of an operation, score prompts based on
-                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-                Users can define any key-value pairs according to their needs. Defaults to None.
-                verbose: Whether to print debug information.
-        """
 
         super().__init__(
             prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
         )
 
-        self._prompt_target = prompt_target
+        self._objective_target = objective_target
         self._achieved_objective = False
 
-        if not os.path.isfile(red_team_target_system_prompt_path):
-            raise FileNotFoundError(f"The file '{red_team_target_system_prompt_path}' does not exist.")
+        self._adversarial_chat_system_seed_prompt = SeedPrompt.from_yaml_file(adversarial_chat_system_prompt_path)
 
-        # TODO validate the yaml doesn't have any parameters besides conversation_objective (or it can be blank)
-
-        self._red_team_target_system_prompt_path = red_team_target_system_prompt_path
+        if "objective" not in self._adversarial_chat_system_seed_prompt.parameters:
+            raise ValueError(
+                f"Adversarial seed prompt must have an objective: '{adversarial_chat_system_prompt_path}'"
+            )
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._prompt_target._memory = self._memory
-        self._red_team_target = red_team_target
-        self._red_team_target._memory = self._memory
-        self._initial_red_teaming_prompt = initial_red_teaming_prompt
+        self._objective_target._memory = self._memory
+        self._adversarial_chat = adversarial_chat
+        self._adversarial_chat._memory = self._memory
+        self._initial_adversarial_prompt = initial_adversarial_chat_prompt
 
         if max_turns <= 0:
             raise ValueError("The maximum number of turns must be greater than or equal to 0.")
@@ -142,7 +154,7 @@ class MultiTurnOrchestrator(Orchestrator):
         return results
 
     async def print_conversation_async(self, result: MultiTurnAttackResult):
-        """Prints the conversation between the prompt target and the red teaming bot, including the scores.
+        """Prints the conversation between the objective target and the adversarial chat, including the scores.
 
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
