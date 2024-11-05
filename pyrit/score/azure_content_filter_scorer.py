@@ -40,10 +40,9 @@ class AzureContentFilterScorer(Scorer):
         api_key: str = None,
         use_aad_auth: bool = False,
         harm_categories: list[TextCategory] = None,
-        memory: MemoryInterface = None,
     ) -> None:
 
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
         """
         Class that initializes an Azure Content Filter Scorer
 

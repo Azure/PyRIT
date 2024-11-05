@@ -20,19 +20,24 @@ class CentralMemory:
     """
     
     _memory_instance: MemoryInterface = None
+    
+    @classmethod
+    def set_memory_instance(cls, passed_memory: MemoryInterface) -> None:
+        """
+        Sets a provided memory instance as the central instance for subsequent calls.
+        
+        :param passed_memory: The memory instance to set as the central instance.
+        """
+        cls._memory_instance = passed_memory
+        logger.info(f"Central memory instance set to: {type(cls._memory_instance).__name__}")
 
     @classmethod
-    def get_memory(cls, passed_memory: Optional[MemoryInterface] = None) -> MemoryInterface:
+    def get_memory_instance(cls) -> MemoryInterface:
         """
-        Returns a centralized memory instance. If `passed_memory` is provided, it's set as the 
-        central instance. Otherwise, it checks for Azure SQL configuration and defaults to 
-        DuckDBMemory if Azure SQL DB and Azure Storage Account settings are missing.
+        Returns a centralized memory instance. Initializes it to AzureSQLMemory if 
+        Azure SQL/Storage Account configuration values are found, otherwise defaults 
+        to DuckDBMemory.
         """
-        if passed_memory:
-            cls._memory_instance = passed_memory
-            logger.info(f"Using provided memory instance: {type(cls._memory_instance).__name__}")
-            return cls._memory_instance
-
         if cls._memory_instance:
             logger.info(f"Reusing existing memory instance: {type(cls._memory_instance).__name__}")
             return cls._memory_instance
@@ -40,7 +45,7 @@ class CentralMemory:
         # Load environment variables
         default_values.load_default_env()
 
-        # Check for Azure SQL settings with get_non_required_value logic
+        # Check for Azure SQL settings
         empty_passed_value = ""
         azure_sql_db_conn_string = default_values.get_non_required_value(
             env_var_name="AZURE_SQL_DB_CONNECTION_STRING",

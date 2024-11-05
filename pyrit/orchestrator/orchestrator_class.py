@@ -23,12 +23,11 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._id = uuid.uuid4()
 

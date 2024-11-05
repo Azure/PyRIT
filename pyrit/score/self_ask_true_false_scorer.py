@@ -66,12 +66,11 @@ class SelfAskTrueFalseScorer(Scorer):
         true_false_question_path: Optional[Path] = None,
         true_false_question: Optional[TrueFalseQuestion] = None,
         true_false_system_prompt_path: Optional[Path] = None,
-        memory: MemoryInterface = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
         if not true_false_question_path and not true_false_question:
             raise ValueError("Either true_false_question_path or true_false_question must be provided.")

@@ -34,12 +34,11 @@ class SelfAskScaleScorer(Scorer):
         chat_target: PromptChatTarget,
         scale_arguments_path: Optional[Path],
         system_prompt_path: Optional[Path],
-        memory: MemoryInterface = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
         
         if not system_prompt_path:
             system_prompt_path = self.SystemPaths.GENERAL_SYSTEM_PROMPT.value

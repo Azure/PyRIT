@@ -18,8 +18,8 @@ from pyrit.prompt_normalizer.prompt_response_converter_configuration import Prom
 class PromptNormalizer(abc.ABC):
     _memory: MemoryInterface
 
-    def __init__(self, *, memory: MemoryInterface) -> None:
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+    def __init__(self) -> None:
+        self._memory = CentralMemory.get_memory_instance()
         self.id = str(uuid4())
 
     async def send_prompt_async(

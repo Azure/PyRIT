@@ -30,13 +30,12 @@ class MultiTurnAttackResult:
         self,
         conversation_id: str,
         achieved_objective: bool,
-        objective: str,
-        memory: MemoryInterface = None,
+        objective: str
     ):
         self.conversation_id = conversation_id
         self.achieved_objective = achieved_objective
         self.objective = objective
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
     async def print_conversation_async(self):
         """Prints the conversation between the objective target and the adversarial chat, including the scores.

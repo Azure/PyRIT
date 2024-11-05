@@ -18,12 +18,12 @@ from pyrit.score.scorer import Scorer
 
 class GandalfScorer(Scorer):
     def __init__(
-        self, level: GandalfLevel, chat_target: PromptChatTarget = None, memory: MemoryInterface = None
+        self, level: GandalfLevel, chat_target: PromptChatTarget = None
     ) -> None:
         self._prompt_target = chat_target
         self._defender = level.value
         self._endpoint = "https://gandalf.lakera.ai/api/guess-password"
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
         # Ensure _prompt_target uses the same memory interface as the scorer.
         if self._prompt_target:
             self._prompt_target._memory = self._memory

@@ -43,7 +43,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         synthesis_language: str = "en_US",
         synthesis_voice_name: str = "en-US-AvaNeural",
         output_format: AzureSpeachAudioFormat = "wav",
-        memory: Optional[MemoryInterface] = None,
     ) -> None:
 
         self._azure_speech_region: str = default_values.get_required_value(
@@ -57,7 +56,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._synthesis_language = synthesis_language
         self._synthesis_voice_name = synthesis_voice_name
         self._output_format = output_format
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

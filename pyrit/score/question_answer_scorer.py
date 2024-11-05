@@ -46,7 +46,7 @@ class QuestionAnswerScorer:
     dataset: QuestionAnsweringDataset
     evaluation_results: dict[QuestionAnsweringEntry, TextScoreResult]
 
-    def __init__(self, dataset: QuestionAnsweringDataset, memory: MemoryInterface = None):
+    def __init__(self, dataset: QuestionAnsweringDataset):
         """
         Initializes the QuestionAnswerScorer object.
 
@@ -55,7 +55,7 @@ class QuestionAnswerScorer:
         """
         self.dataset = dataset
         self.evaluation_results = {}
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
     def _construct_evaluation_prompt(self, *, entry: QuestionAnsweringEntry) -> str:
         available_choices = ""

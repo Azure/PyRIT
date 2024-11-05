@@ -28,11 +28,10 @@ class PromptShieldScorer(Scorer):
     def __init__(
         self,
         prompt_shield_target: PromptShieldTarget,
-        memory: Union[MemoryInterface, None] = None,
     ) -> None:
         self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
         
 
     async def score_async(

@@ -44,7 +44,6 @@ class QRCodeConverter(PromptConverter):
         finder_dark_color: Optional[tuple] = None,
         finder_light_color: Optional[tuple] = None,
         border_color: Optional[tuple] = None,
-        memory: Optional[MemoryInterface] = None,
     ):
         self._scale = scale
         self._border = border
@@ -55,7 +54,7 @@ class QRCodeConverter(PromptConverter):
         self._finder_dark_color = finder_dark_color or dark_color
         self._finder_light_color = finder_light_color or light_color
         self._border_color = border_color or light_color
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
         self._img_serializer = data_serializer_factory(data_type="image_path", memory=self._memory)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

@@ -12,8 +12,8 @@ class SubStringScorer(Scorer):
     Scorer that checks if a given substring is present in the text.
     """
 
-    def __init__(self, *, substring: str, category: str = None, memory: MemoryInterface = None) -> None:
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+    def __init__(self, *, substring: str, category: str = None) -> None:
+        self._memory = CentralMemory.get_memory_instance()
 
         self._substring = substring
         self._score_category = category

@@ -21,13 +21,12 @@ class SelfAskRefusalScorer(Scorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        memory: MemoryInterface = None,
     ) -> None:
 
         self.scorer_type = "true_false"
 
         self._prompt_target = chat_target
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
         self._system_prompt = (SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT)).value
         self._score_category = "refusal"
 

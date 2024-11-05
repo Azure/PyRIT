@@ -36,7 +36,6 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         azure_speech_region: str = None,
         azure_speech_key: str = None,
         recognition_language: str = "en-US",
-        memory: Optional[MemoryInterface] = None,
     ) -> None:
 
         self._azure_speech_region: str = default_values.get_required_value(
@@ -50,7 +49,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
         self.done = False
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"

@@ -12,10 +12,10 @@ from pyrit.score.scorer import Scorer
 
 class MarkdownInjectionScorer(Scorer):
 
-    def __init__(self, memory: MemoryInterface = None):
+    def __init__(self):
         self._category = "security"
         self.scorer_type = "true_false"
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """

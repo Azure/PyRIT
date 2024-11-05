@@ -33,11 +33,10 @@ class AudioFrequencyConverter(PromptConverter):
         *,
         output_format: AcceptedAudioFormats = "wav",
         shift_value: int = 20000,
-        memory: Optional[MemoryInterface] = None,
     ) -> None:
         self._output_format = output_format
         self._shift_value = shift_value
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"

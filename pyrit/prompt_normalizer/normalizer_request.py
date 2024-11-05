@@ -19,7 +19,6 @@ class NormalizerRequestPiece(abc.ABC):
         prompt_data_type: PromptDataType,
         request_converters: list[PromptConverter] = [],
         metadata: str = None,
-        memory: MemoryInterface = None,
     ) -> None:
         """
         Represents a piece of a normalizer request.
@@ -42,7 +41,7 @@ class NormalizerRequestPiece(abc.ABC):
         self.prompt_value = prompt_value
         self.prompt_data_type = prompt_data_type
         self.metadata = metadata
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
         self.validate()
 

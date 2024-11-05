@@ -42,7 +42,6 @@ class AddImageTextConverter(PromptConverter):
         font_size: Optional[int] = 15,
         x_pos: Optional[int] = 10,
         y_pos: Optional[int] = 10,
-        memory: Optional[MemoryInterface] = None,
     ):
         if not img_to_add:
             raise ValueError("Please provide valid image path")
@@ -55,7 +54,7 @@ class AddImageTextConverter(PromptConverter):
         self._color = color
         self._x_pos = x_pos
         self._y_pos = y_pos
-        self._memory = CentralMemory.get_memory(passed_memory=memory)
+        self._memory = CentralMemory.get_memory_instance()
 
     def _load_font(self):
         """
