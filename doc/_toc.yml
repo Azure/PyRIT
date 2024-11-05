@@ -6,7 +6,6 @@ parts:
     - file: reading_order
     - file: how_to_guide
     - file: code/architecture
-      title: Architecture
   - caption: Setup
     chapters:
     - file: setup/install_pyrit

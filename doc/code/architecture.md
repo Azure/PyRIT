@@ -1,4 +1,4 @@
-# Introduction
+# Architecture
 
 The main components of PyRIT are prompts, orchestrators, converters, targets, and scoring. The best way to contribute to PyRIT is by contributing to one of these components.
 
