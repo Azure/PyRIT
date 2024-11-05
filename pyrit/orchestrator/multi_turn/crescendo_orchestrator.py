@@ -30,20 +30,30 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
     """
     The `CrescendoOrchestrator` class represents an orchestrator that executes the Crescendo attack.
 
-    The Crescendo Attack is a multi-turn strategy that is based on progressively guiding the model to generate
-    harmful content in small benign steps. The attack exploits the model's recency bias, tendency to follow patterns,
-    and its trust in the text it has generated itself.
+    The Crescendo Attack is a multi-turn strategy that progressively guides the model to generate harmful
+    content through small, benign steps. It leverages the model's recency bias, pattern-following tendency,
+    and trust in self-generated text.
 
     You can learn more about the Crescendo attack at the link below:
     https://crescendo-the-multiturn-jailbreak.github.io/
 
-
     Args:
         objective_target (PromptTarget): The target that prompts are sent to.
-        adversarial_chat (PromptChatTarget): The chat target for the red teaming.
+        adversarial_chat (PromptChatTarget): The chat target for red teaming.
         scoring_target (PromptChatTarget): The chat target for scoring.
         adversarial_chat_system_prompt_path (Optional[Path], optional): The path to the red teaming chat's
-            system prompt. Defaults to ../crescendo_variant_1_with_examples.yaml
+            system prompt. Defaults to ../crescendo_variant_1_with_examples.yaml.
+        objective_achieved_score_threshhold (float, optional): The score threshold for achieving the objective.
+            Defaults to 0.7.
+        max_turns (int, optional): The maximum number of turns to perform the attack. Defaults to 10.
+        prompt_converters (Optional[list[PromptConverter]], optional): List of converters to apply to prompts.
+            Defaults to None.
+        max_backtracks (int, optional): The maximum number of times to backtrack during the attack.
+            Must be a positive integer. Defaults to 10.
+        memory (Optional[MemoryInterface], optional): Interface for storing and retrieving conversation memory.
+            Defaults to None.
+        memory_labels (Optional[dict[str, str]], optional): Dictionary of labels for memory management.
+            Defaults to None.
         verbose (bool, optional): Flag indicating whether to enable verbose logging. Defaults to False.
     """
 
@@ -106,22 +116,33 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
-        Performs the Crescendo Attack.
+        Executes the Crescendo Attack asynchronously.
+
+        This method orchestrates a multi-turn attack where each turn involves generating and sending prompts
+        to the target, assessing responses, and adapting the approach based on rejection or success criteria.
+        It leverages progressive backtracking if the response is rejected, until either the objective is
+        achieved or maximum turns/backtracks are reached.
 
         Args:
-            max_turns (int, optional): The maximum number of turns to perform the attack.
-                This must be a positive integer value, and it defaults to 10.
+            objective (str): The ultimate goal or purpose of the attack, which the orchestrator attempts
+                to achieve through multiple turns of interaction with the target.
 
         Returns:
-            conversation_id (UUID): The conversation ID for the final or successful multi-turn conversation.
+            MultiTurnAttackResult: An object containing details about the attack outcome, including:
+                - conversation_id (UUID): The ID of the conversation where the objective was ultimately achieved or failed.
+                - achieved_objective (bool): Indicates if the objective was successfully achieved within the turn limit.
+                - objective (str): The initial objective of the attack.
+
+        Raises:
+            ValueError: If `max_turns` is set to a non-positive integer.
         """
 
         if self._max_turns <= 0:
             logger.info(f"Please set max_turns to a positive integer. `max_turns` current value: {self._max_turns}")
             raise ValueError
 
-        red_teaming_chat_conversation_id = str(uuid4())
-        prompt_target_conversation_id = str(uuid4())
+        adversarial_chat_conversation_id = str(uuid4())
+        objective_target_conversation_id = str(uuid4())
 
         adversarial_chat_system_prompt = self._adversarial_chat_system_seed_prompt.render_template_value(
             objective=objective,
@@ -130,7 +151,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         self._adversarial_chat.set_system_prompt(
             system_prompt=adversarial_chat_system_prompt,
-            conversation_id=red_teaming_chat_conversation_id,
+            conversation_id=adversarial_chat_conversation_id,
             orchestrator_identifier=self.get_identifier(),
             labels=self._global_memory_labels,
         )
@@ -148,7 +169,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
             logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
             attack_prompt = await self._get_attack_prompt(
-                red_team_conversation_id=red_teaming_chat_conversation_id,
+                adversarial_chat_conversation_id=adversarial_chat_conversation_id,
                 refused_text=refused_text,
                 objective=objective,
                 turn_num=turn_num,
@@ -159,7 +180,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             logger.info("Sending retrieved attack prompt to TARGET")
 
             last_response = await self._send_prompt_to_target_async(
-                attack_prompt=attack_prompt, conversation_id=prompt_target_conversation_id
+                attack_prompt=attack_prompt, objective_target_conversation_id=objective_target_conversation_id
             )
 
             if backtrack_count < self._max_backtracks:
@@ -179,8 +200,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
                     refused_text = attack_prompt
 
-                    prompt_target_conversation_id = await self._backtrack_memory(
-                        conversation_id=prompt_target_conversation_id
+                    objective_target_conversation_id = await self._backtrack_memory(
+                        conversation_id=objective_target_conversation_id
                     )
 
                     backtrack_count += 1
@@ -217,12 +238,12 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         logger.info(f"\nFINAL RESULTS, TOTAL TURNS: {turn_num}, TOTAL BACKTRACKS {backtrack_count}:\n")
         logger.info("\nPROMPT_TARGET MEMORY: ")
-        self._log_target_memory(conversation_id=prompt_target_conversation_id)
+        self._log_target_memory(conversation_id=objective_target_conversation_id)
         logger.info("\nRED_TEAMING_CHAT MEMORY: ")
-        self._log_target_memory(conversation_id=red_teaming_chat_conversation_id)
+        self._log_target_memory(conversation_id=adversarial_chat_conversation_id)
 
         return MultiTurnAttackResult(
-            conversation_id=prompt_target_conversation_id,
+            conversation_id=objective_target_conversation_id,
             achieved_objective=achieved_objective,
             objective=objective,
         )
@@ -231,7 +252,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
     async def _get_attack_prompt(
         self,
         *,
-        red_team_conversation_id: str,
+        adversarial_chat_conversation_id: str,
         objective: str,
         refused_text: str,
         turn_num: int,
@@ -263,7 +284,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             )
 
         normalizer_request = self._create_normalizer_request(
-            prompt_text=prompt_text, conversation_id=red_team_conversation_id
+            prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id
         )
 
         response_text = (
@@ -300,12 +321,16 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         return str(attack_prompt)
 
     async def _send_prompt_to_target_async(
-        self, *, attack_prompt: str, conversation_id: str = None
+        self,
+        *,
+        attack_prompt: str,
+        objective_target_conversation_id: str = None
     ) -> PromptRequestPiece:
-        # Sends the attack prompt to the prompt target and returns the response
+        
+        # Sends the attack prompt to the objective target and returns the response
         normalizer_request = self._create_normalizer_request(
             prompt_text=attack_prompt,
-            conversation_id=conversation_id,
+            conversation_id=objective_target_conversation_id,
             converters=self._prompt_converters,
         )
 

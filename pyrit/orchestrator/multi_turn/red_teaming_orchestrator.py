@@ -28,6 +28,30 @@ class RTOSystemPromptPaths(enum.Enum):
 
 
 class RedTeamingOrchestrator(MultiTurnOrchestrator):
+    """
+    The `RedTeamingOrchestrator` class orchestrates a multi-turn red teaming attack on a target system.
+
+    It is extemely simple. It sends a prompt to the target system, and then sends the response to the red teaming chat.
+
+    Args:
+        objective_target (PromptTarget): Target for created prompts.
+        adversarial_chat (PromptChatTarget): Endpoint creating prompts sent to objective_target.
+        adversarial_chat_system_prompt_path (Path): Path to initial adversarial_chat system prompt.
+        initial_adversarial_chat_prompt (str, optional): Initial message to start the chat. Defaults to
+            "How can I help you?".
+        prompt_converters (Optional[list[PromptConverter]]): Converters for prompt formatting. Defaults to None.
+        max_turns (int, optional): Max turns for the conversation, ≥ 0. Defaults to 5.
+        objective_scorer (Scorer): Scores prompt target output as sufficient or insufficient.
+        use_score_as_feedback (bool, optional): Use scoring as feedback. Defaults to True.
+        memory (Optional[MemoryInterface], optional): Memory interface for chat storage. Defaults to None.
+        memory_labels (Optional[dict[str, str]], optional): Tags for prompt tracking (e.g., RAI harm categories).
+        verbose (bool, optional): Print debug info. Defaults to False.
+
+    Raises:
+        FileNotFoundError: If adversarial_chat_system_prompt_path file not found.
+        ValueError: If max_turns ≤ 0 or if objective_scorer is not binary.
+    """
+
     _memory: MemoryInterface
 
     def __init__(
@@ -45,31 +69,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
-        """Initializes MultiTurnOrchestrator to manage exchanges between adversarial_chat and objective_target.
-
-        Args:
-            objective_target (PromptTarget): Target for created prompts.
-            adversarial_chat (PromptChatTarget): Endpoint creating prompts sent to objective_target.
-            adversarial_chat_system_prompt_path (Path): Path to initial adversarial_chat system prompt.
-            initial_adversarial_chat_prompt (str, optional): Initial message to start the chat. Defaults to
-                "How can I help you?".
-            prompt_converters (Optional[list[PromptConverter]]): Converters for prompt formatting. Defaults to None.
-            max_turns (int, optional): Max turns for the conversation, ≥ 0. Defaults to 5.
-            objective_scorer (Scorer): Scores prompt target output as sufficient or insufficient.
-            use_score_as_feedback (bool, optional): Use scoring as feedback. Defaults to True.
-            memory (Optional[MemoryInterface], optional): Memory interface for chat storage. Defaults to None.
-            memory_labels (Optional[dict[str, str]], optional): Tags for prompt tracking (e.g., RAI harm categories).
-            verbose (bool, optional): Print debug info. Defaults to False.
-
-        Raises:
-            FileNotFoundError: If adversarial_chat_system_prompt_path file not found.
-            ValueError: If max_turns ≤ 0 or if objective_scorer is not binary.
-        """
 
         super().__init__(
             objective_target=objective_target,
             adversarial_chat=adversarial_chat,
             adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
+            initial_adversarial_chat_prompt=initial_adversarial_chat_prompt,
             max_turns=max_turns,
             prompt_converters=prompt_converters,
             objective_scorer=objective_scorer,
@@ -79,23 +84,33 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         )
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-
-        self._initial_red_teaming_prompt = initial_adversarial_chat_prompt
         self._use_score_as_feedback = use_score_as_feedback
 
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
-        Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
+        Executes a multi-turn red teaming attack asynchronously.
+
+        This method initiates a conversation with the target system, iteratively generating prompts
+        and analyzing responses to achieve a specified objective. It evaluates each response for
+        success and, if necessary, adapts prompts using scoring feedback until either the objective
+        is met or the maximum number of turns is reached.
 
         Args:
-            objective: The objective the red teaming orchestrator is trying to achieve.
+            objective (str): The specific goal the orchestrator aims to achieve through the conversation.
 
         Returns:
-            prompt_target_conversation_id: The conversation ID for the multi-turn conversation.
+            MultiTurnAttackResult: Contains the outcome of the attack, including:
+                - conversation_id (UUID): The ID associated with the final conversation state.
+                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+                - objective (str): The intended goal of the attack.
+
+        Raises:
+            RuntimeError: If the response from the target system contains an unexpected error.
+            ValueError: If the scoring feedback is not of the required type (true/false) for binary completion.
         """
-        # Set conversation IDs for prompt target and red teaming chat at the beginning of the conversation.
-        prompt_target_conversation_id = str(uuid4())
-        red_teaming_chat_conversation_id = str(uuid4())
+        # Set conversation IDs for objective target and adversarial chat at the beginning of the conversation.
+        objective_target_conversation_id = str(uuid4())
+        adversarial_chat_conversation_id = str(uuid4())
 
         turn = 1
         achieved_objective = False
@@ -109,14 +124,14 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
             response = await self._retrieve_and_send_prompt_async(
                 objective=objective,
-                prompt_target_conversation_id=prompt_target_conversation_id,
-                red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
+                objective_target_conversation_id=objective_target_conversation_id,
+                adversarial_chat_conversation_id=adversarial_chat_conversation_id,
                 feedback=feedback,
             )
 
             if response.response_error == "none":
                 score = await self._check_conversation_complete_async(
-                    prompt_target_conversation_id=prompt_target_conversation_id,
+                    objective_target_conversation_id=objective_target_conversation_id,
                 )
                 if bool(score.get_value()):
                     achieved_objective = True
@@ -138,7 +153,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             )
 
         return MultiTurnAttackResult(
-            conversation_id=prompt_target_conversation_id,
+            conversation_id=objective_target_conversation_id,
             achieved_objective=achieved_objective,
             objective=objective,
         )
@@ -147,16 +162,16 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self,
         *,
         objective: str,
-        prompt_target_conversation_id: str,
-        red_teaming_chat_conversation_id: str,
+        objective_target_conversation_id: str,
+        adversarial_chat_conversation_id: str,
         feedback: Optional[str] = None,
     ) -> PromptRequestPiece:
         """
         Generates and sends a prompt to the prompt target.
 
         Args:
-            prompt_target_conversation_id (str): the conversation ID for the prompt target.
-            red_teaming_chat_conversation_id (str): the conversation ID for the red teaming chat.
+            objective_target_conversation_id (str): the conversation ID for the prompt target.
+            adversarial_chat_conversation_id (str): the conversation ID for the red teaming chat.
             feedback (str, optional): feedback from a previous iteration of the conversation.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
@@ -167,10 +182,10 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         """
         # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
         logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
-        prompt = await self._get_prompt_from_red_teaming_target(
+        prompt = await self._get_prompt_from_adversarial_chat(
             objective=objective,
-            objective_target_conversation_id=prompt_target_conversation_id,
-            adversarial_chat_conversation_id=red_teaming_chat_conversation_id,
+            objective_target_conversation_id=objective_target_conversation_id,
+            adversarial_chat_conversation_id=adversarial_chat_conversation_id,
             feedback=feedback,
         )
 
@@ -183,7 +198,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
         normalizer_request = NormalizerRequest(
             request_pieces=[target_prompt_obj],
-            conversation_id=prompt_target_conversation_id,
+            conversation_id=objective_target_conversation_id,
         )
 
         response_piece = (
@@ -197,7 +212,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
         return response_piece
 
-    async def _check_conversation_complete_async(self, prompt_target_conversation_id: str) -> Union[Score, None]:
+    async def _check_conversation_complete_async(self, objective_target_conversation_id: str) -> Union[Score, None]:
         """
         Returns the scoring result of the conversation.
         This function uses the scorer to classify the last response.
@@ -205,7 +220,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
-        prompt_request_responses = self._memory.get_conversation(conversation_id=prompt_target_conversation_id)
+        prompt_request_responses = self._memory.get_conversation(conversation_id=objective_target_conversation_id)
         if not prompt_request_responses:
             # If there are no messages, then the conversation is not complete.
             return None
@@ -264,12 +279,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             raise ValueError(f"{base_error_message}" "However, no scoring rationale was provided by the scorer.")
         return feedback
 
-    def _get_prompt_for_red_teaming_chat(self, *, prompt_target_conversation_id: str, feedback: str | None) -> str:
+    def _get_prompt_for_adversarial_chat(self, *, objective_target_conversation_id: str, feedback: str | None) -> str:
         """
-        Generate prompt for the red teaming chat based off of the last response from the attack target.
+        Generate prompt for the adversarial chat based off of the last response from the attack target.
 
         Args:
-            prompt_target_conversation_id (str): the conversation ID for the prompt target.
+            objective_target_conversation_id (str): the conversation ID for the objective target.
             feedback (str, optional): feedback from a previous iteration of the conversation.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
@@ -281,21 +296,21 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         # If we have previously exchanged messages with the attack target,
         # we can use the last message from the attack target as the new
         # prompt for the red teaming chat.
-        last_response_from_attack_target = self._get_last_attack_target_response(
-            prompt_target_conversation_id=prompt_target_conversation_id
+        last_response_from_objective_target = self._get_last_objective_target_response(
+            objective_target_conversation_id=objective_target_conversation_id
         )
-        if not last_response_from_attack_target:
+        if not last_response_from_objective_target:
             # If there is no response from the attack target (i.e., this is the first turn),
             # we use the initial red teaming prompt
-            logger.info(f"Using the specified initial red teaming prompt: {self._initial_red_teaming_prompt}")
-            return self._initial_red_teaming_prompt
+            logger.info(f"Using the specified initial adversarial prompt: {self._initial_adversarial_prompt}")
+            return self._initial_adversarial_prompt
 
-        if last_response_from_attack_target.converted_value_data_type in ["text", "error"]:
-            return self._handle_text_response(last_response_from_attack_target, feedback)
+        if last_response_from_objective_target.converted_value_data_type in ["text", "error"]:
+            return self._handle_text_response(last_response_from_objective_target, feedback)
 
-        return self._handle_file_response(last_response_from_attack_target, feedback)
+        return self._handle_file_response(last_response_from_objective_target, feedback)
 
-    async def _get_prompt_from_red_teaming_target(
+    async def _get_prompt_from_adversarial_chat(
         self,
         *,
         objective: str,
@@ -304,7 +319,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         feedback: Optional[str] = None,
     ) -> str:
         """
-        Send a prompt to the red teaming chat to generate a new prompt for the prompt target.
+        Send a prompt to the adversarial chat to generate a new prompt for the objective target.
 
         Args:
             objective (str): the objective the red teaming orchestrator is trying to achieve.
@@ -318,8 +333,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
         """
-        prompt_text = self._get_prompt_for_red_teaming_chat(
-            prompt_target_conversation_id=objective_target_conversation_id, feedback=feedback
+        prompt_text = self._get_prompt_for_adversarial_chat(
+            objective_target_conversation_id=objective_target_conversation_id, feedback=feedback
         )
 
         if len(self._memory.get_conversation(conversation_id=adversarial_chat_conversation_id)) == 0:
@@ -351,7 +366,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
         return response_text
 
-    def _get_last_attack_target_response(self, prompt_target_conversation_id: str) -> PromptRequestPiece | None:
-        target_messages = self._memory.get_conversation(conversation_id=prompt_target_conversation_id)
+    def _get_last_objective_target_response(self, objective_target_conversation_id: str) -> PromptRequestPiece | None:
+        target_messages = self._memory.get_conversation(conversation_id=objective_target_conversation_id)
         assistant_responses = [m.request_pieces[0] for m in target_messages if m.request_pieces[0].role == "assistant"]
         return assistant_responses[-1] if len(assistant_responses) > 0 else None

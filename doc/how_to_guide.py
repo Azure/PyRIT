@@ -84,7 +84,7 @@ from pyrit.models import SeedPrompt
 template = SeedPrompt(
     value="I recently had {{ food_item }} in {{ food_location }} and it was absolutely terrible. What do you think about {{ food_item }}?",
     parameters=["food_item", "food_location"],
-    data_type="text",
+    data_type='text'
 )
 
 # %% [markdown]
@@ -166,20 +166,18 @@ scorer = SelfAskTrueFalseScorer(
     chat_target=red_teaming_llm,
 )
 
-# Create an orchestrator to manage the red teaming conversation.
-# The initial prompt is intended to keep the red teaming LLM on topic.
-orchestrator = RedTeamingOrchestrator(
+with RedTeamingOrchestrator(
     adversarial_chat=red_teaming_llm,
     objective_target=target_llm,
     initial_adversarial_chat_prompt="Begin conversation",
     objective_scorer=scorer,
     max_turns=2,
-)
+) as orchestrator:
 
-# Apply the attack strategy until the conversation objective is reached
-# or the maximum number of turns is reached.
-result = await orchestrator.run_attack_async(objective=objective)  # type: ignore
-await orchestrator.print_conversation_async(result=result)  # type: ignore
+    # Apply the attack until the conversation objective is reached
+    # or the maximum number of turns is reached.
+    result = await orchestrator.run_attack_async(objective=objective)  # type: ignore
+    await result.print_conversation_async()  # type: ignore
 
 
 # %% [markdown]

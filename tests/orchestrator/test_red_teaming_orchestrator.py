@@ -91,8 +91,8 @@ async def test_send_prompt_twice(
             mock_target.return_value = expected_target_response
             target_response = await red_teaming_orchestrator._retrieve_and_send_prompt_async(
                 objective="some objective",
-                prompt_target_conversation_id=prompt_target_conversation_id,
-                red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
+                objective_target_conversation_id=prompt_target_conversation_id,
+                adversarial_chat_conversation_id=red_teaming_chat_conversation_id,
             )
             assert target_response.converted_value == expected_target_response
 
@@ -106,8 +106,8 @@ async def test_send_prompt_twice(
             mock_target.return_value = second_target_response
             target_response = await red_teaming_orchestrator._retrieve_and_send_prompt_async(
                 objective="some objective",
-                prompt_target_conversation_id=prompt_target_conversation_id,
-                red_teaming_chat_conversation_id=red_teaming_chat_conversation_id,
+                objective_target_conversation_id=prompt_target_conversation_id,
+                adversarial_chat_conversation_id=red_teaming_chat_conversation_id,
             )
             assert target_response.converted_value == second_target_response
 
@@ -151,7 +151,7 @@ async def test_is_conversation_complete_scoring(score, message_count):
     orchestrator._memory.get_conversation = MagicMock(return_value=simulated_messages)
     # conversation is complete if the last message is from the target
     # and the score is True
-    actual_result = await orchestrator._check_conversation_complete_async(prompt_target_conversation_id=str(uuid4()))
+    actual_result = await orchestrator._check_conversation_complete_async(objective_target_conversation_id=str(uuid4()))
     is_failure = not bool(actual_result) or not actual_result.score_value
     assert not is_failure == (len(simulated_messages) > 0 and score)
 
@@ -221,7 +221,7 @@ async def test_is_conversation_complete_scoring_non_bool():
         ]
     )
     with pytest.raises(ValueError):
-        await orchestrator._check_conversation_complete_async(prompt_target_conversation_id=str(uuid4()))
+        await orchestrator._check_conversation_complete_async(objective_target_conversation_id=str(uuid4()))
 
 
 @pytest.mark.asyncio

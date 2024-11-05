@@ -7,7 +7,7 @@ import logging
 from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
@@ -116,7 +116,7 @@ class MultiTurnOrchestrator(Orchestrator):
         *,
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
-        adversarial_chat_system_prompt_path: Path,
+        adversarial_chat_system_prompt_path: Union[Path|str],
         initial_adversarial_chat_prompt: str = "How can I help you?",
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
@@ -167,14 +167,13 @@ class MultiTurnOrchestrator(Orchestrator):
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
         Args:
-            max_turns: The maximum number of turns to apply the attack strategy.
-                If the conversation is not complete after the maximum number of turns,
-                the orchestrator stops and returns the last score.
-                The default value is 5.
+            objective (str): The specific goal the orchestrator aims to achieve through the conversation.
 
         Returns:
-            MultiTurnAttackResult: The conversation ID for the final or successful multi-turn conversation and
-                whether the orchestrator achieved the objective.
+            MultiTurnAttackResult: Contains the outcome of the attack, including:
+                - conversation_id (UUID): The ID associated with the final conversation state.
+                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+                - objective (str): The intended goal of the attack.
         """
 
     async def run_attacks_async(self, *, objectives: list[str], batch_size=5) -> list[MultiTurnAttackResult]:
@@ -182,10 +181,10 @@ class MultiTurnOrchestrator(Orchestrator):
 
         Args:
             objectives: The list of objectives to apply the attack strategy.
+            batch_size: The number of objectives to process in parallel. The default value is 5.
 
         Returns:
-            list[MultiTurnAttackResult]: The list of conversation IDs for the final or successful multi-turn
-                conversations and whether the orchestrator achieved the objective for each objective.
+            list[MultiTurnAttackResult]: The list of MultiTurnAttackResults for each objective.
         """
         semaphore = asyncio.Semaphore(batch_size)
 

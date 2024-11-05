@@ -322,7 +322,7 @@ async def test_get_attack_invalid_json_exceptions(orchestrator: CrescendoOrchest
 
         with pytest.raises(InvalidJsonException):
             await orchestrator._get_attack_prompt(
-                red_team_conversation_id="123",
+                adversarial_chat_conversation_id="123",
                 objective="objective",
                 refused_text=None,
                 turn_num=1,
@@ -348,7 +348,7 @@ async def test_get_attack_sets_default_prompt(orchestrator: CrescendoOrchestrato
     with patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer:
         mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
         await orchestrator._get_attack_prompt(
-            red_team_conversation_id="123",
+            adversarial_chat_conversation_id="123",
             objective=objective,
             refused_text=None,
             turn_num=3,
@@ -380,7 +380,7 @@ async def test_get_attack_sets_refused_text(orchestrator: CrescendoOrchestrator)
     with patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer:
         mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
         await orchestrator._get_attack_prompt(
-            red_team_conversation_id="123",
+            adversarial_chat_conversation_id="123",
             objective=objective,
             refused_text="this was refused",
             turn_num=3,
@@ -421,7 +421,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
 
         mock_prompt_normalizer.send_prompt_async.return_value = red_teaming_return_value
         await orchestrator._get_attack_prompt(
-            red_team_conversation_id="123",
+            adversarial_chat_conversation_id="123",
             objective=objective,
             refused_text=None,
             turn_num=3,
