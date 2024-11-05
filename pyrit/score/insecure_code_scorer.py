@@ -70,9 +70,9 @@ class InsecureCodeScorer(Scorer):
             task=task,
         )
 
-        # Modify the UnvalidatedScore parsing to check for 'security_score'
+        # Modify the UnvalidatedScore parsing to check for 'score_value'
         try:
-            # Attempt to use security_score if available
+            # Attempt to use score_value if available
             raw_score_value = float(unvalidated_score.raw_score_value)
         except KeyError:
             raise InvalidJsonException("Expected 'score_value' key missing in the JSON response")
