@@ -8,7 +8,7 @@ import yaml
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestPiece, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Score, Scorer, UnvalidatedScore
@@ -71,7 +71,7 @@ class SelfAskTrueFalseScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
         if not true_false_question_path and not true_false_question:
             raise ValueError("Either true_false_question_path or true_false_question must be provided.")

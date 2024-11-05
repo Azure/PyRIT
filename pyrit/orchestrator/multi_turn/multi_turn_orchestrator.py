@@ -11,7 +11,7 @@ from typing import Optional, Union
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -36,7 +36,7 @@ class MultiTurnAttackResult:
         self.conversation_id = conversation_id
         self.achieved_objective = achieved_objective
         self.objective = objective
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
     async def print_conversation_async(self):
         """Prints the conversation between the objective target and the adversarial chat, including the scores.

@@ -7,7 +7,7 @@ from typing import Optional
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 
 
 class QRCodeConverter(PromptConverter):
@@ -55,7 +55,7 @@ class QRCodeConverter(PromptConverter):
         self._finder_dark_color = finder_dark_color or dark_color
         self._finder_light_color = finder_light_color or light_color
         self._border_color = border_color or light_color
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
         self._img_serializer = data_serializer_factory(data_type="image_path", memory=self._memory)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

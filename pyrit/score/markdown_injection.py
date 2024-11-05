@@ -4,7 +4,7 @@
 import re
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.score import Score
 from pyrit.score.scorer import Scorer
@@ -15,7 +15,7 @@ class MarkdownInjectionScorer(Scorer):
     def __init__(self, memory: MemoryInterface = None):
         self._category = "security"
         self.scorer_type = "true_false"
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """

@@ -6,7 +6,7 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptTarget
@@ -19,7 +19,7 @@ class PromptNormalizer(abc.ABC):
     _memory: MemoryInterface
 
     def __init__(self, *, memory: MemoryInterface) -> None:
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
         self.id = str(uuid4())
 
     async def send_prompt_async(

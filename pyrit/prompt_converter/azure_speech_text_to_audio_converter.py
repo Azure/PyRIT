@@ -10,7 +10,7 @@ from pyrit.common import default_values
 from pyrit.models import data_serializer_factory
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._synthesis_language = synthesis_language
         self._synthesis_voice_name = synthesis_voice_name
         self._output_format = output_format
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"

@@ -4,7 +4,7 @@
 from typing import Optional
 from pyrit.score import Score, Scorer
 from pyrit.common import default_values
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.models import data_serializer_factory, DataTypeSerializer
 
@@ -43,7 +43,7 @@ class AzureContentFilterScorer(Scorer):
         memory: MemoryInterface = None,
     ) -> None:
 
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
         """
         Class that initializes an Azure Content Filter Scorer
 

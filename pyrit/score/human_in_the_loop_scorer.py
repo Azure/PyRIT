@@ -5,7 +5,7 @@ import csv
 
 from pathlib import Path
 from typing import Optional
-from pyrit.memory import get_memory_instance, MemoryInterface
+from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import Scorer
 
@@ -16,7 +16,7 @@ class HumanInTheLoopScorer(Scorer):
     """
 
     def __init__(self, *, memory: MemoryInterface = None) -> None:
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
     def import_scores_from_csv(self, csv_file_path: Path | str) -> list[Score]:
 

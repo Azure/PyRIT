@@ -11,7 +11,7 @@ from scipy.io import wavfile
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class AudioFrequencyConverter(PromptConverter):
     ) -> None:
         self._output_format = output_format
         self._shift_value = shift_value
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"

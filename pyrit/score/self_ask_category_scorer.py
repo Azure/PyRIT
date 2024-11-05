@@ -7,7 +7,7 @@ import enum
 from pathlib import Path
 from typing import Dict, Optional
 
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, SeedPrompt
@@ -45,7 +45,7 @@ class SelfAskCategoryScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
         
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Generator, Tuple
 from pydantic import BaseModel, ConfigDict
 from pyrit.models import QuestionAnsweringEntry, QuestionAnsweringDataset
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 import textwrap
 
 
@@ -55,7 +55,7 @@ class QuestionAnswerScorer:
         """
         self.dataset = dataset
         self.evaluation_results = {}
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
     def _construct_evaluation_prompt(self, *, entry: QuestionAnsweringEntry) -> str:
         available_choices = ""

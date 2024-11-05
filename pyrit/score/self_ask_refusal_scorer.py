@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt
 from pyrit.models.score import UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
@@ -27,7 +27,7 @@ class SelfAskRefusalScorer(Scorer):
         self.scorer_type = "true_false"
 
         self._prompt_target = chat_target
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
         self._system_prompt = (SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT)).value
         self._score_category = "refusal"
 

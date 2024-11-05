@@ -13,7 +13,7 @@ from io import BytesIO
 from pyrit.models import data_serializer_factory
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.memory import MemoryInterface, get_memory_instance
+from pyrit.memory import MemoryInterface, CentralMemory
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class AddTextImageConverter(PromptConverter):
         self._color = color
         self._x_pos = x_pos
         self._y_pos = y_pos
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
     def _load_font(self):
         """

@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from typing import Optional
-from pyrit.memory import get_memory_instance, MemoryInterface
+from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.score import Score, Scorer
 
@@ -13,7 +13,7 @@ class SubStringScorer(Scorer):
     """
 
     def __init__(self, *, substring: str, category: str = None, memory: MemoryInterface = None) -> None:
-        self._memory = memory or get_memory_instance()
+        self._memory = CentralMemory.get_memory(passed_memory=memory)
 
         self._substring = substring
         self._score_category = category
