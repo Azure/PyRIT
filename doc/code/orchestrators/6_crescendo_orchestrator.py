@@ -40,9 +40,9 @@ conversation_objectives = [
 ]
 
 objective_target = OpenAIChatTarget(
-    endpoint=os.environ["GPT_4O_FILTER_ENDPOINT"],
-    api_key=os.environ["GPT_4O_FILTER_KEY"],
-    deployment_name=os.environ["GPT_4O_FILTER_DEPLOYMENT"],
+    endpoint=os.environ["AZURE_OPENAI_GPT4O_CHAT_ENDPOINT"],
+    api_key=os.environ["AZURE_OPENAI_GPT4O_CHAT_KEY"],
+    deployment_name=os.environ["AZURE_OPENAI_GPT4O_CHAT_DEPLOYMENT"],
 )
 
 with CrescendoOrchestrator(

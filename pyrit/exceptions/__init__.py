@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.exceptions.exceptions_helpers import log_exception, remove_markdown_json
+from pyrit.exceptions.exceptions_helpers import remove_markdown_json
 
 from pyrit.exceptions.exception_classes import BadRequestException
 from pyrit.exceptions.exception_classes import EmptyResponseException

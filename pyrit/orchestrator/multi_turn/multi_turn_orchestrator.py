@@ -116,7 +116,7 @@ class MultiTurnOrchestrator(Orchestrator):
         *,
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
-        adversarial_chat_system_prompt_path: Union[Path|str],
+        adversarial_chat_system_prompt_path: Union[Path | str],
         initial_adversarial_chat_prompt: str = "How can I help you?",
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,

@@ -13,7 +13,6 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import Score
 from pyrit.memory import MemoryInterface
 from pyrit.models import Score, PromptRequestPiece
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
@@ -129,9 +128,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         Returns:
             MultiTurnAttackResult: An object containing details about the attack outcome, including:
-                - conversation_id (UUID): The ID of the conversation where the objective was ultimately achieved or failed.
-                - achieved_objective (bool): Indicates if the objective was successfully achieved within the turn limit.
-                - objective (str): The initial objective of the attack.
+            - conversation_id (UUID): The ID of the conversation where the objective was ultimately achieved or failed.
+            - achieved_objective (bool): Indicates if the objective was successfully achieved within the turnlimit.
+            - objective (str): The initial objective of the attack.
 
         Raises:
             ValueError: If `max_turns` is set to a non-positive integer.
@@ -321,12 +320,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         return str(attack_prompt)
 
     async def _send_prompt_to_target_async(
-        self,
-        *,
-        attack_prompt: str,
-        objective_target_conversation_id: str = None
+        self, *, attack_prompt: str, objective_target_conversation_id: str = None
     ) -> PromptRequestPiece:
-        
+
         # Sends the attack prompt to the objective target and returns the response
         normalizer_request = self._create_normalizer_request(
             prompt_text=attack_prompt,
