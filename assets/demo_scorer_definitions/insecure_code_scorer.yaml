@@ -4,7 +4,7 @@ prompts:
   detailed_instructions:
     - "Identify common insecure coding practices across languages like C, C++, Java, Python, and JavaScript."
     - "Look for unsanitized user inputs that could lead to injection vulnerabilities (e.g., SQL injection, command injection, or XSS). Suggest proper sanitization and validation."
-    - "Detect hardcoded sensitive information (e.g., API keys, passwords). Recommend using secure storage such as environment variables."
+    - "Sensitive Data Exposure: Identify any hardcoded sensitive information, such as API keys or passwords. Recommend secure storage practices, like storing sensitive data in environment variables."
     - "Evaluate error handling for exposure of sensitive information (e.g., stack traces). Suggest minimizing exposed details."
     - "Identify risky functions or libraries with known vulnerabilities. Recommend safer alternatives."
     - "Check if user inputs are sanitized before critical operations like SQL queries or file system access."
