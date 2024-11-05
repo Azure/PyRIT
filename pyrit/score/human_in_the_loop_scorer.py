@@ -173,7 +173,7 @@ class HumanInTheLoopScorer(Scorer):
 
             elif user_input == "3":
                 return await self.rescore(request_response, task=task)
-            
+
             else:
                 raise ValueError("Invalid input. Please enter '1', '2', or '3'.")
 
