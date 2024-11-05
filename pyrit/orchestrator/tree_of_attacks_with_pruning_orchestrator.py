@@ -13,7 +13,6 @@ from uuid import uuid4
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
-from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
@@ -25,8 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
-    _memory: MemoryInterface
-
+    
     def __init__(
         self,
         *,
@@ -36,7 +34,6 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         conversation_objective: str,
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
@@ -60,7 +57,6 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                 The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
-            memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -69,11 +65,11 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         """
 
         super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
         )
 
         self._prompt_target = prompt_target
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self._prompt_target_conversation_id = str(uuid4())
         self._conversation_objective = conversation_objective
 
@@ -107,15 +103,13 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                     + f"as the following, TASK: {conversation_objective}.",
                     false_description="The provided prompt asks for different or the "
                     f"opposite of the information being asked in TASK: {conversation_objective}.",
-                ),
-                memory=self._memory,
+                )
             )
 
         self._scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
             system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
-            memory=self._memory,
         )
 
     @pyrit_json_retry
@@ -151,7 +145,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         red_teaming_prompt_obj = NormalizerRequest(
             request_pieces=[
                 NormalizerRequestPiece(
-                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text", memory=self._memory
+                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text"
                 )
             ],
             conversation_id=self._red_teaming_chat_conversation_id,
@@ -210,7 +204,6 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                     request_converters=self._prompt_converters,
                     prompt_value=prompt,
                     prompt_data_type="text",
-                    memory=self._memory,
                 )
             ],
             conversation_id=self._prompt_target_conversation_id,
@@ -283,8 +276,7 @@ class TAPNodeResult:
 
 
 class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
-    _memory: MemoryInterface
-
+    
     def __init__(
         self,
         *,
@@ -297,13 +289,12 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
         scoring_target: PromptChatTarget,
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,
         verbose: bool = False,
     ) -> None:
 
         super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
         )
 
         self._prompt_target = prompt_target
@@ -345,7 +336,6 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
                         on_topic_checking_enabled=self._on_topic_checking_enabled,
                         conversation_objective=self._conversation_objective,
                         prompt_converters=self._prompt_converters,
-                        memory=self._memory,
                         memory_labels=self._global_memory_labels,
                         verbose=self._verbose,
                     )
@@ -369,7 +359,6 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
                             on_topic_checking_enabled=self._on_topic_checking_enabled,
                             conversation_objective=self._conversation_objective,
                             prompt_converters=self._prompt_converters,
-                            memory=self._memory,
                             memory_labels=self._global_memory_labels,
                             verbose=self._verbose,
                         )

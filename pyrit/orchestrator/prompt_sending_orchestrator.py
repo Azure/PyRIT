@@ -9,7 +9,6 @@ import logging
 from typing import Optional
 
 from pyrit.common.display_response import display_image_response
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
@@ -35,7 +34,6 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
-        memory: MemoryInterface = None,
         memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -47,7 +45,6 @@ class PromptSendingOrchestrator(Orchestrator):
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
             scorers (list[Scorer], optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
-            memory (MemoryInterface, optional): The memory interface. Defaults to None.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -57,10 +54,10 @@ class PromptSendingOrchestrator(Orchestrator):
                 ensure proper rate limit management.
         """
         super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
         )
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self._scorers = scorers
         
         self._prompt_target = prompt_target
@@ -156,7 +153,6 @@ class PromptSendingOrchestrator(Orchestrator):
 
     async def _score_responses_async(self, prompt_ids: list[str]):
         with ScoringOrchestrator(
-            memory=self._memory,
             batch_size=self._batch_size,
             verbose=self._verbose,
         ) as scoring_orchestrator:
@@ -190,7 +186,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    await display_image_response(message, self._memory)
+                    await display_image_response(message)
 
                 scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
                 for score in scores:

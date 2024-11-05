@@ -196,7 +196,7 @@ class PromptNormalizer(abc.ABC):
                 original_value_data_type=request_piece.prompt_data_type,
                 converted_value_data_type=converted_prompt_type,
             )
-            await prompt_request_piece.compute_sha256(memory=self._memory)
+            await prompt_request_piece.compute_sha256()
             entries.append(prompt_request_piece)
 
         return PromptRequestResponse(request_pieces=entries)

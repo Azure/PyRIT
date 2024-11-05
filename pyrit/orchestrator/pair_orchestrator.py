@@ -10,7 +10,6 @@ from tqdm.auto import tqdm
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import pyrit_json_retry, InvalidJsonException
-from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt, PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
@@ -36,7 +35,6 @@ class PAIROrchestrator(Orchestrator):
     def __init__(
         self,
         *,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         prompt_target: PromptChatTarget,
@@ -55,7 +53,6 @@ class PAIROrchestrator(Orchestrator):
         Initializes the PAIR orchestrator to run the PAIR algorithm against two targets.
 
         Args:
-            memory: The memory interface to use. If None, a new memory interface will be created.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category category.
@@ -87,7 +84,7 @@ class PAIROrchestrator(Orchestrator):
                 the order they are provided. The default PAIR implementation does not use any converters.
         """
         super().__init__(
-            memory=memory, memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters
+            memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters
         )
 
         self.successful_jailbreaks: list[PromptRequestResponse] = []
@@ -98,7 +95,7 @@ class PAIROrchestrator(Orchestrator):
         self._conversation_objective = conversation_objective
         self._number_of_conversation_streams = number_of_conversation_streams
         self._last_attacker_conversation_id = ""
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self._single_turn_jailbreak_only = single_turn_jailbreak_only
         self._scorer_sensitivity = scorer_sensitivity
         self._scorer = scorer
@@ -148,7 +145,6 @@ class PAIROrchestrator(Orchestrator):
                         request_converters=self._prompt_converters,
                         prompt_value=target_response,
                         prompt_data_type="text",
-                        memory=self._memory,
                     )
                 ],
                 conversation_id=self._last_attacker_conversation_id,
@@ -180,7 +176,6 @@ class PAIROrchestrator(Orchestrator):
                         request_converters=self._prompt_converters,
                         prompt_value=text,
                         prompt_data_type="text",
-                        memory=self._memory,
                     )
                 ],
                 conversation_id=curr_conversation_id,

@@ -51,7 +51,7 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
 # %%
 # pylint: disable=W0611
 import time
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
@@ -80,7 +80,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
 
     print(f"Elapsed time for operation: {end-start}")
 
-    memory = DuckDBMemory()
+    memory = CentralMemory.get_memory_instance()
 
     for score in scores:
         prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
@@ -97,7 +97,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
 # pylint: disable=W0611
 import uuid
 
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer
@@ -133,7 +133,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
         scorer=scorer, memory_labels=memory_labels
     )
 
-    memory = DuckDBMemory()
+    memory = CentralMemory.get_memory_instance()
 
     for score in scores:
         prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[

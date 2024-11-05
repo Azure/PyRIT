@@ -30,7 +30,7 @@ import pathlib
 
 from pyrit.common.default_values import load_default_env
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.prompt_converter import (
@@ -58,7 +58,7 @@ prompt_templates = [prompt_template1.value, prompt_template2.value, prompt_templ
 
 load_default_env()
 
-memory = DuckDBMemory()
+memory = CentralMemory.get_memory_instance()
 
 target = OpenAIChatTarget()
 

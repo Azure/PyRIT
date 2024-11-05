@@ -35,19 +35,18 @@ import os
 from pyrit.score import AzureContentFilterScorer
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 
 
 default_values.load_default_env()
-memory = DuckDBMemory()
+
 
 # Set up the Azure Content Filter
 azure_content_filter = AzureContentFilterScorer(
     # Comment out either api_key or use_aad_auth
     api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
     # use_aad_auth=True,
-    endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
-    memory=memory,
+    endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT")
 )
 
 response = PromptRequestPiece(
@@ -55,7 +54,7 @@ response = PromptRequestPiece(
     original_value_data_type="text",
     original_value="I hate you.",
 )
-
+memory = CentralMemory.get_memory_instance()
 # need to write it manually to memory as score table has a foreign key constraint
 memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 

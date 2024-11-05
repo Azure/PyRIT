@@ -11,7 +11,7 @@ from typing import Optional, Union
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
-from pyrit.memory import MemoryInterface, CentralMemory
+from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -68,7 +68,7 @@ class MultiTurnAttackResult:
                 print(f"Converted value: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                await display_image_response(message, self._memory)
+                await display_image_response(message)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
             if scores and len(scores) > 0:
@@ -94,8 +94,6 @@ class MultiTurnOrchestrator(Orchestrator):
             prompts before sending them to the prompt target. Defaults to None.
         objective_scorer (Scorer): The scorer classifies the prompt target outputs as sufficient (True) or
             insufficient (False) to satisfy the objective that is specified in the attack_strategy.
-        memory (Optional[MemoryInterface], optional): The memory to use to store the chat messages. If not
-            provided, a DuckDBMemory will be used. Defaults to None.
         memory_labels (Optional[dict[str, str]], optional): A free-form dictionary for tagging prompts with custom
             labels. These labels can be used to track all prompts sent as part of an operation, score prompts based
             on the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -108,8 +106,6 @@ class MultiTurnOrchestrator(Orchestrator):
         ValueError: If the objective_scorer is not a true/false scorer.
     """
 
-    _memory: MemoryInterface
-
     def __init__(
         self,
         *,
@@ -120,13 +116,12 @@ class MultiTurnOrchestrator(Orchestrator):
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
 
         super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
+            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
         )
 
         self._objective_target = objective_target
@@ -137,7 +132,7 @@ class MultiTurnOrchestrator(Orchestrator):
         if "objective" not in self._adversarial_chat_system_seed_prompt.parameters:
             raise ValueError(f"Adversarial seed prompt must have an objective: '{adversarial_chat_system_prompt_path}'")
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self._adversarial_chat = adversarial_chat
         self._initial_adversarial_prompt = initial_adversarial_chat_prompt
 

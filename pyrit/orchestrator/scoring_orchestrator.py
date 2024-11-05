@@ -4,7 +4,6 @@
 import logging
 from typing import Sequence
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
@@ -20,18 +19,16 @@ class ScoringOrchestrator(Orchestrator):
 
     def __init__(
         self,
-        memory: MemoryInterface = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
         """
         Args:
-            memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If using a scorer that takes a prompt target, and providing max requests per
                 minute on the target, this should be set to 1 to ensure proper rate limit management.
         """
-        super().__init__(memory=memory, verbose=verbose)
+        super().__init__(verbose=verbose)
 
         self._batch_size = batch_size
 

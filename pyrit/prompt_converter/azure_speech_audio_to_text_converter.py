@@ -10,7 +10,6 @@ from pyrit.common import default_values
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
-from pyrit.memory import MemoryInterface, CentralMemory
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,6 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         recognition_language (str): Recognition voice language. Defaults to "en-US".
             For more on supported languages, see the following link:
             https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
-        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -49,7 +47,6 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
         self.done = False
-        self._memory = CentralMemory.get_memory_instance()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
@@ -70,7 +67,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         if not prompt.endswith(".wav"):
             raise ValueError("Please provide a .wav audio file. Compressed formats are not currently supported.")
 
-        audio_serializer = data_serializer_factory(data_type="audio_path", value=prompt, memory=self._memory)
+        audio_serializer = data_serializer_factory(data_type="audio_path", value=prompt)
         audio_bytes = await audio_serializer.read_data()
 
         try:

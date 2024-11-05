@@ -10,7 +10,6 @@ from pyrit.common import default_values
 from pyrit.models import data_serializer_factory
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
-from pyrit.memory import MemoryInterface, CentralMemory
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
         filename (str): File name to be generated.  Please include either .wav or .mp3
         output_format (str): Either wav or mp3. Must match the file prefix.
-        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -56,7 +54,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._synthesis_language = synthesis_language
         self._synthesis_voice_name = synthesis_voice_name
         self._output_format = output_format
-        self._memory = CentralMemory.get_memory_instance()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
@@ -69,7 +66,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
 
         audio_serializer = data_serializer_factory(
-            data_type="audio_path", extension=self._output_format, memory=self._memory
+            data_type="audio_path", extension=self._output_format
         )
 
         audio_serializer_file = None

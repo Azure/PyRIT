@@ -7,7 +7,6 @@ from typing import Optional
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.memory import MemoryInterface, CentralMemory
 
 
 class QRCodeConverter(PromptConverter):
@@ -30,7 +29,6 @@ class QRCodeConverter(PromptConverter):
         finder_light_color (tuple, optional): Sets light module color of finder patterns, using RGB values.
             Defaults to light_color.
         border_color (tuple, optional): Sets color of border, using RGB values. Defaults to light_color.
-        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     def __init__(
@@ -54,8 +52,7 @@ class QRCodeConverter(PromptConverter):
         self._finder_dark_color = finder_dark_color or dark_color
         self._finder_light_color = finder_light_color or light_color
         self._border_color = border_color or light_color
-        self._memory = CentralMemory.get_memory_instance()
-        self._img_serializer = data_serializer_factory(data_type="image_path", memory=self._memory)
+        self._img_serializer = data_serializer_factory(data_type="image_path")
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
