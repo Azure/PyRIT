@@ -12,7 +12,7 @@ Most of our documentation is located within the `doc` directory. There is no sin
 6. [Converters](./code/converters/1_converters.ipynb): These transform prompts from one format to another. This is one of the most powerful capabilities within PyRIT.
 7. [Scorers](./code/scoring/1_scoring.md): These are how PyRIT makes decisions and records output.
 8. [Memory](./code/memory/1_duck_db_memory.ipynb): This is how PyRIT components communicate about the state of things.
-9. [Auxiliary Attacks](./code/auxiliary_attacks/1_auxiliary_attacks): (Optional) Attacks and techniques that do not fit into the core PyRIT functionality.
+9. [Auxiliary Attacks](./code/auxiliary_attacks/1_auxiliary_attacks.ipynb): (Optional) Attacks and techniques that do not fit into the core PyRIT functionality.
 
 Miscellaneous Extra Docs:
 
