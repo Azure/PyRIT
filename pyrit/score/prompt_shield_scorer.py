@@ -7,7 +7,7 @@ import json
 from typing import Union, Any, Optional
 
 from pyrit.prompt_target import PromptShieldTarget
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import MemoryInterface, get_memory_instance
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.memory import PromptMemoryEntry
 from pyrit.score import Scorer, ScoreType
@@ -32,10 +32,8 @@ class PromptShieldScorer(Scorer):
     ) -> None:
         self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
-        self._memory = memory if memory else DuckDBMemory()
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
+        self._memory = memory or get_memory_instance()
+        
 
     async def score_async(
         self, request_response: PromptRequestPiece | PromptMemoryEntry, *, task: Optional[str] = None

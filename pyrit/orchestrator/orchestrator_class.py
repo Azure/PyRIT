@@ -7,7 +7,7 @@ import uuid
 
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import MemoryInterface, get_memory_instance
 from pyrit.models import PromptDataType, Identifier
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
@@ -28,7 +28,7 @@ class Orchestrator(abc.ABC, Identifier):
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []
-        self._memory = memory or DuckDBMemory()
+        self._memory = memory or get_memory_instance()
         self._verbose = verbose
         self._id = uuid.uuid4()
 

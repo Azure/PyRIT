@@ -78,7 +78,6 @@ class SkeletonKeyOrchestrator(Orchestrator):
         )
 
         self._prompt_target = prompt_target
-        self._prompt_target._memory = self._memory
 
         self._batch_size = batch_size
 

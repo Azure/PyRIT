@@ -4,10 +4,9 @@
 from typing import Optional
 from pyrit.score import Score, Scorer
 from pyrit.common import default_values
-from pyrit.memory.duckdb_memory import DuckDBMemory
+from pyrit.memory import MemoryInterface, get_memory_instance
 from pyrit.models import PromptRequestPiece
 from pyrit.models import data_serializer_factory, DataTypeSerializer
-from pyrit.memory.memory_interface import MemoryInterface
 
 from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, TextCategory, ImageData
 from azure.ai.contentsafety import ContentSafetyClient
@@ -44,7 +43,7 @@ class AzureContentFilterScorer(Scorer):
         memory: MemoryInterface = None,
     ) -> None:
 
-        self._memory = memory if memory else DuckDBMemory()
+        self._memory = memory or get_memory_instance()
         """
         Class that initializes an Azure Content Filter Scorer
 

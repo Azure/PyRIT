@@ -5,7 +5,7 @@ import abc
 import logging
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import MemoryInterface, get_memory_instance
 from pyrit.models import PromptRequestResponse, Identifier
 
 
@@ -24,7 +24,7 @@ class PromptTarget(abc.ABC, Identifier):
     def __init__(
         self, memory: MemoryInterface, verbose: bool = False, max_requests_per_minute: Optional[int] = None
     ) -> None:
-        self._memory = memory if memory else DuckDBMemory()
+        self._memory = memory or get_memory_instance()
         self._verbose = verbose
         self._max_requests_per_minute = max_requests_per_minute
 

@@ -62,9 +62,7 @@ class MultiTurnOrchestrator(Orchestrator):
         self._achieved_objective = False
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._prompt_target._memory = self._memory
         self._red_teaming_chat = red_teaming_chat
-        self._red_teaming_chat._memory = self._memory
         self._initial_red_teaming_prompt = initial_red_teaming_prompt
         if not self._initial_red_teaming_prompt:
             raise ValueError("The initial red teaming prompt cannot be empty.")
@@ -73,12 +71,6 @@ class MultiTurnOrchestrator(Orchestrator):
                 f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
             )
         self._objective_scorer = objective_scorer
-
-        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
-        if self._objective_scorer:
-            self._objective_scorer._memory = self._memory
-            if hasattr(self._objective_scorer, "_prompt_target"):
-                self._objective_scorer._prompt_target._memory = self._memory
 
     @abstractmethod
     async def run_attack_async(

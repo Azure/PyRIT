@@ -75,10 +75,8 @@ class CrescendoOrchestrator(Orchestrator):
 
         self._prompt_target = prompt_target
         self._prompt_target_conversation_id = str(uuid4())
-        self._prompt_target._memory = self._memory
 
         self._red_teaming_chat = red_teaming_chat
-        self._red_teaming_chat._memory = self._memory
 
         self.refusal_scorer = SelfAskRefusalScorer(
             chat_target=scoring_target,

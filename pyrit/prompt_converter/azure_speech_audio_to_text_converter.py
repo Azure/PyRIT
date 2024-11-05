@@ -10,7 +10,7 @@ from pyrit.common import default_values
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import MemoryInterface, get_memory_instance
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
         self.done = False
-        self._memory = memory or DuckDBMemory()
+        self._memory = memory or get_memory_instance()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"

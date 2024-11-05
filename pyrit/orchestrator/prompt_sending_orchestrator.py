@@ -62,16 +62,9 @@ class PromptSendingOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
         self._scorers = scorers
-        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
-        if self._scorers:
-            for scorer in self._scorers:
-                scorer._memory = self._memory
-                if hasattr(scorer, "_prompt_target"):
-                    scorer._prompt_target._memory = self._memory
-
+        
         self._prompt_target = prompt_target
-        self._prompt_target._memory = self._memory
-
+        
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
 

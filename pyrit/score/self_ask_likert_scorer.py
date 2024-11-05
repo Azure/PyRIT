@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import MemoryInterface, get_memory_instance
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, SeedPrompt
@@ -38,10 +38,8 @@ class SelfAskLikertScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
 
-        self._memory = memory if memory else DuckDBMemory()
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
+        self._memory = memory or get_memory_instance()
+        
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:
