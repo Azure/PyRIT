@@ -176,6 +176,7 @@ class HumanInTheLoopScorer(Scorer):
 
             else:
                 raise ValueError("Invalid input. Please enter '1', '2', or '3'.")
+        return []
 
     def _get_user_input(self, message) -> str:
         root = tk.Tk()
