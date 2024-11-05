@@ -104,6 +104,7 @@ prompt = template.render_template_value(food_item="pizza", food_location="Italy"
 # to the target LLM under assessment, PyRIT uses a second LLM to generate prompts that are then fed to
 # the target LLM. PyRIT uses a red teaming orchestrator to manage the conversation between the target
 # LLM and the LLM that assists us in red teaming.
+#
 # Importantly, this enables the red teamer to feed the target LLM’s responses back into the red teaming
 # LLM to generate multi-turn conversations. It is worth noting that when red teaming, the prompts sent
 # to the target LLM can sometimes include content that gets moderated or blocked by the target LLM.
@@ -114,19 +115,6 @@ prompt = template.render_template_value(food_item="pizza", food_location="Italy"
 #
 # The red teaming orchestrator still needs to be configured to behave according to the red teamer's plan
 # by using input parameters.
-# `attack_strategy` will be used as the red teaming LLM's metaprompt, so it's either a string or a
-# prompt template (using the `AttackStrategy` class) that defines the attack strategy.
-# Red teaming orchestrators can either
-#
-# - run a single turn of the attack strategy or
-# - try to achieve the goal as specified in the attack strategy which may take multiple turns.
-#
-# The single turn is executed with the `send_prompt_async()` method. It generates the prompt using the red
-# teaming LLM and sends it to the target.
-# The full execution of the attack strategy over potentially multiple turns requires a mechanism
-# to determine if the goal has been achieved. This happens via a scorer that evaluates the output of the
-# target LLM. The scorer can be a simple classifier that checks for specific keywords or a more complex
-# classifier that uses a model to evaluate the output.
 
 # %%
 import os
