@@ -6,15 +6,16 @@ import json
 import logging
 import os
 from openai import RateLimitError
-from tenacity import after_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 from typing import Callable
 
-from pyrit.exceptions.exceptions_helpers import extract_json_from_string, remove_end_md_json, remove_start_md_json
-from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
+from pyrit.exceptions.exceptions_helpers import log_exception
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 
-RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 5))
-RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 1))
-RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 60))
+RETRY_MAX_NUM_ATTEMPTS = int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 10))
+RETRY_WAIT_MIN_SECONDS = int(os.getenv("RETRY_WAIT_MIN_SECONDS", 5))
+RETRY_WAIT_MAX_SECONDS = int(os.getenv("RETRY_WAIT_MAX_SECONDS", 220))
 
 logger = logging.getLogger(__name__)
 
@@ -71,29 +72,6 @@ class MissingPromptPlaceholderException(PyritException):
         super().__init__(message=message)
 
 
-def handle_bad_request_exception(
-    response_text: str,
-    request: PromptRequestPiece,
-    is_content_filter=False,
-) -> PromptRequestResponse:
-
-    if (
-        "content_filter" in response_text
-        or "Invalid prompt: your prompt was flagged as potentially violating our usage policy." in response_text
-        or is_content_filter
-    ):
-        # Handle bad request error when content filter system detects harmful content
-        bad_request_exception = BadRequestException(400, message=response_text)
-        resp_text = bad_request_exception.process_exception()
-        response_entry = construct_response_from_request(
-            request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
-        )
-    else:
-        raise
-
-    return response_entry
-
-
 def pyrit_target_retry(func: Callable) -> Callable:
     """
     A decorator to apply retry logic with exponential backoff to a function.
@@ -114,7 +92,7 @@ def pyrit_target_retry(func: Callable) -> Callable:
         reraise=True,
         retry=retry_if_exception_type(RateLimitError) | retry_if_exception_type(EmptyResponseException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
-        after=after_log(logger, logging.INFO),
+        after=log_exception,
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
 
@@ -139,37 +117,9 @@ def pyrit_json_retry(func: Callable) -> Callable:
         reraise=True,
         retry=retry_if_exception_type(InvalidJsonException),
         wait=wait_random_exponential(min=RETRY_WAIT_MIN_SECONDS, max=RETRY_WAIT_MAX_SECONDS),
-        after=after_log(logger, logging.INFO),
+        after=log_exception,
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
-
-
-def remove_markdown_json(response_msg: str) -> str:
-    """
-    Checks if the response message is in JSON format and removes Markdown formatting if present.
-
-    Args:
-        response_msg (str): The response message to check.
-
-    Returns:
-        str: The response message without Markdown formatting if present.
-    """
-
-    response_msg = remove_start_md_json(response_msg)
-    response_msg = remove_end_md_json(response_msg)
-
-    # Validate if the remaining response message is valid JSON. If it's still not valid
-    # after removing the markdown notation, try to extract JSON from within the string.
-    try:
-        json.loads(response_msg)
-        return response_msg
-    except json.JSONDecodeError:
-        response_msg = extract_json_from_string(response_msg)
-        try:
-            json.loads(response_msg)
-            return response_msg
-        except json.JSONDecodeError:
-            return "Invalid JSON response: {}".format(response_msg)
 
 
 def pyrit_placeholder_retry(func: Callable) -> Callable:
@@ -191,6 +141,29 @@ def pyrit_placeholder_retry(func: Callable) -> Callable:
     return retry(
         reraise=True,
         retry=retry_if_exception_type(MissingPromptPlaceholderException),
-        after=after_log(logger, logging.INFO),
+        after=log_exception,
         stop=stop_after_attempt(RETRY_MAX_NUM_ATTEMPTS),
     )(func)
+
+
+def handle_bad_request_exception(
+    response_text: str,
+    request: PromptRequestPiece,
+    is_content_filter=False,
+) -> PromptRequestResponse:
+
+    if (
+        "content_filter" in response_text
+        or "Invalid prompt: your prompt was flagged as potentially violating our usage policy." in response_text
+        or is_content_filter
+    ):
+        # Handle bad request error when content filter system detects harmful content
+        bad_request_exception = BadRequestException(400, message=response_text)
+        resp_text = bad_request_exception.process_exception()
+        response_entry = construct_response_from_request(
+            request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
+        )
+    else:
+        raise
+
+    return response_entry

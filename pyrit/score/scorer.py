@@ -8,7 +8,7 @@ from typing import Optional, Sequence
 import uuid
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target import PromptChatTarget

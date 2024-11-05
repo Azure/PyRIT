@@ -12,7 +12,7 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
