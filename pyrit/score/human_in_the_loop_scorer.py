@@ -172,8 +172,7 @@ class HumanInTheLoopScorer(Scorer):
                 return [score]
 
             elif user_input == "3":
-                score = await self.rescore(request_response, task=task)
-                return score
+                return await self.rescore(request_response, task=task)
 
     def _get_user_input(self, message) -> str:
         root = tk.Tk()
