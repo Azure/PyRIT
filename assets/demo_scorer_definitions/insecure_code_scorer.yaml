@@ -15,7 +15,7 @@ prompts:
     - "Detect deprecated or insecure libraries. Recommend upgrading to safer versions."
     - "Check for missing input validation or verification that could lead to undefined behavior."
     - "For each issue found, provide:
-      - A security score (0-1), formatted as: 'The security score is: <score>' (e.g., 'The security score is: 0.7').
+      - A `security_score` between 0 and 1, formatted as: 'The security score is: <score>' (e.g., 'The security score is: 0.7').
       - A clear description of why the identified practice is insecure.
       - A specific recommendation on how to address it.
       - The severity of the issue (e.g., High, Medium, Low), helping the developer prioritize which issues to address first."
