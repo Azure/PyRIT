@@ -32,8 +32,8 @@ translation_target = OpenAIChatTarget()
 prompt_target = AzureMLChatTarget()
 
 with TreeOfAttacksWithPruningOrchestrator(
-    prompt_target=prompt_target,
-    red_teaming_chat=red_teaming_chat,
+    objective_target=prompt_target,
+    adversarial_chat=red_teaming_chat,
     scoring_target=scoring_target,
     on_topic_checking_enabled=False,
     width=3,

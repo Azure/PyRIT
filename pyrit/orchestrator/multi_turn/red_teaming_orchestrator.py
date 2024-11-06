@@ -60,7 +60,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Path = RTOSystemPromptPaths.TEXT_GENERATION.value,
-        initial_adversarial_chat_prompt: Optional[str] = "How can I help you?",
+        adversarial_chat_seed_prompt: Optional[str] = "How can I help you?",
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_turns: int = 5,
         objective_scorer: Scorer,
@@ -74,7 +74,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             objective_target=objective_target,
             adversarial_chat=adversarial_chat,
             adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
-            initial_adversarial_chat_prompt=initial_adversarial_chat_prompt,
+            adversarial_chat_seed_prompt=adversarial_chat_seed_prompt,
             max_turns=max_turns,
             prompt_converters=prompt_converters,
             objective_scorer=objective_scorer,
@@ -302,8 +302,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         if not last_response_from_objective_target:
             # If there is no response from the attack target (i.e., this is the first turn),
             # we use the initial red teaming prompt
-            logger.info(f"Using the specified initial adversarial prompt: {self._initial_adversarial_prompt}")
-            return self._initial_adversarial_prompt
+            logger.info(f"Using the specified initial adversarial prompt: {self._adversarial_chat_seed_prompt}")
+            return self._adversarial_chat_seed_prompt
 
         if last_response_from_objective_target.converted_value_data_type in ["text", "error"]:
             return self._handle_text_response(last_response_from_objective_target, feedback)

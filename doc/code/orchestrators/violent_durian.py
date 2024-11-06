@@ -116,7 +116,7 @@ initial_prompt = (
 with RedTeamingOrchestrator(
     adversarial_chat=red_teaming_llm,
     objective_target=prompt_target,
-    initial_adversarial_chat_prompt=initial_prompt,  # The first prompt introduces the Violent Durian persona
+    adversarial_chat_seed_prompt=initial_prompt,  # The first prompt introduces the Violent Durian persona
     objective_scorer=scorer,
     max_turns=2,
 ) as red_teaming_orchestrator:

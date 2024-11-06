@@ -67,9 +67,9 @@ def get_prompt_response_with_content(content: str) -> PromptRequestResponse:
 def test_invalid_width():
     with pytest.raises(ValueError) as e:
         TreeOfAttacksWithPruningOrchestrator(
-            red_teaming_chat=MagicMock(),
+            adversarial_chat=MagicMock(),
             memory=MagicMock(),
-            prompt_target=MagicMock(),
+            objective_target=MagicMock(),
             scoring_target=MagicMock(),
             width=0,
             branching_factor=2,
@@ -83,9 +83,9 @@ def test_invalid_width():
 def test_invalid_branching_factor():
     with pytest.raises(ValueError) as e:
         TreeOfAttacksWithPruningOrchestrator(
-            red_teaming_chat=MagicMock(),
+            adversarial_chat=MagicMock(),
             memory=MagicMock(),
-            prompt_target=MagicMock(),
+            objective_target=MagicMock(),
             scoring_target=MagicMock(),
             width=4,
             branching_factor=0,
@@ -99,9 +99,9 @@ def test_invalid_branching_factor():
 def test_invalid_depth():
     with pytest.raises(ValueError) as e:
         TreeOfAttacksWithPruningOrchestrator(
-            red_teaming_chat=MagicMock(),
+            adversarial_chat=MagicMock(),
             memory=MagicMock(),
-            prompt_target=MagicMock(),
+            objective_target=MagicMock(),
             scoring_target=MagicMock(),
             width=4,
             branching_factor=3,
@@ -122,9 +122,9 @@ async def test_apply_strategy_single_turn_success(
     on_topic_checking_enabled: bool,
 ):
     tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
-        red_teaming_chat=red_teaming_target,
+        adversarial_chat=red_teaming_target,
         memory=memory,
-        prompt_target=prompt_target,
+        objective_target=prompt_target,
         scoring_target=scoring_target,
         width=1,
         branching_factor=1,
@@ -185,9 +185,9 @@ async def test_apply_strategy_max_depth_reached(
     on_topic_checking_enabled: bool,
 ):
     tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
-        red_teaming_chat=red_teaming_target,
+        adversarial_chat=red_teaming_target,
         memory=memory,
-        prompt_target=prompt_target,
+        objective_target=prompt_target,
         scoring_target=scoring_target,
         width=1,
         branching_factor=1,
@@ -245,9 +245,9 @@ async def test_apply_strategy_multiturn_failure(
     on_topic_checking_enabled: bool,
 ):
     tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
-        red_teaming_chat=red_teaming_target,
+        adversarial_chat=red_teaming_target,
         memory=memory,
-        prompt_target=prompt_target,
+        objective_target=prompt_target,
         scoring_target=scoring_target,
         width=1,
         branching_factor=1,
@@ -315,9 +315,9 @@ async def test_apply_strategy_multiturn_success_in_last_turn(
     on_topic_checking_enabled: bool,
 ):
     tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
-        red_teaming_chat=red_teaming_target,
+        adversarial_chat=red_teaming_target,
         memory=memory,
-        prompt_target=prompt_target,
+        objective_target=prompt_target,
         scoring_target=scoring_target,
         width=1,
         branching_factor=1,

@@ -22,7 +22,6 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class MultiTurnAttackResult:
     """The result of a multi-turn attack."""
 
@@ -117,7 +116,7 @@ class MultiTurnOrchestrator(Orchestrator):
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Union[Path | str],
-        initial_adversarial_chat_prompt: str = "How can I help you?",
+        adversarial_chat_seed_prompt: Union[str|SeedPrompt] = "How can I help you?",
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
@@ -142,7 +141,8 @@ class MultiTurnOrchestrator(Orchestrator):
         self._objective_target._memory = self._memory
         self._adversarial_chat = adversarial_chat
         self._adversarial_chat._memory = self._memory
-        self._initial_adversarial_prompt = initial_adversarial_chat_prompt
+
+        self._adversarial_chat_seed_prompt = self._get_adversarial_chat_seed_prompt(adversarial_chat_seed_prompt)
 
         if max_turns <= 0:
             raise ValueError("The maximum number of turns must be greater than or equal to 0.")
@@ -160,6 +160,14 @@ class MultiTurnOrchestrator(Orchestrator):
             self._objective_scorer._memory = self._memory
             if hasattr(self._objective_scorer, "_prompt_target"):
                 self._objective_scorer._prompt_target._memory = self._memory
+
+    def _get_adversarial_chat_seed_prompt(self, seed_prompt):
+        if isinstance(seed_prompt, str):
+            return SeedPrompt(
+                value=seed_prompt,
+                data_type="text",
+            )
+        return seed_prompt
 
     @abstractmethod
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
