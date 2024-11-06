@@ -9,11 +9,9 @@ import uuid
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.models.literals import PromptDataType
-from pyrit.prompt_target import PromptChatTarget
-from pyrit.models import ScoreType, Score, UnvalidatedScore
 from pyrit.memory import MemoryInterface
+from pyrit.models import PromptDataType, PromptRequestResponse, PromptRequestPiece, ScoreType, Score, UnvalidatedScore
+from pyrit.prompt_target import PromptChatTarget
 
 
 class Scorer(abc.ABC):

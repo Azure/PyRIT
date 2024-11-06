@@ -1,9 +1,14 @@
-name: deploy-book
+name: build-book
 
 on:
   push:
     branches:
-      - main
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+      - "release/**"
+  workflow_dispatch:
 
 # This job installs dependencies, builds the book, and pushes it to `gh-pages`
 jobs:

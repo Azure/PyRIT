@@ -12,7 +12,7 @@ class QuestionChoice(BaseModel):
     """
     Represents a choice for a question.
 
-    Attributes:
+    Parameters:
         index (int): The index of the choice.
         text (str): The text of the choice.
     """
@@ -26,14 +26,14 @@ class QuestionAnsweringEntry(BaseModel):
     """
     Represents a question model.
 
-    Attributes:
+    Parameters:
         question (str): The question text.
         answer_type (Literal["int", "float", "str", "bool"]): The type of the answer.
-            - `int` for integer answers (e.g., when the answer is an index of the correct option in a multiple-choice
-               question).
-            - `float` for answers that are floating-point numbers.
-            - `str` for text-based answers.
-            - `bool` for boolean answers.
+            `int` for integer answers (e.g., when the answer is an index of the correct option in a multiple-choice
+            question).
+            `float` for answers that are floating-point numbers.
+            `str` for text-based answers.
+            `bool` for boolean answers.
         correct_answer (Union[int, str, float]): The correct answer.
         choices (list[QuestionChoice]): The list of choices for the question.
     """
@@ -52,7 +52,7 @@ class QuestionAnsweringDataset(BaseModel):
     """
     Represents a dataset for question answering.
 
-    Attributes:
+    Parameters:
         name (str): The name of the dataset.
         version (str): The version of the dataset.
         description (str): A description of the dataset.

@@ -2,10 +2,9 @@
 # Licensed under the MIT license.
 
 from typing import Optional
-from pyrit.memory.duckdb_memory import DuckDBMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.score import Score, Scorer
+from pyrit.memory import DuckDBMemory, MemoryInterface
+from pyrit.models import PromptRequestPiece, Score
+from pyrit.score.scorer import Scorer
 
 
 class SubStringScorer(Scorer):

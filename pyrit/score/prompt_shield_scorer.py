@@ -8,9 +8,9 @@ from typing import Union, Any, Optional
 
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, ScoreType
 from pyrit.memory import PromptMemoryEntry
-from pyrit.score import Scorer, ScoreType
+from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.score import Scorer
+from pyrit.score.scorer import Scorer
 
 
 class HumanInTheLoopScorer(Scorer):

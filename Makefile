@@ -14,7 +14,7 @@ mypy:
 	$(CMD) mypy $(PYMODULE) $(TESTS)
 
 docs-build:
-	jb build ./doc
+	jb build -W -n ./doc
 
 test:
 	$(CMD) pytest --cov=$(PYMODULE) $(TESTS)

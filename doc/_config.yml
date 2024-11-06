@@ -36,8 +36,16 @@ html:
 sphinx:
   extra_extensions:
     - 'sphinx.ext.autodoc'
+    - 'sphinx.ext.napoleon'
+    - 'sphinx.ext.viewcode'
     - 'sphinx.ext.autosummary'
   config:
-    autosummary_generate: True
+    autosummary_generate: true
+    add_module_names: false
     suppress_warnings: ["etoc.toctree"]
     myst_heading_anchors: 4
+    autodoc_default_options:
+      members: true
+      show-inheritance: true
+      undoc-members: true
+      private-members: false

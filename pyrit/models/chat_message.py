@@ -39,7 +39,7 @@ class ChatMessagesDataset(BaseModel):
     """
     Represents a dataset of chat messages.
 
-    Attributes:
+    Parameters:
         model_config (ConfigDict): The model configuration.
         name (str): The name of the dataset.
         description (str): The description of the dataset.
