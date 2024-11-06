@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptDataset, PromptRequestResponse
+from pyrit.models import SeedPromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -70,9 +70,11 @@ class SkeletonKeyOrchestrator(Orchestrator):
         self._skeleton_key_prompt = (
             skeleton_key_prompt
             if skeleton_key_prompt
-            else PromptDataset.from_yaml_file(
+            else SeedPromptDataset.from_yaml_file(
                 Path(DATASETS_PATH) / "orchestrators" / "skeleton_key" / "skeleton_key.prompt"
-            ).prompts[0]
+            )
+            .prompts[0]
+            .value
         )
 
         self._prompt_target = prompt_target

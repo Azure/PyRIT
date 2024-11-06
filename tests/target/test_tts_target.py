@@ -126,7 +126,6 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     tts_target._memory = mock_memory
 
@@ -148,7 +147,6 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
         tts_target._memory.get_conversation.assert_called_once_with(conversation_id=request_piece.conversation_id)
 
         tts_target._memory.add_request_response_to_memory.assert_called_once_with(request=request)
-        tts_target._memory.add_response_entries_to_memory.assert_called_once()
 
         assert response.text in str(exc.value)
 

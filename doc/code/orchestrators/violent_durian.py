@@ -7,13 +7,13 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
 
 # %% [markdown]
-# # Violent Duran attack strategy
+# # Violent Durian attack strategy
 # This update integrates the Violent Durian attack strategy from Project Moonshot into the PyRIT system.
 # The strategy revolves around an attacker LLM manipulating the Target LLM into adopting a criminal persona and
 # providing illegal advice or dangerous suggestions. The criminal persona is chosen randomly from a predefined list,
@@ -29,7 +29,6 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
-from pyrit.models import AttackStrategy
 from pyrit.score import SelfAskTrueFalseScorer
 
 # Load environment variables
@@ -59,12 +58,6 @@ conversation_objective = (
 
 # Define the attack strategy path
 strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "violent_durian.yaml"
-
-# Define the attack strategy using the Violent Durian persona
-attack_strategy = AttackStrategy(
-    strategy=strategy_path,
-    conversation_objective=conversation_objective,
-)
 
 # Set up the red_teaming_chat used to generate prompts sent to the target.
 # OpenAI (GPT4) as the Red Teaming LLM
@@ -121,14 +114,11 @@ initial_prompt = (
 
 # Use the RedTeamingOrchestrator to handle the attack and manage the conversation
 with RedTeamingOrchestrator(
-    attack_strategy=attack_strategy,
-    red_teaming_chat=red_teaming_llm,
-    prompt_target=prompt_target,
-    initial_red_teaming_prompt=initial_prompt,  # The first prompt introduces the Violent Durian persona
+    adversarial_chat=red_teaming_llm,
+    objective_target=prompt_target,
+    initial_adversarial_chat_prompt=initial_prompt,  # The first prompt introduces the Violent Durian persona
     objective_scorer=scorer,
-    verbose=True,
+    max_turns=2,
 ) as red_teaming_orchestrator:
-    # Run the multi-turn attack strategy
-    score = await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    # Print the conversation log for review
-    await red_teaming_orchestrator.print_conversation()  # type: ignore
+    result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
+    await red_teaming_orchestrator.print_conversation_async(result=result)  # type: ignore

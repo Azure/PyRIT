@@ -9,7 +9,7 @@ import base64
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import DuckDBMemory
-from pyrit.models import PromptDataset, PromptRequestPiece
+from pyrit.models import SeedPromptDataset, PromptRequestPiece
 from pyrit.orchestrator import SkeletonKeyOrchestrator
 from pyrit.prompt_converter import Base64Converter
 
@@ -25,10 +25,10 @@ def mock_target() -> MockPromptTarget:
 
 @pytest.fixture
 def skeleton_key_prompt():
-    skeleton_key = PromptDataset.from_yaml_file(
+    skeleton_key = SeedPromptDataset.from_yaml_file(
         Path(DATASETS_PATH) / "orchestrators" / "skeleton_key" / "skeleton_key.prompt"
     )
-    skeleton_key_prompt = skeleton_key.prompts[0]
+    skeleton_key_prompt = skeleton_key.prompts[0].value
     return skeleton_key_prompt
 
 

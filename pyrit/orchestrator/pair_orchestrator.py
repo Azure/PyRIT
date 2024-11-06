@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import pyrit_json_retry, InvalidJsonException
 from pyrit.memory import MemoryInterface
-from pyrit.models import PromptTemplate, PromptRequestResponse, PromptRequestPiece, Score
+from pyrit.models import SeedPrompt, PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer, NormalizerRequest, NormalizerRequestPiece
@@ -110,7 +110,7 @@ class PAIROrchestrator(Orchestrator):
         self._desired_target_response_prefix = desired_target_response_prefix
 
         # Load the prompt templates for the attacker
-        self._attacker_prompt_template = PromptTemplate.from_yaml_file(
+        self._attacker_prompt_template = SeedPrompt.from_yaml_file(
             file=DATASETS_PATH / "orchestrators" / "pair" / "attacker_system_prompt.yaml"
         )
 
@@ -139,7 +139,7 @@ class PAIROrchestrator(Orchestrator):
         """
         if start_new_conversation:
             self._last_attacker_conversation_id = str(uuid.uuid4())
-            attacker_system_prompt = self._attacker_prompt_template.apply_custom_metaprompt_parameters(
+            attacker_system_prompt = self._attacker_prompt_template.render_template_value(
                 goal=self._conversation_objective, target_str=self._desired_target_response_prefix
             )
             self._adversarial_target.set_system_prompt(

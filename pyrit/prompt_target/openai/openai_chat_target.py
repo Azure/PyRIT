@@ -237,6 +237,7 @@ class OpenAIChatTarget(OpenAITarget):
             extracted_response = self._parse_chat_completion(response)
             # Handle empty response
             if not extracted_response:
+                logger.log(logging.ERROR, "The chat returned an empty response.")
                 raise EmptyResponseException(message="The chat returned an empty response.")
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason}")

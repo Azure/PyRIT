@@ -10,7 +10,7 @@ from typing import Callable, Optional
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPrompt
 
 
 class CodeChameleonConverter(PromptConverter):
@@ -98,11 +98,12 @@ class CodeChameleonConverter(PromptConverter):
         else:
             encoded_prompt = prompt
 
-        prompt_template = PromptTemplate.from_yaml_file(
+        seed_prompt = SeedPrompt.from_yaml_file(
             pathlib.Path(DATASETS_PATH) / "prompt_converters" / "codechameleon_converter.yaml"
         )
-        formatted_prompt = prompt_template.apply_custom_metaprompt_parameters(
-            decrypt_function=self.decrypt_function, encoded_prompt=encoded_prompt
+
+        formatted_prompt = seed_prompt.render_template_value(
+            encoded_prompt=encoded_prompt, decrypt_function=self.decrypt_function
         )
 
         return ConverterResult(output_text=formatted_prompt, output_type="text")

@@ -10,7 +10,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_template import JailBreakTemplate
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_target import PromptTarget
@@ -65,7 +65,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         # This is sent to the target
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
-        self.system_prompt = JailBreakTemplate.from_yaml_file(system_prompt_path).get_system_prompt()
+        self.system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
         system_prompt = PromptRequestResponse(
             request_pieces=[

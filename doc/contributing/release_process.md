@@ -98,7 +98,7 @@ Before running the demos, execute `az login` or `az login --use-device-code`, as
 Additionally, verify that your environment file includes all the test secrets needed to run the demos. If not, update your .env file using the secrets from the key vault.
 
 In the new location, run all notebooks.
-This can be done using `.\doc\generate_docs\pct_to_ipynb.ps1` or manually.
+This can be done using `.\doc\generate_docs\pct_to_ipynb.py` or manually.
 Check the output to make sure that the notebooks succeeded.
 
 Note: copying the doc folder elsewhere is essential since we store data files
