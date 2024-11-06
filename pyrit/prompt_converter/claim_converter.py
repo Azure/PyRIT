@@ -205,6 +205,19 @@ class ClaimConverter(PromptConverter):
         generations_df = pd.DataFrame(generations, columns=["claim", "inst"]).drop_duplicates(subset="inst")
         logger.info(f"TestGenie generated {len(generations_df)} statements.")
 
+        sampled_df = generations_df.sample(len(generations), random_state=config["global_seed"])
+        unsampled_df = generations_df.drop(sampled_df.index)
+        
+        sampled_df["label"] = None
+        sampled_df["label"][0] = True
+        sampled_df["label"][1] = False
+        # verified_df = st.data_editor(sampled_df)
+        verified_df = pd.DataFrame(sampled_df)
+    
+        generations_labeled = pd.concat([verified_df, unsampled_df]).sort_index()
+        generations_estimated = classifiers.fit_and_predict(claim_classifier, generations_labeled, True)
+        generations_estimated = generations_estimated.loc[generations_estimated.pred == 1]
+
         tokenizer = components.load_tokenizer("gpt2")
         spacy_model = components.load_spacy()
 
@@ -244,18 +257,20 @@ class ClaimConverter(PromptConverter):
         completion_df = components.build_completion_df(test_data, completions, target_model)
        
         # Predict which completions are failures
-        # completion_df["label"] = None
-        # completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
+        completion_df["label"] = None
+        completion_df["label"][0] = True
+        completion_df["label"][1] = False
+        completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
 
         # calculate margin from random (closer to 0.5->more uncertain)
-        # completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
+        completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
         # ignore already-labeled data
-        # completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
+        completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
 
-        options = [f"[{i}] " + " " + p for i, p in enumerate(generations_df["inst"])]
-        selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
+        options = [f"[{i}] " + " " + p for i, p in enumerate(completions_estimated["inst"])]
+        # selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
 
-        response_msg = generations_df['inst'][int(selected)] #completion_df["inst"][0]
+        response_msg = "\n".join(options)
 
         # response_msg = await self.send_variation_prompt_async(request)
 

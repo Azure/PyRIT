@@ -174,3 +174,4 @@ doc/generate_docs/cache/*
 **/.DS_Store
 
 data/
+checkpoints/
