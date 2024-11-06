@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Dict, Optional
 
 
-from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, SeedPrompt
@@ -37,8 +36,6 @@ class SelfAskLikertScorer(Scorer):
     def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
-
-        self._memory = CentralMemory.get_memory_instance()
         
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 

@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 from typing import Optional
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 

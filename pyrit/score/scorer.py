@@ -13,7 +13,7 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.models import ScoreType, Score, UnvalidatedScore
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, CentralMemory
 
 
 class Scorer(abc.ABC):
@@ -22,7 +22,7 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
-    _memory: Optional[MemoryInterface]
+    _memory: MemoryInterface = CentralMemory.get_memory_instance()
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:

@@ -137,7 +137,7 @@ class OpenAIChatTarget(OpenAITarget):
             mime_type = "application/octet-stream"
 
         image_serializer = data_serializer_factory(
-            value=image_path, data_type="image_path", extension=ext, memory=self._memory
+            value=image_path, data_type="image_path", extension=ext
         )
         base64_encoded_data = await image_serializer.read_data_base64()
         # Azure OpenAI GPT-4o documentation doesn't specify the local image upload format for API.

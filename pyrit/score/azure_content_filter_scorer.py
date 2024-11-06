@@ -4,7 +4,6 @@
 from typing import Optional
 from pyrit.score import Score, Scorer
 from pyrit.common import default_values
-from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.models import data_serializer_factory, DataTypeSerializer
 
@@ -42,7 +41,6 @@ class AzureContentFilterScorer(Scorer):
         harm_categories: list[TextCategory] = None,
     ) -> None:
 
-        self._memory = CentralMemory.get_memory_instance()
         """
         Class that initializes an Azure Content Filter Scorer
 
@@ -154,7 +152,7 @@ class AzureContentFilterScorer(Scorer):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
         image_serializer = data_serializer_factory(
-            value=image_path, data_type="image_path", extension=ext, memory=self._memory
+            value=image_path, data_type="image_path", extension=ext
         )
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data

@@ -99,7 +99,7 @@ class OpenAIDALLETarget(OpenAITarget):
 
         try:
             b64_data = await self._generate_image_response_async(image_generation_args)
-            data = data_serializer_factory(data_type="image_path", memory=self._memory)
+            data = data_serializer_factory(data_type="image_path")
             await data.save_b64_image(data=b64_data)
             resp_text = data.value
             response_type: PromptDataType = "image_path"

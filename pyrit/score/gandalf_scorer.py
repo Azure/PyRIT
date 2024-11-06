@@ -9,7 +9,6 @@ from openai import BadRequestError
 import uuid
 
 from pyrit.exceptions.exception_classes import PyritException, pyrit_target_retry
-from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Score
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptChatTarget, GandalfLevel
@@ -23,10 +22,6 @@ class GandalfScorer(Scorer):
         self._prompt_target = chat_target
         self._defender = level.value
         self._endpoint = "https://gandalf.lakera.ai/api/guess-password"
-        self._memory = CentralMemory.get_memory_instance()
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
         self.scorer_type = "true_false"
 
     @pyrit_target_retry

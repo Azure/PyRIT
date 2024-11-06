@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Generator, Tuple
 from pydantic import BaseModel, ConfigDict
 from pyrit.models import QuestionAnsweringEntry, QuestionAnsweringDataset
-from pyrit.memory import MemoryInterface, CentralMemory
+from pyrit.memory import CentralMemory
 import textwrap
 
 

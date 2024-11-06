@@ -7,7 +7,6 @@ import enum
 from pathlib import Path
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models.score import UnvalidatedScore
 from pyrit.score import Score, Scorer
 from pyrit.models import PromptRequestPiece, SeedPrompt
@@ -37,8 +36,6 @@ class SelfAskScaleScorer(Scorer):
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
-
-        self._memory = CentralMemory.get_memory_instance()
         
         if not system_prompt_path:
             system_prompt_path = self.SystemPaths.GENERAL_SYSTEM_PROMPT.value

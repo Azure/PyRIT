@@ -5,7 +5,6 @@ import csv
 
 from pathlib import Path
 from typing import Optional
-from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score import Scorer
 
@@ -14,9 +13,6 @@ class HumanInTheLoopScorer(Scorer):
     """
     Create scores from manual human input and adds them to the database.
     """
-
-    def __init__(self) -> None:
-        self._memory = CentralMemory.get_memory_instance()
 
     def import_scores_from_csv(self, csv_file_path: Path | str) -> list[Score]:
 

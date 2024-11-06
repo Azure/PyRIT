@@ -7,7 +7,6 @@ import json
 from typing import Union, Any, Optional
 
 from pyrit.prompt_target import PromptShieldTarget
-from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.memory import PromptMemoryEntry
 from pyrit.score import Scorer, ScoreType
@@ -22,7 +21,6 @@ class PromptShieldScorer(Scorer):
 
     scorer_type: ScoreType
     _conversation_id: str
-    _memory: Union[MemoryInterface, None]
     _prompt_shield_target: PromptShieldTarget
 
     def __init__(
@@ -31,7 +29,6 @@ class PromptShieldScorer(Scorer):
     ) -> None:
         self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
-        self._memory = CentralMemory.get_memory_instance()
         
 
     async def score_async(
