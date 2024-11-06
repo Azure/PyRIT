@@ -180,7 +180,11 @@ class ClaimConverter(PromptConverter):
         inferences = [initial_claim] + inferences
         inferences = list(dict.fromkeys(inferences)) # maintains order while turning into a set
 
-        inferences_selected = inferences[0]
+        options = [i.capitalize() for i in inferences]
+        options = [f"[{i}] " + " " + o for i, o in enumerate(options)]
+        selected = input("Select an inference from automatically extracted inferences from the example claim.\n" + "\n".join(options))
+
+        inferences_selected = inferences[int(selected)]
         inf_to_gen_cfg = config["interface"]["inferences_to_generations"]
 
         generations = []
@@ -248,7 +252,10 @@ class ClaimConverter(PromptConverter):
         # ignore already-labeled data
         # completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
 
-        response_msg = generations_df['inst'][0] #completion_df["inst"][0]
+        options = [f"[{i}] " + " " + p for i, p in enumerate(generations_df["inst"])]
+        selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
+
+        response_msg = generations_df['inst'][int(selected)] #completion_df["inst"][0]
 
         # response_msg = await self.send_variation_prompt_async(request)
 
