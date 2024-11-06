@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
-from pyrit.common.path import HOME_PATH
+from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
@@ -22,20 +22,19 @@ class InsecureCodeScorer(Scorer):
         self,
         chat_target: PromptChatTarget,
         threshold: float = 0.5,
-        scorer_type: str = "float_scale",
         system_prompt_path: Optional[Path] = None,
         memory: MemoryInterface = None,
     ):
         super().__init__()
         self._prompt_target = chat_target
         self._threshold = threshold
-        self.scorer_type = scorer_type
+        self.scorer_type = "float_scale"
         self._system_prompt_path = system_prompt_path
         self._memory = memory if memory else DuckDBMemory()
 
         # Load the system prompt template as a SeedPrompt object
         self._system_prompt_path = (
-            system_prompt_path or HOME_PATH / "assets" / "demo_scorer_definitions" / "insecure_code_scorer.yaml"
+            system_prompt_path or DATASETS_PATH / "score" / "insecure_code" / "system_prompt.yaml"
         )
         scoring_instructions_template = SeedPrompt.from_yaml_file(self._system_prompt_path)
 
@@ -75,7 +74,7 @@ class InsecureCodeScorer(Scorer):
             # Attempt to use score_value if available
             raw_score_value = float(unvalidated_score.raw_score_value)
         except KeyError:
-            raise InvalidJsonException("Expected 'score_value' key missing in the JSON response")
+            raise InvalidJsonException(message="Expected 'score_value' key missing in the JSON response")
 
         # Convert UnvalidatedScore to Score, applying scaling and metadata
         score = unvalidated_score.to_score(
