@@ -38,5 +38,4 @@ def test_download_specific_files(setup_environment):
 
     with patch("os.makedirs"):
         with patch("pyrit.common.download_hf_model.download_files"):
-            urls = download_specific_files(MODEL_ID, FILE_PATTERNS, token, Path(""))
-            assert urls
+            download_specific_files(MODEL_ID, FILE_PATTERNS, token, Path(""))

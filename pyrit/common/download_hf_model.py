@@ -58,8 +58,6 @@ def download_specific_files(model_id: str, file_patterns: list, token: str, cach
     # Download the files
     download_files(urls, token, cache_dir)
 
-    return urls
-
 
 def download_files(urls: list, token: str, cache_dir: Path):
     headers = {"Authorization": f"Bearer {token}"}
