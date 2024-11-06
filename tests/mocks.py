@@ -159,6 +159,7 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
 
         session_mock = UnifiedAlchemyMagicMock()
         session_mock.__enter__.return_value = session_mock
+        session_mock.merge.side_effect = lambda entry: entry
         get_session_mock.return_value = session_mock
 
         create_auth_token_mock.return_value = "token"

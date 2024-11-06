@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-from typing import MutableSequence, Union, Optional, Sequence
+from typing import MutableSequence, Optional, Sequence, Union
 import logging
 
 from sqlalchemy import create_engine, MetaData, and_
@@ -206,30 +206,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         self.insert_entries(entries=embedding_data)
 
-    def update_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
-        """
-        Updates entries for a given conversation ID with the specified field values.
-
-        Args:
-            conversation_id (str): The conversation ID of the entries to be updated.
-            update_fields (dict): A dictionary of field names and their new values.
-
-        Returns:
-            bool: True if the update was successful, False otherwise.
-        """
-        # Fetch the relevant entries using query_entries
-        entries_to_update = self.query_entries(
-            PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
-        )
-
-        # Check if there are entries to update
-        if not entries_to_update:
-            logger.info(f"No entries found with conversation_id {conversation_id} to update.")
-            return False
-
-        # Use the utility function to update the entries
-        return self.update_entries(entries=entries_to_update, update_fields=update_fields)
-
     def get_all_table_models(self) -> list[Base]:  # type: ignore
         """
         Returns a list of all table models used in the database by inspecting the Base registry.
@@ -312,7 +288,13 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                     # Ensure the entry is attached to the session. If it's detached, merge it.
                     entry_in_session = session.merge(entry)
                     for field, value in update_fields.items():
-                        setattr(entry_in_session, field, value)
+                        if hasattr(entry_in_session, field):
+                            setattr(entry_in_session, field, value)
+                        else:
+                            logger.warning(
+                                f"Field '{field}' does not exist in the table \
+                                            '{entry_in_session.__tablename__}'"
+                            )
                 session.commit()
                 return True
             except SQLAlchemyError as e:

@@ -5,7 +5,7 @@ import logging
 import struct
 
 from contextlib import closing
-from typing import Optional, Sequence
+from typing import MutableSequence, Optional, Sequence
 from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 
@@ -348,6 +348,34 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
                 return []
+
+    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+        """
+        Updates the given entries with the specified field values.
+
+        Args:
+            entries (list[Base]): A list of SQLAlchemy model instances to be updated.
+            update_fields (dict): A dictionary of field names and their new values.
+        """
+        with closing(self.get_session()) as session:
+            try:
+                for entry in entries:
+                    # Ensure the entry is attached to the session. If it's detached, merge it.
+                    entry_in_session = session.merge(entry)
+                    for field, value in update_fields.items():
+                        if hasattr(entry_in_session, field):
+                            setattr(entry_in_session, field, value)
+                        else:
+                            logger.warning(
+                                f"Field '{field}' does not exist in the table \
+                                            '{entry_in_session.__tablename__}'"
+                            )
+                session.commit()
+                return True
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error updating entries: {e}")
+                return False
 
     def reset_database(self):
         """Drop and recreate existing tables"""
