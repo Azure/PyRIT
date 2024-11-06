@@ -40,7 +40,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-        
+
 
 :py:mod:`pyrit.chat_message_normalizer`
 =======================================
@@ -70,7 +70,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    
+
 
 :py:mod:`pyrit.datasets`
 ========================
@@ -164,7 +164,6 @@ API Reference
     :toctree: _autosummary/
 
     ALLOWED_CHAT_MESSAGE_ROLES
-    AttackStrategy
     AudioPathDataTypeSerializer
     AzureBlobStorageIO
     ChatMessage

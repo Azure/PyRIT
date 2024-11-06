@@ -35,7 +35,7 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
 
     Returns:
         str: The passed value if provided, otherwise the value from the environment variable.
-    
+
     Raises:
         ValueError: If neither the passed value nor the environment variable is provided.
     """

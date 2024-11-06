@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # PyRIT Framework How to Guide
+# # How to Guide
 #
 # Intended for use by AI Red Teams, the Python Risk Identification Tool for generative AI (PyRIT) can
 # help automate the process of identifying risks in AI systems. This guide will walk you through the
