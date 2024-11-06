@@ -10,7 +10,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.download_hf_model_with_aria2 import download_specific_files_with_aria2
+from pyrit.common.download_hf_model import download_specific_files
 from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
@@ -116,14 +116,12 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             if self.necessary_files is None:
                 # Download all files if no specific files are provided
-                logger.info(f"Downloading all files for {self.model_id} using aria2...")
-                download_specific_files_with_aria2(self.model_id, None, self.huggingface_token, cache_dir)
+                logger.info(f"Downloading all files for {self.model_id}...")
+                download_specific_files(self.model_id, None, self.huggingface_token, cache_dir)
             else:
                 # Download only the necessary files
-                logger.info(f"Downloading specific files for {self.model_id} using aria2...")
-                download_specific_files_with_aria2(
-                    self.model_id, self.necessary_files, self.huggingface_token, cache_dir
-                )
+                logger.info(f"Downloading specific files for {self.model_id}...")
+                download_specific_files(self.model_id, self.necessary_files, self.huggingface_token, cache_dir)
 
             # Load the tokenizer and model from the specified directory
             logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
@@ -165,20 +163,23 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         # Apply chat template via the _apply_chat_template method
         tokenized_chat = self._apply_chat_template(messages)
+        input_ids = tokenized_chat["input_ids"]
+        attention_mask = tokenized_chat["attention_mask"]
 
-        logger.info(f"Tokenized chat: {tokenized_chat}")
+        logger.info(f"Tokenized chat: {input_ids}")
 
         try:
             # Ensure model is on the correct device (should already be the case from `load_model_and_tokenizer`)
             self.model.to(self.device)
 
             # Record the length of the input tokens to later extract only the generated tokens
-            input_length = tokenized_chat.shape[-1]
+            input_length = input_ids.shape[-1]
 
             # Generate the response
             logger.info("Generating response from model...")
             generated_ids = self.model.generate(
-                input_ids=tokenized_chat,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
                 max_new_tokens=self.max_new_tokens,
                 temperature=self.temperature,
                 top_p=self.top_p,
@@ -219,7 +220,11 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             # Apply the chat template to format and tokenize the messages
             tokenized_chat = self.tokenizer.apply_chat_template(
-                messages, tokenize=True, add_generation_prompt=True, return_tensors=self.tensor_format
+                messages,
+                tokenize=True,
+                add_generation_prompt=True,
+                return_tensors=self.tensor_format,
+                return_dict=True,
             ).to(self.device)
             return tokenized_chat
         else:

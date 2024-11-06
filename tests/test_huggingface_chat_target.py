@@ -22,12 +22,10 @@ def mock_get_required_value(request):
         yield
 
 
-# Fixture to mock download_specific_files_with_aria2 globally for all tests
+# Fixture to mock download_specific_files globally for all tests
 @pytest.fixture(autouse=True)
-def mock_download_specific_files_with_aria2():
-    with patch(
-        "pyrit.common.download_hf_model_with_aria2.download_specific_files_with_aria2", return_value=None
-    ) as mock_download:
+def mock_download_specific_files():
+    with patch("pyrit.common.download_hf_model.download_specific_files", return_value=None) as mock_download:
         yield mock_download
 
 

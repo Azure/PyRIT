@@ -2,11 +2,12 @@
 # Licensed under the MIT license.
 
 import os
+from pathlib import Path
 import pytest
 from unittest.mock import patch
 
 # Import functions to test from local application files
-from pyrit.common.download_hf_model_with_aria2 import download_specific_files_with_aria2
+from pyrit.common.download_hf_model import download_specific_files
 
 
 # Define constants for testing
@@ -31,8 +32,11 @@ def setup_environment():
         yield token
 
 
-def test_download_specific_files_with_aria2(setup_environment):
-    """Test downloading specific files using aria2."""
+def test_download_specific_files(setup_environment):
+    """Test downloading specific files"""
     token = setup_environment  # Get the token from the fixture
-    with pytest.raises(Exception):
-        download_specific_files_with_aria2(MODEL_ID, FILE_PATTERNS, token)
+
+    with patch("os.makedirs"):
+        with patch("pyrit.common.download_hf_model.download_files"):
+            urls = download_specific_files(MODEL_ID, FILE_PATTERNS, token, Path(""))
+            assert urls
