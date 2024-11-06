@@ -56,23 +56,28 @@ class HumanInTheLoopScorer(Scorer):
 
     def score_prompt_manually(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
-        manually score the prompt
+        Manually score the prompt
+        Args:
+            request_response (PromptRequestPiece): The prompt request piece to score.
+            task (str): The task based on which the text should be scored (the original attacker model's objective).
+        Returns: list of scores
         """
         self.validate(request_response, task=task)
 
         score_value = ""
-        while not score_value:
-            message = f"""This prompt has not been scored yet, please manually score the prompt.
-            The prompt is: {request_response.converted_value}\n
-            Please enter a score value
-            (e.g., 'True' for true_false or a value between '0.0' and '1.0 for float_scale): """
-
-            score_value = self._get_user_input(message)
-        score_type = self._get_score_type(score_value)
-
         score_category = ""
-        while not score_category:
-            score_category = self._get_user_input("Please enter score category (e.g., 'hate' or 'violence').")
+        while not score_value or not score_category:
+            if not score_category:
+                score_category = self._get_user_input("Please enter score category (e.g., 'hate' or 'violence').")
+
+            if not score_value:
+                message = f"""This prompt has not been scored yet, please manually score the prompt.
+                The prompt is: {request_response.converted_value}\n
+                Please enter a score value
+                (e.g., 'True' for true_false or a value between '0.0' and '1.0 for float_scale): """
+
+                score_value = self._get_user_input(message)
+        score_type = self._get_score_type(score_value)
         score_value_description = self._get_user_input(
             "Enter score value description (optional, press 'Enter' to skip): "
         )
@@ -175,8 +180,6 @@ class HumanInTheLoopScorer(Scorer):
             elif user_input == "3":
                 return await self.rescore(request_response, task=task)
 
-            else:
-                raise ValueError("Invalid input. Please enter '1', '2', or '3'.")
         return new_scores
 
     def _get_user_input(self, message) -> str:
@@ -269,7 +272,7 @@ class HumanInTheLoopScorer(Scorer):
     ) -> str:
         """
         Get the modified value for the score.
-        Parameters:
+        Args:
             original_prompt (str): The original prompt.
             score_value (str): The existing value in the Score object.
             field_name (str): The name of the field to change.
