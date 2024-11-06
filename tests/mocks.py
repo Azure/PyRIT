@@ -61,8 +61,8 @@ class MockHttpPostSync:
 class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
-    def __init__(self, id=None, memory=None, rpm=None) -> None:
-        super().__init__(memory=memory, max_requests_per_minute=rpm)
+    def __init__(self, id=None, rpm=None) -> None:
+        super().__init__(max_requests_per_minute=rpm)
         self.id = id
         self.prompt_sent = []
 
@@ -122,7 +122,7 @@ def get_memory_interface() -> Generator[MemoryInterface, None, None]:
 def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
-
+    
     duckdb_memory.disable_embedding()
 
     # Reset the database to ensure a clean state

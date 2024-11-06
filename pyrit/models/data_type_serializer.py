@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 from pyrit.models.literals import PromptDataType
 
 if TYPE_CHECKING:
-    from pyrit.memory import CentralMemory, MemoryInterface
+    from pyrit.memory import MemoryInterface
 
 
 def data_serializer_factory(
@@ -55,14 +55,17 @@ class DataTypeSerializer(abc.ABC):
 
     This class is responsible for saving multi-modal types to disk.
     """
-
     data_type: PromptDataType
     value: str
     data_sub_directory: str
     file_extension: str
-    _memory: MemoryInterface = CentralMemory.get_memory_instance()
 
     _file_path: Union[Path, str] = None
+    
+    @property
+    def _memory(self) -> MemoryInterface:
+        from pyrit.memory import CentralMemory
+        return CentralMemory.get_memory_instance()
 
     @abc.abstractmethod
     def data_on_disk(self) -> bool:

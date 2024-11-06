@@ -13,8 +13,8 @@ from pyrit.memory.memory_exporter import MemoryExporter
 
 __all__ = [
     "AzureSQLMemory",
-    "DuckDBMemory",
     "CentralMemory",
+    "DuckDBMemory",
     "EmbeddingDataEntry",
     "MemoryInterface",
     "MemoryEmbedding",

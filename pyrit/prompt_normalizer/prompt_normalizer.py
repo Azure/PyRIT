@@ -16,7 +16,7 @@ from pyrit.prompt_normalizer.prompt_response_converter_configuration import Prom
 
 
 class PromptNormalizer(abc.ABC):
-    _memory: MemoryInterface
+    _memory: MemoryInterface = None
 
     def __init__(self) -> None:
         self._memory = CentralMemory.get_memory_instance()

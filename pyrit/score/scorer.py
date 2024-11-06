@@ -22,7 +22,11 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
-    _memory: MemoryInterface = CentralMemory.get_memory_instance()
+    _memory: Optional[MemoryInterface] = None
+    
+    @property
+    def _memory(self) -> MemoryInterface:
+        return CentralMemory.get_memory_instance()
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
