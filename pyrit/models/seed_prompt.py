@@ -1,10 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-import uuid
 
+from __future__ import annotations
+
+from pathlib import Path
+import uuid
+import yaml
+
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from collections import defaultdict
 from jinja2 import Template, StrictUndefined
 
@@ -107,13 +113,16 @@ class SeedPromptGroup(YamlLoadable):
     def __init__(
         self,
         *,
-        prompts: List[SeedPrompt],
+        prompts: Union[List[SeedPrompt], List[Dict[str, Any]]],
     ):
-        self.prompts = prompts
-        if self.prompts and isinstance(self.prompts[0], dict):
-            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in self.prompts]  # type: ignore
-        else:
-            self.prompts = prompts
+        if not prompts:
+            raise ValueError("SeedPromptGroup cannot be empty.")
+        self.prompts = []
+        for prompt in prompts:
+            if isinstance(prompt, SeedPrompt):
+                self.prompts.append(prompt)
+            elif isinstance(prompt, dict):
+                self.prompts.append(SeedPrompt(**prompt))
 
         # Check sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
@@ -147,11 +156,15 @@ class SeedPromptDataset(YamlLoadable):
 
     prompts: List[SeedPrompt]
 
-    def __init__(self, prompts: List[SeedPrompt]):
-        if prompts and isinstance(prompts[0], dict):
-            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in prompts]  # type: ignore
-        else:
-            self.prompts = prompts
+    def __init__(self, prompts: Union[List[SeedPrompt], List[Dict[str, Any]]]):
+        if not prompts:
+            raise ValueError("SeedPromptDataset cannot be empty.")
+        self.prompts = []
+        for prompt in prompts:
+            if isinstance(prompt, SeedPrompt):
+                self.prompts.append(prompt)
+            elif isinstance(prompt, dict):
+                self.prompts.append(SeedPrompt(**prompt))
 
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seed_prompts: List[SeedPrompt]) -> List[SeedPromptGroup]:
@@ -184,3 +197,38 @@ class SeedPromptDataset(YamlLoadable):
 
     def __repr__(self):
         return f"<SeedPromptDataset(prompts={len(self.prompts)} prompts)>"
+
+    @staticmethod
+    def from_yaml_file_with_uniform_metadata(file: Path, data_type="text") -> SeedPromptDataset:
+        """
+        Creates a new object from a YAML file.
+
+        In the past, PyRIT supported dataset loading from YAML with uniform metadata.
+        That means, every prompt in a dataset had to have the same harm categories,
+        same authors, same groups, etc. This method is a helper to load such datasets.
+
+        Args:
+            file: The input file path.
+            data_type: The data type of the prompts.
+
+        Returns:
+            A new object of type T.
+
+        Raises:
+            FileNotFoundError: If the input YAML file path does not exist.
+            ValueError: If the YAML file is invalid.
+        """
+        if not file.exists():
+            raise FileNotFoundError(f"File '{file}' does not exist.")
+        try:
+            yaml_data = yaml.safe_load(file.read_text("utf-8"))
+        except yaml.YAMLError as exc:
+            raise ValueError(f"Invalid YAML file '{file}': {exc}")
+        non_prompt_data = deepcopy(yaml_data)
+        del non_prompt_data["prompts"]
+        non_prompt_data["data_type"] = data_type
+        seed_prompt_dicts: List[Dict[str, Any]] = []
+        for prompt_text in yaml_data["prompts"]:
+            seed_prompt_dicts.append({"value": prompt_text, **non_prompt_data})
+        data_object = SeedPromptDataset(seed_prompt_dicts)
+        return data_object
