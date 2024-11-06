@@ -50,6 +50,8 @@ class CrucibleTarget(PromptTarget):
                 response_entry = handle_bad_request_exception(
                     response_text=bre.response.text, request=request, is_content_filter=True
                 )
+            else:
+                raise
 
         return response_entry
 
@@ -70,7 +72,7 @@ class CrucibleTarget(PromptTarget):
             endpoint_uri=f"{self._endpoint.rstrip('/')}/score",
             method="POST",
             request_body=payload,
-            headers={"Authorization": self._api_key},
+            headers={"X-API-Key": self._api_key},
         )
 
         if not resp.text:
