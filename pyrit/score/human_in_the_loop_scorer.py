@@ -117,6 +117,7 @@ class HumanInTheLoopScorer(Scorer):
         self.validate(request_response, task=task)
 
         input_list = []
+        new_scores = []
         original_prompt = request_response.converted_value
 
         if self._scorer:
@@ -165,18 +166,19 @@ class HumanInTheLoopScorer(Scorer):
 
         for user_input in input_list:
             if user_input == "1":  # proceed with scoring the prompt as is
-                return [existing_score]
+                new_scores.append(existing_score)
 
             elif user_input == "2":  # manually modify the score
                 score = self.edit_score(existing_score, original_prompt, request_response, task)
-                return [score]
+                new_scores.append(score)
 
             elif user_input == "3":
-                return await self.rescore(request_response, task=task)
+                score = await self.rescore(request_response, task=task)
+                new_scores.extend(score)
 
             else:
                 raise ValueError("Invalid input. Please enter '1', '2', or '3'.")
-        return []
+        return new_scores
 
     def _get_user_input(self, message) -> str:
         root = tk.Tk()
