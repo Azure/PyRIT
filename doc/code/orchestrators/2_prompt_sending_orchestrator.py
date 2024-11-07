@@ -27,7 +27,7 @@
 # > - **Azure SQL Database**: Results will store in Azure SQL DB if respective settings are configured in your `.env` file.
 # > - **Local DuckDB**: If Azure SQL is not configured, results default to a local DuckDB instance.
 # >
-# > To manually set the memory instance, use the `CentralMemory` class. For details, see the [Memory Configuration Guide](./code/memory/0_memory.md).
+# > To manually set the memory instance, use the `CentralMemory` class. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 #
 
 # %%
