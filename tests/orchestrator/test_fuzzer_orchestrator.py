@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.common.path import DATASETS_PATH
@@ -8,18 +9,24 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, SeedP
 from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, FuzzerConverter, FuzzerShortenConverter
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
-from pyrit.memory import DuckDBMemory, CentralMemory
+from pyrit.memory import CentralMemory
 from pyrit.score import Scorer
 from tests.mocks import MockPromptTarget
+from pyrit.memory.memory_interface import MemoryInterface
 import pathlib
 import pytest
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
-def mock_central_memory_instance():
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def mock_central_memory_instance(memory_interface):
     """Fixture to mock CentralMemory.get_memory_instance"""
-    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    with patch.object(CentralMemory, "get_memory_instance", return_value=duckdb_in_memory) as duck_db_memory:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface) as duck_db_memory:
         yield duck_db_memory
 
 

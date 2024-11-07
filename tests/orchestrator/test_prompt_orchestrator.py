@@ -1,43 +1,34 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Generator
 import pytest
 import tempfile
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
 
-from sqlalchemy import inspect
-
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
 from pyrit.score import SubStringScorer
-from pyrit.memory import DuckDBMemory, CentralMemory
+from pyrit.memory import CentralMemory, MemoryInterface
 
 from tests.mocks import MockPromptTarget
+from tests.mocks import get_memory_interface
 
 
-@pytest.fixture(scope="function")
-def mock_central_memory_instance():
+@pytest.fixture
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def mock_central_memory_instance(memory_interface):
     """Fixture to mock CentralMemory.get_memory_instance"""
-    duck_db_memory = DuckDBMemory(db_path=":memory:")
-    with patch.object(CentralMemory, "get_memory_instance", return_value=duck_db_memory):
-        duck_db_memory.disable_embedding()
-
-        # Reset the database to ensure a clean state
-        duck_db_memory.reset_database()
-        inspector = inspect(duck_db_memory.engine)
-
-        # Verify that tables are created as expected
-        assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
-        assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
-        assert "ScoreEntries" in inspector.get_table_names(), "ScoreEntries table not created."
-        assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
-
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface) as duck_db_memory:
         yield duck_db_memory
-        duck_db_memory.dispose_engine()
 
 
 @pytest.fixture

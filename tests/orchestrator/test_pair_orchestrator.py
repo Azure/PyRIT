@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Generator
 import uuid
 from unittest.mock import Mock, AsyncMock, ANY
 from unittest.mock import patch
@@ -13,7 +14,8 @@ from pyrit.orchestrator import PAIROrchestrator
 from pyrit.orchestrator.pair_orchestrator import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import Scorer
-from pyrit.memory import DuckDBMemory, CentralMemory
+from pyrit.memory import CentralMemory
+from tests.mocks import get_memory_interface
 
 
 def _build_prompt_response_with_single_prompt_piece(*, prompt: str) -> PromptRequestResponse:
@@ -23,10 +25,14 @@ def _build_prompt_response_with_single_prompt_piece(*, prompt: str) -> PromptReq
 
 
 @pytest.fixture
-def mock_central_memory_instance():
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def mock_central_memory_instance(memory_interface):
     """Fixture to mock CentralMemory.get_memory_instance"""
-    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    with patch.object(CentralMemory, "get_memory_instance", return_value=duckdb_in_memory) as duck_db_memory:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface) as duck_db_memory:
         yield duck_db_memory
 
 
