@@ -17,7 +17,7 @@
 #
 # The Red Teaming Orchestrator is an orchestrator that sets up an attacker LLM to communicate with a target LLM.
 #
-# ### Multi-Turn Example
+# ## Multi-Turn Example
 #
 # In this example, we'll try to convince a chatbot to generate a keylogger. For this purpose, we use PyRIT's `RedTeamingOrchestrator` that leverages a red teaming LLM to generate prompts that are then sent to the target chatbot. Behind the scenes, this will use an AzureML endpoint to generate the prompts and send them to the target chatbot. The target chatbot will then respond to the prompts, and the responses will be scored by the `RedTeamingOrchestrator` to determine if the objective has been achieved. If the objective has not been achieved, the `RedTeamingOrchestrator` will generate a new prompt and send it to the target chatbot. This process will continue until the objective is achieved or a maximum number of attempts is reached.
 #
@@ -25,7 +25,7 @@
 #
 # Note that for this to succeed, the `RedTeamingOrchestrator` requires an LLM endpoint without content moderation or other kinds of safety filtering mechanisms. Even then, success depends on the model and may not be achieved every time.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
 import logging
@@ -65,7 +65,7 @@ with RedTeamingOrchestrator(
     await result.print_conversation_async()  # type: ignore
 
 # %% [markdown]
-# ### Image Target Example
+# ## Image Target Example
 #
 # One of the most powerful things about PyRIT is its ability to generalize. You can use images
 # in most places instead of text, and vice versa. In this example, we'll try to convince an image generation model to generate a harmful image.

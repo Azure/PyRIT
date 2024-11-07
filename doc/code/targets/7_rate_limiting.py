@@ -13,13 +13,14 @@
 # ---
 
 # %% [markdown]
-# ### Rate Limit (RPM) Threshold
+# # Rate Limit (RPM) Threshold
 #
 # Some targets have a specific Rate Limit (Requests Per Minute) they can handle. In order to abide by this limitation
 # and avoid exceptions, you can configure `max_requests_per_minute` on the target before using it with an orchestrator.
 #
 # Note `batch_size` has to be set to 1 for this to work properly.
 #
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
 import time

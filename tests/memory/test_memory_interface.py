@@ -15,11 +15,11 @@ from pyrit.memory import MemoryInterface, MemoryExporter, PromptMemoryEntry
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
+    Score,
     SeedPrompt,
     SeedPromptGroup,
 )
 from pyrit.orchestrator import Orchestrator
-from pyrit.score import Score
 
 from tests.mocks import get_memory_interface, get_sample_conversations, get_sample_conversation_entries
 

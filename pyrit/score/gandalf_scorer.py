@@ -8,10 +8,9 @@ import requests
 from openai import BadRequestError
 import uuid
 
-from pyrit.exceptions.exception_classes import PyritException, pyrit_target_retry
+from pyrit.exceptions import PyritException, pyrit_target_retry
 from pyrit.memory import DuckDBMemory, MemoryInterface
-from pyrit.models import Score
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget, GandalfLevel
 from pyrit.score.scorer import Scorer
 

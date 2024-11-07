@@ -1,4 +1,4 @@
-### Populating Secrets
+# Populating Secrets
 
 Nearly all of PyRIT's targets require secrets to interact with.
 

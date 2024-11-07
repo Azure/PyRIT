@@ -19,11 +19,12 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
     """
     The AzureSpeechAudioTextConverter takes a .wav file and transcribes it into text.
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
+
     Args:
         azure_speech_region (str): The name of the Azure region.
         azure_speech_key (str): The API key for accessing the service.
         recognition_language (str): Recognition voice language. Defaults to "en-US".
-            For more on supported languages, see the following link:
+            For more on supported languages, see the following link
             https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
         memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
@@ -134,7 +135,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         Callback function that appends transcribed text upon receiving a "recognized" event
 
         Args:
-            evt (SessionEventArgs): event
+            evt (SpeechRecognitionEventArgs): event
             transcript (list): list to store transcribed text
         """
         logger.info("RECOGNIZED: {}".format(evt.result.text))
@@ -145,7 +146,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         Callback function that stops continuous recognition upon receiving an event 'evt'
 
         Args:
-            evt (SessionEventArgs): event
+            evt (SpeechRecognitionEventArgs): event
             recognizer (SpeechRecognizer): speech recognizer object
         """
         logger.info("CLOSING on {}".format(evt))

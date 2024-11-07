@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ## Generating GCG Suffixes Using Azure Machine Learning
+# # Generating GCG Suffixes Using Azure Machine Learning
 
 # %% [markdown]
 # This notebook shows how to generate GCG suffixes using Azure Machine Learning (AML), which consists of three main steps:
@@ -23,7 +23,7 @@
 # 3. Submit a training job to AML.
 
 # %% [markdown]
-# ### Connect to Azure Machine Learning Workspace
+# ## Connect to Azure Machine Learning Workspace
 
 # %% [markdown]
 # The [workspace](https://docs.microsoft.com/en-us/azure/machine-learning/concept-workspace) is the top-level resource for Azure Machine Learning (AML), providing a centralized place to work with all the artifacts you create when using AML. In this section, we will connect to the workspace in which the job will be run.
@@ -49,7 +49,7 @@ from azure.identity import DefaultAzureCredential
 ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
 
 # %% [markdown]
-# ### Create AML Environment
+# ## Create AML Environment
 
 # %% [markdown]
 # To install the dependencies needed to run GCG, we create an AML environment from a [Dockerfile](../../../pyrit/auxiliary_attacks/gcg/src/Dockerfile).
@@ -71,7 +71,7 @@ ml_client.environments.create_or_update(env_docker_context)
 
 
 # %% [markdown]
-# ### Submit Training Job to AML
+# ## Submit Training Job to AML
 
 # %% [markdown]
 # Finally, we configure the command to run the GCG algorithm. The entry file for the algorithm is [`run.py`](../../../pyrit/auxiliary_attacks/gcg/experiments/run.py), which takes several command line arguments, as shown below. We also have to specify the compute `instance_type` to run the algorithm on. In our experience, a GPU instance with at least 32GB of vRAM is required. In the example below, we use Standard_ND40rs_v2.
