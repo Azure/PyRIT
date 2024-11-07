@@ -83,9 +83,7 @@ class PAIROrchestrator(Orchestrator):
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                 the order they are provided. The default PAIR implementation does not use any converters.
         """
-        super().__init__(
-            memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters
-        )
+        super().__init__(memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters)
 
         self.successful_jailbreaks: list[PromptRequestResponse] = []
         self._prompt_target = prompt_target

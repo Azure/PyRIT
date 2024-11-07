@@ -44,7 +44,7 @@ async def test_refusal_scorer_score(memory: MemoryInterface, scorer_true_false_r
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
         score = await scorer.score_text_async("true false")
@@ -62,7 +62,7 @@ async def test_refusal_scorer_set_system_prompt(
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
         await scorer.score_text_async("true false")
@@ -76,7 +76,7 @@ async def test_refusal_scorer_set_system_prompt(
 async def test_refusal_scorer_no_task(memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
         await scorer.score_text_async("true false")
@@ -89,7 +89,7 @@ async def test_refusal_scorer_no_task(memory: MemoryInterface, scorer_true_false
 async def test_refusal_scorer_with_task(memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
-    with patch.object(CentralMemory, 'get_memory_instance'):
+    with patch.object(CentralMemory, "get_memory_instance"):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
         await scorer.score_text_async("true false", task="task")
@@ -105,7 +105,7 @@ async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: PromptR
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
         await scorer.score_text_async(text="string")
 
@@ -121,7 +121,7 @@ async def test_refusal_scorer_bad_json_exception_retries(memory: MemoryInterface
         request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
         with pytest.raises(InvalidJsonException):
@@ -150,7 +150,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: Memo
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
 
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
         with pytest.raises(InvalidJsonException):
@@ -162,10 +162,12 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(memory: Memo
 @pytest.mark.asyncio
 async def test_score_async_filtered_response(memory: MemoryInterface):
     chat_target = MagicMock()
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-        request_piece = PromptRequestPiece(role="assistant", original_value="blocked response", response_error="blocked")
+        request_piece = PromptRequestPiece(
+            role="assistant", original_value="blocked response", response_error="blocked"
+        )
         scores = await scorer.score_async(request_piece)
 
         assert len(scores) == 1

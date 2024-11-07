@@ -214,7 +214,7 @@ def get_test_request_piece() -> PromptRequestPiece:
 
 
 def get_sample_conversations() -> list[PromptRequestPiece]:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         orchestrator1 = Orchestrator()
         orchestrator2 = Orchestrator()
 

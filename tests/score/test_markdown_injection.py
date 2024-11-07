@@ -26,7 +26,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
     ],
 )
 async def test_md_injection_detected(text: str, memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = MarkdownInjectionScorer()
         score = (await scorer.score_text_async(text))[0]
         assert score.get_value() is True
@@ -34,7 +34,7 @@ async def test_md_injection_detected(text: str, memory: MemoryInterface):
 
 @pytest.mark.asyncio
 async def test_md_injection_not_detected(memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         classifier = MarkdownInjectionScorer()
         text = "this is a test"
         score = await classifier.score_text_async(text)
@@ -44,7 +44,7 @@ async def test_md_injection_not_detected(memory: MemoryInterface):
 @pytest.mark.asyncio
 async def test_md_injection_adds_to_memory():
     memory = MagicMock(MemoryInterface)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = MarkdownInjectionScorer()
         await scorer.score_text_async(text="string")
 

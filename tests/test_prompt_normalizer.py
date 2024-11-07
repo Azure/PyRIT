@@ -48,7 +48,7 @@ def normalizer_piece() -> NormalizerRequestPiece:
 def mock_memory_instance():
     """Fixture to mock CentralMemory.get_memory_instance"""
     memory = MagicMock()
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory) as mock:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory) as mock:
         yield mock
 
 
@@ -72,7 +72,7 @@ async def test_send_prompt_async_multiple_converters(mock_memory_instance, norma
     request = NormalizerRequest([normalizer_piece])
 
     normalizer = PromptNormalizer()
-    
+
     assert mock_memory_instance.called
 
     await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
@@ -81,30 +81,34 @@ async def test_send_prompt_async_multiple_converters(mock_memory_instance, norma
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_no_response_adds_memory(mock_memory_instance, normalizer_piece: NormalizerRequestPiece):
+async def test_send_prompt_async_no_response_adds_memory(
+    mock_memory_instance, normalizer_piece: NormalizerRequestPiece
+):
     prompt_target = AsyncMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=None)
 
     normalizer = PromptNormalizer()
 
     assert mock_memory_instance.called
-    
+
     await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([normalizer_piece]), target=prompt_target)
 
     assert normalizer._memory.add_request_response_to_memory.call_count == 1
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_request_response_added_to_memory(mock_memory_instance, normalizer_piece: NormalizerRequestPiece):
+async def test_send_prompt_async_request_response_added_to_memory(
+    mock_memory_instance, normalizer_piece: NormalizerRequestPiece
+):
     prompt_target = AsyncMock()
 
     response = PromptRequestPiece(role="assistant", original_value="test_response").to_prompt_request_response()
 
     prompt_target.send_prompt_async = AsyncMock(return_value=response)
-    
+
     normalizer = PromptNormalizer()
     assert mock_memory_instance.called
-    
+
     await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([normalizer_piece]), target=prompt_target)
 
     assert normalizer._memory.add_request_response_to_memory.call_count == 2
@@ -112,20 +116,26 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
     # Validate that first request is added to memory, then response is added to memory
     assert (
         normalizer_piece.prompt_value
-        == normalizer._memory.add_request_response_to_memory.call_args_list[0][1]["request"].request_pieces[0].original_value
+        == normalizer._memory.add_request_response_to_memory.call_args_list[0][1]["request"]
+        .request_pieces[0]
+        .original_value
     )
     assert (
         "test_response"
-        == normalizer._memory.add_request_response_to_memory.call_args_list[1][1]["request"].request_pieces[0].original_value
+        == normalizer._memory.add_request_response_to_memory.call_args_list[1][1]["request"]
+        .request_pieces[0]
+        .original_value
     )
 
-    assert normalizer._memory.add_request_response_to_memory.call_args_list[1].called_after(prompt_target.send_prompt_async)
+    assert normalizer._memory.add_request_response_to_memory.call_args_list[1].called_after(
+        prompt_target.send_prompt_async
+    )
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_exception(mock_memory_instance, normalizer_piece: NormalizerRequestPiece):
     prompt_target = AsyncMock()
-    
+
     normalizer = PromptNormalizer()
     assert mock_memory_instance.called
     await normalizer._build_prompt_request_response(request=NormalizerRequest([normalizer_piece]), target=prompt_target)
@@ -166,10 +176,10 @@ async def test_send_prompt_async_adds_memory_twice(
     normalizer_piece.request_converters = []
 
     request = NormalizerRequest(request_pieces=[normalizer_piece])
-    
+
     normalizer = PromptNormalizer()
     assert mock_memory_instance.called
-    
+
     response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
     assert normalizer._memory.add_request_response_to_memory.call_count == 2
 
@@ -184,7 +194,7 @@ async def test_send_prompt_async_no_converters_response(
 
     normalizer_piece.request_converters = []
     request = NormalizerRequest([normalizer_piece])
-    
+
     normalizer = PromptNormalizer()
     # Test that get_memory_instance is called and _memory is set correctly
     assert mock_memory_instance.called
@@ -193,7 +203,7 @@ async def test_send_prompt_async_no_converters_response(
     # Send prompt async and check the response
     response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
     assert response.request_pieces[0].converted_value == "Hello", "There were no response converters"
-    
+
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_converters_response(
@@ -269,7 +279,7 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 
     normalizer_piece.request_converters = [Base64Converter(), StringJoinConverter(join_value="_")]
     normalizer = PromptNormalizer()
-    
+
     assert mock_memory_instance.called
     if max_requests_per_minute and batch_size != 1:
         with pytest.raises(ValueError):

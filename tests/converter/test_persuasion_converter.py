@@ -19,10 +19,10 @@ from tests.mocks import get_memory_interface
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
-    
-    
+
+
 def test_prompt_persuasion_init_authority_endorsement_template_not_null(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         prompt_persuasion = PersuasionConverter(
             converter_target=prompt_target, persuasion_technique="authority_endorsement"
@@ -31,32 +31,36 @@ def test_prompt_persuasion_init_authority_endorsement_template_not_null(memory_i
 
 
 def test_prompt_persuasion_init_evidence_based_template_not_null(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="evidence_based")
         assert prompt_persuasion.system_prompt
 
 
 def test_prompt_persuasion_init_expert_endorsement_template_not_null(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
-        prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="expert_endorsement")
+        prompt_persuasion = PersuasionConverter(
+            converter_target=prompt_target, persuasion_technique="expert_endorsement"
+        )
         assert prompt_persuasion.system_prompt
 
 
 def test_prompt_persuasion_init_logical_appeal_template_not_null(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+
         prompt_target = MockPromptTarget()
         prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="logical_appeal")
         assert prompt_persuasion.system_prompt
 
 
 def test_prompt_persuasion_init_misrepresentation_template_not_null(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+
         prompt_target = MockPromptTarget()
-        prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="misrepresentation")
+        prompt_persuasion = PersuasionConverter(
+            converter_target=prompt_target, persuasion_technique="misrepresentation"
+        )
         assert prompt_persuasion.system_prompt
 
 
@@ -68,10 +72,11 @@ def test_prompt_persuasion_init_misrepresentation_template_not_null(memory_inter
         "{'str' : 'json not formatted correctly'}",
     ],
 )
-async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(converted_value,
-                                                                                 memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
-    
+async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(
+    converted_value, memory_interface: MemoryInterface
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+
         prompt_target = MockPromptTarget()
 
         prompt_persuasion = PersuasionConverter(
@@ -103,7 +108,7 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
 
 
 def test_persuasion_converter_input_supported(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         prompt_persuasion = PersuasionConverter(
             converter_target=prompt_target, persuasion_technique="authority_endorsement"

@@ -29,7 +29,6 @@ class PromptShieldScorer(Scorer):
     ) -> None:
         self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
-        
 
     async def score_async(
         self, request_response: PromptRequestPiece | PromptMemoryEntry, *, task: Optional[str] = None

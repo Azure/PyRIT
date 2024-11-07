@@ -35,7 +35,7 @@ def set_duckdb_in_memory() -> MemoryInterface:
 @pytest.fixture
 def mock_memory_instance():
     """Fixture to mock CentralMemory.get_memory_instance returning None"""
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=None) as mock:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=None) as mock:
         yield mock
 
 
@@ -172,7 +172,9 @@ def test_prompt_response_validate_conversation_id_throws(sample_conversations: l
         request_response.validate()
 
 
-def test_prompt_request_response_inconsistent_roles_throws(mock_memory_instance, sample_conversations: list[PromptRequestPiece]):
+def test_prompt_request_response_inconsistent_roles_throws(
+    mock_memory_instance, sample_conversations: list[PromptRequestPiece]
+):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
 
@@ -196,7 +198,9 @@ def test_group_conversation_request_pieces(mock_memory_instance, sample_conversa
     assert groups[0].request_pieces[0].sequence == 0
 
 
-def test_group_conversation_request_pieces_multiple_groups(mock_memory_instance, sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces_multiple_groups(
+    mock_memory_instance, sample_conversations: list[PromptRequestPiece]
+):
     convo_group = [
         entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
     ]

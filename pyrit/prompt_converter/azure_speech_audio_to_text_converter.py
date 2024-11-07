@@ -4,7 +4,6 @@
 import logging
 import time
 import azure.cognitiveservices.speech as speechsdk
-from typing import Optional
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType

@@ -48,13 +48,13 @@ def openai_mock_return() -> ChatCompletion:
 
 @pytest.fixture
 def chat_completion_engine(memory_interface: MemoryInterface) -> OpenAIChatTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         return OpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
 def azure_openai_target(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         return OpenAIChatTarget(
             deployment_name="test",
             endpoint="test",

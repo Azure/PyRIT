@@ -29,11 +29,11 @@ from tests.mocks import get_memory_interface
 @pytest.fixture
 def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
-    
+
 
 @pytest.fixture
 def gpt4o_chat_engine(memory) -> OpenAIChatTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         return OpenAIChatTarget(
             deployment_name="gpt-o",
             endpoint="https://mock.azure.com/",
@@ -100,7 +100,7 @@ async def test_complete_chat_async_return(openai_mock_return: ChatCompletion, gp
 
 
 def test_init_with_no_env_var_raises(memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(ValueError):
                 OpenAIChatTarget(
@@ -112,14 +112,14 @@ def test_init_with_no_env_var_raises(memory: MemoryInterface):
 
 
 def test_init_with_no_deployment_var_raises(memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(ValueError):
                 OpenAIChatTarget()
 
 
 def test_init_with_no_endpoint_uri_var_raises(memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(ValueError):
                 OpenAIChatTarget(
@@ -131,7 +131,7 @@ def test_init_with_no_endpoint_uri_var_raises(memory: MemoryInterface):
 
 
 def test_init_with_no_additional_request_headers_var_raises(memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(ValueError):
                 OpenAIChatTarget(
@@ -141,7 +141,7 @@ def test_init_with_no_additional_request_headers_var_raises(memory: MemoryInterf
 
 @pytest.mark.asyncio()
 async def test_convert_image_to_data_url_file_not_found(gpt4o_chat_engine: OpenAIChatTarget, memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with pytest.raises(FileNotFoundError):
             await gpt4o_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
 

@@ -21,11 +21,11 @@ from tests.mocks import get_memory_interface
 @pytest.fixture
 def memory() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
-    
+
 
 @pytest.fixture
 def dalle_target(memory) -> OpenAIDALLETarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         return OpenAIDALLETarget(
             deployment_name="test",
             endpoint="test",
@@ -45,7 +45,7 @@ def test_initialization_with_required_parameters(dalle_target: OpenAIDALLETarget
 
 
 def test_initialization_invalid_num_images(memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         with pytest.raises(ValueError):
             OpenAIDALLETarget(
                 deployment_name="test",
@@ -57,9 +57,11 @@ def test_initialization_invalid_num_images(memory: MemoryInterface):
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async(dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece], memory: MemoryInterface):
+async def test_send_prompt_async(
+    dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece], memory: MemoryInterface
+):
     request = sample_conversations[0]
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with patch(
             "pyrit.prompt_target.openai.openai_dall_e_target.OpenAIDALLETarget._generate_image_response_async",
             new_callable=AsyncMock,
@@ -163,7 +165,7 @@ async def test_dalle_send_prompt_file_save_async(memory: MemoryInterface) -> Non
 
     # "test image data" b64 encoded
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": "dGVzdCBpbWFnZSBkYXRh"}]}'
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         mock_dalle_target = OpenAIDALLETarget(deployment_name="test", endpoint="test", api_key="test")
         mock_dalle_target._async_client.images = MagicMock()
         mock_dalle_target._async_client.images.generate = AsyncMock(return_value=mock_return)
@@ -197,7 +199,7 @@ async def test_send_prompt_async_empty_response_adds_memory() -> None:
 
     # b64_json with empty response
     mock_return.model_dump_json.return_value = '{"data": [{"b64_json": ""}]}'
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=mock_memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory):
         mock_dalle_target = OpenAIDALLETarget(deployment_name="test", endpoint="test", api_key="test")
         mock_dalle_target._async_client.images = MagicMock()
         mock_dalle_target._async_client.images.generate = AsyncMock(return_value=mock_return)
@@ -218,7 +220,7 @@ async def test_send_prompt_async_rate_limit_adds_memory() -> None:
         original_value="draw me a test picture",
     ).to_prompt_request_response()
 
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=mock_memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory):
         mock_dalle_target = OpenAIDALLETarget(deployment_name="test", endpoint="test", api_key="test")
         mock_dalle_target._memory = mock_memory
 
@@ -245,7 +247,7 @@ async def test_send_prompt_async_bad_request_adds_memory() -> None:
         role="user",
         original_value="draw me a test picture",
     ).to_prompt_request_response()
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=mock_memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=mock_memory):
         mock_dalle_target = OpenAIDALLETarget(deployment_name="test", endpoint="test", api_key="test")
         mock_dalle_target._memory = mock_memory
 

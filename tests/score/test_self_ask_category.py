@@ -60,7 +60,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 def test_category_scorer_set_no_category_found():
     chat_target = MagicMock()
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         scorer = SelfAskCategoryScorer(
             chat_target=chat_target,
             content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
@@ -78,7 +78,7 @@ async def test_category_scorer_set_system_prompt(
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_bullying)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskCategoryScorer(
             chat_target=chat_target,
             content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
@@ -95,8 +95,8 @@ async def test_category_scorer_score(memory: MemoryInterface, scorer_category_re
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_bullying)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+
         scorer = SelfAskCategoryScorer(
             chat_target=chat_target,
             content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
@@ -121,8 +121,8 @@ async def test_category_scorer_score_false(
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_false)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+
         scorer = SelfAskCategoryScorer(
             chat_target=chat_target,
             content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
@@ -143,8 +143,8 @@ async def test_category_scorer_adds_to_memory(scorer_category_response_false: Pr
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_false)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+
         scorer = SelfAskCategoryScorer(
             chat_target=chat_target,
             content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
@@ -164,8 +164,8 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries():
         request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
+
         scorer = SelfAskCategoryScorer(
             chat_target=chat_target,
             content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
@@ -197,8 +197,8 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
         request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
+
         scorer = SelfAskCategoryScorer(
             chat_target=chat_target,
             content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
@@ -217,7 +217,7 @@ async def test_score_prompts_batch_async(
 ):
     chat_target = AsyncMock()
     chat_target._max_requests_per_minute = max_requests_per_minute
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         scorer = SelfAskCategoryScorer(
             chat_target=chat_target,
             content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
@@ -231,5 +231,7 @@ async def test_score_prompts_batch_async(
                 with pytest.raises(ValueError):
                     await scorer.score_prompts_batch_async(request_responses=[prompt], batch_size=batch_size)
             else:
-                results = await scorer.score_prompts_batch_async(request_responses=[prompt, prompt2], batch_size=batch_size)
+                results = await scorer.score_prompts_batch_async(
+                    request_responses=[prompt, prompt2], batch_size=batch_size
+                )
                 assert len(results) == 2

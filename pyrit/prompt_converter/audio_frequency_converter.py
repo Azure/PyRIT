@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 import io
 import numpy as np

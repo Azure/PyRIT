@@ -34,7 +34,7 @@ class SelfAskLikertScorer(Scorer):
     def __init__(self, chat_target: PromptChatTarget, likert_scale_path: Path) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
-        
+
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
         if likert_scale["category"]:

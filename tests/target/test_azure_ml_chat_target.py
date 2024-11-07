@@ -32,7 +32,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 @pytest.fixture
 def aml_online_chat(memory) -> AzureMLChatTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         aml_online_chat = AzureMLChatTarget(
             endpoint="http://aml-test-endpoint.com",
             api_key="valid_api_key",
@@ -100,14 +100,14 @@ def test_set_model_parameters_partial_update(aml_online_chat: AzureMLChatTarget)
 
 def test_initialization_with_no_key_raises():
     os.environ[AzureMLChatTarget.api_key_environment_variable] = ""
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         with pytest.raises(ValueError):
             AzureMLChatTarget(endpoint="http://aml-test-endpoint.com")
 
 
 def test_initialization_with_no_api_raises():
     os.environ[AzureMLChatTarget.endpoint_uri_environment_variable] = ""
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         with pytest.raises(ValueError):
             AzureMLChatTarget(api_key="xxxxx")
 

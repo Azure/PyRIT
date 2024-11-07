@@ -26,7 +26,7 @@ def _build_prompt_response_with_single_prompt_piece(*, prompt: str) -> PromptReq
 def mock_central_memory_instance():
     """Fixture to mock CentralMemory.get_memory_instance"""
     duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=duckdb_in_memory) as duck_db_memory:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=duckdb_in_memory) as duck_db_memory:
         yield duck_db_memory
 
 

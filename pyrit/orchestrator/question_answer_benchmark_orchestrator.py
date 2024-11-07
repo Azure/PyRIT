@@ -58,7 +58,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
 
         self._chat_model_under_evaluation = chat_model_under_evaluation
         self._scorer = scorer
-        
+
         self._conversation_id = str(uuid4())
         self._normalizer = PromptNormalizer()
 

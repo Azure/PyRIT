@@ -37,8 +37,10 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_audio(audio_request_piece: PromptRequestPiece, memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+async def test_azure_content_filter_scorer_validate_audio(
+    audio_request_piece: PromptRequestPiece, memory: MemoryInterface
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
         with pytest.raises(ValueError, match="Azure Content Filter Scorer only supports text and image_path data type"):
             await scorer.validate(audio_request_piece)
@@ -47,8 +49,10 @@ async def test_azure_content_filter_scorer_validate_audio(audio_request_piece: P
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_image(image_request_piece: PromptRequestPiece, memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+async def test_azure_content_filter_scorer_validate_image(
+    image_request_piece: PromptRequestPiece, memory: MemoryInterface
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
 
         # should not raise an error
@@ -58,8 +62,10 @@ async def test_azure_content_filter_scorer_validate_image(image_request_piece: P
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_text(text_request_piece: PromptRequestPiece, memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+async def test_azure_content_filter_scorer_validate_text(
+    text_request_piece: PromptRequestPiece, memory: MemoryInterface
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
 
         # should not raise an error
@@ -69,8 +75,8 @@ async def test_azure_content_filter_scorer_validate_text(text_request_piece: Pro
 @pytest.mark.asyncio
 async def test_azure_content_filter_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
 
         mock_client = MagicMock()
@@ -85,7 +91,7 @@ async def test_azure_content_filter_scorer_adds_to_memory():
 
 @pytest.mark.asyncio
 async def test_azure_content_filter_scorer_score():
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=MagicMock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
 
         mock_client = MagicMock()
@@ -108,12 +114,12 @@ async def test_azure_content_filter_scorer_score():
 
 
 def test_azure_content_default_category(memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar")
         assert len(scorer._score_categories) == 4
 
 
 def test_azure_content_explicit_category(memory: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
         assert len(scorer._score_categories) == 1

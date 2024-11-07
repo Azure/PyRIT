@@ -172,9 +172,7 @@ class FuzzerOrchestrator(Orchestrator):
                 the number of prompts.
         """
 
-        super().__init__(
-            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         if not prompt_templates:
             raise ValueError("The initial set of prompt templates cannot be empty.")
@@ -216,7 +214,7 @@ class FuzzerOrchestrator(Orchestrator):
         scale_scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
-            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value
+            system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
         )
         self._scorer = FloatScaleThresholdScorer(
             scorer=scale_scorer,

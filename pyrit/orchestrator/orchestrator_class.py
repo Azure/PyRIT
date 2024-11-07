@@ -63,10 +63,7 @@ class Orchestrator(abc.ABC, Identifier):
             converters = self._prompt_converters
 
         request_piece = NormalizerRequestPiece(
-            request_converters=converters,
-            prompt_value=prompt_text,
-            prompt_data_type=prompt_type,
-            metadata=metadata
+            request_converters=converters, prompt_value=prompt_text, prompt_data_type=prompt_type, metadata=metadata
         )
 
         request = NormalizerRequest(request_pieces=[request_piece], conversation_id=conversation_id)

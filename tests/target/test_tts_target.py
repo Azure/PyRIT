@@ -34,7 +34,7 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 
 @pytest.fixture
 def tts_target(memory_interface: MemoryInterface) -> OpenAITTSTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         return OpenAITTSTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
@@ -43,7 +43,7 @@ def test_tts_initializes(tts_target: OpenAITTSTarget):
 
 
 def test_tts_initializes_calls_get_required_parameters(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
             target = OpenAITTSTarget(
                 deployment_name="deploymenttest",
@@ -95,10 +95,11 @@ async def test_tts_validate_previous_conversations(
 @pytest.mark.parametrize("response_format", ["mp3", "ogg"])
 @pytest.mark.asyncio
 async def test_tts_send_prompt_file_save_async(
-    sample_conversations: list[PromptRequestPiece], response_format: TTSResponseFormat,
-    memory_interface: MemoryInterface
+    sample_conversations: list[PromptRequestPiece],
+    response_format: TTSResponseFormat,
+    memory_interface: MemoryInterface,
 ) -> None:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         tts_target = OpenAITTSTarget(
             deployment_name="test", endpoint="test", api_key="test", response_format=response_format
         )

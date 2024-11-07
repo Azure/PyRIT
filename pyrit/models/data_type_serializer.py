@@ -55,16 +55,18 @@ class DataTypeSerializer(abc.ABC):
 
     This class is responsible for saving multi-modal types to disk.
     """
+
     data_type: PromptDataType
     value: str
     data_sub_directory: str
     file_extension: str
 
     _file_path: Union[Path, str] = None
-    
+
     @property
     def _memory(self) -> MemoryInterface:
         from pyrit.memory import CentralMemory
+
         return CentralMemory.get_memory_instance()
 
     @abc.abstractmethod
@@ -212,9 +214,7 @@ class URLDataTypeSerializer(DataTypeSerializer):
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):
-    def __init__(
-        self, *, prompt_text: Optional[str] = None, extension: Optional[str] = None
-    ):
+    def __init__(self, *, prompt_text: Optional[str] = None, extension: Optional[str] = None):
         self.data_type = "image_path"
         self.data_sub_directory = "/dbdata/images"
         self.file_extension = extension if extension else "png"

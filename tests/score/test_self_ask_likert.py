@@ -48,13 +48,11 @@ def memory() -> Generator[MemoryInterface, None, None]:
 @pytest.mark.asyncio
 async def test_likert_scorer_set_system_prompt(scorer_likert_response: PromptRequestResponse):
     memory = MagicMock(MemoryInterface)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         chat_target = MagicMock()
         chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
 
-        scorer = SelfAskLikertScorer(
-            chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value
-        )
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
         await scorer.score_text_async(text="string")
 
@@ -69,7 +67,7 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: PromptReq
 async def test_likert_scorer_must_have_category(memory):
 
     chat_target = MagicMock()
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with pytest.raises(KeyError, match="category"):
             SelfAskLikertScorer(
                 chat_target=chat_target,
@@ -82,10 +80,8 @@ async def test_likert_scorer_adds_to_memory(scorer_likert_response: PromptReques
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-        scorer = SelfAskLikertScorer(
-            chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value
-        )
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
         await scorer.score_text_async(text="string")
 
@@ -99,10 +95,8 @@ async def test_likert_scorer_score(memory: MemoryInterface, scorer_likert_respon
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
 
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-        scorer = SelfAskLikertScorer(
-            chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value
-        )
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
         score = await scorer.score_text_async("No cyber harm")
 
@@ -126,10 +120,8 @@ async def test_self_ask_scorer_bad_json_exception_retries(memory: MemoryInterfac
         request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-        scorer = SelfAskLikertScorer(
-            chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value
-        )
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
         with pytest.raises(InvalidJsonException):
             await scorer.score_text_async("this has no bullying")
@@ -159,10 +151,8 @@ async def test_self_ask_likert_scorer_json_missing_key_exception_retries(memory:
     )
 
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-        scorer = SelfAskLikertScorer(
-            chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value
-        )
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
 
         with pytest.raises(InvalidJsonException):
             await scorer.score_text_async("this has no bullying")

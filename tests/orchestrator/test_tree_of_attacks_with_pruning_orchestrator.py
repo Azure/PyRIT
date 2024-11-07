@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import pytest
-import tempfile
 
 from typing import Generator
 from unittest.mock import MagicMock, patch
@@ -21,19 +20,19 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 @pytest.fixture
 def prompt_target(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         return MockPromptTarget()
 
 
 @pytest.fixture
 def red_teaming_target(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         return MockPromptTarget()
 
 
 @pytest.fixture
 def scoring_target(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         return MockPromptTarget()
 
 
@@ -62,7 +61,7 @@ def get_prompt_response_with_content(content: str) -> PromptRequestResponse:
 
 
 def test_invalid_width(memory):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with pytest.raises(ValueError) as e:
             TreeOfAttacksWithPruningOrchestrator(
                 red_teaming_chat=MagicMock(),
@@ -78,7 +77,7 @@ def test_invalid_width(memory):
 
 
 def test_invalid_branching_factor(memory):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with pytest.raises(ValueError) as e:
             TreeOfAttacksWithPruningOrchestrator(
                 red_teaming_chat=MagicMock(),
@@ -94,7 +93,7 @@ def test_invalid_branching_factor(memory):
 
 
 def test_invalid_depth(memory):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         with pytest.raises(ValueError) as e:
             TreeOfAttacksWithPruningOrchestrator(
                 red_teaming_chat=MagicMock(),
@@ -118,7 +117,7 @@ async def test_apply_strategy_single_turn_success(
     scoring_target: MockPromptTarget,
     on_topic_checking_enabled: bool,
 ):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
             red_teaming_chat=red_teaming_target,
             prompt_target=prompt_target,
@@ -169,7 +168,9 @@ async def test_apply_strategy_single_turn_success(
                     assert mock_scoring_target.call_count == 2 if on_topic_checking_enabled else 1
 
                     # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
-                    assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
+                    assert (
+                        len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
+                    )
 
 
 @pytest.mark.asyncio
@@ -181,7 +182,7 @@ async def test_apply_strategy_max_depth_reached(
     scoring_target: MockPromptTarget,
     on_topic_checking_enabled: bool,
 ):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
             red_teaming_chat=red_teaming_target,
             prompt_target=prompt_target,
@@ -227,7 +228,9 @@ async def test_apply_strategy_max_depth_reached(
                     assert mock_scoring_target.call_count == 2 if on_topic_checking_enabled else 1
 
                     # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
-                    assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
+                    assert (
+                        len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
+                    )
 
 
 @pytest.mark.asyncio
@@ -241,7 +244,7 @@ async def test_apply_strategy_multiturn_failure(
     depth: int,
     on_topic_checking_enabled: bool,
 ):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
             red_teaming_chat=red_teaming_target,
             prompt_target=prompt_target,
@@ -311,7 +314,7 @@ async def test_apply_strategy_multiturn_success_in_last_turn(
     depth: int,
     on_topic_checking_enabled: bool,
 ):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         tap_orchestrator = TreeOfAttacksWithPruningOrchestrator(
             red_teaming_chat=red_teaming_target,
             prompt_target=prompt_target,

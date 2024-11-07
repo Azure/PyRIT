@@ -66,8 +66,8 @@ async def test_gandalf_scorer_score(mocked_post, memory: MemoryInterface, level:
     memory.add_request_response_to_memory(request=response)
 
     chat_target.send_prompt_async = AsyncMock(return_value=response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+
         scorer = GandalfScorer(level=level, chat_target=chat_target)
 
         mocked_post.return_value = MagicMock(
@@ -104,8 +104,8 @@ async def test_gandalf_scorer_set_system_prompt(
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
-    
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = GandalfScorer(chat_target=chat_target, level=level)
 
         mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
@@ -128,8 +128,10 @@ async def test_gandalf_scorer_adds_to_memory(level: GandalfLevel, memory: Memory
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-        with patch.object(memory, 'get_prompt_request_pieces_by_id', return_value=[generated_request.request_pieces[0]]):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        with patch.object(
+            memory, "get_prompt_request_pieces_by_id", return_value=[generated_request.request_pieces[0]]
+        ):
             scorer = GandalfScorer(level=level, chat_target=chat_target)
 
             await scorer.score_async(response.request_pieces[0])
@@ -146,7 +148,7 @@ async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, memory:
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(side_effect=[RuntimeError("Error"), response])
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = GandalfScorer(level=level, chat_target=chat_target)
 
         with pytest.raises(PyritException):

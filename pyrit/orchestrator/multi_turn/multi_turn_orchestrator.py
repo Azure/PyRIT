@@ -26,12 +26,7 @@ logger = logging.getLogger(__name__)
 class MultiTurnAttackResult:
     """The result of a multi-turn attack."""
 
-    def __init__(
-        self,
-        conversation_id: str,
-        achieved_objective: bool,
-        objective: str
-    ):
+    def __init__(self, conversation_id: str, achieved_objective: bool, objective: str):
         self.conversation_id = conversation_id
         self.achieved_objective = achieved_objective
         self.objective = objective
@@ -120,9 +115,7 @@ class MultiTurnOrchestrator(Orchestrator):
         verbose: bool = False,
     ) -> None:
 
-        super().__init__(
-            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         self._objective_target = objective_target
         self._achieved_objective = False

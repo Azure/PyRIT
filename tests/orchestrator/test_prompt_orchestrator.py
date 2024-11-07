@@ -9,7 +9,6 @@ import uuid
 
 from sqlalchemy import inspect
 
-from pyrit.memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
@@ -24,7 +23,7 @@ from tests.mocks import MockPromptTarget
 def mock_central_memory_instance():
     """Fixture to mock CentralMemory.get_memory_instance"""
     duck_db_memory = DuckDBMemory(db_path=":memory:")
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=duck_db_memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=duck_db_memory):
         duck_db_memory.disable_embedding()
 
         # Reset the database to ensure a clean state
@@ -39,7 +38,7 @@ def mock_central_memory_instance():
 
         yield duck_db_memory
         duck_db_memory.dispose_engine()
-        
+
 
 @pytest.fixture
 def mock_target(mock_central_memory_instance) -> MockPromptTarget:
@@ -115,13 +114,15 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget, moc
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("num_conversations", [1, 10, 20])
-async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_conversations: int, mock_central_memory_instance):
+async def test_send_prompts_and_score_async(
+    mock_target: MockPromptTarget, num_conversations: int, mock_central_memory_instance
+):
     # Set up mocks and return values
     scorer = SubStringScorer(
         substring="test",
         category="test",
     )
-    
+
     scorer.score_async = AsyncMock()  # type: ignore
 
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
@@ -152,8 +153,8 @@ async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_c
     orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(
         return_value=[piece.to_prompt_request_response() for piece in request_pieces]
     )
-
-    with patch.object(orchestrator._memory, 'get_prompt_request_pieces_by_id', return_value=request_pieces): # type: ignore
+    func_str = "get_prompt_request_pieces_by_id"
+    with patch.object(orchestrator._memory, func_str, return_value=request_pieces):  # type: ignore
         await orchestrator.send_prompts_async(
             prompt_list=[piece.original_value for piece in request_pieces if piece.role == "user"]
         )
@@ -244,7 +245,9 @@ async def test_orchestrator_with_memory_labels(mock_target: MockPromptTarget, mo
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_send_prompts_async_with_memory_labels(mock_target: MockPromptTarget, mock_central_memory_instance):
+async def test_orchestrator_send_prompts_async_with_memory_labels(
+    mock_target: MockPromptTarget, mock_central_memory_instance
+):
     labels = {"op_name": "op1"}
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, memory_labels=labels)
     new_labels = {"user_name": "name1"}
@@ -259,7 +262,8 @@ async def test_orchestrator_send_prompts_async_with_memory_labels(mock_target: M
 
 @pytest.mark.asyncio
 async def test_orchestrator_send_prompts_async_with_memory_labels_collision(
-    mock_target: MockPromptTarget, mock_central_memory_instance):
+    mock_target: MockPromptTarget, mock_central_memory_instance
+):
     labels = {"op_name": "op1"}
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, memory_labels=labels)
     new_labels = {"op_name": "op2"}
@@ -293,10 +297,10 @@ async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget, mock
         scorer_class_identifier=orchestrator.get_identifier(),
         prompt_request_response_id=request.id,
     )
-    
+
     orchestrator._memory.add_request_pieces_to_memory(request_pieces=[request])
     orchestrator._memory.add_scores_to_memory(scores=[score])
-    with patch.object(orchestrator._memory, 'get_prompt_request_pieces_by_id', return_value=[request]):
+    with patch.object(orchestrator._memory, "get_prompt_request_pieces_by_id", return_value=[request]):
         scores = orchestrator.get_score_memory()
         assert len(scores) == 1
         assert scores[0].prompt_request_response_id == request.id
@@ -343,7 +347,7 @@ def test_prepare_conversation_without_prepended_conversation(mock_central_memory
     prompt_target_mock = MagicMock()
     orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target_mock)
     memory_mock = MagicMock()
-    
+
     orchestrator._memory = memory_mock
     conversation_id = orchestrator._prepare_conversation()
 

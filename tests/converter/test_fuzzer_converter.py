@@ -26,6 +26,7 @@ from tests.mocks import get_memory_interface
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
 
+
 @pytest.mark.parametrize(
     "converter_class",
     [
@@ -37,7 +38,7 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
     ],
 )
 def test_converter_init_templates_not_null(converter_class, memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         converter = converter_class(converter_target=prompt_target)
         assert converter.system_prompt
@@ -65,8 +66,10 @@ def test_converter_init_templates_not_null(converter_class, memory_interface: Me
     "update",
     [True, False],
 )
-async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class, update, memory_interface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+async def test_converter_send_prompt_async_bad_json_exception_retries(
+    converted_value, converter_class, update, memory_interface
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
 
         if converter_class != FuzzerCrossOverConverter:
@@ -119,7 +122,7 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(converted_
     ],
 )
 def test_fuzzer_converter_input_supported(converter_class, memory_interface) -> None:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         converter = converter_class(converter_target=prompt_target)
         assert converter.input_supported("text") is True

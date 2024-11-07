@@ -8,7 +8,7 @@ from pyrit.prompt_normalizer.prompt_response_converter_configuration import Prom
 
 
 class NormalizerRequestPiece(abc.ABC):
-    
+
     def __init__(
         self,
         *,

@@ -39,7 +39,6 @@ class AzureContentFilterScorer(Scorer):
         use_aad_auth: bool = False,
         harm_categories: list[TextCategory] = None,
     ) -> None:
-
         """
         Class that initializes an Azure Content Filter Scorer
 
@@ -152,9 +151,7 @@ class AzureContentFilterScorer(Scorer):
     async def _get_base64_image_data(self, request_response: PromptRequestPiece):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
-        image_serializer = data_serializer_factory(
-            value=image_path, data_type="image_path", extension=ext
-        )
+        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
 

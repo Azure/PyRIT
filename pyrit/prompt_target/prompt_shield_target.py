@@ -3,7 +3,7 @@
 
 import logging
 import json
-from typing import Any, Literal, Union, Optional
+from typing import Any, Literal, Optional
 
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 from pyrit.common import default_values

@@ -15,13 +15,14 @@ from pyrit.models import PromptRequestResponse
 from pyrit.prompt_converter import TranslationConverter
 from tests.mocks import get_memory_interface
 
+
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
-    
-    
+
+
 def test_prompt_translation_init_templates_not_null(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         translation_converter = TranslationConverter(converter_target=prompt_target, language="en")
         assert translation_converter.system_prompt
@@ -29,7 +30,7 @@ def test_prompt_translation_init_templates_not_null(memory_interface: MemoryInte
 
 @pytest.mark.parametrize("languages", [None, ""])
 def test_translator_converter_languages_validation_throws(languages, memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         with pytest.raises(ValueError):
             TranslationConverter(converter_target=prompt_target, language=languages)
@@ -43,9 +44,11 @@ def test_translator_converter_languages_validation_throws(languages, memory_inte
         "{'str' : 'json not formatted correctly'}",
     ],
 )
-async def test_translation_converter_send_prompt_async_bad_json_exception_retries(converted_value, memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
-    
+async def test_translation_converter_send_prompt_async_bad_json_exception_retries(
+    converted_value, memory_interface: MemoryInterface
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+
         prompt_target = MockPromptTarget()
 
         prompt_variation = TranslationConverter(converter_target=prompt_target, language="en")
@@ -76,7 +79,7 @@ async def test_translation_converter_send_prompt_async_bad_json_exception_retrie
 
 @pytest.mark.asyncio
 async def test_translation_converter_send_prompt_async_json_bad_format_retries(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
 
         prompt_target = MockPromptTarget()
 
@@ -107,8 +110,10 @@ async def test_translation_converter_send_prompt_async_json_bad_format_retries(m
 
 
 @pytest.mark.asyncio
-async def test_translation_converter_convert_async_retrieve_key_capitalization_mismatch(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+async def test_translation_converter_convert_async_retrieve_key_capitalization_mismatch(
+    memory_interface: MemoryInterface,
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
 
         translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
@@ -124,7 +129,7 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
 
 
 def test_translation_converter_input_supported(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
         assert translation_converter.input_supported("text") is True

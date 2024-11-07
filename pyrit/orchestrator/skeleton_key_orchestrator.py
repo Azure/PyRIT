@@ -58,9 +58,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
                 ensure proper rate limit management.
             verbose (bool, optional): If set to True, verbose output will be enabled. Defaults to False.
         """
-        super().__init__(
-            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         self._prompt_normalizer = PromptNormalizer()
 

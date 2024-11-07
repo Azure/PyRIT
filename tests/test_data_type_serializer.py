@@ -20,7 +20,7 @@ from pyrit.models import (
 def set_duckdb_in_memory() -> MemoryInterface:
     duckdb_in_memory = DuckDBMemory(db_path=":memory:")
     CentralMemory.set_memory_instance(duckdb_in_memory)
-    
+
 
 def test_data_serializer_factory_text_no_data_throws(set_duckdb_in_memory):
     with pytest.raises(ValueError):

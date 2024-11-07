@@ -21,7 +21,7 @@ def set_duckdb_in_memory() -> MemoryInterface:
 
 @pytest.mark.asyncio
 async def test_convert_async_success(set_duckdb_in_memory):
-    
+
     # Simulate WAV data
     sample_rate = 44100
     mock_audio_data = np.random.randint(-32768, 32767, size=(100,), dtype=np.int16)

@@ -21,8 +21,7 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
-    _memory: Optional[MemoryInterface] = None
-    
+
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()

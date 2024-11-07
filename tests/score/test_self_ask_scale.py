@@ -49,7 +49,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 @pytest.fixture
 def scale_scorer(memory) -> SelfAskScaleScorer:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         return SelfAskScaleScorer(
             chat_target=MagicMock(),
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
@@ -76,7 +76,7 @@ async def test_scale_scorer_set_system_prompt(
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskScaleScorer(
             chat_target=chat_target,
             scale_arguments_path=scale_arguments_path,
@@ -97,7 +97,7 @@ async def test_scale_scorer_set_system_prompt(
 def test_scale_scorer_invalid_scale_file_contents():
     chat_target = MagicMock()
     memory = MagicMock(MemoryInterface)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         # When using a YAML with wrong keys the Scale constructor will raise an exception.
         with pytest.raises(ValueError, match="Missing key in scale_args:"):
             SelfAskScaleScorer(
@@ -150,7 +150,7 @@ async def test_scale_scorer_score(memory: MemoryInterface, scorer_scale_response
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskScaleScorer(
             chat_target=chat_target,
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
@@ -183,7 +183,7 @@ async def test_scale_scorer_score_custom_scale(memory: MemoryInterface, scorer_s
     scorer_scale_response.request_pieces[0].converted_value = scorer_scale_response.request_pieces[0].original_value
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskScaleScorer(
             chat_target=chat_target,
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
@@ -213,7 +213,7 @@ async def test_scale_scorer_score_calls_send_chat():
 
     chat_target = MagicMock()
     memory = MagicMock(MemoryInterface)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskScaleScorer(
             chat_target=chat_target,
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,

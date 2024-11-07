@@ -20,10 +20,10 @@ from tests.mocks import get_memory_interface
 @pytest.fixture
 def memory_interface() -> Generator[MemoryInterface, None, None]:
     yield from get_memory_interface()
-    
+
 
 def test_prompt_variation_init_templates_not_null(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         prompt_variation = VariationConverter(converter_target=prompt_target)
         assert prompt_variation.system_prompt
@@ -37,8 +37,10 @@ def test_prompt_variation_init_templates_not_null(memory_interface: MemoryInterf
         "{'str' : 'json not formatted correctly'}",
     ],
 )
-async def test_variation_converter_send_prompt_async_bad_json_exception_retries(converted_value, memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
+    converted_value, memory_interface: MemoryInterface
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
 
         prompt_variation = VariationConverter(converter_target=prompt_target)
@@ -70,7 +72,7 @@ async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
 
 
 def test_variation_converter_input_supported(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         prompt_target = MockPromptTarget()
         converter = VariationConverter(converter_target=prompt_target)
         assert converter.input_supported("audio_path") is False

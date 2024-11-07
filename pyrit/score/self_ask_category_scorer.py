@@ -42,7 +42,6 @@ class SelfAskCategoryScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
-        
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 
         self._no_category_found_category = category_file_contents["no_category_found"]

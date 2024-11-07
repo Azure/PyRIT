@@ -15,9 +15,7 @@ from pyrit.score.scorer import Scorer
 
 
 class GandalfScorer(Scorer):
-    def __init__(
-        self, level: GandalfLevel, chat_target: PromptChatTarget = None
-    ) -> None:
+    def __init__(self, level: GandalfLevel, chat_target: PromptChatTarget = None) -> None:
         self._prompt_target = chat_target
         self._defender = level.value
         self._endpoint = "https://gandalf.lakera.ai/api/guess-password"

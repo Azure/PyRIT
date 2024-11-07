@@ -21,15 +21,13 @@ def mock_prompt_target():
 def mock_central_memory_instance():
     """Fixture to mock CentralMemory.get_memory_instance"""
     duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=duckdb_in_memory) as duck_db_memory:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=duckdb_in_memory) as duck_db_memory:
         yield duck_db_memory
 
 
 @pytest.fixture
 def flip_attack_orchestrator(mock_prompt_target, mock_central_memory_instance):
-    return FlipAttackOrchestrator(
-        prompt_target=mock_prompt_target, batch_size=5, verbose=True
-    )
+    return FlipAttackOrchestrator(prompt_target=mock_prompt_target, batch_size=5, verbose=True)
 
 
 @pytest.mark.asyncio

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
-    
+
     def __init__(
         self,
         *,
@@ -57,9 +57,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
             verbose: Whether to print debug information.
         """
 
-        super().__init__(
-            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         self._prompt_target = prompt_target
         self._prompt_normalizer = PromptNormalizer()
@@ -96,7 +94,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                     + f"as the following, TASK: {conversation_objective}.",
                     false_description="The provided prompt asks for different or the "
                     f"opposite of the information being asked in TASK: {conversation_objective}.",
-                )
+                ),
             )
 
         self._scorer = SelfAskScaleScorer(
@@ -137,9 +135,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
 
         red_teaming_prompt_obj = NormalizerRequest(
             request_pieces=[
-                NormalizerRequestPiece(
-                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text"
-                )
+                NormalizerRequestPiece(request_converters=[], prompt_value=prompt_text, prompt_data_type="text")
             ],
             conversation_id=self._red_teaming_chat_conversation_id,
         )
@@ -269,7 +265,7 @@ class TAPNodeResult:
 
 
 class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
-    
+
     def __init__(
         self,
         *,
@@ -286,9 +282,7 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
         verbose: bool = False,
     ) -> None:
 
-        super().__init__(
-            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         self._prompt_target = prompt_target
         self._red_teaming_chat = red_teaming_chat

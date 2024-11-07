@@ -69,7 +69,9 @@ target = OpenAIChatTarget()
 
 with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()]) as orchestrator:
 
-    seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+    seed_prompt_dataset = SeedPromptDataset.from_yaml_file(
+        pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt"
+    )
 
     prompts = [seed_prompt.value for seed_prompt in seed_prompt_dataset.prompts]
     # this is run in a Jupyter notebook, so we can use await

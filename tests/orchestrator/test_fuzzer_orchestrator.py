@@ -19,10 +19,10 @@ import pytest
 def mock_central_memory_instance():
     """Fixture to mock CentralMemory.get_memory_instance"""
     duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=duckdb_in_memory) as duck_db_memory:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=duckdb_in_memory) as duck_db_memory:
         yield duck_db_memory
-        
-        
+
+
 @pytest.fixture
 def scoring_target(mock_central_memory_instance) -> MockPromptTarget:
     return MockPromptTarget()
@@ -73,7 +73,9 @@ def simple_prompt_templates():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("rounds", list(range(1, 6)))
 @pytest.mark.parametrize("success_pattern", ["1_per_round", "1_every_other_round"])
-async def test_execute_fuzzer(rounds: int, success_pattern: str, simple_prompts: list, simple_prompt_templates: list, scoring_target):
+async def test_execute_fuzzer(
+    rounds: int, success_pattern: str, simple_prompts: list, simple_prompt_templates: list, scoring_target
+):
 
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
@@ -160,9 +162,7 @@ def test_prompt_templates(simple_prompts: list, simple_templateconverter: list[F
 
 
 def test_invalid_batchsize(
-    simple_prompts: list, simple_prompt_templates: list, 
-    simple_templateconverter: list[FuzzerConverter],
-    scoring_target
+    simple_prompts: list, simple_prompt_templates: list, simple_templateconverter: list[FuzzerConverter], scoring_target
 ):
     with pytest.raises(ValueError) as e:
         FuzzerOrchestrator(
@@ -225,8 +225,7 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list, sc
 
 
 @pytest.mark.asyncio
-async def test_apply_template_converter(simple_prompts: list, 
-                                        simple_prompt_templates: list, scoring_target):
+async def test_apply_template_converter(simple_prompts: list, simple_prompt_templates: list, scoring_target):
     prompt_template = SeedPrompt.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
     )
@@ -258,9 +257,9 @@ async def test_apply_template_converter(simple_prompts: list,
 
 
 @pytest.mark.asyncio
-async def test_apply_template_converter_empty_placeholder(simple_prompts: list[str], 
-                                                          simple_prompt_templates: list,
-                                                          scoring_target):
+async def test_apply_template_converter_empty_placeholder(
+    simple_prompts: list[str], simple_prompt_templates: list, scoring_target
+):
     prompt_shorten_converter = FuzzerShortenConverter(converter_target=scoring_target)
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,

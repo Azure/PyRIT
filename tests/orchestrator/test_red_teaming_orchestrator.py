@@ -27,18 +27,14 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 
 @pytest.fixture
 def chat_completion_engine(memory_interface) -> OpenAIChatTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         return OpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
 def prompt_target(memory_interface) -> OpenAIChatTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
-        return OpenAIChatTarget(
-            deployment_name="test",
-            endpoint="test",
-            api_key="test"
-        )
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        return OpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
@@ -78,7 +74,7 @@ async def test_send_prompt_twice(
 
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         red_teaming_orchestrator = RedTeamingOrchestrator(
             adversarial_chat=chat_completion_engine,
             objective_target=prompt_target,
@@ -129,7 +125,7 @@ async def test_is_conversation_complete_scoring(score, message_count):
     mock_scorer = MagicMock(Scorer)
     mock_scorer.scorer_type = "true_false"
     mock_scorer.score_async = AsyncMock(return_value=[mock_score])
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=Mock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=Mock()):
         orchestrator = RedTeamingOrchestrator(
             adversarial_chat=Mock(),
             objective_target=Mock(),
@@ -153,7 +149,9 @@ async def test_is_conversation_complete_scoring(score, message_count):
         orchestrator._memory.get_conversation = MagicMock(return_value=simulated_messages)
         # conversation is complete if the last message is from the target
         # and the score is True
-        actual_result = await orchestrator._check_conversation_complete_async(objective_target_conversation_id=str(uuid4()))
+        actual_result = await orchestrator._check_conversation_complete_async(
+            objective_target_conversation_id=str(uuid4())
+        )
         is_failure = not bool(actual_result) or not actual_result.score_value
         assert not is_failure == (len(simulated_messages) > 0 and score)
 
@@ -167,7 +165,7 @@ async def test_is_conversation_complete_scoring_non_bool():
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     scorer.score_text_async = AsyncMock(return_value=[mock_score])
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=Mock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=Mock()):
         orchestrator = RedTeamingOrchestrator(
             adversarial_chat=Mock(),
             objective_target=Mock(),
@@ -236,7 +234,7 @@ async def test_run_attack_async(
 ):
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         red_teaming_orchestrator = RedTeamingOrchestrator(
             adversarial_chat=chat_completion_engine,
             adversarial_chat_system_prompt_path=red_team_system_prompt_path,
@@ -271,7 +269,7 @@ async def test_run_attack_async_blocked_response(
 ):
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         red_teaming_orchestrator = RedTeamingOrchestrator(
             adversarial_chat=chat_completion_engine,
             adversarial_chat_system_prompt_path=red_team_system_prompt_path,
@@ -298,7 +296,7 @@ async def test_apply_run_attack_async_runtime_error(
 ):
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         red_teaming_orchestrator = RedTeamingOrchestrator(
             adversarial_chat=chat_completion_engine,
             objective_target=prompt_target,

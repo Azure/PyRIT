@@ -42,8 +42,7 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
             )
         ]
     )
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
-    
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
         float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=threshold)
 

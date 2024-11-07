@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
 
 from pyrit.common import default_values
 from pyrit.memory import AzureSQLMemory
@@ -18,9 +17,9 @@ class CentralMemory:
     it will be reused for future calls. Otherwise, it uses AzureSQLMemory if configuration values
     are found, defaulting to DuckDBMemory if not.
     """
-    
+
     _memory_instance: MemoryInterface = None
-    
+
     @classmethod
     def set_memory_instance(cls, passed_memory: MemoryInterface) -> None:
         """
@@ -35,8 +34,8 @@ class CentralMemory:
     @classmethod
     def get_memory_instance(cls) -> MemoryInterface:
         """
-        Returns a centralized memory instance. Initializes it to AzureSQLMemory if 
-        Azure SQL/Storage Account configuration values are found, otherwise defaults 
+        Returns a centralized memory instance. Initializes it to AzureSQLMemory if
+        Azure SQL/Storage Account configuration values are found, otherwise defaults
         to DuckDBMemory.
         """
         if cls._memory_instance:
@@ -49,18 +48,18 @@ class CentralMemory:
         # Check for Azure SQL settings
         empty_passed_value = ""
         azure_sql_db_conn_string = default_values.get_non_required_value(
-            env_var_name="AZURE_SQL_DB_CONNECTION_STRING",
-            passed_value=empty_passed_value
+            env_var_name="AZURE_SQL_DB_CONNECTION_STRING", passed_value=empty_passed_value
         )
         results_container_url = default_values.get_non_required_value(
-            env_var_name="AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL",
-            passed_value=empty_passed_value
+            env_var_name="AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL", passed_value=empty_passed_value
         )
 
         # If both Azure SQL configs are present, use AzureSQLMemory; otherwise, use DuckDBMemory
         if azure_sql_db_conn_string and results_container_url:
             logger.info("Using AzureSQLMemory as central memory.")
-            cls._memory_instance = AzureSQLMemory(connection_string=azure_sql_db_conn_string, container_url=results_container_url)
+            cls._memory_instance = AzureSQLMemory(
+                connection_string=azure_sql_db_conn_string, container_url=results_container_url
+            )
         else:
             logger.info("Using DuckDBMemory due to missing Azure SQL DB configuration.")
             cls._memory_instance = DuckDBMemory()

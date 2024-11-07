@@ -6,7 +6,7 @@ import httpx
 import json
 import logging
 import re
-from typing import Callable, Union
+from typing import Callable
 
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget

@@ -53,15 +53,13 @@ class PromptSendingOrchestrator(Orchestrator):
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
         """
-        super().__init__(
-            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         self._prompt_normalizer = PromptNormalizer()
         self._scorers = scorers
-        
+
         self._prompt_target = prompt_target
-        
+
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
 

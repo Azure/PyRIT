@@ -14,7 +14,6 @@ from pyrit.orchestrator import (
     XPIAOrchestrator,
     XPIAManualProcessingOrchestrator,
 )
-from pyrit.score import Scorer
 from tests.mocks import get_memory_interface, MockPromptTarget
 
 
@@ -25,13 +24,13 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 
 @pytest.fixture
 def attack_setup_target(memory_interface) -> MockPromptTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         return MockPromptTarget()
 
 
 @pytest.fixture
 def processing_target() -> MockPromptTarget:
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         return MockPromptTarget()
 
 
@@ -57,7 +56,8 @@ async def test_xpia_orchestrator_execute_no_scorer(attack_setup_target, memory_i
         return_request_response_obj.request_pieces = [return_response_piece]
 
         return return_request_response_obj
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         xpia_orchestrator = XPIAOrchestrator(
             attack_content="test",
             attack_setup_target=attack_setup_target,
@@ -77,7 +77,8 @@ async def test_xpia_orchestrator_execute(attack_setup_target, success_scorer, me
         return_request_response_obj.request_pieces = [return_response_piece]
 
         return return_request_response_obj
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         xpia_orchestrator = XPIAOrchestrator(
             attack_content="test",
             attack_setup_target=attack_setup_target,
@@ -100,7 +101,7 @@ async def test_xpia_orchestrator_execute_with_memory_labels(attack_setup_target,
         return return_request_response_obj
 
     labels = {"op_name": "name1"}
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         xpia_orchestrator = XPIAOrchestrator(
             attack_content="test",
             attack_setup_target=attack_setup_target,
@@ -120,8 +121,10 @@ async def test_xpia_orchestrator_execute_with_memory_labels(attack_setup_target,
 
 @pytest.mark.asyncio
 @patch.object(XPIAManualProcessingOrchestrator, "_input_async", new_callable=AsyncMock, return_value="test")
-async def test_xpia_manual_processing_orchestrator_execute(mock_input_async, attack_setup_target, success_scorer, memory_interface):
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+async def test_xpia_manual_processing_orchestrator_execute(
+    mock_input_async, attack_setup_target, success_scorer, memory_interface
+):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         xpia_orchestrator = XPIAManualProcessingOrchestrator(
             attack_content="test",
             attack_setup_target=attack_setup_target,
@@ -141,7 +144,7 @@ async def test_xpia_manual_processing_orchestrator_execute_with_memory_labels(
     mock_input_async, attack_setup_target, success_scorer, memory_interface
 ):
     labels = {"op_name": "name1"}
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         xpia_orchestrator = XPIAManualProcessingOrchestrator(
             attack_content="test", attack_setup_target=attack_setup_target, scorer=success_scorer, memory_labels=labels
         )
@@ -156,8 +159,7 @@ async def test_xpia_manual_processing_orchestrator_execute_with_memory_labels(
 
 
 @pytest.mark.asyncio
-async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_target, 
-                                              success_scorer, memory_interface):
+async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_target, success_scorer, memory_interface):
     with patch.object(processing_target, "send_prompt_async", new_callable=AsyncMock) as mock_send_to_processing_target:
         mock_send_to_processing_target.return_value = AsyncMock(
             request_pieces=[AsyncMock(converted_value="mocked_processing_response")]
@@ -166,7 +168,7 @@ async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_ta
         with patch.object(
             XPIATestOrchestrator, "_process_async", new_callable=AsyncMock, return_value="mocked_processing_response"
         ) as mock_process_async:
-            with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+            with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
                 xpia_orchestrator = XPIATestOrchestrator(
                     attack_content="test",
                     processing_prompt="some instructions and the required <test>",
@@ -185,8 +187,9 @@ async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_ta
 
 
 @pytest.mark.asyncio
-async def test_xpia_orchestrator_process_async(attack_setup_target, processing_target, 
-                                               success_scorer, memory_interface):
+async def test_xpia_orchestrator_process_async(
+    attack_setup_target, processing_target, success_scorer, memory_interface
+):
     with patch.object(processing_target, "send_prompt_async") as mock_send_to_processing_target:
         with patch.object(
             XPIATestOrchestrator,
@@ -195,7 +198,7 @@ async def test_xpia_orchestrator_process_async(attack_setup_target, processing_t
             return_value="mocked_processing_response",
         ) as mock_process_async:
             mock_send_to_processing_target.side_effect = NotImplementedError()
-            with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+            with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
                 xpia_orchestrator = XPIATestOrchestrator(
                     attack_content="test",
                     processing_prompt="some instructions and the required <test>",
@@ -215,7 +218,7 @@ async def test_xpia_orchestrator_process_async_with_memory_labels(
     attack_setup_target, processing_target, success_scorer, memory_interface
 ):
     memory_labels = {"op_name": "name1"}
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
         with patch.object(processing_target, "send_prompt_async") as mock_send_to_processing_target:
             with patch.object(
                 XPIATestOrchestrator,

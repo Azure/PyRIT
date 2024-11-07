@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class XPIAOrchestrator(Orchestrator):
-    
+
     def __init__(
         self,
         *,
@@ -56,9 +56,7 @@ class XPIAOrchestrator(Orchestrator):
             attack_setup_target_conversation_id: The conversation ID to use for the prompt target.
                 If not provided, a new one will be generated.
         """
-        super().__init__(
-            prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         self._attack_setup_target = attack_setup_target
         self._processing_callback = processing_callback

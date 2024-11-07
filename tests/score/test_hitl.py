@@ -43,7 +43,7 @@ def score() -> Score:
 
 def test_import_scores_from_csv(score: Score):
     memory = MagicMock(MemoryInterface)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = HumanInTheLoopScorer()
 
         field_names = [
@@ -93,7 +93,7 @@ def test_import_scores_from_csv(score: Score):
 @pytest.mark.asyncio
 async def test_substring_scorer_validate(image_request_piece: PromptRequestPiece):
     memory = MagicMock()
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SubStringScorer(substring="test", category="new_category")
         with pytest.raises(ValueError, match="Expected text data type"):
             await scorer.score_async(image_request_piece)
@@ -105,7 +105,7 @@ async def test_substring_scorer_validate(image_request_piece: PromptRequestPiece
 @pytest.mark.parametrize("sub_string", ["I can't answer", "Not present"])
 async def test_substring_scorer_score(sub_string: str, memory: MemoryInterface):
     full_text = "blah I can't answer that too"
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SubStringScorer(substring=sub_string, category="new_category")
 
         score = await scorer.score_text_async(full_text)
@@ -121,7 +121,7 @@ async def test_substring_scorer_score(sub_string: str, memory: MemoryInterface):
 @pytest.mark.asyncio
 async def test_substring_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
-    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SubStringScorer(substring="string", category="new_category")
         await scorer.score_text_async(text="string")
 
