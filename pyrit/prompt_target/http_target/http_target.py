@@ -18,15 +18,16 @@ logger = logging.getLogger(__name__)
 class HTTPTarget(PromptTarget):
     """
     HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt
+
     Parameters:
-        http_request (str): the header parameters as a request (ie from Burp)
+        http_request (str): the header parameters as a request (i.e., from Burp)
         prompt_regex_string (str): the placeholder for the prompt
             (default is {PROMPT}) which will be replaced by the actual prompt.
             make sure to modify the http request to have this included, otherwise it will not be properly replaced!
         use_tls: (bool): whether to use TLS or not. Default is True
         callback_function (function): function to parse HTTP response.
             These are the customizable functions which determine how to parse the output
-        memory : memory interface
+        memory: memory interface
     """
 
     def __init__(
@@ -89,6 +90,7 @@ class HTTPTarget(PromptTarget):
     def parse_raw_http_request(self):
         """
         Parses the HTTP request string into a dictionary of headers
+
         Returns:
             headers_dict (dict): dictionary of all http header values
             body (str): string with body data

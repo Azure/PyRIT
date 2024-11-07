@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ## Converters
+# # Converters
 
 # %% [markdown]
 # Converters are used to transform prompts before sending them to the target.
@@ -22,7 +22,7 @@
 # This can be useful for a variety of reasons, such as encoding the prompt in a different format, or adding additional information to the prompt. For example, you might want to convert a prompt to base64 before sending it to the target, or add a prefix to the prompt to indicate that it is a question.
 
 # %% [markdown]
-# ### Simple Converter Example
+# ## Simple Converter Example
 
 # %% [markdown]
 # Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter.

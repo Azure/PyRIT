@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from pyrit.score import Scorer
 from pyrit.memory import MemoryInterface
-from pyrit.score import Score
+from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget

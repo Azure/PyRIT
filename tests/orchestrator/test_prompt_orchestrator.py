@@ -8,13 +8,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
 
 from pyrit.memory import DuckDBMemory
-from pyrit.models import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.score import Score, SubStringScorer
-
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.score import SubStringScorer
 from tests.mocks import MockPromptTarget
 
 
