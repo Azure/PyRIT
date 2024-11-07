@@ -6,7 +6,6 @@ import tempfile
 import pytest
 
 from pyrit.memory import DuckDBMemory, CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import (
     ImagePathDataTypeSerializer,
     TextDataTypeSerializer,
@@ -17,7 +16,7 @@ from pyrit.models import (
 
 
 @pytest.fixture(scope="function")
-def set_duckdb_in_memory() -> MemoryInterface:
+def set_duckdb_in_memory():
     duckdb_in_memory = DuckDBMemory(db_path=":memory:")
     CentralMemory.set_memory_instance(duckdb_in_memory)
 

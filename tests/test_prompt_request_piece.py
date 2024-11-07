@@ -16,7 +16,6 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 from tests.mocks import MockPromptTarget
 from pyrit.memory import DuckDBMemory
-from pyrit.memory import MemoryInterface
 
 from tests.mocks import get_sample_conversations
 
@@ -27,7 +26,7 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 
 @pytest.fixture(scope="function")
-def set_duckdb_in_memory() -> MemoryInterface:
+def set_duckdb_in_memory():
     duckdb_in_memory = DuckDBMemory(db_path=":memory:")
     CentralMemory.set_memory_instance(duckdb_in_memory)
 

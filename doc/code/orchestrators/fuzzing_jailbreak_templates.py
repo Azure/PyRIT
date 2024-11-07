@@ -90,4 +90,4 @@ fuzzer_orchestrator = FuzzerOrchestrator(
 result = await fuzzer_orchestrator.execute_fuzzer()  # type: ignore
 
 result.print_templates()
-result.print_conversations(memory=memory)
+result.print_conversations()

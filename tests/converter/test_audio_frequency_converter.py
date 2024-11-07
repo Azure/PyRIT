@@ -9,12 +9,12 @@ import tempfile
 import numpy as np
 from scipy.io import wavfile
 
-from pyrit.memory import DuckDBMemory, CentralMemory, MemoryInterface
+from pyrit.memory import DuckDBMemory, CentralMemory
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 
 
 @pytest.fixture(scope="function")
-def set_duckdb_in_memory() -> MemoryInterface:
+def set_duckdb_in_memory():
     duckdb_in_memory = DuckDBMemory(db_path=":memory:")
     CentralMemory.set_memory_instance(duckdb_in_memory)
 
