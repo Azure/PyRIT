@@ -207,7 +207,7 @@ class SimpleAdaptiveOrchestrator(PAIROrchestrator):
 
         # If no improvement report failure
         if self._best_logprobs == -np.inf:
-            logger.info("No improvement in logprobs.")
+            logger.info(f"No improvement in logprobs after {self._number_of_iterations} iterations.")
             return jailbreaks
         
         # Set the max tokens back to the original value and generate output
