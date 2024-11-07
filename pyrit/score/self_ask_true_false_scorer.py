@@ -9,9 +9,9 @@ from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestPiece, SeedPrompt
+from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Score, Scorer, UnvalidatedScore
+from pyrit.score.scorer import Scorer
 
 TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
 

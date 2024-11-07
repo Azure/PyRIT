@@ -23,7 +23,7 @@
 #
 # The following example demonstrates this by manually entering prompts into the database and then scoring them.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
 from pyrit.orchestrator import PromptSendingOrchestrator

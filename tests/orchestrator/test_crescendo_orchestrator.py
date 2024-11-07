@@ -12,9 +12,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import InvalidJsonException
 from pyrit.memory import DuckDBMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import CrescendoOrchestrator
-from pyrit.score import Score
 
 
 @pytest.fixture

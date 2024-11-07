@@ -43,28 +43,21 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
 
         Args:
-            attack_strategy: The attack strategy for the red teaming bot to follow.
-                It is used as the metaprompt in the conversation with the red teaming bot.
-                This can be used to guide the bot to achieve the conversation objective in a more direct and
-                structured way.
-                Should be of type string or AttackStrategy (which has a __str__ method).
             prompt_target: The target to send the prompts to.
             red_teaming_chat: The endpoint that creates prompts that are sent to the prompt target.
             scoring_target: The target to send the prompts to for scoring.
+            conversation_objective: The objective of the conversation.
             on_topic_checking_enabled: Enables checking if the prompt for the prompt target is on topic.
                 This is determined by leveraging the scoring_target.
                 If the prompt is off-topic, the attack is pruned.
                 This step can be skipped by not providing an on_topic_checker.
-            initial_red_teaming_prompt: The initial prompt to send to the red teaming target.
-                The attack_strategy only provides the strategy, but not the starting point of the conversation.
-                The initial_red_teaming_prompt is used to start the conversation with the red teaming target.
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
             memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory will be used.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
+                These labels can be used to track all prompts sent as part of an operation, score prompts based on
+                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+                Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
         """
 
