@@ -529,6 +529,42 @@ def test_update_entries(memory_interface):
         assert updated_entry.original_value == "Updated Hello"
 
 
+def test_update_entries_empty_update_fields(memory_interface):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Fetch the entry to update and update its content
+    entries_to_update = memory_interface.query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
+    )
+    with pytest.raises(ValueError):
+        memory_interface.update_entries(entries=entries_to_update, update_fields={})
+
+
+def test_update_entries_nonexistent_fields(memory_interface):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Fetch the entry to update and update its content
+    entries_to_update = memory_interface.query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
+    )
+    with pytest.raises(ValueError):
+        memory_interface.update_entries(
+            entries=entries_to_update, update_fields={"original_value": "Updated", "nonexistent_field": "Updated Hello"}
+        )
+    # Verify changes were rolled back and entry was not updated
+    assert entries_to_update[0].original_value == "Hello"
+
+
 def test_update_entries_by_conversation_id(memory_interface, sample_conversation_entries):
     # Define a specific conversation_id to update
     specific_conversation_id = "update_test_id"

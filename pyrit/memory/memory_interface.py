@@ -442,6 +442,8 @@ class MemoryInterface(abc.ABC):
         Returns:
             bool: True if the update was successful, False otherwise.
         """
+        if not update_fields:
+            raise ValueError("update_fields must be provided to update prompt entries.")
         # Fetch the relevant entries using query_entries
         entries_to_update = self.query_entries(
             PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
@@ -452,7 +454,13 @@ class MemoryInterface(abc.ABC):
             return False
 
         # Use the utility function to update the entries
-        return self.update_entries(entries=entries_to_update, update_fields=update_fields)
+        success = self.update_entries(entries=entries_to_update, update_fields=update_fields)
+
+        if success:
+            logger.info(f"Updated {len(entries_to_update)} entries with conversation_id {conversation_id}.")
+        else:
+            logger.error(f"Failed to update entries with conversation_id {conversation_id}.")
+        return success
 
     def update_labels_by_conversation_id(self, *, conversation_id: str, labels: dict) -> bool:
         """

@@ -356,19 +356,28 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Args:
             entries (list[Base]): A list of SQLAlchemy model instances to be updated.
             update_fields (dict): A dictionary of field names and their new values.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
         """
+        if not update_fields:
+            raise ValueError("update_fields must be provided to update prompt entries.")
         with closing(self.get_session()) as session:
             try:
                 for entry in entries:
                     # Ensure the entry is attached to the session. If it's detached, merge it.
-                    entry_in_session = session.merge(entry)
+                    if not session.is_modified(entry):
+                        entry_in_session = session.merge(entry)
+                    else:
+                        entry_in_session = entry
                     for field, value in update_fields.items():
-                        if hasattr(entry_in_session, field):
+                        if field in vars(entry_in_session):
                             setattr(entry_in_session, field, value)
                         else:
-                            logger.warning(
+                            session.rollback()
+                            raise ValueError(
                                 f"Field '{field}' does not exist in the table \
-                                            '{entry_in_session.__tablename__}'"
+                                            '{entry_in_session.__tablename__}'. Rolling back changes..."
                             )
                 session.commit()
                 return True
