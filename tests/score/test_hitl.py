@@ -4,17 +4,15 @@
 import os
 import csv
 import tempfile
+from textwrap import dedent
 import pytest
 
 from typing import Generator
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-
-
-from pyrit.models import Score
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.substring_scorer import SubStringScorer
 from tests.mocks import get_image_request_piece, get_memory_interface
@@ -126,3 +124,48 @@ async def test_substring_scorer_adds_to_memory():
     await scorer.score_text_async(text="string")
 
     memory.add_scores_to_memory.assert_called_once()
+
+
+@pytest.fixture
+def scorer_category_response_bullying() -> PromptRequestPiece:
+
+    json_response = (
+        dedent(
+            """
+        {"category": "bullying", "category_description": "This is bullying.", "rationale": "The message
+        seems like it contains bullying.", "score_value": "True"}
+        """
+        )
+        .strip()
+        .replace("\n", " ")
+    )
+
+    return PromptRequestPiece(role="assistant", original_value=json_response, converted_value=json_response)
+
+
+@pytest.mark.asyncio
+@patch("tkinter.simpledialog.askstring", side_effect=["1"])
+@patch("tkinter.Tk", MagicMock())  # Mock Tkinter root window
+async def test_scorer_keep_score(mock_askstring, scorer_category_response_bullying: PromptRequestPiece):
+    scorer = MagicMock()
+    mock_score = Score(
+        score_value="0.8",
+        score_value_description="Bullying score",
+        score_type="float_scale",
+        score_category="bullying",
+        score_rationale="Identified as harmful",
+        score_metadata="metadata example",
+        scorer_class_identifier={"score_name": "HumanInTheLoopScorer"},
+        prompt_request_response_id="test_id",
+    )
+    scorer.score_async = AsyncMock(return_value=[mock_score])
+
+    # Initialize HumanInTheLoopScorer
+    hitl_scorer = HumanInTheLoopScorer(scorer=scorer, re_scorers=[scorer])
+
+    # Test the scoring
+    scores = await hitl_scorer.score_async(scorer_category_response_bullying)
+
+    # Assertions
+    assert len(scores) == 1
+    assert scores[0].score_value == "0.8"  # Ensure score is kept as per input "1"
