@@ -69,6 +69,7 @@ class PromptRequestPiece(abc.ABC):
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
+        logprobs: Optional[Dict[str, float]] = None,
     ):
 
         self.id = id if id else uuid4()
@@ -120,6 +121,8 @@ class PromptRequestPiece(abc.ABC):
 
         # Original prompt id defaults to id (assumes that this is the original prompt, not a duplicate)
         self.original_prompt_id = original_prompt_id or self.id
+
+        self.logprobs = logprobs
 
     async def compute_sha256(self, memory: MemoryInterface):
         """

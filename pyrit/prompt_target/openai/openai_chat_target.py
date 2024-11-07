@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import MutableSequence, Optional
+from typing import MutableSequence, Optional, Dict, Tuple
 
 from openai import BadRequestError, NotGiven, NOT_GIVEN
 from openai.types.chat import ChatCompletion
@@ -38,6 +38,8 @@ class OpenAIChatTarget(OpenAITarget):
         frequency_penalty: float = 0.0,
         presence_penalty: float = 0.0,
         seed: Optional[int] = None,
+        logprobs: Optional[bool] = False,
+        top_logprobs: Optional[int] = 0,
         *args,
         **kwargs,
     ):
@@ -77,6 +79,8 @@ class OpenAIChatTarget(OpenAITarget):
         self._frequency_penalty = frequency_penalty
         self._presence_penalty = presence_penalty
         self._seed = seed
+        self._logprobs = logprobs
+        self._top_logprobs = top_logprobs
 
     def _set_azure_openai_env_configuration_vars(self) -> None:
         self.deployment_environment_variable = "AZURE_OPENAI_CHAT_DEPLOYMENT"
@@ -103,11 +107,11 @@ class OpenAIChatTarget(OpenAITarget):
 
         messages = await self._build_chat_messages(prompt_req_res_entries)
         try:
-            resp_text = await self._complete_chat_async(messages=messages)
+            resp_text, logprob_dict = await self._complete_chat_async(messages=messages)
 
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
-            response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[resp_text])
+            response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[resp_text], logprobs=logprob_dict)
         except BadRequestError as bre:
             response_entry = handle_bad_request_exception(response_text=bre.message, request=request_piece)
 
@@ -203,7 +207,7 @@ class OpenAIChatTarget(OpenAITarget):
         return response_message
 
     @pyrit_target_retry
-    async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
+    async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> Tuple[str, Optional[Dict[str, float]]]:
         """
         Completes asynchronous chat request.
 
@@ -229,9 +233,6 @@ class OpenAIChatTarget(OpenAITarget):
 
         # assert(len(response.choices[0].logprobs.content[0].top_logprobs) == 20)
 
-
-        breakpoint()
-
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_completion_tokens=self._max_completion_tokens,
@@ -241,7 +242,7 @@ class OpenAIChatTarget(OpenAITarget):
             frequency_penalty=self._frequency_penalty,
             presence_penalty=self._presence_penalty,
             logprobs=self._logprobs,
-            top_logprobs=self._top_logprobs
+            top_logprobs=self._top_logprobs,
             n=1,
             stream=False,
             seed=self._seed,
@@ -252,7 +253,13 @@ class OpenAIChatTarget(OpenAITarget):
         # finish_reason="stop" means API returned complete message and
         # "length" means API returned incomplete message due to max_tokens limit.
 
-        breakpoint()
+        logprob_dict = {}
+        response_logprobs = response.choices[0].logprobs
+
+        if response_logprobs:
+            top_logprobs = response_logprobs.content[0].top_logprobs
+            for top_logprob in top_logprobs:
+                logprob_dict[top_logprob.token] = top_logprob.logprob
 
         if finish_reason in ["stop", "length"]:
             extracted_response = self._parse_chat_completion(response)
@@ -262,7 +269,7 @@ class OpenAIChatTarget(OpenAITarget):
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason}")
 
-        return extracted_response
+        return extracted_response, logprob_dict
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.

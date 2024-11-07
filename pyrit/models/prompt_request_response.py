@@ -119,6 +119,7 @@ def construct_response_from_request(
     response_type: PromptDataType = "text",
     prompt_metadata: Optional[str] = None,
     error: PromptResponseError = "none",
+    logprobs: Optional[dict] = None,
 ) -> PromptRequestResponse:
     """
     Constructs a response entry from a request.
@@ -136,6 +137,7 @@ def construct_response_from_request(
                 converted_value_data_type=response_type,
                 prompt_metadata=prompt_metadata,
                 response_error=error,
+                logprobs=logprobs,
             )
             for resp_text in response_text_pieces
         ]

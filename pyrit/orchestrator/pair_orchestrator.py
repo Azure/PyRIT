@@ -237,6 +237,8 @@ class PAIROrchestrator(Orchestrator):
                 text=attacker_prompt_suggestion,
                 conversation_id=conversation_id,
             )
+
+
             # This is called JUDGE in the paper
             score = (
                 await self._scorer.score_async(
