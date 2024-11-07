@@ -42,7 +42,7 @@ async def test_insert_entry(memory_interface):
         original_value="Hello",
         converted_value="Hello",
     )
-    await prompt_request_piece.compute_sha256(memory_interface)
+    await prompt_request_piece.compute_sha256()
     entry = PromptMemoryEntry(entry=prompt_request_piece)
 
     # Now, get a new session to query the database and verify the entry was inserted

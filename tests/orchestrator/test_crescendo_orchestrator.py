@@ -2,26 +2,32 @@
 # Licensed under the MIT license.
 
 import os
+from typing import Generator
 import pytest
-import tempfile
 
 from pathlib import Path
+from pyrit.memory.memory_interface import MemoryInterface
 from tests.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import InvalidJsonException
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.score import Score
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
-def mock_target() -> MockPromptTarget:
-    fd, path = tempfile.mkstemp(suffix=".json.memory")
-    file_memory = DuckDBMemory(db_path=":memory:")
-    return MockPromptTarget(memory=file_memory)
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def mock_target(memory_interface) -> MockPromptTarget:
+    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+        return MockPromptTarget()
 
 
 @pytest.fixture
@@ -81,13 +87,13 @@ def false_eval_score() -> Score:
 
 
 @pytest.fixture
-def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
-    return CrescendoOrchestrator(
-        objective_target=mock_target,
-        adversarial_chat=mock_target,
-        scoring_target=mock_target,
-        memory=MagicMock(),
-    )
+def orchestrator(mock_target: MockPromptTarget, memory_interface: MemoryInterface) -> CrescendoOrchestrator:
+    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+        return CrescendoOrchestrator(
+                    objective_target=mock_target,
+                    adversarial_chat=mock_target,
+                    scoring_target=mock_target
+            )
 
 
 @pytest.mark.asyncio
@@ -252,19 +258,21 @@ async def test_no_backtracks_occurred(
 
 
 @pytest.mark.asyncio
-async def test_max_turns_init_exceptions():
-    with pytest.raises(ValueError):
-        CrescendoOrchestrator(
-            objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_turns=0
-        )
+async def test_max_turns_init_exceptions(memory_interface: MemoryInterface):
+    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+        with pytest.raises(ValueError):
+            CrescendoOrchestrator(
+                objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_turns=0
+            )
 
 
 @pytest.mark.asyncio
-async def test_max_backtrack_init_exceptions():
-    with pytest.raises(ValueError):
-        CrescendoOrchestrator(
-            objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
-        )
+async def test_max_backtrack_init_exceptions(memory_interface: MemoryInterface):
+    with patch.object(CentralMemory, 'get_memory_instance', return_value=memory_interface):
+        with pytest.raises(ValueError):
+            CrescendoOrchestrator(
+                objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
+            )
 
 
 @pytest.mark.asyncio

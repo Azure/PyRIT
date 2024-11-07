@@ -1,23 +1,31 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 from unittest.mock import AsyncMock, MagicMock, patch
+
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPromptDataset, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, FuzzerConverter, FuzzerShortenConverter
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
+from pyrit.memory import DuckDBMemory, CentralMemory
 from pyrit.score import Score, Scorer
 from tests.mocks import MockPromptTarget
 import pathlib
 import pytest
-import tempfile
 
 
 @pytest.fixture
-def scoring_target(memory) -> MockPromptTarget:
-    fd, path = tempfile.mkstemp(suffix=".json.memory")
-    return MockPromptTarget(memory=memory)
+def mock_central_memory_instance():
+    """Fixture to mock CentralMemory.get_memory_instance"""
+    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
+    with patch.object(CentralMemory, 'get_memory_instance', return_value=duckdb_in_memory) as duck_db_memory:
+        yield duck_db_memory
+        
+        
+@pytest.fixture
+def scoring_target(mock_central_memory_instance) -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 @pytest.fixture
@@ -28,10 +36,10 @@ def simple_prompts() -> list[SeedPrompt]:
 
 
 @pytest.fixture
-def simple_templateconverter() -> list[FuzzerConverter]:
+def simple_templateconverter(scoring_target) -> list[FuzzerConverter]:
     """template converter"""
-    prompt_shorten_converter = FuzzerShortenConverter(converter_target=MockPromptTarget())
-    prompt_expand_converter = FuzzerExpandConverter(converter_target=MockPromptTarget())
+    prompt_shorten_converter = FuzzerShortenConverter(converter_target=scoring_target)
+    prompt_expand_converter = FuzzerExpandConverter(converter_target=scoring_target)
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     return template_converters
 
@@ -65,17 +73,17 @@ def simple_prompt_templates():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("rounds", list(range(1, 6)))
 @pytest.mark.parametrize("success_pattern", ["1_per_round", "1_every_other_round"])
-async def test_execute_fuzzer(rounds: int, success_pattern: str, simple_prompts: list, simple_prompt_templates: list):
+async def test_execute_fuzzer(rounds: int, success_pattern: str, simple_prompts: list, simple_prompt_templates: list, scoring_target):
 
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
-    prompt_shorten_converter = FuzzerShortenConverter(converter_target=MockPromptTarget())
-    prompt_expand_converter = FuzzerExpandConverter(converter_target=MockPromptTarget())
+    prompt_shorten_converter = FuzzerShortenConverter(converter_target=scoring_target)
+    prompt_expand_converter = FuzzerExpandConverter(converter_target=scoring_target)
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
-        prompt_target=MockPromptTarget(),
+        prompt_target=scoring_target,
         template_converters=template_converters,
         scoring_target=MagicMock(),
         target_jailbreak_goal_count=rounds,
@@ -139,76 +147,73 @@ async def test_execute_fuzzer(rounds: int, success_pattern: str, simple_prompts:
                 assert len(prompt_node[0].children) == rounds
 
 
-def test_prompt_templates(simple_prompts: list, simple_templateconverter: list[FuzzerConverter]):
+def test_prompt_templates(simple_prompts: list, simple_templateconverter: list[FuzzerConverter], scoring_target):
     with pytest.raises(ValueError) as e:
         FuzzerOrchestrator(
             prompts=simple_prompts,
             prompt_templates=[],
-            prompt_target=MockPromptTarget(),
+            prompt_target=scoring_target,
             template_converters=simple_templateconverter,
             scoring_target=MagicMock(),
-            memory=MagicMock(),
         )
     assert e.match("The initial set of prompt templates cannot be empty.")
 
 
 def test_invalid_batchsize(
-    simple_prompts: list, simple_prompt_templates: list, simple_templateconverter: list[FuzzerConverter]
+    simple_prompts: list, simple_prompt_templates: list, 
+    simple_templateconverter: list[FuzzerConverter],
+    scoring_target
 ):
     with pytest.raises(ValueError) as e:
         FuzzerOrchestrator(
             prompts=simple_prompts,
             prompt_templates=simple_prompt_templates,
-            prompt_target=MockPromptTarget(),
+            prompt_target=scoring_target,
             template_converters=simple_templateconverter,
             scoring_target=MagicMock(),
-            memory=MagicMock(),
             batch_size=0,
         )
     assert e.match("Batch size must be at least 1.")
 
 
-def test_prompts(simple_prompt_templates: list):
-    prompt_shorten_converter = FuzzerShortenConverter(converter_target=MockPromptTarget())
-    prompt_expand_converter = FuzzerExpandConverter(converter_target=MockPromptTarget())
+def test_prompts(simple_prompt_templates: list, scoring_target):
+    prompt_shorten_converter = FuzzerShortenConverter(converter_target=scoring_target)
+    prompt_expand_converter = FuzzerExpandConverter(converter_target=scoring_target)
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     with pytest.raises(ValueError) as e:
         FuzzerOrchestrator(
             prompts=[],
             prompt_templates=simple_prompt_templates,
-            prompt_target=MockPromptTarget(),
+            prompt_target=scoring_target,
             template_converters=template_converters,
             scoring_target=MagicMock(),
-            memory=MagicMock(),
         )
     assert e.match("The initial prompts cannot be empty.")
 
 
-def test_template_converter(simple_prompts: list, simple_prompt_templates: list):
+def test_template_converter(simple_prompts: list, simple_prompt_templates: list, scoring_target):
     with pytest.raises(ValueError) as e:
         FuzzerOrchestrator(
             prompts=simple_prompts,
             prompt_templates=simple_prompt_templates,
-            prompt_target=MockPromptTarget(),
+            prompt_target=scoring_target,
             template_converters=[],
             scoring_target=MagicMock(),
-            memory=MagicMock(),
         )
     assert e.match("Template converters cannot be empty.")
 
 
 @pytest.mark.asyncio
-async def test_max_query(simple_prompts: list, simple_prompt_templates: list):
-    prompt_shorten_converter = FuzzerShortenConverter(converter_target=MockPromptTarget())
-    prompt_expand_converter = FuzzerExpandConverter(converter_target=MockPromptTarget())
+async def test_max_query(simple_prompts: list, simple_prompt_templates: list, scoring_target):
+    prompt_shorten_converter = FuzzerShortenConverter(converter_target=scoring_target)
+    prompt_expand_converter = FuzzerExpandConverter(converter_target=scoring_target)
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
-        prompt_target=MockPromptTarget(),
+        prompt_target=scoring_target,
         template_converters=template_converters,
         scoring_target=MagicMock(),
-        memory=MagicMock(),
     )
 
     assert fuzzer_orchestrator._max_query_limit == 80
@@ -220,7 +225,8 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list):
 
 
 @pytest.mark.asyncio
-async def test_apply_template_converter(simple_prompts: list, simple_prompt_templates: list):
+async def test_apply_template_converter(simple_prompts: list, 
+                                        simple_prompt_templates: list, scoring_target):
     prompt_template = SeedPrompt.from_yaml_file(
         pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
     )
@@ -228,10 +234,10 @@ async def test_apply_template_converter(simple_prompts: list, simple_prompt_temp
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
-        prompt_target=MockPromptTarget(),
+        prompt_target=scoring_target,
         template_converters=[
-            FuzzerShortenConverter(converter_target=MockPromptTarget()),
-            FuzzerExpandConverter(converter_target=MockPromptTarget()),
+            FuzzerShortenConverter(converter_target=scoring_target),
+            FuzzerExpandConverter(converter_target=scoring_target),
         ],
         scoring_target=MagicMock(),
     )
@@ -252,12 +258,14 @@ async def test_apply_template_converter(simple_prompts: list, simple_prompt_temp
 
 
 @pytest.mark.asyncio
-async def test_apply_template_converter_empty_placeholder(simple_prompts: list[str], simple_prompt_templates: list):
-    prompt_shorten_converter = FuzzerShortenConverter(converter_target=MockPromptTarget())
+async def test_apply_template_converter_empty_placeholder(simple_prompts: list[str], 
+                                                          simple_prompt_templates: list,
+                                                          scoring_target):
+    prompt_shorten_converter = FuzzerShortenConverter(converter_target=scoring_target)
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
-        prompt_target=MockPromptTarget(),
+        prompt_target=scoring_target,
         template_converters=[prompt_shorten_converter],
         scoring_target=MagicMock(),
     )
@@ -274,14 +282,14 @@ async def test_apply_template_converter_empty_placeholder(simple_prompts: list[s
 
 
 @pytest.mark.asyncio
-async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list):
-    prompt_shorten_converter = FuzzerShortenConverter(converter_target=MockPromptTarget())
-    prompt_expand_converter = FuzzerExpandConverter(converter_target=MockPromptTarget())
+async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list, scoring_target):
+    prompt_shorten_converter = FuzzerShortenConverter(converter_target=scoring_target)
+    prompt_expand_converter = FuzzerExpandConverter(converter_target=scoring_target)
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
         prompt_templates=simple_prompt_templates,
-        prompt_target=MockPromptTarget(),
+        prompt_target=scoring_target,
         template_converters=template_converters,
         scoring_target=MagicMock(),
     )
@@ -301,15 +309,15 @@ async def test_best_UCT(simple_prompts: list, simple_prompt_templates: list):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("probability", [0, 0.5])
-async def test_select(simple_prompts: list, probability: int, simple_prompt_templates: list):
+async def test_select(simple_prompts: list, probability: int, simple_prompt_templates: list, scoring_target):
     # set the children of each parent
-    prompt_shorten_converter = FuzzerShortenConverter(converter_target=MockPromptTarget())
-    prompt_expand_converter = FuzzerExpandConverter(converter_target=MockPromptTarget())
+    prompt_shorten_converter = FuzzerShortenConverter(converter_target=scoring_target)
+    prompt_expand_converter = FuzzerExpandConverter(converter_target=scoring_target)
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
         prompts=simple_prompts,
         prompt_templates=[simple_prompt_templates[0], simple_prompt_templates[1]],
-        prompt_target=MockPromptTarget(),
+        prompt_target=scoring_target,
         template_converters=template_converters,
         scoring_target=MagicMock(),
         frequency_weight=0.5,
