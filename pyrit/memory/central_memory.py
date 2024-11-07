@@ -24,9 +24,10 @@ class CentralMemory:
     @classmethod
     def set_memory_instance(cls, passed_memory: MemoryInterface) -> None:
         """
-        Sets a provided memory instance as the central instance for subsequent calls.
-        
-        :param passed_memory: The memory instance to set as the central instance.
+        Set a provided memory instance as the central instance for subsequent calls.
+
+        Args:
+            passed_memory (MemoryInterface): The memory instance to set as the central instance.
         """
         cls._memory_instance = passed_memory
         logger.info(f"Central memory instance set to: {type(cls._memory_instance).__name__}")
