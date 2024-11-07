@@ -216,7 +216,7 @@ class PAIROrchestrator(Orchestrator):
                     target_response=prompt_to_improve_upon, start_new_conversation=(depth == 0)
                 )
             except InvalidJsonException:
-                logger.warn("Invalid JSON response from attacker despite retries.")
+                logger.warning("Invalid JSON response from attacker despite retries.")
                 break
             if self._single_turn_jailbreak_only:
                 # Create a new conversation ID for each turn
