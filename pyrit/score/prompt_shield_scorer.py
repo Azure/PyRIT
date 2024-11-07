@@ -9,7 +9,7 @@ from typing import Any, Optional
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, ScoreType
 from pyrit.memory import PromptMemoryEntry
-from pyrit.score import Scorer
+from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 

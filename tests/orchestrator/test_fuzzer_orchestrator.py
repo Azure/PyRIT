@@ -9,7 +9,7 @@ from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, Fuzze
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
 from pyrit.memory import DuckDBMemory, CentralMemory
-from pyrit.score import Score, Scorer
+from pyrit.score import Scorer
 from tests.mocks import MockPromptTarget
 import pathlib
 import pytest

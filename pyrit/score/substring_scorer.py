@@ -3,7 +3,7 @@
 
 from typing import Optional
 from pyrit.models import PromptRequestPiece
-from pyrit.score import Scorer
+from pyrit.score.scorer import Scorer
 from pyrit.models import Score
 
 

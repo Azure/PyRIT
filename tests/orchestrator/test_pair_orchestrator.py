@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import Generator
 from unittest.mock import Mock, AsyncMock, ANY
 from unittest.mock import patch
 

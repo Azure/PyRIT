@@ -14,7 +14,7 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
-from pyrit.score import Score, SubStringScorer
+from pyrit.score import SubStringScorer
 from pyrit.memory import DuckDBMemory, CentralMemory
 
 from tests.mocks import MockPromptTarget

@@ -4,7 +4,7 @@
 from typing import Optional
 from pyrit.common import default_values
 from pyrit.models import data_serializer_factory, DataTypeSerializer, PromptRequestPiece, Score
-from pyrit.score import Scorer
+from pyrit.score.scorer import Scorer
 
 from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, TextCategory, ImageData
 from azure.ai.contentsafety import ContentSafetyClient

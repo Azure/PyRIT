@@ -6,8 +6,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.memory import CentralMemory
-from pyrit.prompt_target import PromptTarget
-from pyrit.score import Score, Scorer
+from pyrit.score import Scorer
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Score
 from pyrit.orchestrator import (
@@ -15,7 +14,6 @@ from pyrit.orchestrator import (
     XPIAOrchestrator,
     XPIAManualProcessingOrchestrator,
 )
-from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 from tests.mocks import get_memory_interface, MockPromptTarget
 
