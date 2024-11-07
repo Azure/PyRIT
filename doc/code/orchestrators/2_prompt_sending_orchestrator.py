@@ -23,6 +23,13 @@
 #
 # The first example is as simple as it gets.
 
+# > **Important Note:**
+# > - **Azure SQL Database**: Results will store in Azure SQL DB if respective settings are configured in your `.env` file.
+# > - **Local DuckDB**: If Azure SQL is not configured, results default to a local DuckDB instance.
+# >
+# > To manually set the memory instance, use the `CentralMemory` class. For details, see the [Memory Configuration Guide](./code/memory/0_memory.md).
+#
+
 # %%
 import uuid
 
@@ -98,7 +105,10 @@ default_values.load_default_env()
 text_target = TextTarget()
 
 # use the image from our docs
+# For DuckDB Memory
 image_path = pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"
+# For Azure SQL Memory
+# image_path = "https://airtstorageaccountdev.blob.core.windows.net/results/dbdata/images/1728351978677143.png"
 
 with PromptSendingOrchestrator(prompt_target=text_target) as orchestrator:
 
@@ -170,7 +180,6 @@ from pyrit.prompt_target import OpenAIChatTarget
 
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import Base64Converter
 
 
 default_values.load_default_env()

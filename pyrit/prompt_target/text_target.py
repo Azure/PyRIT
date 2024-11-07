@@ -26,6 +26,7 @@ class TextTarget(PromptTarget):
         *,
         text_stream: IO[str] = sys.stdout,
     ) -> None:
+        super().__init__()
         self._text_stream = text_stream
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
