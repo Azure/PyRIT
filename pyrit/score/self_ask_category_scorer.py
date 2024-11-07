@@ -7,11 +7,10 @@ import enum
 from pathlib import Path
 from typing import Dict, Optional
 
-from pyrit.models.score import UnvalidatedScore
-from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, SeedPrompt
-from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
+from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.score.scorer import Scorer
 
 
 class ContentClassifierPaths(enum.Enum):

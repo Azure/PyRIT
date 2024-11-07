@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPromptDataset, SeedPrompt
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, SeedPromptDataset, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, FuzzerConverter, FuzzerShortenConverter
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode

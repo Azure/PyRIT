@@ -3,7 +3,8 @@
 
 from typing import Optional
 from pyrit.models import PromptRequestPiece
-from pyrit.score import Score, Scorer
+from pyrit.score import Scorer
+from pyrit.models import Score
 
 
 class SubStringScorer(Scorer):

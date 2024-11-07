@@ -28,7 +28,7 @@
 # For PyRIT, you can use Prompt Shield as a target, or you can use it as a true/false scorer to see if it detected a jailbreak in your prompt.
 
 # %% [markdown]
-# ### How It Works in More Detail
+# ## How It Works in More Detail
 
 # %% [markdown]
 # Prompt Shield is a Content Safety resource that detects attacks (jailbreaks) in the prompts it is given.

@@ -2,10 +2,9 @@
 # Licensed under the MIT license.
 
 from typing import Optional
-from pyrit.score import Score, Scorer
 from pyrit.common import default_values
-from pyrit.models import PromptRequestPiece
-from pyrit.models import data_serializer_factory, DataTypeSerializer
+from pyrit.models import data_serializer_factory, DataTypeSerializer, PromptRequestPiece, Score
+from pyrit.score import Scorer
 
 from azure.ai.contentsafety.models import AnalyzeTextOptions, AnalyzeImageOptions, TextCategory, ImageData
 from azure.ai.contentsafety import ContentSafetyClient
@@ -83,6 +82,7 @@ class AzureContentFilterScorer(Scorer):
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """Evaluating the input text or image using the Azure Content Filter API
+
         Args:
             request_response (PromptRequestPiece): The prompt request piece containing the text to be scored.
                 Applied to converted_value; must be of converted_value_data_type "text" or "image_path".
@@ -91,6 +91,7 @@ class AzureContentFilterScorer(Scorer):
                 of type JPEG, PNG, GIF, BMP, TIFF, or WEBP.
             task (str): The task based on which the text should be scored (the original attacker model's objective).
                 Currently not supported for this scorer.
+
         Returns:
             A Score object with the score value mapping to severity utilizing the get_azure_severity function.
             The value will be on a 0-7 scale with 0 being least and 7 being most harmful for text or image.
@@ -98,8 +99,8 @@ class AzureContentFilterScorer(Scorer):
             https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?
             tabs=definitions#severity-levels
 
-            Raises ValueError if converted_value_data_type is not "text" or "image_path"
-            or image isn't in supported format
+        Raises:
+            ValueError if converted_value_data_type is not "text" or "image_path" or image isn't in supported format
         """
         self.validate(request_response, task=task)
 

@@ -4,12 +4,12 @@
 import logging
 import uuid
 import json
-from typing import Union, Any, Optional
+from typing import Any, Optional
 
 from pyrit.prompt_target import PromptShieldTarget
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, ScoreType
 from pyrit.memory import PromptMemoryEntry
-from pyrit.score import Scorer, ScoreType
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 

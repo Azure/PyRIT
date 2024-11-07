@@ -8,12 +8,12 @@ from typing import Optional, Union
 from uuid import uuid4
 
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.score import Scorer, Score
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 

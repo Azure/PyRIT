@@ -10,14 +10,13 @@ import uuid
 from sqlalchemy import inspect
 
 from pyrit.memory import DuckDBMemory
-from pyrit.models import PromptRequestPiece
-from pyrit.models.prompt_request_response import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
 from pyrit.score import Score, SubStringScorer
 from pyrit.memory import DuckDBMemory, CentralMemory
 
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 from tests.mocks import MockPromptTarget
 
 

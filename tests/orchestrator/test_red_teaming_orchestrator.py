@@ -9,11 +9,12 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
+from pyrit.models import Score
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget, OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.score import Score, Scorer
+from pyrit.score import Scorer
 from pyrit.common.path import DATASETS_PATH
 
 from tests.mocks import get_memory_interface

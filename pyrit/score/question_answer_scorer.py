@@ -15,7 +15,7 @@ class TextScoreResult(BaseModel):
 
     Do not build on this class; this class needs to be rewritten.
 
-    Attributes:
+    Parameters:
         provided_answer (str): The provided answer.
         correct_answer (str): The correct answer.
         is_correct (bool): Whether the provided answer is correct.
@@ -36,7 +36,7 @@ class TextScoreResult(BaseModel):
 class QuestionAnswerScorer:
     """A class that represents a question answering scorer.
 
-    Attributes:
+    Parameters:
         dataset (QuestionAnsweringDataset): The dataset containing the questions and answers.
         evaluation_results (dict[QuestionAnsweringDataset, TextScoreResult]): A dictionary to store the evaluation
         results.

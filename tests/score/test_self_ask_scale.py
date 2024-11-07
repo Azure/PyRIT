@@ -11,8 +11,7 @@ import pytest
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.models.score import UnvalidatedScore
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, UnvalidatedScore
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 

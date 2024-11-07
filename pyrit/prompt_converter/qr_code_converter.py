@@ -11,6 +11,7 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 class QRCodeConverter(PromptConverter):
     """Converts a text string to a QR code image.
+
     Args:
         scale (int, optional): Scaling factor that determines the width/height in pixels of each
             black/white square (known as a "module") in the QR code. Defaults to 3.
@@ -33,10 +34,10 @@ class QRCodeConverter(PromptConverter):
 
     def __init__(
         self,
-        scale: Optional[int] = 3,
-        border: Optional[int] = 4,
-        dark_color: Optional[tuple] = (0, 0, 0),
-        light_color: Optional[tuple] = (255, 255, 255),
+        scale: int = 3,
+        border: int = 4,
+        dark_color: tuple = (0, 0, 0),
+        light_color: tuple = (255, 255, 255),
         data_dark_color: Optional[tuple] = None,
         data_light_color: Optional[tuple] = None,
         finder_dark_color: Optional[tuple] = None,

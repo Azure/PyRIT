@@ -8,8 +8,9 @@ import pytest
 import uuid
 
 from pyrit.memory import MemoryInterface
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.score import Score, FloatScaleThresholdScorer
+from pyrit.models import Score
+from pyrit.memory import CentralMemory
+from pyrit.score import FloatScaleThresholdScorer
 
 from tests.mocks import get_memory_interface
 

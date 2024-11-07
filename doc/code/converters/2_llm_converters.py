@@ -40,7 +40,7 @@ with OpenAIChatTarget() as attack_llm:
     print(await variation_converter.convert_async(prompt=prompt))  # type: ignore
 
 # %% [markdown]
-# ### Other LLM Converters
+# ## Other LLM Converters
 #
 # This is not meant to be exhaustive and include all converter techniques, but hopefully illustrate some things you can do!
 

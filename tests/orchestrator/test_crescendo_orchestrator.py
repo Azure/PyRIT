@@ -15,7 +15,7 @@ from pyrit.exceptions import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import CrescendoOrchestrator
-from pyrit.score import Score
+from pyrit.models import Score
 from tests.mocks import get_memory_interface
 
 
