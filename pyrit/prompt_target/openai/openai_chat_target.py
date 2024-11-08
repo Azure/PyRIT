@@ -229,7 +229,7 @@ class OpenAIChatTarget(OpenAITarget):
             frequency_penalty=self._frequency_penalty,
             presence_penalty=self._presence_penalty,
             logprobs=self._logprobs,
-            top_logprobs=self._top_logprobs,
+            top_logprobs=self._top_logprobs, # TODO: when called and logprobs is False, this param is not passed
             n=1,
             stream=False,
             seed=self._seed,

@@ -243,13 +243,17 @@ class SimpleAdaptiveOrchestrator(Orchestrator):
 
             logprob_dict = target_response.request_pieces[0].logprobs
             message = target_response.request_pieces[0].converted_value
+            if "Sure" in message:
+                breakpoint()
 
             if self._desired_target_response_prefix in message[:len(self._desired_target_response_prefix)]:
                 if sum(logprob_dict.values()) > self._best_logprobs:
+                    self._best_logprobs = sum(logprob_dict.values())
                     self._best_logprobs_dict = logprob_dict
                     self._best_adversarial_suffix = self._adversarial_suffix
             elif " " + self._desired_target_response_prefix in message:
                 if sum(logprob_dict.values()) > self._best_logprobs:
+                    self._best_logprobs = sum(logprob_dict.values())
                     self._best_logprobs_dict = logprob_dict
                     self._best_adversarial_suffix = self._adversarial_suffix
             
