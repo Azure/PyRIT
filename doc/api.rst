@@ -145,6 +145,7 @@ API Reference
     :toctree: _autosummary/
 
     AzureSQLMemory
+    CentralMemory
     DuckDBMemory
     EmbeddingDataEntry
     MemoryInterface
