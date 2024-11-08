@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-experimental
 #     language: python
 #     name: python3
 # ---
@@ -211,10 +211,14 @@ print(score[0])
 # 2. **Introducing variability into prompts via templating**, encouraging novel dialogue trajectories.
 # 3. **Leveraging the self-ask technique with GPT-4**, generating fresh topic ideas for exploration.
 #
-# The `MemoryInterface` is at the core of the system, it serves as a blueprint for custom storage
-# solutions, accommodating various data storage needs, from JSON files to cloud databases. The
-# `DuckDBMemory` class, a direct extension of MemoryInterface, specializes in handling conversation data
-# using DuckDB database, ensuring easy manipulation and access to conversational data.
+# The `MemoryInterface` is at the core of the system, serving as a blueprint for custom storage solutions and accommodating various data storage needs.
+#
+# - The `DuckDBMemory` class, implementation of `MemoryInterface`, specializes in handling conversation data using a DuckDB database, enabling easy manipulation and access to conversational data.
+# - The `AzureSQLMemory` class, another implementation of `MemoryInterface`, facilitates storing data in an Azure SQL Database, providing cloud-based persistence for conversation history.
+#
+# You can manually set these memory using `CentralMemory` class or configure them automatically based on environment variables. For more details, check out the memory guide [here](../doc/code/memory/0_memory.md).
+#
+# Together, these implementations ensure flexibility, allowing users to choose a storage solution that best meets their requirements.
 #
 # Developers are encouraged to utilize the `MemoryInterface` for tailoring data storage mechanisms to
 # their specific requirements, be it for integration with Azure Table Storage or other database
@@ -223,7 +227,7 @@ print(score[0])
 # efficiently captured and stored, leveraging the memory system to its full potential for enhanced bot
 # interaction and development.
 #
-# When PyRIT is executed, it automatically generates a database file within the `pyrit/results` directory, named `pyrit_duckdb_storage`. This database is structured to include essential tables specifically designed for the storage of conversational data. These tables play a crucial role in the retrieval process, particularly when core components of PyRIT, such as orchestrators, require access to conversational information.
+# When PyRIT is executed using `DuckDBMemory`, it automatically generates a database file within the `pyrit/results` directory, named `pyrit_duckdb_storage`. This database is structured to include essential tables specifically designed for the storage of conversational data. These tables play a crucial role in the retrieval process, particularly when core components of PyRIT, such as orchestrators, require access to conversational information.
 #
 # ### DuckDB Advantages for PyRIT
 #

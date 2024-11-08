@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 from typing import Optional
-from pyrit.memory import DuckDBMemory, MemoryInterface
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import PromptRequestPiece
 from pyrit.score.scorer import Scorer
+from pyrit.models import Score
 
 
 class SubStringScorer(Scorer):
@@ -12,8 +12,7 @@ class SubStringScorer(Scorer):
     Scorer that checks if a given substring is present in the text.
     """
 
-    def __init__(self, *, substring: str, category: str = None, memory: MemoryInterface = None) -> None:
-        self._memory = memory if memory else DuckDBMemory()
+    def __init__(self, *, substring: str, category: str = None) -> None:
 
         self._substring = substring
         self._score_category = category
