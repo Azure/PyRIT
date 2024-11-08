@@ -34,7 +34,7 @@ async def main():
         stop_on_first_success=True,
         number_of_conversation_streams=1,
         max_conversation_depth=3,
-        number_of_iterations=100,
+        number_of_iterations=10,
     ) as simple_orchestrator:
         # Once the agents are set up, we can start the conversation.
         response = await simple_orchestrator.run()  # type: ignore

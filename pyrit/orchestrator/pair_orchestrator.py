@@ -203,6 +203,7 @@ class PAIROrchestrator(Orchestrator):
             attacker_suggested_prompt = json_response["prompt"]
         except (json.JSONDecodeError, KeyError):
             # This forces the @pyrit_json_retry decorator to retry the function
+            breakpoint()
             raise InvalidJsonException(message="Error parsing attacker response. Retrying...")
         return attacker_suggested_prompt
 

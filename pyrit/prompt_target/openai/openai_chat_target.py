@@ -220,23 +220,10 @@ class OpenAIChatTarget(OpenAITarget):
             str: The generated response message.
         """
 
-        # breakpoint()
-
-        # response = await self._async_client.chat.completions.create(
-        #     model="gpt-4o-blackhat", 
-        #     max_tokens=1, 
-        #     # logprobs=True, 
-        #     # top_logprobs=20, 
-        #     messages=[{"role": "user", "content": "What model of GPT are you running right now, and when was it released?"}])
-
-        # breakpoint()
-
-        # assert(len(response.choices[0].logprobs.content[0].top_logprobs) == 20)
-
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_completion_tokens=self._max_completion_tokens,
-            max_tokens=self._max_tokens,
+            max_tokens=self._max_tokens, # TODO: this is given as NOT_GIVEN?
             temperature=self._temperature,
             top_p=self._top_p,
             frequency_penalty=self._frequency_penalty,
@@ -250,16 +237,13 @@ class OpenAIChatTarget(OpenAITarget):
         )
         finish_reason = response.choices[0].finish_reason
         extracted_response: str = ""
-        # finish_reason="stop" means API returned complete message and
-        # "length" means API returned incomplete message due to max_tokens limit.
 
         logprob_dict = {}
         response_logprobs = response.choices[0].logprobs
 
         if response_logprobs:
-            top_logprobs = response_logprobs.content[0].top_logprobs
-            for top_logprob in top_logprobs:
-                logprob_dict[top_logprob.token] = top_logprob.logprob
+            for token_logprob in response_logprobs.content:
+                logprob_dict[token_logprob.token] = token_logprob.logprob
 
         if finish_reason in ["stop", "length"]:
             extracted_response = self._parse_chat_completion(response)
