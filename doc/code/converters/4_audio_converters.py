@@ -77,7 +77,8 @@ print(converted_audio_file)
 # ## Audio Converters with Azure SQL Memory
 #
 # Converters can also be multi-modal. Because it's an abstract function used interchangeably on a single `PromptRequestPiece`, it can only deal with one input value and type per time, and have one output value and type per time. Below is an example of using `AzureSpeechTextToAudioConverter`, which has an input type of `text` and an output type of `audio_path`.
-
+#
+# In this scenario, we are explicitly setting the memory instance to `AzureSQLMemory()`, ensuring that the results will be saved to the Azure SQL database. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
 from pyrit.common import default_values
