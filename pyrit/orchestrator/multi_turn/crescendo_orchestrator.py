@@ -14,7 +14,7 @@ from pyrit.exceptions import (
     remove_markdown_json,
 )
 from pyrit.memory import MemoryInterface
-from pyrit.models import Score, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer

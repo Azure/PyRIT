@@ -1,9 +1,9 @@
 # %% [markdown]
-# ## Importing and Registering Hugging Face Models into Azure ML
+# # Importing and Registering Hugging Face Models into Azure ML
 #
 # This notebook demonstrates the process of importing models from the [Hugging Face hub](https://huggingface.co/models) and registering them into Azure Machine Learning (Azure ML) for further use in various machine learning tasks.
 #
-# ### Why Hugging Face Models in PyRIT?
+# ## Why Hugging Face Models in PyRIT?
 # The primary goal of PyRIT is to assess the robustness of LLM endpoints against different harm categories such as fabrication/ungrounded content (e.g., hallucination), misuse (e.g., bias), and prohibited content (e.g., harassment). Hugging Face serves as a comprehensive repository of LLMs, capable of generating a diverse and complex prompts when given appropriate system prompt. Models such as:
 # - ["TheBloke/llama2_70b_chat_uncensored-GGML"](https://huggingface.co/TheBloke/llama2_70b_chat_uncensored-GGML)
 # - ["cognitivecomputations/Wizard-Vicuna-30B-Uncensored"](https://huggingface.co/cognitivecomputations/Wizard-Vicuna-30B-Uncensored)
@@ -11,20 +11,20 @@
 #
 # are particularly useful for generating prompts or scenarios without content moderation. These can be configured as part of a red teaming orchestrator in PyRIT to create challenging and uncensored prompts/scenarios. These prompts are then submitted to the target chat bot, helping assess its ability to handle potentially unsafe, unexpected, or adversarial inputs.
 #
-# ### Important Note on Deploying Quantized Models
+# ## Important Note on Deploying Quantized Models
 # When deploying quantized models, especially those suffixed with GGML, FP16, or GPTQ, it's crucial to have GPU support. These models are optimized for performance but require the computational capabilities of GPUs to run. Ensure your deployment environment is equipped with the necessary GPU resources to handle these models.
 #
-# ### Supported Tasks
+# ## Supported Tasks
 # The import process supports a variety of tasks, including but not limited to:
 # - Text classification
 # - Text generation
 # - Question answering
 # - Summarization
 #
-# ### Import Process
+# ## Import Process
 # The process involves downloading models from the Hugging Face hub, converting them to MLflow format for compatibility with Azure ML, and then registering them for easy access and deployment.
 #
-# ### Prerequisites
+# ## Prerequisites
 # - An Azure account with an active subscription. [Create one for free](https://azure.microsoft.com/free/).
 # - An Azure ML workspace set up. [Learn how to set up a workspace](https://docs.microsoft.com/en-us/azure/machine-learning/how-to-manage-workspace).
 # - Install the Azure ML client library for Python with pip.
@@ -32,7 +32,7 @@
 #      pip install azure-ai-ml
 #      pip install azure-identity
 #   ```
-# - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/setup_azure.md)
+# - Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section [here](../setup/populating_secrets.md)
 
 # %% [markdown]
 # ## 1. Connect to Azure Machine Learning Workspace

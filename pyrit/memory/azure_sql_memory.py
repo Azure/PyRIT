@@ -5,7 +5,7 @@ import logging
 import struct
 
 from contextlib import closing
-from typing import Optional, Sequence
+from typing import MutableSequence, Optional, Sequence
 from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 
@@ -348,6 +348,43 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
                 return []
+
+    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+        """
+        Updates the given entries with the specified field values.
+
+        Args:
+            entries (list[Base]): A list of SQLAlchemy model instances to be updated.
+            update_fields (dict): A dictionary of field names and their new values.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        if not update_fields:
+            raise ValueError("update_fields must be provided to update prompt entries.")
+        with closing(self.get_session()) as session:
+            try:
+                for entry in entries:
+                    # Ensure the entry is attached to the session. If it's detached, merge it.
+                    if not session.is_modified(entry):
+                        entry_in_session = session.merge(entry)
+                    else:
+                        entry_in_session = entry
+                    for field, value in update_fields.items():
+                        if field in vars(entry_in_session):
+                            setattr(entry_in_session, field, value)
+                        else:
+                            session.rollback()
+                            raise ValueError(
+                                f"Field '{field}' does not exist in the table \
+                                            '{entry_in_session.__tablename__}'. Rolling back changes..."
+                            )
+                session.commit()
+                return True
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error updating entries: {e}")
+                return False
 
     def reset_database(self):
         """Drop and recreate existing tables"""

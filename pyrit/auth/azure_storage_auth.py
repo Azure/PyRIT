@@ -13,10 +13,6 @@ class AzureStorageAuth:
     """
     A utility class for Azure Storage authentication, providing methods to generate SAS tokens
     using user delegation keys.
-
-    Methods:
-        get_user_delegation_key(blob_service_client)
-        get_sas_token(container_url, blob_name)
     """
 
     @staticmethod

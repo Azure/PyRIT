@@ -1,4 +1,4 @@
-## What can I do if Jupyter cannot find PyRIT?
+# What can I do if Jupyter cannot find PyRIT?
 
 First, you need to find the corresponding conda environment for your project.
 You can do this with the following command:

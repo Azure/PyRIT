@@ -31,6 +31,7 @@ class OpenAIDALLETarget(OpenAITarget):
     ):
         """
         Initialize the DALL-E target with specified parameters.
+
         Args:
             image_size (Literal["256x256", "512x512", "1024x1024"], optional): The size of the generated images.
                 Defaults to "1024x1024".
@@ -44,6 +45,7 @@ class OpenAIDALLETarget(OpenAITarget):
                 DALL-E-3. Defaults to "natural".
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.
+
         Raises:
             ValueError: If `num_images` is not 1 for DALL-E-3.
             ValueError: If `num_images` is less than 1 or greater than 10 for DALL-E-2.
@@ -77,8 +79,10 @@ class OpenAIDALLETarget(OpenAITarget):
     ) -> PromptRequestResponse:
         """
         (Async) Sends prompt to image target and returns response
+
         Args:
             prompt_request (PromptRequestResponse): the prompt to send formatted as an object
+
         Returns: response from target model formatted as an object
         """
 

@@ -23,7 +23,7 @@ class PromptRequestPiece(abc.ABC):
     """
     Represents a prompt request piece.
 
-    Attributes:
+    Parameters:
         id (UUID): The unique identifier for the memory entry.
         role (PromptType): system, assistant, user
         conversation_id (str): The identifier for the conversation which is associated with a single target.
