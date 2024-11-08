@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import json
 import logging
 import os
@@ -18,7 +19,6 @@ from pyrit.common import default_values
 
 
 logger = logging.getLogger(__name__)
-
 
 class HuggingFaceChatTarget(PromptChatTarget):
     """The HuggingFaceChatTarget interacts with HuggingFace models, specifically for conducting red teaming activities.
@@ -75,9 +75,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         if self.use_cuda and not torch.cuda.is_available():
             raise RuntimeError("CUDA requested but not available.")
+        
+        self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
 
-        # Load the model and tokenizer using the encapsulated method
-        self.load_model_and_tokenizer()
 
     def is_model_id_valid(self) -> bool:
         """
@@ -92,7 +92,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.error(f"Invalid HuggingFace model ID {self.model_id}: {e}")
             return False
 
-    def load_model_and_tokenizer(self):
+    async def load_model_and_tokenizer(self):
         """Loads the model and tokenizer, downloading if necessary.
 
         Downloads the model to the HF_MODELS_DIR folder if it does not exist,
@@ -117,11 +117,11 @@ class HuggingFaceChatTarget(PromptChatTarget):
             if self.necessary_files is None:
                 # Download all files if no specific files are provided
                 logger.info(f"Downloading all files for {self.model_id}...")
-                download_specific_files(self.model_id, None, self.huggingface_token, cache_dir)
+                await download_specific_files(self.model_id, None, self.huggingface_token, cache_dir)
             else:
                 # Download only the necessary files
                 logger.info(f"Downloading specific files for {self.model_id}...")
-                download_specific_files(self.model_id, self.necessary_files, self.huggingface_token, cache_dir)
+                await download_specific_files(self.model_id, self.necessary_files, self.huggingface_token, cache_dir)
 
             # Load the tokenizer and model from the specified directory
             logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
@@ -152,6 +152,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
         """
         Sends a normalized prompt asynchronously to the HuggingFace model.
         """
+        # Load the model and tokenizer using the encapsulated method
+        await self.load_model_and_tokenizer_task
+
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
         prompt_template = request.converted_value

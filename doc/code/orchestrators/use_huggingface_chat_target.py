@@ -45,6 +45,10 @@ model_times = {}
 print(f"Running model: {model_id}")
 
 try:
+    # Enable cache for the target to save time on subsequent calls
+    # Target will use cached model and tokenizer if the model_id is the same
+    HuggingFaceChatTarget.enable_cache()
+
     # Initialize HuggingFaceChatTarget with the current model
     target = HuggingFaceChatTarget(model_id=model_id, use_cuda=False, tensor_format="pt", max_new_tokens=30)
 

@@ -1,9 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import logging
 import os
-import urllib.request
+import httpx
 from pathlib import Path
 
 from huggingface_hub import HfApi
@@ -29,7 +30,7 @@ def get_available_files(model_id: str, token: str):
         return []
 
 
-def download_specific_files(model_id: str, file_patterns: list, token: str, cache_dir: Path) -> list[str]:
+async def download_specific_files(model_id: str, file_patterns: list, token: str, cache_dir: Path):
     """
     Downloads specific files from a Hugging Face model repository.
     If file_patterns is None, downloads all files.
@@ -56,15 +57,56 @@ def download_specific_files(model_id: str, file_patterns: list, token: str, cach
     urls = [base_url + file for file in files_to_download]
 
     # Download the files
-    download_files(urls, token, cache_dir)
+    await download_files(urls, token, cache_dir)
 
 
-def download_files(urls: list, token: str, cache_dir: Path):
+async def download_chunk(url, headers, start, end, client):
+    """Download a chunk of the file with a specified byte range."""
+    range_header = {"Range": f"bytes={start}-{end}", **headers}
+    response = await client.get(url, headers=range_header)
+    response.raise_for_status()
+    return response.content
+
+
+async def download_file(url, token, download_dir, num_splits):
+    """Download a file in multiple segments (splits) using byte-range requests."""
     headers = {"Authorization": f"Bearer {token}"}
-    for url in urls:
-        local_filename = Path(cache_dir, url.split("/")[-1])
-        request = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(request) as response, open(local_filename, "wb") as out_file:
-            data = response.read()
-            out_file.write(data)
-        logger.info(f"Downloaded {local_filename}")
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        # Get the file size to determine chunk size
+        response = await client.head(url, headers=headers)
+        response.raise_for_status()
+        file_size = int(response.headers["Content-Length"])
+        chunk_size = file_size // num_splits
+
+        # Prepare tasks for each chunk
+        tasks = []
+        file_name = url.split("/")[-1]
+        file_path = Path(download_dir, file_name)
+
+        for i in range(num_splits):
+            start = i * chunk_size
+            end = start + chunk_size - 1 if i < num_splits - 1 else file_size - 1
+            tasks.append(download_chunk(url, headers, start, end, client))
+
+        # Download all chunks concurrently
+        chunks = await asyncio.gather(*tasks)
+
+        # Write chunks to the file in order
+        with open(file_path, "wb") as f:
+            for chunk in chunks:
+                f.write(chunk)
+        logger.info(f"Downloaded {file_name} to {file_path}")
+
+
+async def download_files(urls: list[str], token: str, download_dir: Path, num_splits=3, parallel_downloads=4):
+    """Download multiple files with parallel downloads and segmented downloading."""
+
+    # Limit the number of parallel downloads
+    semaphore = asyncio.Semaphore(parallel_downloads)
+
+    async def download_with_limit(url):
+        async with semaphore:
+            await download_file(url, token, download_dir, num_splits)
+
+    # Run downloads concurrently, but limit to parallel_downloads at a time
+    await asyncio.gather(*(download_with_limit(url) for url in urls))

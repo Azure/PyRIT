@@ -81,6 +81,7 @@ def test_init_with_no_token_var_raises(monkeypatch):
     assert "Environment variable HUGGINGFACE_TOKEN is required" in str(excinfo.value)
 
 
+# TODO: Run through tests, currently hitting RuntimeError: no running event loop
 def test_initialization():
     # Test the initialization without loading the actual models
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
