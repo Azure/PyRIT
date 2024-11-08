@@ -88,7 +88,6 @@ ml_client.environments.create_or_update(env_docker_context)
 
 # %%
 from azure.ai.ml import command
-from azure.ai.ml.entities import JobResourceConfiguration
 
 # Configure the command
 job = command(
