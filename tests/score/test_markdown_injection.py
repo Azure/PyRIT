@@ -2,9 +2,10 @@
 # Licensed under the MIT license.
 
 from typing import Generator
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import pytest
 
+from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from tests.mocks import get_memory_interface
@@ -25,24 +26,26 @@ def memory() -> Generator[MemoryInterface, None, None]:
     ],
 )
 async def test_md_injection_detected(text: str, memory: MemoryInterface):
-    scorer = MarkdownInjectionScorer(memory=memory)
-    score = (await scorer.score_text_async(text))[0]
-    assert score.get_value() is True
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = MarkdownInjectionScorer()
+        score = (await scorer.score_text_async(text))[0]
+        assert score.get_value() is True
 
 
 @pytest.mark.asyncio
 async def test_md_injection_not_detected(memory: MemoryInterface):
-    classifier = MarkdownInjectionScorer(memory=memory)
-    text = "this is a test"
-    score = await classifier.score_text_async(text)
-    assert score[0].get_value() is False
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        classifier = MarkdownInjectionScorer()
+        text = "this is a test"
+        score = await classifier.score_text_async(text)
+        assert score[0].get_value() is False
 
 
 @pytest.mark.asyncio
 async def test_md_injection_adds_to_memory():
     memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = MarkdownInjectionScorer()
+        await scorer.score_text_async(text="string")
 
-    scorer = MarkdownInjectionScorer(memory=memory)
-    await scorer.score_text_async(text="string")
-
-    memory.add_scores_to_memory.assert_called_once()
+        memory.add_scores_to_memory.assert_called_once()

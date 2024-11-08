@@ -7,7 +7,6 @@ from tkinter import simpledialog
 
 from pathlib import Path
 from typing import Optional
-from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 
@@ -19,14 +18,9 @@ class HumanInTheLoopScorer(Scorer):
     Attributes:
         scorer (Scorer): The scorer to use for the initial scoring.
         re_scorers (list[Scorer]): The scorers to use for re-scoring.
-        memory (MemoryInterface): The memory interface
     """
 
-    def __init__(
-        self, *, scorer: Scorer = None, re_scorers: list[Scorer] = None, memory: MemoryInterface = None
-    ) -> None:
-
-        self._memory = memory if memory else DuckDBMemory()
+    def __init__(self, *, scorer: Scorer = None, re_scorers: list[Scorer] = None) -> None:
         self._scorer = scorer
         self._re_scorers = re_scorers
 

@@ -3,7 +3,6 @@
 
 from typing import Optional
 from pyrit.common import default_values
-from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import data_serializer_factory, DataTypeSerializer, PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 
@@ -39,10 +38,7 @@ class AzureContentFilterScorer(Scorer):
         api_key: str = None,
         use_aad_auth: bool = False,
         harm_categories: list[TextCategory] = None,
-        memory: MemoryInterface = None,
     ) -> None:
-
-        self._memory = memory if memory else DuckDBMemory()
         """
         Class that initializes an Azure Content Filter Scorer
 
@@ -155,9 +151,7 @@ class AzureContentFilterScorer(Scorer):
     async def _get_base64_image_data(self, request_response: PromptRequestPiece):
         image_path = request_response.converted_value
         ext = DataTypeSerializer.get_extension(image_path)
-        image_serializer = data_serializer_factory(
-            value=image_path, data_type="image_path", extension=ext, memory=self._memory
-        )
+        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
         base64_encoded_data = await image_serializer.read_data_base64()
         return base64_encoded_data
 

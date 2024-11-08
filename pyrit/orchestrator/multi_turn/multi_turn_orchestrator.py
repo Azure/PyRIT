@@ -11,7 +11,7 @@ from typing import Optional, Union
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -26,17 +26,11 @@ logger = logging.getLogger(__name__)
 class MultiTurnAttackResult:
     """The result of a multi-turn attack."""
 
-    def __init__(
-        self,
-        conversation_id: str,
-        achieved_objective: bool,
-        objective: str,
-        memory: MemoryInterface = None,
-    ):
+    def __init__(self, conversation_id: str, achieved_objective: bool, objective: str):
         self.conversation_id = conversation_id
         self.achieved_objective = achieved_objective
         self.objective = objective
-        self._memory = memory or DuckDBMemory()
+        self._memory = CentralMemory.get_memory_instance()
 
     async def print_conversation_async(self):
         """Prints the conversation between the objective target and the adversarial chat, including the scores.
@@ -69,7 +63,7 @@ class MultiTurnAttackResult:
                 print(f"Converted value: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                await display_image_response(message, self._memory)
+                await display_image_response(message)
 
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
             if scores and len(scores) > 0:
@@ -95,8 +89,6 @@ class MultiTurnOrchestrator(Orchestrator):
             prompts before sending them to the prompt target. Defaults to None.
         objective_scorer (Scorer): The scorer classifies the prompt target outputs as sufficient (True) or
             insufficient (False) to satisfy the objective that is specified in the attack_strategy.
-        memory (Optional[MemoryInterface], optional): The memory to use to store the chat messages. If not
-            provided, a DuckDBMemory will be used. Defaults to None.
         memory_labels (Optional[dict[str, str]], optional): A free-form dictionary for tagging prompts with custom
             labels. These labels can be used to track all prompts sent as part of an operation, score prompts based
             on the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -109,8 +101,6 @@ class MultiTurnOrchestrator(Orchestrator):
         ValueError: If the objective_scorer is not a true/false scorer.
     """
 
-    _memory: MemoryInterface
-
     def __init__(
         self,
         *,
@@ -121,14 +111,11 @@ class MultiTurnOrchestrator(Orchestrator):
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
 
-        super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         self._objective_target = objective_target
         self._achieved_objective = False
@@ -138,10 +125,8 @@ class MultiTurnOrchestrator(Orchestrator):
         if "objective" not in self._adversarial_chat_system_seed_prompt.parameters:
             raise ValueError(f"Adversarial seed prompt must have an objective: '{adversarial_chat_system_prompt_path}'")
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self._objective_target._memory = self._memory
+        self._prompt_normalizer = PromptNormalizer()
         self._adversarial_chat = adversarial_chat
-        self._adversarial_chat._memory = self._memory
         self._initial_adversarial_prompt = initial_adversarial_chat_prompt
 
         if max_turns <= 0:
@@ -154,12 +139,6 @@ class MultiTurnOrchestrator(Orchestrator):
                 f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
             )
         self._objective_scorer = objective_scorer
-
-        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
-        if self._objective_scorer:
-            self._objective_scorer._memory = self._memory
-            if hasattr(self._objective_scorer, "_prompt_target"):
-                self._objective_scorer._prompt_target._memory = self._memory
 
     @abstractmethod
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:

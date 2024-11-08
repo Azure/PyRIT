@@ -10,6 +10,7 @@ from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
+from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
@@ -59,15 +60,15 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 def test_category_scorer_set_no_category_found():
     chat_target = MagicMock()
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
+        scorer = SelfAskCategoryScorer(
+            chat_target=chat_target,
+            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-    )
-
-    # assert that the category content was loaded into system prompt
-    assert scorer._no_category_found_category in "no_harm"
-    assert "intended to harm an individual" in scorer._system_prompt
+        # assert that the category content was loaded into system prompt
+        assert scorer._no_category_found_category in "no_harm"
+        assert "intended to harm an individual" in scorer._system_prompt
 
 
 @pytest.mark.asyncio
@@ -77,16 +78,15 @@ async def test_category_scorer_set_system_prompt(
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_bullying)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SelfAskCategoryScorer(
+            chat_target=chat_target,
+            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory,
-    )
+        await scorer.score_text_async("this has a lot of bullying")
 
-    await scorer.score_text_async("this has a lot of bullying")
-
-    chat_target.set_system_prompt.assert_called_once()
+        chat_target.set_system_prompt.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -95,22 +95,22 @@ async def test_category_scorer_score(memory: MemoryInterface, scorer_category_re
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_bullying)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory,
-    )
+        scorer = SelfAskCategoryScorer(
+            chat_target=chat_target,
+            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
-    score = await scorer.score_text_async("this has a lot of bullying")
+        score = await scorer.score_text_async("this has a lot of bullying")
 
-    assert len(score) == 1
+        assert len(score) == 1
 
-    assert score[0].score_value == "True"
-    assert "contains bullying" in score[0].score_rationale
-    assert score[0].score_type == "true_false"
-    assert score[0].score_category == "bullying"
-    assert score[0].prompt_request_response_id is None
+        assert score[0].score_value == "True"
+        assert "contains bullying" in score[0].score_rationale
+        assert score[0].score_type == "true_false"
+        assert score[0].score_category == "bullying"
+        assert score[0].prompt_request_response_id is None
 
 
 @pytest.mark.asyncio
@@ -121,21 +121,21 @@ async def test_category_scorer_score_false(
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_false)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory,
-    )
+        scorer = SelfAskCategoryScorer(
+            chat_target=chat_target,
+            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
-    score = await scorer.score_text_async("this has no bullying")
+        score = await scorer.score_text_async("this has no bullying")
 
-    assert len(score) == 1
+        assert len(score) == 1
 
-    assert score[0].score_value == "False"
-    assert score[0].score_type == "true_false"
-    assert score[0].score_category == "no_harm"
-    assert score[0].prompt_request_response_id is None
+        assert score[0].score_value == "False"
+        assert score[0].score_type == "true_false"
+        assert score[0].score_category == "no_harm"
+        assert score[0].prompt_request_response_id is None
 
 
 @pytest.mark.asyncio
@@ -143,16 +143,16 @@ async def test_category_scorer_adds_to_memory(scorer_category_response_false: Pr
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_false)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory,
-    )
+        scorer = SelfAskCategoryScorer(
+            chat_target=chat_target,
+            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
-    await scorer.score_text_async(text="string")
+        await scorer.score_text_async(text="string")
 
-    memory.add_scores_to_memory.assert_called_once()
+        memory.add_scores_to_memory.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -164,16 +164,16 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries():
         request_pieces=[PromptRequestPiece(role="assistant", original_value="this is not a json")]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
 
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory,
-    )
+        scorer = SelfAskCategoryScorer(
+            chat_target=chat_target,
+            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
-    with pytest.raises(InvalidJsonException):
-        await scorer.score_text_async("this has no bullying")
-    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        with pytest.raises(InvalidJsonException):
+            await scorer.score_text_async("this has no bullying")
+        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -197,16 +197,16 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
         request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)]
     )
     chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
 
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=memory,
-    )
+        scorer = SelfAskCategoryScorer(
+            chat_target=chat_target,
+            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
-    with pytest.raises(InvalidJsonException):
-        await scorer.score_text_async("this has no bullying")
-    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
+        with pytest.raises(InvalidJsonException):
+            await scorer.score_text_async("this has no bullying")
+        assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS"))
 
 
 @pytest.mark.asyncio
@@ -217,20 +217,21 @@ async def test_score_prompts_batch_async(
 ):
     chat_target = AsyncMock()
     chat_target._max_requests_per_minute = max_requests_per_minute
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
+        scorer = SelfAskCategoryScorer(
+            chat_target=chat_target,
+            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+        )
 
-    scorer = SelfAskCategoryScorer(
-        chat_target=chat_target,
-        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        memory=MagicMock(),
-    )
+        prompt = PromptRequestPiece(role="assistant", original_value="test")
+        prompt2 = PromptRequestPiece(role="assistant", original_value="test 2")
 
-    prompt = PromptRequestPiece(role="assistant", original_value="test")
-    prompt2 = PromptRequestPiece(role="assistant", original_value="test 2")
-
-    with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
-        if batch_size != 1 and max_requests_per_minute:
-            with pytest.raises(ValueError):
-                await scorer.score_prompts_batch_async(request_responses=[prompt], batch_size=batch_size)
-        else:
-            results = await scorer.score_prompts_batch_async(request_responses=[prompt, prompt2], batch_size=batch_size)
-            assert len(results) == 2
+        with patch.object(chat_target, "send_prompt_async", return_value=scorer_category_response_false):
+            if batch_size != 1 and max_requests_per_minute:
+                with pytest.raises(ValueError):
+                    await scorer.score_prompts_batch_async(request_responses=[prompt], batch_size=batch_size)
+            else:
+                results = await scorer.score_prompts_batch_async(
+                    request_responses=[prompt, prompt2], batch_size=batch_size
+                )
+                assert len(results) == 2

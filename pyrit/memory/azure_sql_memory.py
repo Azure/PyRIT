@@ -181,7 +181,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         try:
             entries = self.query_entries(
                 PromptMemoryEntry,
-                conditions=PromptMemoryEntry.conversation_id == conversation_id,
+                conditions=PromptMemoryEntry.conversation_id == str(conversation_id),
             )  # type: ignore
 
             result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]

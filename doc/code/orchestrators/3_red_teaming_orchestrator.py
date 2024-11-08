@@ -26,7 +26,8 @@
 # Note that for this to succeed, the `RedTeamingOrchestrator` requires an LLM endpoint without content moderation or other kinds of safety filtering mechanisms. Even then, success depends on the model and may not be achieved every time.
 #
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
-
+#
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 import logging
 
@@ -112,4 +113,4 @@ with RedTeamingOrchestrator(
     verbose=True,
 ) as orchestrator:
     result = await orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
-    await result.print_conversation_async(result=result)  # type: ignore
+    await result.print_conversation_async()  # type: ignore
