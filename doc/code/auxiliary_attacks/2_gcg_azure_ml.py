@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.3
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-kernel
 #     language: python
-#     name: python3
+#     name: pyrit-kernel
 # ---
 
 # %% [markdown]
@@ -40,6 +40,8 @@ default_values.load_default_env()
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
 resource_group = os.environ.get("AZURE_RESOURCE_GROUP")
 workspace = os.environ.get("AZURE_ML_WORKSPACE_NAME")
+compute_name = os.environ.get("AZURE_ML_COMPUTE_NAME")
+print(workspace)
 
 # %%
 from azure.ai.ml import MLClient
@@ -47,6 +49,12 @@ from azure.identity import DefaultAzureCredential
 
 # Get a handle to the workspace
 ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
+
+# %% [markdown]
+# ## Create Compute Cluster
+#
+# Before proceeding, create a compute cluster in Azure ML. The following command may be useful:
+# az ml compute create --size Standard_ND96isrf_H100_v5 --type AmlCompute --name <compute-name> -g <group> -w <workspace> --min-instances 0
 
 # %% [markdown]
 # ## Create AML Environment
@@ -80,7 +88,6 @@ ml_client.environments.create_or_update(env_docker_context)
 
 # %%
 from azure.ai.ml import command
-from azure.ai.ml.entities import JobResourceConfiguration
 
 # Configure the command
 job = command(
@@ -98,10 +105,7 @@ job = command(
     environment_variables={"HF_TOKEN": os.environ["HF_TOKEN"]},
     display_name="suffix_generation",
     description="Generate a suffix for attacking LLMs.",
-    resources=JobResourceConfiguration(
-        instance_type="Standard_ND40rs_v2",
-        instance_count=1,
-    ),
+    compute=compute_name,
 )
 
 # %%
