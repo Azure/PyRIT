@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.exceptions.exception_classes import InvalidJsonException, remove_markdown_json
+from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget

@@ -12,7 +12,7 @@ class MemoryEmbedding:
     """
     The MemoryEmbedding class is responsible for encoding the memory embeddings.
 
-    Attributes:
+    Parameters:
         embedding_model (EmbeddingSupport): An instance of a class that supports embedding generation.
     """
 

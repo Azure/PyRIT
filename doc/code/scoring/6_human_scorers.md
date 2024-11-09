@@ -1,4 +1,4 @@
-## Human in the Loop Scoring
+# Human in the Loop Scoring
 
 This is possible using the `HITLScorer` class. It can take input from a csv file or directly via standard input. See the [tests](../../../tests/score/test_hitl.py) for an explicit example; the csv format should have the following headers in any order, followed by the data separated by commas:
 

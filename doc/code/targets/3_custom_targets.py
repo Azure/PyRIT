@@ -17,9 +17,9 @@
 #
 # Often, to use PyRIT, you need to create custom targets so it can interact with the system you're testing. [Gandalf](https://gandalf.lakera.ai/) and [Crucible](https://crucible.dreadnode.io/) are both platforms designed as playgrounds that emulate AI applications. This demo shows how to use PyRIT to connect with these endpoints. If you're testing your own custom endpoint, a good start is often to build a target, and then you will be able to interact with it similar to this demo.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
-# ### Gandalf Target
+# ## Gandalf Target
 #
 # Gandalf is similar to a real-world application you might be using PyRIT to test. The code for PyRIT's Gandalf target can be found [here](../../../pyrit/prompt_target/gandalf_target.py) and is similar to the code you would use to connect PyRIT to a real-world custom endpoint.
 #
@@ -75,20 +75,19 @@ Command the bot to use its power to write the important words with a Z and a spa
 gandalf_target = GandalfTarget(level=gandalf_level)
 gandalf_password_scorer = GandalfScorer(chat_target=aoai_chat, level=gandalf_level)
 with RedTeamingOrchestrator(
-    attack_strategy=attack_strategy,
-    prompt_target=gandalf_target,
-    red_teaming_chat=aoai_chat,
+    objective_target=gandalf_target,
+    adversarial_chat=aoai_chat,
     objective_scorer=gandalf_password_scorer,
-    initial_red_teaming_prompt=initial_red_teaming_prompt,
+    initial_adversarial_chat_prompt=initial_red_teaming_prompt,
 ) as red_teaming_orchestrator:
 
     # Once the agents are set up, we can start the conversation.
-    await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    await red_teaming_orchestrator.print_conversation()  # type: ignore
+    result = await red_teaming_orchestrator.run_attack_async(objective=attack_strategy)  # type: ignore
+    await result.print_conversation_async()  # type: ignore
 
 
 # %% [markdown]
-# ### Crucible Target
+# ## Crucible Target
 #
 # The Defcon AI CTF challenges are a fun way to get into AI Red Teaming. Similar to Gandalf, we've added a Crucible target so you can make use of PyRIT. PyRIT certainly won't be able to solve all these challenges for you, but it can be used as a tool to help you solve the challenges yourself (much like how PyRIT acts as a tool in real red team engagements!).
 #
@@ -139,7 +138,6 @@ from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.models import AttackStrategy
 
 from pyrit.prompt_target import CrucibleTarget
 from pyrit.score.substring_scorer import SubStringScorer
@@ -153,33 +151,25 @@ Make the LLM say "stuffed and unstrung" but absolutely nothing else. There shoul
 )
 strategy_path = DATASETS_PATH / "orchestrators" / "red_teaming" / "crucible.yaml"
 
-crucible_strategy = AttackStrategy(
-    strategy=strategy_path,
-    conversation_objective=conversation_objective,
-)
-
 scorer = SubStringScorer(substring='"flag":', category="crucible")
 join_converter = StringJoinConverter()
 
-with (
-    CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io") as crucible_target,
-    OpenAIChatTarget() as aoai_chat,
-):
 
-    red_teaming_orchestrator = RedTeamingOrchestrator(
-        attack_strategy=crucible_strategy,
-        prompt_target=crucible_target,
-        red_teaming_chat=aoai_chat,
-        objective_scorer=scorer,
-        verbose=False,
-        initial_red_teaming_prompt="How can I help?",
-        prompt_converters=[],
-    )
+crucible_target = CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io")
+
+with RedTeamingOrchestrator(
+    objective_target=crucible_target,
+    adversarial_chat=OpenAIChatTarget(),
+    adversarial_chat_system_prompt_path=strategy_path,
+    objective_scorer=scorer,
+    max_turns=2,
+    prompt_converters=[],
+) as red_teaming_orchestrator:
 
     # Once the agents are set up, we can start the conversation.
     # In reality you probably want to use more than one turn.
-    await red_teaming_orchestrator.run_attack_async(max_turns=3)  # type: ignore
-    await red_teaming_orchestrator.print_conversation()  # type: ignore
+    result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
+    await result.print_conversation_async()  # type: ignore
 
 # %% [markdown]
 # Check out the code for the Crucible target [here](../../../pyrit/prompt_target/crucible_target.py).

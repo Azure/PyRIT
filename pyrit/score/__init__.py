@@ -1,15 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import Score, ScoreType
-from pyrit.score.scorer import Scorer, UnvalidatedScore
-
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.gandalf_scorer import GandalfScorer
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
 from pyrit.score.prompt_shield_scorer import PromptShieldScorer
+from pyrit.score.scorer import Scorer
 from pyrit.score.self_ask_category_scorer import SelfAskCategoryScorer, ContentClassifierPaths
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
@@ -27,11 +25,7 @@ __all__ = [
     "HumanInTheLoopScorer",
     "LikertScalePaths",
     "MarkdownInjectionScorer",
-    "MetaScorerQuestionPaths",
-    "ObjectiveQuestionPaths",
     "PromptShieldScorer",
-    "Score",
-    "ScoreType",
     "Scorer",
     "SelfAskCategoryScorer",
     "SelfAskLikertScorer",
@@ -42,5 +36,4 @@ __all__ = [
     "TrueFalseInverterScorer",
     "TrueFalseQuestion",
     "TrueFalseQuestionPaths",
-    "UnvalidatedScore",
 ]

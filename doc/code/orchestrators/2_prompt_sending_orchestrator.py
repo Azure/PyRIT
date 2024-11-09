@@ -19,9 +19,16 @@
 # This demo is about when you have a list of prompts you want to try against a target. It includes the ways you can send the prompts,
 # how you can modify the prompts, and how you can view results. Before starting, import the necessary libraries.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
 # The first example is as simple as it gets.
+
+# > **Important Note:**
+# > - **Azure SQL Database**: Results will store in Azure SQL DB if respective settings are configured in your `.env` file.
+# > - **Local DuckDB**: If Azure SQL is not configured, results default to a local DuckDB instance.
+# >
+# > To manually set the memory instance, use the `CentralMemory` class. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
+#
 
 # %%
 import uuid
@@ -46,7 +53,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
-# ### Adding Converters
+# ## Adding Converters
 #
 # Additionally, we can make it more interesting by initializing the orchestrator with different types of prompt converters.
 # This variation takes the original example, but converts the text to base64 before sending it to the target.
@@ -69,15 +76,18 @@ target = OpenAIChatTarget()
 
 with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()]) as orchestrator:
 
-    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompts" / "illegal.prompt")
+    seed_prompt_dataset = SeedPromptDataset.from_yaml_file(
+        pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt"
+    )
 
+    prompts = [seed_prompt.value for seed_prompt in seed_prompt_dataset.prompts]
     # this is run in a Jupyter notebook, so we can use await
-    await orchestrator.send_prompts_async(prompt_list=prompts.prompts)  # type: ignore
+    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 
     await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
-# ### Multi-Modal
+# ## Multi-Modal
 #
 # The targets sent do not have to be text prompts. You can also use multi-modal prompts. The below example takes a list of paths to local images, and sends that list of images to the target.
 
@@ -95,7 +105,10 @@ default_values.load_default_env()
 text_target = TextTarget()
 
 # use the image from our docs
+# For DuckDB Memory
 image_path = pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"
+# For Azure SQL Memory
+# image_path = "https://airtstorageaccountdev.blob.core.windows.net/results/dbdata/images/1728351978677143.png"
 
 with PromptSendingOrchestrator(prompt_target=text_target) as orchestrator:
 
@@ -107,7 +120,7 @@ with PromptSendingOrchestrator(prompt_target=text_target) as orchestrator:
         print(entry)
 
 # %% [markdown]
-# ### Automatic Scoring
+# ## Automatic Scoring
 #
 # The `PromptSendingOrchestrator` also has built-in support to score prompt responses in parallel.
 # This example shows how to pass in a list of scorers to the orchestrator.
@@ -151,7 +164,7 @@ with PromptSendingOrchestrator(
                 )
 
 # %% [markdown]
-# ### Prepending Conversations
+# ## Prepending Conversations
 #
 # If you prepend all or part of a conversation with `PromptSendingOrchestrator`, that is also supported. You can call `set_prepended_conversation` to customize the beginning part of any message. For example, you could use this to do a multi-turn conversation. Below sets the system prompt for many messages.
 
@@ -167,7 +180,6 @@ from pyrit.prompt_target import OpenAIChatTarget
 
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import Base64Converter
 
 
 default_values.load_default_env()

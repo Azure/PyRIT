@@ -112,21 +112,20 @@ def fetch_examples(
     """
     Fetch examples from a specified source with caching support.
 
+    Example usage
+    >>> examples = fetch_examples(
+    >>>     source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json',
+    >>>     source_type='public_url'
+    >>> )
+
     Args:
         source (str): The source from which to fetch examples.
         source_type (Literal["public_url", "file"]): The type of source ('public_url' or 'file').
-        file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'json'.
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
         List[Dict[str, str]]: A list of examples.
-
-    Example usage:
-        examples = fetch_examples(
-            source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json',
-            source_type='public_url'
-        )
     """
 
     file_type = source.split(".")[-1]
@@ -189,6 +188,7 @@ def fetch_seclists_bias_testing_examples(
 ) -> SeedPromptDataset:
     """
     Fetch SecLists AI LLM Bias Testing examples from a specified source and create a SeedPromptDataset.
+
     Args:
         source (str): The source from which to fetch examples. Defaults to the SecLists repository Bias_Testing.
         source_type (Literal["public_url"]): The type of source ('public_url').
@@ -773,15 +773,14 @@ def fetch_decoding_trust_stereotypes_examples(
 
 def fetch_forbidden_questions_df() -> SeedPromptDataset:
     """
-
     Fetch Forbidden question dataset and return it as a SeedPromptDataset
 
     Returns: SeedPromptDataset
 
     Note: For more info
-    Paper - https://arxiv.org/abs/2308.03825
-    Github - https://github.com/verazuo/jailbreak_llms/
-    Website - https://jailbreak-llms.xinyueshen.me/
+        Paper - https://arxiv.org/abs/2308.03825
+        Github - https://github.com/verazuo/jailbreak_llms/
+        Website - https://jailbreak-llms.xinyueshen.me/
     """
     data = load_dataset("TrustAIRLab/forbidden_question_set", "default")
 

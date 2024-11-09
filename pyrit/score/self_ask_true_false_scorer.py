@@ -8,10 +8,10 @@ import yaml
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface, DuckDBMemory
 from pyrit.models import PromptRequestPiece, SeedPrompt
+from pyrit.models.score import UnvalidatedScore, Score
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Score, Scorer, UnvalidatedScore
+from pyrit.score.scorer import Scorer
 
 TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
 
@@ -66,16 +66,9 @@ class SelfAskTrueFalseScorer(Scorer):
         true_false_question_path: Optional[Path] = None,
         true_false_question: Optional[TrueFalseQuestion] = None,
         true_false_system_prompt_path: Optional[Path] = None,
-        memory: MemoryInterface = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
-
-        self._memory = memory if memory else DuckDBMemory()
-
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
 
         if not true_false_question_path and not true_false_question:
             raise ValueError("Either true_false_question_path or true_false_question must be provided.")

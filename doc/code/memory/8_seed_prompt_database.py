@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ## Seed Prompt Database
+# # Seed Prompt Database
 #
 # Apart from storing results in memory it's also useful to store datasets of seed prompts
 # and seed prompt templates that we may want to use at a later point.
@@ -47,7 +47,7 @@ print(seed_prompt_dataset.prompts[0])
 azure_memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.prompts, added_by="test")
 
 # %% [markdown]
-# # Retrieving prompts from the database
+# ## Retrieving prompts from the database
 #
 # First, let's get an idea of what datasets are represented in the database.
 
@@ -76,7 +76,7 @@ seed_prompt_group = SeedPromptGroup.from_yaml_file(
 azure_memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")
 
 # %% [markdown]
-# # Retrieving seed prompt groups from the memory with dataset_name as "test multimodal"
+# ## Retrieving seed prompt groups from the memory with dataset_name as "test multimodal"
 
 # %%
 

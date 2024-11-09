@@ -24,6 +24,8 @@ CONTENT_CLASSIFIERS_PATH = pathlib.Path(DATASETS_PATH, "score", "content_classif
 LIKERT_SCALES_PATH = pathlib.Path(DATASETS_PATH, "score", "likert_scales").resolve()
 SCALES_PATH = pathlib.Path(DATASETS_PATH, "score", "scales").resolve()
 
+RED_TEAM_ORCHESTRATOR_PATH = pathlib.Path(DATASETS_PATH, "orchestrators", "red_teaming").resolve()
+
 # Points to the root of the project
 HOME_PATH = pathlib.Path(PYRIT_PATH, "..").resolve()
 

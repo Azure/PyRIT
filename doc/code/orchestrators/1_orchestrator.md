@@ -1,4 +1,4 @@
-## Orchestrators
+# Orchestrators
 
 The Orchestrator is a top-level component that red team operators will interact with the most. It is responsible for telling PyRIT which endpoints to connect to and how to send prompts. It can be thought of as the component that executes an attack technique.
 

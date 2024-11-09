@@ -19,7 +19,7 @@
 #
 # For this example, we will use the Jailbreak `SeedPrompt`. Although you can interact with the target directly using `PromptRequestResponse` objects, it is almost always better to use an orchestrator. The simplest orchestrator is the `PromptSendingOrchestrator`, which provides parallelization, access to converters and scoring, simpler calling methods, and error resiliency.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
 import pathlib
@@ -47,7 +47,7 @@ with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
 
 
 # %% [markdown]
-# ### OpenAI Configuration
+# ## OpenAI Configuration
 #
 # All `OpenAITarget`s can communicate either to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference) or [OpenAI](https://platform.openai.com/docs/api-reference/introduction).
 #

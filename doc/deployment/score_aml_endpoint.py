@@ -1,5 +1,5 @@
 # %% [markdown]
-# ## Score Azure ML Managed Online Endpoint
+# # Score Azure ML Managed Online Endpoint
 #
 # This notebook demonstrates testing the Azure Machine Learning (Azure ML) models that have been deployed to Azure ML managed online endpoints.
 #
@@ -8,10 +8,10 @@
 # Before proceeding with this notebook, ensure the following prerequisites are met:
 #
 # 1. **Azure ML Model Deployment**: Your Azure ML model must be deployed to an Azure ML managed online endpoint. If your model is not yet deployed, please follow the instructions in the [deployment notebook](./deploy_hf_model_aml.ipynb).
-# 2. Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section in the notebook provided [here](../setup/setup_azure.md)
+# 2. Execute the `az login` command to sign in to your Azure subscription. For detailed instructions, refer to the "Authenticate with Azure Subscription" section [here](../setup/populating_secrets.md)
 #
 #
-# ### Environment Variables
+# ## Environment Variables
 #
 # Below are the environment variables that needs to be set in `.env` file:
 #

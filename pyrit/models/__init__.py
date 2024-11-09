@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models.attack_strategy import AttackStrategy
 from pyrit.models.chat_message import (
     ALLOWED_CHAT_MESSAGE_ROLES,
     ChatMessage,
@@ -38,7 +37,6 @@ from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
     "ALLOWED_CHAT_MESSAGE_ROLES",
-    "AttackStrategy",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
     "ChatMessage",

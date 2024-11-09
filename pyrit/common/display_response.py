@@ -7,18 +7,19 @@ import io
 
 from pyrit.common.notebook_utils import is_in_ipython_session
 from pyrit.models import PromptRequestPiece
-from pyrit.memory import MemoryInterface
+from pyrit.memory import CentralMemory
 
 
 logger = logging.getLogger(__name__)
 
 
-async def display_image_response(response_piece: PromptRequestPiece, memory: MemoryInterface) -> None:
+async def display_image_response(response_piece: PromptRequestPiece) -> None:
     """Displays response images if running in notebook environment.
 
     Args:
         response_piece (PromptRequestPiece): The response piece to display.
     """
+    memory = CentralMemory.get_memory_instance()
     if (
         response_piece.response_error == "none"
         and response_piece.converted_value_data_type == "image_path"

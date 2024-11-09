@@ -14,7 +14,7 @@ Once the environment with the correct Python version is set up, run
 pip install pyrit
 ```
 
-Next, check out our [docs](../../doc/) and run the notebooks in your environment!
+Next, check out our [docs](../index.md) and run the notebooks in your environment!
 
 Note that notebooks and your PyRIT installation need to be on the same version.
 If you install PyRIT from source then the notebooks from the same cloned

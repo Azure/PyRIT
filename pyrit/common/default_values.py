@@ -29,13 +29,15 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
 
     If no value is found, raises a KeyError
 
-    :param environment_variable_name: The name of the environment variable
-    :type environment_variable_name: str
-    :param passed_value: The value passed as an argument
-    :type passed_value: str
-    :return: The required value
-    :rtype: str
-    :raises ValueError: If no value is found
+    Args:
+        env_var_name (str): The name of the environment variable to check
+        passed_value (str): The value passed to the function.
+
+    Returns:
+        str: The passed value if provided, otherwise the value from the environment variable.
+
+    Raises:
+        ValueError: If neither the passed value nor the environment variable is provided.
     """
     if passed_value:
         return passed_value
@@ -50,18 +52,15 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
 def get_non_required_value(*, env_var_name: str, passed_value: str) -> str:
     """
     Gets a non-required value from an environment variable or a passed value,
-    prefering the passed value
+    prefering the passed value.
 
-    If no value is found, returns an empty string.
-        env_var_name (str): The name of the environment variable to check.
-        passed_value (str): The value passed to the function.
-    Returns:
-        str: The passed value if provided, otherwise the value from the environment variable.
-    Raises:
-        ValueError: If neither the passed value nor the environment variable is provided.
-    preferring the passed value.
     Args:
         env_var_name (str): The name of the environment variable to check.
+        passed_value (str): The value passed to the function.
+
+    Returns:
+        str: The passed value if provided, otherwise the value from the environment variable.
+             If no value is found, returns an empty string.
     """
     if passed_value:
         return passed_value

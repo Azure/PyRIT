@@ -24,30 +24,27 @@ def data_serializer_factory(
     data_type: PromptDataType,
     value: Optional[str] = None,
     extension: Optional[str] = None,
-    memory: MemoryInterface = None,
 ):
-    if not memory:
-        raise ValueError("The memory provided is invalid. Please provide a valid memory value.")
     if value:
         if data_type == "text":
-            return TextDataTypeSerializer(prompt_text=value, memory=memory)
+            return TextDataTypeSerializer(prompt_text=value)
         elif data_type == "image_path":
-            return ImagePathDataTypeSerializer(prompt_text=value, memory=memory, extension=extension)
+            return ImagePathDataTypeSerializer(prompt_text=value, extension=extension)
         elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(prompt_text=value, memory=memory, extension=extension)
+            return AudioPathDataTypeSerializer(prompt_text=value, extension=extension)
         elif data_type == "error":
-            return ErrorDataTypeSerializer(prompt_text=value, memory=memory)
+            return ErrorDataTypeSerializer(prompt_text=value)
         elif data_type == "url":
-            return URLDataTypeSerializer(prompt_text=value, memory=memory)
+            return URLDataTypeSerializer(prompt_text=value)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
         if data_type == "image_path":
-            return ImagePathDataTypeSerializer(extension=extension, memory=memory)
+            return ImagePathDataTypeSerializer(extension=extension)
         elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(extension=extension, memory=memory)
+            return AudioPathDataTypeSerializer(extension=extension)
         elif data_type == "error":
-            return ErrorDataTypeSerializer(prompt_text="", memory=memory)
+            return ErrorDataTypeSerializer(prompt_text="")
         else:
             raise ValueError(f"Data type {data_type} without prompt text not supported")
 
@@ -63,9 +60,14 @@ class DataTypeSerializer(abc.ABC):
     value: str
     data_sub_directory: str
     file_extension: str
-    _memory: MemoryInterface = None
 
     _file_path: Union[Path, str] = None
+
+    @property
+    def _memory(self) -> MemoryInterface:
+        from pyrit.memory import CentralMemory
+
+        return CentralMemory.get_memory_instance()
 
     @abc.abstractmethod
     def data_on_disk(self) -> bool:
@@ -185,40 +187,34 @@ class DataTypeSerializer(abc.ABC):
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: MemoryInterface):
+    def __init__(self, *, prompt_text: str):
         self.data_type = "text"
         self.value = prompt_text
-        self._memory = memory
 
     def data_on_disk(self) -> bool:
         return False
 
 
 class ErrorDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: MemoryInterface):
+    def __init__(self, *, prompt_text: str):
         self.data_type = "error"
         self.value = prompt_text
-        self._memory = memory
 
     def data_on_disk(self) -> bool:
         return False
 
 
 class URLDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: MemoryInterface):
+    def __init__(self, *, prompt_text: str):
         self.data_type = "url"
         self.value = prompt_text
-        self._memory = memory
 
     def data_on_disk(self) -> bool:
         return False
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):
-    def __init__(
-        self, *, memory: MemoryInterface = None, prompt_text: Optional[str] = None, extension: Optional[str] = None
-    ):
-        self._memory = memory
+    def __init__(self, *, prompt_text: Optional[str] = None, extension: Optional[str] = None):
         self.data_type = "image_path"
         self.data_sub_directory = "/dbdata/images"
         self.file_extension = extension if extension else "png"
@@ -234,12 +230,10 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
     def __init__(
         self,
         *,
-        memory: MemoryInterface = None,
         prompt_text: Optional[str] = None,
         extension: Optional[str] = None,
     ):
         self.data_type = "audio_path"
-        self._memory = memory
         self.data_sub_directory = "/dbdata/audio"
         self.file_extension = extension if extension else "mp3"
 

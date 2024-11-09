@@ -7,7 +7,7 @@ import uuid
 
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptDataType, Identifier
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
@@ -23,12 +23,11 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []
-        self._memory = memory or DuckDBMemory()
+        self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._id = uuid.uuid4()
 
@@ -64,11 +63,7 @@ class Orchestrator(abc.ABC, Identifier):
             converters = self._prompt_converters
 
         request_piece = NormalizerRequestPiece(
-            request_converters=converters,
-            prompt_value=prompt_text,
-            prompt_data_type=prompt_type,
-            metadata=metadata,
-            memory=self._memory,
+            request_converters=converters, prompt_value=prompt_text, prompt_data_type=prompt_type, metadata=metadata
         )
 
         request = NormalizerRequest(request_pieces=[request_piece], conversation_id=conversation_id)
