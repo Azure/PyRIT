@@ -30,7 +30,7 @@ class InsecureCodeScorer(Scorer):
         self._threshold = threshold
         self.scorer_type = "float_scale"
         self._system_prompt_path = system_prompt_path
-        self._memory = memory if memory else DuckDBMemory()
+        self._custom_memory = memory if memory else DuckDBMemory()
 
         # Load the system prompt template as a SeedPrompt object
         self._system_prompt_path = (
@@ -82,10 +82,10 @@ class InsecureCodeScorer(Scorer):
         )
 
         # Add the request response to memory
-        self._memory.add_request_pieces_to_memory(request_pieces=[request_response])
+        self._custom_memory.add_request_pieces_to_memory(request_pieces=[request_response])
 
         # Add the score to memory
-        self._memory.add_scores_to_memory(scores=[score])
+        self._custom_memory.add_scores_to_memory(scores=[score])
 
         return [score]
 

@@ -4,11 +4,11 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import PromptRequestPiece, Score, UnvalidatedScore
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.memory import MemoryInterface
-from pyrit.score import InsecureCodeScorer, UnvalidatedScore
+from pyrit.score import InsecureCodeScorer
 
 
 @pytest.fixture
