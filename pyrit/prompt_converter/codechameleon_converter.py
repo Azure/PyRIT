@@ -27,19 +27,19 @@ class CodeChameleonConverter(PromptConverter):
     ---
     encrypt_mode: {"custom", "reverse", "binary_tree", "odd_even", "length"}
         Select a built-in encryption method or provide custom encryption and decryption functions.
-        - custom: User provided encryption and decryption functions. Encryption function used to encode prompt.
-          Markdown formatting and plaintext instructions appended to decryption function, used as text only.
-          Should include imports.
-        - reverse: Reverse the prompt. "How to cut down a tree?" becomes "tree? a down cut to How"
-        - binary_tree: Encode prompt using binary tree. "How to cut down a tree"?" becomes
-          "{'value': 'cut',
-          'left': {'value': 'How', 'left': None, 'right': {'value': 'to', 'left': None, 'right': None}},
-          'right': {'value': 'a', 'left': {'value': 'down', 'left': None, 'right': None},
-          'right': {'value': 'tree?', 'left': None, 'right': None}}}"
-        - odd_even: All words in odd indices of prompt followed by all words in even indices.
-          "How to cut down a tree?" becomes "How cut a to down tree?"
-        - length: List of words in prompt sorted by length, use word as key, original index as value.
-          "How to cut down a tree?" becomes "[{'a': 4}, {'to': 1}, {'How': 0}, {'cut': 2}, {'down': 3}, {'tree?': 5}]"
+        `custom`: User provided encryption and decryption functions. Encryption function used to encode prompt.
+        Markdown formatting and plaintext instructions appended to decryption function, used as text only.
+        Should include imports.
+        `reverse`: Reverse the prompt. "How to cut down a tree?" becomes "tree? a down cut to How"
+        `binary_tree`: Encode prompt using binary tree. "How to cut down a tree"?" becomes
+        "{'value': 'cut',
+        'left': {'value': 'How', 'left': None, 'right': {'value': 'to', 'left': None, 'right': None}},
+        'right': {'value': 'a', 'left': {'value': 'down', 'left': None, 'right': None},
+        'right': {'value': 'tree?', 'left': None, 'right': None}}}"
+        `odd_even`: All words in odd indices of prompt followed by all words in even indices.
+        "How to cut down a tree?" becomes "How cut a to down tree?"
+        `length`: List of words in prompt sorted by length, use word as key, original index as value.
+        "How to cut down a tree?" becomes "[{'a': 4}, {'to': 1}, {'How': 0}, {'cut': 2}, {'down': 3}, {'tree?': 5}]"
 
     encrypt_function: Callable, default=None
         User provided encryption function. Only used if `encrypt_mode` is "custom".

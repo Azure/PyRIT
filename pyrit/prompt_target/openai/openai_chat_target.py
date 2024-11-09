@@ -136,9 +136,7 @@ class OpenAIChatTarget(OpenAITarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(
-            value=image_path, data_type="image_path", extension=ext, memory=self._memory
-        )
+        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
         base64_encoded_data = await image_serializer.read_data_base64()
         # Azure OpenAI GPT-4o documentation doesn't specify the local image upload format for API.
         # GPT-4o image upload format is determined using "view code" functionality in Azure OpenAI deployments
@@ -237,6 +235,7 @@ class OpenAIChatTarget(OpenAITarget):
             extracted_response = self._parse_chat_completion(response)
             # Handle empty response
             if not extracted_response:
+                logger.log(logging.ERROR, "The chat returned an empty response.")
                 raise EmptyResponseException(message="The chat returned an empty response.")
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason}")

@@ -8,25 +8,17 @@ import requests
 from openai import BadRequestError
 import uuid
 
-from pyrit.exceptions.exception_classes import PyritException, pyrit_target_retry
-from pyrit.memory import DuckDBMemory, MemoryInterface
-from pyrit.models import Score
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.exceptions import PyritException, pyrit_target_retry
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.prompt_target import PromptChatTarget, GandalfLevel
 from pyrit.score.scorer import Scorer
 
 
 class GandalfScorer(Scorer):
-    def __init__(
-        self, level: GandalfLevel, chat_target: PromptChatTarget = None, memory: MemoryInterface = None
-    ) -> None:
+    def __init__(self, level: GandalfLevel, chat_target: PromptChatTarget = None) -> None:
         self._prompt_target = chat_target
         self._defender = level.value
         self._endpoint = "https://gandalf.lakera.ai/api/guess-password"
-        self._memory = memory if memory else DuckDBMemory()
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
         self.scorer_type = "true_false"
 
     @pyrit_target_retry

@@ -23,8 +23,9 @@
 #
 # The following example demonstrates this by manually entering prompts into the database and then scoring them.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
-
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
+#
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
@@ -51,7 +52,7 @@ with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchest
 # %%
 # pylint: disable=W0611
 import time
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
@@ -80,7 +81,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
 
     print(f"Elapsed time for operation: {end-start}")
 
-    memory = DuckDBMemory()
+    memory = CentralMemory.get_memory_instance()
 
     for score in scores:
         prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
@@ -97,7 +98,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
 # pylint: disable=W0611
 import uuid
 
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer
@@ -133,7 +134,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
         scorer=scorer, memory_labels=memory_labels
     )
 
-    memory = DuckDBMemory()
+    memory = CentralMemory.get_memory_instance()
 
     for score in scores:
         prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[

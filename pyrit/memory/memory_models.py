@@ -5,14 +5,11 @@ import uuid
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
+from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
-from pyrit.models import PromptDataType, SeedPrompt
 from sqlalchemy.types import Uuid  # type: ignore
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
 from sqlalchemy.orm import Mapped  # type: ignore
-
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.score import Score
 
 
 class Base(DeclarativeBase):
@@ -25,7 +22,7 @@ class PromptMemoryEntry(Base):
 
     Because of the nature of database and sql alchemy, type ignores are abundant :)
 
-    Attributes:
+    Parameters:
         __tablename__ (str): The name of the database table.
         __table_args__ (dict): Additional arguments for the database table.
         id (Uuid): The unique identifier for the memory entry.
@@ -138,8 +135,8 @@ class EmbeddingDataEntry(Base):  # type: ignore
     Represents the embedding data associated with conversation entries in the database.
     Each embedding is linked to a specific conversation entry via an id
 
-    Attributes:
-        uuid (Uuid): The primary key, which is a foreign key referencing the UUID in the MemoryEntries table.
+    Parameters:
+        id (Uuid): The primary key, which is a foreign key referencing the UUID in the PromptMemoryEntries table.
         embedding (ARRAY(Float)): An array of floats representing the embedding vector.
         embedding_type_name (String): The name or type of the embedding, indicating the model or method used.
     """
@@ -229,7 +226,7 @@ class SeedPromptEntry(Base):
     running through models with corresponding attack strategies, and applying converters.
     PromptMemoryEntry captures the processed prompt data before and after the above steps.
 
-    Attributes:
+    Parameters:
         __tablename__ (str): The name of the database table.
         __table_args__ (dict): Additional arguments for the database table.
         id (Uuid): The unique identifier for the memory entry.

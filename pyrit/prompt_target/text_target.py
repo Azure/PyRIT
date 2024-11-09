@@ -8,7 +8,6 @@ import sys
 
 from typing import IO
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 
@@ -26,9 +25,8 @@ class TextTarget(PromptTarget):
         self,
         *,
         text_stream: IO[str] = sys.stdout,
-        memory: MemoryInterface = None,
     ) -> None:
-        super().__init__(memory=memory)
+        super().__init__()
         self._text_stream = text_stream
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
