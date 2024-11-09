@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 import io
 import numpy as np
@@ -11,7 +11,6 @@ from scipy.io import wavfile
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.memory import MemoryInterface, DuckDBMemory
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,6 @@ class AudioFrequencyConverter(PromptConverter):
     Args:
         output_format (str): The format of the audio file. Defaults to "wav".
         shift_value (int): The value by which the frequency will be shifted. Defaults to 20000 Hz.
-        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     AcceptedAudioFormats = Literal["wav"]
@@ -33,11 +31,9 @@ class AudioFrequencyConverter(PromptConverter):
         *,
         output_format: AcceptedAudioFormats = "wav",
         shift_value: int = 20000,
-        memory: Optional[MemoryInterface] = None,
     ) -> None:
         self._output_format = output_format
         self._shift_value = shift_value
-        self._memory = memory or DuckDBMemory()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
@@ -60,7 +56,7 @@ class AudioFrequencyConverter(PromptConverter):
         try:
             # Create serializer to read audio data
             audio_serializer = data_serializer_factory(
-                data_type="audio_path", extension=self._output_format, value=prompt, memory=self._memory
+                data_type="audio_path", extension=self._output_format, value=prompt
             )
             audio_bytes = await audio_serializer.read_data()
 

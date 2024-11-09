@@ -10,7 +10,6 @@ from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.memory import MemoryInterface
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,6 @@ class OpenAITarget(PromptChatTarget):
         headers: str = None,
         is_azure_target=True,
         use_aad_auth: bool = False,
-        memory: MemoryInterface = None,
         api_version: str = "2024-06-01",
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
@@ -57,15 +55,13 @@ class OpenAITarget(PromptChatTarget):
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            memory (MemoryInterface, optional): An instance of the MemoryInterface class
-                for storing conversation history. Defaults to None.
             api_version (str, optional): The version of the Azure OpenAI API. Defaults to
                 "2024-06-01".
             max_requests_per_minute (int, optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
+        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
 
         self._extra_headers: dict = {}
 

@@ -10,7 +10,6 @@ from azure.storage.blob import ContentSettings
 from enum import Enum
 
 from pyrit.common import default_values
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
@@ -39,7 +38,6 @@ class AzureBlobStorageTarget(PromptTarget):
             delegation SAS token will be created using Entra ID authentication.
         blob_content_type (SupportedContentType): Expected Content Type of the blob, chosen from the
             SupportedContentType enum. Set to PLAIN_TEXT by default.
-        memory (str): MemoryInterface to use for the class. FileMemory by default.
         max_requests_per_minute (int, optional): Number of requests the target can handle per
             minute before hitting a rate limit. The number of requests sent to the target
             will be capped at the value provided.
@@ -54,7 +52,6 @@ class AzureBlobStorageTarget(PromptTarget):
         container_url: Optional[str] = None,
         sas_token: Optional[str] = None,
         blob_content_type: SupportedContentType = SupportedContentType.PLAIN_TEXT,
-        memory: Optional[MemoryInterface] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
 
@@ -67,7 +64,7 @@ class AzureBlobStorageTarget(PromptTarget):
         self._sas_token = sas_token
         self._client_async: AsyncContainerClient = None
 
-        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
+        super().__init__(max_requests_per_minute=max_requests_per_minute)
 
     async def _create_container_client_async(self) -> None:
         """Creates an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the

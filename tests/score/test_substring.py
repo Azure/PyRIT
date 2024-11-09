@@ -5,9 +5,10 @@ import os
 import pytest
 
 from typing import Generator
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
+from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 
@@ -27,37 +28,37 @@ def memory() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_substring_scorer_validate(image_request_piece: PromptRequestPiece):
+async def test_substring_scorer_validate(image_request_piece: PromptRequestPiece, memory: MemoryInterface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SubStringScorer(substring="test", category="new_category")
+        with pytest.raises(ValueError, match="Expected text data type"):
+            await scorer.score_async(image_request_piece)
 
-    scorer = SubStringScorer(substring="test", category="new_category")
-    with pytest.raises(ValueError, match="Expected text data type"):
-        await scorer.score_async(image_request_piece)
-
-    os.remove(image_request_piece.converted_value)
+        os.remove(image_request_piece.converted_value)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("sub_string", ["I can't answer", "Not present"])
 async def test_substring_scorer_score(sub_string: str, memory: MemoryInterface):
     full_text = "blah I can't answer that too"
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SubStringScorer(substring=sub_string, category="new_category")
 
-    scorer = SubStringScorer(substring=sub_string, category="new_category", memory=memory)
+        score = await scorer.score_text_async(full_text)
 
-    score = await scorer.score_text_async(full_text)
+        assert len(score) == 1
 
-    assert len(score) == 1
-
-    assert score[0].score_value == str(sub_string in full_text)
-    assert score[0].score_type == "true_false"
-    assert score[0].score_category == "new_category"
-    assert score[0].prompt_request_response_id is None
+        assert score[0].score_value == str(sub_string in full_text)
+        assert score[0].score_type == "true_false"
+        assert score[0].score_category == "new_category"
+        assert score[0].prompt_request_response_id is None
 
 
 @pytest.mark.asyncio
 async def test_substring_scorer_adds_to_memory():
     memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SubStringScorer(substring="string", category="new_category")
+        await scorer.score_text_async(text="string")
 
-    scorer = SubStringScorer(substring="string", category="new_category", memory=memory)
-    await scorer.score_text_async(text="string")
-
-    memory.add_scores_to_memory.assert_called_once()
+        memory.add_scores_to_memory.assert_called_once()
