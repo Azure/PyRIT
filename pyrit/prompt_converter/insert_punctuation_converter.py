@@ -20,11 +20,10 @@ class InsertPunctuationConverter(PromptConverter):
 
     default_punctuation_list = [",", ".", "!", "?", ":", ";", "-"]
 
-    def __init__(self, max_iterations: int = 10, word_swap_ratio: float = 0.2, between_words: bool = True) -> None:
+    def __init__(self, word_swap_ratio: float = 0.2, between_words: bool = True) -> None:
         """
-        Initialize the converter with optional max iterations and word swap ratio.
+        Initialize the converter with optional and word swap ratio.
         Args:
-            max_iterations (int): Number of prompts to generate. Defaults to 10.
             word_swap_ratio (float): Percentage of words to perturb. Defaults to 0.2.
             between_words (bool): If True, insert punctuation only between words.
                                   If False, insert punctuation within words. Defaults to True.
@@ -33,11 +32,6 @@ class InsertPunctuationConverter(PromptConverter):
         if not 0 < word_swap_ratio <= 1:
             raise ValueError("word_swap_ratio must be between 0 to 1, as (0, 1].")
 
-        # Max iterations should be at least 1
-        if max_iterations < 1:
-            raise ValueError("max_iterations must be greater than 0.")
-
-        self._max_iterations = max_iterations
         self._word_swap_ratio = word_swap_ratio
         self._between_words = between_words
 
@@ -71,8 +65,6 @@ class InsertPunctuationConverter(PromptConverter):
         # If not specified, defaults to default_punctuation_list
         if punctuation_list is None:
             punctuation_list = self.default_punctuation_list
-        elif not punctuation_list:
-            raise ValueError("punctuation_list cannot be empty")
         elif not self._is_valid_punctuation(punctuation_list):
             raise ValueError(
                 f"Invalid punctuations: {punctuation_list}."
