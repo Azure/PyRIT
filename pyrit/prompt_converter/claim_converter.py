@@ -10,6 +10,8 @@ import pathlib
 
 import numpy as np
 import pandas as pd
+import asyncio
+import ipywidgets as widgets
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions.exception_classes import (
@@ -26,6 +28,12 @@ logger.setLevel(logging.ERROR)
 
 config_path = pathlib.Path(__file__).parent / '_default.yaml'
 config = config.load_config(config_path)
+
+# Define an asyncio event
+checkbox_event = asyncio.Event()
+
+# Define an asyncio event
+submit_event = asyncio.Event()
 
 clf_config = config["classifier"]
 
@@ -205,9 +213,128 @@ class ClaimConverter(PromptConverter):
         generations_df = pd.DataFrame(generations, columns=["claim", "inst"]).drop_duplicates(subset="inst")
         logger.info(f"TestGenie generated {len(generations_df)} statements.")
 
-        sampled_df = generations_df.sample(len(generations), random_state=config["global_seed"])
+        sampled_df = generations_df.sample(20, random_state=config["global_seed"])
         unsampled_df = generations_df.drop(sampled_df.index)
         
+
+        # Create a list of options
+        options = sampled_df["inst"].tolist()
+
+        # Create a checkbox widget
+        checkbox = widgets.SelectMultiple(
+            options=options,
+            value=[],
+            description='Select options:'
+        )
+
+        # Define a callback function that will be called when the button is clicked
+        def on_checkbox_change(change):
+            # The new value is available in change['new']
+            selected_options = change['new']
+            # print(f"Selected options: {selected_options}")
+            # Set the event to signal that the checkbox value has changed
+            checkbox_event.set()
+
+        # Attach the callback function to the 'value' trait of the checkbox widget
+        checkbox.observe(on_checkbox_change, names='value')
+
+        # Create a Submit button
+        submit_button = widgets.Button(description="Submit")
+
+        # Define a callback function that will be called when the button is clicked
+        def on_button_click(b):
+            print("Button clicked!")
+            # Proceed with the rest of the convert_async logic
+            selected_options = checkbox.value
+            # print(f"Final selected options: {selected_options}")
+
+            options = checkbox.options
+            labels = [option in selected_options for option in options]
+            sampled_df["label"] = labels #pd.DataFrame({'claim': options, 'label': labels})
+            # print(f"Sampled dataframe: {sampled_df}")
+            
+            verified_df = pd.DataFrame(sampled_df)
+            generations_labeled = pd.concat([verified_df, unsampled_df]).sort_index()
+            generations_estimated = classifiers.fit_and_predict(claim_classifier, generations_labeled, True)
+            # print(f"Generation estimated: {generations_estimated}")
+            generations_estimated = generations_estimated.loc[generations_estimated.pred == 1]
+
+            tokenizer = components.load_tokenizer("gpt2")
+            spacy_model = components.load_spacy()
+
+            insts = generations_df["inst"]
+            claims = generations_df['claim']
+
+            truncation_strategies = {
+                "half": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=0.5),
+                "3_toks": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=-3),
+                "root": lambda insts, _: components.truncate_text_by_root(insts, spacy_model),
+                "gpt3": lambda insts, claims: components.truncate_text_with_gpt3(insts, claims, engine=config["openai_engine"]),
+                # TODO: truncate based on classifier probability
+            }
+
+            selected_truncation = ["half", "3_toks", "root", "gpt3"]
+            test_data = []
+            for name in selected_truncation:
+                truncator = truncation_strategies[name]
+                prompts_and_targets = truncator(insts, claims)
+                test_data.extend(zip(claims, prompts_and_targets))
+
+            logger.info(f"Created {len(test_data)} tests/prompts. We show 10 random prompts below.")
+            test_prompts = [prompt for _, (prompt, _) in test_data]
+
+            target_model = "gpt3/"+config["openai_engine"]
+            num_generations = 1
+            completion_data = []
+            if target_model.startswith("gpt3"):
+                engine = target_model.split("/")[1]
+                completions = components.generate_from_prompts_gpt3(test_prompts, engine, num_generations)
+            else: # implies a huggingface model
+                generator = components.load_hf_generator(target_model)
+                logger.info("Using target model to complete the prompts...")
+                completions = components.generate_from_prompts_hf(test_prompts, generator, num_generations)
+
+            # Build dataframe to label and retrieve existing annotations
+            completion_df = components.build_completion_df(test_data, completions, target_model)
+        
+            # Predict which completions are failures
+            completion_df["label"] = None
+            # completion_df["label"][0] = True
+            # completion_df["label"][1] = False
+            completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
+
+            # calculate margin from random (closer to 0.5->more uncertain)
+            completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
+            # ignore already-labeled data
+            completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
+            # print(f"Response message: {completions_estimated}")
+
+            options = [f"[{index}] {row['label']}: {row['inst']}" for index, row in completions_estimated.iterrows()]
+            # selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
+
+            response_msg = "\n".join(options)
+            print(f"Response message: {response_msg}")
+
+            # print(f"Button clicked!")
+            # Set the event to signal that the checkbox value has changed
+            # submit_event.set()
+
+        # Attach the callback function to the button's on_click event
+        submit_button.on_click(on_button_click)
+
+        # Display the checkbox
+        display(checkbox, submit_button)
+        # await submit_event.wait()
+        await asyncio.sleep(0)  # Example of non-blocking async operation
+
+        # Reset the event for future use
+        submit_event.clear()
+
+        # Proceed with the rest of the convert_async logic
+        selected_options = checkbox.value
+        print(f"Final selected options: {selected_options}")
+
+        return ConverterResult(output_text="Placeholder text", output_type="text")
         sampled_df["label"] = None
         sampled_df["label"][0] = True
         sampled_df["label"][1] = False
