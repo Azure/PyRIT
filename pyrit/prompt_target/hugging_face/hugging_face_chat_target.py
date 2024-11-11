@@ -19,6 +19,7 @@ from pyrit.common import default_values
 
 logger = logging.getLogger(__name__)
 
+
 class HuggingFaceChatTarget(PromptChatTarget):
     """The HuggingFaceChatTarget interacts with HuggingFace models, specifically for conducting red teaming activities.
     Inherits from PromptTarget to comply with the current design standards.
@@ -72,9 +73,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         if self.use_cuda and not torch.cuda.is_available():
             raise RuntimeError("CUDA requested but not available.")
-        
-        self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
 
+        self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
 
     def is_model_id_valid(self) -> bool:
         """
