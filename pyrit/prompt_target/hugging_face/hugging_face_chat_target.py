@@ -31,7 +31,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
     _cached_model_id = None
 
     # Class-level flag to enable or disable cache
-    _cache_enabled = False
+    _cache_enabled = True
 
     # Define the environment variable name for the Hugging Face token
     HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE = "HUGGINGFACE_TOKEN"
@@ -49,6 +49,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
         top_p: float = 1.0,
         skip_special_tokens: bool = True,
     ) -> None:
+        super().__init__()
+
         self.model_id = model_id
         self.use_cuda = use_cuda
         self.tensor_format = tensor_format
