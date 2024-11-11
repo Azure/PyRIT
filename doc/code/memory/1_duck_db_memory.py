@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Memory
+# # DuckDB Memory
 #
 # The memory DuckDB database can be thought of as a normalized source of truth. The memory module is the primary way pyrit keeps track of requests and responses to targets and scores. Most of this is done automatically. All Prompt Targets write to memory for later retrieval. All scorers also write to memory when scoring.
 #
