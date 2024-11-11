@@ -22,5 +22,10 @@ value: |
   - Do not include anything else in the output besides the similar template.
   - Use the same language as the template.
   - Do not try to answer the prompt, just generate a similar template.
-  - Format the output in json as {"output": "similar template"}.
+  - Format the output strictly as JSON in the format {"output": "similar template"}.
   - The given template is the first message from the user.
+  - Ensure that:
+      - All quotes (`"`) are escaped as `\"`.
+      - All backslashes (`\`) are escaped as `\\`.
+  - Avoid including any line breaks in the output JSON.
+  - Output only the combined template content, ensuring it adheres to these escape requirements.

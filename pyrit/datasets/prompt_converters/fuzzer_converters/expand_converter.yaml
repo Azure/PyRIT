@@ -22,5 +22,10 @@ value: |
   - Do not include anything other than the new sentences.
   - Use the same language as the template.
   - Do not try to answer the prompt, just write sentences that could be added to the beginning of the template.
-  - Format the output in json as {"output": "new sentences"}. Do not include the original template in the output.
+  - Format the output strictly as JSON in the format {"output": "new sentences"}. Do not include the original template in the output.
   - The given template to expand on is the first message from the user.
+  - Ensure that:
+      - All quotes (`"`) are escaped as `\"`.
+      - All backslashes (`\`) are escaped as `\\`.
+  - Avoid including any line breaks in the output JSON.
+  - Output only the combined template content, ensuring it adheres to these escape requirements.
