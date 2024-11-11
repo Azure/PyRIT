@@ -98,8 +98,6 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
             temperature=temperature,
         )
 
-        super().__init__(memory=None)
-
     def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
 
         raise NotImplementedError("SemanticKernelPluginPromptTarget only supports send_prompt_async")

@@ -17,7 +17,7 @@
 #
 # Like most of PyRIT, targets can be multi-modal. This notebook highlights some scenarios using multi-modal targets.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %% [markdown]
 # ## Dall-e Target

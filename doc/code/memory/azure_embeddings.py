@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ## Azure OpenAI Embeddings
+# # Azure OpenAI Embeddings
 #
 # Similar to the [OpenAI Completions](../targets/open_ai_completions.ipynb) endpoint, PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
 
@@ -34,7 +34,7 @@ pprint(embedding_response, width=280, compact=True)
 
 # %% [markdown]
 #
-# ### Embeddings Serialization
+# ## Embeddings Serialization
 #
 # All the PyRIT's embeddings are easily serializable. This allows you to easily save and load embeddings for later use, and be able to inspect the value of the embeddings offline (since
 # embeddings are stored as JSON objects).

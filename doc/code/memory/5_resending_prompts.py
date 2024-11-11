@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# ## Resending Prompts Example
+# # Resending Prompts Example
 #
 # There are many situations where you can use memory. Besides basic usage, you may want to send prompts a second time. The following:
 #

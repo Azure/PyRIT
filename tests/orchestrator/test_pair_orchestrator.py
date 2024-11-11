@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
 from typing import Generator
+import uuid
 from unittest.mock import Mock, AsyncMock, ANY
 from unittest.mock import patch
 
@@ -14,6 +14,7 @@ from pyrit.orchestrator import PAIROrchestrator
 from pyrit.orchestrator.pair_orchestrator import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import Scorer
+from pyrit.memory import CentralMemory
 from tests.mocks import get_memory_interface
 
 
@@ -29,12 +30,19 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 
 
 @pytest.fixture
+def mock_central_memory_instance(memory_interface):
+    """Fixture to mock CentralMemory.get_memory_instance"""
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface) as duck_db_memory:
+        yield duck_db_memory
+
+
+@pytest.fixture
 def chat_completion_engine() -> OpenAIChatTarget:
     return OpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
-def scorer_mock(memory_interface: MemoryInterface) -> Scorer:
+def scorer_mock() -> Scorer:
     scorer = Mock()
     scorer.scorer_type = "float_scale"
     scorer.score_async = AsyncMock(return_value=[])
@@ -42,7 +50,7 @@ def scorer_mock(memory_interface: MemoryInterface) -> Scorer:
 
 
 @pytest.fixture
-def orchestrator(memory_interface: MemoryInterface, scorer_mock: Scorer) -> PAIROrchestrator:
+def orchestrator(mock_central_memory_instance: MemoryInterface, scorer_mock: Scorer) -> PAIROrchestrator:
     target = Mock()
     attacker = Mock()
     labels = {"op_name": "name1"}
@@ -51,7 +59,6 @@ def orchestrator(memory_interface: MemoryInterface, scorer_mock: Scorer) -> PAIR
         desired_target_response_prefix="desired response",
         red_teaming_chat=attacker,
         conversation_objective="attacker objective",
-        memory=memory_interface,
         memory_labels=labels,
         scorer=scorer_mock,
         stop_on_first_success=True,

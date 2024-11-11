@@ -25,7 +25,7 @@ prompt_target = TextTarget()
 examples_source = "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/harmbench_behaviors_text_all.csv"
 
 
-# %%
+# %% [markdown]
 # Note:
 # The dataset sources can be found at:
 # - GitHub repository: https://github.com/centerforaisafety/HarmBench
@@ -50,6 +50,3 @@ try:
         print("No valid responses were received from the orchestrator.")
 except Exception as e:
     print(f"An error occurred while sending prompts: {e}")
-
-
-# %%

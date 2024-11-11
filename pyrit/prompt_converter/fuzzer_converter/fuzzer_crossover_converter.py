@@ -9,7 +9,7 @@ from typing import List, Optional
 from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.models.prompt_template import PromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import FuzzerConverter
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_target import PromptChatTarget
@@ -24,7 +24,7 @@ class FuzzerCrossOverConverter(FuzzerConverter):
     converter_target: PromptChatTarget
         Chat target used to perform fuzzing on user prompt
 
-    prompt_template: PromptTemplate, default=None
+    prompt_template: SeedPrompt, default=None
         Template to be used instead of the default system prompt with instructions for the chat target.
 
     prompt_templates: List[str], default=None
@@ -35,13 +35,13 @@ class FuzzerCrossOverConverter(FuzzerConverter):
         self,
         *,
         converter_target: PromptChatTarget,
-        prompt_template: PromptTemplate = None,
+        prompt_template: SeedPrompt = None,
         prompt_templates: Optional[List[str]] = None,
     ):
         prompt_template = (
             prompt_template
             if prompt_template
-            else PromptTemplate.from_yaml_file(
+            else SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "fuzzer_converters" / "crossover_converter.yaml"
             )
         )

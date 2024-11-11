@@ -9,8 +9,7 @@ from uuid import uuid4
 
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.memory import MemoryInterface
-from pyrit.models import PromptDataset, PromptRequestResponse
+from pyrit.models import SeedPromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -40,7 +39,6 @@ class SkeletonKeyOrchestrator(Orchestrator):
         skeleton_key_prompt: Optional[str] = None,
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory: MemoryInterface = None,
         memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -51,7 +49,6 @@ class SkeletonKeyOrchestrator(Orchestrator):
             prompt_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
-            memory (MemoryInterface, optional): The memory interface. Defaults to None.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -61,22 +58,21 @@ class SkeletonKeyOrchestrator(Orchestrator):
                 ensure proper rate limit management.
             verbose (bool, optional): If set to True, verbose output will be enabled. Defaults to False.
         """
-        super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
 
         self._skeleton_key_prompt = (
             skeleton_key_prompt
             if skeleton_key_prompt
-            else PromptDataset.from_yaml_file(
+            else SeedPromptDataset.from_yaml_file(
                 Path(DATASETS_PATH) / "orchestrators" / "skeleton_key" / "skeleton_key.prompt"
-            ).prompts[0]
+            )
+            .prompts[0]
+            .value
         )
 
         self._prompt_target = prompt_target
-        self._prompt_target._memory = self._memory
 
         self._batch_size = batch_size
 

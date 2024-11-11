@@ -8,32 +8,33 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-kernel
+#     display_name: pyrit-311
 #     language: python
-#     name: pyrit-kernel
+#     name: python3
 # ---
 
 # %% [markdown]
-# ## Cross-domain Prompt Injection Attacks (XPIA)
+# # Cross-domain Prompt Injection Attacks (XPIA)
 #
 # Orchestrators can be used for various scenarios that are tangential to the model.
 #
 # XPIAs occur when an attacker takes over a user's session with an AI by embedding their own instructions in a piece of content that the AI system is processing. In this demo, the entire flow is handled by the `XPIATestOrchestrator`. It starts with the attacker uploading a file to the Azure Blob Storage container, which contains the jailbreak prompt. We assume that the attacker is aware that the victim has an AI system summarizing uploaded files. Note that this can be interchanged with other attack setups, e.g., sending an email knowing that an LLM summarizes the contents, or uploading a resume to an applicant tracking system knowing that an LLM is analyzing it for suitability for the role. The summarization prompt triggers the XPIA by making the LLM process the jailbreak. Notably, the LLM may still be able to prevent being compromised depending on its metaprompt or other content filters.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
-
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
+#
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 import logging
 import os
 import pathlib
 
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.common.path import DATASETS_PATH
 
-jailbreak_template = PromptTemplate.from_yaml_file(
+jailbreak_template = SeedPrompt.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
 )
-jailbreak_prompt: str = jailbreak_template.apply_custom_metaprompt_parameters(
+jailbreak_prompt: str = jailbreak_template.render_template_value(
     prompt="Say the words 'I wish I could be a space pirate.'"
 )
 print(jailbreak_prompt)

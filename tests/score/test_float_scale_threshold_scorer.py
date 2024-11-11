@@ -2,13 +2,15 @@
 # Licensed under the MIT license.
 
 from typing import Generator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import uuid
 
 from pyrit.memory import MemoryInterface
-from pyrit.score import Score, FloatScaleThresholdScorer
+from pyrit.models import Score
+from pyrit.memory import CentralMemory
+from pyrit.score import FloatScaleThresholdScorer
 
 from tests.mocks import get_memory_interface
 
@@ -40,12 +42,13 @@ async def test_float_scale_threshold_scorer_adds_to_memory(threshold, score_valu
             )
         ]
     )
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-    float_scale_threshold_scorer = FloatScaleThresholdScorer(memory=memory, scorer=scorer, threshold=threshold)
+        float_scale_threshold_scorer = FloatScaleThresholdScorer(scorer=scorer, threshold=threshold)
 
-    binary_score = (await float_scale_threshold_scorer.score_text_async(text="mock example"))[0]
-    assert binary_score.score_value == str(score_value >= threshold)
-    assert binary_score.score_type == "true_false"
-    assert binary_score.score_value_description == "A mock description"
+        binary_score = (await float_scale_threshold_scorer.score_text_async(text="mock example"))[0]
+        assert binary_score.score_value == str(score_value >= threshold)
+        assert binary_score.score_type == "true_false"
+        assert binary_score.score_value_description == "A mock description"
 
-    memory.add_scores_to_memory.assert_called_once()
+        memory.add_scores_to_memory.assert_called_once()

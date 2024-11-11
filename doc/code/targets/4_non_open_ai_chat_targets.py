@@ -14,11 +14,11 @@
 # ---
 
 # %% [markdown]
-# ## AML Chat Targets
+# # AML Chat Targets
 #
 # This code shows how to use Azure Machine Learning (AML) managed online endpoints with PyRIT.
 #
-# ### Prerequisites
+# ## Prerequisites
 #
 # 1. **Deploy an AML-Managed Online Endpoint:** Confirm that an Azure Machine Learning managed online endpoint is
 #      already deployed.
@@ -37,7 +37,7 @@
 #      and pass them in as arguments to the `_set_env_configuration_vars` function to interact with those models.
 #
 #
-# ### Create a AzureMLChatTarget
+# ## Create a AzureMLChatTarget
 #
 # After deploying a model and populating your env file, send prompts to the model using the `AzureMLChatTarget` class. Model parameters can be passed upon instantiation
 # or set using the _set_model_parameters() function. `**param_kwargs` allows for the setting of other parameters not explicitly shown in the constructor. A general list of

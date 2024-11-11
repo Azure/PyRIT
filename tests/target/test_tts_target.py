@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from typing import Generator
 from httpx import HTTPStatusError
 from openai import RateLimitError
 import os
@@ -11,11 +12,14 @@ import pytest
 
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
+from pyrit.memory import CentralMemory
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import OpenAITTSTarget
 
 from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
 from tests.mocks import get_sample_conversations
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
@@ -24,33 +28,40 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 
 @pytest.fixture
-def tts_target() -> OpenAITTSTarget:
-    return OpenAITTSTarget(deployment_name="test", endpoint="test", api_key="test")
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def tts_target(memory_interface: MemoryInterface) -> OpenAITTSTarget:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        return OpenAITTSTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 def test_tts_initializes(tts_target: OpenAITTSTarget):
     assert tts_target
 
 
-def test_tts_initializes_calls_get_required_parameters():
-    with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
-        target = OpenAITTSTarget(
-            deployment_name="deploymenttest",
-            endpoint="endpointtest",
-            api_key="keytest",
-        )
+def test_tts_initializes_calls_get_required_parameters(memory_interface: MemoryInterface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
+            target = OpenAITTSTarget(
+                deployment_name="deploymenttest",
+                endpoint="endpointtest",
+                api_key="keytest",
+            )
 
-        assert mock_get_required.call_count == 3
+            assert mock_get_required.call_count == 3
 
-        mock_get_required.assert_any_call(
-            env_var_name=target.deployment_environment_variable, passed_value="deploymenttest"
-        )
+            mock_get_required.assert_any_call(
+                env_var_name=target.deployment_environment_variable, passed_value="deploymenttest"
+            )
 
-        mock_get_required.assert_any_call(
-            env_var_name=target.endpoint_uri_environment_variable, passed_value="endpointtest"
-        )
+            mock_get_required.assert_any_call(
+                env_var_name=target.endpoint_uri_environment_variable, passed_value="endpointtest"
+            )
 
-        mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
+            mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
 
 
 @pytest.mark.asyncio
@@ -84,31 +95,33 @@ async def test_tts_validate_previous_conversations(
 @pytest.mark.parametrize("response_format", ["mp3", "ogg"])
 @pytest.mark.asyncio
 async def test_tts_send_prompt_file_save_async(
-    sample_conversations: list[PromptRequestPiece], response_format: TTSResponseFormat
+    sample_conversations: list[PromptRequestPiece],
+    response_format: TTSResponseFormat,
+    memory_interface: MemoryInterface,
 ) -> None:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        tts_target = OpenAITTSTarget(
+            deployment_name="test", endpoint="test", api_key="test", response_format=response_format
+        )
 
-    tts_target = OpenAITTSTarget(
-        deployment_name="test", endpoint="test", api_key="test", response_format=response_format
-    )
+        request_piece = sample_conversations[0]
+        request_piece.conversation_id = str(uuid.uuid4())
+        request = PromptRequestResponse(request_pieces=[request_piece])
+        with patch(
+            "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
+        ) as mock_request:
+            return_value = MagicMock()
+            return_value.content = b"audio data"
+            mock_request.return_value = return_value
+            response = await tts_target.send_prompt_async(prompt_request=request)
 
-    request_piece = sample_conversations[0]
-    request_piece.conversation_id = str(uuid.uuid4())
-    request = PromptRequestResponse(request_pieces=[request_piece])
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        return_value = MagicMock()
-        return_value.content = b"audio data"
-        mock_request.return_value = return_value
-        response = await tts_target.send_prompt_async(prompt_request=request)
-
-        file_path = response.request_pieces[0].converted_value
-        assert file_path
-        assert file_path.endswith(f".{response_format}")
-        assert os.path.exists(file_path)
-        data = open(file_path, "rb").read()
-        assert data == b"audio data"
-        os.remove(file_path)
+            file_path = response.request_pieces[0].converted_value
+            assert file_path
+            assert file_path.endswith(f".{response_format}")
+            assert os.path.exists(file_path)
+            data = open(file_path, "rb").read()
+            assert data == b"audio data"
+            os.remove(file_path)
 
 
 testdata = [(400, "Bad Request", HTTPStatusError), (429, "Rate Limit Reached", RateLimitException)]
@@ -126,7 +139,6 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     tts_target._memory = mock_memory
 
@@ -148,7 +160,6 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
         tts_target._memory.get_conversation.assert_called_once_with(conversation_id=request_piece.conversation_id)
 
         tts_target._memory.add_request_response_to_memory.assert_called_once_with(request=request)
-        tts_target._memory.add_response_entries_to_memory.assert_called_once()
 
         assert response.text in str(exc.value)
 

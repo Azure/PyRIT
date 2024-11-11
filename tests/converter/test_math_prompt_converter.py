@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import AsyncMock
 
 from pyrit.prompt_converter import ConverterResult
-from pyrit.models import PromptTemplate, PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPrompt
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 
 
@@ -14,7 +14,12 @@ async def test_math_prompt_converter_convert_async():
     # Mock the converter target
     mock_converter_target = AsyncMock()
     # Specify parameters=['prompt'] to match the placeholder in the template
-    mock_prompt_template = PromptTemplate(template="Solve the following problem: {prompt}", parameters=["prompt"])
+    template_value = "Solve the following problem: {{ prompt }}"
+    dataset_name = "dataset_1"
+    parameters = ["prompt"]
+    mock_prompt_template = SeedPrompt(
+        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
+    )
 
     # Create the MathPromptConverter instance
     converter = MathPromptConverter(converter_target=mock_converter_target, prompt_template=mock_prompt_template)
@@ -63,7 +68,12 @@ async def test_math_prompt_converter_handles_disallowed_content():
     # Mock the converter target
     mock_converter_target = AsyncMock()
     # Specify parameters=['prompt'] to match the placeholder in the template
-    mock_prompt_template = PromptTemplate(template="Encode this instruction: {prompt}", parameters=["prompt"])
+    template_value = "Encode this instruction: {{ prompt }}"
+    dataset_name = "dataset_1"
+    parameters = ["prompt"]
+    mock_prompt_template = SeedPrompt(
+        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
+    )
 
     # Create the MathPromptConverter instance
     converter = MathPromptConverter(converter_target=mock_converter_target, prompt_template=mock_prompt_template)
@@ -109,7 +119,12 @@ async def test_math_prompt_converter_invalid_input_type():
     # Mock the converter target
     mock_converter_target = AsyncMock()
     # Specify parameters=['prompt'] to match the placeholder in the template
-    mock_prompt_template = PromptTemplate(template="Encode this instruction: {prompt}", parameters=["prompt"])
+    template_value = "Encode this instruction: {{ prompt }}"
+    dataset_name = "dataset_1"
+    parameters = ["prompt"]
+    mock_prompt_template = SeedPrompt(
+        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
+    )
 
     # Create the MathPromptConverter instance
     converter = MathPromptConverter(converter_target=mock_converter_target, prompt_template=mock_prompt_template)
@@ -124,7 +139,12 @@ async def test_math_prompt_converter_error_handling():
     # Mock the converter target
     mock_converter_target = AsyncMock()
     # Specify parameters=['prompt'] to match the placeholder in the template
-    mock_prompt_template = PromptTemplate(template="Encode this instruction: {prompt}", parameters=["prompt"])
+    template_value = "Encode this instruction: {{ prompt }}"
+    dataset_name = "dataset_1"
+    parameters = ["prompt"]
+    mock_prompt_template = SeedPrompt(
+        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
+    )
 
     # Create the MathPromptConverter instance
     converter = MathPromptConverter(converter_target=mock_converter_target, prompt_template=mock_prompt_template)

@@ -5,9 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestPiece, Score, PromptTemplate
-from pyrit.models.score import UnvalidatedScore
+from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 
@@ -21,17 +19,12 @@ class SelfAskRefusalScorer(Scorer):
         self,
         *,
         chat_target: PromptChatTarget,
-        memory: MemoryInterface = None,
     ) -> None:
 
         self.scorer_type = "true_false"
 
         self._prompt_target = chat_target
-        self._memory = memory if memory else DuckDBMemory()
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
-        self._system_prompt = (PromptTemplate.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT)).template
+        self._system_prompt = (SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT)).value
         self._score_category = "refusal"
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:

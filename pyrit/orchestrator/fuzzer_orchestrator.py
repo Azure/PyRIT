@@ -13,8 +13,8 @@ import uuid
 import numpy as np
 
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
-from pyrit.memory import MemoryInterface
-from pyrit.models import PromptTemplate
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter, FuzzerConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
@@ -84,13 +84,14 @@ class FuzzerResult:
         else:
             print("No successful templates found.")
 
-    def print_conversations(self, memory: MemoryInterface):
+    def print_conversations(self):
         """
         Prints the conversations of the successful jailbreaks.
 
         Args:
             result: The result of the fuzzer.
         """
+        memory = CentralMemory.get_memory_instance()
         for conversation_id in self.prompt_target_conversation_ids:
             print(f"\nConversation ID: {conversation_id}")
 
@@ -124,7 +125,6 @@ class FuzzerOrchestrator(Orchestrator):
         prompt_converters: Optional[list[PromptConverter]] = None,
         template_converters: list[FuzzerConverter],
         scoring_target: PromptChatTarget,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         frequency_weight: float = 0.5,
@@ -156,8 +156,6 @@ class FuzzerOrchestrator(Orchestrator):
             template_converters: The converters that will be applied on the jailbreak template that was
                 selected by MCTS-explore. The converters will not be applied to the prompts.
                 In each iteration of the algorithm, one converter is chosen at random.
-            memory: The memory to use to store the chat messages. If not provided, a DuckDBMemory
-                will be used.
             memory_labels: The labels to use for the memory. This is useful to identify the messages in the memory.
             verbose: Whether to print debug information.
             frequency_weight: constant that balances between the seed with high reward and the seed that is
@@ -174,9 +172,7 @@ class FuzzerOrchestrator(Orchestrator):
                 the number of prompts.
         """
 
-        super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
 
         if not prompt_templates:
             raise ValueError("The initial set of prompt templates cannot be empty.")
@@ -189,9 +185,8 @@ class FuzzerOrchestrator(Orchestrator):
             raise ValueError("Batch size must be at least 1.")
 
         self._prompt_target = prompt_target
-        self._prompt_target._memory = self._memory
         self._prompts = prompts
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self._prompt_templates = prompt_templates
         self._template_converters = template_converters
         self._frequency_weight = frequency_weight
@@ -220,12 +215,10 @@ class FuzzerOrchestrator(Orchestrator):
             chat_target=scoring_target,
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
             system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
-            memory=self._memory,
         )
         self._scorer = FloatScaleThresholdScorer(
             scorer=scale_scorer,
             threshold=0.8,
-            memory=self._memory,
         )
 
         for template in self._prompt_templates:
@@ -291,7 +284,7 @@ class FuzzerOrchestrator(Orchestrator):
                 for prompt_node in self._initial_prompt_nodes + self._new_prompt_nodes:
                     if prompt_node.id not in node_ids_on_mcts_selected_path:
                         other_templates.append(prompt_node.template)
-                target_seed_obj = await self._apply_template_converter(
+                target_seed = await self._apply_template_converter(
                     template=current_seed.template,
                     other_templates=other_templates,
                 )
@@ -308,15 +301,15 @@ class FuzzerOrchestrator(Orchestrator):
                     prompt_target_conversation_ids=self._jailbreak_conversation_ids,
                 )
 
-            target_template = PromptTemplate(target_seed_obj, parameters=["prompt"])
+            target_template = SeedPrompt(value=target_seed, data_type="text", parameters=["prompt"])
 
             # convert the target_template into a prompt_node to maintain the tree information
-            target_template_node = PromptNode(template=target_seed_obj, parent=None)
+            target_template_node = PromptNode(template=target_seed, parent=None)
 
             # 3. Fill in prompts into the newly generated template.
             jailbreak_prompts = []
             for prompt in self._prompts:
-                jailbreak_prompts.append(target_template.apply_custom_metaprompt_parameters(prompt=prompt))
+                jailbreak_prompts.append(target_template.render_template_value(prompt=prompt))
 
             # 4. Apply prompt converter if any and send request to the target
             requests: list[NormalizerRequest] = []

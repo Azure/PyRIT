@@ -9,10 +9,10 @@ import pathlib
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.exceptions.exception_classes import (
+from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
@@ -47,12 +47,12 @@ class PersuasionConverter(PromptConverter):
         self.converter_target = converter_target
 
         try:
-            prompt_template = PromptTemplate.from_yaml_file(
+            prompt_template = SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "persuasion" / f"{persuasion_technique}.yaml"
             )
         except FileNotFoundError:
             raise ValueError(f"Persuasion technique '{persuasion_technique}' does not exist or is not supported.")
-        self.system_prompt = str(prompt_template.template)
+        self.system_prompt = str(prompt_template.value)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
