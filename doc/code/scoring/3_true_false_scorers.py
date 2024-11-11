@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ### True False Scoring
+# # True False Scoring
 #
 # In the simplest case a scorer can answer a question. There can be many types of true false scorers. The following example uses a `SelfAskTrueFalseScorer` to see if prompt injection was successful. This type of scorer is really useful in orchestrators that have to make decisions based on responses.
 

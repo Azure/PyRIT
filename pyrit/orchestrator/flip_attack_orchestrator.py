@@ -7,10 +7,9 @@ import logging
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.prompt_template import JailBreakTemplate
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_target import PromptTarget
@@ -32,7 +31,6 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         self,
         prompt_target: PromptTarget,
         scorers: Optional[list[Scorer]] = None,
-        memory: MemoryInterface = None,
         memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -42,7 +40,6 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             prompt_target (PromptTarget): The target for sending prompts.
             scorers (list[Scorer], optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
-            memory (MemoryInterface, optional): The memory interface. Defaults to None.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -57,7 +54,6 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             prompt_target=prompt_target,
             prompt_converters=[FlipConverter()],
             scorers=scorers,
-            memory=memory,
             memory_labels=memory_labels,
             batch_size=batch_size,
             verbose=verbose,
@@ -65,7 +61,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         # This is sent to the target
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
-        self.system_prompt = JailBreakTemplate.from_yaml_file(system_prompt_path).get_system_prompt()
+        self.system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
         system_prompt = PromptRequestResponse(
             request_pieces=[

@@ -20,7 +20,7 @@
 #
 # The schema is found in `memory_models.py` and can be programatically viewed as follows
 #
-# ### Azure Login
+# ## Azure Login
 #
 # PyRIT `AzureSQLMemory` supports only **Azure Entra ID authentication** at this time. User ID/password-based login is not available.
 #
@@ -30,7 +30,7 @@
 #   ```bash
 #   az login --scope https://database.windows.net//.default
 #   ```
-# ### Environment Variables
+# ## Environment Variables
 #
 # Please set the following environment variables to run AzureSQLMemory interactions:
 #

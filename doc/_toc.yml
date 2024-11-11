@@ -1,0 +1,101 @@
+format: jb-book
+root: index
+chapters:
+  - file: how_to_guide
+  - file: setup/install_pyrit
+    sections:
+    - file: setup/jupyter_setup
+    - file: setup/populating_secrets
+    - file: setup/use_azure_sql_db
+  - file: contributing/README
+    sections:
+    - file: contributing/exception
+    - file: contributing/git
+    - file: contributing/incorporating_research
+    - file: contributing/installation
+    - file: contributing/release_process
+    - file: contributing/style_guide
+    - file: contributing/tests
+  - file: code/architecture
+  - file: code/user_guide
+    sections:
+    - file: code/orchestrators/1_orchestrator
+      sections:
+      - file: code/orchestrators/2_prompt_sending_orchestrator
+      - file: code/orchestrators/3_red_teaming_orchestrator
+      - file: code/orchestrators/4_xpia_orchestrator
+      - file: code/orchestrators/5_scoring_orchestrator
+      - file: code/orchestrators/6_crescendo_orchestrator
+      - file: code/orchestrators/7_skeleton_key_attack
+      - file: code/orchestrators/advbench_prompt_sending_orchestrator
+      - file: code/orchestrators/benchmark_orchestrator
+      - file: code/orchestrators/decoding_trust_stereotype_testing
+      - file: code/orchestrators/fetch_tdc23_redteaming_dataset_testing
+      - file: code/orchestrators/flip_orchestrator
+      - file: code/orchestrators/forbidden_questions_df_testing
+      - file: code/orchestrators/fuzzing_jailbreak_templates
+      - file: code/orchestrators/harmbench_testing
+      - file: code/orchestrators/hf_harmful_dataset_testing
+      - file: code/orchestrators/many_shot_jailbreak
+      - file: code/orchestrators/pair_orchestrator
+      - file: code/orchestrators/pku_safe_rlhf_testing
+      - file: code/orchestrators/seclists_bias_testing
+      - file: code/orchestrators/tree_of_attacks_with_pruning
+      - file: code/orchestrators/use_huggingface_chat_target
+      - file: code/orchestrators/violent_durian
+      - file: code/orchestrators/xstest_bias_testing
+    - file: code/targets/1_prompt_targets
+      sections:
+      - file: code/targets/2_openai_chat_target
+      - file: code/targets/3_custom_targets
+      - file: code/targets/4_non_open_ai_chat_targets
+      - file: code/targets/5_non_llm_targets
+      - file: code/targets/6_multi_modal_targets
+      - file: code/targets/7_rate_limiting
+      - file: code/targets/8_http_target
+      - file: code/targets/open_ai_completions
+      - file: code/targets/prompt_shield_target
+    - file: code/converters/1_converters
+      sections:
+        - file: code/converters/2_llm_converters
+        - file: code/converters/3_using_converters
+        - file: code/converters/4_audio_converters
+        - file: code/converters/5_image_converters
+        - file: code/converters/6_selectively_converting
+        - file: code/converters/7_human_converter
+        - file: code/converters/char_swap_attack_generator
+        - file: code/converters/math_prompt_converter
+    - file: code/scoring/1_scoring
+      sections:
+      - file: code/scoring/2_azure_content_safety_scorers
+      - file: code/scoring/3_true_false_scorers
+      - file: code/scoring/4_classification_scorers
+      - file: code/scoring/5_likert_scorers
+      - file: code/scoring/6_human_scorers
+      - file: code/scoring/7_refusal_scorer
+      - file: code/scoring/prompt_shield_scorer
+    - file: code/memory/0_memory
+      sections:
+      - file: code/memory/1_duck_db_memory
+      - file: code/memory/2_basic_memory_programming
+      - file: code/memory/3_prompt_request
+      - file: code/memory/4_manually_working_with_memory
+      - file: code/memory/5_resending_prompts
+      - file: code/memory/6_azure_sql_memory
+      - file: code/memory/7_azure_sql_memory_orchestrators
+      - file: code/memory/8_seed_prompt_database
+      - file: code/memory/9_exporting_data
+      - file: code/memory/azure_embeddings
+      - file: code/memory/chat_message
+    - file: code/auxiliary_attacks/1_auxiliary_attacks
+      sections:
+      - file: code/auxiliary_attacks/2_gcg_azure_ml
+    - file: deployment/README
+      sections:
+      - file: deployment/deploy_hf_model_aml
+      - file: deployment/download_and_register_hf_model_aml
+      - file: deployment/hf_aml_model_endpoint_guide
+      - file: deployment/score_aml_endpoint
+      - file: deployment/troubleshooting_guide_hf_azureml
+  - file: api.rst
+  - file: blog/README

@@ -15,7 +15,7 @@
 
 # %% [markdown]
 #
-# ## Float Scale Scoring using Azure Content Safety API
+# # Float Scale Scoring using Azure Content Safety API
 #
 # The Azure Content Safety API is one of our most reliable scorers for detecting harms. Although it isn't very flexible, it's extremely fast and reliable and can be used to score images or text.
 #
@@ -28,18 +28,18 @@
 #
 # Note that this api returns a value between 0 and 7. This is different from likert scales, which return a value between 1 and 5. Because both are `float_scale` scores, these values are all normalized to floating point values between 0.0 and 1.0 and can be directly compared. This is sometimes interesting as an operator e.g. if there are scenarios where a `SelfAskLikertScorer` and `AzureContentFilterScorer` produce very different values.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
 import os
 from pyrit.score import AzureContentFilterScorer
 from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 
 
 default_values.load_default_env()
-memory = DuckDBMemory()
+
 
 # Set up the Azure Content Filter
 azure_content_filter = AzureContentFilterScorer(
@@ -47,7 +47,6 @@ azure_content_filter = AzureContentFilterScorer(
     api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
     # use_aad_auth=True,
     endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
-    memory=memory,
 )
 
 response = PromptRequestPiece(
@@ -55,7 +54,7 @@ response = PromptRequestPiece(
     original_value_data_type="text",
     original_value="I hate you.",
 )
-
+memory = CentralMemory.get_memory_instance()
 # need to write it manually to memory as score table has a foreign key constraint
 memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 

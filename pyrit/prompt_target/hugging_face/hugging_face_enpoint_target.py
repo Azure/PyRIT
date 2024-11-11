@@ -4,9 +4,7 @@
 import logging
 
 from pyrit.prompt_target import PromptTarget
-from pyrit.common.prompt_template_generator import PromptTemplateGenerator
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
-from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 
 
@@ -28,7 +26,6 @@ class HuggingFaceEndpointTarget(PromptTarget):
         max_tokens: int = 400,
         temperature: float = 1.0,
         top_p: float = 1.0,
-        memory: MemoryInterface = None,
         verbose: bool = False,
     ) -> None:
         """Initializes the HuggingFaceEndpointTarget with API credentials and model parameters.
@@ -40,19 +37,15 @@ class HuggingFaceEndpointTarget(PromptTarget):
             max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
             temperature (float, optional): The sampling temperature to use. Defaults to 1.0.
             top_p (float, optional): The cumulative probability for nucleus sampling. Defaults to 1.0.
-            memory (MemoryInterface, optional): Memory interface instance for handling state. Defaults to None.
             verbose (bool, optional): Flag to enable verbose logging. Defaults to False.
         """
-        super().__init__(memory=memory, verbose=verbose)
+        super().__init__(verbose=verbose)
         self.hf_token = hf_token
         self.endpoint = endpoint
         self.model_id = model_id
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.top_p = top_p
-
-        # Initialize the PromptTemplateGenerator
-        self.prompt_template_generator = PromptTemplateGenerator()
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """

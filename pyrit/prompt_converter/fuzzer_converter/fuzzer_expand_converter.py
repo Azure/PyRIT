@@ -7,18 +7,18 @@ import uuid
 from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.models.prompt_template import PromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import FuzzerConverter
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 
 
 class FuzzerExpandConverter(FuzzerConverter):
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
         prompt_template = (
             prompt_template
             if prompt_template
-            else PromptTemplate.from_yaml_file(
+            else SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "fuzzer_converters" / "expand_converter.yaml"
             )
         )

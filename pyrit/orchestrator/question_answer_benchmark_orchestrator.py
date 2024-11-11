@@ -4,7 +4,6 @@ import textwrap
 from typing import Optional
 import yaml
 from uuid import uuid4
-from pyrit.memory import MemoryInterface
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -22,7 +21,6 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         Orchestrator (_type_): _description_
     """
 
-    _memory: MemoryInterface
     _chat_model_under_evaluation: PromptChatTarget
     _conversation_id: str
     normalizer_id: str
@@ -34,7 +32,6 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         chat_model_under_evaluation: PromptChatTarget,
         scorer: QuestionAnswerScorer,
         prompt_converters: list[PromptConverter] = [],
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         evaluation_prompt: Optional[str] = None,
         verbose: bool = False,
@@ -46,7 +43,6 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
             prompt_converters (list[PromptConverter], optional): The prompt converters to be used.
-            memory (MemoryInterface, optional): The memory interface to be used. Defaults to None.
             memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
@@ -56,20 +52,15 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         """
         super().__init__(
             prompt_converters=prompt_converters,
-            memory=memory,
             verbose=verbose,
             memory_labels=memory_labels,
         )
 
         self._chat_model_under_evaluation = chat_model_under_evaluation
         self._scorer = scorer
-        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
-        if self._scorer:
-            self._scorer._memory = self._memory
-            if hasattr(self._scorer, "_prompt_target"):
-                self._scorer._prompt_target._memory = self._memory
+
         self._conversation_id = str(uuid4())
-        self._normalizer = PromptNormalizer(memory=self._memory)
+        self._normalizer = PromptNormalizer()
 
         if evaluation_prompt:
             self.evaluation_system_prompt = evaluation_prompt

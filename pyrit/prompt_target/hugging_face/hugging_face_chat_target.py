@@ -11,7 +11,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.download_hf_model_with_aria2 import download_specific_files_with_aria2
-from pyrit.memory import MemoryInterface
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
 from pyrit.common import default_values
@@ -43,14 +42,12 @@ class HuggingFaceChatTarget(PromptChatTarget):
         hf_access_token: Optional[str] = None,
         use_cuda: bool = False,
         tensor_format: str = "pt",
-        memory: MemoryInterface = None,
         necessary_files: list = None,
         max_new_tokens: int = 20,
         temperature: float = 1.0,
         top_p: float = 1.0,
         skip_special_tokens: bool = True,
     ) -> None:
-        super().__init__(memory=memory)
         self.model_id = model_id
         self.use_cuda = use_cuda
         self.tensor_format = tensor_format

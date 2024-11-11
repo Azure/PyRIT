@@ -8,7 +8,7 @@ For running PyRIT tests, you need to have `pytest` package installed, but if you
 `pip install -e .[dev]`, `pytest` should be included in that setup.
 
 
-#### Running PyRIT test files
+### Running PyRIT test files
 PyRIT test files can be run using `pytest`.
 
 **Pytest**
@@ -35,7 +35,7 @@ PyRIT test files can be run using `pytest`.
      python -m pytest tests\test_aml_online_endpoint_chat.py::test_get_headers_with_empty_api_key
      ```
 
-#### Unit Test Best Practices in PyRIT
+### Unit Test Best Practices in PyRIT
 
 Testing is an art to get right! But here are some best practices in terms of unit testing in PyRIT, and some potential concepts to familiarize yourself with as you're writing these tests.
 
@@ -63,6 +63,7 @@ pre-commit run --all-files
 pre-commit run --files <file_name>
 ```
 
+(notebook_tests)=
 ## Notebooks
 
 While we don't exactly have integration tests, we do dynamically generate the `ipynb` notebooks in this document section. These help to document, but also connect to actual endpoints and help ensure broad functionality is working as expected.
@@ -76,6 +77,7 @@ Here are contributor guidelines:
 - This is *not* a replacement for unit tests. Coverage is not needed here.
 - This code often connects to various endpoints so it may not be easy to run (not all contributors will have everything deployed). However, it is an expectation that maintainers have all documented infrastructure available and configured.
   - Contributors: if your notebook updates a `.py` file or how it works specifically, rerun it as ` jupytext --execute --to notebook  ./doc/affected_file.py`
-  - Maintainers (bonus if contributors do this also): If there are big changes, re-generate all notebooks by using [pct_to_ipynb.ps1](../generate_docs/pct_to_ipynb.ps1). Because this executes against real systems, it can detect many issues.
+  - Maintainers (bonus if contributors do this also): If there are big changes, re-generate all notebooks by using [pct_to_ipynb.py](../generate_docs/pct_to_ipynb.py). Because this executes against real systems, it can detect many issues.
 - Some contributors use jupytext to generate `.py` files from `.ipynb` files. This is also acceptable.
 - Please do not re-commit updated generated `.ipynb` files with slight changes if nothing has changed in the source
+- We use [Jupyter-Book](https://jupyterbook.org/en/stable/intro.html) with [Markedly Structured Text (MyST)](https://jupyterbook.org/en/stable/content/myst.html).

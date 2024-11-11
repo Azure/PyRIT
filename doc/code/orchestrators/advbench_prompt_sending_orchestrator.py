@@ -19,9 +19,11 @@
 # This demo is uses prompts from the AdvBench dataset to try against a target. It includes the ways you can send the prompts,
 # and how you can view results. Before starting, import the necessary libraries.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
 # The first example is as simple as it gets.
+#
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 
 # %%
 import time
@@ -54,7 +56,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     orchestrator.print_conversations()
 
 # %% [markdown]
-# ### Adding Converters
+# ## Adding Converters
 #
 # Additionally, we can make it more interesting by initializing the orchestrator with different types of prompt converters.
 # This variation takes the original example, but converts the text to base64 before sending it to the target.

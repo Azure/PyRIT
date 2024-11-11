@@ -3,14 +3,15 @@
 
 import json
 import logging
+from typing import Optional
 import uuid
 
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.models import PromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.exceptions.exception_classes import (
+from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
@@ -24,25 +25,18 @@ class FuzzerConverter(PromptConverter):
     Base class for GPTFUZZER converters.
 
     Adapted from GPTFUZZER: Red Teaming Large Language Models with Auto-Generated Jailbreak Prompts.
+    Paper https://arxiv.org/pdf/2309.10253 by Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
+    GitHub https://github.com/sherdencooper/GPTFuzz/tree/master
 
-        Link: https://arxiv.org/pdf/2309.10253
-
-        Author: Jiahao Yu, Xingwei Lin, Zheng Yu, Xinyu Xing
-
-        GitHub: https://github.com/sherdencooper/GPTFuzz/tree/master
-
-    Parameters
-    ---
-    converter_target: PromptChatTarget
-        Chat target used to perform fuzzing on user prompt
-
-    prompt_template: PromptTemplate, default=None
-        Template to be used instead of the default system prompt with instructions for the chat target.
+    Parameters:
+        converter_target (PromptChatTarget): Chat target used to perform fuzzing on user prompt
+        prompt_template (SeedPrompt): Template to be used instead of the default system prompt with instructions for
+            the chat target.
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: PromptTemplate = None):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: Optional[SeedPrompt] = None):
         self.converter_target = converter_target
-        self.system_prompt = prompt_template.template
+        self.system_prompt = prompt_template.value
         self.template_label = "TEMPLATE"
 
     def update(self, **kwargs) -> None:
@@ -51,6 +45,10 @@ class FuzzerConverter(PromptConverter):
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converter to generate versions of prompt with new, prepended sentences.
+
+        Args:
+            prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of the input prompt.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")

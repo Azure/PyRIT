@@ -2,13 +2,23 @@
 # Licensed under the MIT license.
 
 
+from typing import Generator
+from unittest.mock import patch
 import pytest
 import os
 
-from pyrit.prompt_converter import AddTextImageConverter
-
 from io import BytesIO
 from PIL import Image, ImageFont
+
+from pyrit.memory.memory_interface import MemoryInterface
+from tests.mocks import get_memory_interface
+from pyrit.prompt_converter import AddTextImageConverter
+from pyrit.memory import CentralMemory
+
+
+@pytest.fixture
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
 
 
 @pytest.fixture
@@ -75,25 +85,27 @@ def test_text_image_converter_add_text_to_image(text_image_converter_sample_imag
 
 
 @pytest.mark.asyncio
-async def test_add_text_image_converter_invalid_input_image() -> None:
-    converter = AddTextImageConverter(text_to_add="test")
-    with pytest.raises(FileNotFoundError):
-        assert await converter.convert_async(prompt="mock_image.png", input_type="image_path")  # type: ignore
+async def test_add_text_image_converter_invalid_input_image(memory_interface: MemoryInterface) -> None:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        converter = AddTextImageConverter(text_to_add="test")
+        with pytest.raises(FileNotFoundError):
+            assert await converter.convert_async(prompt="mock_image.png", input_type="image_path")  # type: ignore
 
 
 @pytest.mark.asyncio
-async def test_add_text_image_converter_convert_async() -> None:
-    converter = AddTextImageConverter(text_to_add="test")
-    mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
-    mock_image.save("test.png")
+async def test_add_text_image_converter_convert_async(memory_interface: MemoryInterface) -> None:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        converter = AddTextImageConverter(text_to_add="test")
+        mock_image = Image.new("RGB", (400, 300), (255, 255, 255))
+        mock_image.save("test.png")
 
-    converted_image = await converter.convert_async(prompt="test.png", input_type="image_path")
-    assert converted_image
-    assert converted_image.output_text
-    assert converted_image.output_type == "image_path"
-    assert os.path.exists(converted_image.output_text)
-    os.remove(converted_image.output_text)
-    os.remove("test.png")
+        converted_image = await converter.convert_async(prompt="test.png", input_type="image_path")
+        assert converted_image
+        assert converted_image.output_text
+        assert converted_image.output_type == "image_path"
+        assert os.path.exists(converted_image.output_text)
+        os.remove(converted_image.output_text)
+        os.remove("test.png")
 
 
 def test_text_image_converter_input_supported():

@@ -7,11 +7,11 @@ from typing import Optional
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.memory import MemoryInterface, DuckDBMemory
 
 
 class QRCodeConverter(PromptConverter):
     """Converts a text string to a QR code image.
+
     Args:
         scale (int, optional): Scaling factor that determines the width/height in pixels of each
             black/white square (known as a "module") in the QR code. Defaults to 3.
@@ -30,21 +30,19 @@ class QRCodeConverter(PromptConverter):
         finder_light_color (tuple, optional): Sets light module color of finder patterns, using RGB values.
             Defaults to light_color.
         border_color (tuple, optional): Sets color of border, using RGB values. Defaults to light_color.
-        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     def __init__(
         self,
-        scale: Optional[int] = 3,
-        border: Optional[int] = 4,
-        dark_color: Optional[tuple] = (0, 0, 0),
-        light_color: Optional[tuple] = (255, 255, 255),
+        scale: int = 3,
+        border: int = 4,
+        dark_color: tuple = (0, 0, 0),
+        light_color: tuple = (255, 255, 255),
         data_dark_color: Optional[tuple] = None,
         data_light_color: Optional[tuple] = None,
         finder_dark_color: Optional[tuple] = None,
         finder_light_color: Optional[tuple] = None,
         border_color: Optional[tuple] = None,
-        memory: Optional[MemoryInterface] = None,
     ):
         self._scale = scale
         self._border = border
@@ -55,8 +53,7 @@ class QRCodeConverter(PromptConverter):
         self._finder_dark_color = finder_dark_color or dark_color
         self._finder_light_color = finder_light_color or light_color
         self._border_color = border_color or light_color
-        self._memory = memory or DuckDBMemory()
-        self._img_serializer = data_serializer_factory(data_type="image_path", memory=self._memory)
+        self._img_serializer = data_serializer_factory(data_type="image_path")
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

@@ -3,10 +3,9 @@
 
 import logging
 import json
-from typing import Any, Literal, Union, Optional
+from typing import Any, Literal, Optional
 
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
-from pyrit.memory import MemoryInterface
 from pyrit.common import default_values
 from pyrit.common import net_utility
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
@@ -54,11 +53,10 @@ class PromptShieldTarget(PromptTarget):
         api_key: str = None,
         api_version: Optional[str] = "2024-02-15-preview",
         field: Optional[PromptShieldEntryField] = None,
-        memory: Union[MemoryInterface, None] = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
 
-        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
+        super().__init__(max_requests_per_minute=max_requests_per_minute)
 
         self._endpoint = default_values.get_required_value(
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint

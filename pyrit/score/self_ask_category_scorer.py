@@ -7,12 +7,10 @@ import enum
 from pathlib import Path
 from typing import Dict, Optional
 
-from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models.score import UnvalidatedScore
-from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, PromptTemplate
-from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
+from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.score.scorer import Scorer
 
 
 class ContentClassifierPaths(enum.Enum):
@@ -33,7 +31,6 @@ class SelfAskCategoryScorer(Scorer):
         self,
         chat_target: PromptChatTarget,
         content_classifier: Path,
-        memory: MemoryInterface = None,
     ) -> None:
         """
         Initializes a new instance of the SelfAskCategoryScorer class.
@@ -45,20 +42,16 @@ class SelfAskCategoryScorer(Scorer):
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
-        self._memory = memory if memory else DuckDBMemory()
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
         category_file_contents = yaml.safe_load(content_classifier.read_text(encoding="utf-8"))
 
         self._no_category_found_category = category_file_contents["no_category_found"]
         categories_as_string = self._content_classifier_to_string(category_file_contents["categories"])
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(
+        scoring_instructions_template = SeedPrompt.from_yaml_file(
             CONTENT_CLASSIFIERS_PATH / "content_classifier_system_prompt.yaml"
         )
 
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
+        self._system_prompt = scoring_instructions_template.render_template_value(
             categories=categories_as_string,
             no_category_found=self._no_category_found_category,
         )

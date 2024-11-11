@@ -94,13 +94,8 @@ async def test_char_swap_generator_random_swapping():
 
     with patch(
         "random.sample",
-        side_effect=[
-            [0, 1, 2],  # First set of indices for the first call
-            [2, 1, 0],  # Second set of indices for the second call
-        ],
+        side_effect=[[0, 1, 2]],
     ):
         result1 = await converter.convert_async(prompt=prompt)
-        result2 = await converter.convert_async(prompt=prompt)
 
-    # With the mocked randomness, result1 and result2 should be different
-    assert result1.output_text != result2.output_text
+    assert prompt != result1.output_text

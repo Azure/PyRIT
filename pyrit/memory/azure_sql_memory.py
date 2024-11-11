@@ -5,7 +5,7 @@ import logging
 import struct
 
 from contextlib import closing
-from typing import Optional, Sequence
+from typing import MutableSequence, Optional, Sequence
 from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 
@@ -17,11 +17,9 @@ from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import EmbeddingDataEntry, Base, PromptMemoryEntry, ScoreEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.score import Score
-from pyrit.models.storage_io import AzureBlobStorageIO
+from pyrit.models import AzureBlobStorageIO, PromptRequestPiece, Score
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +181,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         try:
             entries = self.query_entries(
                 PromptMemoryEntry,
-                conditions=PromptMemoryEntry.conversation_id == conversation_id,
+                conditions=PromptMemoryEntry.conversation_id == str(conversation_id),
             )  # type: ignore
 
             result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
@@ -325,13 +323,16 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def query_entries(self, model, *, conditions: Optional = None) -> list[Base]:  # type: ignore
+    def query_entries(
+        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+    ) -> list[Base]:
         """
         Fetches data from the specified table model with optional conditions.
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (optional).
+            distinct: Flag to return distinct rows (defaults to False).
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -341,9 +342,49 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 query = session.query(model)
                 if conditions is not None:
                     query = query.filter(conditions)
+                if distinct:
+                    return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
+                return []
+
+    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+        """
+        Updates the given entries with the specified field values.
+
+        Args:
+            entries (list[Base]): A list of SQLAlchemy model instances to be updated.
+            update_fields (dict): A dictionary of field names and their new values.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        if not update_fields:
+            raise ValueError("update_fields must be provided to update prompt entries.")
+        with closing(self.get_session()) as session:
+            try:
+                for entry in entries:
+                    # Ensure the entry is attached to the session. If it's detached, merge it.
+                    if not session.is_modified(entry):
+                        entry_in_session = session.merge(entry)
+                    else:
+                        entry_in_session = entry
+                    for field, value in update_fields.items():
+                        if field in vars(entry_in_session):
+                            setattr(entry_in_session, field, value)
+                        else:
+                            session.rollback()
+                            raise ValueError(
+                                f"Field '{field}' does not exist in the table \
+                                            '{entry_in_session.__tablename__}'. Rolling back changes..."
+                            )
+                session.commit()
+                return True
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error updating entries: {e}")
+                return False
 
     def reset_database(self):
         """Drop and recreate existing tables"""

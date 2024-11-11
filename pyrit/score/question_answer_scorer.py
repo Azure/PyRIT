@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Generator, Tuple
 from pydantic import BaseModel, ConfigDict
 from pyrit.models import QuestionAnsweringEntry, QuestionAnsweringDataset
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.memory import CentralMemory
 import textwrap
 
 
@@ -15,7 +15,7 @@ class TextScoreResult(BaseModel):
 
     Do not build on this class; this class needs to be rewritten.
 
-    Attributes:
+    Parameters:
         provided_answer (str): The provided answer.
         correct_answer (str): The correct answer.
         is_correct (bool): Whether the provided answer is correct.
@@ -36,7 +36,7 @@ class TextScoreResult(BaseModel):
 class QuestionAnswerScorer:
     """A class that represents a question answering scorer.
 
-    Attributes:
+    Parameters:
         dataset (QuestionAnsweringDataset): The dataset containing the questions and answers.
         evaluation_results (dict[QuestionAnsweringDataset, TextScoreResult]): A dictionary to store the evaluation
         results.
@@ -46,7 +46,7 @@ class QuestionAnswerScorer:
     dataset: QuestionAnsweringDataset
     evaluation_results: dict[QuestionAnsweringEntry, TextScoreResult]
 
-    def __init__(self, dataset: QuestionAnsweringDataset, memory: MemoryInterface = None):
+    def __init__(self, dataset: QuestionAnsweringDataset):
         """
         Initializes the QuestionAnswerScorer object.
 
@@ -55,7 +55,7 @@ class QuestionAnswerScorer:
         """
         self.dataset = dataset
         self.evaluation_results = {}
-        self._memory = memory if memory else DuckDBMemory()
+        self._memory = CentralMemory.get_memory_instance()
 
     def _construct_evaluation_prompt(self, *, entry: QuestionAnsweringEntry) -> str:
         available_choices = ""

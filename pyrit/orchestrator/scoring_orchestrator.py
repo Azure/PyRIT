@@ -4,7 +4,6 @@
 import logging
 from typing import Sequence
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
@@ -20,30 +19,18 @@ class ScoringOrchestrator(Orchestrator):
 
     def __init__(
         self,
-        memory: MemoryInterface = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
         """
         Args:
-            memory (MemoryInterface, optional): The memory interface. Defaults to None.
             batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If using a scorer that takes a prompt target, and providing max requests per
                 minute on the target, this should be set to 1 to ensure proper rate limit management.
         """
-        super().__init__(memory=memory, verbose=verbose)
+        super().__init__(verbose=verbose)
 
         self._batch_size = batch_size
-
-    def _assign_memory(self, scorer: Scorer) -> None:
-        """
-        Assigns the provided memory to the scorer passed to the orchestrator,
-        as well as to its prompt target, if applicable.
-        """
-        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
-        scorer._memory = self._memory
-        if hasattr(scorer, "_prompt_target"):
-            scorer._prompt_target._memory = self._memory
 
     async def score_prompts_by_orchestrator_id_async(
         self,
@@ -55,7 +42,6 @@ class ScoringOrchestrator(Orchestrator):
         """
         Scores prompts using the Scorer for prompts correlated to the orchestrator_ids.
         """
-        self._assign_memory(scorer)
         request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
             request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
@@ -77,7 +63,6 @@ class ScoringOrchestrator(Orchestrator):
         """
         if not memory_labels:
             raise ValueError("Invalid memory_labels: Please provide valid memory labels.")
-        self._assign_memory(scorer)
         request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_piece_by_memory_labels(
             memory_labels=memory_labels
         )
@@ -101,7 +86,6 @@ class ScoringOrchestrator(Orchestrator):
         """
         Scores prompts using the Scorer for prompts with the prompt_ids
         """
-        self._assign_memory(scorer)
         request_pieces: Sequence[PromptRequestPiece] = []
         request_pieces = self._memory.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
 
