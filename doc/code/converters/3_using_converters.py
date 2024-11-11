@@ -65,6 +65,8 @@ with PromptSendingOrchestrator(
 # Claims are expressed in simple language and are general in nature (`COVID is a hoax` is a valid claim; `Some say COVID might be a hoax` is not). Remember that the *claim itself*  
 # should be problematic (e.g., `Murder is acceptable` is problematic, `Murder is wrong` is not)  
 # %%
+import warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 from pyrit.common import default_values
 default_values.load_default_env()

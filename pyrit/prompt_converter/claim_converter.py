@@ -306,10 +306,10 @@ class ClaimConverter(PromptConverter):
             # calculate margin from random (closer to 0.5->more uncertain)
             completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
             # ignore already-labeled data
-            completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
+            # completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
             # print(f"Response message: {completions_estimated}")
 
-            options = [f"[{index}] {row['label']}: {row['inst']}" for index, row in completions_estimated.iterrows()]
+            options = [f"[{index}] {row['pred']}: {row['inst']}" for index, row in completions_estimated.iterrows()]
             # selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
 
             response_msg = "\n".join(options)
