@@ -2,8 +2,6 @@
 # Licensed under the MIT license.
 
 import csv
-import tkinter as tk
-from tkinter import simpledialog
 
 from pathlib import Path
 from typing import Optional
@@ -177,6 +175,15 @@ class HumanInTheLoopScorer(Scorer):
         return new_scores
 
     def _get_user_input(self, message) -> str:
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+        except ImportError as e:
+            print(
+                "To use HumanInTheLoopScorer, you need to install tkinter. "
+                "See https://stackoverflow.com/a/74607246 for more information."
+            )
+            raise e
         root = tk.Tk()
         root.withdraw()
         user_input = simpledialog.askstring("Score Prompt", message).strip()
