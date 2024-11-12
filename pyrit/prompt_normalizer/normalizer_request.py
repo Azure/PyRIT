@@ -2,15 +2,12 @@
 # Licensed under the MIT license.
 
 import abc
-from pyrit.memory import MemoryInterface
 from pyrit.models import data_serializer_factory, PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
-from pyrit.memory import DuckDBMemory
 
 
 class NormalizerRequestPiece(abc.ABC):
-    _memory: MemoryInterface
 
     def __init__(
         self,
@@ -19,7 +16,6 @@ class NormalizerRequestPiece(abc.ABC):
         prompt_data_type: PromptDataType,
         request_converters: list[PromptConverter] = [],
         metadata: str = None,
-        memory: MemoryInterface = None,
     ) -> None:
         """
         Represents a piece of a normalizer request.
@@ -42,7 +38,6 @@ class NormalizerRequestPiece(abc.ABC):
         self.prompt_value = prompt_value
         self.prompt_data_type = prompt_data_type
         self.metadata = metadata
-        self._memory = memory or DuckDBMemory()
 
         self.validate()
 
@@ -62,7 +57,7 @@ class NormalizerRequestPiece(abc.ABC):
             raise ValueError("prompt_converters must be a PromptConverter List")
 
         # this validates the media exists, if needed
-        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_value, memory=self._memory)
+        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_value)
 
 
 class NormalizerRequest:

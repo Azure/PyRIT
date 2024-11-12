@@ -2,12 +2,9 @@
 # Licensed under the MIT license.
 
 import csv
-import tkinter as tk
-from tkinter import simpledialog
 
 from pathlib import Path
 from typing import Optional
-from pyrit.memory import DuckDBMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 
@@ -19,14 +16,9 @@ class HumanInTheLoopScorer(Scorer):
     Attributes:
         scorer (Scorer): The scorer to use for the initial scoring.
         re_scorers (list[Scorer]): The scorers to use for re-scoring.
-        memory (MemoryInterface): The memory interface
     """
 
-    def __init__(
-        self, *, scorer: Scorer = None, re_scorers: list[Scorer] = None, memory: MemoryInterface = None
-    ) -> None:
-
-        self._memory = memory if memory else DuckDBMemory()
+    def __init__(self, *, scorer: Scorer = None, re_scorers: list[Scorer] = None) -> None:
         self._scorer = scorer
         self._re_scorers = re_scorers
 
@@ -183,6 +175,15 @@ class HumanInTheLoopScorer(Scorer):
         return new_scores
 
     def _get_user_input(self, message) -> str:
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+        except ImportError as e:
+            print(
+                "To use HumanInTheLoopScorer, you need to install tkinter. "
+                "See https://stackoverflow.com/a/74607246 for more information."
+            )
+            raise e
         root = tk.Tk()
         root.withdraw()
         user_input = simpledialog.askstring("Score Prompt", message).strip()

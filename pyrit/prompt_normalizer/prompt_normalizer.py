@@ -6,7 +6,7 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptTarget
@@ -16,10 +16,10 @@ from pyrit.prompt_normalizer.prompt_response_converter_configuration import Prom
 
 
 class PromptNormalizer(abc.ABC):
-    _memory: MemoryInterface
+    _memory: MemoryInterface = None
 
-    def __init__(self, *, memory: MemoryInterface) -> None:
-        self._memory = memory
+    def __init__(self) -> None:
+        self._memory = CentralMemory.get_memory_instance()
         self.id = str(uuid4())
 
     async def send_prompt_async(
@@ -196,7 +196,7 @@ class PromptNormalizer(abc.ABC):
                 original_value_data_type=request_piece.prompt_data_type,
                 converted_value_data_type=converted_prompt_type,
             )
-            await prompt_request_piece.compute_sha256(memory=self._memory)
+            await prompt_request_piece.compute_sha256()
             entries.append(prompt_request_piece)
 
         return PromptRequestResponse(request_pieces=entries)

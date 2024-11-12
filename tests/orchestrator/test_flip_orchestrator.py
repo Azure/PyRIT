@@ -7,6 +7,7 @@ from pyrit.orchestrator.flip_attack_orchestrator import FlipAttackOrchestrator
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptTarget
 from pyrit.memory import MemoryInterface
+from pyrit.memory import DuckDBMemory, CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_converter.flip_converter import FlipConverter
 
@@ -17,15 +18,16 @@ def mock_prompt_target():
 
 
 @pytest.fixture
-def mock_memory_interface():
-    return MagicMock(spec=MemoryInterface)
+def mock_central_memory_instance():
+    """Fixture to mock CentralMemory.get_memory_instance"""
+    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
+    with patch.object(CentralMemory, "get_memory_instance", return_value=duckdb_in_memory) as duck_db_memory:
+        yield duck_db_memory
 
 
 @pytest.fixture
-def flip_attack_orchestrator(mock_prompt_target, mock_memory_interface):
-    return FlipAttackOrchestrator(
-        prompt_target=mock_prompt_target, memory=mock_memory_interface, batch_size=5, verbose=True
-    )
+def flip_attack_orchestrator(mock_prompt_target, mock_central_memory_instance):
+    return FlipAttackOrchestrator(prompt_target=mock_prompt_target, batch_size=5, verbose=True)
 
 
 @pytest.mark.asyncio

@@ -6,9 +6,8 @@ import httpx
 import json
 import logging
 import re
-from typing import Callable, Union
+from typing import Callable
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 
@@ -27,7 +26,6 @@ class HTTPTarget(PromptTarget):
         use_tls: (bool): whether to use TLS or not. Default is True
         callback_function (function): function to parse HTTP response.
             These are the customizable functions which determine how to parse the output
-        memory: memory interface
     """
 
     def __init__(
@@ -36,10 +34,8 @@ class HTTPTarget(PromptTarget):
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
         callback_function: Callable = None,
-        memory: Union[MemoryInterface, None] = None,
     ) -> None:
 
-        super().__init__(memory=memory)
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string

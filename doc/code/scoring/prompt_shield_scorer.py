@@ -52,7 +52,7 @@ from pyrit.prompt_target import PromptShieldTarget, OpenAIChatTarget
 from pyrit.score import PromptShieldScorer
 from pyrit.common.default_values import load_default_env
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 
 load_default_env()
@@ -81,7 +81,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
         scorer=scorer, orchestrator_ids=[id], responses_only=False
     )
 
-    memory = DuckDBMemory()
+    memory = CentralMemory.get_memory_instance()
 
     for score in scores:
         prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
