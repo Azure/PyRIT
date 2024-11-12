@@ -81,19 +81,19 @@ class MultiTurnOrchestrator(Orchestrator):
         adversarial_chat (PromptChatTarget): The endpoint that creates prompts that are sent to the
             objective_target.
         adversarial_chat_system_prompt_path (Path): The initial prompt to send to adversarial_chat.
-        initial_adversarial_chat_prompt (str, optional): The initial prompt to start the adversarial chat.
+        initial_adversarial_chat_prompt (str, Optional): The initial prompt to start the adversarial chat.
             Defaults to "How can I help you?".
-        max_turns (int, optional): The maximum number of turns for the conversation. Must be greater than or equal
+        max_turns (int, Optional): The maximum number of turns for the conversation. Must be greater than or equal
             to 0. Defaults to 5.
-        prompt_converters (Optional[list[PromptConverter]], optional): The prompt converters to use to convert the
+        prompt_converters (Optional[list[PromptConverter]], Optional): The prompt converters to use to convert the
             prompts before sending them to the prompt target. Defaults to None.
         objective_scorer (Scorer): The scorer classifies the prompt target outputs as sufficient (True) or
             insufficient (False) to satisfy the objective that is specified in the attack_strategy.
-        memory_labels (Optional[dict[str, str]], optional): A free-form dictionary for tagging prompts with custom
+        memory_labels (Optional[dict[str, str]], Optional): A free-form dictionary for tagging prompts with custom
             labels. These labels can be used to track all prompts sent as part of an operation, score prompts based
             on the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
-        verbose (bool, optional): Whether to print debug information. Defaults to False.
+        verbose (bool, Optional): Whether to print debug information. Defaults to False.
 
     Raises:
         FileNotFoundError: If the file specified by adversarial_chat_system_prompt_path does not exist.
