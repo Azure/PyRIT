@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Seed Prompt Database
+# # 8. Seed Prompt Database
 #
 # Apart from storing results in memory it's also useful to store datasets of seed prompts
 # and seed prompt templates that we may want to use at a later point.

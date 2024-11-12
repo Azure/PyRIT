@@ -176,7 +176,7 @@ with RedTeamingOrchestrator(
 # for example, `pyrit/datasets/orchestrators/red_teaming/text_generation.yaml`).
 #
 # PyRIT also offers various integration choices for the red teaming orchestrators, including
-# [Azure ML managed online endpoints](../doc/code/targets/4_non_open_ai_chat_targets.ipynb),
+# [Azure ML managed online endpoints](../doc/code/targets/3_non_open_ai_chat_targets.ipynb),
 # and Azure OpenAI models (as shown above).
 #
 # ## Output scoring

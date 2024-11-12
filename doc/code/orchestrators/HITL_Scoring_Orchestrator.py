@@ -12,7 +12,7 @@
 #     name: python3
 # ---
 
-# # How to use HITL Scoring
+# # How to use HITL Scoring - optional
 
 # +
 from pyrit.orchestrator import PromptSendingOrchestrator
