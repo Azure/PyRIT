@@ -698,7 +698,7 @@ class MultiPromptAttack(object):
         control_weight=None,
         anneal=True,
         anneal_from=0,
-        prev_loss=np.infty,
+        prev_loss=np.inf,
         stop_on_success=True,
         test_steps=50,
         log_first=False,
@@ -1081,7 +1081,7 @@ class ProgressiveMultiPromptAttack(object):
         num_workers = 1 if self.progressive_models else len(self.workers)
         step = 0
         stop_inner_on_success = self.progressive_goals
-        loss = np.infty
+        loss = np.inf
 
         while step < n_steps:
             attack = self.managers["MPA"](
@@ -1121,11 +1121,11 @@ class ProgressiveMultiPromptAttack(object):
 
             if num_goals < len(self.goals):
                 num_goals += 1
-                loss = np.infty
+                loss = np.inf
             elif num_goals == len(self.goals):
                 if num_workers < len(self.workers):
                     num_workers += 1
-                    loss = np.infty
+                    loss = np.inf
                 elif num_workers == len(self.workers) and stop_on_success:
                     model_tests = attack.test_all()
                     attack.log(step, n_steps, self.control, loss, 0.0, model_tests, verbose=verbose)
@@ -1134,7 +1134,7 @@ class ProgressiveMultiPromptAttack(object):
                     if isinstance(control_weight, (int, float)) and incr_control:
                         if control_weight <= 0.09:
                             control_weight += 0.01
-                            loss = np.infty
+                            loss = np.inf
                             if verbose:
                                 print(f"Control weight increased to {control_weight:.5}")
                         else:
@@ -1343,7 +1343,7 @@ class IndividualPromptAttack(object):
                 control_weight=control_weight,
                 anneal=anneal,
                 anneal_from=0,
-                prev_loss=np.infty,
+                prev_loss=np.inf,
                 stop_on_success=stop_inner_on_success,
                 test_steps=test_steps,
                 log_first=True,
