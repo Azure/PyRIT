@@ -70,6 +70,11 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         verbose: bool = False,
     ) -> None:
 
+        if objective_scorer.scorer_type != "true_false":
+            raise ValueError(
+                f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
+            )
+
         super().__init__(
             objective_target=objective_target,
             adversarial_chat=adversarial_chat,

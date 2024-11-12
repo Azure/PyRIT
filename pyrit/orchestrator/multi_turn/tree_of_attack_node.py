@@ -40,7 +40,10 @@ class TAPNodeResult:
     def __repr__(self) -> str:
         return self.__str__()
 
-class TreeOfAttacksWithPruningNode():
+class TreeOfAttackNode():
+    """
+    Creates a Node to be used with Tree of Attacks with Pruning.
+    """
     _memory: MemoryInterface
 
     def __init__(
@@ -57,11 +60,9 @@ class TreeOfAttacksWithPruningNode():
         orchestrator_id: str,
         memory: Optional[MemoryInterface],
         memory_labels: Optional[dict[str, str]],
-        iteration: int = 1,
+        parent_id: str = None,
     ) -> None:
-        """
-        Creates a Node to be used with Tree of Attacks with Pruning.
-        """
+
         self._objective_target = objective_target
         self._adversarial_chat = adversarial_chat
         self._objective_scorer = objective_scorer
@@ -75,18 +76,11 @@ class TreeOfAttacksWithPruningNode():
         self._global_memory_labels = memory_labels
 
         self._prompt_normalizer = PromptNormalizer(memory=self._memory)
-        self.iteration = iteration
-        self._node_id_prefix = str(uuid.uuid4())
+        self.parent_id = parent_id
+        self.node_id = str(uuid.uuid4())
 
         self.objective_target_conversation_id = str(uuid.uuid4())
         self.adversarial_chat_conversation_id = str(uuid.uuid4())
-
-
-    def get_node_id(self) -> str:
-        return f"{self._node_id_prefix}_{self.iteration}"
-
-    def get_parent_node_id(self) -> str:
-        return f"{self._node_id_prefix}_{self.iteration-1}"
 
     async def send_prompt_async(
             self,
@@ -100,20 +94,8 @@ class TreeOfAttacksWithPruningNode():
         The response from the prompt target is finally scored by the scorer.
         """
 
-        if self.iteration == 1:
-            self._adversarial_chat.set_system_prompt(
-                system_prompt=self._adversarial_chat_system_seed_prompt.render_template_value(objective=objective),
-                conversation_id=self.adversarial_chat_conversation_id,
-                orchestrator_identifier=self._orchestrator_id,
-                labels=self._global_memory_labels,
-            )
-
         try:
-            prompt = await self._generate_red_teaming_prompt_async(
-                objective=objective,
-                objective_target_conversation_id=self.objective_target_conversation_id,
-                adversarial_chat_conversation_id=self.adversarial_chat_conversation_id
-            )
+            prompt = await self._generate_red_teaming_prompt_async(objective=objective)
         except InvalidJsonException as e:
             logger.error(f"Failed to generate a prompt for the prompt target: {e}")
             logger.info("Pruning the branch since we can't proceed without red teaming prompt.")
@@ -121,7 +103,7 @@ class TreeOfAttacksWithPruningNode():
                 pruned=True,
                 completed=False,
                 objective_target_conversation_id=self.objective_target_conversation_id,
-                node_id=self._node_id_prefix
+                node_id=self.node_id
             )
 
         if self._on_topic_scorer:
@@ -133,10 +115,10 @@ class TreeOfAttacksWithPruningNode():
                     pruned=True,
                     completed=False,
                     objective_target_conversation_id=self.objective_target_conversation_id,
-                    node_id=self._node_id_prefix
+                    node_id=self.node_id
                 )
 
-        objective_target_prompt_obj = NormalizerRequest(
+        objective_target_request = NormalizerRequest(
             request_pieces=[
                 NormalizerRequestPiece(
                     request_converters=self._prompt_converters,
@@ -150,7 +132,7 @@ class TreeOfAttacksWithPruningNode():
 
         response = (
             await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=objective_target_prompt_obj,
+                normalizer_request=objective_target_request,
                 target=self._objective_target,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self._orchestrator_id,
@@ -166,15 +148,43 @@ class TreeOfAttacksWithPruningNode():
             )
         )[0].get_value()
 
-        self.iteration += 1
-
         return TAPNodeResult(
             pruned=False,
             completed=True,
             score=score,
-            node_id=self._node_id_prefix,
+            node_id=self.node_id,
             objective_target_conversation_id=self.objective_target_conversation_id,
         )
+
+    def duplicate(self) -> "TreeOfAttackNode":
+        """
+        Creates a duplicate of the provided instance
+        with incremented iteration and new conversations ids (but duplicated conversations)
+        """
+        duplicate_node = TreeOfAttackNode(
+            objective_target=self._objective_target,
+            adversarial_chat=self._adversarial_chat,
+            adversarial_chat_seed_prompt=self._adversarial_chat_seed_prompt,
+            adversarial_chat_prompt_template=self._adversarial_chat_prompt_template,
+            adversarial_chat_system_seed_prompt=self._adversarial_chat_system_seed_prompt,
+            objective_scorer=self._objective_scorer,
+            on_topic_scorer=self._on_topic_scorer,
+            prompt_converters=self._prompt_converters,
+            orchestrator_id=self._orchestrator_id,
+            memory=self._memory,
+            memory_labels=self._global_memory_labels,
+            parent_id=self.node_id,
+        )
+
+        duplicate_node.objective_target_conversation_id = self._memory.duplicate_conversation(
+            conversation_id=self.objective_target_conversation_id
+        )
+
+        duplicate_node.adversarial_chat_conversation_id = self._memory.duplicate_conversation(
+            conversation_id=self.adversarial_chat_conversation_id,
+        )
+
+        return duplicate_node
 
     @pyrit_json_retry
     async def _generate_red_teaming_prompt_async(
@@ -188,29 +198,36 @@ class TreeOfAttacksWithPruningNode():
         # so we can use the initial red teaming prompt
         target_messages = self._memory.get_conversation(conversation_id=self.objective_target_conversation_id)
 
-        logger.debug("Generating a prompt for the prompt target using the red teaming LLM.")
 
-        assistant_responses = [r for r in target_messages if r.request_pieces[0].role == "assistant"]
-        if len(assistant_responses) > 0:
+        if not target_messages:
+            self._adversarial_chat.set_system_prompt(
+                system_prompt=self._adversarial_chat_system_seed_prompt.render_template_value(objective=objective),
+                conversation_id=self.adversarial_chat_conversation_id,
+                orchestrator_identifier=self._orchestrator_id,
+                labels=self._global_memory_labels,
+            )
+
+            logger.debug("Using the specified initial red teaming prompt for the first turn.")
+            prompt_text = self._adversarial_chat_seed_prompt.render_template_value(objective=objective)
+
+        else:
+            assistant_responses = [r for r in target_messages if r.request_pieces[0].role == "assistant"]
             target_response = assistant_responses[-1]
             target_response_piece = target_response.request_pieces[0]
-            print(f"target_response_piece.id: {target_response_piece.id}")
+            logger.debug(f"target_response_piece.id: {target_response_piece.id}")
             scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(target_response_piece.id)])
-            print(f"scores: {scores}")
+
             if scores:
                 score = scores[0].get_value()
             else:
                 score = "unavailable"
             prompt_text = self._adversarial_chat_prompt_template.render_template_value(
                 target_response=target_response_piece.converted_value,
-                conversation_objective=objective,
+                objective=objective,
                 score=str(score),
             )
-        else:  # If there are no assistant responses it's the first message.
-            logger.debug("Using the specified initial red teaming prompt.")
-            prompt_text = self._adversarial_chat_seed_prompt.render_template_value(objective=objective)
 
-        red_teaming_prompt_obj = NormalizerRequest(
+        adversarial_chat_request = NormalizerRequest(
             request_pieces=[
                 NormalizerRequestPiece(
                     request_converters=[], prompt_value=prompt_text, prompt_data_type="text", memory=self._memory
@@ -219,10 +236,10 @@ class TreeOfAttacksWithPruningNode():
             conversation_id=self.adversarial_chat_conversation_id,
         )
 
-        red_teaming_response = (
+        adversarial_chat_response = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=red_teaming_prompt_obj,
+                    normalizer_request=adversarial_chat_request,
                     target=self._adversarial_chat,
                     labels=self._global_memory_labels,
                     orchestrator_identifier=self._orchestrator_id,
@@ -232,7 +249,7 @@ class TreeOfAttacksWithPruningNode():
             .converted_value
         )
 
-        return self._parse_red_teaming_response(red_teaming_response)
+        return self._parse_red_teaming_response(adversarial_chat_response)
 
 
     def _parse_red_teaming_response(self, red_teaming_response: str) -> str:
