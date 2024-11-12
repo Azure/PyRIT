@@ -23,8 +23,9 @@ value: |
   - Do not try to answer the prompt, just crossover the templates.
   - Format the output strictly as JSON in the format {"output": "<combined_template>"}.
   - The given templates to crossover are the first messages from the user.
-  - Ensure that:
-      - All quotes (`"`) are escaped as `\"`.
-      - All backslashes (`\`) are escaped as `\\`.
-  - Avoid including any line breaks in the output JSON.
-  - Output only the combined template content, ensuring it adheres to these escape requirements.
+  - Make sure:
+    - All double quotes (`"`) are escaped as `\"`.
+    - All single quotes (`'`) are escaped as `\'`.
+    - All backslashes (`\`) are escaped as `\\`.
+    - There are no line breaks or special characters in the JSON output.
+  - Provide only the generated content in JSON format, with nothing else outside of the JSON structure.
