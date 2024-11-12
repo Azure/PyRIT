@@ -327,3 +327,30 @@ def test_prepare_conversation_without_prepended_conversation():
 
     assert not conversation_id
     memory_mock.add_request_response_to_memory.assert_not_called()
+
+# 1. add test for zero retries
+#    - should not call the retry logic
+
+@pytest.mark.asyncio
+async def test_zero_retries():
+    prompt_target_mock = MagicMock()
+    orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target_mock)
+    
+    await orchestrator.send_prompts_async(prompt_list=["hello"], max_retries_on_refusal=0)
+    orchestrator._get_should_retry_score_async.assert_not_called()
+
+
+
+# 2. add test for one retry
+#    a) - mock response as a refusal
+#       - check that one retry is happening
+#    b) - mock response a non-refusal
+#       - check no retry is happening
+
+# 3. capture error if scorer is not true_false
+
+# 4. user does not specify scorer, should default to SelfAskRefusalScorer
+
+# 5. test for _get_should_retry_score_async, task should not be None if prompt request piece is text
+#    a) scorer.score_async.assert_called_with(request_response=response2, task=None)
+#    b) check test=None when the prompt request piece is image
