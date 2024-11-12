@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from pyrit.models import PromptRequestPiece, Score, UnvalidatedScore
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.memory import MemoryInterface
 from pyrit.score import InsecureCodeScorer
 
 
@@ -16,18 +15,12 @@ def mock_chat_target():
     return MagicMock(spec=PromptChatTarget)
 
 
-@pytest.fixture
-def mock_memory():
-    return MagicMock(spec=MemoryInterface)
-
-
 @pytest.mark.asyncio
-async def test_insecure_code_scorer_valid_response(mock_chat_target, mock_memory):
+async def test_insecure_code_scorer_valid_response(mock_chat_target):
     # Initialize the scorer
     scorer = InsecureCodeScorer(
         chat_target=mock_chat_target,
         threshold=0.5,
-        memory=mock_memory,
     )
 
     # Create an UnvalidatedScore mock response
@@ -43,42 +36,43 @@ async def test_insecure_code_scorer_valid_response(mock_chat_target, mock_memory
         task=None,
     )
 
-    with patch.object(scorer, "_score_value_with_llm", new=AsyncMock(return_value=unvalidated_score)):
-        # Create a request_response object
-        request_response = PromptRequestPiece(role="user", original_value="sample code")
+    # Patch _memory.add_scores_to_memory to prevent duckdb errors and check for call
+    with patch.object(scorer._memory, "add_scores_to_memory", new=MagicMock()) as mock_add_scores:
+        with patch.object(scorer, "_score_value_with_llm", new=AsyncMock(return_value=unvalidated_score)):
+            # Create a request_response object
+            request_response = PromptRequestPiece(role="user", original_value="sample code")
 
-        # Call the score_async method
-        scores = await scorer.score_async(request_response)
+            # Call the score_async method
+            scores = await scorer.score_async(request_response)
 
-        # Assertions
-        assert len(scores) == 1
-        assert isinstance(scores[0], Score)
-        assert scores[0].score_value == "0.8"
-        assert mock_memory.add_request_pieces_to_memory.called
-        assert mock_memory.add_scores_to_memory.called
+            # Assertions
+            assert len(scores) == 1
+            assert isinstance(scores[0], Score)
+            assert scores[0].score_value == "0.8"
+            mock_add_scores.assert_called_once_with(scores=[scores[0]])
 
 
 @pytest.mark.asyncio
-async def test_insecure_code_scorer_invalid_json(mock_chat_target, mock_memory):
+async def test_insecure_code_scorer_invalid_json(mock_chat_target):
     # Initialize the scorer
     scorer = InsecureCodeScorer(
         chat_target=mock_chat_target,
         threshold=0.5,
-        memory=mock_memory,
     )
 
-    # Mock _score_value_with_llm to raise InvalidJsonException
-    with patch.object(
-        scorer, "_score_value_with_llm", new=AsyncMock(side_effect=InvalidJsonException(message="Invalid JSON"))
-    ):
-        request_response = PromptRequestPiece(role="user", original_value="sample code")
+    # Patch scorer._memory.add_scores_to_memory to make it a mock
+    with patch.object(scorer._memory, "add_scores_to_memory", new=MagicMock()) as mock_add_scores:
+        # Mock _score_value_with_llm to raise InvalidJsonException
+        with patch.object(
+            scorer, "_score_value_with_llm", new=AsyncMock(side_effect=InvalidJsonException(message="Invalid JSON"))
+        ):
+            request_response = PromptRequestPiece(role="user", original_value="sample code")
 
-        with pytest.raises(InvalidJsonException, match="Invalid JSON"):
-            await scorer.score_async(request_response)
+            with pytest.raises(InvalidJsonException, match="Invalid JSON"):
+                await scorer.score_async(request_response)
 
-        # Ensure memory functions were not called
-        assert not mock_memory.add_request_pieces_to_memory.called
-        assert not mock_memory.add_scores_to_memory.called
+            # Ensure memory functions were not called
+            mock_add_scores.assert_not_called()
 
 
 def test_insecure_code_scorer_validate():

@@ -28,6 +28,9 @@ def authenticate_user(username, password):
 # Create a PromptRequestPiece to hold the example prompt as if it were an assistant response
 request_piece = PromptRequestPiece(role="assistant", original_value=example_prompt)
 
+# Request piece is added to memory first
+scorer._memory.add_request_pieces_to_memory(request_pieces=[request_piece])
+
 # Run the scorer to evaluate the security of the prompt
 scores = await scorer.score_async(request_piece)  # type: ignore
 

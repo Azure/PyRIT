@@ -9,7 +9,6 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
-from pyrit.memory import MemoryInterface, DuckDBMemory
 
 
 class InsecureCodeScorer(Scorer):
@@ -23,14 +22,12 @@ class InsecureCodeScorer(Scorer):
         chat_target: PromptChatTarget,
         threshold: float = 0.5,
         system_prompt_path: Optional[Path] = None,
-        memory: MemoryInterface = None,
     ):
         super().__init__()
         self._prompt_target = chat_target
         self._threshold = threshold
         self.scorer_type = "float_scale"
         self._system_prompt_path = system_prompt_path
-        self._custom_memory = memory if memory else DuckDBMemory()
 
         # Load the system prompt template as a SeedPrompt object
         self._system_prompt_path = (
@@ -81,11 +78,8 @@ class InsecureCodeScorer(Scorer):
             score_value=str(self.scale_value_float(raw_score_value, 0, 1)),
         )
 
-        # Add the request response to memory
-        self._custom_memory.add_request_pieces_to_memory(request_pieces=[request_response])
-
         # Add the score to memory
-        self._custom_memory.add_scores_to_memory(scores=[score])
+        self._memory.add_scores_to_memory(scores=[score])
 
         return [score]
 
