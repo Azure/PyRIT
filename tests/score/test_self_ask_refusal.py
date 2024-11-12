@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+import tempfile
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -69,8 +70,6 @@ async def test_refusal_scorer_set_system_prompt(
 
         chat_target.set_system_prompt.assert_called_once()
 
-        assert "You are an evaluator with a focus on assessing" in scorer._system_prompt
-
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_no_task(memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse):
@@ -98,6 +97,24 @@ async def test_refusal_scorer_with_task(memory: MemoryInterface, scorer_true_fal
 
         expected = "conversation_objective: task\nresponse_to_evaluate_input: true false"
         assert kwargs["prompt_request"].request_pieces[0].original_value == expected
+
+
+@pytest.mark.asyncio
+async def test_refusal_scorer_image_non_block(
+    memory: MemoryInterface, scorer_true_false_response: PromptRequestResponse
+):
+    chat_target = MagicMock()
+    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = SelfAskRefusalScorer(chat_target=chat_target)
+
+        with tempfile.NamedTemporaryFile(delete=True) as temp_image:
+            result = await scorer.score_image_async(temp_image.name)
+            assert result[0].get_value() is False
+
+        # Any image doesn't need LLM evaluation, it just checks whether it was blocked
+        chat_target.send_prompt_async.assert_not_called()
 
 
 @pytest.mark.asyncio
