@@ -36,6 +36,7 @@ chapters:
       - file: code/orchestrators/fuzzing_jailbreak_templates
       - file: code/orchestrators/harmbench_testing
       - file: code/orchestrators/hf_harmful_dataset_testing
+      - file: code/orchestrators/HITL_Scoring_Orchestrator
       - file: code/orchestrators/many_shot_jailbreak
       - file: code/orchestrators/pair_orchestrator
       - file: code/orchestrators/pku_safe_rlhf_testing
