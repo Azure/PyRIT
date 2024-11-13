@@ -201,5 +201,9 @@ class PromptSendingOrchestrator(Orchestrator):
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
 
+                    # if the piece is retrieved from somewhere else, it needs to be unique
+                    # and if not, this won't hurt anything
+                    piece.id = uuid.uuid4()
+
                 self._memory.add_request_response_to_memory(request=request)
         return conversation_id
