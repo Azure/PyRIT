@@ -74,6 +74,7 @@ chapters:
       - file: code/scoring/4_likert_scorers
       - file: code/scoring/5_human_scorers
       - file: code/scoring/6_refusal_scorer
+      - file: code/scoring/insecure_code_scorer
       - file: code/scoring/prompt_shield_scorer
     - file: code/memory/0_memory
       sections:
