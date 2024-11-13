@@ -46,7 +46,15 @@ from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusabl
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
-from pyrit.prompt_converter.claim_converter import ClaimConverter
+from pyrit.prompt_converter.claim_converter.claim_converter import (
+    ClaimConverter,
+    prompt_openai,
+    classifiers,
+    components,
+    exemplars,
+    config,
+    utils,
+)
 
 
 __all__ = [
@@ -93,11 +101,4 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
-    "ClaimConverter",
-    "prompt_openai",
-    "classifiers",
-    "components",
-    "exemplars",
-    "config",
-    "utils",
 ]

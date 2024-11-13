@@ -417,6 +417,10 @@ if __name__ == "__main__":
     with tqdm(FEW_SHOT_SOURCES) as pbar:
         for name in pbar:
             pbar.set_description(name)
+            dataset_path = Path(args.output_dir, name)
+            if dataset_path.exists():
+                print(f"Dataset {name} already exists. Skipping.")
+                continue
             if name.startswith("glue-"):
                 ds = load_glue(name.split("-")[1], seed=args.seed)
             if name == "entailmentbank":

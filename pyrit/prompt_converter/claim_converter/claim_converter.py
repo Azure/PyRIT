@@ -14,13 +14,15 @@ import asyncio
 import ipywidgets as widgets
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.datasets import fetch_testgenie_dataset
 from pyrit.exceptions.exception_classes import (
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
 )
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, TestGenieDataset
-from pyrit.prompt_converter import PromptConverter, ConverterResult, config, utils, prompt_openai, exemplars, components, classifiers
+from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter.claim_converter import config, utils, prompt_openai, exemplars, components, classifiers
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -28,6 +30,8 @@ logger.setLevel(logging.ERROR)
 
 config_path = pathlib.Path(__file__).parent / '_default.yaml'
 config = config.load_config(config_path)
+
+testgenie_dataset = fetch_testgenie_dataset()
 
 # Define an asyncio event
 checkbox_event = asyncio.Event()

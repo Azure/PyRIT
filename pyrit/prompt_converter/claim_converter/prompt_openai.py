@@ -6,7 +6,7 @@ from openai import OpenAI
 
 client = OpenAI()
 
-from pyrit.prompt_converter.utils import st_cache_data
+from pyrit.prompt_converter.claim_converter.utils import st_cache_data
 # from utils import st_cache_data
 
 

@@ -22,8 +22,8 @@ import transformers
 from transformers import pipeline, AutoTokenizer
 from transformers.generation.stopping_criteria import StoppingCriteria
 
-from pyrit.prompt_converter import prompt_openai, exemplars
-from pyrit.prompt_converter.classifiers import ClaimClassifierCE, ClaimClassifierSF
+from pyrit.prompt_converter.claim_converter import prompt_openai, exemplars
+from pyrit.prompt_converter.claim_converter.classifiers import ClaimClassifierCE, ClaimClassifierSF
 # from prompt_openai import make_prompt, complete_prompt, _OPENAI_MAX_PROMPTS
 # from exemplars import FEW_SHOT_INTERNAL
 

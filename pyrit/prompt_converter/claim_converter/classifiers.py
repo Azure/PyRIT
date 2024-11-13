@@ -14,7 +14,7 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers.models import Transformer, Pooling
 from setfit import SetFitModel, SetFitHead, SetFitTrainer
 
-from pyrit.prompt_converter.utils import st_cache_data
+from pyrit.prompt_converter.claim_converter import utils
 
 class RidgeClassifierCVProb(RidgeClassifierCV):
     def predict_proba(self, X):
@@ -97,7 +97,7 @@ class ClaimClassifierCE(ClaimClassifierBase):
         self.ids = list(self.label2id.values())
         super().__init__(predict_without_fit=predict_without_fit)
 
-    @st_cache_data(show_spinner="Preparing data for classification...")
+    # @st_cache_data(show_spinner="Preparing data for classification...")
     def _prep_data(_self, gen_df, remove_claims_with_homogenous_label=True, rebalance=True):
         """
         Process the annotation dataframe
@@ -114,7 +114,7 @@ class ClaimClassifierCE(ClaimClassifierBase):
         )
         return train_df, test_df
 
-    @st_cache_data(show_spinner="Fitting failure classifier...")
+    # @st_cache_data(show_spinner="Fitting failure classifier...")
     def _fit(_self, train_df):
         self = _self
         if len(train_df) > 0: # do not fit if no labels
@@ -126,7 +126,7 @@ class ClaimClassifierCE(ClaimClassifierBase):
             self._is_fitted = True
             self._fit_counter += 1
 
-    @st_cache_data(show_spinner="Predicting likely failures...")
+    # @st_cache_data(show_spinner="Predicting likely failures...")
     def _predict(_self, test_df, fit_counter=None):
         self = _self
         test_ce_p = test_df[self.labels].values
@@ -197,7 +197,7 @@ class ClaimClassifierSF(ClaimClassifierBase):
         else:
             self.sent_sep = "[SEP]"
 
-    @st_cache_data(show_spinner=False)
+    # @st_cache_data(show_spinner=False)
     def _prep_data(_self, gen_df, remove_claims_with_homogenous_label=True, rebalance=True):
         """
         Process the annotation dataframe,
@@ -215,7 +215,7 @@ class ClaimClassifierSF(ClaimClassifierBase):
         )
         return train_df, test_df
 
-    @st_cache_data(show_spinner="Fitting failure classifier...")
+    # @st_cache_data(show_spinner="Fitting failure classifier...")
     def _fit(_self, train_df):
         """`train_df` is a `pd.DataFrame`. `fit_counter` used to trigger memoization"""
         self = _self
@@ -250,7 +250,7 @@ class ClaimClassifierSF(ClaimClassifierBase):
         self._is_fitted = True
         self._fit_counter += 1
 
-    @st_cache_data(show_spinner="Predicting likely failures...")
+    # @st_cache_data(show_spinner="Predicting likely failures...")
     def _predict(_self, test_df, fit_counter=None):
         """`test_df` is a `pd.DataFrame`. `fit_counter` used to trigger memoization"""
         self = _self
