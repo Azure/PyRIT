@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Many-Shot Jailbreaking
+# # Many-Shot Jailbreaking - optional
 #
 # This notebook demonstrates the process of many-shot jailbreaking.
 # It includes using a faux dialogue between a human and an AI assistant within a single prompt for the LLM.

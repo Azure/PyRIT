@@ -27,7 +27,7 @@ class OpenAICompletionTarget(OpenAITarget):
     ):
         """
         Args:
-            max_tokens (int, optional): The maximum number of tokens that can be generated in the
+            max_tokens (int, Optional): The maximum number of tokens that can be generated in the
               completion. The token count of your prompt plus `max_tokens` cannot exceed the model's
               context length.
         """

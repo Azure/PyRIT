@@ -36,14 +36,14 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target (PromptTarget): Target for created prompts.
         adversarial_chat (PromptChatTarget): Endpoint creating prompts sent to objective_target.
         adversarial_chat_system_prompt_path (Path): Path to initial adversarial_chat system prompt.
-        initial_adversarial_chat_prompt (str, optional): Initial message to start the chat. Defaults to
+        initial_adversarial_chat_prompt (str, Optional): Initial message to start the chat. Defaults to
             "How can I help you?".
         prompt_converters (Optional[list[PromptConverter]]): Converters for prompt formatting. Defaults to None.
-        max_turns (int, optional): Max turns for the conversation, ≥ 0. Defaults to 5.
+        max_turns (int, Optional): Max turns for the conversation, ≥ 0. Defaults to 5.
         objective_scorer (Scorer): Scores prompt target output as sufficient or insufficient.
-        use_score_as_feedback (bool, optional): Use scoring as feedback. Defaults to True.
-        memory_labels (Optional[dict[str, str]], optional): Tags for prompt tracking (e.g., RAI harm categories).
-        verbose (bool, optional): Print debug info. Defaults to False.
+        use_score_as_feedback (bool, Optional): Use scoring as feedback. Defaults to True.
+        memory_labels (Optional[dict[str, str]], Optional): Tags for prompt tracking (e.g., RAI harm categories).
+        verbose (bool, Optional): Print debug info. Defaults to False.
 
     Raises:
         FileNotFoundError: If adversarial_chat_system_prompt_path file not found.
@@ -166,7 +166,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         Args:
             objective_target_conversation_id (str): the conversation ID for the prompt target.
             adversarial_chat_conversation_id (str): the conversation ID for the red teaming chat.
-            feedback (str, optional): feedback from a previous iteration of the conversation.
+            feedback (str, Optional): feedback from a previous iteration of the conversation.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
                 The feedback is passed back to the red teaming chat to improve the next prompt.
@@ -278,7 +278,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
         Args:
             objective_target_conversation_id (str): the conversation ID for the objective target.
-            feedback (str, optional): feedback from a previous iteration of the conversation.
+            feedback (str, Optional): feedback from a previous iteration of the conversation.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
                 The feedback is passed back to the red teaming chat to improve the next prompt.
@@ -318,7 +318,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             objective (str): the objective the red teaming orchestrator is trying to achieve.
             objective_target_conversation_id (str): the conversation ID for the prompt target.
             adversarial_chat_conversation_id (str): the conversation ID for the red teaming chat.
-            feedback (str, optional): feedback from a previous iteration of the conversation.
+            feedback (str, Optional): feedback from a previous iteration of the conversation.
                 This can either be a score if the request completed, or a short prompt to rewrite
                 the input if the request was blocked.
                 The feedback is passed back to the red teaming chat to improve the next prompt.

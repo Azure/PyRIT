@@ -1,5 +1,5 @@
 # %% [markdown]
-# # TDC-23 Red Teaming Dataset
+# # TDC-23 Red Teaming Dataset - optional
 #
 # This notebook demonstrates the process of using examples from the TDC-23 Red Teaming dataset to perform AI red teaming on a target language model (LLM).
 # It involves fetching potentially harmful behavior prompts from the HugginFace source, sending them to the LLM, and analyzing the responses.

@@ -48,7 +48,7 @@ class XPIAOrchestrator(Orchestrator):
             scorer: The scorer to use to score the processing response. This is optional.
                 If no scorer is provided the orchestrator will skip scoring.
             prompt_converters: The converters to apply to the attack content before sending it to the prompt target.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
@@ -137,7 +137,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
             attack_setup_target: The target that generates the attack prompt and gets it into the attack location.
             scorer: The scorer to use to score the processing response.
             prompt_converters: The converters to apply to the attack content before sending it to the prompt target.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.

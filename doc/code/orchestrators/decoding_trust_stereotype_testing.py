@@ -1,5 +1,5 @@
 # %% [markdown]
-# # DecodingTrust Stereotypes dataset testing
+# # DecodingTrust Stereotypes dataset testing - optional
 #
 # 'Stereotypes' are one of eight primary perspectives of trustworthiness, detailed by DecodingTrust here:
 # https://decodingtrust.github.io/

@@ -38,7 +38,7 @@ class MemoryExporter:
             data (Union[List[Base], List[Dict]]): The data to be exported, typically a list of SQLAlchemy
               model instances or as a list of dictionaries.
             file_path (str): The full path, including the file name, where the data will be exported.
-            export_type (str, optional): The format for exporting data. Defaults to "json".
+            export_type (str, Optional): The format for exporting data. Defaults to "json".
 
         Raises:
             ValueError: If no file_path is provided or if the specified export format is not supported.

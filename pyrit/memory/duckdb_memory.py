@@ -256,7 +256,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
-            conditions: SQLAlchemy filter conditions (optional).
+            conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (default is False).
 
         Returns:

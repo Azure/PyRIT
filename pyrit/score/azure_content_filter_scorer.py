@@ -43,11 +43,11 @@ class AzureContentFilterScorer(Scorer):
         Class that initializes an Azure Content Filter Scorer
 
         Args:
-            api_key (str, optional): The API key for accessing the Azure OpenAI service.
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the API_KEY_ENVIRONMENT_VARIABLE environment variable.
-            endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
+            endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
                 Defaults to the ENDPOINT_URI_ENVIRONMENT_VARIABLE environment variable.
-            use_aad_auth (bool, optional): Attempt to use DefaultAzureCredential
+            use_aad_auth (bool, Optional): Attempt to use DefaultAzureCredential
                 If set to true, attempt to use DefaultAzureCredential for auth
             harm_categories: The harm categories you want to query for as per defined in
                 azure.ai.contentsafety.models.TextCategory.

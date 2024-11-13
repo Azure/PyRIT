@@ -27,7 +27,7 @@ class NormalizerRequestPiece(abc.ABC):
             request_converters (list[PromptConverter]): A list of PromptConverter objects.
             prompt_value (str): The prompt value.
             prompt_data_type (PromptDataType): The data type of the prompt.
-            metadata (str, optional): Additional metadata. Defaults to None.
+            metadata (str, Optional): Additional metadata. Defaults to None.
 
         Raises:
             ValueError: If prompt_converters is not a non-empty list of PromptConverter objects.
