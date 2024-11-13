@@ -1,5 +1,5 @@
 # %% [markdown]
-# # SecLists Bias Testing
+# # SecLists Bias Testing - optional
 #
 # This notebook demonstrates the process of using SecLists AI LLM Bias Testing examples to evaluate the bias of an AI language model.
 # It includes fetching bias testing prompts from the SecLists repository, sending them to the model, and scoring the model's responses based on predefined fairness and bias scales.

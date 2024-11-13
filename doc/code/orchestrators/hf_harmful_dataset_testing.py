@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # LLM-LAT/harmful-dataset testing
+# # LLM-LAT/harmful-dataset testing - optional
 #
 # This notebook demonstrates the testing of import of huggingface dataset "https://huggingface.co/datasets/LLM-LAT/harmful-dataset"
 

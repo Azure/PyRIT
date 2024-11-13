@@ -122,7 +122,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
-            conditions: SQLAlchemy filter conditions (optional).
+            conditions: SQLAlchemy filter conditions (Optional).
             distinct: Whether to return distinct rows only. Defaults to False.
 
         Returns:
@@ -321,7 +321,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_orchestrator_id (str, optional): The new orchestrator ID to assign to the duplicated conversations.
+            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
                 If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
@@ -687,14 +687,14 @@ class MemoryInterface(abc.ABC):
         """Retrieves groups of seed prompts based on the provided filtering criteria._summary_
 
         Args:
-            dataset_name (Optional[str], optional): Name of the dataset to filter seed prompts.
-            data_types (Optional[Sequence[str]], optional): List of data types to filter seed prompts by
+            dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
+            data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
-            harm_categories (Optional[Sequence[str]], optional): List of harm categories to filter seed prompts by.
-            added_by (Optional[str], optional): The user who added the seed prompt groups to filter by.
-            authors (Optional[Sequence[str]], optional): List of authors to filter seed prompt groups by.
-            groups (Optional[Sequence[str]], optional): List of groups to filter seed prompt groups by.
-            source (Optional[str], optional): The source from which the seed prompts originated.
+            harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
+            added_by (Optional[str], Optional): The user who added the seed prompt groups to filter by.
+            authors (Optional[Sequence[str]], Optional): List of authors to filter seed prompt groups by.
+            groups (Optional[Sequence[str]], Optional): List of groups to filter seed prompt groups by.
+            source (Optional[str], Optional): The source from which the seed prompts originated.
 
         Returns:
             list[SeedPromptGroup]: A list of `SeedPromptGroup` objects that match the filtering criteria.

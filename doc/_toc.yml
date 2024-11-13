@@ -19,14 +19,14 @@ chapters:
   - file: code/architecture
   - file: code/user_guide
     sections:
-    - file: code/orchestrators/1_orchestrator
+    - file: code/orchestrators/0_orchestrator
       sections:
-      - file: code/orchestrators/2_prompt_sending_orchestrator
-      - file: code/orchestrators/3_red_teaming_orchestrator
-      - file: code/orchestrators/4_xpia_orchestrator
-      - file: code/orchestrators/5_scoring_orchestrator
-      - file: code/orchestrators/6_crescendo_orchestrator
-      - file: code/orchestrators/7_skeleton_key_attack
+      - file: code/orchestrators/1_prompt_sending_orchestrator
+      - file: code/orchestrators/2_red_teaming_orchestrator
+      - file: code/orchestrators/3_xpia_orchestrator
+      - file: code/orchestrators/4_scoring_orchestrator
+      - file: code/orchestrators/5_crescendo_orchestrator
+      - file: code/orchestrators/6_skeleton_key_attack
       - file: code/orchestrators/advbench_prompt_sending_orchestrator
       - file: code/orchestrators/benchmark_orchestrator
       - file: code/orchestrators/decoding_trust_stereotype_testing
@@ -36,6 +36,7 @@ chapters:
       - file: code/orchestrators/fuzzing_jailbreak_templates
       - file: code/orchestrators/harmbench_testing
       - file: code/orchestrators/hf_harmful_dataset_testing
+      - file: code/orchestrators/HITL_Scoring_Orchestrator
       - file: code/orchestrators/many_shot_jailbreak
       - file: code/orchestrators/pair_orchestrator
       - file: code/orchestrators/pku_safe_rlhf_testing
@@ -44,35 +45,36 @@ chapters:
       - file: code/orchestrators/use_huggingface_chat_target
       - file: code/orchestrators/violent_durian
       - file: code/orchestrators/xstest_bias_testing
-    - file: code/targets/1_prompt_targets
+    - file: code/targets/0_prompt_targets
       sections:
-      - file: code/targets/2_openai_chat_target
-      - file: code/targets/3_custom_targets
-      - file: code/targets/4_non_open_ai_chat_targets
-      - file: code/targets/5_non_llm_targets
-      - file: code/targets/6_multi_modal_targets
-      - file: code/targets/7_rate_limiting
-      - file: code/targets/8_http_target
+      - file: code/targets/1_openai_chat_target
+      - file: code/targets/2_custom_targets
+      - file: code/targets/3_non_open_ai_chat_targets
+      - file: code/targets/4_non_llm_targets
+      - file: code/targets/5_multi_modal_targets
+      - file: code/targets/6_rate_limiting
+      - file: code/targets/7_http_target
       - file: code/targets/open_ai_completions
       - file: code/targets/prompt_shield_target
-    - file: code/converters/1_converters
+    - file: code/converters/0_converters
       sections:
-        - file: code/converters/2_llm_converters
-        - file: code/converters/3_using_converters
-        - file: code/converters/4_audio_converters
-        - file: code/converters/5_image_converters
-        - file: code/converters/6_selectively_converting
-        - file: code/converters/7_human_converter
+        - file: code/converters/1_llm_converters
+        - file: code/converters/2_using_converters
+        - file: code/converters/3_audio_converters
+        - file: code/converters/4_image_converters
+        - file: code/converters/5_selectively_converting
+        - file: code/converters/6_human_converter
         - file: code/converters/char_swap_attack_generator
         - file: code/converters/math_prompt_converter
-    - file: code/scoring/1_scoring
+    - file: code/scoring/0_scoring
       sections:
-      - file: code/scoring/2_azure_content_safety_scorers
-      - file: code/scoring/3_true_false_scorers
-      - file: code/scoring/4_classification_scorers
-      - file: code/scoring/5_likert_scorers
-      - file: code/scoring/6_human_scorers
-      - file: code/scoring/7_refusal_scorer
+      - file: code/scoring/1_azure_content_safety_scorers
+      - file: code/scoring/2_true_false_scorers
+      - file: code/scoring/3_classification_scorers
+      - file: code/scoring/4_likert_scorers
+      - file: code/scoring/5_human_scorers
+      - file: code/scoring/6_refusal_scorer
+      - file: code/scoring/insecure_code_scorer
       - file: code/scoring/prompt_shield_scorer
     - file: code/memory/0_memory
       sections:
@@ -87,9 +89,9 @@ chapters:
       - file: code/memory/9_exporting_data
       - file: code/memory/azure_embeddings
       - file: code/memory/chat_message
-    - file: code/auxiliary_attacks/1_auxiliary_attacks
+    - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
-      - file: code/auxiliary_attacks/2_gcg_azure_ml
+      - file: code/auxiliary_attacks/1_gcg_azure_ml
     - file: deployment/README
       sections:
       - file: deployment/deploy_hf_model_aml

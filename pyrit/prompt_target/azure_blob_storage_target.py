@@ -38,7 +38,7 @@ class AzureBlobStorageTarget(PromptTarget):
             delegation SAS token will be created using Entra ID authentication.
         blob_content_type (SupportedContentType): Expected Content Type of the blob, chosen from the
             SupportedContentType enum. Set to PLAIN_TEXT by default.
-        max_requests_per_minute (int, optional): Number of requests the target can handle per
+        max_requests_per_minute (int, Optional): Number of requests the target can handle per
             minute before hitting a rate limit. The number of requests sent to the target
             will be capped at the value provided.
     """
