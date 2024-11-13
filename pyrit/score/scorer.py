@@ -8,12 +8,11 @@ from typing import Optional, Sequence
 import uuid
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.models.literals import PromptDataType
-from pyrit.prompt_target.prompt_chat_target.prompt_chat_target import PromptChatTarget
+from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.models import PromptDataType, PromptRequestResponse, PromptRequestPiece
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.models import ScoreType, Score, UnvalidatedScore
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, CentralMemory
 
 
 class Scorer(abc.ABC):
@@ -22,7 +21,10 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
-    _memory: Optional[MemoryInterface]
+
+    @property
+    def _memory(self) -> MemoryInterface:
+        return CentralMemory.get_memory_instance()
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
@@ -194,6 +196,7 @@ class Scorer(abc.ABC):
                     role="user",
                     original_value=prompt_request_value,
                     original_value_data_type=prompt_request_data_type,
+                    converted_value_data_type=prompt_request_data_type,
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                 )
@@ -204,6 +207,8 @@ class Scorer(abc.ABC):
 
         try:
             response_json = response.request_pieces[0].converted_value
+
+            response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
 
             category_response = parsed_response.get("category")

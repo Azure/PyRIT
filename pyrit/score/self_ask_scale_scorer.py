@@ -7,12 +7,10 @@ import enum
 from pathlib import Path
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models.score import UnvalidatedScore
-from pyrit.score import Score, Scorer
-from pyrit.models import PromptRequestPiece, PromptTemplate
-from pyrit.prompt_target import PromptChatTarget
 from pyrit.common.path import SCALES_PATH
+from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.score.scorer import Scorer
 
 
 class SelfAskScaleScorer(Scorer):
@@ -34,15 +32,9 @@ class SelfAskScaleScorer(Scorer):
         chat_target: PromptChatTarget,
         scale_arguments_path: Optional[Path],
         system_prompt_path: Optional[Path],
-        memory: MemoryInterface = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "float_scale"
-
-        self._memory = memory if memory else DuckDBMemory()
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
 
         if not system_prompt_path:
             system_prompt_path = self.SystemPaths.GENERAL_SYSTEM_PROMPT.value
@@ -58,9 +50,9 @@ class SelfAskScaleScorer(Scorer):
         self._maximum_value = scale_args["maximum_value"]
         self._category = scale_args["category"]
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(system_prompt_path)
+        scoring_instructions_template = SeedPrompt.from_yaml_file(system_prompt_path)
 
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(**scale_args)
+        self._system_prompt = scoring_instructions_template.render_template_value(**scale_args)
 
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """

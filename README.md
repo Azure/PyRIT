@@ -35,7 +35,7 @@ protect against prompt injection attacks.
 Microsoft Learn has a
 [dedicated page on AI Red Teaming](https://learn.microsoft.com/en-us/security/ai-red-team).
 
-Check out our [docs](https://github.com/Azure/PyRIT/blob/main/doc/README.md) for more information
+Check out our [docs](https://github.com/Azure/PyRIT/blob/main/doc/index.md) for more information
 on how to [install PyRIT](https://github.com/Azure/PyRIT/blob/main/doc/setup/install_pyrit.md),
 our [How to Guide](https://github.com/Azure/PyRIT/blob/main/doc/how_to_guide.ipynb),
 and more, as well as our [demos](https://github.com/Azure/PyRIT/tree/main/doc/code).
@@ -49,3 +49,21 @@ Use of Microsoft trademarks or logos in modified versions of this project must
 not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's
 policies.
+
+## Citing PyRIT
+
+If you use PyRIT in your research, please cite our preprint paper as follows:
+
+```
+@misc{munoz2024pyritframeworksecurityrisk,
+      title={PyRIT: A Framework for Security Risk Identification and Red Teaming in Generative AI Systems},
+      author={Gary D. Lopez Munoz and Amanda J. Minnich and Roman Lutz and Richard Lundeen and Raja Sekhar Rao Dheekonda and Nina Chikanov and Bolor-Erdene Jagdagdorj and Martin Pouliot and Shiven Chawla and Whitney Maxwell and Blake Bullwinkel and Katherine Pratt and Joris de Gruyter and Charlotte Siska and Pete Bryan and Tori Westerhoff and Chang Kawaguchi and Christian Seifert and Ram Shankar Siva Kumar and Yonatan Zunger},
+      year={2024},
+      eprint={2410.02828},
+      archivePrefix={arXiv},
+      primaryClass={cs.CR},
+      url={https://arxiv.org/abs/2410.02828},
+}
+```
+
+Additionally, please cite the tool itself following the `CITATION.cff` file in the root of this repository.

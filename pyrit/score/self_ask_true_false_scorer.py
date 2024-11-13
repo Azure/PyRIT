@@ -2,16 +2,16 @@
 # Licensed under the MIT license.
 
 import enum
-from typing import Dict, Optional
+from typing import Optional
 import yaml
 
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestPiece, PromptTemplate
+from pyrit.models import PromptRequestPiece, SeedPrompt
+from pyrit.models.score import UnvalidatedScore, Score
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import Score, Scorer, UnvalidatedScore
+from pyrit.score.scorer import Scorer
 
 TRUE_FALSE_QUESTIONS_PATH = Path(DATASETS_PATH, "score", "true_false_question").resolve()
 
@@ -24,6 +24,38 @@ class TrueFalseQuestionPaths(enum.Enum):
     GANDALF = Path(TRUE_FALSE_QUESTIONS_PATH, "gandalf.yaml").resolve()
 
 
+class TrueFalseQuestion:
+    """
+    A class that represents a true/false question.
+
+    This is sent to an LLM and can be used as an alternative to a yaml file from TrueFalseQuestionPaths.
+    """
+
+    def __init__(
+        self, *, true_description: str, false_description: str = "", category: str = "", metadata: Optional[str] = ""
+    ):
+        self.true_description = true_description
+
+        self.false_description = (
+            false_description or "Anything that does not fulfill or is not related to the true description."
+        )
+
+        self.category = category
+        self.metadata = metadata
+
+        self._keys = ["category", "true_description", "false_description"]
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def __iter__(self):
+        # Define which keys should be included when iterating
+        return iter(self._keys)
+
+
 class SelfAskTrueFalseScorer(Scorer):
     """A class that represents a self-ask true/false for scoring."""
 
@@ -32,35 +64,28 @@ class SelfAskTrueFalseScorer(Scorer):
         *,
         chat_target: PromptChatTarget,
         true_false_question_path: Optional[Path] = None,
-        true_false_question_contents: Optional[Dict[str, str]] = None,
+        true_false_question: Optional[TrueFalseQuestion] = None,
         true_false_system_prompt_path: Optional[Path] = None,
-        memory: MemoryInterface = None,
     ) -> None:
         self._prompt_target = chat_target
         self.scorer_type = "true_false"
 
-        self._memory = memory if memory else DuckDBMemory()
-
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
-
-        if not true_false_question_path and not true_false_question_contents:
-            raise ValueError("Either true_false_question_path or true_false_question_contents must be provided.")
-        if true_false_question_path and true_false_question_contents:
-            raise ValueError("Only one of true_false_question_path or true_false_question_contents should be provided.")
+        if not true_false_question_path and not true_false_question:
+            raise ValueError("Either true_false_question_path or true_false_question must be provided.")
+        if true_false_question_path and true_false_question:
+            raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
         if true_false_question_path:
-            true_false_question_contents = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
+            true_false_question = yaml.safe_load(true_false_question_path.read_text(encoding="utf-8"))
 
         for key in ["category", "true_description", "false_description"]:
-            if key not in true_false_question_contents:
-                raise ValueError(f"{key} must be provided in true_false_question_contents.")
+            if key not in true_false_question:
+                raise ValueError(f"{key} must be provided in true_false_question.")
 
-        self._score_category = true_false_question_contents["category"]
-        true_category = true_false_question_contents["true_description"]
-        false_category = true_false_question_contents["false_description"]
+        self._score_category = true_false_question["category"]
+        true_category = true_false_question["true_description"]
+        false_category = true_false_question["false_description"]
 
-        metadata = true_false_question_contents["metadata"] if "metadata" in true_false_question_contents else ""
+        metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""
 
         true_false_system_prompt_path = (
             true_false_system_prompt_path
@@ -68,9 +93,9 @@ class SelfAskTrueFalseScorer(Scorer):
             else TRUE_FALSE_QUESTIONS_PATH / "true_false_system_prompt.yaml"
         )
 
-        scoring_instructions_template = PromptTemplate.from_yaml_file(true_false_system_prompt_path)
+        scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt_path)
 
-        self._system_prompt = scoring_instructions_template.apply_custom_metaprompt_parameters(
+        self._system_prompt = scoring_instructions_template.render_template_value(
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 

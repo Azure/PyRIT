@@ -26,15 +26,6 @@ class ChatMessage(BaseModel):
     tool_call_id: Optional[str] = None
 
 
-class ChatMessageListContent(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    role: ChatMessageRole
-    content: list[dict[str, str]]
-    name: Optional[str] = None
-    tool_calls: Optional[list[ToolCall]] = None
-    tool_call_id: Optional[str] = None
-
-
 class ChatMessageListDictContent(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: ChatMessageRole
@@ -48,7 +39,7 @@ class ChatMessagesDataset(BaseModel):
     """
     Represents a dataset of chat messages.
 
-    Attributes:
+    Parameters:
         model_config (ConfigDict): The model configuration.
         name (str): The name of the dataset.
         description (str): The description of the dataset.

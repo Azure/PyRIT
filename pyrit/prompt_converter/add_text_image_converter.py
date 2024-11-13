@@ -13,7 +13,6 @@ from io import BytesIO
 from pyrit.models import data_serializer_factory
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.memory import MemoryInterface, DuckDBMemory
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,6 @@ class AddTextImageConverter(PromptConverter):
         font_size (float, optional): Size of font to use. Defaults to 15.
         x_pos (int, optional): X coordinate to place text in (0 is left most). Defaults to 10.
         y_pos (int, optional): Y coordinate to place text in (0 is upper most). Defaults to 10.
-        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     def __init__(
@@ -40,7 +38,6 @@ class AddTextImageConverter(PromptConverter):
         font_size: Optional[int] = 15,
         x_pos: Optional[int] = 10,
         y_pos: Optional[int] = 10,
-        memory: Optional[MemoryInterface] = None,
     ):
         if text_to_add.strip() == "":
             raise ValueError("Please provide valid text_to_add value")
@@ -53,7 +50,6 @@ class AddTextImageConverter(PromptConverter):
         self._color = color
         self._x_pos = x_pos
         self._y_pos = y_pos
-        self._memory = memory or DuckDBMemory()
 
     def _load_font(self):
         """
@@ -100,7 +96,7 @@ class AddTextImageConverter(PromptConverter):
         wrapped_text = textwrap.fill(self._text_to_add, width=max_chars_per_line)
 
         # Add wrapped text to image
-        y_offset = self._y_pos
+        y_offset = float(self._y_pos)
         for line in wrapped_text.split("\n"):
             draw.text((self._x_pos, y_offset), line, font=self._font, fill=self._color)
             bbox = draw.textbbox((self._x_pos, y_offset), line, font=self._font)
@@ -114,7 +110,7 @@ class AddTextImageConverter(PromptConverter):
         Converter that adds text to an image
 
         Args:
-            prompt (str): The prompt to be added to the image.
+            prompt (str): The filename of the image to add the text to
             input_type (PromptDataType): type of data
         Returns:
             ConverterResult: The filename of the converted image as a ConverterResult Object
@@ -122,7 +118,7 @@ class AddTextImageConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        img_serializer = data_serializer_factory(value=prompt, data_type="image_path", memory=self._memory)
+        img_serializer = data_serializer_factory(value=prompt, data_type="image_path")
 
         # Open the image
         original_img_bytes = await img_serializer.read_data()

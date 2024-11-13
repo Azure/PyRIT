@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from asyncio import Task
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
-from pyrit.prompt_target.hugging_face_chat_target import HuggingFaceChatTarget
+from pyrit.prompt_target import HuggingFaceChatTarget
 from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
 
 
@@ -13,7 +14,8 @@ from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRe
 def mock_get_required_value(request):
     if request.node.name != "test_init_with_no_token_var_raises":
         with patch(
-            "pyrit.prompt_target.hugging_face_chat_target.default_values.get_required_value", return_value="dummy_token"
+            "pyrit.prompt_target.hugging_face.hugging_face_chat_target.default_values.get_required_value",
+            return_value="dummy_token",
         ):
             yield
     else:
@@ -21,12 +23,10 @@ def mock_get_required_value(request):
         yield
 
 
-# Fixture to mock download_specific_files_with_aria2 globally for all tests
+# Fixture to mock download_specific_files globally for all tests
 @pytest.fixture(autouse=True)
-def mock_download_specific_files_with_aria2():
-    with patch(
-        "pyrit.common.download_hf_model_with_aria2.download_specific_files_with_aria2", return_value=None
-    ) as mock_download:
+def mock_download_specific_files():
+    with patch("pyrit.common.download_hf_model.download_specific_files", return_value=None) as mock_download:
         yield mock_download
 
 
@@ -72,6 +72,17 @@ def mock_pretrained_config():
         yield
 
 
+class AwaitableMock(AsyncMock):
+    def __await__(self):
+        return iter([])
+
+
+@pytest.fixture(autouse=True)
+def mock_create_task():
+    with patch("asyncio.create_task", return_value=AwaitableMock(spec=Task)):
+        yield
+
+
 def test_init_with_no_token_var_raises(monkeypatch):
     # Ensure the environment variable is unset
     monkeypatch.delenv("HUGGINGFACE_TOKEN", raising=False)
@@ -82,12 +93,15 @@ def test_init_with_no_token_var_raises(monkeypatch):
     assert "Environment variable HUGGINGFACE_TOKEN is required" in str(excinfo.value)
 
 
-def test_initialization():
+@pytest.mark.asyncio
+async def test_initialization():
     # Test the initialization without loading the actual models
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
     assert hf_chat.model_id == "test_model"
     assert not hf_chat.use_cuda
     assert hf_chat.device == "cpu"
+
+    await hf_chat.load_model_and_tokenizer()
     assert hf_chat.model is not None
     assert hf_chat.tokenizer is not None
 
@@ -105,8 +119,10 @@ def test_is_model_id_valid_false():
         assert not hf_chat.is_model_id_valid()
 
 
-def test_load_model_and_tokenizer():
+@pytest.mark.asyncio
+async def test_load_model_and_tokenizer():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+    await hf_chat.load_model_and_tokenizer()
     assert hf_chat.model is not None
     assert hf_chat.tokenizer is not None
 
@@ -114,6 +130,7 @@ def test_load_model_and_tokenizer():
 @pytest.mark.asyncio
 async def test_send_prompt_async():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+    await hf_chat.load_model_and_tokenizer()
 
     request_piece = PromptRequestPiece(
         role="user",
@@ -133,6 +150,7 @@ async def test_send_prompt_async():
 @pytest.mark.asyncio
 async def test_missing_chat_template_error():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
+    await hf_chat.load_model_and_tokenizer()
     hf_chat.tokenizer.chat_template = None
 
     request_piece = PromptRequestPiece(
@@ -168,8 +186,11 @@ def test_invalid_prompt_request_validation():
     assert "This target only supports a single prompt request piece." in str(excinfo.value)
 
 
-def test_load_with_missing_files():
+@pytest.mark.asyncio
+async def test_load_with_missing_files():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False, necessary_files=["file1", "file2"])
+    await hf_chat.load_model_and_tokenizer()
+
     assert hf_chat.model is not None
     assert hf_chat.tokenizer is not None
 

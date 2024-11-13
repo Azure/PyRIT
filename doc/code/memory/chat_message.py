@@ -10,11 +10,11 @@
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
-#     name: pyrit-311
+#     name: python3
 # ---
 
 # %% [markdown]
-# ### Introduction
+# # Chat messages
 #
 # This notebook gives an introduction to the concept of `ChatMessage` and `ChatMessageNormalizer` and how it can be helpful as you start to work with different models.
 #

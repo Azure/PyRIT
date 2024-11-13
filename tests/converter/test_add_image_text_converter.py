@@ -2,10 +2,15 @@
 # Licensed under the MIT license.
 
 
+from typing import Generator
+from unittest.mock import patch
 import pytest
 import os
 
+from pyrit.memory.central_memory import CentralMemory
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.prompt_converter import AddImageTextConverter, AddTextImageConverter
+from tests.mocks import get_memory_interface
 
 from PIL import Image, ImageFont
 
@@ -15,6 +20,11 @@ def image_text_converter_sample_image():
     img = Image.new("RGB", (100, 100), color=(125, 125, 125))
     img.save("test.png")
     return "test.png"
+
+
+@pytest.fixture
+def memory_interface() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
 
 
 def test_add_image_text_converter_initialization(image_text_converter_sample_image):
@@ -95,15 +105,19 @@ async def test_add_image_text_converter_invalid_file_path():
 
 
 @pytest.mark.asyncio
-async def test_add_image_text_converter_convert_async(image_text_converter_sample_image) -> None:
-    converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
-    converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
-    assert converted_image
-    assert converted_image.output_text
-    assert converted_image.output_type == "image_path"
-    assert os.path.exists(converted_image.output_text)
-    os.remove(converted_image.output_text)
-    os.remove("test.png")
+async def test_add_image_text_converter_convert_async(
+    image_text_converter_sample_image, memory_interface: MemoryInterface
+) -> None:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+
+        converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
+        converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
+        assert converted_image
+        assert converted_image.output_text
+        assert converted_image.output_type == "image_path"
+        assert os.path.exists(converted_image.output_text)
+        os.remove(converted_image.output_text)
+        os.remove("test.png")
 
 
 def test_text_image_converter_input_supported(image_text_converter_sample_image):
@@ -113,14 +127,17 @@ def test_text_image_converter_input_supported(image_text_converter_sample_image)
 
 
 @pytest.mark.asyncio
-async def test_add_image_text_converter_equal_to_add_text_image(image_text_converter_sample_image) -> None:
-    converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
-    converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
-    text_image_converter = AddTextImageConverter(text_to_add="Sample Text!")
-    converted_text_image = await text_image_converter.convert_async(prompt="test.png", input_type="image_path")
-    pixels_image_text = list(Image.open(converted_image.output_text).getdata())
-    pixels_text_image = list(Image.open(converted_text_image.output_text).getdata())
-    assert pixels_image_text == pixels_text_image
-    os.remove(converted_image.output_text)
-    os.remove("test.png")
-    os.remove(converted_text_image.output_text)
+async def test_add_image_text_converter_equal_to_add_text_image(
+    image_text_converter_sample_image, memory_interface: MemoryInterface
+) -> None:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
+        converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
+        text_image_converter = AddTextImageConverter(text_to_add="Sample Text!")
+        converted_text_image = await text_image_converter.convert_async(prompt="test.png", input_type="image_path")
+        pixels_image_text = list(Image.open(converted_image.output_text).getdata())
+        pixels_text_image = list(Image.open(converted_text_image.output_text).getdata())
+        assert pixels_image_text == pixels_text_image
+        os.remove(converted_image.output_text)
+        os.remove("test.png")
+        os.remove(converted_text_image.output_text)

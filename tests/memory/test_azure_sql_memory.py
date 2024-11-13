@@ -42,7 +42,7 @@ async def test_insert_entry(memory_interface):
         original_value="Hello",
         converted_value="Hello",
     )
-    await prompt_request_piece.compute_sha256(memory_interface)
+    await prompt_request_piece.compute_sha256()
     entry = PromptMemoryEntry(entry=prompt_request_piece)
 
     # Now, get a new session to query the database and verify the entry was inserted
@@ -280,3 +280,126 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
         # Compare the SQL text and the bound parameters
         assert str(actual_sql_condition) == str(expected_sql_condition)
         assert actual_sql_condition.compile().params == expected_sql_condition.compile().params
+
+
+def test_update_entries(memory_interface: AzureSQLMemory):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Fetch the entry to update and update its content
+    entries_to_update = memory_interface.query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
+    )
+    memory_interface.update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
+
+    # Verify the entry was updated
+    with memory_interface.get_session() as session:  # type: ignore
+        updated_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
+        assert updated_entry.original_value == "Updated Hello"
+
+
+def test_update_entries_empty_update_fields(memory_interface: AzureSQLMemory):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Fetch the entry to update and update its content
+    entries_to_update = memory_interface.query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
+    )
+    with pytest.raises(ValueError):
+        memory_interface.update_entries(entries=entries_to_update, update_fields={})
+
+
+def test_update_entries_nonexistent_fields(memory_interface):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Fetch the entry to update and update its content
+    entries_to_update = memory_interface.query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
+    )
+    with pytest.raises(ValueError):
+        memory_interface.update_entries(
+            entries=entries_to_update, update_fields={"original_value": "Updated", "nonexistent_field": "Updated Hello"}
+        )
+
+
+def test_update_prompt_entries_by_conversation_id(memory_interface: AzureSQLMemory, sample_conversation_entries):
+    specific_conversation_id = "update_test_id"
+
+    for entry in sample_conversation_entries:
+        entry.conversation_id = specific_conversation_id
+
+    memory_interface.insert_entries(entries=sample_conversation_entries)
+
+    # Update the entry using the update_prompt_entries_by_conversation_id method
+    update_result = memory_interface.update_prompt_entries_by_conversation_id(
+        conversation_id=specific_conversation_id, update_fields={"original_value": "Updated Hello", "role": "assistant"}
+    )
+
+    assert update_result is True
+
+    # Verify the entry was updated
+    with memory_interface.get_session() as session:  # type: ignore
+        updated_entries = session.query(PromptMemoryEntry).filter_by(conversation_id=specific_conversation_id)
+        for entry in updated_entries:
+            assert entry.original_value == "Updated Hello"
+            assert entry.role == "assistant"
+
+
+def test_update_labels_by_conversation_id(memory_interface: AzureSQLMemory):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(
+            conversation_id="123",
+            role="user",
+            original_value="Hello",
+            converted_value="Hello",
+            labels={"test": "label"},
+        )
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Update the labels using the update_labels_by_conversation_id method
+    memory_interface.update_labels_by_conversation_id(conversation_id="123", labels={"test1": "change"})
+
+    # Verify the labels were updated
+    with memory_interface.get_session() as session:  # type: ignore
+        updated_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
+        assert updated_entry.labels["test1"] == "change"
+
+
+def test_update_prompt_metadata_by_conversation_id(memory_interface: AzureSQLMemory):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(
+            conversation_id="123",
+            role="user",
+            original_value="Hello",
+            converted_value="Hello",
+            prompt_metadata="test",
+        )
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Update the metadata using the update_prompt_metadata_by_conversation_id method
+    memory_interface.update_prompt_metadata_by_conversation_id(conversation_id="123", prompt_metadata="updated")
+
+    # Verify the metadata was updated
+    with memory_interface.get_session() as session:  # type: ignore
+        updated_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
+        assert updated_entry.prompt_metadata == "updated"

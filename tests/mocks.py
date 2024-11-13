@@ -6,13 +6,14 @@ import os
 
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, Optional
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import uuid
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 from sqlalchemy import inspect
 
 from pyrit.memory import AzureSQLMemory, DuckDBMemory, MemoryInterface
+from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
@@ -61,8 +62,8 @@ class MockHttpPostSync:
 class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
-    def __init__(self, id=None, memory=None, rpm=None) -> None:
-        super().__init__(memory=memory, max_requests_per_minute=rpm)
+    def __init__(self, id=None, rpm=None) -> None:
+        super().__init__(max_requests_per_minute=rpm)
         self.id = id
         self.prompt_sent = []
 
@@ -132,6 +133,8 @@ def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
     # Verify that tables are created as expected
     assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
     assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
+    assert "ScoreEntries" in inspector.get_table_names(), "ScoreEntries table not created."
+    assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
 
     yield duckdb_memory
     duckdb_memory.dispose_engine()
@@ -157,6 +160,7 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
 
         session_mock = UnifiedAlchemyMagicMock()
         session_mock.__enter__.return_value = session_mock
+        session_mock.is_modified.return_value = True
         get_session_mock.return_value = session_mock
 
         create_auth_token_mock.return_value = "token"
@@ -211,37 +215,37 @@ def get_test_request_piece() -> PromptRequestPiece:
 
 
 def get_sample_conversations() -> list[PromptRequestPiece]:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
+        orchestrator1 = Orchestrator()
+        orchestrator2 = Orchestrator()
 
-    orchestrator1 = Orchestrator()
-    orchestrator2 = Orchestrator()
+        conversation_1 = str(uuid.uuid4())
 
-    conversation_1 = str(uuid.uuid4())
-
-    return [
-        PromptRequestPiece(
-            role="user",
-            original_value="original prompt text",
-            converted_value="Hello, how are you?",
-            conversation_id=conversation_1,
-            sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
-        ),
-        PromptRequestPiece(
-            role="assistant",
-            original_value="original prompt text",
-            converted_value="I'm fine, thank you!",
-            conversation_id=conversation_1,
-            sequence=0,
-            orchestrator_identifier=orchestrator1.get_identifier(),
-        ),
-        PromptRequestPiece(
-            role="assistant",
-            original_value="original prompt text",
-            converted_value="I'm fine, thank you!",
-            conversation_id=str(uuid.uuid4()),
-            orchestrator_identifier=orchestrator2.get_identifier(),
-        ),
-    ]
+        return [
+            PromptRequestPiece(
+                role="user",
+                original_value="original prompt text",
+                converted_value="Hello, how are you?",
+                conversation_id=conversation_1,
+                sequence=0,
+                orchestrator_identifier=orchestrator1.get_identifier(),
+            ),
+            PromptRequestPiece(
+                role="assistant",
+                original_value="original prompt text",
+                converted_value="I'm fine, thank you!",
+                conversation_id=conversation_1,
+                sequence=0,
+                orchestrator_identifier=orchestrator1.get_identifier(),
+            ),
+            PromptRequestPiece(
+                role="assistant",
+                original_value="original prompt text",
+                converted_value="I'm fine, thank you!",
+                conversation_id=str(uuid.uuid4()),
+                orchestrator_identifier=orchestrator2.get_identifier(),
+            ),
+        ]
 
 
 def get_sample_conversation_entries() -> list[PromptMemoryEntry]:

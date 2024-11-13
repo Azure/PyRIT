@@ -6,29 +6,29 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
 
 # %% [markdown]
-# ### Classification Scoring
+# # Classification Scoring
 #
 # In this example, we set up a `SelfAskCategoryScorer` and use it to determine whether there is harmful content in a response. This is a special type of true/false scorer that returns a score that matches the classification (or a false result is it doesn't fit in any classification). It does this by asking an LLM whether a response matches a criteria.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskCategoryScorer
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 
 
 default_values.load_default_env()
-with AzureOpenAIGPT4OChatTarget() as azure_openai_chat_target:
+with OpenAIChatTarget() as azure_openai_chat_target:
     harmful_content_classifier = SelfAskCategoryScorer(
         content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value, chat_target=azure_openai_chat_target
     )

@@ -14,24 +14,24 @@
 # ---
 
 # %% [markdown]
-# ## Float Scale Scoring using Likert Scale
+# # Float Scale Scoring using Likert Scale
 #
 # In some cases, we are interested in scoring a response on a Likert scale that measures the prevalence or severity of some type of content.
 #
 # In this example, we use the `SelfAskLikertScorer` to measure the severity of political misinformation in a text string.
 # Looking at the scored responses, we see that the `text_with_political_misinfo` is scored as 'Severe misinformation', while `text_without_political_misinfo` is scored as 'No misinformation'.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import AzureOpenAIGPT4OChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 default_values.load_default_env()
 
 
-with AzureOpenAIGPT4OChatTarget() as self_ask_target:
+with OpenAIChatTarget() as self_ask_target:
 
     political_misinfo_scorer = SelfAskLikertScorer(
         likert_scale_path=LikertScalePaths.MISINFORMATION_SCALE.value, chat_target=self_ask_target

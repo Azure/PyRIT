@@ -8,10 +8,11 @@ import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
+from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.prompt_target import AzureOpenAITextChatTarget
+from pyrit.prompt_target import OpenAIChatTarget
 
 from tests.mocks import get_memory_interface
 from tests.mocks import get_sample_conversations
@@ -46,22 +47,22 @@ def openai_mock_return() -> ChatCompletion:
 
 
 @pytest.fixture
-def chat_completion_engine() -> AzureOpenAITextChatTarget:
-    return AzureOpenAITextChatTarget(deployment_name="test", endpoint="test", api_key="test")
+def chat_completion_engine(memory_interface: MemoryInterface) -> OpenAIChatTarget:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        return OpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
 
 
 @pytest.fixture
 def azure_openai_target(memory_interface: MemoryInterface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
+        return OpenAIChatTarget(
+            deployment_name="test",
+            endpoint="test",
+            api_key="test",
+        )
 
-    return AzureOpenAITextChatTarget(
-        deployment_name="test",
-        endpoint="test",
-        api_key="test",
-        memory=memory_interface,
-    )
 
-
-def test_set_system_prompt(azure_openai_target: AzureOpenAITextChatTarget):
+def test_set_system_prompt(azure_openai_target: OpenAIChatTarget):
     azure_openai_target.set_system_prompt(
         system_prompt="system prompt",
         conversation_id="1",
@@ -77,7 +78,7 @@ def test_set_system_prompt(azure_openai_target: AzureOpenAITextChatTarget):
 
 @pytest.mark.asyncio
 async def test_send_prompt_user_no_system(
-    azure_openai_target: AzureOpenAITextChatTarget,
+    azure_openai_target: OpenAIChatTarget,
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):
@@ -100,7 +101,7 @@ async def test_send_prompt_user_no_system(
 
 
 @pytest.mark.asyncio
-async def test_set_system_prompt_adds_memory(azure_openai_target: AzureOpenAITextChatTarget):
+async def test_set_system_prompt_adds_memory(azure_openai_target: OpenAIChatTarget):
     azure_openai_target.set_system_prompt(
         system_prompt="system prompt",
         conversation_id="1",
@@ -115,7 +116,7 @@ async def test_set_system_prompt_adds_memory(azure_openai_target: AzureOpenAITex
 
 @pytest.mark.asyncio
 async def test_send_prompt_with_system_calls_chat_complete(
-    azure_openai_target: AzureOpenAITextChatTarget,
+    azure_openai_target: OpenAIChatTarget,
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):
@@ -141,7 +142,7 @@ async def test_send_prompt_with_system_calls_chat_complete(
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_with_delay(
-    azure_openai_target: AzureOpenAITextChatTarget,
+    azure_openai_target: OpenAIChatTarget,
     openai_mock_return: ChatCompletion,
     sample_entries: list[PromptRequestPiece],
 ):

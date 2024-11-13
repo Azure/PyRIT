@@ -22,9 +22,9 @@
 # This prompt target in particular will take in a prompt and upload it as a text file to the provided Azure Storage Account Container.
 # This could be useful for Cross-Prompt Injection Attack scenarios, for example, where there is a jailbreak within a file.
 #
-# ### Prerequisites
+# ## Prerequisites
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT and have Azure Storage Blob Container secrets configured as described [here](../../setup/). This target is configured to use delegation SAS-based authentication. Please run the AZ CLI command to authenticate with Azure using `az login --use-device-code` or `az login`.
+# Before you begin, ensure you are setup with the correct version of PyRIT and have Azure Storage Blob Container secrets configured as described [here](../../setup/populating_secrets.md). This target is configured to use delegation SAS-based authentication. Please run the AZ CLI command to authenticate with Azure using `az login --use-device-code` or `az login`.
 #
 # For more details, https://learn.microsoft.com/en-us/rest/api/storageservices/create-user-delegation-sas
 #

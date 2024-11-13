@@ -1,4 +1,4 @@
-## Releasing PyRIT to PyPI
+# Releasing PyRIT to PyPI
 
 This section is for maintainers only.
 If you don't know who the maintainers are but you need to reach them
@@ -7,7 +7,7 @@ email address listed in pyproject.toml
 
 Follow the instructions according to the order provided.
 
-### 1. Decide the Next Version
+## 1. Decide the Next Version
 
 First, decide what the next release version is going to be.
 We follow semantic versioning for Python projects; see
@@ -31,11 +31,11 @@ at least until we hit major version `1`.
 With that in mind, the reason for the release and the set of changes
 that happened since the last release will influence the new version number.
 
-### 2. Update __init__.py and pyproject.toml
+## 2. Update __init__.py and pyproject.toml
 
 Set the version in `pyproject.toml` and `pyrit/__init__.py` to the version established in step 1.
 
-### Update README.md
+## Update README.md
 
 Readme.md is published to PyPI and also needs to be updated so the
 links work properly.
@@ -54,7 +54,7 @@ For directories, update using the "tree" link, e.g.,
 This is required for the release branch because PyPI does not pick up
 other files besides the README, which results in local links breaking.
 
-### 3. Publish to github
+## 3. Publish to github
 
 Commit your changes and push them to the repository on a branch called
 `releases/vx.y.z`, then run
@@ -69,7 +69,7 @@ git push --tags
 
 After pushing the branch to remote, check the release branch to make sure it looks as intended (e.g. check the links in the README work properly).
 
-### 4. Build Package
+## 4. Build Package
 
 You'll need the build package to build the project. If it’s not already installed, install it `pip install build`.
 
@@ -83,7 +83,7 @@ This should print
 
 > Successfully built pyrit-x.y.z.tar.gz and pyrit-x.y.z-py3-none-any.whl
 
-### 5. Test built package
+## 5. Test built package
 
 This step is crucial to ensure that the new package works out of the box.
 Create a new conda environment with `conda create -n release-test-vx.y.z python=3.11 -y`
@@ -98,7 +98,7 @@ Before running the demos, execute `az login` or `az login --use-device-code`, as
 Additionally, verify that your environment file includes all the test secrets needed to run the demos. If not, update your .env file using the secrets from the key vault.
 
 In the new location, run all notebooks.
-This can be done using `.\doc\generate_docs\pct_to_ipynb.ps1` or manually.
+This can be done using `.\doc\generate_docs\pct_to_ipynb.py` or manually.
 Check the output to make sure that the notebooks succeeded.
 
 Note: copying the doc folder elsewhere is essential since we store data files
@@ -106,7 +106,7 @@ in the repository that should be shipped with the package.
 If we run inside the repository, we may not face errors that users encounter
 with a clean installation and no locally cloned repository.
 
-### 6. Publish to PyPi
+## 6. Publish to PyPi
 
 Create an account on pypi.org if you don't have one yet.
 Ask one of the other maintainers to add you to the `pyrit` project on PyPI.
@@ -126,7 +126,7 @@ where the only change is the version increase in `__init__.py` (while keeping
 suffix `.dev0`).
 This should be something like `x.y.z+1.dev0`.
 
-### 7. Create GitHub Release
+## 7. Create GitHub Release
 
 Finally, go to the [releases page](https://github.com/Azure/PyRIT/releases), select the "tag"
 for which you want to create the release notes. It should match the version that you just released

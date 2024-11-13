@@ -4,13 +4,12 @@
 import logging
 import uuid
 import json
-from typing import Union, Any, Optional
+from typing import Any, Optional
 
 from pyrit.prompt_target import PromptShieldTarget
-from pyrit.memory import MemoryInterface, DuckDBMemory
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, ScoreType
 from pyrit.memory import PromptMemoryEntry
-from pyrit.score import Scorer, ScoreType
+from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -22,20 +21,14 @@ class PromptShieldScorer(Scorer):
 
     scorer_type: ScoreType
     _conversation_id: str
-    _memory: Union[MemoryInterface, None]
     _prompt_shield_target: PromptShieldTarget
 
     def __init__(
         self,
         prompt_shield_target: PromptShieldTarget,
-        memory: Union[MemoryInterface, None] = None,
     ) -> None:
         self._prompt_target = prompt_shield_target
         self.scorer_type = "true_false"
-        self._memory = memory if memory else DuckDBMemory()
-        # Ensure _prompt_target uses the same memory interface as the scorer.
-        if self._prompt_target:
-            self._prompt_target._memory = self._memory
 
     async def score_async(
         self, request_response: PromptRequestPiece | PromptMemoryEntry, *, task: Optional[str] = None
