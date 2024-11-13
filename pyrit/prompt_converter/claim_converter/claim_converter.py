@@ -19,7 +19,7 @@ from pyrit.exceptions.exception_classes import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, TestGenieDataset
 from pyrit.prompt_converter import PromptConverter, ConverterResult, config, utils, prompt_openai, exemplars, components, classifiers
 from pyrit.prompt_target import PromptChatTarget
 
