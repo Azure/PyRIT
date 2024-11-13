@@ -9,7 +9,7 @@ from typing import Optional
 import uuid
 
 from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
@@ -58,7 +58,6 @@ class TreeOfAttackNode():
         on_topic_scorer: Scorer,
         prompt_converters: list[PromptConverter],
         orchestrator_id: str,
-        memory: Optional[MemoryInterface],
         memory_labels: Optional[dict[str, str]],
         parent_id: str = None,
     ) -> None:
@@ -72,10 +71,10 @@ class TreeOfAttackNode():
         self._on_topic_scorer = on_topic_scorer
         self._prompt_converters = prompt_converters
         self._orchestrator_id = orchestrator_id
-        self._memory = memory
+        self._memory = CentralMemory.get_memory_instance()
         self._global_memory_labels = memory_labels
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self.parent_id = parent_id
         self.node_id = str(uuid.uuid4())
 
@@ -124,7 +123,6 @@ class TreeOfAttackNode():
                     request_converters=self._prompt_converters,
                     prompt_value=prompt,
                     prompt_data_type="text",
-                    memory=self._memory,
                 )
             ],
             conversation_id=self.objective_target_conversation_id,
@@ -171,7 +169,6 @@ class TreeOfAttackNode():
             on_topic_scorer=self._on_topic_scorer,
             prompt_converters=self._prompt_converters,
             orchestrator_id=self._orchestrator_id,
-            memory=self._memory,
             memory_labels=self._global_memory_labels,
             parent_id=self.node_id,
         )
@@ -230,7 +227,7 @@ class TreeOfAttackNode():
         adversarial_chat_request = NormalizerRequest(
             request_pieces=[
                 NormalizerRequestPiece(
-                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text", memory=self._memory
+                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text"
                 )
             ],
             conversation_id=self.adversarial_chat_conversation_id,

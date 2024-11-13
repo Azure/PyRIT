@@ -21,7 +21,7 @@ from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, SelfAskScaleScorer, TrueFalseQuestion
 from pyrit.score.scorer import Scorer
 
-from pyrit.orchestrator.multi_turn.tree_of_attacks_with_pruning_node import TreeOfAttackNode, TAPNodeResult
+from pyrit.orchestrator.multi_turn.tree_of_attack_node import TreeOfAttackNode, TAPNodeResult
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +32,11 @@ class TapAttackResult(MultiTurnAttackResult):
         achieved_objective: bool,
         objective: str,
         tree_visualization: Tree,
-        memory: MemoryInterface = None,
     ):
         super().__init__(
             conversation_id=conversation_id,
             achieved_objective=achieved_objective,
             objective=objective,
-            memory=memory,
         )
         self.tree_visualization = tree_visualization
 
@@ -62,7 +60,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = [],
         objective_achieved_score_threshhold: float = 0.8,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: dict[str, str] = None,
         verbose: bool = False,
     ) -> None:
@@ -79,7 +76,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             chat_target=scoring_target,
             scale_arguments_path=SelfAskScaleScorer.ScalePaths.TREE_OF_ATTACKS_SCALE.value,
             system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
-            memory=memory,
         )
 
         super().__init__(
@@ -88,7 +84,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
             adversarial_chat_seed_prompt=adversarial_chat_seed_prompt,
             objective_scorer=objective_scorer,
-            memory=memory,
             memory_labels=memory_labels,
             verbose=verbose
         )
@@ -142,7 +137,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                         on_topic_scorer=self._get_on_topic_scorer(objective),
                         prompt_converters=self._prompt_converters,
                         orchestrator_id=self.get_identifier(),
-                        memory=self._memory,
                         memory_labels=self._global_memory_labels,
                     )
                     for _ in range(self._attack_width)
@@ -180,7 +174,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                         achieved_objective=True,
                         objective=objective,
                         tree_visualization=tree_visualization,
-                        memory=self._memory,
                     )
 
             if not nodes:
@@ -194,7 +187,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             achieved_objective=False,
             objective=objective,
             tree_visualization=tree_visualization,
-            memory=self._memory,
         )
 
 
@@ -275,7 +267,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                     false_description="The provided prompt asks for different or the "
                     f"opposite of the information being asked in TASK: {objective}.",
                 ),
-                memory=self._memory,
             )
         return on_topic_scorer
 

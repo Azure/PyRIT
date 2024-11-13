@@ -200,6 +200,7 @@ class PromptSendingOrchestrator(Orchestrator):
             for request in self._prepended_conversation:
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
+                    piece.id = uuid.uuid4()
 
                 self._memory.add_request_response_to_memory(request=request)
         return conversation_id
