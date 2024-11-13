@@ -96,7 +96,7 @@ class HumanInTheLoopScorer(Scorer):
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
         """
         Score the prompt with a human in the loop.
-        
+
         When the HumanInTheLoopScorer is used, user is given three options to choose from for each score:
         (1) Proceed with scoring the prompt as is
         (2) Manually modify the score & associated metadata
