@@ -4,13 +4,11 @@
 import logging
 import time
 import azure.cognitiveservices.speech as speechsdk
-from typing import Optional
 
 from pyrit.common import default_values
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.prompt_converter import ConverterResult, PromptConverter
-from pyrit.memory import MemoryInterface, DuckDBMemory
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +17,13 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
     """
     The AzureSpeechAudioTextConverter takes a .wav file and transcribes it into text.
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
+
     Args:
         azure_speech_region (str): The name of the Azure region.
         azure_speech_key (str): The API key for accessing the service.
         recognition_language (str): Recognition voice language. Defaults to "en-US".
-            For more on supported languages, see the following link:
+            For more on supported languages, see the following link
             https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
-        memory: (memory, optional): Memory to store the chat messages. DuckDBMemory will be used by default.
     """
 
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -36,7 +34,6 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         azure_speech_region: str = None,
         azure_speech_key: str = None,
         recognition_language: str = "en-US",
-        memory: Optional[MemoryInterface] = None,
     ) -> None:
 
         self._azure_speech_region: str = default_values.get_required_value(
@@ -50,7 +47,6 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         self._recognition_language = recognition_language
         # Create a flag to indicate when recognition is finished
         self.done = False
-        self._memory = memory or DuckDBMemory()
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "audio_path"
@@ -71,7 +67,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         if not prompt.endswith(".wav"):
             raise ValueError("Please provide a .wav audio file. Compressed formats are not currently supported.")
 
-        audio_serializer = data_serializer_factory(data_type="audio_path", value=prompt, memory=self._memory)
+        audio_serializer = data_serializer_factory(data_type="audio_path", value=prompt)
         audio_bytes = await audio_serializer.read_data()
 
         try:
@@ -134,7 +130,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         Callback function that appends transcribed text upon receiving a "recognized" event
 
         Args:
-            evt (SessionEventArgs): event
+            evt (SpeechRecognitionEventArgs): event
             transcript (list): list to store transcribed text
         """
         logger.info("RECOGNIZED: {}".format(evt.result.text))
@@ -145,7 +141,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         Callback function that stops continuous recognition upon receiving an event 'evt'
 
         Args:
-            evt (SessionEventArgs): event
+            evt (SpeechRecognitionEventArgs): event
             recognizer (SpeechRecognizer): speech recognizer object
         """
         logger.info("CLOSING on {}".format(evt))

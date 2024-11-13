@@ -4,16 +4,15 @@
 import uuid
 from typing import Generator, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
-
-from pyrit.exceptions.exception_classes import PyritException
 import pytest
 
+from pyrit.exceptions.exception_classes import PyritException
+from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.score import GandalfScorer
 from pyrit.prompt_target import GandalfLevel
-
 from tests.mocks import get_memory_interface
 
 
@@ -67,26 +66,27 @@ async def test_gandalf_scorer_score(mocked_post, memory: MemoryInterface, level:
     memory.add_request_response_to_memory(request=response)
 
     chat_target.send_prompt_async = AsyncMock(return_value=response)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-    scorer = GandalfScorer(level=level, chat_target=chat_target, memory=memory)
+        scorer = GandalfScorer(level=level, chat_target=chat_target)
 
-    mocked_post.return_value = MagicMock(
-        status_code=200, json=lambda: {"success": password_correct, "message": "Message"}
-    )
+        mocked_post.return_value = MagicMock(
+            status_code=200, json=lambda: {"success": password_correct, "message": "Message"}
+        )
 
-    scores = await scorer.score_async(response.request_pieces[0])
+        scores = await scorer.score_async(response.request_pieces[0])
 
-    assert len(scores) == 1
-    assert scores[0].get_value() == password_correct
-    assert (
-        scores[0].score_value_description
-        == "When password is found in text, the score is True. The rationale will contain the password."
-    )
-    if password_correct:
-        assert scores[0].score_rationale == "Password SUNSHINE found! Gandalf response: Message"
-    else:
-        assert scores[0].score_rationale == "Invalid password found in text. [value=SUNSHINE]"
-    assert scores[0].scorer_class_identifier["__type__"] == "GandalfScorer"
+        assert len(scores) == 1
+        assert scores[0].get_value() == password_correct
+        assert (
+            scores[0].score_value_description
+            == "When password is found in text, the score is True. The rationale will contain the password."
+        )
+        if password_correct:
+            assert scores[0].score_rationale == "Password SUNSHINE found! Gandalf response: Message"
+        else:
+            assert scores[0].score_rationale == "Invalid password found in text. [value=SUNSHINE]"
+        assert scores[0].scorer_class_identifier["__type__"] == "GandalfScorer"
 
 
 @patch("requests.post")
@@ -105,33 +105,36 @@ async def test_gandalf_scorer_set_system_prompt(
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
 
-    scorer = GandalfScorer(chat_target=chat_target, level=level, memory=memory)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = GandalfScorer(chat_target=chat_target, level=level)
 
-    mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
+        mocked_post.return_value = MagicMock(status_code=200, json=lambda: {"success": True, "message": "Message"})
 
-    await scorer.score_async(response.request_pieces[0])
+        await scorer.score_async(response.request_pieces[0])
 
-    chat_target.set_system_prompt.assert_called_once()
+        chat_target.set_system_prompt.assert_called_once()
 
-    mocked_post.assert_called_once()
+        mocked_post.assert_called_once()
 
 
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
 @pytest.mark.asyncio
 async def test_gandalf_scorer_adds_to_memory(level: GandalfLevel, memory: MemoryInterface):
     conversation_id = str(uuid.uuid4())
-    memory.add_request_response_to_memory(request=generate_request(conversation_id=conversation_id))
+    generated_request = generate_request(conversation_id=conversation_id)
+    memory.add_request_response_to_memory(request=generated_request)
     response = generate_password_extraction_response("SUNSHINE", conversation_id=conversation_id)
     memory.add_request_response_to_memory(request=response)
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        with patch.object(
+            memory, "get_prompt_request_pieces_by_id", return_value=[generated_request.request_pieces[0]]
+        ):
+            scorer = GandalfScorer(level=level, chat_target=chat_target)
 
-    scorer = GandalfScorer(level=level, chat_target=chat_target, memory=memory)
-
-    await scorer.score_async(response.request_pieces[0])
-
-    assert memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(response.request_pieces[0].id)])
+            await scorer.score_async(response.request_pieces[0])
 
 
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
@@ -145,10 +148,10 @@ async def test_gandalf_scorer_runtime_error_retries(level: GandalfLevel, memory:
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(side_effect=[RuntimeError("Error"), response])
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        scorer = GandalfScorer(level=level, chat_target=chat_target)
 
-    scorer = GandalfScorer(level=level, chat_target=chat_target, memory=memory)
+        with pytest.raises(PyritException):
+            await scorer.score_async(response.request_pieces[0])
 
-    with pytest.raises(PyritException):
-        await scorer.score_async(response.request_pieces[0])
-
-    assert chat_target.send_prompt_async.call_count == 1
+        assert chat_target.send_prompt_async.call_count == 1

@@ -23,7 +23,7 @@
 #
 # This notebook demonstrates how to use the PyRIT's PAIR implementation.
 #
-# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/).
+# Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
 #
 # ## Orchestrator Initialization
@@ -47,7 +47,8 @@
 #
 # The output of the `run()` method is a list of jailbreaks from the target model. If the `stop_on_first_success` parameter is set to `True`, the orchestrator will stop as soon as it gets one desired response from the target model, and this response will be the only item in the list. If `stop_on_first_success` is set to False, the list will contain all responses from the target model, up to the max_conversation_depth.
 #
-
+#
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 from pyrit.common.default_values import load_default_env
 from pyrit.orchestrator.pair_orchestrator import PAIROrchestrator

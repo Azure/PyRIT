@@ -2,15 +2,14 @@
 # Licensed under the MIT license.
 from typing import Optional
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 
 
 class PromptChatTarget(PromptTarget):
 
-    def __init__(self, *, memory: MemoryInterface, max_requests_per_minute: Optional[int] = None) -> None:
-        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
+    def __init__(self, *, max_requests_per_minute: Optional[int] = None) -> None:
+        super().__init__(max_requests_per_minute=max_requests_per_minute)
 
     def set_system_prompt(
         self,

@@ -6,15 +6,15 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.3
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-kernel
 #     language: python
-#     name: python3
+#     name: pyrit-kernel
 # ---
 
 # %% [markdown]
-# ## Generating GCG Suffixes Using Azure Machine Learning
+# # Generating GCG Suffixes Using Azure Machine Learning
 
 # %% [markdown]
 # This notebook shows how to generate GCG suffixes using Azure Machine Learning (AML), which consists of three main steps:
@@ -23,7 +23,7 @@
 # 3. Submit a training job to AML.
 
 # %% [markdown]
-# ### Connect to Azure Machine Learning Workspace
+# ## Connect to Azure Machine Learning Workspace
 
 # %% [markdown]
 # The [workspace](https://docs.microsoft.com/en-us/azure/machine-learning/concept-workspace) is the top-level resource for Azure Machine Learning (AML), providing a centralized place to work with all the artifacts you create when using AML. In this section, we will connect to the workspace in which the job will be run.
@@ -40,6 +40,8 @@ default_values.load_default_env()
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
 resource_group = os.environ.get("AZURE_RESOURCE_GROUP")
 workspace = os.environ.get("AZURE_ML_WORKSPACE_NAME")
+compute_name = os.environ.get("AZURE_ML_COMPUTE_NAME")
+print(workspace)
 
 # %%
 from azure.ai.ml import MLClient
@@ -49,7 +51,13 @@ from azure.identity import DefaultAzureCredential
 ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
 
 # %% [markdown]
-# ### Create AML Environment
+# ## Create Compute Cluster
+#
+# Before proceeding, create a compute cluster in Azure ML. The following command may be useful:
+# az ml compute create --size Standard_ND96isrf_H100_v5 --type AmlCompute --name <compute-name> -g <group> -w <workspace> --min-instances 0
+
+# %% [markdown]
+# ## Create AML Environment
 
 # %% [markdown]
 # To install the dependencies needed to run GCG, we create an AML environment from a [Dockerfile](../../../pyrit/auxiliary_attacks/gcg/src/Dockerfile).
@@ -71,7 +79,7 @@ ml_client.environments.create_or_update(env_docker_context)
 
 
 # %% [markdown]
-# ### Submit Training Job to AML
+# ## Submit Training Job to AML
 
 # %% [markdown]
 # Finally, we configure the command to run the GCG algorithm. The entry file for the algorithm is [`run.py`](../../../pyrit/auxiliary_attacks/gcg/experiments/run.py), which takes several command line arguments, as shown below. We also have to specify the compute `instance_type` to run the algorithm on. In our experience, a GPU instance with at least 32GB of vRAM is required. In the example below, we use Standard_ND40rs_v2.
@@ -80,7 +88,6 @@ ml_client.environments.create_or_update(env_docker_context)
 
 # %%
 from azure.ai.ml import command
-from azure.ai.ml.entities import JobResourceConfiguration
 
 # Configure the command
 job = command(
@@ -98,10 +105,7 @@ job = command(
     environment_variables={"HF_TOKEN": os.environ["HF_TOKEN"]},
     display_name="suffix_generation",
     description="Generate a suffix for attacking LLMs.",
-    resources=JobResourceConfiguration(
-        instance_type="Standard_ND40rs_v2",
-        instance_count=1,
-    ),
+    compute=compute_name,
 )
 
 # %%

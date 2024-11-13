@@ -13,7 +13,7 @@ class PromptRequestResponse:
 
     This is a single request to a target. It can contain multiple prompt request pieces.
 
-    Attributes:
+    Parameters:
         request_pieces (list[PromptRequestPiece]): The list of prompt request pieces.
     """
 
@@ -71,26 +71,23 @@ def group_conversation_request_pieces_by_sequence(
         request piece.
 
     Example:
-        request_pieces = [
-            PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
-            PromptRequestPiece(conversation_id=1, sequence=2, text="How are you?"),
-            PromptRequestPiece(conversation_id=1, sequence=1, text="Hi"),
-            PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
-        ]
-
-        grouped_responses = group_conversation_request_pieces(request_pieces) ->
-
-        Returns:
-         [
-             PromptRequestResponse(request_pieces=[
-                 PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
-                 PromptRequestPiece(conversation_id=1, sequence=1, text="Hi")
-             ]),
-             PromptRequestResponse(request_pieces=[
-                 PromptRequestPiece(conversation_id=1, sequence=2, text="How are you?"),
-                 PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
-             ])
-         ]
+    >>> request_pieces = [
+    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="How are you?"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=1, text="Hi"),
+    >>>     PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
+    >>> ]
+    >>> grouped_responses = group_conversation_request_pieces(request_pieces)
+    ... [
+    ...     PromptRequestResponse(request_pieces=[
+    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Hello"),
+    ...         PromptRequestPiece(conversation_id=1, sequence=1, text="Hi")
+    ...     ]),
+    ...     PromptRequestResponse(request_pieces=[
+    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="How are you?"),
+    ...         PromptRequestPiece(conversation_id=1, sequence=2, text="I'm good, thanks!")
+    ...     ])
+    ... ]
     """
 
     if not request_pieces:

@@ -8,13 +8,12 @@ from typing import Optional, Union
 from uuid import uuid4
 
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
-from pyrit.memory import MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
-from pyrit.score import Scorer, Score
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         max_turns (int, optional): Max turns for the conversation, ≥ 0. Defaults to 5.
         objective_scorer (Scorer): Scores prompt target output as sufficient or insufficient.
         use_score_as_feedback (bool, optional): Use scoring as feedback. Defaults to True.
-        memory (Optional[MemoryInterface], optional): Memory interface for chat storage. Defaults to None.
         memory_labels (Optional[dict[str, str]], optional): Tags for prompt tracking (e.g., RAI harm categories).
         verbose (bool, optional): Print debug info. Defaults to False.
 
@@ -51,8 +49,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         FileNotFoundError: If adversarial_chat_system_prompt_path file not found.
         ValueError: If max_turns ≤ 0 or if objective_scorer is not binary.
     """
-
-    _memory: MemoryInterface
 
     def __init__(
         self,
@@ -65,7 +61,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         max_turns: int = 5,
         objective_scorer: Scorer,
         use_score_as_feedback: bool = True,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
@@ -83,12 +78,11 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             max_turns=max_turns,
             prompt_converters=prompt_converters,
             objective_scorer=objective_scorer,
-            memory=memory,
             memory_labels=memory_labels,
             verbose=verbose,
         )
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self._use_score_as_feedback = use_score_as_feedback
 
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
@@ -198,7 +192,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             request_converters=self._prompt_converters,
             prompt_value=prompt,
             prompt_data_type="text",
-            memory=self._memory,
         )
 
         normalizer_request = NormalizerRequest(

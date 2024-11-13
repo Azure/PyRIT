@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ## Basic Memory Programming Usage
+# # Basic Memory Programming Usage
 #
 # The `pyrit.memory` module provides functionality to keep track of the conversation history, scoring, data, and more. You can use memory to read and write data. Here is an example that retrieves a normalized conversation:
 

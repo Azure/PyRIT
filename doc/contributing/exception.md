@@ -1,15 +1,15 @@
-### Exception Handling Guidelines
+# Exception Handling Guidelines
 
 In our PyRIT framework, proper exception handling is crucial for maintaining robustness and reliability. We have centralized exceptions in a dedicated [module](../../pyrit/exceptions/exception_classes.py) to streamline this process. When working with orchestrators, targets, converters, and scorers, and handle exceptions please adhere to the following guidelines:
 
-#### General Guidelines
+## General Guidelines
 
 1. **Centralized Exceptions**: Use the exceptions defined in our centralized exceptions module or create new ones as necessary in the same module.
 2. **Inherit `PyritException`**: Ensure any new exceptions inherit from `PyritException` to maintain consistency.
 3. **Exception Processing**: Utilize the `process_exception` method to handle exceptions appropriately.
 4. **Add Response Entries to Memory**: After handling an exception using the `process_exception` method. While adding response entries to memory, ensure to set the `response_type` and `error` parameter to `error` to help identify the responses in the database for easy filtering. The `original_value` and `converted_value` or the `PromptRequestPiece` object should contain the error message.
 
-#### Specific Scenarios
+## Specific Scenarios
 
 1. **Response is None, JSON Parsing Failure in Scorer, RateLimitError**
    - **Action**: In the endpoint code (scoring, target, or converter) there should be a retry mechanism to attempt the operation a few times. For example, use the `@pyrit_target_retry` decorator

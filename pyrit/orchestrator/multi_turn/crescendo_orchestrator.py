@@ -13,8 +13,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.memory import MemoryInterface
-from pyrit.models import Score, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -49,8 +48,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             Defaults to None.
         max_backtracks (int, optional): The maximum number of times to backtrack during the attack.
             Must be a positive integer. Defaults to 10.
-        memory (Optional[MemoryInterface], optional): Interface for storing and retrieving conversation memory.
-            Defaults to None.
         memory_labels (Optional[dict[str, str]], optional): Dictionary of labels for memory management.
             Defaults to None.
         verbose (bool, optional): Flag indicating whether to enable verbose logging. Defaults to False.
@@ -66,7 +63,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         max_turns: int = 10,
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_backtracks: int = 10,
-        memory: Optional[MemoryInterface] = None,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
@@ -82,7 +78,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 scale_arguments_path=SelfAskScaleScorer.ScalePaths.TASK_ACHIEVED_SCALE.value,
                 system_prompt_path=SelfAskScaleScorer.SystemPaths.RED_TEAMER_SYSTEM_PROMPT.value,
             ),
-            memory=memory,
             threshold=objective_achieved_score_threshhold,
         )
 
@@ -91,7 +86,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             adversarial_chat=adversarial_chat,
             adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
             max_turns=max_turns,
-            memory=memory,
             objective_scorer=objective_scorer,
             memory_labels=memory_labels,
             prompt_converters=prompt_converters,
@@ -100,10 +94,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         self._refusal_scorer = SelfAskRefusalScorer(
             chat_target=scoring_target,
-            memory=self._memory,
         )
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
 
         if max_backtracks <= 0:
             logger.info(

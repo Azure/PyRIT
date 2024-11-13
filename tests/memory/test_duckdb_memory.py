@@ -155,7 +155,7 @@ async def test_insert_entry(memory_interface):
         original_value="Hello",
         converted_value="Hello after conversion",
     )
-    await prompt_request_piece_entry.compute_sha256(memory_interface)
+    await prompt_request_piece_entry.compute_sha256()
     entry = PromptMemoryEntry(entry=prompt_request_piece_entry)
     # Use the insert_entry method to insert the entry into the database
     memory_interface.insert_entry(entry)
@@ -310,26 +310,6 @@ def test_query_entries(memory_interface, sample_conversation_entries):
     )
     assert len(specific_entry) == 1
     assert specific_entry[0].original_value == "Message 1"
-
-
-def test_update_entries(memory_interface):
-    # Insert a test entry
-    entry = PromptMemoryEntry(
-        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
-    )
-
-    memory_interface.insert_entry(entry)
-
-    # Fetch the entry to update and update its content
-    entries_to_update = memory_interface.query_entries(
-        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
-    )
-    memory_interface.update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
-
-    # Verify the entry was updated
-    with memory_interface.get_session() as session:
-        updated_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
-        assert updated_entry.original_value == "Updated Hello"
 
 
 def test_get_all_memory(memory_interface, sample_conversation_entries):
@@ -529,6 +509,62 @@ def test_get_memories_with_zero_memory_labels(memory_interface: DuckDBMemory):
     assert len(retrieved_entries) == 0  # zero entries found since invalid memory labels passed
 
 
+def test_update_entries(memory_interface):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Fetch the entry to update and update its content
+    entries_to_update = memory_interface.query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
+    )
+    memory_interface.update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
+
+    # Verify the entry was updated
+    with memory_interface.get_session() as session:
+        updated_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
+        assert updated_entry.original_value == "Updated Hello"
+
+
+def test_update_entries_empty_update_fields(memory_interface):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Fetch the entry to update and update its content
+    entries_to_update = memory_interface.query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
+    )
+    with pytest.raises(ValueError):
+        memory_interface.update_entries(entries=entries_to_update, update_fields={})
+
+
+def test_update_entries_nonexistent_fields(memory_interface):
+    # Insert a test entry
+    entry = PromptMemoryEntry(
+        entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
+    )
+
+    memory_interface.insert_entry(entry)
+
+    # Fetch the entry to update and update its content
+    entries_to_update = memory_interface.query_entries(
+        PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
+    )
+    with pytest.raises(ValueError):
+        memory_interface.update_entries(
+            entries=entries_to_update, update_fields={"original_value": "Updated", "nonexistent_field": "Updated Hello"}
+        )
+    # Verify changes were rolled back and entry was not updated
+    assert entries_to_update[0].original_value == "Hello"
+
+
 def test_update_entries_by_conversation_id(memory_interface, sample_conversation_entries):
     # Define a specific conversation_id to update
     specific_conversation_id = "update_test_id"
@@ -547,8 +583,8 @@ def test_update_entries_by_conversation_id(memory_interface, sample_conversation
         # Define the fields to update for entries with the specific conversation_id
         update_fields = {"original_value": "Updated content", "role": "assistant"}
 
-        # Use the update_entries_by_conversation_id method to update the entries
-        update_result = memory_interface.update_entries_by_conversation_id(
+        # Use the update_prompt_entries_by_conversation_id method to update the entries
+        update_result = memory_interface.update_prompt_entries_by_conversation_id(
             conversation_id=specific_conversation_id, update_fields=update_fields
         )
 
@@ -565,3 +601,76 @@ def test_update_entries_by_conversation_id(memory_interface, sample_conversation
         # Verify that the entry with a different conversation_id was not updated
         other_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="other_id").first()
         assert other_entry.original_value == original_content  # Content should remain unchanged
+
+
+def test_update_labels_by_conversation_id(memory_interface, sample_conversation_entries):
+    # Define a specific conversation_id to update
+    specific_conversation_id = "update_test_id"
+
+    sample_conversation_entries[0].conversation_id = specific_conversation_id
+    sample_conversation_entries[2].conversation_id = specific_conversation_id
+
+    sample_conversation_entries[1].conversation_id = "other_id"
+    original_labels = sample_conversation_entries[1].labels
+
+    # Insert the ConversationData entries using the insert_entries method within a session
+    with memory_interface.get_session() as session:
+        memory_interface.insert_entries(entries=sample_conversation_entries)
+        session.commit()  # Ensure all entries are committed to the database
+
+        # Define the fields to update for entries with the specific conversation_id
+        update_fields = {"labels": {"new_label": "new_value"}}
+
+        # Use the update_prompt_entries_by_conversation_id method to update the entries
+        update_result = memory_interface.update_prompt_entries_by_conversation_id(
+            conversation_id=specific_conversation_id, update_fields=update_fields
+        )
+
+        assert update_result is True  # Ensure the update operation was reported as successful
+
+        # Verify that the entries with the specific conversation_id were updated
+        updated_entries = memory_interface.query_entries(
+            PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == specific_conversation_id
+        )
+        for entry in updated_entries:
+            assert entry.labels == {"new_label": "new_value"}
+
+        # Verify that the entry with a different conversation_id was not updated
+        other_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="other_id").first()
+        assert other_entry.labels == original_labels  # Labels should remain unchanged
+
+
+def test_update_prompt_metadata_by_conversation_id(memory_interface, sample_conversation_entries):
+    # Define a specific conversation_id to update
+    specific_conversation_id = "update_test_id"
+
+    sample_conversation_entries[0].conversation_id = specific_conversation_id
+    sample_conversation_entries[2].conversation_id = specific_conversation_id
+
+    sample_conversation_entries[1].conversation_id = "other_id"
+    original_metadata = sample_conversation_entries[1].prompt_metadata
+
+    # Insert the ConversationData entries using the insert_entries method within a session
+    with memory_interface.get_session() as session:
+        memory_interface.insert_entries(entries=sample_conversation_entries)
+        session.commit()  # Ensure all entries are committed to the database
+
+        # Define the fields to update for entries with the specific conversation_id
+        update_fields = {"prompt_metadata": "updated_metadata"}
+        # Use the update_prompt_entries_by_conversation_id method to update the entries
+        update_result = memory_interface.update_prompt_entries_by_conversation_id(
+            conversation_id=specific_conversation_id, update_fields=update_fields
+        )
+
+        assert update_result is True  # Ensure the update operation was reported as successful
+
+        # Verify that the entries with the specific conversation_id were updated
+        updated_entries = memory_interface.query_entries(
+            PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == specific_conversation_id
+        )
+        for entry in updated_entries:
+            assert entry.prompt_metadata == "updated_metadata"
+
+        # Verify that the entry with a different conversation_id was not updated
+        other_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="other_id").first()
+        assert other_entry.prompt_metadata == original_metadata  # Metadata should remain unchanged

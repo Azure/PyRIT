@@ -15,10 +15,9 @@ class LeetspeakConverter(PromptConverter):
         Initialize the converter with optional deterministic mode and custom substitutions.
 
         Args:
-        deterministic (bool): If True, use the first substitution for each character.
-                              If False, randomly choose a substitution for each character.
-        custom_substitutions (dict, optional): A dictionary of custom substitutions to override
-                                               the defaults.
+            deterministic (bool): If True, use the first substitution for each character.
+                If False, randomly choose a substitution for each character.
+            custom_substitutions (dict, optional): A dictionary of custom substitutions to override the defaults.
         """
         default_substitutions = {
             "a": ["4", "@", "/\\", "@", "^", "/-\\"],

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import asyncio
 import json
 import logging
 import os
@@ -10,8 +11,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.download_hf_model_with_aria2 import download_specific_files_with_aria2
-from pyrit.memory import MemoryInterface
+from pyrit.common.download_hf_model import download_specific_files
 from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
 from pyrit.common import default_values
@@ -31,7 +31,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
     _cached_model_id = None
 
     # Class-level flag to enable or disable cache
-    _cache_enabled = False
+    _cache_enabled = True
 
     # Define the environment variable name for the Hugging Face token
     HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE = "HUGGINGFACE_TOKEN"
@@ -43,14 +43,14 @@ class HuggingFaceChatTarget(PromptChatTarget):
         hf_access_token: Optional[str] = None,
         use_cuda: bool = False,
         tensor_format: str = "pt",
-        memory: MemoryInterface = None,
         necessary_files: list = None,
         max_new_tokens: int = 20,
         temperature: float = 1.0,
         top_p: float = 1.0,
         skip_special_tokens: bool = True,
     ) -> None:
-        super().__init__(memory=memory)
+        super().__init__()
+
         self.model_id = model_id
         self.use_cuda = use_cuda
         self.tensor_format = tensor_format
@@ -76,8 +76,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         if self.use_cuda and not torch.cuda.is_available():
             raise RuntimeError("CUDA requested but not available.")
 
-        # Load the model and tokenizer using the encapsulated method
-        self.load_model_and_tokenizer()
+        self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
 
     def is_model_id_valid(self) -> bool:
         """
@@ -92,7 +91,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.error(f"Invalid HuggingFace model ID {self.model_id}: {e}")
             return False
 
-    def load_model_and_tokenizer(self):
+    async def load_model_and_tokenizer(self):
         """Loads the model and tokenizer, downloading if necessary.
 
         Downloads the model to the HF_MODELS_DIR folder if it does not exist,
@@ -116,14 +115,12 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             if self.necessary_files is None:
                 # Download all files if no specific files are provided
-                logger.info(f"Downloading all files for {self.model_id} using aria2...")
-                download_specific_files_with_aria2(self.model_id, None, self.huggingface_token, cache_dir)
+                logger.info(f"Downloading all files for {self.model_id}...")
+                await download_specific_files(self.model_id, None, self.huggingface_token, cache_dir)
             else:
                 # Download only the necessary files
-                logger.info(f"Downloading specific files for {self.model_id} using aria2...")
-                download_specific_files_with_aria2(
-                    self.model_id, self.necessary_files, self.huggingface_token, cache_dir
-                )
+                logger.info(f"Downloading specific files for {self.model_id}...")
+                await download_specific_files(self.model_id, self.necessary_files, self.huggingface_token, cache_dir)
 
             # Load the tokenizer and model from the specified directory
             logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
@@ -154,6 +151,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
         """
         Sends a normalized prompt asynchronously to the HuggingFace model.
         """
+        # Load the model and tokenizer using the encapsulated method
+        await self.load_model_and_tokenizer_task
+
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
         prompt_template = request.converted_value
@@ -165,20 +165,23 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         # Apply chat template via the _apply_chat_template method
         tokenized_chat = self._apply_chat_template(messages)
+        input_ids = tokenized_chat["input_ids"]
+        attention_mask = tokenized_chat["attention_mask"]
 
-        logger.info(f"Tokenized chat: {tokenized_chat}")
+        logger.info(f"Tokenized chat: {input_ids}")
 
         try:
             # Ensure model is on the correct device (should already be the case from `load_model_and_tokenizer`)
             self.model.to(self.device)
 
             # Record the length of the input tokens to later extract only the generated tokens
-            input_length = tokenized_chat.shape[-1]
+            input_length = input_ids.shape[-1]
 
             # Generate the response
             logger.info("Generating response from model...")
             generated_ids = self.model.generate(
-                input_ids=tokenized_chat,
+                input_ids=input_ids,
+                attention_mask=attention_mask,
                 max_new_tokens=self.max_new_tokens,
                 temperature=self.temperature,
                 top_p=self.top_p,
@@ -219,7 +222,11 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             # Apply the chat template to format and tokenize the messages
             tokenized_chat = self.tokenizer.apply_chat_template(
-                messages, tokenize=True, add_generation_prompt=True, return_tensors=self.tensor_format
+                messages,
+                tokenize=True,
+                add_generation_prompt=True,
+                return_tensors=self.tensor_format,
+                return_dict=True,
             ).to(self.device)
             return tokenized_chat
         else:

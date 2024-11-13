@@ -13,9 +13,8 @@
 # ---
 
 # %% [markdown]
-# ## Benchmark Orchestrator
+# # Benchmark Orchestrator
 
-# %%
 # %%
 # Import necessary packages
 from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
@@ -26,16 +25,13 @@ from pyrit.datasets import fetch_wmdp_dataset
 from pyrit.common import default_values
 
 # %%
-# %%
 # Load environment variables
 default_values.load_default_env()
 
 # %%
-# %%
 # Set up the Azure OpenAI prompt target
 target = OpenAIChatTarget()
 
-# %%
 # %%
 # Create demo dataset for Q/A Model
 qa_ds = QuestionAnsweringDataset(
@@ -96,7 +92,6 @@ benchmark_orchestrator = QuestionAnsweringBenchmarkOrchestrator(
 await benchmark_orchestrator.evaluate()  # type: ignore
 
 # %%
-# %%
 # Output if the results are correct
 correct_count = 0
 total_count = 0
@@ -111,7 +106,6 @@ for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator._scorer
 print(f"Correct count: {correct_count}/{len(benchmark_orchestrator._scorer.evaluation_results)}")
 
 # %%
-# # %%
 # Fetch WMDP dataset for Q/A Model Testing
 
 wmdp_ds = fetch_wmdp_dataset()
@@ -131,7 +125,6 @@ benchmark_orchestrator_wmdp = QuestionAnsweringBenchmarkOrchestrator(
 await benchmark_orchestrator_wmdp.evaluate()  # type: ignore
 
 # %%
-# %%
 # Output if the results are correct
 correct_count = 0
 total_count = 0
@@ -146,7 +139,6 @@ for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator_wmdp._s
 print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.evaluation_results)}")
 
 # %%
-# # %%
 # Fetch WMDP dataset for Q/A Model Testing - Chem Subset
 
 wmdp_ds = fetch_wmdp_dataset(category="chem")
@@ -180,7 +172,6 @@ for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator_wmdp._s
 print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.evaluation_results)}")
 
 # %%
-# # %%
 # Fetch WMDP dataset for Q/A Model Testing - Bio Subset
 
 wmdp_ds = fetch_wmdp_dataset(category="bio")
@@ -214,7 +205,6 @@ for idx, (qa_question_entry, answer) in enumerate(benchmark_orchestrator_wmdp._s
 print(f"Correct count: {correct_count}/{len(benchmark_orchestrator_wmdp._scorer.evaluation_results)}")
 
 # %%
-# # %%
 # Fetch WMDP dataset for Q/A Model Testing - Cyber Subset
 
 wmdp_ds = fetch_wmdp_dataset(category="cyber")

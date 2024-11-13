@@ -14,6 +14,8 @@ skipped_urls = [
     "https://platform.openai.com/docs/api-reference/introduction",  # blocks python requests
 ]
 
+custom_myst_references = ["notebook_tests"]
+
 # Updated regex pattern to capture URLs from Markdown and HTML
 URL_PATTERN = re.compile(r'\[.*?\]\((.*?)\)|href="([^"]+)"|src="([^"]+)"')
 
@@ -56,6 +58,7 @@ def check_url(url, retries=2, delay=2):
     if (
         "http://localhost:" in url
         or url in skipped_urls
+        or any(url.endswith(reference) for reference in custom_myst_references)
         or os.path.isfile(url)
         or os.path.isdir(url)
         or url.startswith("mailto:")

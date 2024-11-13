@@ -25,7 +25,7 @@ from pyrit.models import (
     StorageIO,
 )
 
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, ScoreEntry, SeedPromptEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry, SeedPromptEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 
@@ -141,6 +141,16 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
+
+    @abc.abstractmethod
+    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+        """
+        Updates the given entries with the specified field values.
+
+        Args:
+            entries (list[Base]): A list of SQLAlchemy model instances to be updated.
+            update_fields (dict): A dictionary of field names and their new values.
+        """
 
     def add_scores_to_memory(self, *, scores: list[Score]) -> None:
         """
@@ -425,6 +435,67 @@ class MemoryInterface(abc.ABC):
 
         for piece in request_pieces:
             piece.sequence = sequence
+
+    def update_prompt_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
+        """
+        Updates prompt entries for a given conversation ID with the specified field values.
+
+        Args:
+            conversation_id (str): The conversation ID of the entries to be updated.
+            update_fields (dict): A dictionary of field names and their new values (ex. {"labels": {"test": "value"}})
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        if not update_fields:
+            raise ValueError("update_fields must be provided to update prompt entries.")
+        # Fetch the relevant entries using query_entries
+        entries_to_update = self.query_entries(
+            PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
+        )
+        # Check if there are entries to update
+        if not entries_to_update:
+            logger.info(f"No entries found with conversation_id {conversation_id} to update.")
+            return False
+
+        # Use the utility function to update the entries
+        success = self.update_entries(entries=entries_to_update, update_fields=update_fields)
+
+        if success:
+            logger.info(f"Updated {len(entries_to_update)} entries with conversation_id {conversation_id}.")
+        else:
+            logger.error(f"Failed to update entries with conversation_id {conversation_id}.")
+        return success
+
+    def update_labels_by_conversation_id(self, *, conversation_id: str, labels: dict) -> bool:
+        """
+        Updates the labels of prompt entries in memory for a given conversation ID.
+
+        Args:
+            conversation_id (str): The conversation ID of the entries to be updated.
+            labels (dict): New dictionary of labels.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        return self.update_prompt_entries_by_conversation_id(
+            conversation_id=conversation_id, update_fields={"labels": labels}
+        )
+
+    def update_prompt_metadata_by_conversation_id(self, *, conversation_id: str, prompt_metadata: str) -> bool:
+        """
+        Updates the metadata of prompt entries in memory for a given conversation ID.
+
+        Args:
+            conversation_id (str): The conversation ID of the entries to be updated.
+            metadata (str): New metadata.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        return self.update_prompt_entries_by_conversation_id(
+            conversation_id=conversation_id, update_fields={"prompt_metadata": prompt_metadata}
+        )
 
     @abc.abstractmethod
     def dispose_engine(self):

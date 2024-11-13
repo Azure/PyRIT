@@ -15,11 +15,11 @@ from pyrit.memory import MemoryInterface, MemoryExporter, PromptMemoryEntry
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
+    Score,
     SeedPrompt,
     SeedPromptGroup,
 )
 from pyrit.orchestrator import Orchestrator
-from pyrit.score import Score
 
 from tests.mocks import get_memory_interface, get_sample_conversations, get_sample_conversation_entries
 
@@ -1045,7 +1045,10 @@ def test_get_seed_prompt_dataset_names_multiple(memory: MemoryInterface):
 
 
 def test_add_seed_prompt_groups_to_memory_empty_list(memory: MemoryInterface):
-    prompt_group = SeedPromptGroup(prompts=[])
+    prompt_group = SeedPromptGroup(
+        prompts=[SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)]
+    )
+    prompt_group.prompts = []
     with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
         memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
@@ -1067,7 +1070,7 @@ def test_add_seed_prompt_groups_to_memory_multiple_elements(memory: MemoryInterf
 
 
 def test_add_seed_prompt_groups_to_memory_no_elements(memory: MemoryInterface):
-    with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
+    with pytest.raises(ValueError, match="SeedPromptGroup cannot be empty."):
         prompt_group = SeedPromptGroup(prompts=[])
         memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
