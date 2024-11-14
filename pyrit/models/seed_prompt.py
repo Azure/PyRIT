@@ -9,7 +9,7 @@ import yaml
 
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import datetime
+import datetime
 from typing import Any, Dict, List, Optional, Union
 from collections import defaultdict
 from jinja2 import Template, StrictUndefined
@@ -32,7 +32,7 @@ class SeedPrompt(YamlLoadable):
     authors: Optional[List[str]]
     groups: Optional[List[str]]
     source: Optional[str]
-    date_added: Optional[datetime]
+    date_added: Optional[datetime.datetime]
     added_by: Optional[str]
     metadata: Optional[Dict[str, str]]
     parameters: Optional[List[str]]
@@ -52,7 +52,7 @@ class SeedPrompt(YamlLoadable):
         authors: Optional[List[str]] = None,
         groups: Optional[List[str]] = None,
         source: Optional[str] = None,
-        date_added: Optional[datetime] = datetime.now(),
+        date_added: Optional[datetime.datetime] = datetime.datetime.now(datetime.timezone.utc),
         added_by: Optional[str] = None,
         metadata: Optional[Dict[str, str]] = None,
         parameters: Optional[List[str]] = None,
