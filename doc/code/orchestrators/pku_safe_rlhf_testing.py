@@ -13,14 +13,11 @@
 # ---
 
 # %% [markdown]
-# # PKU-SafeRLHF dataset testing
+# # PKU-SafeRLHF dataset testing - optional
 #
 # This notebook demonstrates the process of using PKU-SafeRLHF examples to perform AI red teaming on a target language model (LLM).
 # It involves fetching potentially harmful behavior prompts from the PKU-SafeRLHF repository, sending them to the LLM, and analyzing the responses.
 # The goal is to identify vulnerabilities, inappropriate responses, or weaknesses in the model's handling of harmful or ethically sensitive prompts.
-#
-#
-#
 #
 
 # %% [markdown]

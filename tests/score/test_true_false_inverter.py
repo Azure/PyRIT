@@ -31,7 +31,7 @@ def memory() -> Generator[MemoryInterface, None, None]:
 async def test_inverter_scorer_validate(image_request_piece: PromptRequestPiece, memory: MemoryInterface):
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         sub_scorer = SubStringScorer(substring="test", category="new_category")
-        scorer = TrueFalseInverterScorer(scorer=sub_scorer, threshold=0.5)
+        scorer = TrueFalseInverterScorer(scorer=sub_scorer)
 
         with pytest.raises(ValueError, match="Expected text data type"):
             await scorer.score_async(image_request_piece)
@@ -46,7 +46,7 @@ async def test_substring_scorer_score(sub_string: str, memory: MemoryInterface):
 
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         sub_scorer = SubStringScorer(substring=sub_string, category="new_category")
-        scorer = TrueFalseInverterScorer(scorer=sub_scorer, threshold=0.5)
+        scorer = TrueFalseInverterScorer(scorer=sub_scorer)
 
         score = await scorer.score_text_async(full_text)
 

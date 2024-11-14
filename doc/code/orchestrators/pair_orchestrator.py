@@ -14,8 +14,7 @@
 # ---
 
 # %% [markdown]
-# # PAIR Orchestrator
-#
+# # PAIR Orchestrator - optional
 #
 # This Jupyter notebook demonstrates how to use the Prompt Automatic Iterative Refinement (PAIR) PyRIT orchestrator. This orchestrator is designed to automate the process of refining a prompt to achieve a desired response from a target model. The orchestrator uses a pair of models, an attacker model and a target model, to iteratively refine a prompt to achieve a desired response from the target model. The orchestrator uses a number of conversation streams to explore the space of possible prompts and responses, and stops when a desired response is achieved.
 #

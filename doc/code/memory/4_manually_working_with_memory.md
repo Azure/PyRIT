@@ -1,10 +1,8 @@
-# Updating Memory Manually
-
+# 4. Updating Memory Manually
 
 After or during an operation or a test, it can be important to use the memory in the database in a straightforward way.
 
 There are many ways to do this, but this section gives some general ideas on how users can solve common problems. Most of this relies on using https://duckdb.org/docs/guides/sql_editors/dbeaver.html
-
 
 ## Sharing Data Between Users
 

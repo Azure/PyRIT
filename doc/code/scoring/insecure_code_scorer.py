@@ -1,5 +1,5 @@
 # %% [markdown]
-# ### Insecure Code Scorer Demonstration
+# # Insecure Code Scorer
 # This script demonstrates how to use InsecureCodeScorer to evaluate a code snippet for potential security vulnerabilities.
 # InsecureCodeScorer uses a language model (LLM) to analyze the code and identify security risks, returning a score based on a predefined threshold.
 

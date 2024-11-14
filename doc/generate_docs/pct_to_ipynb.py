@@ -5,8 +5,8 @@ import argparse, os, subprocess
 from pathlib import Path
 
 skip_files = {
-    "1_auxiliary_attacks.py",
-    "2_gcg_azure_ml.py",
+    "0_auxiliary_attacks.py",
+    "1_gcg_azure_ml.py",
     "7_human_converter.py",
 }
 

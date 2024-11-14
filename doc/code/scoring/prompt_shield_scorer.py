@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Prompt Shield Scorer Documentation + Tutorial
+# # Prompt Shield Scorer Documentation + Tutorial - optional
 
 # %% [markdown]
 # ## 0 TL;DR
