@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass
-from datetime import datetime
+import datetime
 from typing import Dict, Literal, Optional, get_args
 import uuid
 
@@ -64,7 +64,7 @@ class Score:
         task: Optional[str] = None,
     ):
         self.id = id if id else uuid.uuid4()
-        self.timestamp = timestamp if timestamp else datetime.now()
+        self.timestamp = timestamp if timestamp else datetime.datetime.now(datetime.timezone.utc)
 
         self.validate(score_type, score_value)
 
