@@ -9,9 +9,9 @@ pool:
 
 steps:
   - script: pip install --upgrade setuptools pip
-    name: Upgrade pip
+    name: "Upgrade pip"
 
   - script: pip install --ignore-installed --dry-run --quiet --report ./component-detection-pip-report.json .
-    name: Generate Pip Report
+    name: "Generate Pip Report"
 
   - task: ComponentGovernanceComponentDetection@0
