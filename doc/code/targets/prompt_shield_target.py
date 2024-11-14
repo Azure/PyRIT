@@ -78,7 +78,7 @@ from pyrit.common import default_values
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptShieldTarget
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 pst = PromptShieldTarget(os.environ.get("AZURE_CONTENT_SAFETY_ENDPOINT"), os.environ.get("AZURE_CONTENT_SAFETY_KEY"))

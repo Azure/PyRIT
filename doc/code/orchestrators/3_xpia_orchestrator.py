@@ -60,7 +60,7 @@ from xpia_helpers import (
     SemanticKernelPluginAzureOpenAIPromptTarget,
 )
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 

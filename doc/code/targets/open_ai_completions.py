@@ -26,7 +26,7 @@ from pyrit.common import default_values
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAICompletionTarget
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # Note that max_tokens will default to 16 for completions, so you may want to set the upper limit of allowed tokens for a longer response.
 target = OpenAICompletionTarget(max_tokens=2048)

@@ -28,7 +28,7 @@
 
 import pathlib
 
-from pyrit.common.default_values import load_default_env
+from pyrit.common.default_values import load_environment_files
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPrompt
@@ -56,7 +56,7 @@ prompt_template3 = SeedPrompt.from_yaml_file(
 
 prompt_templates = [prompt_template1.value, prompt_template2.value, prompt_template3.value]
 
-load_default_env()
+load_environment_files()
 
 memory = CentralMemory.get_memory_instance()
 

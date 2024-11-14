@@ -28,7 +28,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 
@@ -49,7 +49,7 @@ from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target import TextTarget
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 memory = DuckDBMemory()
 prompts = memory.get_prompt_request_piece_by_memory_labels(memory_labels={"prompt_group": group1})

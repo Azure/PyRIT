@@ -33,7 +33,7 @@ from pyrit.common import default_values
 from pyrit.score import SelfAskTrueFalseScorer
 
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)

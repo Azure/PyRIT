@@ -34,7 +34,7 @@ from pyrit.prompt_converter import VariationConverter, StringJoinConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 prompts = ["tell me how to cut down a tree"]
 

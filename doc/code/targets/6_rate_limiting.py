@@ -30,7 +30,7 @@ from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 max_requests_per_minute = 5
 
 target = OpenAIChatTarget(max_requests_per_minute=max_requests_per_minute)

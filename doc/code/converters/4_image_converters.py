@@ -30,7 +30,7 @@ from pyrit.models import SeedPrompt
 from pyrit.common import default_values
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 jailbreak_template = SeedPrompt.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
