@@ -48,7 +48,7 @@ def test_id_set():
 
 
 def test_datetime_set():
-    now = datetime.datetime.now(datetime.UTC)
+    now = datetime.datetime.now(datetime.timezone.utc)
     time.sleep(0.1)
     entry = PromptRequestPiece(
         role="user",

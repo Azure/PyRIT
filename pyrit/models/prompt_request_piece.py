@@ -82,7 +82,7 @@ class PromptRequestPiece(abc.ABC):
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
 
-        self.timestamp = datetime.datetime.now(datetime.UTC)
+        self.timestamp = datetime.datetime.now(datetime.timezone.utc)
         self.labels = labels
         self.prompt_metadata = prompt_metadata
 
