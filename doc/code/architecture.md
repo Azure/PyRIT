@@ -27,13 +27,13 @@ This is the least defined component, because attacks can get *complicated*. They
 
 Orchestrators should contain all the logic for different types of attacks. For example, PAIR, tree of attack, or crescendo should be implemented primarily as orchestrators.
 
-Ways to contribute: Check out our [orchestrator docs](./orchestrators/1_orchestrator.md). There are hundreds of attacks outlined in research papers. A lot of these can be orchestrators. If you find an attack that doesn't fit the orchestrator model please tell us since we want to try to make it easier to orchestrate these. Are there scenarios you can write orchestrators for?
+Ways to contribute: Check out our [orchestrator docs](./orchestrators/0_orchestrator.md). There are hundreds of attacks outlined in research papers. A lot of these can be orchestrators. If you find an attack that doesn't fit the orchestrator model please tell us since we want to try to make it easier to orchestrate these. Are there scenarios you can write orchestrators for?
 
 ## Converters
 
 Converters are a powerful component that converts prompts to something else. They can be stacked and combined. They can be as varied as translating a text prompt into a Word document, rephrasing a prompt in 100 different ways, or adding a text overlay to an image.
 
-Ways to contribute: Check out our [converter docs](./converters/1_converters.ipynb). Are there ways prompts can be converted that would be useful for an attack?
+Ways to contribute: Check out our [converter docs](./converters/0_converters.ipynb). Are there ways prompts can be converted that would be useful for an attack?
 
 ## Target
 
@@ -43,14 +43,14 @@ This is often an LLM, but it doesn't have to be. For Cross-Domain Prompt Injecti
 
 One orchestrator can have many Prompt Targets (and in fact, converters and Scoring Engine can also use Prompt Targets to convert/score the prompt).
 
-Ways to contribute: Check out our [target docs](./targets/1_prompt_targets.md). Are there models you want to use at any stage or for different attacks?
+Ways to contribute: Check out our [target docs](./targets/0_prompt_targets.md). Are there models you want to use at any stage or for different attacks?
 
 
 ## Scoring Engine
 
 The scoring engine is a component that gives feedback to the orchestrator on what happened with the prompt. This could be as simple as "Was this prompt blocked?" or "Was our objective achieved?"
 
-Ways to contribute: Check out our [scoring docs](./scoring/1_scoring.md). Is there data you want to use to make decisions or analyze?
+Ways to contribute: Check out our [scoring docs](./scoring/0_scoring.md). Is there data you want to use to make decisions or analyze?
 
 ## Memory
 

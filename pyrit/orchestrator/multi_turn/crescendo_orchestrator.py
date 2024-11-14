@@ -39,18 +39,18 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         objective_target (PromptTarget): The target that prompts are sent to.
         adversarial_chat (PromptChatTarget): The chat target for red teaming.
         scoring_target (PromptChatTarget): The chat target for scoring.
-        adversarial_chat_system_prompt_path (Optional[Path], optional): The path to the red teaming chat's
+        adversarial_chat_system_prompt_path (Optional[Path], Optional): The path to the red teaming chat's
             system prompt. Defaults to ../crescendo_variant_1_with_examples.yaml.
-        objective_achieved_score_threshhold (float, optional): The score threshold for achieving the objective.
+        objective_achieved_score_threshhold (float, Optional): The score threshold for achieving the objective.
             Defaults to 0.7.
-        max_turns (int, optional): The maximum number of turns to perform the attack. Defaults to 10.
-        prompt_converters (Optional[list[PromptConverter]], optional): List of converters to apply to prompts.
+        max_turns (int, Optional): The maximum number of turns to perform the attack. Defaults to 10.
+        prompt_converters (Optional[list[PromptConverter]], Optional): List of converters to apply to prompts.
             Defaults to None.
-        max_backtracks (int, optional): The maximum number of times to backtrack during the attack.
+        max_backtracks (int, Optional): The maximum number of times to backtrack during the attack.
             Must be a positive integer. Defaults to 10.
-        memory_labels (Optional[dict[str, str]], optional): Dictionary of labels for memory management.
+        memory_labels (Optional[dict[str, str]], Optional): Dictionary of labels for memory management.
             Defaults to None.
-        verbose (bool, optional): Flag indicating whether to enable verbose logging. Defaults to False.
+        verbose (bool, Optional): Flag indicating whether to enable verbose logging. Defaults to False.
     """
 
     def __init__(

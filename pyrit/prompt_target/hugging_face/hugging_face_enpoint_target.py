@@ -34,10 +34,10 @@ class HuggingFaceEndpointTarget(PromptTarget):
             hf_token (str): The Hugging Face token for authenticating with the Hugging Face endpoint.
             endpoint (str): The endpoint URL for the Hugging Face model.
             model_id (str): The model ID to be used at the endpoint.
-            max_tokens (int, optional): The maximum number of tokens to generate. Defaults to 400.
-            temperature (float, optional): The sampling temperature to use. Defaults to 1.0.
-            top_p (float, optional): The cumulative probability for nucleus sampling. Defaults to 1.0.
-            verbose (bool, optional): Flag to enable verbose logging. Defaults to False.
+            max_tokens (int, Optional): The maximum number of tokens to generate. Defaults to 400.
+            temperature (float, Optional): The sampling temperature to use. Defaults to 1.0.
+            top_p (float, Optional): The cumulative probability for nucleus sampling. Defaults to 1.0.
+            verbose (bool, Optional): Flag to enable verbose logging. Defaults to False.
         """
         super().__init__(verbose=verbose)
         self.hf_token = hf_token

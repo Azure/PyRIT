@@ -53,7 +53,7 @@ class PAIROrchestrator(Orchestrator):
         Initializes the PAIR orchestrator to run the PAIR algorithm against two targets.
 
         Args:
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category category.
             Users can define any key-value pairs according to their needs. Defaults to None.
@@ -72,15 +72,15 @@ class PAIROrchestrator(Orchestrator):
             stop_on_first_success: Whether to stop the algorithm after the first successful attack. Defaults to True.
                 If False, the algorithm will continue to run until all conversation streams are exhausted possibly
                 finding multiple successful jailbreaks.
-            scorer (Score, optional): The scorer to use for scoring the target's response.
-            scorer_sensitivity (float, optional): The sensitivity of the scorer.
+            scorer (Score, Optional): The scorer to use for scoring the target's response.
+            scorer_sensitivity (float, Optional): The sensitivity of the scorer.
                 This value indicates the scorer's tolerance for scores below the maximum score value.
                 Note that the sensitivity refers to the normalized score (value-min)/(max-min).
                 For example, for a scoring scale 1-10, the scores map as follows:
                 1 -> 0.0, 2 -> 0.11, 3 -> 0.22, ..., 10 -> 1.0.
                 A sensitivity of 0.7 would consider a score of 7 or above as a successful jailbreak.
                 Defaults to 1.0 which is equivalent to 10/10 in the scale of the PAIR paper.
-            prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
+            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 the order they are provided. The default PAIR implementation does not use any converters.
         """
         super().__init__(memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters)

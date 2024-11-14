@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # OpenAI Completions
+# # OpenAI Completions - optional
 #
 # Before you begin, ensure you are setup with the correct version of PyRIT and have the applicable secrets configured as described [here](../../setup/populating_secrets.md).
 #

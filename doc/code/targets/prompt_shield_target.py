@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Prompt Shield Target Documentation + Tutorial
+# # Prompt Shield Target Documentation + Tutorial - optional
 
 # %% [markdown]
 # This is a brief tutorial and documentation on using the Prompt Shield Target

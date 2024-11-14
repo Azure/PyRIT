@@ -1,5 +1,5 @@
 # %% [markdown]
-# # HuggingFace Chat Target Testing
+# # HuggingFace Chat Target Testing - optional
 #
 # This notebook is designed to demonstrate **instruction models** that use a **chat template**, allowing users to experiment with structured chat-based interactions.  Non-instruct models are excluded to ensure consistency and reliability in the chat-based interactions. More instruct models can be explored on Hugging Face.
 #
