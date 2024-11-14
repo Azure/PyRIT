@@ -9,6 +9,14 @@ from pyrit.prompt_target import HuggingFaceChatTarget
 from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
 
 
+def is_torch_installed():
+    try:
+        import torch  # noqa: F401
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
 # Fixture to mock get_required_value
 @pytest.fixture(autouse=True)
 def mock_get_required_value(request):
@@ -83,6 +91,7 @@ def mock_create_task():
         yield
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 def test_init_with_no_token_var_raises(monkeypatch):
     # Ensure the environment variable is unset
     monkeypatch.delenv("HUGGINGFACE_TOKEN", raising=False)
@@ -93,6 +102,7 @@ def test_init_with_no_token_var_raises(monkeypatch):
     assert "Environment variable HUGGINGFACE_TOKEN is required" in str(excinfo.value)
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.asyncio
 async def test_initialization():
     # Test the initialization without loading the actual models
@@ -106,12 +116,14 @@ async def test_initialization():
     assert hf_chat.tokenizer is not None
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 def test_is_model_id_valid_true():
     # Simulate valid model ID
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
     assert hf_chat.is_model_id_valid()
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 def test_is_model_id_valid_false():
     # Simulate invalid model ID by causing an exception
     with patch("transformers.PretrainedConfig.from_pretrained", side_effect=Exception("Invalid model")):
@@ -119,6 +131,7 @@ def test_is_model_id_valid_false():
         assert not hf_chat.is_model_id_valid()
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.asyncio
 async def test_load_model_and_tokenizer():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
@@ -127,6 +140,7 @@ async def test_load_model_and_tokenizer():
     assert hf_chat.tokenizer is not None
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.asyncio
 async def test_send_prompt_async():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
@@ -147,6 +161,7 @@ async def test_send_prompt_async():
     assert response.request_pieces[0].original_value == "Assistant's response"
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.asyncio
 async def test_missing_chat_template_error():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
@@ -168,6 +183,7 @@ async def test_missing_chat_template_error():
     assert "Tokenizer does not have a chat template" in str(excinfo.value)
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 def test_invalid_prompt_request_validation():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False)
 
@@ -186,6 +202,7 @@ def test_invalid_prompt_request_validation():
     assert "This target only supports a single prompt request piece." in str(excinfo.value)
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.asyncio
 async def test_load_with_missing_files():
     hf_chat = HuggingFaceChatTarget(model_id="test_model", use_cuda=False, necessary_files=["file1", "file2"])
@@ -195,6 +212,7 @@ async def test_load_with_missing_files():
     assert hf_chat.tokenizer is not None
 
 
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 def test_enable_disable_cache():
     # Test enabling cache
     HuggingFaceChatTarget.enable_cache()

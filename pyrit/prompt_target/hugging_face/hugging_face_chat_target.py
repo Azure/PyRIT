@@ -7,7 +7,6 @@ import logging
 import os
 from typing import Optional
 
-import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
 from pyrit.prompt_target import PromptChatTarget
@@ -59,6 +58,13 @@ class HuggingFaceChatTarget(PromptChatTarget):
         self.huggingface_token = default_values.get_required_value(
             env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, passed_value=hf_access_token
         )
+
+        # 
+        try:
+            import torch
+        except ModuleNotFoundError as e:
+            logger.error(f"Could not import torch. You may need to install it via 'pip install pyrit[all]'")
+            raise e
 
         # Determine the device
         self.device = "cuda" if self.use_cuda and torch.cuda.is_available() else "cpu"
