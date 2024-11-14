@@ -34,7 +34,7 @@
 import os
 from pyrit.common import default_values
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # Enter details of your AML workspace
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")

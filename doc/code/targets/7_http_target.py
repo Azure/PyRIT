@@ -36,7 +36,7 @@ from pyrit.prompt_target.http_target.http_target_callback_functions import (
 )
 from pyrit.score import SelfAskTrueFalseScorer
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 deployment_name = os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT")
 endpoint = os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT")

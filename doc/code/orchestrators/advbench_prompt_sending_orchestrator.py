@@ -36,7 +36,7 @@ from pyrit.prompt_converter import Base64Converter
 from pyrit.datasets import fetch_adv_bench_dataset
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 target = OpenAIChatTarget()
 
 # %%

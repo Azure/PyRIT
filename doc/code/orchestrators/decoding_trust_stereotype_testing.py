@@ -22,7 +22,7 @@ from pyrit.score.substring_scorer import SubStringScorer
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 # %%

@@ -56,7 +56,7 @@ from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # Note: parameters are not required here. They are added here to show how they can be used.
 with OpenAIChatTarget(

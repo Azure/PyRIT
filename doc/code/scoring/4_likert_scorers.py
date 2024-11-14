@@ -28,7 +28,7 @@ from pyrit.common import default_values
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 with OpenAIChatTarget() as self_ask_target:

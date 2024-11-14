@@ -7,10 +7,10 @@
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import InsecureCodeScorer
 from pyrit.models import PromptRequestPiece
-from pyrit.common.default_values import load_default_env
+from pyrit.common.default_values import load_environment_files
 
 # Load default environment configurations if needed
-load_default_env()
+load_environment_files()
 
 # Initialize the LLM model target
 chat_target = OpenAIChatTarget()
