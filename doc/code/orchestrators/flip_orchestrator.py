@@ -29,7 +29,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 

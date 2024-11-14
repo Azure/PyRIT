@@ -24,7 +24,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 with OpenAIChatTarget() as azure_openai_chat_target:
     true_false_classifier = SelfAskTrueFalseScorer(
         true_false_question_path=TrueFalseQuestionPaths.PROMPT_INJECTION.value, chat_target=azure_openai_chat_target
