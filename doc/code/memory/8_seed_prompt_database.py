@@ -27,7 +27,7 @@
 from pyrit.common import default_values
 from pyrit.memory import AzureSQLMemory
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 azure_memory = AzureSQLMemory()
 

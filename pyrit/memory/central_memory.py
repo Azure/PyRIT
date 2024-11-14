@@ -42,9 +42,6 @@ class CentralMemory:
             logger.info(f"Reusing existing memory instance: {type(cls._memory_instance).__name__}")
             return cls._memory_instance
 
-        # Load environment variables
-        default_values.load_default_env()
-
         # Check for Azure SQL settings
         empty_passed_value = ""
         azure_sql_db_conn_string = default_values.get_non_required_value(

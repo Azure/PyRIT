@@ -38,7 +38,7 @@ from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 
@@ -70,7 +70,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 
@@ -100,7 +100,7 @@ from pyrit.common.path import HOME_PATH
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 text_target = TextTarget()
 
@@ -134,7 +134,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer, SelfAskLikertScorer, LikertScalePaths
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 
@@ -182,7 +182,7 @@ from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 

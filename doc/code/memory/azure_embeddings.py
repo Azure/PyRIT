@@ -24,7 +24,7 @@ from pprint import pprint
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 from pyrit.common import default_values
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 input_text = "hello"
 ada_embedding_engine = AzureTextEmbedding()

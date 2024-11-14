@@ -27,7 +27,7 @@ from pyrit.score import SelfAskCategoryScorer
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 with OpenAIChatTarget() as azure_openai_chat_target:
     harmful_content_classifier = SelfAskCategoryScorer(
         content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value, chat_target=azure_openai_chat_target
