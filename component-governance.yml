@@ -13,5 +13,8 @@ steps:
 
   - script: pip install --ignore-installed --dry-run --quiet --report ./component-detection-pip-report.json .
     name: GeneratePipReport
+  
+  - script: cat ./component-detection-pip-report.json
+    name: ShowPipReport
 
   - task: ComponentGovernanceComponentDetection@0
