@@ -8,12 +8,10 @@ pool:
   vmImage: "ubuntu-latest"
 
 steps:
-  - script: pip install --upgrade setuptools pip
-  # Component Governance does not support pyproject.toml yet.
-  # For that reason, use toml-to-requirements to export the
-  # dependencies into a requirements.txt file.
-  - script: pip install toml-to-requirements
+  - name: Upgrade pip
+    script: pip install --upgrade setuptools pip
 
-  - script: toml-to-req --toml-file pyproject.toml
+  - name: Generate Pip Report
+    script: pip install --ignore-installed --dry-run --quiet --report ./component-detection-pip-report.json .
 
   - task: ComponentGovernanceComponentDetection@0
