@@ -10,6 +10,7 @@ from pyrit.common import path
 
 logger = logging.getLogger(__name__)
 
+
 def load_environment_files() -> None:
     """
     Loads the base environment file from .env if it exists,
