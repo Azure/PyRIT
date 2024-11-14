@@ -4,7 +4,7 @@
 import abc
 from collections import defaultdict
 import copy
-from datetime import datetime
+import datetime
 import logging
 from pathlib import Path
 from sqlalchemy import and_
@@ -605,7 +605,7 @@ class MemoryInterface(abc.ABC):
             added_by (str): The user who added the prompts.
         """
         entries: list[SeedPromptEntry] = []
-        current_time = datetime.now()
+        current_time = datetime.datetime.now(datetime.timezone.utc)
         for prompt in prompts:
             if added_by:
                 prompt.added_by = added_by

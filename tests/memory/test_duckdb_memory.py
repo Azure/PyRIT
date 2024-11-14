@@ -331,18 +331,17 @@ def test_get_memories_with_json_properties(memory_interface):
     # Start a session
     with memory_interface.get_session() as session:
         # Create a ConversationData entry with all attributes filled
-        entry = PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                conversation_id=specific_conversation_id,
-                role="user",
-                sequence=1,
-                original_value="Test content",
-                converted_value="Test content",
-                labels={"normalizer_id": "id1"},
-                converter_identifiers=converter_identifiers,
-                prompt_target_identifier=target.get_identifier(),
-            )
+        piece = PromptRequestPiece(
+            conversation_id=specific_conversation_id,
+            role="user",
+            sequence=1,
+            original_value="Test content",
+            converted_value="Test content",
+            labels={"normalizer_id": "id1"},
+            converter_identifiers=converter_identifiers,
+            prompt_target_identifier=target.get_identifier(),
         )
+        entry = PromptMemoryEntry(entry=piece)
 
         # Insert the ConversationData entry
         session.add(entry)
@@ -358,7 +357,7 @@ def test_get_memories_with_json_properties(memory_interface):
         assert retrieved_entry.role == "user"
         assert retrieved_entry.original_value == "Test content"
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
-        assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 10  # Assuming the test runs quickly
+        assert abs((retrieved_entry.timestamp - piece.timestamp).total_seconds()) < 10  # Assuming the test runs quickly
 
         converter_identifiers = retrieved_entry.converter_identifiers
         assert len(converter_identifiers) == 1
