@@ -8,10 +8,10 @@ pool:
   vmImage: "ubuntu-latest"
 
 steps:
-  - name: Upgrade pip
-    script: pip install --upgrade setuptools pip
+  - script: pip install --upgrade setuptools pip
+    name: Upgrade pip
 
-  - name: Generate Pip Report
-    script: pip install --ignore-installed --dry-run --quiet --report ./component-detection-pip-report.json .
+  - script: pip install --ignore-installed --dry-run --quiet --report ./component-detection-pip-report.json .
+    name: Generate Pip Report
 
   - task: ComponentGovernanceComponentDetection@0
