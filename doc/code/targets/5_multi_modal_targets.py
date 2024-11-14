@@ -35,7 +35,7 @@ from pyrit.prompt_target import OpenAIDALLETarget
 
 
 prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
-default_values.load_default_env()
+default_values.load_environment_files()
 
 request = PromptRequestPiece(
     role="user",
@@ -70,7 +70,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import TranslationConverter
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 converter_target = OpenAIChatTarget()
 
@@ -105,7 +105,7 @@ from pyrit.prompt_normalizer.normalizer_request import NormalizerRequestPiece
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.orchestrator import PromptSendingOrchestrator
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
 

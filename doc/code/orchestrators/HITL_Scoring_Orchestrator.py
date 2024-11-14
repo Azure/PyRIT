@@ -19,7 +19,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 from pyrit.common import default_values
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # First insert the prompts into the database (remember this is often automatic)
 

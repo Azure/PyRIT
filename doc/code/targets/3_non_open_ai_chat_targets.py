@@ -49,7 +49,7 @@ from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureMLChatTarget
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # Defaults to endpoint and api_key pulled from the AZURE_ML_MANAGED_ENDPOINT and AZURE_ML_KEY environment variables
 azure_ml_chat_target = AzureMLChatTarget()

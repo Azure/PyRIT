@@ -27,7 +27,7 @@ from pyrit.common.path import DATASETS_PATH
 
 from pyrit.common import default_values
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 with OpenAIChatTarget() as attack_llm:
 
@@ -57,7 +57,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 
 from pyrit.common import default_values
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 with OpenAIChatTarget() as attack_llm:

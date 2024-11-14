@@ -38,7 +38,7 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.memory import CentralMemory
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 # Set up the Azure Content Filter

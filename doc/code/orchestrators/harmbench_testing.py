@@ -16,7 +16,7 @@ from pyrit.prompt_target import TextTarget
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 # %%

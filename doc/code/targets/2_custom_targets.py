@@ -54,7 +54,7 @@ from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
 from pyrit.score import GandalfScorer
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 gandalf_level = GandalfLevel.LEVEL_1
 print(f"\n---\nRunning Gandalf level {gandalf_level}...")
@@ -105,7 +105,7 @@ from pyrit.score import SubStringScorer
 
 from pyrit.common import default_values
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -142,7 +142,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.prompt_target import CrucibleTarget
 from pyrit.score.substring_scorer import SubStringScorer
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 conversation_objective = textwrap.dedent(
     """\
