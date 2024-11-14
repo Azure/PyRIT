@@ -29,7 +29,7 @@ class TranslationConverter(PromptConverter):
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
-            prompt_template (SeedPrompt, optional): The prompt template for the conversion.
+            prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
 
         Raises:
             ValueError: If the language is not provided.

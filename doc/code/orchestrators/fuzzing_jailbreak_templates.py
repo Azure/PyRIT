@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Fuzzing Jailbreak Templates
+# # Fuzzing Jailbreak Templates - optional
 #
 # Based on GPTFuzzer by Yu et al. (https://arxiv.org/abs/2309.10253, https://github.com/sherdencooper/GPTFuzz),
 # this notebook demonstrates the process of generating new jailbreak templates from existing ones by applying

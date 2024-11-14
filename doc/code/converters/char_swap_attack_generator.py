@@ -1,5 +1,5 @@
 # %% [markdown]
-# # Generating Perturbed Prompts Using the CharSwapGenerator
+# # Generating Perturbed Prompts Using the CharSwapGenerator - optional
 #
 # In this script, we demonstrate how to use the `CharSwapGenerator` to generate perturbed prompts by swapping characters in words.
 # The converter interacts with the Azure OpenAI API, sending prompts asynchronously through the `PromptSendingOrchestrator`.

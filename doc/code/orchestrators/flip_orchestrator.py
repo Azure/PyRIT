@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Flip Orchestrator
+# # Flip Orchestrator - optional
 #
 # Flip Orchestrator is a simple attack. The paper is available here: https://arxiv.org/html/2410.02832v1.
 #

@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Resending Prompts Example
+# # 5. Resending Prompts Example
 #
 # There are many situations where you can use memory. Besides basic usage, you may want to send prompts a second time. The following:
 #
@@ -40,7 +40,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
     await orchestrator.send_prompts_async(prompt_list=all_prompts)  # type: ignore
 
 # %% [markdown]
-# Because you have labeled `group1`, you can retrieve these prompts later. For example, you could score them as shown [here](../orchestrators/5_scoring_orchestrator.ipynb). Or you could resend them as shown below; this script will resend any prompts with the label regardless of modality.
+# Because you have labeled `group1`, you can retrieve these prompts later. For example, you could score them as shown [here](../orchestrators/4_scoring_orchestrator.ipynb). Or you could resend them as shown below; this script will resend any prompts with the label regardless of modality.
 
 # %%
 from pyrit.memory import DuckDBMemory
