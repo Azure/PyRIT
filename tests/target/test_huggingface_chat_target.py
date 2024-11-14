@@ -12,6 +12,7 @@ from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRe
 def is_torch_installed():
     try:
         import torch  # noqa: F401
+
         return True
     except ModuleNotFoundError:
         return False

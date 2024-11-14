@@ -59,11 +59,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
             env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, passed_value=hf_access_token
         )
 
-        # 
         try:
             import torch
         except ModuleNotFoundError as e:
-            logger.error(f"Could not import torch. You may need to install it via 'pip install pyrit[all]'")
+            logger.error("Could not import torch. You may need to install it via 'pip install pyrit[all]'")
             raise e
 
         # Determine the device
