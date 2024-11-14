@@ -2,6 +2,7 @@
 
 trigger:
   - main
+  - romanlutz/cg_fix
 
 pool:
   vmImage: "ubuntu-latest"
