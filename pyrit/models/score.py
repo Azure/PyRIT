@@ -43,7 +43,7 @@ class Score:
     prompt_request_response_id: uuid.UUID | str
 
     # Timestamp of when the score was created
-    timestamp: datetime
+    timestamp: datetime.datetime
 
     # The task based on which the text is scored (the original attacker model's objective).
     task: str
@@ -60,7 +60,7 @@ class Score:
         score_metadata: str,
         scorer_class_identifier: Dict[str, str] = None,
         prompt_request_response_id: str | uuid.UUID,
-        timestamp: Optional[datetime] = None,
+        timestamp: Optional[datetime.datetime] = None,
         task: Optional[str] = None,
     ):
         self.id = id if id else uuid.uuid4()
@@ -140,7 +140,7 @@ class UnvalidatedScore:
     prompt_request_response_id: uuid.UUID | str
     task: str
     id: Optional[uuid.UUID | str] = None
-    timestamp: Optional[datetime] = None
+    timestamp: Optional[datetime.datetime] = None
 
     def to_score(self, *, score_value: str):
         return Score(

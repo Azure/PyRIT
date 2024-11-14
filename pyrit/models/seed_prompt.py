@@ -52,7 +52,7 @@ class SeedPrompt(YamlLoadable):
         authors: Optional[List[str]] = None,
         groups: Optional[List[str]] = None,
         source: Optional[str] = None,
-        date_added: Optional[datetime] = datetime.datetime.now(datetime.timezone.utc),
+        date_added: Optional[datetime.datetime] = datetime.datetime.now(datetime.timezone.utc),
         added_by: Optional[str] = None,
         metadata: Optional[Dict[str, str]] = None,
         parameters: Optional[List[str]] = None,

@@ -341,9 +341,7 @@ def test_get_memories_with_json_properties(memory_interface):
             converter_identifiers=converter_identifiers,
             prompt_target_identifier=target.get_identifier(),
         )
-        entry = PromptMemoryEntry(
-            entry=piece
-        )
+        entry = PromptMemoryEntry(entry=piece)
 
         # Insert the ConversationData entry
         session.add(entry)
