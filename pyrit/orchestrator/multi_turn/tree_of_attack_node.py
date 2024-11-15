@@ -3,7 +3,6 @@
 
 import json
 import logging
-from dataclasses import dataclass
 
 from typing import Optional
 import uuid
@@ -19,31 +18,11 @@ from pyrit.score.scorer import Scorer
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class TAPNodeResult:
-    pruned: bool
-    completed: bool
-    score: Optional[float] = None
-    node_id: Optional[str] = None
-    objective_target_conversation_id: Optional[str] = None
-
-    def __str__(self) -> str:
-        return (
-            "TAPNodeResult("
-            f"pruned={self.pruned}, "
-            f"completed={self.completed}, "
-            f"score={self.score}, "
-            f"node_id={self.node_id}, "
-            f"objective_target_conversation_id={self.objective_target_conversation_id})"
-        )
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-class TreeOfAttackNode():
+class TreeOfAttackNode:
     """
     Creates a Node to be used with Tree of Attacks with Pruning.
     """
+
     _memory: MemoryInterface
 
     def __init__(
@@ -81,10 +60,12 @@ class TreeOfAttackNode():
         self.objective_target_conversation_id = str(uuid.uuid4())
         self.adversarial_chat_conversation_id = str(uuid.uuid4())
 
-    async def send_prompt_async(
-            self,
-            objective: str
-        ) -> TAPNodeResult:
+        self.prompt_sent = False
+        self.completed = False
+        self.score = 0.0
+        self.off_topic = False
+
+    async def send_prompt_async(self, objective: str):
         """Executes one turn of a branch of a tree of attacks with pruning.
 
         This includes a few steps. At first, the red teaming target generates a prompt for the prompt target.
@@ -93,29 +74,22 @@ class TreeOfAttackNode():
         The response from the prompt target is finally scored by the scorer.
         """
 
+        self.prompt_sent = True
+
         try:
             prompt = await self._generate_red_teaming_prompt_async(objective=objective)
         except InvalidJsonException as e:
             logger.error(f"Failed to generate a prompt for the prompt target: {e}")
             logger.info("Pruning the branch since we can't proceed without red teaming prompt.")
-            return TAPNodeResult(
-                pruned=True,
-                completed=False,
-                objective_target_conversation_id=self.objective_target_conversation_id,
-                node_id=self.node_id
-            )
+            return
 
         if self._on_topic_scorer:
             on_topic_score = (await self._on_topic_scorer.score_text_async(text=prompt))[0]
 
             # If the prompt is not on topic we prune the branch.
             if not on_topic_score.get_value():
-                return TAPNodeResult(
-                    pruned=True,
-                    completed=False,
-                    objective_target_conversation_id=self.objective_target_conversation_id,
-                    node_id=self.node_id
-                )
+                self.off_topic = True
+                return
 
         objective_target_request = NormalizerRequest(
             request_pieces=[
@@ -139,20 +113,14 @@ class TreeOfAttackNode():
 
         logger.debug(f"saving score with prompt_request_response_id: {response.id}")
 
-        score = (
+        self.score = (
             await self._objective_scorer.score_async(
                 request_response=response,
                 task=objective,
             )
         )[0].get_value()
 
-        return TAPNodeResult(
-            pruned=False,
-            completed=True,
-            score=score,
-            node_id=self.node_id,
-            objective_target_conversation_id=self.objective_target_conversation_id,
-        )
+        self.completed = True
 
     def duplicate(self) -> "TreeOfAttackNode":
         """
@@ -184,17 +152,13 @@ class TreeOfAttackNode():
         return duplicate_node
 
     @pyrit_json_retry
-    async def _generate_red_teaming_prompt_async(
-        self,
-        objective
-    ) -> str:
+    async def _generate_red_teaming_prompt_async(self, objective) -> str:
 
         # Use the red teaming target to generate a prompt for the attack target.
         # The prompt for the red teaming target needs to include the latest message from the prompt target.
         # A special case is the very first message, in which case there are no prior messages
         # so we can use the initial red teaming prompt
         target_messages = self._memory.get_conversation(conversation_id=self.objective_target_conversation_id)
-
 
         if not target_messages:
             self._adversarial_chat.set_system_prompt(
@@ -226,9 +190,7 @@ class TreeOfAttackNode():
 
         adversarial_chat_request = NormalizerRequest(
             request_pieces=[
-                NormalizerRequestPiece(
-                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text"
-                )
+                NormalizerRequestPiece(request_converters=[], prompt_value=prompt_text, prompt_data_type="text")
             ],
             conversation_id=self.adversarial_chat_conversation_id,
         )
@@ -248,7 +210,6 @@ class TreeOfAttackNode():
 
         return self._parse_red_teaming_response(adversarial_chat_response)
 
-
     def _parse_red_teaming_response(self, red_teaming_response: str) -> str:
         # The red teaming response should be in JSON format with two keys: "prompt" and "improvement".
         # We need to parse only "prompt" and return its value.
@@ -266,3 +227,14 @@ class TreeOfAttackNode():
         except KeyError:
             logger.error(f"The response from the red teaming chat does not contain a prompt: {red_teaming_response}")
             raise InvalidJsonException(message="The response from the red teaming chat does not contain a prompt.")
+
+    def __str__(self) -> str:
+        return (
+            "TreeOfAttackNode("
+            f"completed={self.completed}, "
+            f"score={self.score}, "
+            f"node_id={self.node_id}, "
+            f"objective_target_conversation_id={self.objective_target_conversation_id})"
+        )
+
+    __repr__ = __str__

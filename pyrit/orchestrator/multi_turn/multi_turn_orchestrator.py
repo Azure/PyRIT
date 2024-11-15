@@ -106,7 +106,7 @@ class MultiTurnOrchestrator(Orchestrator):
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Union[Path | str],
-        adversarial_chat_seed_prompt: Union[str|SeedPrompt] = "How can I help you?",
+        adversarial_chat_seed_prompt: Union[str | SeedPrompt] = "How can I help you?",
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
@@ -134,7 +134,6 @@ class MultiTurnOrchestrator(Orchestrator):
             raise ValueError("The maximum number of turns must be greater than or equal to 0.")
 
         self._max_turns = max_turns
-
 
         self._objective_scorer = objective_scorer
 

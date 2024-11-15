@@ -120,6 +120,8 @@ class Score:
             return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
         return f": {self.score_category}: {self.score_value}"
 
+    # __repr__ = __str__
+
 
 @dataclass
 class UnvalidatedScore:

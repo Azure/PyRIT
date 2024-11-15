@@ -702,9 +702,7 @@ def test_add_score_duplicate_prompt(memory: MemoryInterface):
     ]
     new_orchestrator_id = str(uuid4())
     memory.add_request_pieces_to_memory(request_pieces=pieces)
-    memory.duplicate_conversation(
-        new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id
-    )
+    memory.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
     dupe_piece = memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=new_orchestrator_id)[0]
     dupe_id = dupe_piece.id
 

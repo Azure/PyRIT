@@ -1,16 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import logging
-import math
 import random
-from colorama import Fore, Style
-from dataclasses import dataclass
+
 from pathlib import Path
 from treelib import Tree
 from typing import Optional
-from uuid import uuid4
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface
@@ -21,9 +17,10 @@ from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, SelfAskScaleScorer, TrueFalseQuestion
 from pyrit.score.scorer import Scorer
 
-from pyrit.orchestrator.multi_turn.tree_of_attack_node import TreeOfAttackNode, TAPNodeResult
+from pyrit.orchestrator.multi_turn.tree_of_attack_node import TreeOfAttackNode
 
 logger = logging.getLogger(__name__)
+
 
 class TapAttackResult(MultiTurnAttackResult):
     def __init__(
@@ -42,6 +39,7 @@ class TapAttackResult(MultiTurnAttackResult):
 
     def print_tree(self):
         print(self.tree_visualization)
+
 
 class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
     _memory: MemoryInterface
@@ -64,13 +62,13 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         verbose: bool = False,
     ) -> None:
 
-
         adversarial_chat_seed_prompt = adversarial_chat_seed_prompt or SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_seed_prompt.yaml")
         )
 
-        adversarial_chat_system_prompt_path = adversarial_chat_system_prompt_path or \
-            Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_system_prompt.yaml")
+        adversarial_chat_system_prompt_path = adversarial_chat_system_prompt_path or Path(
+            DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_system_prompt.yaml"
+        )
 
         objective_scorer = SelfAskScaleScorer(
             chat_target=scoring_target,
@@ -85,9 +83,8 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             adversarial_chat_seed_prompt=adversarial_chat_seed_prompt,
             objective_scorer=objective_scorer,
             memory_labels=memory_labels,
-            verbose=verbose
+            verbose=verbose,
         )
-
 
         self._adversarial_chat_prompt_template = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_prompt_template.yaml")
@@ -110,7 +107,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         self._scoring_target = scoring_target
         self._prompt_converters = prompt_converters
         self._objective_achieved_score_threshhold = objective_achieved_score_threshhold
-
 
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
 
@@ -142,35 +138,32 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                     for _ in range(self._attack_width)
                 ]
                 for node in nodes:
-                    tree_visualization.create_node("Start", node.node_id, parent="root")
+                    tree_visualization.create_node("1: ", node.node_id, parent="root")
             else:  # branch existing orchestrators
                 cloned_nodes = []
                 for node in nodes:
                     for _ in range(self._attack_branching_factor - 1):
                         cloned_node = node.duplicate()
-                        tree_visualization.create_node("TBD", cloned_node.node_id, parent=cloned_node.parent_id)
+                        tree_visualization.create_node(
+                            f"{iteration}: ", cloned_node.node_id, parent=cloned_node.parent_id
+                        )
                         cloned_nodes.append(cloned_node)
 
                 nodes.extend(cloned_nodes)
 
-            completed_results: list[TAPNodeResult] = await self._send_prompt_to_nodes_async(
-                objective=objective,
-                nodes=nodes,
-                tree_visualization=tree_visualization
+            await self._send_prompt_to_nodes_async(
+                objective=objective, nodes=nodes, tree_visualization=tree_visualization
             )
 
-            if len(completed_results) > 0:
-                best_conversation_id = completed_results[0].objective_target_conversation_id
+            nodes = self._prune_nodes_over_width(nodes, tree_visualization)
 
-            nodes = self._prune_incomplete_nodes(completed_results, nodes, tree_visualization)
-            nodes = self._prune_nodes_over_width(completed_results, nodes, tree_visualization)
+            if len(nodes) > 0:
+                best_conversation_id = nodes[0].objective_target_conversation_id
 
-            for result in completed_results:
-                # Check if the (floating point) score is over the threshhold
-                if result.score >= self._objective_achieved_score_threshhold:
+                if nodes[0].score >= self._objective_achieved_score_threshhold:
                     logger.info("The conversation has been stopped because the response is jailbroken.")
                     return TapAttackResult(
-                        conversation_id=result.objective_target_conversation_id,
+                        conversation_id=best_conversation_id,
                         achieved_objective=True,
                         objective=objective,
                         tree_visualization=tree_visualization,
@@ -189,71 +182,38 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             tree_visualization=tree_visualization,
         )
 
-
     async def _send_prompt_to_nodes_async(
-            self,
-            objective: str,
-            nodes:list[TreeOfAttackNode],
-            tree_visualization: Tree
-        ) -> list[TAPNodeResult]:
-
-        results: list[TAPNodeResult]  = []
+        self, objective: str, nodes: list[TreeOfAttackNode], tree_visualization: Tree
+    ):
 
         for node_index, node in enumerate(nodes, start=1):
             logger.info(f"Sending prompt for node {node_index}/{len(nodes)}")
-            node_result = await node.send_prompt_async(objective=objective)
-            results.append(node_result)
+            await node.send_prompt_async(objective=objective)
 
-            if node_result:
-                tree_visualization[node.node_id].tag = self._get_result_string(node_result)
-            else:
-                tree_visualization[node.node_id].tag = "Pruned (error)"
+            tree_visualization[node.node_id].tag += self._get_result_string(node)
 
-        # Sort the results of completed, unpruned, scored branches by score
-        completed_results = [
-            result for result in results if result and result.completed and isinstance(result.score, float)
+    def _get_completed_on_topic_results_in_order(self, nodes: list[TreeOfAttackNode]):
+        completed_nodes = [
+            node for node in nodes if node and node.completed and (not node.off_topic) and isinstance(node.score, float)
         ]
-        completed_results.sort(key=lambda x: (x.score, random.random()), reverse=True)
-        return completed_results
-
-    def _prune_incomplete_nodes(
-        self,
-        completed_results: list[TAPNodeResult],
-        nodes: list[TreeOfAttackNode],
-        tree_visualization: Tree,
-    ) -> list[TreeOfAttackNode]:
-
-        completed_node_ids = [result.node_id for result in completed_results if result.completed]
-
-        for node in nodes:
-            if node.node_id not in completed_node_ids:
-                tree_visualization[node.node_id].tag += " Pruned (incomplete)"
-
-        return [
-            node
-            for node in nodes
-            if node.node_id in completed_node_ids
-        ]
+        completed_nodes.sort(key=lambda x: (x.score, random.random()), reverse=True)
+        return completed_nodes
 
     def _prune_nodes_over_width(
         self,
-        completed_results: list[TAPNodeResult],
         nodes: list[TreeOfAttackNode],
         tree_visualization: Tree,
     ) -> list[TreeOfAttackNode]:
 
-        if len(completed_results) > self._attack_width:
-            completed_results = completed_results[: self._attack_width]
-        remaining_node_ids = [result.node_id for result in completed_results]
+        # This may be redundant but it makes it so you don't need to call in order
+        nodes = self._get_completed_on_topic_results_in_order(nodes)
 
-        for node in nodes:
-            if node.node_id not in remaining_node_ids:
-                tree_visualization[node.node_id].tag += " Pruned (width)"
-        return [
-            node
-            for node in nodes
-            if node.node_id in remaining_node_ids
-        ]
+        under_width = nodes[: self._attack_width]
+        over_width = nodes[self._attack_width :]
+
+        for node in over_width:
+            tree_visualization[node.node_id].tag += " Pruned (width)"
+        return under_width
 
     def _get_on_topic_scorer(self, objective: str) -> Scorer:
         on_topic_scorer = None
@@ -270,11 +230,11 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             )
         return on_topic_scorer
 
-    def _get_result_string(self, result: TAPNodeResult) -> str:
-        if result.pruned:
+    def _get_result_string(self, result: TreeOfAttackNode) -> str:
+        if result.off_topic:
             return "Pruned (off-topic)"
-        if result.completed and result.score is None:
+        if not result.completed:
             return "Pruned (no score available)"
         # get score into human-readable format by adding min value and multiplying by (max-min)
         unnormalized_score = round(1 + result.score * 9)
-        return f"Score: {unnormalized_score}/10"
+        return f"Score: {unnormalized_score}/10 || "
