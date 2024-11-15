@@ -13,23 +13,23 @@ class QRCodeConverter(PromptConverter):
     """Converts a text string to a QR code image.
 
     Args:
-        scale (int, optional): Scaling factor that determines the width/height in pixels of each
+        scale (int, Optional): Scaling factor that determines the width/height in pixels of each
             black/white square (known as a "module") in the QR code. Defaults to 3.
-        border (int, optional): Controls how many modules thick the border should be.
+        border (int, Optional): Controls how many modules thick the border should be.
             Defaults to recommended value of 4.
-        dark_color (tuple, optional): Sets color of dark modules, using RGB values.
+        dark_color (tuple, Optional): Sets color of dark modules, using RGB values.
             Defaults to black: (0, 0, 0).
-        light_color (tuple, optional): Sets color of light modules, using RGB values.
+        light_color (tuple, Optional): Sets color of light modules, using RGB values.
             Defaults to white: (255, 255, 255).
-        data_dark_color (tuple, optional): Sets color of dark data modules (the modules that actually
+        data_dark_color (tuple, Optional): Sets color of dark data modules (the modules that actually
             stores the data), using RGB values. Defaults to dark_color.
-        data_light_color (tuple, optional): Sets color of light data modules, using RGB values.
+        data_light_color (tuple, Optional): Sets color of light data modules, using RGB values.
             Defaults to light_color.
-        finder_dark_color (tuple, optional): Sets dark module color of finder patterns (squares located in
+        finder_dark_color (tuple, Optional): Sets dark module color of finder patterns (squares located in
             three corners), using RGB values. Defaults to dark_color.
-        finder_light_color (tuple, optional): Sets light module color of finder patterns, using RGB values.
+        finder_light_color (tuple, Optional): Sets light module color of finder patterns, using RGB values.
             Defaults to light_color.
-        border_color (tuple, optional): Sets color of border, using RGB values. Defaults to light_color.
+        border_color (tuple, Optional): Sets color of border, using RGB values. Defaults to light_color.
     """
 
     def __init__(

@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Prompt Shield Scorer Documentation + Tutorial
+# # Prompt Shield Scorer Documentation + Tutorial - optional
 
 # %% [markdown]
 # ## 0 TL;DR
@@ -50,12 +50,12 @@
 # %%
 from pyrit.prompt_target import PromptShieldTarget, OpenAIChatTarget
 from pyrit.score import PromptShieldScorer
-from pyrit.common.default_values import load_default_env
+from pyrit.common.default_values import load_environment_files
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 
-load_default_env()
+load_environment_files()
 
 pst = PromptShieldTarget()
 

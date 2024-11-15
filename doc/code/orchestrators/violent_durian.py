@@ -13,7 +13,8 @@
 # ---
 
 # %% [markdown]
-# # Violent Durian attack strategy
+# # Violent Durian attack strategy - optional
+#
 # This update integrates the Violent Durian attack strategy from Project Moonshot into the PyRIT system.
 # The strategy revolves around an attacker LLM manipulating the Target LLM into adopting a criminal persona and
 # providing illegal advice or dangerous suggestions. The criminal persona is chosen randomly from a predefined list,
@@ -32,7 +33,7 @@ from pyrit.common import default_values
 from pyrit.score import SelfAskTrueFalseScorer
 
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)

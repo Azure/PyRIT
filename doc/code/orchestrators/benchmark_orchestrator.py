@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Benchmark Orchestrator
+# # Benchmark Orchestrator - optional
 
 # %%
 # Import necessary packages
@@ -26,7 +26,7 @@ from pyrit.common import default_values
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # %%
 # Set up the Azure OpenAI prompt target

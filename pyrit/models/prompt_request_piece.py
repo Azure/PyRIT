@@ -67,6 +67,7 @@ class PromptRequestPiece(abc.ABC):
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
+        timestamp: Optional[datetime] = None,
     ):
 
         self.id = id if id else uuid4()
@@ -82,7 +83,7 @@ class PromptRequestPiece(abc.ABC):
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
 
-        self.timestamp = datetime.utcnow()
+        self.timestamp = timestamp if timestamp else datetime.now()
         self.labels = labels
         self.prompt_metadata = prompt_metadata
 

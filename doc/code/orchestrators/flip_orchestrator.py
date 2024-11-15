@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Flip Orchestrator
+# # Flip Orchestrator - optional
 #
 # Flip Orchestrator is a simple attack. The paper is available here: https://arxiv.org/html/2410.02832v1.
 #
@@ -29,7 +29,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 

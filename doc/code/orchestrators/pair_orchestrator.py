@@ -14,8 +14,7 @@
 # ---
 
 # %% [markdown]
-# # PAIR Orchestrator
-#
+# # PAIR Orchestrator - optional
 #
 # This Jupyter notebook demonstrates how to use the Prompt Automatic Iterative Refinement (PAIR) PyRIT orchestrator. This orchestrator is designed to automate the process of refining a prompt to achieve a desired response from a target model. The orchestrator uses a pair of models, an attacker model and a target model, to iteratively refine a prompt to achieve a desired response from the target model. The orchestrator uses a number of conversation streams to explore the space of possible prompts and responses, and stops when a desired response is achieved.
 #
@@ -50,12 +49,12 @@
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
-from pyrit.common.default_values import load_default_env
+from pyrit.common.default_values import load_environment_files
 from pyrit.orchestrator.pair_orchestrator import PAIROrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 
-load_default_env()
+load_environment_files()
 
 pair_orchestrator = PAIROrchestrator(
     red_teaming_chat=OpenAIChatTarget(),

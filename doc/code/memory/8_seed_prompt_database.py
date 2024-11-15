@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Seed Prompt Database
+# # 8. Seed Prompt Database
 #
 # Apart from storing results in memory it's also useful to store datasets of seed prompts
 # and seed prompt templates that we may want to use at a later point.
@@ -27,7 +27,7 @@
 from pyrit.common import default_values
 from pyrit.memory import AzureSQLMemory
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 azure_memory = AzureSQLMemory()
 

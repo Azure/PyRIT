@@ -1,5 +1,5 @@
 # %% [markdown]
-# # DecodingTrust Stereotypes dataset testing
+# # DecodingTrust Stereotypes dataset testing - optional
 #
 # 'Stereotypes' are one of eight primary perspectives of trustworthiness, detailed by DecodingTrust here:
 # https://decodingtrust.github.io/
@@ -22,7 +22,7 @@ from pyrit.score.substring_scorer import SubStringScorer
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 # %%

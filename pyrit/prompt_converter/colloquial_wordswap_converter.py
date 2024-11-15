@@ -21,7 +21,7 @@ class ColloquialWordswapConverter(PromptConverter):
         Args:
         deterministic (bool): If True, use the first substitution for each wordswap.
                               If False, randomly choose a substitution for each wordswap. Defaults to False.
-        custom_substitutions (Optional[Dict[str, List[str]]], optional): A dictionary of custom substitutions to
+        custom_substitutions (Optional[Dict[str, List[str]]], Optional): A dictionary of custom substitutions to
                                                                         override the defaults. Defaults to None.
         """
         default_substitutions = {

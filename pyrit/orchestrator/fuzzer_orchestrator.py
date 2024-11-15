@@ -165,7 +165,7 @@ class FuzzerOrchestrator(Orchestrator):
             minimum_reward: Minimal reward prevents the reward of the current node and its ancestors
                 from being too small or negative.
             non_leaf_node_probability: parameter which decides the likelihood of selecting a non-leaf node.
-            batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+            batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
             target_jailbreak_goal_count: target number of the jailbreaks after which the fuzzer will stop.
             max_query_limit: Maximum number of times the fuzzer will run. By default, it calculates the product
                 of prompts and prompt templates and multiplies it by 10. Each iteration makes as many calls as

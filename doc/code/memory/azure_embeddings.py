@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Azure OpenAI Embeddings
+# # Azure OpenAI Embeddings - optional
 #
 # Similar to the [OpenAI Completions](../targets/open_ai_completions.ipynb) endpoint, PyRIT also allows to get embeddings. The embedding response is a wrapper for the OpenAI embedding API.
 
@@ -24,7 +24,7 @@ from pprint import pprint
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 from pyrit.common import default_values
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 input_text = "hello"
 ada_embedding_engine = AzureTextEmbedding()
