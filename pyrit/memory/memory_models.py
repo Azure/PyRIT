@@ -122,6 +122,7 @@ class PromptMemoryEntry(Base):
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,
             original_prompt_id=self.original_prompt_id,
+            timestamp=self.timestamp,
         )
 
     def __str__(self):
