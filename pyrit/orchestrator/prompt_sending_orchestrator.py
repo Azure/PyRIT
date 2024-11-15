@@ -200,7 +200,6 @@ class PromptSendingOrchestrator(Orchestrator):
             for request in self._prepended_conversation:
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
-                    piece.id = uuid.uuid4()
 
                     # if the piece is retrieved from somewhere else, it needs to be unique
                     # and if not, this won't hurt anything
