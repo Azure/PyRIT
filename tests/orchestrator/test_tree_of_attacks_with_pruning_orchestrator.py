@@ -10,7 +10,6 @@ from pyrit.memory import MemoryInterface
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
-from pyrit.orchestrator.multi_turn.tree_of_attack_node import TreeOfAttackNode
 from tests.mocks import MockPromptTarget, get_memory_interface
 
 

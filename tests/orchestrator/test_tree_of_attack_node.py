@@ -9,12 +9,14 @@ from pyrit.score.scorer import Scorer
 from pyrit.prompt_converter import PromptConverter
 from pyrit.orchestrator.multi_turn.tree_of_attack_node import TreeOfAttackNode
 
+
 @pytest.fixture
 def mock_memory():
     memory = MagicMock()
     memory.get_memory_instance.return_value = memory
     memory.duplicate_conversation.return_value = "duplicated_conversation_id"
     return memory
+
 
 @pytest.fixture
 def tree_of_attack_node(mock_memory):
@@ -31,18 +33,26 @@ def tree_of_attack_node(mock_memory):
         memory_labels={"label_key": "label_value"},
     )
 
+
 @pytest.mark.asyncio
 async def test_send_prompt_async(tree_of_attack_node):
     tree_of_attack_node._generate_red_teaming_prompt_async = AsyncMock(return_value="generated_prompt")
-    tree_of_attack_node._on_topic_scorer.score_text_async = AsyncMock(return_value=[MagicMock(get_value=MagicMock(return_value=True))])
-    tree_of_attack_node._prompt_normalizer.send_prompt_async = AsyncMock(return_value=MagicMock(request_pieces=[MagicMock(id="response_id")]))
-    tree_of_attack_node._objective_scorer.score_async = AsyncMock(return_value=[MagicMock(get_value=MagicMock(return_value=0.9))])
+    tree_of_attack_node._on_topic_scorer.score_text_async = AsyncMock(
+        return_value=[MagicMock(get_value=MagicMock(return_value=True))]
+    )
+    tree_of_attack_node._prompt_normalizer.send_prompt_async = AsyncMock(
+        return_value=MagicMock(request_pieces=[MagicMock(id="response_id")])
+    )
+    tree_of_attack_node._objective_scorer.score_async = AsyncMock(
+        return_value=[MagicMock(get_value=MagicMock(return_value=0.9))]
+    )
 
     await tree_of_attack_node.send_prompt_async(objective="test_objective")
 
     assert tree_of_attack_node.prompt_sent is True
     assert tree_of_attack_node.completed is True
     assert tree_of_attack_node.score == 0.9
+
 
 def test_duplicate(tree_of_attack_node, mock_memory):
     duplicate_node = tree_of_attack_node.duplicate()
@@ -51,16 +61,22 @@ def test_duplicate(tree_of_attack_node, mock_memory):
     assert duplicate_node.objective_target_conversation_id != tree_of_attack_node.objective_target_conversation_id
     assert duplicate_node.adversarial_chat_conversation_id != tree_of_attack_node.adversarial_chat_conversation_id
 
+
 @pytest.mark.asyncio
 async def test_generate_red_teaming_prompt_async(tree_of_attack_node, mock_memory):
     mock_memory.get_conversation.return_value = []
     tree_of_attack_node._adversarial_chat_seed_prompt.render_template_value = MagicMock(return_value="seed_prompt")
-    tree_of_attack_node._adversarial_chat_system_seed_prompt.render_template_value = MagicMock(return_value="system_prompt")
-    tree_of_attack_node._prompt_normalizer.send_prompt_async = AsyncMock(return_value=MagicMock(request_pieces=[MagicMock(converted_value='{"prompt": "generated_prompt"}')]))
+    tree_of_attack_node._adversarial_chat_system_seed_prompt.render_template_value = MagicMock(
+        return_value="system_prompt"
+    )
+    tree_of_attack_node._prompt_normalizer.send_prompt_async = AsyncMock(
+        return_value=MagicMock(request_pieces=[MagicMock(converted_value='{"prompt": "generated_prompt"}')])
+    )
 
     prompt = await tree_of_attack_node._generate_red_teaming_prompt_async(objective="test_objective")
 
     assert prompt == "generated_prompt"
+
 
 def test_parse_red_teaming_response(tree_of_attack_node):
     response = '{"prompt": "parsed_prompt", "improvement": "some_improvement"}'

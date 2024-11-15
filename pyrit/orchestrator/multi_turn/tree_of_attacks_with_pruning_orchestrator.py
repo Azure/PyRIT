@@ -108,7 +108,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         self._prompt_converters = prompt_converters
         self._objective_achieved_score_threshhold = objective_achieved_score_threshhold
 
-    async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
+    async def run_attack_async(self, *, objective: str) -> TapAttackResult:
 
         tree_visualization = Tree()
         tree_visualization.create_node("Root", "root")

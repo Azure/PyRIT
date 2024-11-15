@@ -301,7 +301,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             # If there is no response from the attack target (i.e., this is the first turn),
             # we use the initial red teaming prompt
             logger.info(f"Using the specified initial adversarial prompt: {self._adversarial_chat_seed_prompt}")
-            return self._adversarial_chat_seed_prompt
+            return self._adversarial_chat_seed_prompt.value
 
         if last_response_from_objective_target.converted_value_data_type in ["text", "error"]:
             return self._handle_text_response(last_response_from_objective_target, feedback)

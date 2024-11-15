@@ -5,7 +5,6 @@ import asyncio
 import logging
 
 from abc import abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 from colorama import Fore, Style

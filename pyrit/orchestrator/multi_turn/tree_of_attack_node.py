@@ -36,7 +36,7 @@ class TreeOfAttackNode:
         objective_scorer: Scorer,
         on_topic_scorer: Scorer,
         prompt_converters: list[PromptConverter],
-        orchestrator_id: str,
+        orchestrator_id: dict[str, str],
         memory_labels: Optional[dict[str, str]],
         parent_id: str = None,
     ) -> None:
