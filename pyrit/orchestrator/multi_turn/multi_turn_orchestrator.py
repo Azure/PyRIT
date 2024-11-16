@@ -3,16 +3,17 @@
 
 import asyncio
 import logging
+import uuid
 
 from abc import abstractmethod
+from colorama import Fore, Style
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
-from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import CentralMemory
-from pyrit.models import SeedPrompt
+from pyrit.models import SeedPrompt, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
@@ -139,6 +140,7 @@ class MultiTurnOrchestrator(Orchestrator):
                 f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
             )
         self._objective_scorer = objective_scorer
+        self._prepended_conversation: list[PromptRequestResponse] = None
 
     @abstractmethod
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
@@ -174,3 +176,45 @@ class MultiTurnOrchestrator(Orchestrator):
         tasks = [limited_run_attack(objective) for objective in objectives]
         results = await asyncio.gather(*tasks)
         return results
+
+    def set_prepended_conversation(self, *, prepended_conversation: list[PromptRequestResponse]):
+        """Sets the prepended conversation to be sent to the objective target.
+        This can be used to set the system prompt of the objective target, or send a series of
+        user/assistant messages from which the orchestrator should start the conversation from.
+
+        Args:
+            prepended_conversation (str): The prepended conversation to send to the objective target.
+        """
+        self._prepended_conversation = prepended_conversation
+
+    def _prepare_conversation(self, *, new_conversation_id: str) -> int:
+        """Prepare the conversation by saving the prepended conversation to memory
+        with the new conversation ID. This should only be called by inheriting classes.
+
+        Args:
+            new_conversation_id (str): The ID for the new conversation.
+
+        Returns:
+            num_turns (int): The number of turns in the prepended conversation, used
+            by the calling orchestrators to reset the starting turn number.
+        """
+        turn_count = 0
+        for request in self._prepended_conversation:
+            for piece in request.request_pieces:
+                piece.conversation_id = new_conversation_id
+                piece.id = uuid.uuid4()
+
+                # Number of complete turns should be the same as the number of assistant messages
+                if piece.role == "assistant":
+                    turn_count += 1
+
+            # QUESTION: Would this be enough? If there is a system message prepended do we send
+            # this through to the target? For user/assistant messages, we assume these are fabricated?
+            self._memory.add_request_response_to_memory(request=request)
+
+        if turn_count > self._max_turns:
+            logger.info(f"Number of turns in prepended conversation ({turn_count}) must not exceed
+                        `max_turns` current value: {self._max_turns}")
+            raise ValueError
+
+        return turn_count

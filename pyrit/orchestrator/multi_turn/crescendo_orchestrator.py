@@ -148,15 +148,19 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             labels=self._global_memory_labels,
         )
 
-        turn_num = 0
+        # Determine how many turns have been completed in the conversation and add them to memory.
+        # If self._prepended_conversation is empty, this will be set to 0.
+        preset_turns = self._prepare_conversation(new_conversation_id=objective_target_conversation_id)
+
+        # Turn counter should be one more than preset turn count
+        turn_num = preset_turns + 1
         backtrack_count = 0
         refused_text = ""
         achieved_objective = False
         objective_score = None
 
-        while turn_num < self._max_turns:
+        while turn_num <= self._max_turns:
 
-            turn_num += 1
             logger.info(f"TURN {turn_num}\n-----------")
 
             logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
@@ -171,6 +175,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
             logger.info("Sending retrieved attack prompt to TARGET")
 
+            # TODO: Check self._prepended_conversation to see if the last message is from a user
+            # If it is, we only should send the prompt (no need to retrieve)
+            # Otherwise, proceed as usual
             last_response = await self._send_prompt_to_target_async(
                 attack_prompt=attack_prompt, objective_target_conversation_id=objective_target_conversation_id
             )

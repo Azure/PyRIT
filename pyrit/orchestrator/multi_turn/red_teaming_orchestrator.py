@@ -106,7 +106,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id = str(uuid4())
         adversarial_chat_conversation_id = str(uuid4())
 
-        turn = 1
+        # Determine how many turns have been completed in the conversation and add them to memory.
+        # If self._prepended_conversation is empty, this will be set to 0.
+        preset_turns = self._prepare_conversation(new_conversation_id=objective_target_conversation_id)
+
+        # Turn counter should be one more than preset turn count
+        turn = preset_turns + 1
         achieved_objective = False
         score: Score | None = None
         while turn <= self._max_turns:
@@ -116,11 +121,23 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             if self._use_score_as_feedback and score:
                 feedback = score.score_rationale
 
+            prompt = None
+
+            # TODO: Check self._prepended_conversation to see if the last message is from a user
+            # Check how memory.get_conversation() gets the user/assistant messages to see if this
+            # is the right way to get the last message.
+            # May need to check there is no assistant message in that last piece...
+            if self._prepended_conversation:
+                last_message = self._prepended_conversation[-1].request_pieces[-1]
+                if last_message.role == "user":
+                    prompt = last_message.converted_value
+
             response = await self._retrieve_and_send_prompt_async(
                 objective=objective,
                 objective_target_conversation_id=objective_target_conversation_id,
                 adversarial_chat_conversation_id=adversarial_chat_conversation_id,
                 feedback=feedback,
+                prompt=prompt,
             )
 
             if response.response_error == "none":
@@ -159,6 +176,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id: str,
         adversarial_chat_conversation_id: str,
         feedback: Optional[str] = None,
+        prompt: str = None,
     ) -> PromptRequestPiece:
         """
         Generates and sends a prompt to the prompt target.
@@ -173,15 +191,18 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 For text-to-image applications, for example, there is no immediate text output
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
+            prompt (str, optional): If provided, send this prompt to the target instead of
+                generating a new prompt with the red teaming LLM.
         """
-        # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
-        logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
-        prompt = await self._get_prompt_from_adversarial_chat(
-            objective=objective,
-            objective_target_conversation_id=objective_target_conversation_id,
-            adversarial_chat_conversation_id=adversarial_chat_conversation_id,
-            feedback=feedback,
-        )
+        if not prompt:
+            # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
+            logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
+            prompt = await self._get_prompt_from_adversarial_chat(
+                objective=objective,
+                objective_target_conversation_id=objective_target_conversation_id,
+                adversarial_chat_conversation_id=adversarial_chat_conversation_id,
+                feedback=feedback,
+            )
 
         target_prompt_obj = NormalizerRequestPiece(
             request_converters=self._prompt_converters,
