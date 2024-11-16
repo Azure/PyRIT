@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import json
 import logging
 
@@ -38,7 +40,7 @@ class TreeOfAttackNode:
         prompt_converters: list[PromptConverter],
         orchestrator_id: dict[str, str],
         memory_labels: Optional[dict[str, str]],
-        parent_id: str = None,
+        parent_id: Optional[str] = None,
     ) -> None:
 
         self._objective_target = objective_target
@@ -122,7 +124,7 @@ class TreeOfAttackNode:
 
         self.completed = True
 
-    def duplicate(self) -> "TreeOfAttackNode":
+    def duplicate(self) -> TreeOfAttackNode:
         """
         Creates a duplicate of the provided instance
         with incremented iteration and new conversations ids (but duplicated conversations)

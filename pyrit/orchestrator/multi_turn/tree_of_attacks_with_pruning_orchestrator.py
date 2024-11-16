@@ -22,7 +22,7 @@ from pyrit.orchestrator.multi_turn.tree_of_attack_node import TreeOfAttackNode
 logger = logging.getLogger(__name__)
 
 
-class TapAttackResult(MultiTurnAttackResult):
+class TAPAttackResult(MultiTurnAttackResult):
     def __init__(
         self,
         conversation_id: str,
@@ -56,8 +56,8 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         depth: int = 5,
         branching_factor: int = 2,
         on_topic_checking_enabled: bool = True,
-        prompt_converters: Optional[list[PromptConverter]] = [],
-        objective_achieved_score_threshhold: float = 0.8,
+        prompt_converters: Optional[list[PromptConverter]] = None,
+        objective_achieved_score_threshold: float = 0.8,
         memory_labels: dict[str, str] = None,
         verbose: bool = False,
     ) -> None:
@@ -97,7 +97,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         if branching_factor < 1:
             raise ValueError("The branching factor of the tree must be at least 1.")
 
-        if objective_achieved_score_threshhold < 0 or objective_achieved_score_threshhold > 1:
+        if objective_achieved_score_threshold < 0 or objective_achieved_score_threshold > 1:
             raise ValueError("The objective achieved score threshhold must be between 0 and 1.")
 
         self._attack_width = width
@@ -105,10 +105,10 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         self._attack_branching_factor = branching_factor
         self._on_topic_checking_enabled = on_topic_checking_enabled
         self._scoring_target = scoring_target
-        self._prompt_converters = prompt_converters
-        self._objective_achieved_score_threshhold = objective_achieved_score_threshhold
+        self._prompt_converters = prompt_converters or []
+        self._objective_achieved_score_threshhold = objective_achieved_score_threshold
 
-    async def run_attack_async(self, *, objective: str) -> TapAttackResult:
+    async def run_attack_async(self, *, objective: str) -> TAPAttackResult:
 
         tree_visualization = Tree()
         tree_visualization.create_node("Root", "root")
@@ -162,7 +162,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
                 if nodes[0].score >= self._objective_achieved_score_threshhold:
                     logger.info("The conversation has been stopped because the response is jailbroken.")
-                    return TapAttackResult(
+                    return TAPAttackResult(
                         conversation_id=best_conversation_id,
                         achieved_objective=True,
                         objective=objective,
@@ -175,7 +175,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
         logger.info("Could not achieve the conversation goal.")
 
-        return TapAttackResult(
+        return TAPAttackResult(
             conversation_id=best_conversation_id,
             achieved_objective=False,
             objective=objective,

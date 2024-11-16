@@ -283,7 +283,7 @@ class MemoryInterface(abc.ABC):
 
         return prompt_ids
 
-    def duplicate_conversation(self, *, conversation_id: str, new_orchestrator_id: str = None) -> str:
+    def duplicate_conversation(self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None) -> str:
         """
         Duplicates a conversation for reuse
 
@@ -293,7 +293,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_orchestrator_id (str, optional): The new orchestrator ID to assign to the duplicated conversations.
+            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
                 If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.

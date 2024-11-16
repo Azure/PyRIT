@@ -291,7 +291,7 @@ def test_prune_nodes_over_width():
         adversarial_chat=MagicMock(),
         objective_target=MagicMock(),
         scoring_target=MagicMock(),
-        objective_achieved_score_threshhold=0.7,
+        objective_achieved_score_threshold=0.7,
         width=2,
         branching_factor=1,
         depth=1,
