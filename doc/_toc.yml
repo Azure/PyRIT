@@ -42,7 +42,6 @@ chapters:
       - file: code/orchestrators/pku_safe_rlhf_testing
       - file: code/orchestrators/seclists_bias_testing
       - file: code/orchestrators/tree_of_attacks_with_pruning
-      - file: code/orchestrators/use_huggingface_chat_target
       - file: code/orchestrators/violent_durian
       - file: code/orchestrators/xstest_bias_testing
     - file: code/targets/0_prompt_targets
@@ -56,6 +55,7 @@ chapters:
       - file: code/targets/7_http_target
       - file: code/targets/open_ai_completions
       - file: code/targets/prompt_shield_target
+      - file: code/targets/use_huggingface_chat_target
     - file: code/converters/0_converters
       sections:
         - file: code/converters/1_llm_converters
