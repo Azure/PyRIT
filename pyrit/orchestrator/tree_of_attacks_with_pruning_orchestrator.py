@@ -357,13 +357,11 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
                         cloned_orchestrator._memory.duplicate_conversation_for_new_orchestrator(
                             new_orchestrator_id=cloned_orchestrator.get_identifier()["id"],
                             conversation_id=orchestrator._prompt_target_conversation_id,
-                            new_conversation_id=cloned_orchestrator._prompt_target_conversation_id,
                         )
 
                         cloned_orchestrator._memory.duplicate_conversation_for_new_orchestrator(
                             new_orchestrator_id=cloned_orchestrator.get_identifier()["id"],
                             conversation_id=orchestrator._red_teaming_chat_conversation_id,
-                            new_conversation_id=cloned_orchestrator._red_teaming_chat_conversation_id,
                         )
                         cloned_orchestrators.append(cloned_orchestrator)
 
