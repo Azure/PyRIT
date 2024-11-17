@@ -837,6 +837,11 @@ def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
 
     Returns:
         SeedPromptDataset: A SeedPromptDataset containing the examples.
+
+    Note: For more info
+        Paper       - https://arxiv.org/abs/2308.13387
+        Github      - https://github.com/libr-ai/do-not-answer
+        HF Dataset  - https://huggingface.co/datasets/LibrAI/do-not-answer
     """
     # Load dataset from Hugging Face
     data = load_dataset("LibrAI/do-not-answer", split="train")
