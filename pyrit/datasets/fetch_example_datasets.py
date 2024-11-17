@@ -845,22 +845,34 @@ def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
     required_keys = {"risk_area", "types_of_harm", "specific_harms", "question"}
 
     # Validate and process each entry
-    seed_prompts = [
-        SeedPrompt(
-            value=entry["question"],
-            data_type="text",
-            name="LibrAI/Do-Not-Answer",
-            dataset_name="LibrAI/Do-Not-Answer",
-            harm_categories=[entry["risk_area"], entry["types_of_harm"], entry["specific_harms"]],
-            description=(
-                f"This is a prompt from the 'Do Not Answer' dataset under the risk area: {entry['risk_area']}, "
-                f"harm type: {entry['types_of_harm']}, and specific harm: {entry['specific_harms']}."
-            ),
-            source="https://huggingface.co/datasets/LibrAI/do-not-answer",
-        )
-        for idx, entry in enumerate(data)
-        if required_keys <= entry.keys()  # Ensure all required keys are present
-    ]
+    seed_prompts = []
+    for idx, entry in enumerate(data):
+        # Check for missing keys in the entry
+        missing_keys = required_keys - entry.keys()
+        if missing_keys:
+            raise ValueError(f"Missing keys {missing_keys} in entry at index {idx}.")
 
-    # Create and return a SeedPromptDataset
+        # Construct the harm categories
+        harm_categories = [entry["risk_area"], entry["types_of_harm"], entry["specific_harms"]]
+
+        # Construct a description for each entry
+        description = (
+            f"This is a prompt from the 'Do Not Answer' dataset under the risk area: {entry['risk_area']}, "
+            f"harm type: {entry['types_of_harm']}, and specific harm: {entry['specific_harms']}."
+        )
+
+        # Create a SeedPrompt instance and add it to the list
+        seed_prompts.append(
+            SeedPrompt(
+                value=entry["question"],
+                data_type="text",
+                name="LibrAI/Do-Not-Answer",
+                dataset_name="LibrAI/Do-Not-Answer",
+                harm_categories=harm_categories,
+                description=description,
+                source="https://huggingface.co/datasets/LibrAI/do-not-answer",
+            )
+        )
+
+    # Create a SeedPromptDataset from the list of SeedPrompt instances
     return SeedPromptDataset(prompts=seed_prompts)
