@@ -176,7 +176,9 @@ class TreeOfAttacksNode:
         else:
             assistant_responses = [r for r in target_messages if r.request_pieces[0].role == "assistant"]
             if not assistant_responses:
-                logger.error(f"No assistant responses found in the conversation {self.objective_target_conversation_id}.")
+                logger.error(
+                    f"No assistant responses found in the conversation {self.objective_target_conversation_id}."
+                )
                 raise RuntimeError("Cannot proceed without an assistant response.")
 
             target_response = assistant_responses[-1]
