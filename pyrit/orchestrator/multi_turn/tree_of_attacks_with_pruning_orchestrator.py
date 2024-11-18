@@ -17,7 +17,7 @@ from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, SelfAskScaleScorer, TrueFalseQuestion
 from pyrit.score.scorer import Scorer
 
-from pyrit.orchestrator.multi_turn.tree_of_attack_node import TreeOfAttackNode
+from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         tree_visualization = Tree()
         tree_visualization.create_node("Root", "root")
 
-        nodes: list[TreeOfAttackNode] = []
+        nodes: list[TreeOfAttacksNode] = []
 
         best_conversation_id = None
 
@@ -123,7 +123,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             if iteration == 1:
                 # Initialize branch nodes that execute a single branch of the attack
                 nodes = [
-                    TreeOfAttackNode(
+                    TreeOfAttacksNode(
                         objective_target=self._objective_target,
                         adversarial_chat=self._adversarial_chat,
                         adversarial_chat_seed_prompt=self._adversarial_chat_seed_prompt,
@@ -183,7 +183,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         )
 
     async def _send_prompt_to_nodes_async(
-        self, objective: str, nodes: list[TreeOfAttackNode], tree_visualization: Tree
+        self, objective: str, nodes: list[TreeOfAttacksNode], tree_visualization: Tree
     ):
 
         for node_index, node in enumerate(nodes, start=1):
@@ -192,7 +192,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
             tree_visualization[node.node_id].tag += self._get_result_string(node)
 
-    def _get_completed_on_topic_results_in_order(self, nodes: list[TreeOfAttackNode]):
+    def _get_completed_on_topic_results_in_order(self, nodes: list[TreeOfAttacksNode]):
         completed_nodes = [
             node for node in nodes if node and node.completed and (not node.off_topic) and isinstance(node.score, float)
         ]
@@ -201,9 +201,9 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
     def _prune_nodes_over_width(
         self,
-        nodes: list[TreeOfAttackNode],
+        nodes: list[TreeOfAttacksNode],
         tree_visualization: Tree,
-    ) -> list[TreeOfAttackNode]:
+    ) -> list[TreeOfAttacksNode]:
 
         # This may be redundant but it makes it so you don't need to call in order
         nodes = self._get_completed_on_topic_results_in_order(nodes)
@@ -230,7 +230,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             )
         return on_topic_scorer
 
-    def _get_result_string(self, result: TreeOfAttackNode) -> str:
+    def _get_result_string(self, result: TreeOfAttacksNode) -> str:
         if result.off_topic:
             return "Pruned (off-topic)"
         if not result.completed:

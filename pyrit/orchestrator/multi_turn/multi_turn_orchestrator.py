@@ -125,7 +125,6 @@ class MultiTurnOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer()
         self._adversarial_chat = adversarial_chat
-        self._adversarial_chat._memory = self._memory
 
         self._adversarial_chat_seed_prompt = self._get_adversarial_chat_seed_prompt(adversarial_chat_seed_prompt)
 

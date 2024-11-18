@@ -20,7 +20,7 @@ from pyrit.score.scorer import Scorer
 logger = logging.getLogger(__name__)
 
 
-class TreeOfAttackNode:
+class TreeOfAttacksNode:
     """
     Creates a Node to be used with Tree of Attacks with Pruning.
     """
@@ -39,7 +39,7 @@ class TreeOfAttackNode:
         on_topic_scorer: Scorer,
         prompt_converters: list[PromptConverter],
         orchestrator_id: dict[str, str],
-        memory_labels: Optional[dict[str, str]],
+        memory_labels: Optional[dict[str, str]] = None,
         parent_id: Optional[str] = None,
     ) -> None:
 
@@ -53,7 +53,7 @@ class TreeOfAttackNode:
         self._prompt_converters = prompt_converters
         self._orchestrator_id = orchestrator_id
         self._memory = CentralMemory.get_memory_instance()
-        self._global_memory_labels = memory_labels
+        self._global_memory_labels = memory_labels or {}
 
         self._prompt_normalizer = PromptNormalizer()
         self.parent_id = parent_id
@@ -124,12 +124,12 @@ class TreeOfAttackNode:
 
         self.completed = True
 
-    def duplicate(self) -> TreeOfAttackNode:
+    def duplicate(self) -> TreeOfAttacksNode:
         """
         Creates a duplicate of the provided instance
         with incremented iteration and new conversations ids (but duplicated conversations)
         """
-        duplicate_node = TreeOfAttackNode(
+        duplicate_node = TreeOfAttacksNode(
             objective_target=self._objective_target,
             adversarial_chat=self._adversarial_chat,
             adversarial_chat_seed_prompt=self._adversarial_chat_seed_prompt,
@@ -175,6 +175,10 @@ class TreeOfAttackNode:
 
         else:
             assistant_responses = [r for r in target_messages if r.request_pieces[0].role == "assistant"]
+            if not assistant_responses:
+                logger.error(f"No assistant responses found in the conversation {self.objective_target_conversation_id}.")
+                raise RuntimeError("Cannot proceed without an assistant response.")
+
             target_response = assistant_responses[-1]
             target_response_piece = target_response.request_pieces[0]
             logger.debug(f"target_response_piece.id: {target_response_piece.id}")

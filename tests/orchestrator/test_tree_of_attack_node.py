@@ -7,7 +7,7 @@ from pyrit.models import SeedPrompt
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.score.scorer import Scorer
 from pyrit.prompt_converter import PromptConverter
-from pyrit.orchestrator.multi_turn.tree_of_attack_node import TreeOfAttackNode
+from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def mock_memory():
 
 @pytest.fixture
 def tree_of_attack_node(mock_memory):
-    return TreeOfAttackNode(
+    return TreeOfAttacksNode(
         objective_target=MagicMock(spec=PromptTarget),
         adversarial_chat=MagicMock(spec=PromptChatTarget),
         adversarial_chat_seed_prompt=MagicMock(spec=SeedPrompt),
