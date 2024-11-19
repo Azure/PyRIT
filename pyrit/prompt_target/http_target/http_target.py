@@ -6,7 +6,7 @@ import httpx
 import json
 import logging
 import re
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Any
 
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
@@ -35,7 +35,7 @@ class HTTPTarget(PromptTarget):
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
         callback_function: Callable = None,
-        **client_kwargs: Optional[Dict],
+        **client_kwargs: Optional[Any],
     ) -> None:
 
         self.http_request = http_request
