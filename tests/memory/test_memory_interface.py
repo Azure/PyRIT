@@ -117,11 +117,11 @@ def test_duplicate_memory(memory: MemoryInterface):
     memory.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 5
     orchestrator3 = Orchestrator()
-    new_conversation_id1 = memory.duplicate_conversation_for_new_orchestrator(
+    new_conversation_id1 = memory.duplicate_conversation(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_1,
     )
-    new_conversation_id2 = memory.duplicate_conversation_for_new_orchestrator(
+    new_conversation_id2 = memory.duplicate_conversation(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_2,
     )
@@ -194,7 +194,7 @@ def test_duplicate_conversation_pieces_not_score(memory: MemoryInterface):
     memory.add_request_pieces_to_memory(request_pieces=pieces)
     memory.add_scores_to_memory(scores=scores)
     orchestrator2 = Orchestrator()
-    new_conversation_id = memory.duplicate_conversation_for_new_orchestrator(
+    new_conversation_id = memory.duplicate_conversation(
         new_orchestrator_id=orchestrator2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
@@ -449,7 +449,7 @@ def test_duplicate_memory_orchestrator_id_collision(memory: MemoryInterface):
     memory.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 1
     with pytest.raises(ValueError):
-        memory.duplicate_conversation_for_new_orchestrator(
+        memory.duplicate_conversation(
             new_orchestrator_id=str(orchestrator1.get_identifier()["id"]),
             conversation_id=conversation_id,
         )
@@ -702,9 +702,7 @@ def test_add_score_duplicate_prompt(memory: MemoryInterface):
     ]
     new_orchestrator_id = str(uuid4())
     memory.add_request_pieces_to_memory(request_pieces=pieces)
-    memory.duplicate_conversation_for_new_orchestrator(
-        new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id
-    )
+    memory.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
     dupe_piece = memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=new_orchestrator_id)[0]
     dupe_id = dupe_piece.id
 
