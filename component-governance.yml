@@ -19,4 +19,4 @@ steps:
 
   - task: ComponentGovernanceComponentDetection@0
     env:
-      PIP_INDEX_URL: https://pypi.org
+      PIP_INDEX_URL: https://pypi.org/simple
