@@ -50,7 +50,7 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                 This step can be skipped by not providing an on_topic_checker.
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
                 These labels can be used to track all prompts sent as part of an operation, score prompts based on
                 the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
                 Users can define any key-value pairs according to their needs. Defaults to None.
@@ -357,13 +357,11 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
                         cloned_orchestrator._memory.duplicate_conversation_for_new_orchestrator(
                             new_orchestrator_id=cloned_orchestrator.get_identifier()["id"],
                             conversation_id=orchestrator._prompt_target_conversation_id,
-                            new_conversation_id=cloned_orchestrator._prompt_target_conversation_id,
                         )
 
                         cloned_orchestrator._memory.duplicate_conversation_for_new_orchestrator(
                             new_orchestrator_id=cloned_orchestrator.get_identifier()["id"],
                             conversation_id=orchestrator._red_teaming_chat_conversation_id,
-                            new_conversation_id=cloned_orchestrator._red_teaming_chat_conversation_id,
                         )
                         cloned_orchestrators.append(cloned_orchestrator)
 

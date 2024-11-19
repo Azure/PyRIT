@@ -1,5 +1,5 @@
 # %% [markdown]
-# # HarmBench dataset testing
+# # HarmBench dataset testing - optional
 #
 # This notebook demonstrates the process of using HarmBench examples to perform AI red teaming on a target language model (LLM).
 # It involves fetching potentially harmful behavior prompts from the HarmBench repository, sending them to the LLM, and analyzing the responses.
@@ -16,7 +16,7 @@ from pyrit.prompt_target import TextTarget
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 # %%

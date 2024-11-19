@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # PromptSendingOrchestrator with Azure SQL Memory
+# # 7. PromptSendingOrchestrator with Azure SQL Memory
 #
 # This demo is about when you have a list of prompts you want to try against a target. All interactions with the target will be saved in Azure SQL Memory. It includes the ways you can send the prompts,
 # how you can modify the prompts, and how you can view results. Before starting, import the necessary libraries.
@@ -35,7 +35,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.memory import AzureSQLMemory, CentralMemory
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 memory = AzureSQLMemory()
@@ -70,7 +70,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer, SelfAskLikertScorer, LikertScalePaths
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 target = OpenAIChatTarget()
 memory = AzureSQLMemory()
@@ -130,7 +130,7 @@ from pyrit.memory import AzureSQLMemory, CentralMemory
 
 logging.basicConfig(level=logging.WARNING)
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 img_prompt_target = OpenAIDALLETarget(
     deployment_name=os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT"),

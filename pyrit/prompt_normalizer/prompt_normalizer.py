@@ -37,9 +37,9 @@ class PromptNormalizer(abc.ABC):
         Args:
             normalizer_request (NormalizerRequest): The request to be sent.
             target (PromptTarget): The target to send the request to.
-            sequence (int, optional): The sequence number. Defaults to -1.
-            labels (dict[str, str], optional): Additional labels for the request. Defaults to None.
-            orchestrator_identifier (dict[str, str], optional): The orchestrator identifier. Defaults to None.
+            sequence (int, Optional): The sequence number. Defaults to -1.
+            labels (dict[str, str], Optional): Additional labels for the request. Defaults to None.
+            orchestrator_identifier (dict[str, str], Optional): The orchestrator identifier. Defaults to None.
 
         Returns:
             PromptRequestResponse: The response received from the target.
@@ -99,10 +99,10 @@ class PromptNormalizer(abc.ABC):
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects representing the prompts to
                 be sent.
             target (PromptTarget): The target to which the prompts should be sent.
-            labels (dict[str, str], optional): Additional labels to be included with the prompts. Defaults to None
-            orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
+            labels (dict[str, str], Optional): Additional labels to be included with the prompts. Defaults to None
+            orchestrator_identifier (dict[str, str], Optional): The identifier of the orchestrator used for sending
                 the prompts. Defaults to None.
-            batch_size (int, optional): The size of each batch of prompts. Defaults to 10.
+            batch_size (int, Optional): The size of each batch of prompts. Defaults to 10.
 
         Returns:
             list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses
@@ -160,9 +160,9 @@ class PromptNormalizer(abc.ABC):
         Args:
             request (NormalizerRequest): The normalizer request object.
             target (PromptTarget): The prompt target object.
-            sequence (int, optional): The sequence number. Defaults to -1.
-            labels (dict[str, str], optional): The labels dictionary. Defaults to None.
-            orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
+            sequence (int, Optional): The sequence number. Defaults to -1.
+            labels (dict[str, str], Optional): The labels dictionary. Defaults to None.
+            orchestrator_identifier (dict[str, str], Optional): The identifier of the orchestrator used for sending
                 the prompts. Defaults to None.
 
         Returns:

@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Many-Shot Jailbreaking
+# # Many-Shot Jailbreaking - optional
 #
 # This notebook demonstrates the process of many-shot jailbreaking.
 # It includes using a faux dialogue between a human and an AI assistant within a single prompt for the LLM.
@@ -35,7 +35,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
 
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # We demonstrate the use of the Azure OpenAI text-only target here
 prompt_target = OpenAIChatTarget()

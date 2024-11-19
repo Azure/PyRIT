@@ -42,13 +42,13 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
         Args:
             chat_model_under_evaluation (PromptChatTarget): The chat model to be evaluated.
             scorer (QuestionAnswerScorer): The scorer used to evaluate the chat model's responses.
-            prompt_converters (list[PromptConverter], optional): The prompt converters to be used.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            prompt_converters (list[PromptConverter], Optional): The prompt converters to be used.
+            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
-            evaluation_prompt (str, optional): The evaluation prompt to be used. Defaults to None.
-            verbose (bool, optional): Whether to print verbose output. Defaults to False.
+            evaluation_prompt (str, Optional): The evaluation prompt to be used. Defaults to None.
+            verbose (bool, Optional): Whether to print verbose output. Defaults to False.
         """
         super().__init__(
             prompt_converters=prompt_converters,

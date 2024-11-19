@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # AdvBench PromptSendingOrchestrator
+# # AdvBench PromptSendingOrchestrator - optional
 #
 # This demo is uses prompts from the AdvBench dataset to try against a target. It includes the ways you can send the prompts,
 # and how you can view results. Before starting, import the necessary libraries.
@@ -36,7 +36,7 @@ from pyrit.prompt_converter import Base64Converter
 from pyrit.datasets import fetch_adv_bench_dataset
 
 
-default_values.load_default_env()
+default_values.load_environment_files()
 target = OpenAIChatTarget()
 
 # %%

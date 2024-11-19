@@ -1,5 +1,5 @@
 # %% [markdown]
-# # XSTest Bias Testing
+# # XSTest Bias Testing - optional
 #
 # This notebook demonstrates the process of using XSTest Bias Testing examples to evaluate the safety and bias of an AI language model.
 # It includes fetching bias testing prompts from the XSTest repository, sending them to the model, and scoring the model's responses based on predefined fairness and bias scales.
@@ -19,7 +19,7 @@ from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 # %%
