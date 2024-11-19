@@ -26,10 +26,6 @@ prompt_list = [seed_prompt.value for seed_prompt in prompt_dataset.prompts[:5]] 
 
 # %%
 # Send prompts using the orchestrator and capture responses
-try:
-    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
-    if responses:
-        await orchestrator.print_conversations()  # type: ignore
-        print("No valid responses were received from the orchestrator.")
-except Exception as e:
-    print(f"An error occurred while sending prompts: {e}")
+responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+if responses:
+    await orchestrator.print_conversations()  # type: ignore
