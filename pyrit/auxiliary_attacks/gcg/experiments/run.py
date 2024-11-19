@@ -15,7 +15,7 @@ def _load_yaml_to_dict(config_path: str) -> dict:
     return data
 
 
-MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
+MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "phi_3_small", "phi_3_medium"]
 ALL_MODELS = "all_models"
 MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
 
@@ -26,7 +26,7 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
 
     Args:
         model_name (str): The name of the model, currently supports:
-            "mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "all_models"
+            "mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "phi_3_small", "phi_3_medium", "all_models"
         setup (str): Identifier for the setup, currently supporst
             - "single": one prompt one model
             - "multiple": multiple prompts one model or multiple prompts multiple models
@@ -35,7 +35,7 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
 
     if model_name not in MODEL_NAMES:
         raise ValueError(
-            "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"
+            "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', 'phi_3_mini', 'phi_3_small', and 'phi_3_medium'"
         )
 
     default_values.load_environment_files()
