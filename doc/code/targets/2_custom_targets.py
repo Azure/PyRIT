@@ -78,7 +78,7 @@ with RedTeamingOrchestrator(
     objective_target=gandalf_target,
     adversarial_chat=aoai_chat,
     objective_scorer=gandalf_password_scorer,
-    initial_adversarial_chat_prompt=initial_red_teaming_prompt,
+    adversarial_chat_seed_prompt=initial_red_teaming_prompt,
 ) as red_teaming_orchestrator:
 
     # Once the agents are set up, we can start the conversation.
