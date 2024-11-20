@@ -155,7 +155,7 @@ async def test_send_prompt_with_skeleton_key_session_id(
 @pytest.mark.asyncio
 @patch(
     "pyrit.common.default_values.get_non_required_value",
-    return_value='{"OP_NAME": "dummy_op"}',
+    return_value='{"op_name": "dummy_op"}',
 )
 async def test_send_prompt_with_skeleton_key_with_global_memory_labels(
     mock_get_non_required_value, mock_target: MockPromptTarget, memory_interface: MemoryInterface
@@ -168,7 +168,7 @@ async def test_send_prompt_with_skeleton_key_with_global_memory_labels(
 
         entries = orchestrator.get_memory()
         assert len(entries) == 4
-        assert entries[0].labels == {"OP_NAME": "dummy_op"}
+        assert entries[0].labels == {"op_name": "dummy_op"}
 
 
 # Test single prompt function with custom skeleton key prompt (no convertor)

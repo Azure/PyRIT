@@ -93,7 +93,7 @@ async def test_xpia_orchestrator_execute(attack_setup_target, success_scorer, me
 @pytest.mark.asyncio
 @patch(
     "pyrit.common.default_values.get_non_required_value",
-    return_value='{"OP_NAME": "dummy_op"}',
+    return_value='{"op_name": "dummy_op"}',
 )
 async def test_xpia_orchestrator_execute_with_memory_labels(
     mock_get_non_required_value, attack_setup_target, success_scorer, memory_interface
@@ -118,7 +118,7 @@ async def test_xpia_orchestrator_execute_with_memory_labels(
 
         entries = xpia_orchestrator.get_memory()
         assert len(entries) == 2
-        assert entries[0].labels == {"OP_NAME": "dummy_op"}
+        assert entries[0].labels == {"op_name": "dummy_op"}
         assert score.get_value()
         success_scorer.score_text_async.assert_called_once()
 
@@ -145,7 +145,7 @@ async def test_xpia_manual_processing_orchestrator_execute(
 @pytest.mark.asyncio
 @patch(
     "pyrit.common.default_values.get_non_required_value",
-    return_value='{"OP_NAME": "dummy_op"}',
+    return_value='{"op_name": "dummy_op"}',
 )
 @patch.object(XPIAManualProcessingOrchestrator, "_input_async", new_callable=AsyncMock, return_value="test")
 async def test_xpia_manual_processing_orchestrator_execute_with_memory_labels(
@@ -159,7 +159,7 @@ async def test_xpia_manual_processing_orchestrator_execute_with_memory_labels(
         score = await xpia_orchestrator.execute_async()
         entries = xpia_orchestrator.get_memory()
         assert len(entries) == 2
-        assert entries[0].labels == {"OP_NAME": "dummy_op"}
+        assert entries[0].labels == {"op_name": "dummy_op"}
         assert score.get_value()
         success_scorer.score_text_async.assert_called_once()
         mock_input_async.assert_awaited_once()
@@ -223,7 +223,7 @@ async def test_xpia_orchestrator_process_async(
 @pytest.mark.asyncio
 @patch(
     "pyrit.common.default_values.get_non_required_value",
-    return_value='{"OP_NAME": "dummy_op"}',
+    return_value='{"op_name": "dummy_op"}',
 )
 async def test_xpia_orchestrator_process_async_with_memory_labels(
     mock_get_non_required_value, attack_setup_target, processing_target, success_scorer, memory_interface
@@ -248,7 +248,7 @@ async def test_xpia_orchestrator_process_async_with_memory_labels(
                 assert score.get_value()
                 entries = xpia_orchestrator.get_memory()
                 assert len(entries) == 2
-                assert entries[0].labels == {"OP_NAME": "dummy_op"}
+                assert entries[0].labels == {"op_name": "dummy_op"}
 
                 success_scorer.score_text_async.assert_called_once()
                 mock_send_to_processing_target.assert_not_called()
