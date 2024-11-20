@@ -42,7 +42,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         max_turns (int, Optional): Max turns for the conversation, ≥ 0. Defaults to 5.
         objective_scorer (Scorer): Scores prompt target output as sufficient or insufficient.
         use_score_as_feedback (bool, Optional): Use scoring as feedback. Defaults to True.
-        memory_labels (Optional[dict[str, str]], Optional): Tags for prompt tracking (e.g., RAI harm categories).
         verbose (bool, Optional): Print debug info. Defaults to False.
 
     Raises:
@@ -61,7 +60,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         max_turns: int = 5,
         objective_scorer: Scorer,
         use_score_as_feedback: bool = True,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
 
@@ -73,7 +71,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             max_turns=max_turns,
             prompt_converters=prompt_converters,
             objective_scorer=objective_scorer,
-            memory_labels=memory_labels,
             verbose=verbose,
         )
 

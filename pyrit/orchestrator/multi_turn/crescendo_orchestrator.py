@@ -48,8 +48,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             Defaults to None.
         max_backtracks (int, Optional): The maximum number of times to backtrack during the attack.
             Must be a positive integer. Defaults to 10.
-        memory_labels (Optional[dict[str, str]], Optional): Dictionary of labels for memory management.
-            Defaults to None.
         verbose (bool, Optional): Flag indicating whether to enable verbose logging. Defaults to False.
     """
 
@@ -63,7 +61,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         max_turns: int = 10,
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_backtracks: int = 10,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
 
@@ -87,7 +84,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
             max_turns=max_turns,
             objective_scorer=objective_scorer,
-            memory_labels=memory_labels,
             prompt_converters=prompt_converters,
             verbose=verbose,
         )

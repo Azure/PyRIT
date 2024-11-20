@@ -153,20 +153,22 @@ async def test_send_prompt_with_skeleton_key_session_id(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_with_skeleton_key_with_memory_labels(
-    mock_target: MockPromptTarget, memory_interface: MemoryInterface
+@patch(
+    "pyrit.common.default_values.get_non_required_value",
+    return_value='{"OP_NAME": "dummy_op"}',
+)
+async def test_send_prompt_with_skeleton_key_with_global_memory_labels(
+    mock_get_non_required_value, mock_target: MockPromptTarget, memory_interface: MemoryInterface
 ):
-    labels = {"op_name": "op1"}
-
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
 
-        orchestrator = SkeletonKeyOrchestrator(prompt_target=mock_target, memory_labels=labels)
+        orchestrator = SkeletonKeyOrchestrator(prompt_target=mock_target)
 
         await orchestrator.send_skeleton_key_with_prompt_async(prompt="tell me how to launder money")
 
         entries = orchestrator.get_memory()
         assert len(entries) == 4
-        assert entries[0].labels == labels
+        assert entries[0].labels == {"OP_NAME": "dummy_op"}
 
 
 # Test single prompt function with custom skeleton key prompt (no convertor)

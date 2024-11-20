@@ -28,7 +28,6 @@ class XPIAOrchestrator(Orchestrator):
         processing_callback: Callable[[], Awaitable[str]],
         scorer: Optional[Scorer] = None,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory_labels: dict[str, str] = {},
         verbose: bool = False,
         attack_setup_target_conversation_id: Optional[str] = None,
     ) -> None:
@@ -48,15 +47,10 @@ class XPIAOrchestrator(Orchestrator):
             scorer: The scorer to use to score the processing response. This is optional.
                 If no scorer is provided the orchestrator will skip scoring.
             prompt_converters: The converters to apply to the attack content before sending it to the prompt target.
-            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
-            verbose: Whether to print debug information.
             attack_setup_target_conversation_id: The conversation ID to use for the prompt target.
                 If not provided, a new one will be generated.
         """
-        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
+        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         self._attack_setup_target = attack_setup_target
         self._processing_callback = processing_callback
@@ -117,7 +111,6 @@ class XPIATestOrchestrator(XPIAOrchestrator):
         attack_setup_target: PromptTarget,
         scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         attack_setup_target_conversation_id: Optional[str] = None,
     ) -> None:
@@ -137,10 +130,6 @@ class XPIATestOrchestrator(XPIAOrchestrator):
             attack_setup_target: The target that generates the attack prompt and gets it into the attack location.
             scorer: The scorer to use to score the processing response.
             prompt_converters: The converters to apply to the attack content before sending it to the prompt target.
-            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
             attack_setup_target_conversation_id: The conversation ID to use for the prompt target.
                 If not provided, a new one will be generated.
@@ -151,7 +140,6 @@ class XPIATestOrchestrator(XPIAOrchestrator):
             scorer=scorer,
             processing_callback=self._process_async,  # type: ignore
             prompt_converters=prompt_converters,
-            memory_labels=memory_labels,
             verbose=verbose,
             attack_setup_target_conversation_id=attack_setup_target_conversation_id,
         )
@@ -183,7 +171,6 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
         attack_setup_target: PromptTarget,
         scorer: Scorer,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory_labels: Optional[dict[str, str]] = {},
         verbose: bool = False,
         attack_setup_target_conversation_id: Optional[str] = None,
     ) -> None:
@@ -200,7 +187,6 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
             attack_setup_target: The target that generates the attack prompt and gets it into the attack location.
             scorer: The scorer to use to score the processing response.
             prompt_converters: The converters to apply to the attack content before sending it to the prompt target.
-            memory_labels: The labels to use for the memory. This is useful to identify the bot messages in the memory.
             verbose: Whether to print debug information.
             attack_setup_target_conversation_id: The conversation ID to use for the prompt target.
                 If not provided, a new one will be generated.
@@ -211,7 +197,6 @@ class XPIAManualProcessingOrchestrator(XPIAOrchestrator):
             scorer=scorer,
             processing_callback=self._input_async,
             prompt_converters=prompt_converters,
-            memory_labels=memory_labels,
             verbose=verbose,
             attack_setup_target_conversation_id=attack_setup_target_conversation_id,
         )

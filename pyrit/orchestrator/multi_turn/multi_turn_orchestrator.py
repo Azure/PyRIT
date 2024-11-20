@@ -89,10 +89,6 @@ class MultiTurnOrchestrator(Orchestrator):
             prompts before sending them to the prompt target. Defaults to None.
         objective_scorer (Scorer): The scorer classifies the prompt target outputs as sufficient (True) or
             insufficient (False) to satisfy the objective that is specified in the attack_strategy.
-        memory_labels (Optional[dict[str, str]], Optional): A free-form dictionary for tagging prompts with custom
-            labels. These labels can be used to track all prompts sent as part of an operation, score prompts based
-            on the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
         verbose (bool, Optional): Whether to print debug information. Defaults to False.
 
     Raises:
@@ -111,11 +107,10 @@ class MultiTurnOrchestrator(Orchestrator):
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
 
-        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
+        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         self._objective_target = objective_target
         self._achieved_objective = False

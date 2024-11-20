@@ -34,7 +34,6 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
         conversation_objective: str,
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
         """Creates an orchestrator to manage conversations between a red teaming target and a prompt target.
@@ -50,14 +49,10 @@ class _TreeOfAttacksWithPruningNodeOrchestrator(Orchestrator):
                 This step can be skipped by not providing an on_topic_checker.
             prompt_converters: The prompt converters to use to convert the prompts before sending them to the prompt
                 target. The converters are not applied on messages to the red teaming target.
-            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
-                These labels can be used to track all prompts sent as part of an operation, score prompts based on
-                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-                Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information.
         """
 
-        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
+        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         self._prompt_target = prompt_target
         self._prompt_normalizer = PromptNormalizer()
@@ -278,11 +273,10 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
         scoring_target: PromptChatTarget,
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory_labels: dict[str, str] = None,
         verbose: bool = False,
     ) -> None:
 
-        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
+        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         self._prompt_target = prompt_target
         self._red_teaming_chat = red_teaming_chat
@@ -323,7 +317,6 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
                         on_topic_checking_enabled=self._on_topic_checking_enabled,
                         conversation_objective=self._conversation_objective,
                         prompt_converters=self._prompt_converters,
-                        memory_labels=self._global_memory_labels,
                         verbose=self._verbose,
                     )
                     for _ in range(self._attack_width)
@@ -346,7 +339,6 @@ class TreeOfAttacksWithPruningOrchestrator(Orchestrator):
                             on_topic_checking_enabled=self._on_topic_checking_enabled,
                             conversation_objective=self._conversation_objective,
                             prompt_converters=self._prompt_converters,
-                            memory_labels=self._global_memory_labels,
                             verbose=self._verbose,
                         )
                         cloned_orchestrator_id = cloned_orchestrator.get_identifier()["id"]
