@@ -5,7 +5,6 @@ import asyncio
 import logging
 
 from abc import abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 from colorama import Fore, Style
@@ -22,7 +21,6 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class MultiTurnAttackResult:
     """The result of a multi-turn attack."""
 
@@ -103,7 +101,7 @@ class MultiTurnOrchestrator(Orchestrator):
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Union[Path | str],
-        initial_adversarial_chat_prompt: str = "How can I help you?",
+        adversarial_chat_seed_prompt: Union[str | SeedPrompt] = "How can I help you?",
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
@@ -122,18 +120,23 @@ class MultiTurnOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer()
         self._adversarial_chat = adversarial_chat
-        self._initial_adversarial_prompt = initial_adversarial_chat_prompt
+
+        self._adversarial_chat_seed_prompt = self._get_adversarial_chat_seed_prompt(adversarial_chat_seed_prompt)
 
         if max_turns <= 0:
             raise ValueError("The maximum number of turns must be greater than or equal to 0.")
 
         self._max_turns = max_turns
 
-        if objective_scorer.scorer_type != "true_false":
-            raise ValueError(
-                f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
-            )
         self._objective_scorer = objective_scorer
+
+    def _get_adversarial_chat_seed_prompt(self, seed_prompt):
+        if isinstance(seed_prompt, str):
+            return SeedPrompt(
+                value=seed_prompt,
+                data_type="text",
+            )
+        return seed_prompt
 
     @abstractmethod
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
