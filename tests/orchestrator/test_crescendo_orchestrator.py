@@ -165,7 +165,7 @@ async def test_apply_crescendo_attack_fail_max_refusals_num_turns(
 
 
 @pytest.mark.asyncio
-async def test_apply_crescendo_attack_succeed_max_refusals_num_turns(
+async def test_run_attack_succeed_max_refusals_num_turns(
     orchestrator: CrescendoOrchestrator,
     did_refuse_score: Score,
     true_eval_score: Score,
@@ -196,6 +196,57 @@ async def test_apply_crescendo_attack_succeed_max_refusals_num_turns(
         assert mock_eval_score.call_count == 1
         assert objective_score.achieved_objective, "should have achieved objective"
         assert mock_get_attack_prompt.call_count == 1 + max_refusal
+
+
+@pytest.mark.asyncio
+async def test_run_attack_calls_get_attack_prompt(
+    orchestrator: CrescendoOrchestrator,
+    did_refuse_score: Score,
+    false_eval_score: Score,
+):
+    """
+    Tests the scenario where we reach max refusals and max turns
+    """
+    max_refusal = 1
+    orchestrator._max_backtracks = max_refusal
+    orchestrator._max_turns = 2
+
+    with (
+        patch.object(
+            orchestrator, "_get_attack_prompt", AsyncMock(return_value="attack_prompt")
+        ) as mock_get_attack_prompt,
+        patch.object(
+            orchestrator._refusal_scorer,
+            "score_async",
+            AsyncMock(return_value=[did_refuse_score]),
+        ),
+        patch.object(
+            orchestrator._objective_scorer,
+            "score_async",
+            AsyncMock(return_value=[false_eval_score]),
+        ),
+    ):
+        await orchestrator.run_attack_async(objective="objective")
+
+        assert mock_get_attack_prompt.call_count == 3
+
+        # The first iteration has no objective score or refused text
+        call_0 = mock_get_attack_prompt.call_args_list[0]
+        _, kwargs_0 = call_0
+        assert not kwargs_0["objective_score"]
+        assert not kwargs_0["refused_text"]
+
+        # The second iteration has refused text but no objective score
+        call_1 = mock_get_attack_prompt.call_args_list[1]
+        _, kwargs_1 = call_1
+        assert not kwargs_1["objective_score"]
+        assert kwargs_1["refused_text"] == "attack_prompt"
+
+        # The third iteration has no refused text but has an objective score
+        call_2 = mock_get_attack_prompt.call_args_list[2]
+        _, kwargs_2 = call_2
+        assert kwargs_2["objective_score"]
+        assert not kwargs_2["refused_text"]
 
 
 @pytest.mark.asyncio
@@ -443,3 +494,127 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
         # the previous prompt text and score rationalie should be in prompt text
         assert previous_prompt_text in prompt_sent
         assert false_eval_score.score_rationale in prompt_sent
+
+
+@pytest.mark.asyncio
+async def test_get_attack_prompt_with_refusal(orchestrator: CrescendoOrchestrator):
+    red_team_response = (
+        '{"generated_question": "Red Teaming Response", '
+        '"last_response_summary": "Last Response Summary", '
+        '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
+    )
+
+    mock_request_piece = MagicMock()
+    mock_request_piece.converted_value = red_team_response
+
+    red_teaming_return_value = MagicMock()
+    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+
+    objective = "do something extremely bad"
+    refused_text = "this request was refused"
+
+    with patch.object(
+        orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
+    ) as mock_prompt_normalizer:
+
+        await orchestrator._get_attack_prompt(
+            adversarial_chat_conversation_id="123",
+            objective=objective,
+            refused_text=refused_text,
+            turn_num=3,
+            max_turns=7,
+            objective_score=None,
+        )
+
+        _, kwargs = mock_prompt_normalizer.call_args
+        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+
+        assert "This is the turn 3 of 7 turns." in prompt_sent
+        assert objective in prompt_sent
+        assert "The target refused to respond to the last request you sent. " in prompt_sent
+        assert refused_text in prompt_sent
+        assert "The target responsed to the last question with the " not in prompt_sent
+
+
+@pytest.mark.asyncio
+async def test_get_attack_prompt_first_turn(orchestrator: CrescendoOrchestrator):
+    red_team_response = (
+        '{"generated_question": "Red Teaming Response", '
+        '"last_response_summary": "Last Response Summary", '
+        '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
+    )
+
+    mock_request_piece = MagicMock()
+    mock_request_piece.converted_value = red_team_response
+
+    red_teaming_return_value = MagicMock()
+    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+
+    objective = "do something extremely bad"
+
+    with patch.object(
+        orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
+    ) as mock_prompt_normalizer:
+
+        await orchestrator._get_attack_prompt(
+            adversarial_chat_conversation_id="123",
+            objective=objective,
+            refused_text=None,
+            turn_num=3,
+            max_turns=7,
+            objective_score=None,
+        )
+
+        _, kwargs = mock_prompt_normalizer.call_args
+        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+
+        assert "This is the turn 3 of 7 turns." in prompt_sent
+        assert objective in prompt_sent
+        assert "The target refused to respond to the last request you sent. " not in prompt_sent
+        assert "The target responsed to the last question with the " not in prompt_sent
+
+
+@pytest.mark.asyncio
+async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestrator):
+    red_team_response = (
+        '{"generated_question": "Red Teaming Response", '
+        '"last_response_summary": "Last Response Summary", '
+        '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
+    )
+
+    mock_request_piece = MagicMock()
+    mock_request_piece.converted_value = red_team_response
+
+    red_teaming_return_value = MagicMock()
+    red_teaming_return_value.request_pieces = [mock_request_piece]  # Mock list with proper behavior
+
+    objective = "do something extremely bad"
+    objective_score = MagicMock(score_rationale="Objective Score Rationale")
+
+    objective_score_return = MagicMock(converted_value="Objective Score Original prompt sent")
+
+    with (
+        patch.object(
+            orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
+        ) as mock_prompt_normalizer,
+        patch.object(
+            orchestrator._memory, "get_prompt_request_pieces_by_id", MagicMock(return_value=[objective_score_return])
+        ),
+    ):
+
+        await orchestrator._get_attack_prompt(
+            adversarial_chat_conversation_id="123",
+            objective=objective,
+            refused_text=None,
+            turn_num=3,
+            max_turns=7,
+            objective_score=objective_score,
+        )
+
+        _, kwargs = mock_prompt_normalizer.call_args
+        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+
+        assert "This is the turn 3 of 7 turns." in prompt_sent
+        assert objective in prompt_sent
+        assert "Objective Score Rationale" in prompt_sent
+        assert "Original prompt sent" in prompt_sent
