@@ -199,22 +199,37 @@ class MultiTurnOrchestrator(Orchestrator):
             by the calling orchestrators to reset the starting turn number.
         """
         turn_count = 0
-        for request in self._prepended_conversation:
-            for piece in request.request_pieces:
-                piece.conversation_id = new_conversation_id
-                piece.id = uuid.uuid4()
+        if self._prepended_conversation:
+            for request in self._prepended_conversation:
+                for piece in request.request_pieces:
+                    piece.conversation_id = new_conversation_id
+                    piece.id = uuid.uuid4()
 
-                # Number of complete turns should be the same as the number of assistant messages
-                if piece.role == "assistant":
-                    turn_count += 1
+                    # Number of complete turns should be the same as the number of assistant messages
+                    if piece.role == "assistant":
+                        turn_count += 1
 
-            # QUESTION: Would this be enough? If there is a system message prepended do we send
-            # this through to the target? For user/assistant messages, we assume these are fabricated?
-            self._memory.add_request_response_to_memory(request=request)
+                    # TODO: Check that system prompt is set correctly
+                    if piece.role == "system":
+                        if issubclass(type(self._objective_target), type(PromptChatTarget)):
+                            chat_target = (PromptChatTarget)(self._objective_target)
+                            chat_target.set_system_prompt(
+                                system_prompt=piece.original_value,
+                                conversation_id=new_conversation_id,
+                                orchestrator_identifier=piece.orchestrator_identifier,
+                                labels=piece.labels,
+                            )
+                        else:
+                            logger.info("Objective target must be a PromptChatTarget to set system prompt")
+                            raise ValueError
+
+                self._memory.add_request_response_to_memory(request=request)
 
         if turn_count > self._max_turns:
-            logger.info(f"Number of turns in prepended conversation ({turn_count}) must not exceed
-                        `max_turns` current value: {self._max_turns}")
+            logger.info(
+                f"Number of turns in prepended conversation ({turn_count}) must not exceed"
+                + f" `max_turns` current value: {self._max_turns}"
+            )
             raise ValueError
 
         return turn_count

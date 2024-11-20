@@ -121,14 +121,13 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             if self._use_score_as_feedback and score:
                 feedback = score.score_rationale
 
+            # Check if the last prepended message is a user message
+            # If it is, use it as the prompt for the next turn instead of generating a new prompt
             prompt = None
 
-            # TODO: Check self._prepended_conversation to see if the last message is from a user
-            # Check how memory.get_conversation() gets the user/assistant messages to see if this
-            # is the right way to get the last message.
-            # May need to check there is no assistant message in that last piece...
             if self._prepended_conversation:
-                last_message = self._prepended_conversation[-1].request_pieces[-1]
+                last_message = self._prepended_conversation[-1].request_pieces[0]
+
                 if last_message.role == "user":
                     prompt = last_message.converted_value
 
@@ -191,8 +190,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 For text-to-image applications, for example, there is no immediate text output
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
-            prompt (str, optional): If provided, send this prompt to the target instead of
-                generating a new prompt with the red teaming LLM.
+            prompt (str, optional): If provided, send this prompt to the target directly.
+                Otherwise, generate a new prompt with the red teaming LLM.
         """
         if not prompt:
             # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
