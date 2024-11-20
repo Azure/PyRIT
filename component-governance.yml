@@ -11,12 +11,10 @@ steps:
   - script: pip install --upgrade setuptools pip
     name: UpgradePip
 
-  - script: pip install --ignore-installed --dry-run --quiet --report ./component-detection-pip-report.json .
-    name: GeneratePipReport
-  
-  - script: cat ./component-detection-pip-report.json
-    name: ShowPipReport
+  - script: pip install toml-to-requirements
+
+  - script: toml-to-req --toml-file pyproject.toml --output-file
 
   - task: ComponentGovernanceComponentDetection@0
     env:
-      PIP_INDEX_URL: https://pypi.org/simple
+      PIP_INDEX_URL: https://pypi.python.org/simple
