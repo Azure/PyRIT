@@ -13,7 +13,7 @@ steps:
 
   - script: pip install toml-to-requirements
 
-  - script: toml-to-req --toml-file pyproject.toml --output-file
+  - script: toml-to-req --toml-file pyproject.toml
 
   - task: ComponentGovernanceComponentDetection@0
     env:
