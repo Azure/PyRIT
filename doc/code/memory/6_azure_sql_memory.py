@@ -44,8 +44,9 @@
 
 # %%
 from pyrit.memory import AzureSQLMemory
+from pyrit.common import default_values
 
-
+default_values.load_environment_files()
 memory = AzureSQLMemory()
 
 memory.print_schema()

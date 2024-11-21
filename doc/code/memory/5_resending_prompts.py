@@ -23,12 +23,15 @@
 
 # %%
 import uuid
-
+from pyrit.memory import DuckDBMemory, CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 default_values.load_environment_files()
+
+memory = DuckDBMemory()
+CentralMemory.set_memory_instance(memory)
 
 target = OpenAIChatTarget()
 
@@ -43,15 +46,13 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 # Because you have labeled `group1`, you can retrieve these prompts later. For example, you could score them as shown [here](../orchestrators/4_scoring_orchestrator.ipynb). Or you could resend them as shown below; this script will resend any prompts with the label regardless of modality.
 
 # %%
-from pyrit.memory import DuckDBMemory
 from pyrit.common import default_values
-from pyrit.prompt_converter.base64_converter import Base64Converter
+from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import TextTarget
 
 
 default_values.load_environment_files()
 
-memory = DuckDBMemory()
 prompts = memory.get_prompt_request_piece_by_memory_labels(memory_labels={"prompt_group": group1})
 
 # These are all original prompts sent previously
