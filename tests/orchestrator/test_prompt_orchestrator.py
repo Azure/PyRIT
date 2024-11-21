@@ -38,7 +38,7 @@ def mock_target(mock_central_memory_instance) -> MockPromptTarget:
 
 @patch(
     "pyrit.common.default_values.get_non_required_value",
-    return_value='{"OP_NAME": "dummy_op"}',
+    return_value='{"op_name": "dummy_op"}',
 )
 def test_init_orchestrator_global_memory_labels(mock_get_non_required_value, mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
@@ -233,7 +233,7 @@ def test_orchestrator_get_memory(mock_target: MockPromptTarget, mock_central_mem
 @pytest.mark.asyncio
 @patch(
     "pyrit.common.default_values.get_non_required_value",
-    return_value='{"OP_NAME": "dummy_op"}',
+    return_value='{"op_name": "dummy_op"}',
 )
 async def test_orchestrator_send_prompts_async_with_env_local_memory_labels(
     mock_get_non_required_value, mock_target: MockPromptTarget, mock_central_memory_instance
@@ -254,11 +254,11 @@ async def test_orchestrator_send_prompts_async_with_memory_labels(
     mock_target: MockPromptTarget, mock_central_memory_instance
 ):
     orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
-    new_labels = {"op_name": "op1", "user_name": "name1"}
+    new_labels = {"op_name": "op1", "username": "name1"}
     await orchestrator.send_prompts_async(prompt_list=["hello"], memory_labels=new_labels)
     assert mock_target.prompt_sent == ["hello"]
 
-    expected_labels = {"op_name": "op1", "user_name": "name1"}
+    expected_labels = {"op_name": "op1", "username": "name1"}
     entries = orchestrator.get_memory()
     assert len(entries) == 2
     assert entries[0].labels == expected_labels
@@ -277,7 +277,7 @@ async def test_orchestrator_send_prompts_async_with_memory_labels_collision(
     await orchestrator.send_prompts_async(prompt_list=["hello"], memory_labels=new_labels)
     assert mock_target.prompt_sent == ["hello"]
 
-    expected_labels = {"OP_NAME": "op2", "username": "dummy_name"}
+    expected_labels = {"op_name": "op2", "username": "dummy_name"}
     entries = orchestrator.get_memory()
     assert len(entries) == 2
     assert entries[0].labels == expected_labels
