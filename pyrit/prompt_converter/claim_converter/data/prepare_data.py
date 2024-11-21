@@ -24,11 +24,11 @@ def download_file(url, dest):
 
 def extract_tar_gz(file_path, dest_dir):
     """Extract a .tar.gz file to a destination directory."""
-    if not os.path.exists(dest_dir):
-        with tarfile.open(file_path, 'r:gz') as tar:
-            tar.extractall(path=dest_dir)
-    else:
-        print(f"Directory {dest_dir} already exists. Skipping extraction.")
+    # if not os.path.exists(dest_dir):
+    with tarfile.open(file_path, 'r:gz') as tar:
+        tar.extractall(path=dest_dir)
+    # else:
+    #     print(f"Directory {dest_dir} already exists. Skipping extraction.")
 
 def extract_zip(file_path, dest_dir):
     """Extract a .zip file to a destination directory."""
@@ -45,7 +45,7 @@ def main():
     # Create sample problematic example data
     os.makedirs('sbf', exist_ok=True)
     download_file('https://maartensap.com/social-bias-frames/SBIC.v2.tgz', 'sbf/SBIC.v2.tgz')
-    extract_tar_gz('sbf/SBIC.v2.tgz', 'sbf/SBIC.v2')
+    extract_tar_gz('sbf/SBIC.v2.tgz', 'sbf/')
     if not os.path.exists('sample_utterances.json'):
         subprocess.run(['python', 'gen_sample_utterances.py'], check=True)
     else:
