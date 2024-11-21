@@ -6,7 +6,7 @@ import httpx
 import json
 import logging
 import re
-from typing import Callable
+from typing import Callable, Optional
 
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
@@ -34,8 +34,9 @@ class HTTPTarget(PromptTarget):
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
         callback_function: Callable = None,
+        max_requests_per_minute: Optional[int] = None,
     ) -> None:
-
+        super().__init__(max_requests_per_minute=max_requests_per_minute)
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
