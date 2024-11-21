@@ -157,7 +157,7 @@ scorer = SelfAskTrueFalseScorer(
 with RedTeamingOrchestrator(
     adversarial_chat=red_teaming_llm,
     objective_target=target_llm,
-    initial_adversarial_chat_prompt="Begin conversation",
+    adversarial_chat_seed_prompt="Begin conversation",
     objective_scorer=scorer,
     max_turns=2,
 ) as orchestrator:
