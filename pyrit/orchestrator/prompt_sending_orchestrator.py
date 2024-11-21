@@ -206,9 +206,5 @@ class PromptSendingOrchestrator(Orchestrator):
                     # and if not, this won't hurt anything
                     piece.id = uuid.uuid4()
 
-                    # if the piece is retrieved from somewhere else, it needs to be unique
-                    # and if not, this won't hurt anything
-                    piece.id = uuid.uuid4()
-
                 self._memory.add_request_response_to_memory(request=request)
         return conversation_id

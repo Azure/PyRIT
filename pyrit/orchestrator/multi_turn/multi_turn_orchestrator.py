@@ -145,14 +145,6 @@ class MultiTurnOrchestrator(Orchestrator):
             )
         return seed_prompt
 
-    def _get_adversarial_chat_seed_prompt(self, seed_prompt):
-        if isinstance(seed_prompt, str):
-            return SeedPrompt(
-                value=seed_prompt,
-                data_type="text",
-            )
-        return seed_prompt
-
     @abstractmethod
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
