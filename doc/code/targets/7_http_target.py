@@ -29,8 +29,9 @@ from pathlib import Path
 
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator, RedTeamingOrchestrator
-from pyrit.prompt_target import OpenAIChatTarget, HTTPTarget
-from pyrit.prompt_target.http_target.http_target_callback_functions import (
+from pyrit.prompt_target import (
+    OpenAIChatTarget,
+    HTTPTarget,
     get_http_target_json_response_callback_function,
     get_http_target_regex_matching_callback_function,
 )

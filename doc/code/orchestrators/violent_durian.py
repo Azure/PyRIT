@@ -122,4 +122,4 @@ with RedTeamingOrchestrator(
     max_turns=2,
 ) as red_teaming_orchestrator:
     result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
-    await red_teaming_orchestrator.print_conversation_async(result=result)  # type: ignore
+    await result.print_conversation_async()  # type: ignore

@@ -33,12 +33,14 @@
 # %%
 import uuid
 
+from pyrit.memory import DuckDBMemory, CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 
 default_values.load_environment_files()
+CentralMemory.set_memory_instance(DuckDBMemory())
 
 target = OpenAIChatTarget()
 
@@ -70,8 +72,6 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 
 
-default_values.load_environment_files()
-
 target = OpenAIChatTarget()
 
 with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Converter()]) as orchestrator:
@@ -95,8 +95,6 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=[Base64Co
 import pathlib
 
 from pyrit.prompt_target import TextTarget
-from pyrit.common.path import HOME_PATH
-
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 
@@ -106,7 +104,7 @@ text_target = TextTarget()
 
 # use the image from our docs
 # For DuckDB Memory
-image_path = pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"
+image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
 # For Azure SQL Memory
 # image_path = "https://airtstorageaccountdev.blob.core.windows.net/results/dbdata/images/1728351978677143.png"
 

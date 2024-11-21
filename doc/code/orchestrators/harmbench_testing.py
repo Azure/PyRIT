@@ -13,13 +13,9 @@ from pyrit.datasets import fetch_harmbench_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
-
-# %%
 # Load environment variables
 default_values.load_environment_files()
 
-
-# %%
 # Set up the Azure OpenAI prompt target
 prompt_target = TextTarget()
 examples_source = "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/harmbench_behaviors_text_all.csv"
@@ -39,7 +35,7 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 prompt_dataset = fetch_harmbench_examples(examples_source, source_type="public_url")
 
 # Use the first 4 examples for red teaming
-prompt_list = prompt_dataset.prompts[:4]
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
 # Send prompts using the orchestrator and capture responses
 try:

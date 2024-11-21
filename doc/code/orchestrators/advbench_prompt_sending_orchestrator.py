@@ -46,14 +46,15 @@ test_user_name = str(uuid.uuid4())
 memory_labels = {"op_name": test_op_name, "user_name": test_user_name}
 with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels) as orchestrator:
     adv_bench_prompts = fetch_adv_bench_dataset()
+    prompts = [prompt.value for prompt in adv_bench_prompts.prompts[:3]]
 
     start = time.time()
-    await orchestrator.send_prompts_async(prompt_list=adv_bench_prompts.prompts[:3])  # type: ignore
+    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
     end = time.time()
 
     print(f"Elapsed time for operation: {end-start}")
 
-    orchestrator.print_conversations()
+    await orchestrator.print_conversations()  # type: ignore
 
 # %% [markdown]
 # ## Adding Converters
@@ -65,10 +66,7 @@ with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels
 with PromptSendingOrchestrator(
     prompt_target=target, prompt_converters=[Base64Converter()], batch_size=1
 ) as orchestrator:
-
-    adv_bench_prompts = fetch_adv_bench_dataset()
-
     # this is run in a Jupyter notebook, so we can use await
-    await orchestrator.send_prompts_async(prompt_list=adv_bench_prompts.prompts[:3])  # type: ignore
+    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 
-    orchestrator.print_conversations()
+    await orchestrator.print_conversations()  # type: ignore
