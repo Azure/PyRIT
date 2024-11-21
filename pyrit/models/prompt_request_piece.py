@@ -171,3 +171,5 @@ class PromptRequestPiece(abc.ABC):
 
     def __str__(self):
         return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"
+
+    __repr__ = __str__

@@ -67,7 +67,8 @@ from pyrit.prompt_converter import SearchReplaceConverter
 
 # For AOAI the response content is located in the path choices[0].message.content - for other responses this should be in the documentation or you can manually test the output to find the right path
 parsing_function = get_http_target_json_response_callback_function(key="choices[0].message.content")
-http_prompt_target = HTTPTarget(http_request=raw_http_request, callback_function=parsing_function)
+# httpx AsyncClient parameters can be passed as kwargs to HTTPTarget, for example the timeout below
+http_prompt_target = HTTPTarget(http_request=raw_http_request, callback_function=parsing_function, timeout=20.0)
 
 # Note, a converter is used to format the prompt to be json safe without new lines/carriage returns, etc
 with PromptSendingOrchestrator(
