@@ -347,7 +347,6 @@ def test_prepare_conversation_without_prepended_conversation(mock_central_memory
 
 # 1. add test for zero retries
 #    - should not call the retry logic
-
 @pytest.mark.asyncio
 async def test_zero_retries():
     prompt_target_mock = MagicMock()
