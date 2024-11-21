@@ -64,6 +64,26 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
 
 
 @pytest.mark.asyncio
+@patch("httpx.AsyncClient")
+async def test_send_prompt_async_client_kwargs(mock_async_client):
+    # Create client_kwargs to test
+    client_kwargs = {"timeout": 10, "verify": False}
+    sample_request = "GET /test HTTP/1.1\nHost: example.com\n\n"
+    # Create instance of HTTPTarget with client_kwargs
+    # Use **client_kwargs to pass them as keyword arguments
+    http_target = HTTPTarget(http_request=sample_request, **client_kwargs)
+    prompt_request = MagicMock()
+    prompt_request.request_pieces = [MagicMock(converted_value="")]
+    mock_response = MagicMock()
+    mock_response.content = b"Response content"
+    instance = mock_async_client.return_value.__aenter__.return_value
+    instance.request.return_value = mock_response
+    await http_target.send_prompt_async(prompt_request=prompt_request)
+
+    mock_async_client.assert_called_with(http2=False, timeout=10, verify=False)
+
+
+@pytest.mark.asyncio
 async def test_send_prompt_async_validation(mock_http_target):
     # Create an invalid prompt request (missing request_pieces)
     invalid_prompt_request = MagicMock()
