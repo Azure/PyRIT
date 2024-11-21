@@ -7,7 +7,6 @@ import uuid
 
 from abc import abstractmethod
 from colorama import Fore, Style
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
@@ -23,7 +22,6 @@ from pyrit.score import Scorer
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class MultiTurnAttackResult:
     """The result of a multi-turn attack."""
 
@@ -82,19 +80,19 @@ class MultiTurnOrchestrator(Orchestrator):
         adversarial_chat (PromptChatTarget): The endpoint that creates prompts that are sent to the
             objective_target.
         adversarial_chat_system_prompt_path (Path): The initial prompt to send to adversarial_chat.
-        initial_adversarial_chat_prompt (str, optional): The initial prompt to start the adversarial chat.
+        initial_adversarial_chat_prompt (str, Optional): The initial prompt to start the adversarial chat.
             Defaults to "How can I help you?".
-        max_turns (int, optional): The maximum number of turns for the conversation. Must be greater than or equal
+        max_turns (int, Optional): The maximum number of turns for the conversation. Must be greater than or equal
             to 0. Defaults to 5.
-        prompt_converters (Optional[list[PromptConverter]], optional): The prompt converters to use to convert the
+        prompt_converters (Optional[list[PromptConverter]], Optional): The prompt converters to use to convert the
             prompts before sending them to the prompt target. Defaults to None.
         objective_scorer (Scorer): The scorer classifies the prompt target outputs as sufficient (True) or
             insufficient (False) to satisfy the objective that is specified in the attack_strategy.
-        memory_labels (Optional[dict[str, str]], optional): A free-form dictionary for tagging prompts with custom
+        memory_labels (Optional[dict[str, str]], Optional): A free-form dictionary for tagging prompts with custom
             labels. These labels can be used to track all prompts sent as part of an operation, score prompts based
             on the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
-        verbose (bool, optional): Whether to print debug information. Defaults to False.
+        verbose (bool, Optional): Whether to print debug information. Defaults to False.
 
     Raises:
         FileNotFoundError: If the file specified by adversarial_chat_system_prompt_path does not exist.
@@ -108,7 +106,7 @@ class MultiTurnOrchestrator(Orchestrator):
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_system_prompt_path: Union[Path | str],
-        initial_adversarial_chat_prompt: str = "How can I help you?",
+        adversarial_chat_seed_prompt: Union[str | SeedPrompt] = "How can I help you?",
         max_turns: int = 5,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_scorer: Scorer,
@@ -128,19 +126,32 @@ class MultiTurnOrchestrator(Orchestrator):
 
         self._prompt_normalizer = PromptNormalizer()
         self._adversarial_chat = adversarial_chat
-        self._initial_adversarial_prompt = initial_adversarial_chat_prompt
+
+        self._adversarial_chat_seed_prompt = self._get_adversarial_chat_seed_prompt(adversarial_chat_seed_prompt)
 
         if max_turns <= 0:
             raise ValueError("The maximum number of turns must be greater than or equal to 0.")
 
         self._max_turns = max_turns
 
-        if objective_scorer.scorer_type != "true_false":
-            raise ValueError(
-                f"The scorer must be a true/false scorer. The scorer type is {objective_scorer.scorer_type}."
-            )
         self._objective_scorer = objective_scorer
         self._prepended_conversation: list[PromptRequestResponse] = None
+
+    def _get_adversarial_chat_seed_prompt(self, seed_prompt):
+        if isinstance(seed_prompt, str):
+            return SeedPrompt(
+                value=seed_prompt,
+                data_type="text",
+            )
+        return seed_prompt
+
+    def _get_adversarial_chat_seed_prompt(self, seed_prompt):
+        if isinstance(seed_prompt, str):
+            return SeedPrompt(
+                value=seed_prompt,
+                data_type="text",
+            )
+        return seed_prompt
 
     @abstractmethod
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:

@@ -33,15 +33,15 @@ class OpenAIDALLETarget(OpenAITarget):
         Initialize the DALL-E target with specified parameters.
 
         Args:
-            image_size (Literal["256x256", "512x512", "1024x1024"], optional): The size of the generated images.
+            image_size (Literal["256x256", "512x512", "1024x1024"], Optional): The size of the generated images.
                 Defaults to "1024x1024".
-            num_images (int, optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be
+            num_images (int, Optional): The number of images to generate. Defaults to 1. For DALL-E-2, this can be
                 between 1 and 10. For DALL-E-3, this must be 1.
-            dalle_version (Literal["dall-e-2", "dall-e-3"], optional): The version of DALL-E to use. Defaults to
+            dalle_version (Literal["dall-e-2", "dall-e-3"], Optional): The version of DALL-E to use. Defaults to
                 "dall-e-2".
-            quality (Literal["standard", "hd"], optional): The quality of the generated images. Only applicable for
+            quality (Literal["standard", "hd"], Optional): The quality of the generated images. Only applicable for
                 DALL-E-3. Defaults to "standard".
-            style (Literal["natural", "vivid"], optional): The style of the generated images. Only applicable for
+            style (Literal["natural", "vivid"], Optional): The style of the generated images. Only applicable for
                 DALL-E-3. Defaults to "natural".
             *args: Additional positional arguments to be passed to AzureOpenAITarget.
             **kwargs: Additional keyword arguments to be passed to AzureOpenAITarget.

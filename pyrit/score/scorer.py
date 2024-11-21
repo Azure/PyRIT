@@ -172,9 +172,9 @@ class Scorer(abc.ABC):
             prompt_request_value (str): The actual value or content to be scored by the LLM.
             prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
             scored_prompt_id (str): The ID of the scored prompt.
-            category (str, optional): The category of the score. Can also be parsed from the JSON response if not
+            category (str, Optional): The category of the score. Can also be parsed from the JSON response if not
                 provided.
-            task (str, optional): A description of the task that is associated with the score, used for contextualizing
+            task (str, Optional): A description of the task that is associated with the score, used for contextualizing
                 the result.
 
         Returns:

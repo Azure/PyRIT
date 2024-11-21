@@ -16,7 +16,7 @@ class HumanInTheLoopConverter(PromptConverter):
     modify the prompt, or run the prompt through one of the passed-in converters before sending it.
 
     Args:
-        converters: (List[PromptConverter], optional): List of possible converters to run input through.
+        converters: (List[PromptConverter], Optional): List of possible converters to run input through.
     """
 
     def __init__(

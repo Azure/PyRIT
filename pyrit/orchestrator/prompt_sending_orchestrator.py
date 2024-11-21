@@ -41,15 +41,15 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         Args:
             prompt_target (PromptTarget): The target for sending prompts.
-            prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
+            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
-            scorers (list[Scorer], optional): List of scorers to use for each prompt request response, to be
+            scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
+            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
             These labels can be used to track all prompts sent as part of an operation, score prompts based on
             the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
             Users can define any key-value pairs according to their needs. Defaults to None.
-            batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+            batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
         """
@@ -83,7 +83,7 @@ class PromptSendingOrchestrator(Orchestrator):
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
-            memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts.
             These labels will be merged with the instance's global memory labels. Defaults to None.
             metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
@@ -201,6 +201,10 @@ class PromptSendingOrchestrator(Orchestrator):
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
                     piece.orchestrator_identifier = self.get_identifier()
+
+                    # if the piece is retrieved from somewhere else, it needs to be unique
+                    # and if not, this won't hurt anything
+                    piece.id = uuid.uuid4()
 
                     # if the piece is retrieved from somewhere else, it needs to be unique
                     # and if not, this won't hurt anything

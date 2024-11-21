@@ -56,7 +56,7 @@ from pyrit.common import default_values
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # Note: parameters are not required here. They are added here to show how they can be used.
 with OpenAIChatTarget(
@@ -157,7 +157,7 @@ scorer = SelfAskTrueFalseScorer(
 with RedTeamingOrchestrator(
     adversarial_chat=red_teaming_llm,
     objective_target=target_llm,
-    initial_adversarial_chat_prompt="Begin conversation",
+    adversarial_chat_seed_prompt="Begin conversation",
     objective_scorer=scorer,
     max_turns=2,
 ) as orchestrator:
@@ -176,7 +176,7 @@ with RedTeamingOrchestrator(
 # for example, `pyrit/datasets/orchestrators/red_teaming/text_generation.yaml`).
 #
 # PyRIT also offers various integration choices for the red teaming orchestrators, including
-# [Azure ML managed online endpoints](../doc/code/targets/4_non_open_ai_chat_targets.ipynb),
+# [Azure ML managed online endpoints](../doc/code/targets/3_non_open_ai_chat_targets.ipynb),
 # and Azure OpenAI models (as shown above).
 #
 # ## Output scoring

@@ -9,7 +9,7 @@
 # ---
 
 # %% [markdown]
-# # Exporting Data Example
+# # 9. Exporting Data Example
 #
 # This notebook shows all the different ways to export data from memory. This first example exports all conversations from Azure SQL memory with their respective score values in a JSON format. Without using the database query editor, these export functions allow for a quick approach to exporting data from memory.
 
@@ -18,7 +18,7 @@ from pyrit.memory.azure_sql_memory import AzureSQLMemory
 from pyrit.common import default_values
 from pathlib import Path
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 memory = AzureSQLMemory()
 
