@@ -204,32 +204,18 @@ class MultiTurnOrchestrator(Orchestrator):
                 for piece in request.request_pieces:
                     piece.conversation_id = new_conversation_id
                     piece.id = uuid.uuid4()
+                    piece.orchestrator_identifier = self.get_identifier()
 
                     # Number of complete turns should be the same as the number of assistant messages
                     if piece.role == "assistant":
                         turn_count += 1
 
-                    # TODO: Check that system prompt is set correctly
-                    if piece.role == "system":
-                        if issubclass(type(self._objective_target), type(PromptChatTarget)):
-                            chat_target = (PromptChatTarget)(self._objective_target)
-                            chat_target.set_system_prompt(
-                                system_prompt=piece.original_value,
-                                conversation_id=new_conversation_id,
-                                orchestrator_identifier=piece.orchestrator_identifier,
-                                labels=piece.labels,
-                            )
-                        else:
-                            logger.info("Objective target must be a PromptChatTarget to set system prompt")
-                            raise ValueError
-
                 self._memory.add_request_response_to_memory(request=request)
 
-        if turn_count > self._max_turns:
-            logger.info(
-                f"Number of turns in prepended conversation ({turn_count}) must not exceed"
-                + f" `max_turns` current value: {self._max_turns}"
+        if turn_count >= self._max_turns:
+            raise ValueError(f"Number of turns in prepended conversation ({turn_count}) must not be equal to or "
+                + f"exceed `max_turns` current value: {self._max_turns}. Increase the number of max turns, or "
+                + " reduce the number of turns in the prepended conversation."
             )
-            raise ValueError
 
         return turn_count
