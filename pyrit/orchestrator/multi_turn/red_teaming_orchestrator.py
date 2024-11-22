@@ -134,6 +134,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 last_message = self._prepended_conversation[-1].request_pieces[0]
 
                 if last_message.role == "user":
+                    logger.info("Sending last user message from prepended conversation to the prompt target.")
                     prompt = last_message.converted_value
 
             response = await self._retrieve_and_send_prompt_async(

@@ -163,22 +163,30 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
             logger.info(f"TURN {turn_num}\n-----------")
 
-            logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
-            attack_prompt = await self._get_attack_prompt(
-                adversarial_chat_conversation_id=adversarial_chat_conversation_id,
-                refused_text=refused_text,
-                objective=objective,
-                turn_num=turn_num,
-                max_turns=self._max_turns,
-                objective_score=objective_score,
-            )
+            # Check if the last prepended message is a user message
+            # If it is, use it as the prompt for the next turn instead of generating a new prompt
+            attack_prompt = None
+            if self._prepended_conversation:
+                last_message = self._prepended_conversation[-1].request_pieces[0]
+
+                if last_message.role == "user":
+                    logger.info("Using last user message from prepended conversation as Attack Prompt.")
+                    attack_prompt = last_message.converted_value
+
+            if not attack_prompt:
+                logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
+                attack_prompt = await self._get_attack_prompt(
+                    adversarial_chat_conversation_id=adversarial_chat_conversation_id,
+                    refused_text=refused_text,
+                    objective=objective,
+                    turn_num=turn_num,
+                    max_turns=self._max_turns,
+                    objective_score=objective_score,
+                )
 
             refused_text = ""
-            logger.info("Sending retrieved attack prompt to TARGET")
+            logger.info("Sending attack prompt to TARGET")
 
-            # TODO: Check self._prepended_conversation to see if the last message is from a user
-            # If it is, we only should send the prompt (no need to retrieve)
-            # Otherwise, proceed as usual
             last_response = await self._send_prompt_to_target_async(
                 attack_prompt=attack_prompt, objective_target_conversation_id=objective_target_conversation_id
             )
@@ -228,6 +236,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 break
 
             logger.info("Jailbreak Unsuccessful, continuing to next turn")
+
+            turn_num += 1
 
         if achieved_objective:
             logger.info("The crescendo orchestrator has achieved the objective.")
