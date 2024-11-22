@@ -168,7 +168,8 @@ class MultiTurnOrchestrator(Orchestrator):
             objectives (list[str]): The list of objectives to apply the attack strategy.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
-                with the passed-in labels taking precedence in the case of collisions. Defaults to None.
+                (from the GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
+                the passed-in labels take precedence. Defaults to None.
             batch_size (int): The number of objectives to process in parallel. The default value is 5.
 
         Returns:

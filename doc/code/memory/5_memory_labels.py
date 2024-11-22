@@ -13,13 +13,23 @@
 # ---
 
 # %% [markdown]
-# # 5. Resending Prompts Example
+# # 5. Resending Prompts Using Memory Labels Example
 #
-# There are many situations where you can use memory. Besides basic usage, you may want to send prompts a second time. The following:
+# Memory labels are a free-from dictionary for tagging prompts for easier querying and scoring later on. The `GLOBAL_MEMORY_LABELS`
+# environment variable can be set to apply labels (e.g. `username` and `op_name`) to all prompts sent by any orchestrator. You can also
+# pass additional memory labels to `send_prompts_async` in the `PromptSendingOrchestrator` or `run_attack_async` for all `MultiTurnOrchestrators`
+# Passed-in labels will be combined with `GLOBAL_MEMORY_LABELS` into one dictionary. In the case of collisions,
+# the passed-in labels take precedence.
 #
-# 1. Sends prompts to a text target using `PromptSendingOrchestrator`
-# 2. Retrieves these prompts using memory labels.
-# 3. Resends the retrieved prompts.
+# You can then query the database (either AzureSQL or DuckDB) for prompts with specific labels, such as `username` and/or `op_name`
+# (which are standard), as well as any others you'd like, including `harm_category`, `language`, `technique`, etc.
+#
+# We take the following steps in this example:
+# 1. Send prompts to a text target using `PromptSendingOrchestrator`, passing in `memory_labels` to `send_prompts_async`.
+# 2. Retrieve these prompts by querying for the corresponding memory label.
+# 3. Resend the retrieved prompts.
+#
+# Note that similar steps can be taken with `MultiTurnOrchestrators` as well by passing in `memory_labels` to `run_attack_async`.
 
 # %%
 import uuid
@@ -57,6 +67,10 @@ default_values.load_environment_files()
 
 memory = DuckDBMemory()
 prompts = memory.get_prompt_request_piece_by_memory_labels(memory_labels={"prompt_group": group1})
+
+# Print original values of queried prompt request pieces (including responses)
+for piece in prompts:
+    print(piece.original_value)
 
 # These are all original prompts sent previously
 original_user_prompts = [prompt.original_value for prompt in prompts if prompt.role == "user"]
