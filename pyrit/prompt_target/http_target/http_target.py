@@ -6,7 +6,7 @@ import httpx
 import json
 import logging
 import re
-from typing import Callable
+from typing import Callable, Optional, Any
 
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
@@ -26,6 +26,7 @@ class HTTPTarget(PromptTarget):
         use_tls: (bool): whether to use TLS or not. Default is True
         callback_function (function): function to parse HTTP response.
             These are the customizable functions which determine how to parse the output
+        client_kwargs: (dict): additional keyword arguments to pass to the HTTP client
     """
 
     def __init__(
@@ -34,12 +35,14 @@ class HTTPTarget(PromptTarget):
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
         callback_function: Callable = None,
+        **client_kwargs: Optional[Any],
     ) -> None:
 
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
         self.use_tls = use_tls
+        self.client_kwargs = client_kwargs or {}
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -66,7 +69,7 @@ class HTTPTarget(PromptTarget):
         if http_version and "HTTP/2" in http_version:
             http2_version = True
 
-        async with httpx.AsyncClient(http2=http2_version) as client:
+        async with httpx.AsyncClient(http2=http2_version, **self.client_kwargs) as client:
             response = await client.request(
                 method=http_method,
                 url=url,
