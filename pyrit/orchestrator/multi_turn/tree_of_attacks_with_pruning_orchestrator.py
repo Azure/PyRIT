@@ -106,7 +106,25 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         self._prompt_converters = prompt_converters or []
         self._objective_achieved_score_threshhold = objective_achieved_score_threshold
 
-    async def run_attack_async(self, *, objective: str) -> TAPAttackResult:
+    async def run_attack_async(
+        self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
+    ) -> TAPAttackResult:
+        """
+        Applies the TAP attack strategy asynchronously.
+
+        Args:
+            objective (str): The specific goal the orchestrator aims to achieve through the conversation.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
+                prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
+                (from the GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
+                the passed-in labels take precedence. Defaults to None.
+
+        Returns:
+            MultiTurnAttackResult: Contains the outcome of the attack, including:
+                - conversation_id (UUID): The ID associated with the final conversation state.
+                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+                - objective (str): The intended goal of the attack.
+        """
 
         tree_visualization = Tree()
         tree_visualization.create_node("Root", "root")
@@ -114,6 +132,8 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         nodes: list[TreeOfAttacksNode] = []
 
         best_conversation_id = None
+
+        updated_memory_labels = self._combine_with_global_memory_labels(memory_labels)
 
         for iteration in range(1, self._attack_depth + 1):
             logger.info(f"Starting iteration number: {iteration}")
@@ -131,7 +151,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                         on_topic_scorer=self._get_on_topic_scorer(objective),
                         prompt_converters=self._prompt_converters,
                         orchestrator_id=self.get_identifier(),
-                        memory_labels=self._global_memory_labels,
+                        memory_labels=updated_memory_labels,
                     )
                     for _ in range(self._attack_width)
                 ]

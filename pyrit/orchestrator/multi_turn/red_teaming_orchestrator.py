@@ -82,7 +82,9 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self._prompt_normalizer = PromptNormalizer()
         self._use_score_as_feedback = use_score_as_feedback
 
-    async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
+    async def run_attack_async(
+        self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
+    ) -> MultiTurnAttackResult:
         """
         Executes a multi-turn red teaming attack asynchronously.
 
@@ -93,6 +95,10 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
 
         Args:
             objective (str): The specific goal the orchestrator aims to achieve through the conversation.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
+                prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
+                (from the GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
+                the passed-in labels take precedence. Defaults to None.
 
         Returns:
             MultiTurnAttackResult: Contains the outcome of the attack, including:
@@ -107,6 +113,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         # Set conversation IDs for objective target and adversarial chat at the beginning of the conversation.
         objective_target_conversation_id = str(uuid4())
         adversarial_chat_conversation_id = str(uuid4())
+
+        updated_memory_labels = self._combine_with_global_memory_labels(memory_labels)
 
         turn = 1
         achieved_objective = False
@@ -123,6 +131,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 objective_target_conversation_id=objective_target_conversation_id,
                 adversarial_chat_conversation_id=adversarial_chat_conversation_id,
                 feedback=feedback,
+                memory_labels=updated_memory_labels,
             )
 
             if response.response_error == "none":
@@ -161,6 +170,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id: str,
         adversarial_chat_conversation_id: str,
         feedback: Optional[str] = None,
+        memory_labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestPiece:
         """
         Generates and sends a prompt to the prompt target.
@@ -175,6 +185,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 For text-to-image applications, for example, there is no immediate text output
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of labels to apply to the
+                prompts throughout the attack. These should already be combined with GLOBAL_MEMORY_LABELS.
         """
         # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
         logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
@@ -183,6 +195,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             objective_target_conversation_id=objective_target_conversation_id,
             adversarial_chat_conversation_id=adversarial_chat_conversation_id,
             feedback=feedback,
+            memory_labels=memory_labels,
         )
 
         target_prompt_obj = NormalizerRequestPiece(
@@ -200,7 +213,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             await self._prompt_normalizer.send_prompt_async(
                 normalizer_request=normalizer_request,
                 target=self._objective_target,
-                labels=self._global_memory_labels,
+                labels=memory_labels,
                 orchestrator_identifier=self.get_identifier(),
             )
         ).request_pieces[0]
@@ -312,6 +325,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id: str,
         adversarial_chat_conversation_id: str,
         feedback: Optional[str] = None,
+        memory_labels: Optional[dict[str, str]] = None,
     ) -> str:
         """
         Send a prompt to the adversarial chat to generate a new prompt for the objective target.
@@ -327,6 +341,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 For text-to-image applications, for example, there is no immediate text output
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of labels to apply to the
+                prompts throughout the attack. These should already be combined with GLOBAL_MEMORY_LABELS.
         """
         prompt_text = self._get_prompt_for_adversarial_chat(
             objective_target_conversation_id=objective_target_conversation_id, feedback=feedback
@@ -339,7 +355,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 system_prompt=str(system_prompt),
                 conversation_id=adversarial_chat_conversation_id,
                 orchestrator_identifier=self.get_identifier(),
-                labels=self._global_memory_labels,
+                labels=memory_labels,
             )
 
         normalizer_request = self._create_normalizer_request(
@@ -352,7 +368,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                     normalizer_request=normalizer_request,
                     target=self._adversarial_chat,
                     orchestrator_identifier=self.get_identifier(),
-                    labels=self._global_memory_labels,
+                    labels=memory_labels,
                 )
             )
             .request_pieces[0]

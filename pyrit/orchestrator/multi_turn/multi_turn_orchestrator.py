@@ -139,12 +139,18 @@ class MultiTurnOrchestrator(Orchestrator):
         return seed_prompt
 
     @abstractmethod
-    async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
+    async def run_attack_async(
+        self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
+    ) -> MultiTurnAttackResult:
         """
         Applies the attack strategy until the conversation is complete or the maximum number of turns is reached.
 
         Args:
             objective (str): The specific goal the orchestrator aims to achieve through the conversation.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
+                prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
+                (from the GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
+                the passed-in labels take precedence. Defaults to None.
 
         Returns:
             MultiTurnAttackResult: Contains the outcome of the attack, including:
@@ -153,12 +159,17 @@ class MultiTurnOrchestrator(Orchestrator):
                 - objective (str): The intended goal of the attack.
         """
 
-    async def run_attacks_async(self, *, objectives: list[str], batch_size=5) -> list[MultiTurnAttackResult]:
+    async def run_attacks_async(
+        self, *, objectives: list[str], memory_labels: Optional[dict[str, str]] = None, batch_size=5
+    ) -> list[MultiTurnAttackResult]:
         """Applies the attack strategy for each objective in the list of objectives.
 
         Args:
-            objectives: The list of objectives to apply the attack strategy.
-            batch_size: The number of objectives to process in parallel. The default value is 5.
+            objectives (list[str]): The list of objectives to apply the attack strategy.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
+                prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
+                with the passed-in labels taking precedence in the case of collisions. Defaults to None.
+            batch_size (int): The number of objectives to process in parallel. The default value is 5.
 
         Returns:
             list[MultiTurnAttackResult]: The list of MultiTurnAttackResults for each objective.
@@ -167,7 +178,7 @@ class MultiTurnOrchestrator(Orchestrator):
 
         async def limited_run_attack(objective):
             async with semaphore:
-                return await self.run_attack_async(objective=objective)
+                return await self.run_attack_async(objective=objective, memory_labels=memory_labels)
 
         tasks = [limited_run_attack(objective) for objective in objectives]
         results = await asyncio.gather(*tasks)

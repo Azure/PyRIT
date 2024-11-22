@@ -79,8 +79,9 @@ class PromptSendingOrchestrator(Orchestrator):
             prompt_list (list[str]): The list of prompts to be sent.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
-                prompts. Any labels passed in will be combined with self._global_memory_labels with the passed
-                in labels taking precedence in the case of collisions. Defaults to None.
+                prompts. Any labels passed in will be combined with self._global_memory_labels (from the
+                GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
+                the passed-in labels take precedence. Defaults to None.
             metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
 
         Returns:
