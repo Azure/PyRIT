@@ -38,7 +38,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
     def __init__(
         self,
         *,
-        model_id: str,
+        model_id: Optional[str] = None,
+        model_path: Optional[str] = None,
         hf_access_token: Optional[str] = None,
         use_cuda: bool = False,
         tensor_format: str = "pt",
@@ -47,16 +48,26 @@ class HuggingFaceChatTarget(PromptChatTarget):
         temperature: float = 1.0,
         top_p: float = 1.0,
         skip_special_tokens: bool = True,
+        trust_remote_code: bool = False,
     ) -> None:
         super().__init__()
 
+        if model_id is None and model_path is None:
+            raise ValueError("Either model_id or model_path must be provided.")
+
         self.model_id = model_id
+        self.model_path = model_path
         self.use_cuda = use_cuda
         self.tensor_format = tensor_format
+        self.trust_remote_code = trust_remote_code
 
-        # Use the `get_required_value` to get the API key (from env or passed value)
-        self.huggingface_token = default_values.get_required_value(
-            env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, passed_value=hf_access_token
+        # Only get the Hugging Face token if a model ID is provided
+        self.huggingface_token = (
+            default_values.get_required_value(
+                env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, passed_value=hf_access_token
+            )
+            if model_id
+            else None
         )
 
         try:
@@ -106,46 +117,69 @@ class HuggingFaceChatTarget(PromptChatTarget):
             Exception: If the model loading fails.
         """
         try:
-            # Define the default Hugging Face cache directory
-            cache_dir = os.path.join(
-                os.path.expanduser("~"), ".cache", "huggingface", "hub", f"models--{self.model_id.replace('/', '--')}"
-            )
+            # Determine the identifier for caching purposes
+            model_identifier = self.model_path or self.model_id
 
             # Check if the model is already cached
-            if HuggingFaceChatTarget._cache_enabled and HuggingFaceChatTarget._cached_model_id == self.model_id:
-                logger.info(f"Using cached model and tokenizer for {self.model_id}.")
+            if HuggingFaceChatTarget._cache_enabled and HuggingFaceChatTarget._cached_model_id == model_identifier:
+                logger.info(f"Using cached model and tokenizer for {model_identifier}.")
                 self.model = HuggingFaceChatTarget._cached_model
                 self.tokenizer = HuggingFaceChatTarget._cached_tokenizer
                 return
 
-            if self.necessary_files is None:
-                # Download all files if no specific files are provided
-                logger.info(f"Downloading all files for {self.model_id}...")
-                await download_specific_files(self.model_id, None, self.huggingface_token, cache_dir)
+            if self.model_path:
+                # Load the tokenizer and model from the local directory
+                logger.info(f"Loading model from local path: {self.model_path}...")
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_path, trust_remote_code=self.trust_remote_code
+                )
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_path, trust_remote_code=self.trust_remote_code
+                )
             else:
-                # Download only the necessary files
-                logger.info(f"Downloading specific files for {self.model_id}...")
-                await download_specific_files(self.model_id, self.necessary_files, self.huggingface_token, cache_dir)
+                # Define the default Hugging Face cache directory
+                cache_dir = os.path.join(
+                    os.path.expanduser("~"),
+                    ".cache",
+                    "huggingface",
+                    "hub",
+                    f"models--{self.model_id.replace('/', '--')}",
+                )
 
-            # Load the tokenizer and model from the specified directory
-            logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, cache_dir=cache_dir)
-            self.model = AutoModelForCausalLM.from_pretrained(self.model_id, cache_dir=cache_dir)
+                if self.necessary_files is None:
+                    # Download all files if no specific files are provided
+                    logger.info(f"Downloading all files for {self.model_id}...")
+                    await download_specific_files(self.model_id, None, self.huggingface_token, cache_dir)
+                else:
+                    # Download only the necessary files
+                    logger.info(f"Downloading specific files for {self.model_id}...")
+                    await download_specific_files(
+                        self.model_id, self.necessary_files, self.huggingface_token, cache_dir
+                    )
+
+                # Load the tokenizer and model from the specified directory
+                logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_id, cache_dir=cache_dir, trust_remote_code=self.trust_remote_code
+                )
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_id, cache_dir=cache_dir, trust_remote_code=self.trust_remote_code
+                )
 
             # Move the model to the correct device
             self.model = self.model.to(self.device)
 
             # Debug prints to check types
-            logger.info(f"Model loaded: {type(self.model)}")  # Debug print
-            logger.info(f"Tokenizer loaded: {type(self.tokenizer)}")  # Debug print
+            logger.info(f"Model loaded: {type(self.model)}")
+            logger.info(f"Tokenizer loaded: {type(self.tokenizer)}")
 
             # Cache the loaded model and tokenizer if caching is enabled
             if HuggingFaceChatTarget._cache_enabled:
                 HuggingFaceChatTarget._cached_model = self.model
                 HuggingFaceChatTarget._cached_tokenizer = self.tokenizer
-                HuggingFaceChatTarget._cached_model_id = self.model_id
+                HuggingFaceChatTarget._cached_model_id = model_identifier
 
-            logger.info(f"Model {self.model_id} loaded successfully.")
+            logger.info(f"Model {model_identifier} loaded successfully.")
 
         except Exception as e:
             logger.error(f"Error loading model {self.model_id}: {e}")
@@ -207,10 +241,12 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             logger.info(f"Assistant's response: {assistant_response}")
 
+            model_identifier = self.model_id or self.model_path
+
             return construct_response_from_request(
                 request=request,
                 response_text_pieces=[assistant_response],
-                prompt_metadata=json.dumps({"model_id": self.model_id}),
+                prompt_metadata=json.dumps({"model_id": model_identifier}),
             )
 
         except Exception as e:
