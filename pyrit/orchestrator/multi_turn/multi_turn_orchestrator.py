@@ -136,6 +136,7 @@ class MultiTurnOrchestrator(Orchestrator):
 
         self._objective_scorer = objective_scorer
         self._prepended_conversation: list[PromptRequestResponse] = None
+        self._custom_user_message: str = None
 
     def _get_adversarial_chat_seed_prompt(self, seed_prompt):
         if isinstance(seed_prompt, str):
@@ -199,7 +200,7 @@ class MultiTurnOrchestrator(Orchestrator):
 
         Returns:
             num_turns (int): The number of turns in the prepended conversation, used
-            by the calling orchestrators to reset the starting turn number.
+                by the calling orchestrators to reset the starting turn number.
         """
         turn_count = 0
         if self._prepended_conversation:
@@ -215,8 +216,14 @@ class MultiTurnOrchestrator(Orchestrator):
 
                 self._memory.add_request_response_to_memory(request=request)
 
+            # Check if necessary to handle a custom user message
+            last_message = self._prepended_conversation[-1].request_pieces[0]
+            if last_message.role == "user":
+                self._custom_user_message = last_message.converted_value
+
         if turn_count >= self._max_turns:
-            raise ValueError(f"Number of turns in prepended conversation ({turn_count}) must not be equal to or "
+            raise ValueError(
+                f"Number of turns in prepended conversation ({turn_count}) must not be equal to or "
                 + f"exceed `max_turns` current value: {self._max_turns}. Increase the number of max turns, or "
                 + " reduce the number of turns in the prepended conversation."
             )

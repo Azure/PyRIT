@@ -148,8 +148,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             labels=self._global_memory_labels,
         )
 
-        # Determine how many turns have been completed in the conversation and add them to memory.
-        # If self._prepended_conversation is empty, this will be set to 0.
+        # Prepare the conversation by adding any provided messages to memory.
+        # If there is no prepended conversation, the turn count is 0.
+        # If the last message is from a user role, there will be a non-None self._custom_user_message to handle.
         preset_turns = self._prepare_conversation(new_conversation_id=objective_target_conversation_id)
 
         # Turn counter should be one more than preset turn count
@@ -163,17 +164,13 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
             logger.info(f"TURN {turn_num}\n-----------")
 
-            # Check if the last prepended message is a user message
-            # If it is, use it as the prompt for the next turn instead of generating a new prompt
-            attack_prompt = None
-            if self._prepended_conversation:
-                last_message = self._prepended_conversation[-1].request_pieces[0]
-
-                if last_message.role == "user":
-                    logger.info("Using last user message from prepended conversation as Attack Prompt.")
-                    attack_prompt = last_message.converted_value
-
-            if not attack_prompt:
+            # Check if there is a custom user message for the first iteration
+            # If so, skip generating an adversarial prompt and use provided prompt
+            # Every iteration besides the first should continue to generate adversarial prompt
+            if turn_num == preset_turns + 1 and self._custom_user_message:
+                logger.info("Using last user message from prepended conversation as Attack Prompt.")
+                attack_prompt = self._custom_user_message
+            else:
                 logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
                 attack_prompt = await self._get_attack_prompt(
                     adversarial_chat_conversation_id=adversarial_chat_conversation_id,

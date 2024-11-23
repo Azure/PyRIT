@@ -1,14 +1,15 @@
 import pytest
 import uuid
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrchestrator
+
 
 @pytest.fixture
 def orchestrator():
     objective_scorer = MagicMock()
     objective_scorer.scorer_type = "true_false"
-    orchestrator =  RedTeamingOrchestrator(
+    orchestrator = RedTeamingOrchestrator(
         objective_target=MagicMock(),
         adversarial_chat=MagicMock(),
         max_turns=2,
