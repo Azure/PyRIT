@@ -52,8 +52,8 @@ class HuggingFaceChatTarget(PromptChatTarget):
     ) -> None:
         super().__init__()
 
-        if model_id is None and model_path is None:
-            raise ValueError("Either model_id or model_path must be provided.")
+        if (model_id is None) == (model_path is None):
+            raise ValueError("Provide exactly one of `model_id` or `model_path`.")
 
         self.model_id = model_id
         self.model_path = model_path
