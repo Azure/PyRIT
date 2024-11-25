@@ -40,7 +40,7 @@ default_values.load_environment_files()
 target = OpenAIChatTarget()
 memory = AzureSQLMemory()
 CentralMemory.set_memory_instance(memory)
-# You can optionally pass memory labels to `send_prompts_async`, which will be associated with each prompt and assist in retrieving or scoring later. These take precedence over `GLOBAL_MEMORY_LABELS` in env.local.
+# You can optionally pass memory labels to `send_prompts_async`, which will be associated with each prompt and assist in retrieving or scoring later. In the case of collisions, these take precedence over `GLOBAL_MEMORY_LABELS` in env.local.
 test_op_name = str(uuid.uuid4())
 test_user_name = str(uuid.uuid4())
 memory_labels = {"op_name": test_op_name, "username": test_user_name}
