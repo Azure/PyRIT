@@ -44,13 +44,10 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[b
 prompt_dataset = fetch_seclists_bias_testing_examples(examples_source, source_type="public_url")
 
 # Use the first 5 examples
-prompt_list = prompt_dataset.prompts[:4]
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
 # Send prompts using the orchestrator
 responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
 
 # Retrieve the memory to print scoring results
-orchestrator.print_conversations()  # Use built-in method to display conversations
-
-
-# %%
+await orchestrator.print_conversations()  # type: ignore
