@@ -25,7 +25,7 @@ from PIL import Image
 from IPython.display import display
 
 from pyrit.prompt_converter import AddTextImageConverter
-from pyrit.common.path import HOME_PATH, DATASETS_PATH
+from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.common import default_values
 from pyrit.memory import CentralMemory, DuckDBMemory

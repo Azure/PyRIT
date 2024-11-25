@@ -35,6 +35,7 @@ class HTTPTarget(PromptTarget):
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
         callback_function: Callable = None,
+        max_requests_per_minute: Optional[int] = None,
         **client_kwargs: Optional[Any],
     ) -> None:
         super().__init__(max_requests_per_minute=max_requests_per_minute)
