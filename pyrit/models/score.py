@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass
-import datetime
+from datetime import datetime
 from typing import Dict, Literal, Optional, get_args
 import uuid
 
@@ -43,7 +43,7 @@ class Score:
     prompt_request_response_id: uuid.UUID | str
 
     # Timestamp of when the score was created
-    timestamp: datetime.datetime
+    timestamp: datetime
 
     # The task based on which the text is scored (the original attacker model's objective).
     task: str
@@ -60,11 +60,11 @@ class Score:
         score_metadata: str,
         scorer_class_identifier: Dict[str, str] = None,
         prompt_request_response_id: str | uuid.UUID,
-        timestamp: Optional[datetime.datetime] = None,
+        timestamp: Optional[datetime] = None,
         task: Optional[str] = None,
     ):
         self.id = id if id else uuid.uuid4()
-        self.timestamp = timestamp if timestamp else datetime.datetime.now(datetime.timezone.utc)
+        self.timestamp = timestamp if timestamp else datetime.now()
 
         self.validate(score_type, score_value)
 
@@ -120,6 +120,8 @@ class Score:
             return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"
         return f": {self.score_category}: {self.score_value}"
 
+    __repr__ = __str__
+
 
 @dataclass
 class UnvalidatedScore:
@@ -140,7 +142,7 @@ class UnvalidatedScore:
     prompt_request_response_id: uuid.UUID | str
     task: str
     id: Optional[uuid.UUID | str] = None
-    timestamp: Optional[datetime.datetime] = None
+    timestamp: Optional[datetime] = None
 
     def to_score(self, *, score_value: str):
         return Score(

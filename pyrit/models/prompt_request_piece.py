@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import uuid
 
-import datetime
+from datetime import datetime
 from typing import Dict, List, Optional, Literal, get_args
 from uuid import uuid4
 
@@ -67,6 +67,7 @@ class PromptRequestPiece(abc.ABC):
         response_error: PromptResponseError = "none",
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
+        timestamp: Optional[datetime] = None,
     ):
 
         self.id = id if id else uuid4()
@@ -82,7 +83,7 @@ class PromptRequestPiece(abc.ABC):
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
 
-        self.timestamp = datetime.datetime.now(datetime.timezone.utc)
+        self.timestamp = timestamp if timestamp else datetime.now()
         self.labels = labels
         self.prompt_metadata = prompt_metadata
 
@@ -170,3 +171,5 @@ class PromptRequestPiece(abc.ABC):
 
     def __str__(self):
         return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"
+
+    __repr__ = __str__

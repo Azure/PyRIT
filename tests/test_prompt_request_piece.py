@@ -7,7 +7,7 @@ import uuid
 import pytest
 import time
 
-import datetime
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece
@@ -48,7 +48,7 @@ def test_id_set():
 
 
 def test_datetime_set():
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.now()
     time.sleep(0.1)
     entry = PromptRequestPiece(
         role="user",

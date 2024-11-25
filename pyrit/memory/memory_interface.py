@@ -4,7 +4,7 @@
 import abc
 from collections import defaultdict
 import copy
-import datetime
+from datetime import datetime
 import logging
 from pathlib import Path
 from sqlalchemy import and_
@@ -283,17 +283,18 @@ class MemoryInterface(abc.ABC):
 
         return prompt_ids
 
-    def duplicate_conversation_for_new_orchestrator(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
+    def duplicate_conversation(self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None) -> str:
         """
-        Duplicates a conversation from one orchestrator to another.
+        Duplicates a conversation for reuse
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
         One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
         the memory. Instead, one needs to duplicate the conversation and continue with the new orchestrator ID.
 
         Args:
-            new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
             conversation_id (str): The conversation ID with existing conversations.
+            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
+                If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
         """
@@ -305,8 +306,12 @@ class MemoryInterface(abc.ABC):
             piece.id = uuid.uuid4()
             if piece.orchestrator_identifier["id"] == new_orchestrator_id:
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
-            piece.orchestrator_identifier["id"] = new_orchestrator_id
+
+            if new_orchestrator_id:
+                piece.orchestrator_identifier["id"] = new_orchestrator_id
+
             piece.conversation_id = new_conversation_id
+
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
         return new_conversation_id
 
@@ -605,7 +610,7 @@ class MemoryInterface(abc.ABC):
             added_by (str): The user who added the prompts.
         """
         entries: list[SeedPromptEntry] = []
-        current_time = datetime.datetime.now(datetime.timezone.utc)
+        current_time = datetime.now()
         for prompt in prompts:
             if added_by:
                 prompt.added_by = added_by
