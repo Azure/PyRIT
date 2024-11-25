@@ -184,8 +184,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 conditions=PromptMemoryEntry.conversation_id == str(conversation_id),
             )  # type: ignore
 
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
+            prompt_pieces: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
