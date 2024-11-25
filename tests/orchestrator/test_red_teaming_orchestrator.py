@@ -225,6 +225,10 @@ async def test_is_conversation_complete_scoring_non_bool():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("max_turns", [1, 3, 5])
+@patch(
+    "pyrit.common.default_values.get_non_required_value",
+    return_value='{"op_name": "dummy_op", "username": "dummy_user"}',
+)
 async def test_run_attack_async(
     prompt_target: PromptTarget,
     chat_completion_engine: OpenAIChatTarget,
@@ -251,13 +255,17 @@ async def test_run_attack_async(
             mock_send_prompt.return_value = MagicMock(response_error="none")
             mock_check_complete.return_value = MagicMock(get_value=MagicMock(return_value=True))
 
-            result = await red_teaming_orchestrator.run_attack_async(objective="objective")
+            result = await red_teaming_orchestrator.run_attack_async(
+                objective="objective", memory_labels={"username": "user"}
+            )
 
             assert result is not None
             assert result.conversation_id is not None
             assert result.achieved_objective is True
             assert mock_send_prompt.call_count <= max_turns
             assert mock_check_complete.call_count <= max_turns
+            # Test that the global memory labels and passed-in memory labels were combined properly
+            assert mock_send_prompt.call_args.kwargs["memory_labels"] == {"op_name": "dummy_op", "username": "user"}
 
 
 @pytest.mark.asyncio
@@ -281,9 +289,9 @@ async def test_run_attack_async_blocked_response(
         with patch.object(red_teaming_orchestrator, "_retrieve_and_send_prompt_async") as mock_send_prompt:
             mock_send_prompt.return_value = MagicMock(response_error="blocked")
 
-            conversation_id = await red_teaming_orchestrator.run_attack_async(objective="objective")
+            result = await red_teaming_orchestrator.run_attack_async(objective="objective")
 
-            assert conversation_id is not None
+            assert result.conversation_id is not None
             assert red_teaming_orchestrator._achieved_objective is False
             assert mock_send_prompt.call_count == 5
 

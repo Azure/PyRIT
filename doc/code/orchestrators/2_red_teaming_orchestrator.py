@@ -28,6 +28,9 @@
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
+#
+# You can optionally assign custom memory labels for the prompts and target responses throughout the attack by passing in `memory_labels` in `run_attack_async`. (This is true of any `MultiTurnOrchestrator`.) These labels will be combined with the global memory labels (from the `GLOBAL_MEMORY_LABELS` environment variable) into one dictionary.
+# In the case of collisions, the passed-in labels take precedence. These labels assist in querying/scoring specific groups of prompts. For more information on memory labels, see the [Memory Labels Guide](../memory/5_memory_labels.ipynb).
 # %%
 import logging
 
@@ -62,7 +65,8 @@ with RedTeamingOrchestrator(
     max_turns=3,
     objective_scorer=scorer,
 ) as red_teaming_orchestrator:
-    result = await red_teaming_orchestrator.run_attack_async(objective=objective)  # type: ignore
+    # passed-in memory labels are combined with global memory labels
+    result = await red_teaming_orchestrator.run_attack_async(objective=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
     await result.print_conversation_async()  # type: ignore
 
 # %% [markdown]
