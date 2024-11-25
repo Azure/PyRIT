@@ -41,7 +41,7 @@ def main():
     found_files = find_files(exec_dir, file_type)
 
     for file in found_files:
-        if any([file == proc_file for proc_file in processed_files]):
+        if file in processed_files:
             print(f"Skipping already processed file: {file}")
             continue
         if any([skip_file in file for skip_file in skip_files]):
