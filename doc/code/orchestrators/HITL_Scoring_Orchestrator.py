@@ -18,8 +18,12 @@
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 from pyrit.common import default_values
+from pyrit.memory import DuckDBMemory, CentralMemory
 
 default_values.load_environment_files()
+
+memory = DuckDBMemory()
+CentralMemory.set_memory_instance(memory)
 
 # First insert the prompts into the database (remember this is often automatic)
 
@@ -62,7 +66,6 @@ azure_content_filter_scorer = AzureContentFilterScorer(
 
 scorer = HumanInTheLoopScorer(scorer=self_ask_scorer, re_scorers=[self_ask_scorer, azure_content_filter_scorer])
 with ScoringOrchestrator() as scoring_orchestrator:
-    memory = DuckDBMemory()
     start = time.time()
     scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[id], responses_only=False

@@ -62,6 +62,9 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         max_tokens: int = 2000,
         temperature: float = 0.7,
     ) -> None:
+
+        super().__init__()
+
         self._deployment_name = default_values.get_required_value(
             env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
         )

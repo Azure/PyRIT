@@ -32,8 +32,7 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 prompt_dataset = fetch_tdc23_redteaming_dataset()
 
 # Use the first 8 examples for red teaming
-prompt_list = prompt_dataset.prompts[:8]
-
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:8]]
 
 # Send prompts using the orchestrator and capture responses
 try:
