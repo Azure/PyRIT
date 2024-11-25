@@ -35,7 +35,6 @@ class PAIROrchestrator(Orchestrator):
     def __init__(
         self,
         *,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         objective_target: PromptChatTarget,
         desired_target_response_prefix: str,
@@ -53,10 +52,6 @@ class PAIROrchestrator(Orchestrator):
         Initializes the PAIR orchestrator to run the PAIR algorithm against two targets.
 
         Args:
-            memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
-                These labels can be used to track all prompts sent as part of an operation, score prompts based on
-                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-                Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information. Defaults to False.
             objective_target: The target model to jailbreak.
             desired_target_response_prefix: An example of a desired response from the target. This is used to compare
@@ -83,7 +78,7 @@ class PAIROrchestrator(Orchestrator):
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 the order they are provided. The default PAIR implementation does not use any converters.
         """
-        super().__init__(memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters)
+        super().__init__(verbose=verbose, prompt_converters=prompt_converters)
 
         self.successful_jailbreaks: list[PromptRequestResponse] = []
         self._objective_target = objective_target

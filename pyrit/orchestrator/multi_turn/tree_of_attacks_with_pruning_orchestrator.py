@@ -58,7 +58,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_achieved_score_threshold: float = 0.8,
-        memory_labels: dict[str, str] = None,
         verbose: bool = False,
     ) -> None:
 
@@ -82,7 +81,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
             adversarial_chat_seed_prompt=adversarial_chat_seed_prompt,
             objective_scorer=objective_scorer,
-            memory_labels=memory_labels,
             verbose=verbose,
         )
 
@@ -98,7 +96,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             raise ValueError("The branching factor of the tree must be at least 1.")
 
         if objective_achieved_score_threshold < 0 or objective_achieved_score_threshold > 1:
-            raise ValueError("The objective achieved score threshhold must be between 0 and 1.")
+            raise ValueError("The objective achieved score threshold must be between 0 and 1.")
 
         self._attack_width = width
         self._attack_depth = depth
@@ -108,7 +106,25 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         self._prompt_converters = prompt_converters or []
         self._objective_achieved_score_threshhold = objective_achieved_score_threshold
 
-    async def run_attack_async(self, *, objective: str) -> TAPAttackResult:
+    async def run_attack_async(
+        self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
+    ) -> TAPAttackResult:
+        """
+        Applies the TAP attack strategy asynchronously.
+
+        Args:
+            objective (str): The specific goal the orchestrator aims to achieve through the conversation.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
+                prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
+                (from the GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
+                the passed-in labels take precedence. Defaults to None.
+
+        Returns:
+            MultiTurnAttackResult: Contains the outcome of the attack, including:
+                - conversation_id (UUID): The ID associated with the final conversation state.
+                - achieved_objective (bool): Indicates whether the orchestrator successfully met the objective.
+                - objective (str): The intended goal of the attack.
+        """
 
         tree_visualization = Tree()
         tree_visualization.create_node("Root", "root")
@@ -116,6 +132,8 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         nodes: list[TreeOfAttacksNode] = []
 
         best_conversation_id = None
+
+        updated_memory_labels = self._combine_with_global_memory_labels(memory_labels)
 
         for iteration in range(1, self._attack_depth + 1):
             logger.info(f"Starting iteration number: {iteration}")
@@ -133,7 +151,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                         on_topic_scorer=self._get_on_topic_scorer(objective),
                         prompt_converters=self._prompt_converters,
                         orchestrator_id=self.get_identifier(),
-                        memory_labels=self._global_memory_labels,
+                        memory_labels=updated_memory_labels,
                     )
                     for _ in range(self._attack_width)
                 ]
