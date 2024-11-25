@@ -69,8 +69,6 @@ class PromptSendingOrchestrator(Orchestrator):
             if retry_scorer.scorer_type != "true_false":
                 raise TypeError("retry_scorer must be a 'true_false' scorer")
             self._retry_scorer = retry_scorer
-        else:
-            self._retry_scorer = SelfAskRefusalScorer(chat_target=OpenAIChatTarget())
 
         self._prompt_target = prompt_target
 
