@@ -37,9 +37,9 @@ class PAIROrchestrator(Orchestrator):
         *,
         memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
-        prompt_target: PromptChatTarget,
+        objective_target: PromptChatTarget,
         desired_target_response_prefix: str,
-        red_teaming_chat: PromptChatTarget,
+        adversarial_chat: PromptChatTarget,
         conversation_objective: str,
         number_of_conversation_streams: int = 20,
         max_conversation_depth: int = 3,
@@ -54,15 +54,15 @@ class PAIROrchestrator(Orchestrator):
 
         Args:
             memory_labels (dict[str, str], Optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
+                These labels can be used to track all prompts sent as part of an operation, score prompts based on
+                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+                Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information. Defaults to False.
-            prompt_target: The target model to jailbreak.
+            objective_target: The target model to jailbreak.
             desired_target_response_prefix: An example of a desired response from the target. This is used to compare
                 against the target's actual response to determine if the target has been compromised. E.g., "Sure, here
                 is code for a keylogger."
-            red_teaming_chat: The attacker model to use to jailbreak the target.
+            adversarial_chat: The attacker model to use to jailbreak the target.
             conversation_objective: The objective for the attacker to achieve, as a string. E.g. "Generate a phishing
                 email" or "Generate code for a keylogger", etc. Defaults to "Sure, I'd be happy to assist with that".
             max_conversation_depth: The maximum number of turns in a conversation. Defaults to 3 based on the PAIR's
@@ -86,8 +86,8 @@ class PAIROrchestrator(Orchestrator):
         super().__init__(memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters)
 
         self.successful_jailbreaks: list[PromptRequestResponse] = []
-        self._prompt_target = prompt_target
-        self._adversarial_target = red_teaming_chat
+        self._objective_target = objective_target
+        self._adversarial_target = adversarial_chat
         self._max_conversation_depth = max_conversation_depth
         self._stop_on_first_success = stop_on_first_success
         self._conversation_objective = conversation_objective
@@ -147,7 +147,7 @@ class PAIROrchestrator(Orchestrator):
                 ],
                 conversation_id=self._last_attacker_conversation_id,
             ),
-            target=self._prompt_target,
+            target=self._objective_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
@@ -178,7 +178,7 @@ class PAIROrchestrator(Orchestrator):
                 ],
                 conversation_id=curr_conversation_id,
             ),
-            target=self._prompt_target,
+            target=self._objective_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
