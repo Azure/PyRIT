@@ -55,6 +55,7 @@ def get_prompt_response_with_content(content: str) -> PromptRequestResponse:
                 converted_value=content,
                 original_value_data_type="text",
                 converted_value_data_type="text",
+                response_error="none",
             )
         ],
     )
