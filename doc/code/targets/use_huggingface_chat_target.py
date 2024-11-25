@@ -32,6 +32,9 @@
 import time
 from pyrit.prompt_target import HuggingFaceChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.common import default_values
+
+default_values.load_environment_files()
 
 # models to test
 model_id = "HuggingFaceTB/SmolLM-135M-Instruct"
