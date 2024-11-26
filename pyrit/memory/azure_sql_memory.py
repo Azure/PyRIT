@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from datetime import datetime, timedelta, timezone
 import logging
 import struct
 
@@ -60,11 +61,16 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except ValueError:
             self._sas_token = None  # To use delegation SAS
 
+        self._auth_token: Optional[AccessToken] = None
+        self._auth_token_expiry: Optional[int] = None
+        
         self.results_path = self._container_url
 
         self.engine = self._create_engine(has_echo=verbose)
 
-        self._auth_token = self._create_auth_token()
+        # Generate the initial auth token
+        self._create_auth_token()
+        # Enable token-based authorization
         self._enable_azure_authorization()
 
         self.SessionFactory = sessionmaker(bind=self.engine)
@@ -77,8 +83,22 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         self.storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
 
     def _create_auth_token(self) -> AccessToken:
+        """
+        Creates an Azure Entra ID access token.
+        Stores the token and its expiry time.
+        """
         azure_credentials = DefaultAzureCredential()
-        return azure_credentials.get_token(self.TOKEN_URL)
+        token: AccessToken = azure_credentials.get_token(self.TOKEN_URL)
+        self._auth_token = token
+        self._auth_token_expiry = token.expires_on
+    
+    def _refresh_token_if_needed(self) -> None:
+        """
+        Refresh the access token if it is close to expiry (within 5 minutes).
+        """
+        if datetime.now(timezone.utc) >= datetime.fromtimestamp(self._auth_token_expiry, tz=timezone.utc) - timedelta(minutes=5):
+            logger.info("Refreshing Microsoft Entra ID access token...")
+            self._create_auth_token()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
         """Creates the SQLAlchemy engine for Azure SQL Server.
@@ -92,7 +112,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         try:
             # Create the SQLAlchemy engine.
-            engine = create_engine(self._connection_string, echo=has_echo)
+            # Use pool_pre_ping (health check) to gracefully handle server-closed connections 
+            # by testing and replacing stale connections.
+            # Set pool_recycle to 1800 seconds to prevent connections from being closed due to server timeout.
+
+            engine = create_engine(self._connection_string, pool_recycle=1800, pool_pre_ping=True, echo=has_echo)
             logger.info(f"Engine created successfully for database: {engine.name}")
             return engine
         except SQLAlchemyError as e:
@@ -113,6 +137,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         @event.listens_for(self.engine, "do_connect")
         def provide_token(_dialect, _conn_rec, cargs, cparams):
+            # Refresh token if it's close to expiry
+            self._refresh_token_if_needed()
+            
             # remove the "Trusted_Connection" parameter that SQLAlchemy adds
             cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
 
