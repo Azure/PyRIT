@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import CentralMemory
-from pyrit.models import SeedPrompt, PromptRequestResponse
+from pyrit.models import SeedPrompt, PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
@@ -135,8 +135,10 @@ class MultiTurnOrchestrator(Orchestrator):
         self._max_turns = max_turns
 
         self._objective_scorer = objective_scorer
+
         self._prepended_conversation: list[PromptRequestResponse] = None
-        self._custom_user_message: str = None
+        self._last_prepended_user_message: str = None
+        self._last_prepended_assistant_message: PromptRequestPiece = None
 
     def _get_adversarial_chat_seed_prompt(self, seed_prompt):
         if isinstance(seed_prompt, str):
@@ -216,10 +218,14 @@ class MultiTurnOrchestrator(Orchestrator):
 
                 self._memory.add_request_response_to_memory(request=request)
 
-            # Check if necessary to handle a custom user message
+            # There is specific handling per orchestrator depending on the last message
             last_message = self._prepended_conversation[-1].request_pieces[0]
             if last_message.role == "user":
-                self._custom_user_message = last_message.converted_value
+                self._last_prepended_user_message = last_message.converted_value
+            elif last_message.role == "assistant":
+                # Assumption that there will always be a user message preceding the assistant message
+                self._last_prepended_user_message = self._prepended_conversation[-2].request_pieces[0].converted_value
+                self._last_prepended_assistant_message = last_message
 
         if turn_count >= self._max_turns:
             raise ValueError(

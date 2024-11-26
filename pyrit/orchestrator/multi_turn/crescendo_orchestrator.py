@@ -164,13 +164,45 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
             logger.info(f"TURN {turn_num}\n-----------")
 
-            # Check if there is a custom user message for the first iteration
-            # If so, skip generating an adversarial prompt and use provided prompt
-            # Every iteration besides the first should continue to generate adversarial prompt
-            if turn_num == preset_turns + 1 and self._custom_user_message:
-                logger.info("Using last user message from prepended conversation as Attack Prompt.")
-                attack_prompt = self._custom_user_message
-            else:
+            # Custom handling on the first turn for prepended conversation
+            attack_prompt = None
+            if turn_num == preset_turns + 1:
+                # The last message is from an assistant
+                if self._last_prepended_assistant_message:
+                    # Score last assistant response
+                    refusal_score = (
+                        await self._refusal_scorer.score_async(
+                            request_response=self._last_prepended_assistant_message,
+                            task=self._last_prepended_user_message,
+                        )
+                    )[0]
+
+                    logger.info(
+                        "REFUSAL_SCORER for target response is: "
+                        f"{refusal_score.get_value()} {refusal_score.score_rationale}"
+                    )
+
+                    if refusal_score.get_value():
+                        refused_text = self._last_prepended_user_message
+                        # Question: Should we handle backtracking for prepended messages?
+                        # Right now we provide the refused text as feedback when crafting attack prompt
+                    else:
+                        objective_score = (
+                            await self._objective_scorer.score_async(
+                                request_response=self._last_prepended_assistant_message, task=objective
+                            )
+                        )[0]
+
+                        logger.info(
+                            "EVAL_SCORER for target response is: "
+                            f"{objective_score.get_value()} {objective_score.score_rationale}"
+                        )
+                # The last message is from a user
+                elif self._last_prepended_user_message and not self._last_prepended_assistant_message:
+                    logger.info("Using last user message from prepended conversation as Attack Prompt.")
+                    attack_prompt = self._last_prepended_user_message
+
+            if not attack_prompt:
                 logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
                 attack_prompt = await self._get_attack_prompt(
                     adversarial_chat_conversation_id=adversarial_chat_conversation_id,

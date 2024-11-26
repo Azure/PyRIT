@@ -123,17 +123,24 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         while turn <= self._max_turns:
             logger.info(f"Applying the attack strategy for turn {turn}.")
 
+            # Custom handling on the first turn for prepended conversation
+            prompt = None
+            if turn == preset_turns + 1:
+                # The last message is from an assistant
+                if self._last_prepended_assistant_message:
+                    score = (
+                        await self._objective_scorer.score_async(
+                            request_response=self._last_prepended_assistant_message
+                        )
+                    )[0]
+                # The last message is from a user
+                elif self._last_prepended_user_message and not self._last_prepended_assistant_message:
+                    logger.info("Sending last user message from prepended conversation to the prompt target.")
+                    prompt = self._last_prepended_user_message
+
             feedback = None
             if self._use_score_as_feedback and score:
                 feedback = score.score_rationale
-
-            # Check if there is a custom user message for the first iteration
-            # If so, skip generating an adversarial prompt and use provided prompt
-            # Every iteration besides the first should continue to generate adversarial prompt
-            prompt = None
-            if turn == preset_turns + 1 and self._custom_user_message:
-                logger.info("Sending last user message from prepended conversation to the prompt target.")
-                prompt = self._custom_user_message
 
             response = await self._retrieve_and_send_prompt_async(
                 objective=objective,
