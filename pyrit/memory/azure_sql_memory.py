@@ -82,7 +82,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         # Handle for Azure Blob Storage when using Azure SQL memory.
         self.storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
 
-    def _create_auth_token(self) -> AccessToken:
+    def _create_auth_token(self):
         """
         Creates an Azure Entra ID access token.
         Stores the token and its expiry time.
