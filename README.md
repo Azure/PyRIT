@@ -28,7 +28,7 @@ For example, at Microsoft we are using this tool to iterate on different
 versions of a product (and its metaprompt) so that we can more effectively
 protect against prompt injection attacks.
 
-![PyRIT architecture](https://raw.githubusercontent.com/Azure/PyRIT/releases/vx.y.z/assets/pyrit_architecture.png)
+![PyRIT architecture](https://raw.githubusercontent.com/Azure/PyRIT/releases/v0.5.0/assets/pyrit_architecture.png)
 
 ## Where can I learn more?
 
