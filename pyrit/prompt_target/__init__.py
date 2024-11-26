@@ -18,7 +18,7 @@ from pyrit.prompt_target.gandalf_target import GandalfTarget, GandalfLevel
 from pyrit.prompt_target.http_target.http_target import HTTPTarget
 from pyrit.prompt_target.http_target.http_target_callback_functions import (
     get_http_target_json_response_callback_function,
-    get_http_target_regex_matching_callback_function
+    get_http_target_regex_matching_callback_function,
 )
 from pyrit.prompt_target.hugging_face.hugging_face_chat_target import HuggingFaceChatTarget
 from pyrit.prompt_target.hugging_face.hugging_face_endpoint_target import HuggingFaceEndpointTarget
@@ -33,6 +33,8 @@ __all__ = [
     "CrucibleTarget",
     "GandalfLevel",
     "GandalfTarget",
+    "get_http_target_json_response_callback_function",
+    "get_http_target_regex_matching_callback_function",
     "HTTPTarget",
     "HuggingFaceChatTarget",
     "HuggingFaceEndpointTarget",

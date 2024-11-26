@@ -2,11 +2,13 @@
 # Licensed under the MIT license.
 
 import abc
+import ast
 import logging
 import uuid
 
 from typing import Optional
 
+from pyrit.common import default_values
 from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptDataType, Identifier
 from pyrit.prompt_converter import PromptConverter
@@ -23,7 +25,6 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []
@@ -31,7 +32,11 @@ class Orchestrator(abc.ABC, Identifier):
         self._verbose = verbose
         self._id = uuid.uuid4()
 
-        self._global_memory_labels = memory_labels if memory_labels else {}
+        # Pull in global memory labels from .env.local. memory_labels. These labels will be applied to all prompts
+        # sent via orchestrator.
+        self._global_memory_labels: dict[str, str] = ast.literal_eval(
+            default_values.get_non_required_value(env_var_name="GLOBAL_MEMORY_LABELS", passed_value=None) or "{}"
+        )
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)

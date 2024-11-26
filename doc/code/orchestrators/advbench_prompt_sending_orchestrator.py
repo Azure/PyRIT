@@ -27,7 +27,6 @@
 
 # %%
 import time
-import uuid
 
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
@@ -40,11 +39,7 @@ default_values.load_environment_files()
 target = OpenAIChatTarget()
 
 # %%
-# You could optionally pass memory labels to orchestrators, which will be associated with each prompt and assist in retrieving or scoring later.
-test_op_name = str(uuid.uuid4())
-test_user_name = str(uuid.uuid4())
-memory_labels = {"op_name": test_op_name, "user_name": test_user_name}
-with PromptSendingOrchestrator(prompt_target=target, memory_labels=memory_labels) as orchestrator:
+with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
     adv_bench_prompts = fetch_adv_bench_dataset()
     prompts = [prompt.value for prompt in adv_bench_prompts.prompts[:3]]
 
