@@ -63,7 +63,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         self._auth_token: Optional[AccessToken] = None
         self._auth_token_expiry: Optional[int] = None
-        
+
         self.results_path = self._container_url
 
         self.engine = self._create_engine(has_echo=verbose)
@@ -91,12 +91,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         token: AccessToken = azure_credentials.get_token(self.TOKEN_URL)
         self._auth_token = token
         self._auth_token_expiry = token.expires_on
-    
+
     def _refresh_token_if_needed(self) -> None:
         """
         Refresh the access token if it is close to expiry (within 5 minutes).
         """
-        if datetime.now(timezone.utc) >= datetime.fromtimestamp(self._auth_token_expiry, tz=timezone.utc) - timedelta(minutes=5):
+        if datetime.now(timezone.utc) >= datetime.fromtimestamp(self._auth_token_expiry, tz=timezone.utc) - timedelta(
+            minutes=5
+        ):
             logger.info("Refreshing Microsoft Entra ID access token...")
             self._create_auth_token()
 
@@ -112,7 +114,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         try:
             # Create the SQLAlchemy engine.
-            # Use pool_pre_ping (health check) to gracefully handle server-closed connections 
+            # Use pool_pre_ping (health check) to gracefully handle server-closed connections
             # by testing and replacing stale connections.
             # Set pool_recycle to 1800 seconds to prevent connections from being closed due to server timeout.
 
@@ -139,7 +141,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         def provide_token(_dialect, _conn_rec, cargs, cparams):
             # Refresh token if it's close to expiry
             self._refresh_token_if_needed()
-            
+
             # remove the "Trusted_Connection" parameter that SQLAlchemy adds
             cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
 
