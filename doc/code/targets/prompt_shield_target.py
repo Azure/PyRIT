@@ -75,7 +75,7 @@ import os
 
 from pyrit.common import default_values
 
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptShieldTarget
 
 default_values.load_environment_files()

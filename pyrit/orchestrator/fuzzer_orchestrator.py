@@ -125,7 +125,6 @@ class FuzzerOrchestrator(Orchestrator):
         prompt_converters: Optional[list[PromptConverter]] = None,
         template_converters: list[FuzzerConverter],
         scoring_target: PromptChatTarget,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
         frequency_weight: float = 0.5,
         reward_penalty: float = 0.1,
@@ -156,7 +155,6 @@ class FuzzerOrchestrator(Orchestrator):
             template_converters: The converters that will be applied on the jailbreak template that was
                 selected by MCTS-explore. The converters will not be applied to the prompts.
                 In each iteration of the algorithm, one converter is chosen at random.
-            memory_labels: The labels to use for the memory. This is useful to identify the messages in the memory.
             verbose: Whether to print debug information.
             frequency_weight: constant that balances between the seed with high reward and the seed that is
                 selected fewer times.
@@ -172,7 +170,7 @@ class FuzzerOrchestrator(Orchestrator):
                 the number of prompts.
         """
 
-        super().__init__(prompt_converters=prompt_converters, memory_labels=memory_labels, verbose=verbose)
+        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         if not prompt_templates:
             raise ValueError("The initial set of prompt templates cannot be empty.")

@@ -53,13 +53,11 @@ def scorer_mock() -> Scorer:
 def orchestrator(mock_central_memory_instance: MemoryInterface, scorer_mock: Scorer) -> PAIROrchestrator:
     target = Mock()
     attacker = Mock()
-    labels = {"op_name": "name1"}
     orchestrator = PAIROrchestrator(
-        prompt_target=target,
+        objective_target=target,
         desired_target_response_prefix="desired response",
-        red_teaming_chat=attacker,
+        adversarial_chat=attacker,
         conversation_objective="attacker objective",
-        memory_labels=labels,
         scorer=scorer_mock,
         stop_on_first_success=True,
         number_of_conversation_streams=3,
@@ -79,12 +77,12 @@ def correctly_formatted_response_piece() -> PromptRequestPiece:
 
 @pytest.mark.asyncio
 async def test_init(orchestrator):
-    assert orchestrator._prompt_target is not None
+    assert orchestrator._objective_target is not None
     assert orchestrator._adversarial_target is not None
     assert orchestrator._scorer is not None
     assert orchestrator._conversation_objective == "attacker objective"
     assert orchestrator._desired_target_response_prefix == "desired response"
-    assert orchestrator._global_memory_labels == {"op_name": "name1"}
+    assert orchestrator._global_memory_labels == {}
 
 
 @pytest.mark.asyncio
@@ -273,7 +271,7 @@ async def test_get_target_response_and_store(orchestrator: PAIROrchestrator) -> 
 
         orchestrator._prompt_normalizer.send_prompt_async.assert_called_with(
             normalizer_request=ANY,  # We already checked the conversation_id separately, so use ANY here
-            target=orchestrator._prompt_target,
+            target=orchestrator._objective_target,
             labels=orchestrator._global_memory_labels,
             orchestrator_identifier=orchestrator.get_identifier(),
         )
