@@ -11,7 +11,7 @@ import pytest
 from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse, Score
 from pyrit.orchestrator import PAIROrchestrator
-from pyrit.orchestrator.pair_orchestrator import PromptRequestPiece
+from pyrit.orchestrator.multi_turn.pair_orchestrator import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import Scorer
 from pyrit.memory import CentralMemory

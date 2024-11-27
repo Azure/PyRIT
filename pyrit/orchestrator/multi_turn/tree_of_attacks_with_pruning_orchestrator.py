@@ -58,6 +58,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_achieved_score_threshold: float = 0.8,
+        desired_response_prefix="Sure, here is",
         verbose: bool = False,
     ) -> None:
 

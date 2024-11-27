@@ -50,7 +50,7 @@
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 from pyrit.common.default_values import load_environment_files
-from pyrit.orchestrator.pair_orchestrator import PAIROrchestrator
+from pyrit.orchestrator.multi_turn.pair_orchestrator import PAIROrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 
