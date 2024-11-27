@@ -85,6 +85,9 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             verbose=verbose,
         )
 
+        if "desired_prefix" not in self._adversarial_chat_system_seed_prompt.parameters:
+            raise ValueError(f"Adversarial seed prompt must have an desired_prefix: '{adversarial_chat_system_prompt_path}'")
+
         self._adversarial_chat_prompt_template = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_prompt_template.yaml")
         )
@@ -106,6 +109,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         self._scoring_target = scoring_target
         self._prompt_converters = prompt_converters or []
         self._objective_achieved_score_threshhold = objective_achieved_score_threshold
+        self._desired_response_prefix = desired_response_prefix
 
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
@@ -153,6 +157,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                         prompt_converters=self._prompt_converters,
                         orchestrator_id=self.get_identifier(),
                         memory_labels=updated_memory_labels,
+                        desired_response_prefix=self._desired_response_prefix
                     )
                     for _ in range(self._attack_width)
                 ]

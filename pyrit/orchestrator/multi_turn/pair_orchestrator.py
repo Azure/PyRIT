@@ -88,7 +88,6 @@ class PAIROrchestrator(TreeOfAttacksWithPruningOrchestrator):
         adversarial_chat_seed_prompt: Optional[SeedPrompt] = None,
         adversarial_chat_system_prompt_path: Optional[Path] = None,
         depth: int = 3,
-        desired_target_response_prefix: str,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_achieved_score_threshold: float = 0.8,
         desired_response_prefix = "Sure, here is",
@@ -96,9 +95,8 @@ class PAIROrchestrator(TreeOfAttacksWithPruningOrchestrator):
     ) -> None:
         
 
-        # Load the prompt templates for the attacker
-        self._attacker_prompt_template = SeedPrompt.from_yaml_file(
-            file=DATASETS_PATH / "orchestrators" / "pair" / "attacker_system_prompt.yaml"
+        adversarial_chat_system_prompt_path = adversarial_chat_system_prompt_path or Path(
+            DATASETS_PATH / "orchestrators" / "pair" / "attacker_system_prompt.yaml"
         )
 
         super().__init__(
@@ -106,7 +104,7 @@ class PAIROrchestrator(TreeOfAttacksWithPruningOrchestrator):
             adversarial_chat=adversarial_chat,
             scoring_target=scoring_target,
             adversarial_chat_seed_prompt=adversarial_chat_seed_prompt,
-            adversarial_chat_system_prompt_path=TODOTODO,
+            adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
             width=1,
             depth=depth,
             branching_factor=1,
