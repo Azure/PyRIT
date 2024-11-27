@@ -225,3 +225,41 @@ def test_enable_disable_cache():
     assert HuggingFaceChatTarget._cached_model is None
     assert HuggingFaceChatTarget._cached_tokenizer is None
     assert HuggingFaceChatTarget._cached_model_id is None
+
+
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.asyncio
+async def test_load_model_with_model_path():
+    """Test loading a model from a local directory (`model_path`)."""
+    model_path = "./mock_local_model_path"
+    hf_chat = HuggingFaceChatTarget(model_path=model_path, use_cuda=False, trust_remote_code=False)
+    await hf_chat.load_model_and_tokenizer()
+    assert hf_chat.model is not None
+    assert hf_chat.tokenizer is not None
+
+
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.asyncio
+async def test_load_model_with_trust_remote_code():
+    """Test loading a remote model requiring `trust_remote_code=True`."""
+    model_id = "mock_remote_model"
+    hf_chat = HuggingFaceChatTarget(model_id=model_id, use_cuda=False, trust_remote_code=True)
+    await hf_chat.load_model_and_tokenizer()
+    assert hf_chat.model is not None
+    assert hf_chat.tokenizer is not None
+
+
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+def test_init_with_both_model_id_and_model_path_raises():
+    """Ensure providing both `model_id` and `model_path` raises an error."""
+    with pytest.raises(ValueError) as excinfo:
+        HuggingFaceChatTarget(model_id="test_model", model_path="./mock_local_model_path", use_cuda=False)
+    assert "Provide only one of `model_id` or `model_path`, not both." in str(excinfo.value)
+
+
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+def test_load_model_without_model_id_or_path():
+    """Ensure initializing without `model_id` or `model_path` raises an error."""
+    with pytest.raises(ValueError) as excinfo:
+        HuggingFaceChatTarget(use_cuda=False)
+    assert "Either `model_id` or `model_path` must be provided." in str(excinfo.value)
