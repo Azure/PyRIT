@@ -28,7 +28,7 @@ classifier:
   #   "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
   # both can be used with either classifier type
   # for a lighter-weight (but not thoroughly tested) model, use `cross-encoder/nli-MiniLM2-L6-H768`
-  encoder_model:  "cross-encoder/nli-deberta-v3-base"
+  encoder_model:  "sentence-transformers/all-MiniLM-L6-v2" # "cross-encoder/nli-deberta-v3-base"
 
   # arguments specific to setfit; most meaningful ones included here
   setfit:

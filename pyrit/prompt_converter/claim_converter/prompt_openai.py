@@ -4,8 +4,6 @@ from typing import Optional, Union, Dict
 import numpy as np
 from openai import OpenAI
 
-client = OpenAI()
-
 from pyrit.prompt_converter.claim_converter.utils import st_cache_data
 # from utils import st_cache_data
 
@@ -97,6 +95,8 @@ def complete_prompt(prompts, n=5, top_p=1, temperature=1,  max_tokens=200, stop=
     """Pass one or more prompts to GPT-3 and calculate their log-probability"""
     if temperature < 1 and top_p < 1:
         raise ValueError("Set either temperature or top_p, but not both")
+
+    client = OpenAI()
 
     response = client.completions.create(model=engine,
     prompt=prompts,
