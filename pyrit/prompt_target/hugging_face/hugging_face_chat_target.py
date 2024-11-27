@@ -52,8 +52,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
     ) -> None:
         super().__init__()
 
-        if (model_id is None) == (model_path is None):
-            raise ValueError("Provide exactly one of `model_id` or `model_path`.")
+        if not model_id and not model_path:
+            raise ValueError("Either `model_id` or `model_path` must be provided.")
+        if model_id and model_path:
+            raise ValueError("Provide only one of `model_id` or `model_path`, not both.")
 
         self.model_id = model_id
         self.model_path = model_path
@@ -62,13 +64,14 @@ class HuggingFaceChatTarget(PromptChatTarget):
         self.trust_remote_code = trust_remote_code
 
         # Only get the Hugging Face token if a model ID is provided
-        self.huggingface_token = (
-            default_values.get_required_value(
-                env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, passed_value=hf_access_token
+        if model_id:
+            self.huggingface_token = default_values.get_required_value(
+                env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, 
+                passed_value=hf_access_token
             )
-            if model_id
-            else None
-        )
+        else:
+            self.huggingface_token = None
+
 
         try:
             import torch
@@ -93,6 +96,14 @@ class HuggingFaceChatTarget(PromptChatTarget):
             raise RuntimeError("CUDA requested but not available.")
 
         self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
+    
+    def _load_from_path(self, path: str):
+        """
+        Helper function to load the model and tokenizer from a given path.
+        """
+        logger.info(f"Loading model and tokenizer from path: {path}...")
+        self.tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=self.trust_remote_code)
+        self.model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=self.trust_remote_code)
 
     def is_model_id_valid(self) -> bool:
         """
@@ -130,12 +141,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             if self.model_path:
                 # Load the tokenizer and model from the local directory
                 logger.info(f"Loading model from local path: {self.model_path}...")
-                self.tokenizer = AutoTokenizer.from_pretrained(
-                    self.model_path, trust_remote_code=self.trust_remote_code
-                )
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_path, trust_remote_code=self.trust_remote_code
-                )
+                self._load_from_path(self.model_path)
             else:
                 # Define the default Hugging Face cache directory
                 cache_dir = os.path.join(

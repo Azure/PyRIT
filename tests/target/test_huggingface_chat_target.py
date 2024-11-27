@@ -254,7 +254,7 @@ def test_init_with_both_model_id_and_model_path_raises():
     """Ensure providing both `model_id` and `model_path` raises an error."""
     with pytest.raises(ValueError) as excinfo:
         HuggingFaceChatTarget(model_id="test_model", model_path="./mock_local_model_path", use_cuda=False)
-    assert "Provide exactly one of `model_id` or `model_path`." in str(excinfo.value)
+    assert "Provide only one of `model_id` or `model_path`, not both." in str(excinfo.value)
 
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
@@ -262,4 +262,4 @@ def test_load_model_without_model_id_or_path():
     """Ensure initializing without `model_id` or `model_path` raises an error."""
     with pytest.raises(ValueError) as excinfo:
         HuggingFaceChatTarget(use_cuda=False)
-    assert "Provide exactly one of `model_id` or `model_path`." in str(excinfo.value)
+    assert "Either `model_id` or `model_path` must be provided." in str(excinfo.value)
