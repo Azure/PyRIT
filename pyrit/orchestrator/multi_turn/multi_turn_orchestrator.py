@@ -36,7 +36,7 @@ class MultiTurnAttackResult:
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
-        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=self.conversation_id)
+        target_messages = self._memory.get_conversation(conversation_id=self.conversation_id)
 
         if not target_messages or len(target_messages) == 0:
             print("No conversation with the target")
