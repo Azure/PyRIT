@@ -142,6 +142,7 @@ class TreeOfAttacksNode:
             prompt_converters=self._prompt_converters,
             orchestrator_id=self._orchestrator_id,
             memory_labels=self._global_memory_labels,
+            desired_response_prefix=self._desired_response_prefix,
             parent_id=self.node_id,
         )
 
