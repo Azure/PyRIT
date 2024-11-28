@@ -64,6 +64,7 @@ dependencies = [
     "pyodbc>=5.1.0",
     "pycountry>=24.6.1",
     "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
     "segno>=1.6.1",
     "sentence_transformers>=3.3.1",
     "scikit-learn>=1.4.2",
