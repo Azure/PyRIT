@@ -148,7 +148,7 @@ class ClaimConverter(PromptConverter):
 
         options = [p.capitalize() for p, _ in produced_claims]
         options = [f"[{i}] " + " " + o for i, o in enumerate(options)]
-        selected = input("Select a claim from automatically extracted claims from the example statement.\n" + "\n".join(options))
+        selected = input("\nSelect a claim from automatically extracted claims from the example statement.\n" + "\n".join(options) + "\n\n")
 
         # select initial claim        
         # initial_claim = st.text_input(
@@ -194,7 +194,7 @@ class ClaimConverter(PromptConverter):
 
         options = [i.capitalize() for i in inferences]
         options = [f"[{i}] " + " " + o for i, o in enumerate(options)]
-        selected = input("Select an inference from automatically extracted inferences from the example claim.\n" + "\n".join(options))
+        selected = input("\nSelect an inference from automatically extracted inferences from the example claim.\n" + "\n".join(options) + "\n\n")
 
         inferences_selected = inferences[int(selected)]
         inf_to_gen_cfg = config["interface"]["inferences_to_generations"]
@@ -224,11 +224,16 @@ class ClaimConverter(PromptConverter):
         # Create a list of options
         options = sampled_df["inst"].tolist()
 
+        # Create an HTML widget for the description
+        description = widgets.HTML(value="<b>Select options:</b>")
+
         # Create a checkbox widget
         checkbox = widgets.SelectMultiple(
             options=options,
             value=[],
-            description='Select options:'
+            # description='Select options:\n',
+            layout=widgets.Layout(width='800px'),
+            style={'description_width': 'initial'}
         )
 
         # Define a callback function that will be called when the button is clicked
@@ -326,8 +331,11 @@ class ClaimConverter(PromptConverter):
         # Attach the callback function to the button's on_click event
         submit_button.on_click(on_button_click)
 
+        # Create a vertical box layout with some space between the checkbox and the button
+        vbox = widgets.VBox([description, checkbox, widgets.Box(layout=widgets.Layout(height='20px')), submit_button])
+
         # Display the checkbox
-        display(checkbox, submit_button)
+        display(vbox)
         # await submit_event.wait()
         await asyncio.sleep(0)  # Example of non-blocking async operation
 
@@ -336,7 +344,7 @@ class ClaimConverter(PromptConverter):
 
         # Proceed with the rest of the convert_async logic
         selected_options = checkbox.value
-        print(f"Final selected options: {selected_options}")
+        # print(f"Final selected options: {selected_options}")
 
         return ConverterResult(output_text="Placeholder text", output_type="text")
         sampled_df["label"] = None

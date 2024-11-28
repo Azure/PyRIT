@@ -5,11 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit_kernel
 #     language: python
-#     name: python3
+#     name: pyrit_kernel
 # ---
 
 # %% [markdown]
@@ -59,7 +59,7 @@ with PromptSendingOrchestrator(
 #
 # TestGenie first tries to extract problematic claims that are contained by the statement:  
 #   `Cancer is contagious`  
-# 
+#
 # A claim is a brief statement that asserts a relationship between entities in the sentence. It usually consists of a subject, verb, and object. 
 #  
 # Claims are expressed in simple language and are general in nature (`COVID is a hoax` is a valid claim; `Some say COVID might be a hoax` is not). Remember that the *claim itself*  
