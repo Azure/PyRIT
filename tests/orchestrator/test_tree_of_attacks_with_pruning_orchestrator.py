@@ -95,18 +95,17 @@ def test_invalid_depth():
         )
     assert e.match("The depth of the tree must be at least 1.")
 
+
 def test_system_prompt_without_desired_prefix():
     # This is mostly valid but missing 'desired_prefix'
-    invald_system_prompt = Path(
-        DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml"
-    )
+    invald_system_prompt = Path(DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml")
 
     with pytest.raises(ValueError) as e:
         TreeOfAttacksWithPruningOrchestrator(
             objective_target=MagicMock(),
             adversarial_chat=MagicMock(),
             scoring_target=MagicMock(),
-            adversarial_chat_system_prompt_path = invald_system_prompt
+            adversarial_chat_system_prompt_path=invald_system_prompt,
         )
     assert e.match("Adversarial seed prompt must have a desired_prefix")
 

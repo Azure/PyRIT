@@ -168,8 +168,7 @@ class TreeOfAttacksNode:
         if not target_messages:
 
             system_prompt = self._adversarial_chat_system_seed_prompt.render_template_value(
-                objective=objective,
-                desired_prefix=self._desired_response_prefix
+                objective=objective, desired_prefix=self._desired_response_prefix
             )
 
             self._adversarial_chat.set_system_prompt(

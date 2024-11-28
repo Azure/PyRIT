@@ -62,7 +62,7 @@ class MultiTurnAttackResult:
                     print(f"Converted value: {piece.converted_value}")
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{piece.role}: {piece.converted_value}")
-                    
+
                 await display_image_response(piece)
 
                 scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)])
