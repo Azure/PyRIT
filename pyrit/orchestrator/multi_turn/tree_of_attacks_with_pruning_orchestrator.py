@@ -86,7 +86,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         )
 
         if "desired_prefix" not in self._adversarial_chat_system_seed_prompt.parameters:
-            raise ValueError(f"Adversarial seed prompt must have an desired_prefix: '{adversarial_chat_system_prompt_path}'")
+            raise ValueError(f"Adversarial seed prompt must have a desired_prefix: '{adversarial_chat_system_prompt_path}'")
 
         self._adversarial_chat_prompt_template = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_prompt_template.yaml")
