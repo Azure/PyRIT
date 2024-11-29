@@ -71,5 +71,10 @@ def main():
     else:
         print("Exemplars already processed. Skipping.")
 
+    try:
+        subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to download spaCy model: {e}")
+
 if __name__ == '__main__':
     main()
