@@ -50,7 +50,7 @@ dependencies = [
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
     "httpx[http2]>=0.27.2",
-    "huggingface-hub>=0.25.0",
+    "huggingface-hub==0.25.0",
     "jsonpickle>=3.0.4",
     "jupyter>=1.0.0",
     "ipykernel>=6.29.4",
