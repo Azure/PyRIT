@@ -26,12 +26,12 @@ from pyrit.prompt_converter.claim_converter import config, utils, prompt_openai,
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 config_path = pathlib.Path(__file__).parent / '_default.yaml'
 config = config.load_config(config_path)
 
-testgenie_dataset = fetch_testgenie_dataset()
+#testgenie_dataset = fetch_testgenie_dataset()
 
 # Define an asyncio event
 checkbox_event = asyncio.Event()
@@ -250,9 +250,12 @@ class ClaimConverter(PromptConverter):
         # Create a Submit button
         submit_button = widgets.Button(description="Submit")
 
+        output_area = widgets.Output()
         # Define a callback function that will be called when the button is clicked
         def on_button_click(b):
-            print("Button clicked!")
+            with output_area:
+                print("The next step will take a while. Please wait...")
+            submit_event.set()
             # Proceed with the rest of the convert_async logic
             selected_options = checkbox.value
             # print(f"Final selected options: {selected_options}")
@@ -322,7 +325,8 @@ class ClaimConverter(PromptConverter):
             # selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
 
             response_msg = "\n".join(options)
-            print(f"Response message: {response_msg}")
+            with output_area:
+                print(f"Response message: {response_msg}")
 
             # print(f"Button clicked!")
             # Set the event to signal that the checkbox value has changed
@@ -336,11 +340,22 @@ class ClaimConverter(PromptConverter):
 
         # Display the checkbox
         display(vbox)
+        
+        display(output_area)
+
         # await submit_event.wait()
-        await asyncio.sleep(0)  # Example of non-blocking async operation
+        # await asyncio.sleep(0)  # Example of non-blocking async operation
+
+        # async def wait_for_submit():
+        #     print("Waiting for button click...")
+        #     await submit_event.wait()
+        #     print("Button click event received!")
+
+        # # Run the async function
+        # await wait_for_submit()
 
         # Reset the event for future use
-        submit_event.clear()
+        # submit_event.clear()
 
         # Proceed with the rest of the convert_async logic
         selected_options = checkbox.value
