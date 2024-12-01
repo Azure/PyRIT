@@ -232,7 +232,7 @@ class ClaimConverter(PromptConverter):
             options=options,
             value=[],
             # description='Select options:\n',
-            layout=widgets.Layout(width='800px'),
+            layout=widgets.Layout(width='800px', height='400px'),  # Adjust the height
             style={'description_width': 'initial'}
         )
 
@@ -267,7 +267,8 @@ class ClaimConverter(PromptConverter):
             
             verified_df = pd.DataFrame(sampled_df)
             generations_labeled = pd.concat([verified_df, unsampled_df]).sort_index()
-            generations_estimated = classifiers.fit_and_predict(claim_classifier, generations_labeled, True)
+            with output_area:
+                generations_estimated = classifiers.fit_and_predict(claim_classifier, generations_labeled, True)
             # print(f"Generation estimated: {generations_estimated}")
             generations_estimated = generations_estimated.loc[generations_estimated.pred == 1]
 
@@ -313,7 +314,8 @@ class ClaimConverter(PromptConverter):
             completion_df["label"] = None
             # completion_df["label"][0] = True
             # completion_df["label"][1] = False
-            completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
+            with output_area:
+                completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
 
             # calculate margin from random (closer to 0.5->more uncertain)
             completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
@@ -321,7 +323,11 @@ class ClaimConverter(PromptConverter):
             # completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
             # print(f"Response message: {completions_estimated}")
 
-            options = [f"[{index}] {row['pred']}: {row['inst']}" for index, row in completions_estimated.iterrows()]
+            test_sort_col = "prob" # "uncertainty"
+            completions_to_annotate = (
+                completions_estimated.sort_values(test_sort_col, ascending=False)
+            )
+            options = [f"[{index}] {row['pred']} ({row['prob']}): {row['inst']}" for index, row in completions_to_annotate.iterrows()]
             # selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
 
             response_msg = "\n".join(options)
