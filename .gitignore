@@ -119,6 +119,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
 .venv
 env/
 venv/
@@ -166,6 +167,10 @@ cython_debug/
 # Cache for generating docs
 doc/generate_docs/cache/*
 !doc/generate_docs/cache/.gitkeep
+
+# Jupyterbook build files
+doc/_build/
+doc/_autosummary/
 
 # ignore all VSCode settings
 .vscode/*

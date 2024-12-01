@@ -7,7 +7,6 @@ import logging
 from typing import Optional
 
 from pyrit.common import net_utility
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
@@ -35,10 +34,9 @@ class GandalfTarget(PromptTarget):
         self,
         *,
         level: GandalfLevel,
-        memory: MemoryInterface = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
-        super().__init__(memory=memory, max_requests_per_minute=max_requests_per_minute)
+        super().__init__(max_requests_per_minute=max_requests_per_minute)
 
         self._endpoint = "https://gandalf.lakera.ai/api/send-message"
         self._defender = level.value

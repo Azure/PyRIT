@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# ### Introduction
+# # Chat messages - optional
 #
 # This notebook gives an introduction to the concept of `ChatMessage` and `ChatMessageNormalizer` and how it can be helpful as you start to work with different models.
 #
@@ -60,7 +60,7 @@ chat_messages = normalizer.from_chatml(
 print(chat_messages)
 
 # %% [markdown]
-# To see how to use this in action, check out the [aml endpoint](../targets/4_non_open_ai_chat_targets.ipynb) notebook. It takes a `chat_message_normalizer` parameter so that an AML model can support various chat message formats.
+# To see how to use this in action, check out the [aml endpoint](../targets/3_non_open_ai_chat_targets.ipynb) notebook. It takes a `chat_message_normalizer` parameter so that an AML model can support various chat message formats.
 
 # %% [markdown]
 # Besides chatml, there are many other chat templates that a model might be trained on. If you would like to apply the template stored in a Hugging Face tokenizer,

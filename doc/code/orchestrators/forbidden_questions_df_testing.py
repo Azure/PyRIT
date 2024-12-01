@@ -12,7 +12,8 @@
 #     name: python3
 # ---
 
-# # TrustAIRLab Forbidden Questions Dataset
+# # TrustAIRLab Forbidden Questions Dataset - optional
+#
 # This notebook demonstrates the testing of imports of the TrustAIRLab Forbidden Questions Dataset.
 # It involves fetching potentially harmful behavior prompts from the HugginFace source, sending them to the LLM, and analyzing the responses.
 # The goal is to identify questions that come under the following harmful categories: Illegal Activity, Hate Speech, Malware Generation, Physical Harm, Economic Harm, Fraud,Pornography, Political Lobbying, Privacy Violence, Legal Opinion, Financial Advice,Health Consultation and Government Decision.
@@ -24,7 +25,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # Set up the Azure OpenAI prompt target
 prompt_target = TextTarget()
@@ -38,7 +39,7 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 prompt_dataset = fetch_forbidden_questions_df()
 
 # Use the first 8 examples for red teaming
-prompt_list = prompt_dataset.prompts[:8]
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:8]]
 
 # Send prompts using the orchestrator and capture responses
 try:

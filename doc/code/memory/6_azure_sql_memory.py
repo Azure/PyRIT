@@ -14,13 +14,13 @@
 # ---
 
 # %% [markdown]
-# # Azure SQL Memory
+# # 6. Azure SQL Memory
 #
 # The memory AzureSQL database can be thought of as a normalized source of truth. The memory module is the primary way pyrit keeps track of requests and responses to targets and scores. Most of this is done automatically. All orchestrators write to memory for later retrieval. All scorers also write to memory when scoring.
 #
 # The schema is found in `memory_models.py` and can be programatically viewed as follows
 #
-# ### Azure Login
+# ## Azure Login
 #
 # PyRIT `AzureSQLMemory` supports only **Azure Entra ID authentication** at this time. User ID/password-based login is not available.
 #
@@ -30,7 +30,7 @@
 #   ```bash
 #   az login --scope https://database.windows.net//.default
 #   ```
-# ### Environment Variables
+# ## Environment Variables
 #
 # Please set the following environment variables to run AzureSQLMemory interactions:
 #
@@ -44,8 +44,9 @@
 
 # %%
 from pyrit.memory import AzureSQLMemory
+from pyrit.common import default_values
 
-
+default_values.load_environment_files()
 memory = AzureSQLMemory()
 
 memory.print_schema()

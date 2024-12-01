@@ -9,7 +9,6 @@ import logging
 from typing import Optional
 
 from pyrit.common.display_response import display_image_response
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataType
 from pyrit.models import PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
@@ -35,42 +34,26 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
-        memory: MemoryInterface = None,
-        memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
         """
         Args:
             prompt_target (PromptTarget): The target for sending prompts.
-            prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
+            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
-            scorers (list[Scorer], optional): List of scorers to use for each prompt request response, to be
+            scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
-            memory (MemoryInterface, optional): The memory interface. Defaults to None.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
-            batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+            batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.
         """
-        super().__init__(
-            prompt_converters=prompt_converters, memory=memory, memory_labels=memory_labels, verbose=verbose
-        )
+        super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self._scorers = scorers
-        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
-        if self._scorers:
-            for scorer in self._scorers:
-                scorer._memory = self._memory
-                if hasattr(scorer, "_prompt_target"):
-                    scorer._prompt_target._memory = self._memory
 
         self._prompt_target = prompt_target
-        self._prompt_target._memory = self._memory
 
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
@@ -95,9 +78,10 @@ class PromptSendingOrchestrator(Orchestrator):
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
             prompt_type (PromptDataType): The type of prompt data. Defaults to "text".
-            memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
-                prompts.
-            These labels will be merged with the instance's global memory labels. Defaults to None.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
+                prompts. Any labels passed in will be combined with self._global_memory_labels (from the
+                GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
+                the passed-in labels take precedence. Defaults to None.
             metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
 
         Returns:
@@ -120,7 +104,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
-            memory_labels=memory_labels,
+            memory_labels=self._combine_with_global_memory_labels(memory_labels),
         )
 
     async def send_normalizer_requests_async(
@@ -163,7 +147,6 @@ class PromptSendingOrchestrator(Orchestrator):
 
     async def _score_responses_async(self, prompt_ids: list[str]):
         with ScoringOrchestrator(
-            memory=self._memory,
             batch_size=self._batch_size,
             verbose=self._verbose,
         ) as scoring_orchestrator:
@@ -197,7 +180,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
                 else:
                     print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    await display_image_response(message, self._memory)
+                    await display_image_response(message)
 
                 scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
                 for score in scores:
@@ -213,6 +196,10 @@ class PromptSendingOrchestrator(Orchestrator):
             for request in self._prepended_conversation:
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
+
+                    # if the piece is retrieved from somewhere else, it needs to be unique
+                    # and if not, this won't hurt anything
+                    piece.id = uuid.uuid4()
 
                 self._memory.add_request_response_to_memory(request=request)
         return conversation_id

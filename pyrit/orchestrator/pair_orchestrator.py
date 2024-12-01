@@ -10,8 +10,7 @@ from tqdm.auto import tqdm
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import pyrit_json_retry, InvalidJsonException
-from pyrit.memory import MemoryInterface
-from pyrit.models import SeedPromptTemplate, PromptRequestResponse, PromptRequestPiece, Score
+from pyrit.models import SeedPrompt, PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer, NormalizerRequest, NormalizerRequestPiece
@@ -36,12 +35,10 @@ class PAIROrchestrator(Orchestrator):
     def __init__(
         self,
         *,
-        memory: Optional[MemoryInterface] = None,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
-        prompt_target: PromptChatTarget,
+        objective_target: PromptChatTarget,
         desired_target_response_prefix: str,
-        red_teaming_chat: PromptChatTarget,
+        adversarial_chat: PromptChatTarget,
         conversation_objective: str,
         number_of_conversation_streams: int = 20,
         max_conversation_depth: int = 3,
@@ -55,17 +52,12 @@ class PAIROrchestrator(Orchestrator):
         Initializes the PAIR orchestrator to run the PAIR algorithm against two targets.
 
         Args:
-            memory: The memory interface to use. If None, a new memory interface will be created.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
             verbose: Whether to print debug information. Defaults to False.
-            prompt_target: The target model to jailbreak.
+            objective_target: The target model to jailbreak.
             desired_target_response_prefix: An example of a desired response from the target. This is used to compare
                 against the target's actual response to determine if the target has been compromised. E.g., "Sure, here
                 is code for a keylogger."
-            red_teaming_chat: The attacker model to use to jailbreak the target.
+            adversarial_chat: The attacker model to use to jailbreak the target.
             conversation_objective: The objective for the attacker to achieve, as a string. E.g. "Generate a phishing
                 email" or "Generate code for a keylogger", etc. Defaults to "Sure, I'd be happy to assist with that".
             max_conversation_depth: The maximum number of turns in a conversation. Defaults to 3 based on the PAIR's
@@ -75,42 +67,35 @@ class PAIROrchestrator(Orchestrator):
             stop_on_first_success: Whether to stop the algorithm after the first successful attack. Defaults to True.
                 If False, the algorithm will continue to run until all conversation streams are exhausted possibly
                 finding multiple successful jailbreaks.
-            scorer (Score, optional): The scorer to use for scoring the target's response.
-            scorer_sensitivity (float, optional): The sensitivity of the scorer.
+            scorer (Score, Optional): The scorer to use for scoring the target's response.
+            scorer_sensitivity (float, Optional): The sensitivity of the scorer.
                 This value indicates the scorer's tolerance for scores below the maximum score value.
                 Note that the sensitivity refers to the normalized score (value-min)/(max-min).
                 For example, for a scoring scale 1-10, the scores map as follows:
                 1 -> 0.0, 2 -> 0.11, 3 -> 0.22, ..., 10 -> 1.0.
                 A sensitivity of 0.7 would consider a score of 7 or above as a successful jailbreak.
                 Defaults to 1.0 which is equivalent to 10/10 in the scale of the PAIR paper.
-            prompt_converters (list[PromptConverter], optional): List of prompt converters. These are stacked in
+            prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 the order they are provided. The default PAIR implementation does not use any converters.
         """
-        super().__init__(
-            memory=memory, memory_labels=memory_labels, verbose=verbose, prompt_converters=prompt_converters
-        )
+        super().__init__(verbose=verbose, prompt_converters=prompt_converters)
 
         self.successful_jailbreaks: list[PromptRequestResponse] = []
-        self._prompt_target = prompt_target
-        self._adversarial_target = red_teaming_chat
+        self._objective_target = objective_target
+        self._adversarial_target = adversarial_chat
         self._max_conversation_depth = max_conversation_depth
         self._stop_on_first_success = stop_on_first_success
         self._conversation_objective = conversation_objective
         self._number_of_conversation_streams = number_of_conversation_streams
         self._last_attacker_conversation_id = ""
-        self._prompt_normalizer = PromptNormalizer(memory=self._memory)
+        self._prompt_normalizer = PromptNormalizer()
         self._single_turn_jailbreak_only = single_turn_jailbreak_only
         self._scorer_sensitivity = scorer_sensitivity
         self._scorer = scorer
-        # Set the scorer and scorer._prompt_target memory to match the orchestrator's memory.
-        if self._scorer:
-            self._scorer._memory = self._memory
-            if hasattr(self._scorer, "_prompt_target"):
-                self._scorer._prompt_target._memory = self._memory
         self._desired_target_response_prefix = desired_target_response_prefix
 
         # Load the prompt templates for the attacker
-        self._attacker_prompt_template = SeedPromptTemplate.from_yaml_file(
+        self._attacker_prompt_template = SeedPrompt.from_yaml_file(
             file=DATASETS_PATH / "orchestrators" / "pair" / "attacker_system_prompt.yaml"
         )
 
@@ -139,7 +124,7 @@ class PAIROrchestrator(Orchestrator):
         """
         if start_new_conversation:
             self._last_attacker_conversation_id = str(uuid.uuid4())
-            attacker_system_prompt = self._attacker_prompt_template.apply_parameters(
+            attacker_system_prompt = self._attacker_prompt_template.render_template_value(
                 goal=self._conversation_objective, target_str=self._desired_target_response_prefix
             )
             self._adversarial_target.set_system_prompt(
@@ -153,12 +138,11 @@ class PAIROrchestrator(Orchestrator):
                         request_converters=self._prompt_converters,
                         prompt_value=target_response,
                         prompt_data_type="text",
-                        memory=self._memory,
                     )
                 ],
                 conversation_id=self._last_attacker_conversation_id,
             ),
-            target=self._prompt_target,
+            target=self._objective_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
@@ -185,12 +169,11 @@ class PAIROrchestrator(Orchestrator):
                         request_converters=self._prompt_converters,
                         prompt_value=text,
                         prompt_data_type="text",
-                        memory=self._memory,
                     )
                 ],
                 conversation_id=curr_conversation_id,
             ),
-            target=self._prompt_target,
+            target=self._objective_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
@@ -228,7 +211,7 @@ class PAIROrchestrator(Orchestrator):
                     target_response=prompt_to_improve_upon, start_new_conversation=(depth == 0)
                 )
             except InvalidJsonException:
-                logger.warn("Invalid JSON response from attacker despite retries.")
+                logger.warning("Invalid JSON response from attacker despite retries.")
                 break
             if self._single_turn_jailbreak_only:
                 # Create a new conversation ID for each turn

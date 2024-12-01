@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Prompt Shield Target Documentation + Tutorial
+# # Prompt Shield Target Documentation + Tutorial - optional
 
 # %% [markdown]
 # This is a brief tutorial and documentation on using the Prompt Shield Target
@@ -28,7 +28,7 @@
 # For PyRIT, you can use Prompt Shield as a target, or you can use it as a true/false scorer to see if it detected a jailbreak in your prompt.
 
 # %% [markdown]
-# ### How It Works in More Detail
+# ## How It Works in More Detail
 
 # %% [markdown]
 # Prompt Shield is a Content Safety resource that detects attacks (jailbreaks) in the prompts it is given.
@@ -75,10 +75,10 @@ import os
 
 from pyrit.common import default_values
 
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptShieldTarget
 
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 pst = PromptShieldTarget(os.environ.get("AZURE_CONTENT_SAFETY_ENDPOINT"), os.environ.get("AZURE_CONTENT_SAFETY_KEY"))

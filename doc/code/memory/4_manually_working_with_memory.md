@@ -1,12 +1,10 @@
-## Updating Memory Manually
-
+# 4. Updating Memory Manually
 
 After or during an operation or a test, it can be important to use the memory in the database in a straightforward way.
 
 There are many ways to do this, but this section gives some general ideas on how users can solve common problems. Most of this relies on using https://duckdb.org/docs/guides/sql_editors/dbeaver.html
 
-
-### Sharing Data Between Users
+## Sharing Data Between Users
 
 Eventually, we have plans to extend the `MemoryInterface` implementation to other instances. For example, it would not be a huge task to extend it to Azure SQL Server, and operators could use that as a shared database.
 
@@ -15,7 +13,7 @@ In the meantime, one of the easiest ways to share data is to do the following:
 1. Export and import the database as described here. This allows a lot of flexibility and can include partial exports (for example based on labels or time):  https://dbeaver.com/docs/dbeaver/Data-transfer/
 2. Copy the PyRIT `results/dbdata` directory over; it will contain multi-modal data that the database references.
 
-### Making Pretty Graphs with Excel
+## Making Pretty Graphs with Excel
 
 This is especially nice with scoring. There are countless ways to do this, but this shows one example;
 
@@ -33,7 +31,7 @@ This is especially nice with scoring. There are countless ways to do this, but t
 
 4. Optionally, if you catch entries you want to update (e.g., if you want to correct scores), you could either change them in the database or in Excel and re-import. Note: the most stable way of doing this is in the database since the mapping can be off in some cases when reimporting.
 
-### Entering Manual Prompts
+## Entering Manual Prompts
 
 Although most prompts are run through `PromptTargets` which will add prompts to memory, there are a few reasons you may want to enter in manual prompts. For example, if you ssh into a box, are not using PyRIT to probe for weaknesses, but want to add prompts later for reporting or scoring.
 

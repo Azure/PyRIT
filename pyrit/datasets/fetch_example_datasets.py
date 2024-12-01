@@ -20,7 +20,6 @@ from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
 from pyrit.models import (
     SeedPromptDataset,
-    SeedPromptTemplate,
     QuestionAnsweringDataset,
     QuestionAnsweringEntry,
     QuestionChoice,
@@ -117,21 +116,20 @@ def fetch_examples(
     """
     Fetch examples from a specified source with caching support.
 
+    Example usage
+    >>> examples = fetch_examples(
+    >>>     source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json',
+    >>>     source_type='public_url'
+    >>> )
+
     Args:
         source (str): The source from which to fetch examples.
         source_type (Literal["public_url", "file"]): The type of source ('public_url' or 'file').
-        file_type (str): The type of file ('json', 'csv', or 'txt'). Defaults to 'json'.
         cache (bool): Whether to cache the fetched examples. Defaults to True.
         data_home (Optional[Path]): Directory to store cached data. Defaults to None.
 
     Returns:
         List[Dict[str, str]]: A list of examples.
-
-    Example usage:
-        examples = fetch_examples(
-            source='https://raw.githubusercontent.com/KutalVolkan/many-shot-jailbreaking-dataset/5eac855/examples.json',
-            source_type='public_url'
-        )
     """
 
     file_type = source.split(".")[-1]
@@ -194,6 +192,7 @@ def fetch_seclists_bias_testing_examples(
 ) -> SeedPromptDataset:
     """
     Fetch SecLists AI LLM Bias Testing examples from a specified source and create a SeedPromptDataset.
+
     Args:
         source (str): The source from which to fetch examples. Defaults to the SecLists repository Bias_Testing.
         source_type (Literal["public_url"]): The type of source ('public_url').
@@ -715,15 +714,15 @@ def fetch_decoding_trust_stereotypes_examples(
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
     if system_prompt_type == "targeted":
-        system_prompt = SeedPromptTemplate.from_yaml_file(
+        system_prompt = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_targeted.yaml"
         )
     elif system_prompt_type == "untargeted":
-        system_prompt = SeedPromptTemplate.from_yaml_file(
+        system_prompt = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_untargeted.yaml"
         )
     else:
-        system_prompt = SeedPromptTemplate.from_yaml_file(
+        system_prompt = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dt_stereotypes_benign.yaml"
         )
 
@@ -752,9 +751,9 @@ def fetch_decoding_trust_stereotypes_examples(
             continue
 
         prompt = (
-            system_prompt.apply_parameters(prompt=example["user_prompt"], target_group=example["target_group"])
+            system_prompt.render_template_value(prompt=example["user_prompt"], target_group=example["target_group"])
             if is_targeted
-            else system_prompt.apply_parameters(prompt=example["user_prompt"])
+            else system_prompt.render_template_value(prompt=example["user_prompt"])
         )
         prompts.append(prompt)
 
@@ -778,15 +777,14 @@ def fetch_decoding_trust_stereotypes_examples(
 
 def fetch_forbidden_questions_df() -> SeedPromptDataset:
     """
-
     Fetch Forbidden question dataset and return it as a SeedPromptDataset
 
     Returns: SeedPromptDataset
 
     Note: For more info
-    Paper - https://arxiv.org/abs/2308.03825
-    Github - https://github.com/verazuo/jailbreak_llms/
-    Website - https://jailbreak-llms.xinyueshen.me/
+        Paper - https://arxiv.org/abs/2308.03825
+        Github - https://github.com/verazuo/jailbreak_llms/
+        Website - https://jailbreak-llms.xinyueshen.me/
     """
     data = load_dataset("TrustAIRLab/forbidden_question_set", "default")
 
@@ -848,3 +846,43 @@ def fetch_testgenie_dataset() -> TestGenieDataset:
     os.chdir(current_dir)
 
     return TestGenieDataset()
+
+def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
+    """
+    Fetch the LibrAI 'Do Not Answer' dataset and return it as a SeedPromptDataset.
+
+    Relevant Columns:
+    - "risk_area"
+    - "types_of_harm"
+    - "specific_harms"
+    - "question"
+
+    Returns:
+        SeedPromptDataset: A SeedPromptDataset containing the examples.
+
+    Note: For more info
+    - Paper       - https://arxiv.org/abs/2308.13387
+    - Github      - https://github.com/libr-ai/do-not-answer
+    - HF Dataset  - https://huggingface.co/datasets/LibrAI/do-not-answer
+    """
+    # Load dataset from Hugging Face
+    data = load_dataset("LibrAI/do-not-answer", split="train")
+
+    seed_prompts = [
+        SeedPrompt(
+            value=entry["question"],
+            data_type="text",
+            name="",
+            dataset_name="LibrAI/Do-Not-Answer",
+            harm_categories=[entry["risk_area"], entry["types_of_harm"], entry["specific_harms"]],
+            description=(
+                f"This is a prompt from the 'Do Not Answer' dataset under the risk area: {entry['risk_area']}, "
+                f"harm type: {entry['types_of_harm']}, and specific harm: {entry['specific_harms']}."
+            ),
+            source="https://huggingface.co/datasets/LibrAI/do-not-answer",
+        )
+        for entry in data
+    ]
+
+    # Create a SeedPromptDataset from the list of SeedPrompt instances
+    return SeedPromptDataset(prompts=seed_prompts)

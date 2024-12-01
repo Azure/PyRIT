@@ -1,8 +1,8 @@
-### Populating Secrets
+# Populating Secrets
 
 Nearly all of PyRIT's targets require secrets to interact with.
 
-PyRIT primarily uses these by putting them in a local `.env` file.
+PyRIT primarily uses these by putting them in a local `.env` file. In typical AI red team operations, operators may create new targets that require additional environment variables, which might differ from those in the base `.env` file. In such cases, you can place these additional or modified variables in a `.env.local` file, which will take precedence over the base `.env`.
 
 When dealing with Azure OpenAI, you need to have an Azure account and a subscription. Populate the `.env` file in your repo with the correct Azure OpenAI Keys, deployment names, and endpoints.
 

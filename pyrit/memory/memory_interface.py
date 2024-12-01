@@ -2,13 +2,14 @@
 # Licensed under the MIT license.
 
 import abc
+from collections import defaultdict
 import copy
 from datetime import datetime
 import logging
 from pathlib import Path
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import MutableSequence, Optional, Sequence
+from typing import MutableSequence, Optional, Sequence, Union
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
@@ -21,11 +22,10 @@ from pyrit.models import (
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
-    SeedPromptTemplate,
     StorageIO,
 )
 
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, ScoreEntry, SeedPromptEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry, SeedPromptEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
 from pyrit.memory.memory_exporter import MemoryExporter
 
@@ -122,7 +122,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
-            conditions: SQLAlchemy filter conditions (optional).
+            conditions: SQLAlchemy filter conditions (Optional).
             distinct: Whether to return distinct rows only. Defaults to False.
 
         Returns:
@@ -141,6 +141,16 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
+
+    @abc.abstractmethod
+    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+        """
+        Updates the given entries with the specified field values.
+
+        Args:
+            entries (list[Base]): A list of SQLAlchemy model instances to be updated.
+            update_fields (dict): A dictionary of field names and their new values.
+        """
 
     def add_scores_to_memory(self, *, scores: list[Score]) -> None:
         """
@@ -273,17 +283,18 @@ class MemoryInterface(abc.ABC):
 
         return prompt_ids
 
-    def duplicate_conversation_for_new_orchestrator(self, *, new_orchestrator_id: str, conversation_id: str) -> str:
+    def duplicate_conversation(self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None) -> str:
         """
-        Duplicates a conversation from one orchestrator to another.
+        Duplicates a conversation for reuse
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
         One cannot continue both branches with the same orchestrator and conversation IDs since that would corrupt
         the memory. Instead, one needs to duplicate the conversation and continue with the new orchestrator ID.
 
         Args:
-            new_orchestrator_id (str): The new orchestrator ID to assign to the duplicated conversations.
             conversation_id (str): The conversation ID with existing conversations.
+            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
+                If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
         """
@@ -295,8 +306,12 @@ class MemoryInterface(abc.ABC):
             piece.id = uuid.uuid4()
             if piece.orchestrator_identifier["id"] == new_orchestrator_id:
                 raise ValueError("The new orchestrator ID must be different from the existing orchestrator ID.")
-            piece.orchestrator_identifier["id"] = new_orchestrator_id
+
+            if new_orchestrator_id:
+                piece.orchestrator_identifier["id"] = new_orchestrator_id
+
             piece.conversation_id = new_conversation_id
+
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
         return new_conversation_id
 
@@ -311,7 +326,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_orchestrator_id (str, optional): The new orchestrator ID to assign to the duplicated conversations.
+            new_orchestrator_id (str, Optional): The new orchestrator ID to assign to the duplicated conversations.
                 If no new orchestrator ID is provided, the orchestrator ID will remain the same. Defaults to None.
         Returns:
             The uuid for the new conversation.
@@ -420,6 +435,67 @@ class MemoryInterface(abc.ABC):
 
         for piece in request_pieces:
             piece.sequence = sequence
+
+    def update_prompt_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
+        """
+        Updates prompt entries for a given conversation ID with the specified field values.
+
+        Args:
+            conversation_id (str): The conversation ID of the entries to be updated.
+            update_fields (dict): A dictionary of field names and their new values (ex. {"labels": {"test": "value"}})
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        if not update_fields:
+            raise ValueError("update_fields must be provided to update prompt entries.")
+        # Fetch the relevant entries using query_entries
+        entries_to_update = self.query_entries(
+            PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
+        )
+        # Check if there are entries to update
+        if not entries_to_update:
+            logger.info(f"No entries found with conversation_id {conversation_id} to update.")
+            return False
+
+        # Use the utility function to update the entries
+        success = self.update_entries(entries=entries_to_update, update_fields=update_fields)
+
+        if success:
+            logger.info(f"Updated {len(entries_to_update)} entries with conversation_id {conversation_id}.")
+        else:
+            logger.error(f"Failed to update entries with conversation_id {conversation_id}.")
+        return success
+
+    def update_labels_by_conversation_id(self, *, conversation_id: str, labels: dict) -> bool:
+        """
+        Updates the labels of prompt entries in memory for a given conversation ID.
+
+        Args:
+            conversation_id (str): The conversation ID of the entries to be updated.
+            labels (dict): New dictionary of labels.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        return self.update_prompt_entries_by_conversation_id(
+            conversation_id=conversation_id, update_fields={"labels": labels}
+        )
+
+    def update_prompt_metadata_by_conversation_id(self, *, conversation_id: str, prompt_metadata: str) -> bool:
+        """
+        Updates the metadata of prompt entries in memory for a given conversation ID.
+
+        Args:
+            conversation_id (str): The conversation ID of the entries to be updated.
+            metadata (str): New metadata.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        return self.update_prompt_entries_by_conversation_id(
+            conversation_id=conversation_id, update_fields={"prompt_metadata": prompt_metadata}
+        )
 
     @abc.abstractmethod
     def dispose_engine(self):
@@ -602,34 +678,6 @@ class MemoryInterface(abc.ABC):
             all_prompts.extend(prompt_group.prompts)
         self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
 
-    def get_seed_prompt_templates(
-        self,
-        *,
-        value: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[list[str]] = None,
-        added_by: Optional[str] = None,
-        authors: Optional[list[str]] = None,
-        groups: Optional[list[str]] = None,
-        source: Optional[str] = None,
-        parameters: Optional[list[str]] = None,
-    ) -> list[SeedPromptTemplate]:
-        if not parameters:
-            raise ValueError("Prompt templates must have parameters. Please specify at least one.")
-        return [
-            prompt.to_prompt_template()
-            for prompt in self.get_seed_prompts(
-                value=value,
-                dataset_name=dataset_name,
-                harm_categories=harm_categories,
-                added_by=added_by,
-                authors=authors,
-                groups=groups,
-                source=source,
-                parameters=parameters,
-            )
-        ]
-
     def get_seed_prompt_groups(
         self,
         *,
@@ -644,14 +692,14 @@ class MemoryInterface(abc.ABC):
         """Retrieves groups of seed prompts based on the provided filtering criteria._summary_
 
         Args:
-            dataset_name (Optional[str], optional): Name of the dataset to filter seed prompts.
-            data_types (Optional[Sequence[str]], optional): List of data types to filter seed prompts by
+            dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
+            data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
-            harm_categories (Optional[Sequence[str]], optional): List of harm categories to filter seed prompts by.
-            added_by (Optional[str], optional): The user who added the seed prompt groups to filter by.
-            authors (Optional[Sequence[str]], optional): List of authors to filter seed prompt groups by.
-            groups (Optional[Sequence[str]], optional): List of groups to filter seed prompt groups by.
-            source (Optional[str], optional): The source from which the seed prompts originated.
+            harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
+            added_by (Optional[str], Optional): The user who added the seed prompt groups to filter by.
+            authors (Optional[Sequence[str]], Optional): List of authors to filter seed prompt groups by.
+            groups (Optional[Sequence[str]], Optional): List of groups to filter seed prompt groups by.
+            source (Optional[str], Optional): The source from which the seed prompts originated.
 
         Returns:
             list[SeedPromptGroup]: A list of `SeedPromptGroup` objects that match the filtering criteria.
@@ -684,3 +732,39 @@ class MemoryInterface(abc.ABC):
         seed_prompts = [memory_entry.get_seed_prompt() for memory_entry in memory_entries]
         seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups
+
+    def export_all_conversations_with_scores(self, *, file_path: Optional[Path] = None, export_type: str = "json"):
+        """
+        Exports all conversations with scores to a specified file.
+        Args:
+            file_path (str): The path to the file where the data will be exported.
+            If not provided, a default path using RESULTS_PATH will be constructed.
+            export_type (str): The format of the export. Defaults to "json".
+        """
+        all_prompt_pieces = self.get_all_prompt_pieces()
+
+        # Group pieces by original prompt ID
+        grouped_pieces: defaultdict[Union[uuid.UUID, str], list[str]] = defaultdict(list)
+        for piece in all_prompt_pieces:
+            grouped_pieces[piece.original_prompt_id].append(piece.converted_value)
+
+        all_scores = self.get_scores_by_prompt_ids(
+            prompt_request_response_ids=[str(key) for key in list(grouped_pieces.keys())]
+        )
+
+        # Combine data for export
+        combined_data = [
+            {
+                "prompt_request_response_id": str(score.prompt_request_response_id),
+                "conversation": grouped_pieces[score.prompt_request_response_id],
+                "score_value": score.score_value,
+            }
+            for score in all_scores
+        ]
+
+        # If file_path is not provided, construct a default using the exporter's results_path
+        if not file_path:
+            file_name = f"conversations_and_scores.{export_type}"
+            file_path = RESULTS_PATH / file_name
+
+        self.exporter.export_data(combined_data, file_path=file_path, export_type=export_type)

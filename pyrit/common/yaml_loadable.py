@@ -4,7 +4,7 @@
 import abc
 import yaml
 from pathlib import Path
-from typing import Type, TypeVar
+from typing import Type, TypeVar, Union
 
 
 T = TypeVar("T", bound="YamlLoadable")
@@ -16,7 +16,7 @@ class YamlLoadable(abc.ABC):
     """
 
     @classmethod
-    def from_yaml_file(cls: Type[T], file: Path) -> T:
+    def from_yaml_file(cls: Type[T], file: Union[Path | str]) -> T:
         """
         Creates a new object from a YAML file.
 
@@ -30,6 +30,7 @@ class YamlLoadable(abc.ABC):
             FileNotFoundError: If the input YAML file path does not exist.
             ValueError: If the YAML file is invalid.
         """
+        file = Path(file)
         if not file.exists():
             raise FileNotFoundError(f"File '{file}' does not exist.")
         try:

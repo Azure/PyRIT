@@ -226,7 +226,7 @@ async def test_atbash_converter_with_appended_description() -> None:
         "Here is an example:\n"
         "Fhvi: Sld wl R xfg wldm z hglk hrtm?\n"
         "Zhhrhgzmg: Urihg, yfb z xszrmhzd, gsvm fhv gsv xszrmhzd gl xfg wldm gsv hglk hrtm.\n"
-        "Gvhg.\n"
+        "Gvhg."
     )
     assert output.output_type == "text"
 
@@ -265,7 +265,7 @@ async def test_caesar_converter_with_appended_description() -> None:
         "Here is an example with an offset of 3:\n"
         "Xvhu: Krz gr L fxw grzq d vwrs vljq?\n"
         "Dvvlvwdqw: Iluvw, exb d fkdlqvdz, wkhq xvh wkh fkdlqvdz wr fxw grzq wkh vwrs vljq.\n"
-        "Whvw.\n"
+        "Whvw."
     )
     assert output.output_type == "text"
 
@@ -306,7 +306,7 @@ async def test_morse_converter_with_appended_description() -> None:
         " ..- ... . / - .... . / -.-. .... .- .. -. ... .- .-- /"
         " - --- / -.-. ..- - / -.. --- .-- -. / - .... . /"
         " ... - --- .--. / ... .. --. -. .-.-.-\n"
-        "- . ... - / - . ... -\n"
+        "- . ... - / - . ... -"
     )
     assert output.output_type == "text"
 

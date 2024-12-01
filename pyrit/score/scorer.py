@@ -8,12 +8,11 @@ from typing import Optional, Sequence
 import uuid
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.exceptions.exception_classes import InvalidJsonException, pyrit_json_retry, remove_markdown_json
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.models.literals import PromptDataType
+from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.models import PromptDataType, PromptRequestResponse, PromptRequestPiece
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.models import ScoreType, Score, UnvalidatedScore
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, CentralMemory
 
 
 class Scorer(abc.ABC):
@@ -22,7 +21,10 @@ class Scorer(abc.ABC):
     """
 
     scorer_type: ScoreType
-    _memory: Optional[MemoryInterface]
+
+    @property
+    def _memory(self) -> MemoryInterface:
+        return CentralMemory.get_memory_instance()
 
     @abstractmethod
     async def score_async(self, request_response: PromptRequestPiece, *, task: Optional[str] = None) -> list[Score]:
@@ -170,9 +172,9 @@ class Scorer(abc.ABC):
             prompt_request_value (str): The actual value or content to be scored by the LLM.
             prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
             scored_prompt_id (str): The ID of the scored prompt.
-            category (str, optional): The category of the score. Can also be parsed from the JSON response if not
+            category (str, Optional): The category of the score. Can also be parsed from the JSON response if not
                 provided.
-            task (str, optional): A description of the task that is associated with the score, used for contextualizing
+            task (str, Optional): A description of the task that is associated with the score, used for contextualizing
                 the result.
 
         Returns:

@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models.attack_strategy import AttackStrategy
 from pyrit.models.chat_message import (
     ALLOWED_CHAT_MESSAGE_ROLES,
     ChatMessage,
@@ -19,10 +18,8 @@ from pyrit.models.data_type_serializer import (
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import PromptDataType, PromptResponseError, ChatMessageRole
-from pyrit.models.many_shot_template import ManyShotTemplate
 from pyrit.models.seed_prompt import (
     SeedPromptDataset,
-    SeedPromptTemplate,
     SeedPrompt,
     SeedPromptGroup,
 )
@@ -41,7 +38,6 @@ from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
     "ALLOWED_CHAT_MESSAGE_ROLES",
-    "AttackStrategy",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
     "ChatMessage",
@@ -60,7 +56,6 @@ __all__ = [
     "group_conversation_request_pieces_by_sequence",
     "Identifier",
     "ImagePathDataTypeSerializer",
-    "ManyShotTemplate",
     "PromptRequestPiece",
     "PromptResponse",
     "PromptResponseError",
@@ -74,7 +69,6 @@ __all__ = [
     "SeedPrompt",
     "SeedPromptDataset",
     "SeedPromptGroup",
-    "SeedPromptTemplate",
     "StorageIO",
     "TextDataTypeSerializer",
     "UnvalidatedScore",

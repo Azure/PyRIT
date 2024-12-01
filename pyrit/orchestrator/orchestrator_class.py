@@ -2,12 +2,14 @@
 # Licensed under the MIT license.
 
 import abc
+import ast
 import logging
 import uuid
 
 from typing import Optional
 
-from pyrit.memory import MemoryInterface, DuckDBMemory
+from pyrit.common import default_values
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptDataType, Identifier
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
@@ -23,16 +25,18 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         *,
         prompt_converters: Optional[list[PromptConverter]] = None,
-        memory: Optional[MemoryInterface] = None,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ):
         self._prompt_converters = prompt_converters if prompt_converters else []
-        self._memory = memory or DuckDBMemory()
+        self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
         self._id = uuid.uuid4()
 
-        self._global_memory_labels = memory_labels if memory_labels else {}
+        # Pull in global memory labels from .env.local. memory_labels. These labels will be applied to all prompts
+        # sent via orchestrator.
+        self._global_memory_labels: dict[str, str] = ast.literal_eval(
+            default_values.get_non_required_value(env_var_name="GLOBAL_MEMORY_LABELS", passed_value=None) or "{}"
+        )
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -64,11 +68,7 @@ class Orchestrator(abc.ABC, Identifier):
             converters = self._prompt_converters
 
         request_piece = NormalizerRequestPiece(
-            request_converters=converters,
-            prompt_value=prompt_text,
-            prompt_data_type=prompt_type,
-            metadata=metadata,
-            memory=self._memory,
+            request_converters=converters, prompt_value=prompt_text, prompt_data_type=prompt_type, metadata=metadata
         )
 
         request = NormalizerRequest(request_pieces=[request_piece], conversation_id=conversation_id)

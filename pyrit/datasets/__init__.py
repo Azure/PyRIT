@@ -15,6 +15,7 @@ from .fetch_example_datasets import (
     fetch_llm_latent_adversarial_training_harmful_dataset,
     fetch_tdc23_redteaming_dataset,
     fetch_testgenie_dataset,
+    fetch_librAI_do_not_answer_dataset,
 )
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "fetch_llm_latent_adversarial_training_harmful_dataset",
     "fetch_tdc23_redteaming_dataset",
     "fetch_testgenie_dataset",
+    "fetch_librAI_do_not_answer_dataset",
 ]

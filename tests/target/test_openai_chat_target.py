@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+from typing import Generator
 import pytest
 
 from contextlib import AbstractAsyncContextManager
@@ -13,6 +14,7 @@ from openai.types.chat.chat_completion import Choice
 from openai import BadRequestError, RateLimitError
 
 from pyrit.exceptions.exception_classes import EmptyResponseException
+from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
@@ -21,17 +23,23 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.models import ChatMessageListDictContent
 
 from tests.mocks import get_image_request_piece
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
-def gpt4o_chat_engine() -> OpenAIChatTarget:
-    return OpenAIChatTarget(
-        deployment_name="gpt-o",
-        endpoint="https://mock.azure.com/",
-        api_key="mock-api-key",
-        api_version="some_version",
-        memory=DuckDBMemory(db_path=":memory:"),
-    )
+def memory() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def gpt4o_chat_engine(memory) -> OpenAIChatTarget:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        return OpenAIChatTarget(
+            deployment_name="gpt-o",
+            endpoint="https://mock.azure.com/",
+            api_key="mock-api-key",
+            api_version="some_version",
+        )
 
 
 @pytest.fixture
@@ -91,46 +99,51 @@ async def test_complete_chat_async_return(openai_mock_return: ChatCompletion, gp
         assert ret == "hi"
 
 
-def test_init_with_no_env_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIChatTarget(
-                deployment_name="gpt-4",
-                endpoint="https://mock.azure.com/",
-                api_key="",
-                api_version="some_version",
-            )
+def test_init_with_no_env_var_raises(memory: MemoryInterface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError):
+                OpenAIChatTarget(
+                    deployment_name="gpt-4",
+                    endpoint="https://mock.azure.com/",
+                    api_key="",
+                    api_version="some_version",
+                )
 
 
-def test_init_with_no_deployment_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIChatTarget()
+def test_init_with_no_deployment_var_raises(memory: MemoryInterface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError):
+                OpenAIChatTarget()
 
 
-def test_init_with_no_endpoint_uri_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIChatTarget(
-                deployment_name="gpt-4",
-                endpoint="",
-                api_key="xxxxx",
-                api_version="some_version",
-            )
+def test_init_with_no_endpoint_uri_var_raises(memory: MemoryInterface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError):
+                OpenAIChatTarget(
+                    deployment_name="gpt-4",
+                    endpoint="",
+                    api_key="xxxxx",
+                    api_version="some_version",
+                )
 
 
-def test_init_with_no_additional_request_headers_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIChatTarget(
-                deployment_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
-            )
+def test_init_with_no_additional_request_headers_var_raises(memory: MemoryInterface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError):
+                OpenAIChatTarget(
+                    deployment_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
+                )
 
 
 @pytest.mark.asyncio()
-async def test_convert_image_to_data_url_file_not_found(gpt4o_chat_engine: OpenAIChatTarget):
-    with pytest.raises(FileNotFoundError):
-        await gpt4o_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
+async def test_convert_image_to_data_url_file_not_found(gpt4o_chat_engine: OpenAIChatTarget, memory: MemoryInterface):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        with pytest.raises(FileNotFoundError):
+            await gpt4o_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
 
 
 @pytest.mark.asyncio()
@@ -153,8 +166,9 @@ async def test_convert_image_with_unsupported_extension(gpt4o_chat_engine: OpenA
 @patch("os.path.exists", return_value=True)
 @patch("mimetypes.guess_type", return_value=("image/jpg", None))
 @patch("pyrit.models.data_type_serializer.ImagePathDataTypeSerializer")
+@patch("pyrit.memory.CentralMemory.get_memory_instance", return_value=DuckDBMemory(db_path=":memory:"))
 async def test_convert_image_to_data_url_success(
-    mock_serializer_class, mock_guess_type, mock_exists, gpt4o_chat_engine: OpenAIChatTarget
+    mock_get_memory_instance, mock_serializer_class, mock_guess_type, mock_exists, gpt4o_chat_engine: OpenAIChatTarget
 ):
     with NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_file_name = tmp_file.name
@@ -170,7 +184,7 @@ async def test_convert_image_to_data_url_success(
     assert "data:image/jpeg;base64,encoded_base64_string" in result
 
     # Assertions for the mocks
-    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name, memory=duckdb_in_memory, extension=".jpg")
+    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name, extension=".jpg")
     mock_serializer_instance.read_data_base64.assert_called_once()
 
     os.remove(tmp_file_name)
@@ -225,7 +239,6 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     gpt4o_chat_engine._memory = mock_memory
 
@@ -273,7 +286,6 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
                 gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(
                     request=prompt_req_resp
                 )
-                gpt4o_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
             assert str(e.value) == "Status Code: 204, Message: The chat returned an empty response."
 
 
@@ -284,7 +296,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     gpt4o_chat_engine._memory = mock_memory
 
@@ -302,7 +313,6 @@ async def test_send_prompt_async_rate_limit_exception_adds_to_memory(
         await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_request)
         gpt4o_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
         gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-        gpt4o_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
 
     assert str(rle.value) == "Rate Limit Reached"
 
@@ -312,7 +322,6 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(gpt4o_chat_eng
     mock_memory = MagicMock()
     mock_memory.get_conversation.return_value = []
     mock_memory.add_request_response_to_memory = AsyncMock()
-    mock_memory.add_response_entries_to_memory = AsyncMock()
 
     gpt4o_chat_engine._memory = mock_memory
 
@@ -330,7 +339,6 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(gpt4o_chat_eng
         await gpt4o_chat_engine.send_prompt_async(prompt_request=prompt_request)
         gpt4o_chat_engine._memory.get_conversation.assert_called_once_with(conversation_id="123")
         gpt4o_chat_engine._memory.add_request_response_to_memory.assert_called_once_with(request=prompt_request)
-        gpt4o_chat_engine._memory.add_response_entries_to_memory.assert_called_once()
 
     assert str(bre.value) == "Bad Request"
 

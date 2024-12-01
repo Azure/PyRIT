@@ -9,7 +9,6 @@ from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
 from pyrit.exceptions import EmptyResponseException, RateLimitException
 from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
-from pyrit.memory import MemoryInterface
 from pyrit.models import ChatMessage, PromptRequestResponse
 from pyrit.models import construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
@@ -28,7 +27,6 @@ class AzureMLChatTarget(PromptChatTarget):
         endpoint: str = None,
         api_key: str = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
-        memory: MemoryInterface = None,
         max_new_tokens: int = 400,
         temperature: float = 1.0,
         top_p: float = 1.0,
@@ -45,26 +43,24 @@ class AzureMLChatTarget(PromptChatTarget):
         model you are using.
 
         Args:
-            endpoint (str, optional): The endpoint URL for the deployed Azure ML model.
+            endpoint (str, Optional): The endpoint URL for the deployed Azure ML model.
                 Defaults to the value of the AZURE_ML_MANAGED_ENDPOINT environment variable.
-            api_key (str, optional): The API key for accessing the Azure ML endpoint.
+            api_key (str, Optional): The API key for accessing the Azure ML endpoint.
                 Defaults to the value of the AZURE_ML_KEY environment variable.
-            chat_message_normalizer (ChatMessageNormalizer, optional): The chat message normalizer.
+            chat_message_normalizer (ChatMessageNormalizer, Optional): The chat message normalizer.
                 For models that do not allow system prompts such as mistralai-Mixtral-8x7B-Instruct-v01,
                 GenericSystemSquash() can be passed in. Defaults to ChatMessageNop(), which does not
                 alter the chat messages.
-            memory (MemoryInterface, optional): The memory interface.
-                Defaults to None.
-            max_new_tokens (int, optional): The maximum number of tokens to generate in the response.
+            max_new_tokens (int, Optional): The maximum number of tokens to generate in the response.
                 Defaults to 400.
-            temperature (float, optional): The temperature for generating diverse responses. 1.0 is most random,
+            temperature (float, Optional): The temperature for generating diverse responses. 1.0 is most random,
                 0.0 is least random. Defaults to 1.0.
-            top_p (float, optional): The top-p value for generating diverse responses. It represents
+            top_p (float, Optional): The top-p value for generating diverse responses. It represents
                 the cumulative probability of the top tokens to keep. Defaults to 1.0.
-            repetition_penalty (float, optional): The repetition penalty for generating diverse responses.
+            repetition_penalty (float, Optional): The repetition penalty for generating diverse responses.
                 1.0 means no penalty with a greater value (up to 2.0) meaning more penalty for repeating tokens.
                 Defaults to 1.2.
-            max_requests_per_minute (int, optional): Number of requests the target can handle per
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
             **param_kwargs: Additional parameters to pass to the model for generating responses. Example
@@ -73,7 +69,7 @@ class AzureMLChatTarget(PromptChatTarget):
                 model-dependent. If a model does not accept a certain parameter that is passed in, it will be skipped
                 without throwing an error.
         """
-        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
+        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
 
         self._initialize_vars(endpoint=endpoint, api_key=api_key)
 

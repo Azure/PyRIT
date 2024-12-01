@@ -6,7 +6,7 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.memory import MemoryInterface
+from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptTarget
@@ -16,10 +16,10 @@ from pyrit.prompt_normalizer.prompt_response_converter_configuration import Prom
 
 
 class PromptNormalizer(abc.ABC):
-    _memory: MemoryInterface
+    _memory: MemoryInterface = None
 
-    def __init__(self, *, memory: MemoryInterface) -> None:
-        self._memory = memory
+    def __init__(self) -> None:
+        self._memory = CentralMemory.get_memory_instance()
         self.id = str(uuid4())
 
     async def send_prompt_async(
@@ -37,9 +37,9 @@ class PromptNormalizer(abc.ABC):
         Args:
             normalizer_request (NormalizerRequest): The request to be sent.
             target (PromptTarget): The target to send the request to.
-            sequence (int, optional): The sequence number. Defaults to -1.
-            labels (dict[str, str], optional): Additional labels for the request. Defaults to None.
-            orchestrator_identifier (dict[str, str], optional): The orchestrator identifier. Defaults to None.
+            sequence (int, Optional): The sequence number. Defaults to -1.
+            labels (dict[str, str], Optional): Additional labels for the request. Defaults to None.
+            orchestrator_identifier (dict[str, str], Optional): The orchestrator identifier. Defaults to None.
 
         Returns:
             PromptRequestResponse: The response received from the target.
@@ -99,10 +99,10 @@ class PromptNormalizer(abc.ABC):
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects representing the prompts to
                 be sent.
             target (PromptTarget): The target to which the prompts should be sent.
-            labels (dict[str, str], optional): Additional labels to be included with the prompts. Defaults to None
-            orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
+            labels (dict[str, str], Optional): Additional labels to be included with the prompts. Defaults to None
+            orchestrator_identifier (dict[str, str], Optional): The identifier of the orchestrator used for sending
                 the prompts. Defaults to None.
-            batch_size (int, optional): The size of each batch of prompts. Defaults to 10.
+            batch_size (int, Optional): The size of each batch of prompts. Defaults to 10.
 
         Returns:
             list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses
@@ -160,9 +160,9 @@ class PromptNormalizer(abc.ABC):
         Args:
             request (NormalizerRequest): The normalizer request object.
             target (PromptTarget): The prompt target object.
-            sequence (int, optional): The sequence number. Defaults to -1.
-            labels (dict[str, str], optional): The labels dictionary. Defaults to None.
-            orchestrator_identifier (dict[str, str], optional): The identifier of the orchestrator used for sending
+            sequence (int, Optional): The sequence number. Defaults to -1.
+            labels (dict[str, str], Optional): The labels dictionary. Defaults to None.
+            orchestrator_identifier (dict[str, str], Optional): The identifier of the orchestrator used for sending
                 the prompts. Defaults to None.
 
         Returns:
@@ -196,7 +196,7 @@ class PromptNormalizer(abc.ABC):
                 original_value_data_type=request_piece.prompt_data_type,
                 converted_value_data_type=converted_prompt_type,
             )
-            await prompt_request_piece.compute_sha256(memory=self._memory)
+            await prompt_request_piece.compute_sha256()
             entries.append(prompt_request_piece)
 
         return PromptRequestResponse(request_pieces=entries)

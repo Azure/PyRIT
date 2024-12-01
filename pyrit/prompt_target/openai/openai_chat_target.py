@@ -43,26 +43,26 @@ class OpenAIChatTarget(OpenAITarget):
     ):
         """
         Args:
-            max_completion_tokens (int, optional): An upper bound for the number of tokens that
+            max_completion_tokens (int, Optional): An upper bound for the number of tokens that
                 can be generated for a completion, including visible output tokens and
                 reasoning tokens.
 
                 NOTE: Specify this value when using an o1 series model.
-            max_tokens (int, optional): The maximum number of tokens that can be
+            max_tokens (int, Optional): The maximum number of tokens that can be
                 generated in the chat completion. This value can be used to control
                 costs for text generated via API.
 
                 This value is now deprecated in favor of `max_completion_tokens`, and IS NOT
                 COMPATIBLE with o1 series models.
-            temperature (float, optional): The temperature parameter for controlling the
+            temperature (float, Optional): The temperature parameter for controlling the
                 randomness of the response. Defaults to 1.0.
-            top_p (float, optional): The top-p parameter for controlling the diversity of the
+            top_p (float, Optional): The top-p parameter for controlling the diversity of the
                 response. Defaults to 1.0.
-            frequency_penalty (float, optional): The frequency penalty parameter for penalizing
+            frequency_penalty (float, Optional): The frequency penalty parameter for penalizing
                 frequently generated tokens. Defaults to 0.
-            presence_penalty (float, optional): The presence penalty parameter for penalizing
+            presence_penalty (float, Optional): The presence penalty parameter for penalizing
                 tokens that are already present in the conversation history. Defaults to 0.
-            seed (int, optional): If specified, openAI will make a best effort to sample deterministically,
+            seed (int, Optional): If specified, openAI will make a best effort to sample deterministically,
                 such that repeated requests with the same seed and parameters should return the same result.
         """
         super().__init__(*args, **kwargs)
@@ -136,9 +136,7 @@ class OpenAIChatTarget(OpenAITarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(
-            value=image_path, data_type="image_path", extension=ext, memory=self._memory
-        )
+        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
         base64_encoded_data = await image_serializer.read_data_base64()
         # Azure OpenAI GPT-4o documentation doesn't specify the local image upload format for API.
         # GPT-4o image upload format is determined using "view code" functionality in Azure OpenAI deployments
@@ -237,6 +235,7 @@ class OpenAIChatTarget(OpenAITarget):
             extracted_response = self._parse_chat_completion(response)
             # Handle empty response
             if not extracted_response:
+                logger.log(logging.ERROR, "The chat returned an empty response.")
                 raise EmptyResponseException(message="The chat returned an empty response.")
         else:
             raise PyritException(message=f"Unknown finish_reason {finish_reason}")

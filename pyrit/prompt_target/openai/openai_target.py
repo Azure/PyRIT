@@ -10,7 +10,6 @@ from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
-from pyrit.memory import MemoryInterface
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,6 @@ class OpenAITarget(PromptChatTarget):
         headers: str = None,
         is_azure_target=True,
         use_aad_auth: bool = False,
-        memory: MemoryInterface = None,
         api_version: str = "2024-06-01",
         max_requests_per_minute: Optional[int] = None,
     ) -> None:
@@ -45,27 +43,25 @@ class OpenAITarget(PromptChatTarget):
 
 
         Args:
-            deployment_name (str, optional): The name of the deployment. Defaults to the
+            deployment_name (str, Optional): The name of the deployment. Defaults to the
                 AZURE_OPENAI_CHAT_DEPLOYMENT environment variable .
-            endpoint (str, optional): The endpoint URL for the Azure OpenAI service.
+            endpoint (str, Optional): The endpoint URL for the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_ENDPOINT environment variable.
-            api_key (str, optional): The API key for accessing the Azure OpenAI service.
+            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
                 Defaults to the AZURE_OPENAI_CHAT_KEY environment variable.
-            headers (str, optional): Headers of the endpoint (JSON).
-            is_azure_target (bool, optional): Whether the target is an Azure target.
-            use_aad_auth (bool, optional): When set to True, user authentication is used
+            headers (str, Optional): Headers of the endpoint (JSON).
+            is_azure_target (bool, Optional): Whether the target is an Azure target.
+            use_aad_auth (bool, Optional): When set to True, user authentication is used
                 instead of API Key. DefaultAzureCredential is taken for
                 https://cognitiveservices.azure.com/.default . Please run `az login` locally
                 to leverage user AuthN.
-            memory (MemoryInterface, optional): An instance of the MemoryInterface class
-                for storing conversation history. Defaults to None.
-            api_version (str, optional): The version of the Azure OpenAI API. Defaults to
+            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to
                 "2024-06-01".
-            max_requests_per_minute (int, optional): Number of requests the target can handle per
+            max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
         """
-        PromptChatTarget.__init__(self, memory=memory, max_requests_per_minute=max_requests_per_minute)
+        PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
 
         self._extra_headers: dict = {}
 

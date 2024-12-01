@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import tempfile
 from typing import Generator, Literal
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -14,12 +15,11 @@ from pyrit.memory import MemoryInterface, MemoryExporter, PromptMemoryEntry
 from pyrit.models import (
     PromptRequestPiece,
     PromptRequestResponse,
+    Score,
     SeedPrompt,
     SeedPromptGroup,
-    SeedPromptTemplate,
 )
 from pyrit.orchestrator import Orchestrator
-from pyrit.score import Score
 
 from tests.mocks import get_memory_interface, get_sample_conversations, get_sample_conversation_entries
 
@@ -117,11 +117,11 @@ def test_duplicate_memory(memory: MemoryInterface):
     memory.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 5
     orchestrator3 = Orchestrator()
-    new_conversation_id1 = memory.duplicate_conversation_for_new_orchestrator(
+    new_conversation_id1 = memory.duplicate_conversation(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_1,
     )
-    new_conversation_id2 = memory.duplicate_conversation_for_new_orchestrator(
+    new_conversation_id2 = memory.duplicate_conversation(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_2,
     )
@@ -194,7 +194,7 @@ def test_duplicate_conversation_pieces_not_score(memory: MemoryInterface):
     memory.add_request_pieces_to_memory(request_pieces=pieces)
     memory.add_scores_to_memory(scores=scores)
     orchestrator2 = Orchestrator()
-    new_conversation_id = memory.duplicate_conversation_for_new_orchestrator(
+    new_conversation_id = memory.duplicate_conversation(
         new_orchestrator_id=orchestrator2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
@@ -449,7 +449,7 @@ def test_duplicate_memory_orchestrator_id_collision(memory: MemoryInterface):
     memory.add_request_pieces_to_memory(request_pieces=pieces)
     assert len(memory.get_all_prompt_pieces()) == 1
     with pytest.raises(ValueError):
-        memory.duplicate_conversation_for_new_orchestrator(
+        memory.duplicate_conversation(
             new_orchestrator_id=str(orchestrator1.get_identifier()["id"]),
             conversation_id=conversation_id,
         )
@@ -702,9 +702,7 @@ def test_add_score_duplicate_prompt(memory: MemoryInterface):
     ]
     new_orchestrator_id = str(uuid4())
     memory.add_request_pieces_to_memory(request_pieces=pieces)
-    memory.duplicate_conversation_for_new_orchestrator(
-        new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id
-    )
+    memory.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
     dupe_piece = memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=new_orchestrator_id)[0]
     dupe_id = dupe_piece.id
 
@@ -1045,7 +1043,10 @@ def test_get_seed_prompt_dataset_names_multiple(memory: MemoryInterface):
 
 
 def test_add_seed_prompt_groups_to_memory_empty_list(memory: MemoryInterface):
-    prompt_group = SeedPromptGroup(prompts=[])
+    prompt_group = SeedPromptGroup(
+        prompts=[SeedPrompt(value="Test prompt", added_by="tester", data_type="text", sequence=0)]
+    )
+    prompt_group.prompts = []
     with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
         memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
@@ -1067,7 +1068,7 @@ def test_add_seed_prompt_groups_to_memory_multiple_elements(memory: MemoryInterf
 
 
 def test_add_seed_prompt_groups_to_memory_no_elements(memory: MemoryInterface):
-    with pytest.raises(ValueError, match="Prompt group must have at least one prompt."):
+    with pytest.raises(ValueError, match="SeedPromptGroup cannot be empty."):
         prompt_group = SeedPromptGroup(prompts=[])
         memory.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
@@ -1132,32 +1133,13 @@ def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(memory: 
     assert groups_from_memory[1].prompts[0].prompt_group_id == groups_from_memory[1].prompts[1].prompt_group_id
 
 
-def test_get_seed_prompt_templates_no_parameters(memory: MemoryInterface):
-    with pytest.raises(ValueError, match="Prompt templates must have parameters. Please specify at least one."):
-        memory.get_seed_prompt_templates(parameters=[])
-
-
-def test_get_seed_prompt_templates_with_value_filter(memory: MemoryInterface):
-    template_value = "Test template {{param1}}"
-    dataset_name = "dataset_1"
-    parameters = ["param1"]
-    template = SeedPromptTemplate(
-        value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
-    )
-    memory.add_seed_prompts_to_memory(prompts=[template])
-
-    templates = memory.get_seed_prompt_templates(value=template_value, parameters=parameters)
-    assert len(templates) == 1
-    assert templates[0].value == template_value
-
-
-def test_get_seed_prompt_templates_with_multiple_filters(memory: MemoryInterface):
+def test_get_seed_prompts_with_param_filters(memory: MemoryInterface):
     template_value = "Test template {{param1}}"
     dataset_name = "dataset_1"
     harm_categories = ["category1"]
     added_by = "tester"
     parameters = ["param1"]
-    template = SeedPromptTemplate(
+    template = SeedPrompt(
         value=template_value,
         dataset_name=dataset_name,
         parameters=parameters,
@@ -1167,7 +1149,7 @@ def test_get_seed_prompt_templates_with_multiple_filters(memory: MemoryInterface
     )
     memory.add_seed_prompts_to_memory(prompts=[template])
 
-    templates = memory.get_seed_prompt_templates(
+    templates = memory.get_seed_prompts(
         value=template_value,
         dataset_name=dataset_name,
         harm_categories=harm_categories,
@@ -1252,3 +1234,65 @@ def test_get_seed_prompt_groups_multiple_groups_with_unique_ids(memory: MemoryIn
     assert len(groups) == 2
     # Check that each group has a unique prompt_group_id
     assert groups[0].prompts[0].prompt_group_id != groups[1].prompts[0].prompt_group_id
+
+
+def test_export_all_conversations_with_scores_file_created(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+        with (
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
+        ):
+            file_path = Path(temp_file.name)
+
+            mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
+            mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
+            memory.export_all_conversations_with_scores(file_path=file_path)
+
+            assert file_path.exists()
+
+
+def test_export_all_conversations_with_scores_correct_data(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
+    expected_data = [
+        {
+            "prompt_request_response_id": "1234",
+            "conversation": ["sample piece"],
+            "score_value": 10,
+        }
+    ]
+
+    with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
+        with (
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
+            patch.object(memory.exporter, "export_data") as mock_export_data,
+        ):
+            file_path = Path(temp_file.name)
+
+            mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
+            mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
+
+            memory.export_all_conversations_with_scores(file_path=file_path)
+
+            mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
+            assert mock_export_data.call_args[0][0] == expected_data
+
+
+def test_export_all_conversations_with_scores_empty_data(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
+    expected_data: list = []
+    with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
+        with (
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
+            patch.object(memory.exporter, "export_data") as mock_export_data,
+        ):
+            file_path = Path(temp_file.name)
+
+            mock_get_pieces.return_value = []
+            mock_get_scores.return_value = []
+
+            memory.export_all_conversations_with_scores(file_path=file_path)
+            mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")

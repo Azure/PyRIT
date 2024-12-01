@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import AsyncMock
 
 from pyrit.prompt_converter import ConverterResult
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPromptTemplate
+from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPrompt
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 
 
@@ -17,7 +17,7 @@ async def test_math_prompt_converter_convert_async():
     template_value = "Solve the following problem: {{ prompt }}"
     dataset_name = "dataset_1"
     parameters = ["prompt"]
-    mock_prompt_template = SeedPromptTemplate(
+    mock_prompt_template = SeedPrompt(
         value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
     )
 
@@ -71,7 +71,7 @@ async def test_math_prompt_converter_handles_disallowed_content():
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
     parameters = ["prompt"]
-    mock_prompt_template = SeedPromptTemplate(
+    mock_prompt_template = SeedPrompt(
         value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
     )
 
@@ -122,7 +122,7 @@ async def test_math_prompt_converter_invalid_input_type():
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
     parameters = ["prompt"]
-    mock_prompt_template = SeedPromptTemplate(
+    mock_prompt_template = SeedPrompt(
         value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
     )
 
@@ -142,7 +142,7 @@ async def test_math_prompt_converter_error_handling():
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
     parameters = ["prompt"]
-    mock_prompt_template = SeedPromptTemplate(
+    mock_prompt_template = SeedPrompt(
         value=template_value, dataset_name=dataset_name, parameters=parameters, added_by="tester", data_type="text"
     )
 

@@ -1,5 +1,5 @@
 # %% [markdown]
-# # TDC-23 Red Teaming Dataset
+# # TDC-23 Red Teaming Dataset - optional
 #
 # This notebook demonstrates the process of using examples from the TDC-23 Red Teaming dataset to perform AI red teaming on a target language model (LLM).
 # It involves fetching potentially harmful behavior prompts from the HugginFace source, sending them to the LLM, and analyzing the responses.
@@ -13,7 +13,7 @@ from pyrit.prompt_target import TextTarget
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # %%
 # Set up the Azure OpenAI prompt target
@@ -32,8 +32,7 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 prompt_dataset = fetch_tdc23_redteaming_dataset()
 
 # Use the first 8 examples for red teaming
-prompt_list = prompt_dataset.prompts[:8]
-
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:8]]
 
 # Send prompts using the orchestrator and capture responses
 try:

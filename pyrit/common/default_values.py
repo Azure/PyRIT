@@ -3,23 +3,33 @@
 
 import dotenv
 import os
-
+import logging
 
 from pyrit.common import path
 
 
-def load_default_env() -> None:
-    """
-    Loads an environment file from the $PROJECT_ROOT/.env file if it exists,
-    or if not, loads from the default dotenv .env file
-    """
-    file_path = path.HOME_PATH / ".env"
+logger = logging.getLogger(__name__)
 
-    if not file_path.exists():
+
+def load_environment_files() -> None:
+    """
+    Loads the base environment file from .env if it exists,
+    and then loads a single .env.local file if it exists, overriding previous values.
+    """
+    base_file_path = path.HOME_PATH / ".env"
+    local_file_path = path.HOME_PATH / ".env.local"
+
+    # Load the base .env file if it exists
+    if base_file_path.exists():
+        dotenv.load_dotenv(base_file_path, override=True)
+        logger.info(f"Loaded {base_file_path}")
+    else:
         dotenv.load_dotenv()
-        return
 
-    dotenv.load_dotenv(file_path, override=True)
+    # Load the .env.local file if it exists, to override base .env values
+    if local_file_path.exists():
+        dotenv.load_dotenv(local_file_path, override=True)
+        logger.info(f"Loaded {local_file_path}")
 
 
 def get_required_value(*, env_var_name: str, passed_value: str) -> str:
@@ -29,13 +39,15 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
 
     If no value is found, raises a KeyError
 
-    :param environment_variable_name: The name of the environment variable
-    :type environment_variable_name: str
-    :param passed_value: The value passed as an argument
-    :type passed_value: str
-    :return: The required value
-    :rtype: str
-    :raises ValueError: If no value is found
+    Args:
+        env_var_name (str): The name of the environment variable to check
+        passed_value (str): The value passed to the function.
+
+    Returns:
+        str: The passed value if provided, otherwise the value from the environment variable.
+
+    Raises:
+        ValueError: If neither the passed value nor the environment variable is provided.
     """
     if passed_value:
         return passed_value
@@ -50,18 +62,15 @@ def get_required_value(*, env_var_name: str, passed_value: str) -> str:
 def get_non_required_value(*, env_var_name: str, passed_value: str) -> str:
     """
     Gets a non-required value from an environment variable or a passed value,
-    prefering the passed value
+    prefering the passed value.
 
-    If no value is found, returns an empty string.
-        env_var_name (str): The name of the environment variable to check.
-        passed_value (str): The value passed to the function.
-    Returns:
-        str: The passed value if provided, otherwise the value from the environment variable.
-    Raises:
-        ValueError: If neither the passed value nor the environment variable is provided.
-    preferring the passed value.
     Args:
         env_var_name (str): The name of the environment variable to check.
+        passed_value (str): The value passed to the function.
+
+    Returns:
+        str: The passed value if provided, otherwise the value from the environment variable.
+             If no value is found, returns an empty string.
     """
     if passed_value:
         return passed_value

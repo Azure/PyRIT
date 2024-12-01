@@ -2,14 +2,18 @@
 # Licensed under the MIT license.
 
 from __future__ import annotations
+
+from pathlib import Path
+import uuid
+import yaml
+
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
-import uuid
-
+from typing import Any, Dict, List, Optional, Union
 from collections import defaultdict
+from jinja2 import Template, StrictUndefined
 
-from pyrit.common.apply_parameters_to_template import apply_parameters_to_template
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
 
@@ -72,85 +76,28 @@ class SeedPrompt(YamlLoadable):
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
 
-    def to_prompt_template(self) -> SeedPromptTemplate:
-        """Convert the SeedPrompt instance to a SeedPromptTemplate."""
-        if not self.parameters:
-            raise ValueError("SeedPrompt must have parameters to convert to a SeedPromptTemplate.")
+    def render_template_value(self, **kwargs) -> str:
+        """Renders self.value as a template, applying provided parameters in kwargs
 
-        return SeedPromptTemplate(
-            id=self.id,
-            value=self.value,
-            data_type=self.data_type,
-            name=self.name,
-            dataset_name=self.dataset_name,
-            harm_categories=self.harm_categories,
-            description=self.description,
-            authors=self.authors,
-            groups=self.groups,
-            source=self.source,
-            date_added=self.date_added,
-            added_by=self.added_by,
-            metadata=self.metadata,
-            parameters=self.parameters,
-            prompt_group_id=self.prompt_group_id,
-            sequence=self.sequence,
-        )
+        Args:
+            kwargs:Key-value pairs to replace in the SeedPrompt value.
 
+        Returns:
+            A new prompt with the parameters applied.
 
-class SeedPromptTemplate(SeedPrompt):
-    """Represents a template of a seed prompt with required parameters."""
+        Raises:
+            ValueError: If parameters are missing or invalid in the template.
+        """
 
-    parameters: List[str]
+        if self.data_type != "text":
+            raise ValueError(f"Cannot render non-text values as templates {self.data_type}")
 
-    def __init__(
-        self,
-        *,
-        id: Optional[uuid.UUID] = None,
-        value: str,
-        data_type: PromptDataType,
-        name: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        harm_categories: Optional[List[str]] = None,
-        description: Optional[str] = None,
-        authors: Optional[List[str]] = None,
-        groups: Optional[List[str]] = None,
-        source: Optional[str] = None,
-        date_added: Optional[datetime] = datetime.now(),
-        added_by: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-        parameters: List[str],
-        prompt_group_id: Optional[uuid.UUID] = None,
-        sequence: Optional[int] = None,
-    ):
-        if data_type != "text":
-            raise ValueError("SeedPromptTemplate must have data_type 'text'.")
-        super().__init__(
-            id=id,
-            value=value,
-            data_type=data_type,
-            name=name,
-            dataset_name=dataset_name,
-            harm_categories=harm_categories,
-            description=description,
-            authors=authors,
-            groups=groups,
-            source=source,
-            date_added=date_added,
-            added_by=added_by,
-            metadata=metadata,
-            parameters=parameters,
-            prompt_group_id=prompt_group_id,
-            sequence=sequence,
-        )
+        jinja_template = Template(self.value, undefined=StrictUndefined)
 
-    def apply_parameters(self, **kwargs) -> str:
-        """Applies parameters to the seed prompt template and returns the formatted string."""
-        if not self.parameters:
-            raise ValueError("SeedPromptTemplate must have parameters to apply.")
-        if not all(param in kwargs for param in self.parameters):
-            raise ValueError("Not all parameters were provided.")
-
-        return apply_parameters_to_template(self.value, self.parameters, **kwargs)
+        try:
+            return jinja_template.render(**kwargs)
+        except Exception as e:
+            raise ValueError(f"Error applying parameters: {str(e)}")
 
 
 class SeedPromptGroup(YamlLoadable):
@@ -166,13 +113,16 @@ class SeedPromptGroup(YamlLoadable):
     def __init__(
         self,
         *,
-        prompts: List[SeedPrompt],
+        prompts: Union[List[SeedPrompt], List[Dict[str, Any]]],
     ):
-        self.prompts = prompts
-        if self.prompts and isinstance(self.prompts[0], dict):
-            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in self.prompts]  # type: ignore
-        else:
-            self.prompts = prompts
+        if not prompts:
+            raise ValueError("SeedPromptGroup cannot be empty.")
+        self.prompts = []
+        for prompt in prompts:
+            if isinstance(prompt, SeedPrompt):
+                self.prompts.append(prompt)
+            elif isinstance(prompt, dict):
+                self.prompts.append(SeedPrompt(**prompt))
 
         # Check sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
@@ -206,11 +156,15 @@ class SeedPromptDataset(YamlLoadable):
 
     prompts: List[SeedPrompt]
 
-    def __init__(self, prompts: List[SeedPrompt]):
-        if prompts and isinstance(prompts[0], dict):
-            self.prompts = [SeedPrompt(**prompt_args) for prompt_args in prompts]  # type: ignore
-        else:
-            self.prompts = prompts
+    def __init__(self, prompts: Union[List[SeedPrompt], List[Dict[str, Any]]]):
+        if not prompts:
+            raise ValueError("SeedPromptDataset cannot be empty.")
+        self.prompts = []
+        for prompt in prompts:
+            if isinstance(prompt, SeedPrompt):
+                self.prompts.append(prompt)
+            elif isinstance(prompt, dict):
+                self.prompts.append(SeedPrompt(**prompt))
 
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seed_prompts: List[SeedPrompt]) -> List[SeedPromptGroup]:
@@ -243,3 +197,38 @@ class SeedPromptDataset(YamlLoadable):
 
     def __repr__(self):
         return f"<SeedPromptDataset(prompts={len(self.prompts)} prompts)>"
+
+    @staticmethod
+    def from_yaml_file_with_uniform_metadata(file: Path, data_type="text") -> SeedPromptDataset:
+        """
+        Creates a new object from a YAML file.
+
+        In the past, PyRIT supported dataset loading from YAML with uniform metadata.
+        That means, every prompt in a dataset had to have the same harm categories,
+        same authors, same groups, etc. This method is a helper to load such datasets.
+
+        Args:
+            file: The input file path.
+            data_type: The data type of the prompts.
+
+        Returns:
+            A new object of type T.
+
+        Raises:
+            FileNotFoundError: If the input YAML file path does not exist.
+            ValueError: If the YAML file is invalid.
+        """
+        if not file.exists():
+            raise FileNotFoundError(f"File '{file}' does not exist.")
+        try:
+            yaml_data = yaml.safe_load(file.read_text("utf-8"))
+        except yaml.YAMLError as exc:
+            raise ValueError(f"Invalid YAML file '{file}': {exc}")
+        non_prompt_data = deepcopy(yaml_data)
+        del non_prompt_data["prompts"]
+        non_prompt_data["data_type"] = data_type
+        seed_prompt_dicts: List[Dict[str, Any]] = []
+        for prompt_text in yaml_data["prompts"]:
+            seed_prompt_dicts.append({"value": prompt_text, **non_prompt_data})
+        data_object = SeedPromptDataset(seed_prompt_dicts)
+        return data_object

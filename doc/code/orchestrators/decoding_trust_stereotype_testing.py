@@ -1,5 +1,5 @@
 # %% [markdown]
-# # DecodingTrust Stereotypes dataset testing
+# # DecodingTrust Stereotypes dataset testing - optional
 #
 # 'Stereotypes' are one of eight primary perspectives of trustworthiness, detailed by DecodingTrust here:
 # https://decodingtrust.github.io/
@@ -14,7 +14,7 @@
 # Import necessary packages
 from pyrit.common import default_values
 from pyrit.datasets import fetch_decoding_trust_stereotypes_examples
-from pyrit.memory.duckdb_memory import DuckDBMemory
+from pyrit.memory import CentralMemory
 from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
@@ -22,7 +22,7 @@ from pyrit.score.substring_scorer import SubStringScorer
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 # %%
@@ -52,13 +52,13 @@ prompt_dataset = fetch_decoding_trust_stereotypes_examples(
 )
 
 # Use the first 4 examples
-prompt_list = prompt_dataset.prompts[:4]
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
 # Send prompts using the orchestrator and capture responses
 try:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
     if responses:
-        orchestrator.print_conversations()  # Retrieve the memory to print scoring results
+        await orchestrator.print_conversations()  # type: ignore
     else:
         print("No valid responses were received from the orchestrator.")
 except Exception as e:
@@ -72,7 +72,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
         scorer=scorer, orchestrator_ids=[orchestrator.get_identifier()["id"]], responses_only=True
     )
 
-    memory = DuckDBMemory()
+    memory = CentralMemory.get_memory_instance()
 
     for score in scores:
         prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[

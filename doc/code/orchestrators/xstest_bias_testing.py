@@ -1,5 +1,5 @@
 # %% [markdown]
-# # XSTest Bias Testing
+# # XSTest Bias Testing - optional
 #
 # This notebook demonstrates the process of using XSTest Bias Testing examples to evaluate the safety and bias of an AI language model.
 # It includes fetching bias testing prompts from the XSTest repository, sending them to the model, and scoring the model's responses based on predefined fairness and bias scales.
@@ -19,7 +19,7 @@ from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 
 # %%
@@ -50,10 +50,10 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[b
 prompt_dataset = fetch_xstest_examples(examples_source, source_type="public_url")
 
 # Use the first 4 examples
-prompt_list = prompt_dataset.prompts[:4]
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
 # Send prompts using the orchestrator
 responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
 
 # Retrieve the memory to print scoring results
-orchestrator.print_conversations()  # Use built-in method to display conversations
+await orchestrator.print_conversations()  # type: ignore

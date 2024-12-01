@@ -4,7 +4,7 @@
 import logging
 
 from pyrit.prompt_converter import ConverterResult, LLMGenericTextConverter
-from pyrit.models import SeedPromptTemplate, PromptDataType
+from pyrit.models import SeedPrompt, PromptDataType
 from pyrit.prompt_target import PromptChatTarget
 
 from pyrit.common.path import DATASETS_PATH
@@ -19,20 +19,20 @@ class MathPromptConverter(LLMGenericTextConverter):
     using an LLM via an existing PromptTarget (like Azure OpenAI or other supported backends).
     """
 
-    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPromptTemplate = None):
+    def __init__(self, *, converter_target: PromptChatTarget, prompt_template: SeedPrompt = None):
         """
         Initializes the converter with a specific target and template.
 
         Args:
             converter_target (PromptChatTarget): The endpoint that converts the prompt.
-            prompt_template (SeedPromptTemplate): The prompt template to use.
+            prompt_template (SeedPrompt): The prompt template to use.
         """
 
         # Load the template from the YAML file or use a default template if not provided
         prompt_template = (
             prompt_template
             if prompt_template
-            else SeedPromptTemplate.from_yaml_file(
+            else SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "math_prompt_converter.yaml"
             )
         )

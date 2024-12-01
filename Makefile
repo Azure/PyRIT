@@ -13,6 +13,9 @@ pre-commit:
 mypy:
 	$(CMD) mypy $(PYMODULE) $(TESTS)
 
+docs-build:
+	jb build -W -v ./doc
+
 test:
 	$(CMD) pytest --cov=$(PYMODULE) $(TESTS)
 

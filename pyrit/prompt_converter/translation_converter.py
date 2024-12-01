@@ -9,12 +9,12 @@ import uuid
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions.exception_classes import (
+from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPromptTemplate
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPrompt
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 
@@ -22,16 +22,14 @@ logger = logging.getLogger(__name__)
 
 
 class TranslationConverter(PromptConverter):
-    def __init__(
-        self, *, converter_target: PromptChatTarget, language: str, prompt_template: SeedPromptTemplate = None
-    ):
+    def __init__(self, *, converter_target: PromptChatTarget, language: str, prompt_template: SeedPrompt = None):
         """
         Initializes a TranslationConverter object.
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate
             language (str): The language for the conversion. E.g. Spanish, French, leetspeak, etc.
-            prompt_template (SeedPromptTemplate, optional): The prompt template for the conversion.
+            prompt_template (SeedPrompt, Optional): The prompt template for the conversion.
 
         Raises:
             ValueError: If the language is not provided.
@@ -42,7 +40,7 @@ class TranslationConverter(PromptConverter):
         prompt_template = (
             prompt_template
             if prompt_template
-            else SeedPromptTemplate.from_yaml_file(
+            else SeedPrompt.from_yaml_file(
                 pathlib.Path(DATASETS_PATH) / "prompt_converters" / "translation_converter.yaml"
             )
         )
@@ -52,7 +50,7 @@ class TranslationConverter(PromptConverter):
 
         self.language = language.lower()
 
-        self.system_prompt = prompt_template.apply_parameters(languages=language)
+        self.system_prompt = prompt_template.render_template_value(languages=language)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

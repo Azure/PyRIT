@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from azure.identity.aio import DefaultAzureCredential
@@ -13,10 +13,6 @@ class AzureStorageAuth:
     """
     A utility class for Azure Storage authentication, providing methods to generate SAS tokens
     using user delegation keys.
-
-    Methods:
-        get_user_delegation_key(blob_service_client)
-        get_sas_token(container_url, blob_name)
     """
 
     @staticmethod
@@ -31,8 +27,8 @@ class AzureStorageAuth:
         Returns:
             UserDelegationKey: A user delegation key valid for one day.
         """
-        delegation_key_start_time = datetime.datetime.now(datetime.timezone.utc)
-        delegation_key_expiry_time = delegation_key_start_time + datetime.timedelta(days=1)
+        delegation_key_start_time = datetime.now()
+        delegation_key_expiry_time = delegation_key_start_time + timedelta(days=1)
 
         user_delegation_key = await blob_service_client.get_user_delegation_key(
             key_start_time=delegation_key_start_time, key_expiry_time=delegation_key_expiry_time
@@ -79,8 +75,8 @@ class AzureStorageAuth:
                 storage_account_name = parsed_url.netloc.split(".")[0]
 
                 # Set start_time 5 minutes before the current time to account for any clock skew
-                start_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5)
-                expiry_time = start_time + datetime.timedelta(days=1)
+                start_time = datetime.now() - timedelta(minutes=5)
+                expiry_time = start_time + timedelta(days=1)
 
                 sas_token = generate_container_sas(
                     account_name=storage_account_name,

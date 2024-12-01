@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # LLM-LAT/harmful-dataset testing
+# # LLM-LAT/harmful-dataset testing - optional
 #
 # This notebook demonstrates the testing of import of huggingface dataset "https://huggingface.co/datasets/LLM-LAT/harmful-dataset"
 
@@ -29,7 +29,7 @@ from pyrit.prompt_target import TextTarget
 
 # %%
 # Load environment variables
-default_values.load_default_env()
+default_values.load_environment_files()
 
 # %%
 # Set up the Azure OpenAI prompt target
@@ -44,7 +44,7 @@ orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 prompt_dataset = fetch_llm_latent_adversarial_training_harmful_dataset()
 
 # Use the first 8 examples for red teaming
-prompt_list = prompt_dataset.prompts[:8]
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:8]]
 
 # Send prompts using the orchestrator and capture responses
 try:

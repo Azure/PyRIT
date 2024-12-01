@@ -2,16 +2,20 @@
 # Licensed under the MIT license.
 
 import os
-from unittest.mock import AsyncMock, patch
+from typing import Generator
+from unittest.mock import AsyncMock, MagicMock, patch
 
+from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 import pytest
 from openai.types.completion import Completion
+from pyrit.memory.memory_interface import MemoryInterface
 from openai.types.completion_choice import CompletionChoice
 from openai.types.completion_usage import CompletionUsage
 
 from pyrit.prompt_target import OpenAICompletionTarget
 from tests.mocks import get_sample_conversations
+from tests.mocks import get_memory_interface
 
 
 @pytest.fixture
@@ -38,13 +42,19 @@ def openai_mock_return() -> Completion:
 
 
 @pytest.fixture
-def azure_completion_target() -> OpenAICompletionTarget:
-    return OpenAICompletionTarget(
-        deployment_name="gpt-35-turbo",
-        endpoint="https://mock.azure.com/",
-        api_key="mock-api-key",
-        api_version="some_version",
-    )
+def memory() -> Generator[MemoryInterface, None, None]:
+    yield from get_memory_interface()
+
+
+@pytest.fixture
+def azure_completion_target(memory) -> OpenAICompletionTarget:
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        return OpenAICompletionTarget(
+            deployment_name="gpt-35-turbo",
+            endpoint="https://mock.azure.com/",
+            api_key="mock-api-key",
+            api_version="some_version",
+        )
 
 
 @pytest.fixture
@@ -102,28 +112,31 @@ async def test_azure_complete_async_return(
 
 
 def test_azure_invalid_key_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAICompletionTarget(
-                deployment_name="gpt-4",
-                endpoint="https://mock.azure.com/",
-                api_key="",
-                api_version="some_version",
-            )
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError):
+                OpenAICompletionTarget(
+                    deployment_name="gpt-4",
+                    endpoint="https://mock.azure.com/",
+                    api_key="",
+                    api_version="some_version",
+                )
 
 
 def test_azure_initialization_with_no_deployment_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAICompletionTarget()
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError):
+                OpenAICompletionTarget()
 
 
 def test_azure_invalid_endpoint_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAICompletionTarget(
-                deployment_name="gpt-4",
-                endpoint="",
-                api_key="xxxxx",
-                api_version="some_version",
-            )
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError):
+                OpenAICompletionTarget(
+                    deployment_name="gpt-4",
+                    endpoint="",
+                    api_key="xxxxx",
+                    api_version="some_version",
+                )

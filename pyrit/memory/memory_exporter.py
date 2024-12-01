@@ -3,7 +3,7 @@
 
 import csv
 import json
-from typing import Any
+from typing import Any, Dict, List, Union
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -28,14 +28,17 @@ class MemoryExporter:
             # Future formats can be added here
         }
 
-    def export_data(self, data: list[Base], *, file_path: Path = None, export_type: str = "json"):  # type: ignore
+    def export_data(
+        self, data: Union[List[Base], List[Dict]], *, file_path: Path = None, export_type: str = "json"
+    ):  # type: ignore
         """
         Exports the provided data to a file in the specified format.
 
         Args:
-            data (list[Base]): The data to be exported, typically a list of SQLAlchemy model instances.
+            data (Union[List[Base], List[Dict]]): The data to be exported, typically a list of SQLAlchemy
+              model instances or as a list of dictionaries.
             file_path (str): The full path, including the file name, where the data will be exported.
-            export_type (str, optional): The format for exporting data. Defaults to "json".
+            export_type (str, Optional): The format for exporting data. Defaults to "json".
 
         Raises:
             ValueError: If no file_path is provided or if the specified export format is not supported.
@@ -49,14 +52,15 @@ class MemoryExporter:
         else:
             raise ValueError(f"Unsupported export format: {export_type}")
 
-    def export_to_json(self, data: list[Base], file_path: Path = None) -> None:  # type: ignore
+    def export_to_json(self, data: Union[List[Base], List[Dict]], file_path: Path = None) -> None:  # type: ignore
         """
         Exports the provided data to a JSON file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
         Args:
-            data (list[Base]): The data to be exported, as a list of SQLAlchemy model instances.
+            data (Union[List[Base], List[Dict]]): The data to be exported, as a list of SQLAlchemy model instances
+              or as a list of dictionaries.
             file_path (Path): The full path, including the file name, where the data will be exported.
 
         Raises:
@@ -65,18 +69,19 @@ class MemoryExporter:
         if not file_path:
             raise ValueError("Please provide a valid file path for exporting data.")
 
-        export_data = [self.model_to_dict(instance) for instance in data]
+        export_data = [self.model_to_dict(instance) if isinstance(instance, Base) else instance for instance in data]
         with open(file_path, "w") as f:
             json.dump(export_data, f, indent=4)
 
-    def export_to_csv(self, data: list[Base], file_path: Path = None) -> None:  # type: ignore
+    def export_to_csv(self, data: Union[List[Base], List[Dict]], file_path: Path = None) -> None:  # type: ignore
         """
         Exports the provided data to a CSV file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
         Args:
-            data (list[Base]): The data to be exported, as a list of SQLAlchemy model instances.
+            data (Union[List[Base], List[Dict]]): The data to be exported, as a list of SQLAlchemy model instances
+              or as a list of dictionaries.
             file_path (Path): The full path, including the file name, where the data will be exported.
 
         Raises:
@@ -87,7 +92,10 @@ class MemoryExporter:
         if not data:
             raise ValueError("No data to export.")
 
-        export_data = [_flatten_dict(self.model_to_dict(instance)) for instance in data]
+        export_data = [
+            _flatten_dict(self.model_to_dict(instance)) if isinstance(instance, Base) else _flatten_dict(instance)
+            for instance in data
+        ]
         fieldnames = list(export_data[0].keys())
         with open(file_path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)

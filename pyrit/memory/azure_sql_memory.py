@@ -1,11 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from datetime import datetime, timedelta, timezone
 import logging
 import struct
 
 from contextlib import closing
-from typing import Optional, Sequence
+from typing import MutableSequence, Optional, Sequence
 from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 
@@ -60,11 +61,16 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except ValueError:
             self._sas_token = None  # To use delegation SAS
 
+        self._auth_token: Optional[AccessToken] = None
+        self._auth_token_expiry: Optional[int] = None
+
         self.results_path = self._container_url
 
         self.engine = self._create_engine(has_echo=verbose)
 
-        self._auth_token = self._create_auth_token()
+        # Generate the initial auth token
+        self._create_auth_token()
+        # Enable token-based authorization
         self._enable_azure_authorization()
 
         self.SessionFactory = sessionmaker(bind=self.engine)
@@ -76,9 +82,25 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         # Handle for Azure Blob Storage when using Azure SQL memory.
         self.storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
 
-    def _create_auth_token(self) -> AccessToken:
+    def _create_auth_token(self):
+        """
+        Creates an Azure Entra ID access token.
+        Stores the token and its expiry time.
+        """
         azure_credentials = DefaultAzureCredential()
-        return azure_credentials.get_token(self.TOKEN_URL)
+        token: AccessToken = azure_credentials.get_token(self.TOKEN_URL)
+        self._auth_token = token
+        self._auth_token_expiry = token.expires_on
+
+    def _refresh_token_if_needed(self) -> None:
+        """
+        Refresh the access token if it is close to expiry (within 5 minutes).
+        """
+        if datetime.now(timezone.utc) >= datetime.fromtimestamp(self._auth_token_expiry, tz=timezone.utc) - timedelta(
+            minutes=5
+        ):
+            logger.info("Refreshing Microsoft Entra ID access token...")
+            self._create_auth_token()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
         """Creates the SQLAlchemy engine for Azure SQL Server.
@@ -92,7 +114,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         try:
             # Create the SQLAlchemy engine.
-            engine = create_engine(self._connection_string, echo=has_echo)
+            # Use pool_pre_ping (health check) to gracefully handle server-closed connections
+            # by testing and replacing stale connections.
+            # Set pool_recycle to 1800 seconds to prevent connections from being closed due to server timeout.
+
+            engine = create_engine(self._connection_string, pool_recycle=1800, pool_pre_ping=True, echo=has_echo)
             logger.info(f"Engine created successfully for database: {engine.name}")
             return engine
         except SQLAlchemyError as e:
@@ -113,6 +139,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         @event.listens_for(self.engine, "do_connect")
         def provide_token(_dialect, _conn_rec, cargs, cparams):
+            # Refresh token if it's close to expiry
+            self._refresh_token_if_needed()
+
             # remove the "Trusted_Connection" parameter that SQLAlchemy adds
             cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
 
@@ -181,11 +210,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         try:
             entries = self.query_entries(
                 PromptMemoryEntry,
-                conditions=PromptMemoryEntry.conversation_id == conversation_id,
+                conditions=PromptMemoryEntry.conversation_id == str(conversation_id),
             )  # type: ignore
 
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
+            prompt_pieces: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.sequence))
 
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
@@ -331,7 +360,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         Args:
             model: The SQLAlchemy model class corresponding to the table you want to query.
-            conditions: SQLAlchemy filter conditions (optional).
+            conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (defaults to False).
 
         Returns:
@@ -348,6 +377,43 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             except SQLAlchemyError as e:
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
                 return []
+
+    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+        """
+        Updates the given entries with the specified field values.
+
+        Args:
+            entries (list[Base]): A list of SQLAlchemy model instances to be updated.
+            update_fields (dict): A dictionary of field names and their new values.
+
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        if not update_fields:
+            raise ValueError("update_fields must be provided to update prompt entries.")
+        with closing(self.get_session()) as session:
+            try:
+                for entry in entries:
+                    # Ensure the entry is attached to the session. If it's detached, merge it.
+                    if not session.is_modified(entry):
+                        entry_in_session = session.merge(entry)
+                    else:
+                        entry_in_session = entry
+                    for field, value in update_fields.items():
+                        if field in vars(entry_in_session):
+                            setattr(entry_in_session, field, value)
+                        else:
+                            session.rollback()
+                            raise ValueError(
+                                f"Field '{field}' does not exist in the table \
+                                            '{entry_in_session.__tablename__}'. Rolling back changes..."
+                            )
+                session.commit()
+                return True
+            except SQLAlchemyError as e:
+                session.rollback()
+                logger.exception(f"Error updating entries: {e}")
+                return False
 
     def reset_database(self):
         """Drop and recreate existing tables"""

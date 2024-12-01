@@ -6,9 +6,8 @@ import httpx
 import json
 import logging
 import re
-from typing import Callable, Union
+from typing import Callable, Optional, Any
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptTarget
 
@@ -18,15 +17,16 @@ logger = logging.getLogger(__name__)
 class HTTPTarget(PromptTarget):
     """
     HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt
+
     Parameters:
-        http_request (str): the header parameters as a request (ie from Burp)
+        http_request (str): the header parameters as a request (i.e., from Burp)
         prompt_regex_string (str): the placeholder for the prompt
             (default is {PROMPT}) which will be replaced by the actual prompt.
             make sure to modify the http request to have this included, otherwise it will not be properly replaced!
         use_tls: (bool): whether to use TLS or not. Default is True
         callback_function (function): function to parse HTTP response.
             These are the customizable functions which determine how to parse the output
-        memory : memory interface
+        client_kwargs: (dict): additional keyword arguments to pass to the HTTP client
     """
 
     def __init__(
@@ -35,14 +35,15 @@ class HTTPTarget(PromptTarget):
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
         callback_function: Callable = None,
-        memory: Union[MemoryInterface, None] = None,
+        max_requests_per_minute: Optional[int] = None,
+        **client_kwargs: Optional[Any],
     ) -> None:
-
-        super().__init__(memory=memory)
+        super().__init__(max_requests_per_minute=max_requests_per_minute)
         self.http_request = http_request
         self.callback_function = callback_function
         self.prompt_regex_string = prompt_regex_string
         self.use_tls = use_tls
+        self.client_kwargs = client_kwargs or {}
 
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         """
@@ -69,7 +70,7 @@ class HTTPTarget(PromptTarget):
         if http_version and "HTTP/2" in http_version:
             http2_version = True
 
-        async with httpx.AsyncClient(http2=http2_version) as client:
+        async with httpx.AsyncClient(http2=http2_version, **self.client_kwargs) as client:
             response = await client.request(
                 method=http_method,
                 url=url,
@@ -89,6 +90,7 @@ class HTTPTarget(PromptTarget):
     def parse_raw_http_request(self):
         """
         Parses the HTTP request string into a dictionary of headers
+
         Returns:
             headers_dict (dict): dictionary of all http header values
             body (str): string with body data

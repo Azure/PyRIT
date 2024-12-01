@@ -7,10 +7,9 @@ import logging
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestResponse
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models import SeedPromptTemplate
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_target import PromptTarget
@@ -32,40 +31,31 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         self,
         prompt_target: PromptTarget,
         scorers: Optional[list[Scorer]] = None,
-        memory: MemoryInterface = None,
-        memory_labels: Optional[dict[str, str]] = None,
         batch_size: int = 10,
         verbose: bool = False,
     ) -> None:
         """
         Args:
             prompt_target (PromptTarget): The target for sending prompts.
-            scorers (list[Scorer], optional): List of scorers to use for each prompt request response, to be
+            scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
                 scored immediately after receiving response. Default is None.
-            memory (MemoryInterface, optional): The memory interface. Defaults to None.
-            memory_labels (dict[str, str], optional): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to None.
-            batch_size (int, optional): The (max) batch size for sending prompts. Defaults to 10.
+            batch_size (int, Optional): The (max) batch size for sending prompts. Defaults to 10.
                 Note: If providing max requests per minute on the prompt_target, this should be set to 1 to
                 ensure proper rate limit management.\
-            verbose (bool, optional): Whether to log debug information. Defaults to False.
+            verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
         super().__init__(
             prompt_target=prompt_target,
             prompt_converters=[FlipConverter()],
             scorers=scorers,
-            memory=memory,
-            memory_labels=memory_labels,
             batch_size=batch_size,
             verbose=verbose,
         )
 
         # This is sent to the target
         system_prompt_path = pathlib.Path(DATASETS_PATH) / "orchestrators" / "flip_attack.yaml"
-        self.system_prompt = SeedPromptTemplate.from_yaml_file(system_prompt_path).value
+        self.system_prompt = SeedPrompt.from_yaml_file(system_prompt_path).value
 
         system_prompt = PromptRequestResponse(
             request_pieces=[
@@ -90,9 +80,9 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
 
         Args:
             prompt_list (list[str]): The list of prompts to be sent.
-            memory_labels (dict[str, str], optional): A free-form dictionary of additional labels to apply to the
-                prompts.
-            These labels will be merged with the instance's global memory labels. Defaults to None.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
+                prompts. Any labels passed in will be combined with self._global_memory_labels with the passed
+                in labels taking precedence in the case of collisions. Defaults to None.
             metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
 
         Returns:
