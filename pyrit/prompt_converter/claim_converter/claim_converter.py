@@ -12,10 +12,11 @@ import numpy as np
 import pandas as pd
 import asyncio
 import ipywidgets as widgets
+from IPython.display import display
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_testgenie_dataset
-from pyrit.exceptions.exception_classes import (
+from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
@@ -217,7 +218,7 @@ class ClaimConverter(PromptConverter):
         generations_df = pd.DataFrame(generations, columns=["claim", "inst"]).drop_duplicates(subset="inst")
         logger.info(f"TestGenie generated {len(generations_df)} statements.")
 
-        sampled_df = generations_df.sample(20, random_state=config["global_seed"])
+        sampled_df = generations_df.sample(2, random_state=config["global_seed"])
         unsampled_df = generations_df.drop(sampled_df.index)
         
 

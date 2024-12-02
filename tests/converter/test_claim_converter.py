@@ -2,7 +2,9 @@
 # Licensed under the MIT license.
 
 import pytest
-from pyrit.prompt_converter.claim_converter import prompt_openai
+from unittest.mock import patch, MagicMock
+from pyrit.prompt_converter import ConverterResult
+from pyrit.prompt_converter.claim_converter import prompt_openai, claim_converter
 
 def test_make_prompt_basic():
     instance = "example instance"
@@ -46,3 +48,17 @@ def test_make_prompt_with_sample_exemplars():
     assert "This is an instruction.\n-------\n" in result
     assert "example instance->" in result
     assert result.count("->") <= 3  # 2 exemplars + instance
+
+@pytest.mark.asyncio
+@patch('pyrit.prompt_converter.claim_converter.prompt_openai.run_pipeline_per_source', return_value=[("Claim 1", 0.9), ("Claim 2", 0.8)])
+@patch('builtins.input', return_value='0')  # Mock user input to always return '0'
+@patch('IPython.display.display', new_callable=MagicMock())  # Mock the display function
+async def test_convert_async(mock_run_pipeline_per_source, mock_input, mock_display):
+    # mock_openai_api.add_response("Hi")
+    # The following encoded message is "Hi"
+    encoded_message = chr(0xE0001) + chr(0xE0000) + chr(0xE0048) + chr(0xE0000) + chr(0xE0069) + chr(0xE007F)
+    converter = claim_converter.ClaimConverter(converter_target="text")
+    result = await converter.convert_async(prompt="Test prompt")
+    assert isinstance(result, ConverterResult)
+    assert result.output_type == "text"
+    assert result.output_text == "Placeholder text"
