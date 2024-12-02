@@ -113,8 +113,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             entries = self.query_entries(
                 PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == str(conversation_id)
             )
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
+            prompt_pieces: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.sequence))
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []

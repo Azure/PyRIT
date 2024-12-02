@@ -52,13 +52,13 @@ prompt_dataset = fetch_decoding_trust_stereotypes_examples(
 )
 
 # Use the first 4 examples
-prompt_list = prompt_dataset.prompts[:4]
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
 # Send prompts using the orchestrator and capture responses
 try:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
     if responses:
-        orchestrator.print_conversations()  # Retrieve the memory to print scoring results
+        await orchestrator.print_conversations()  # type: ignore
     else:
         print("No valid responses were received from the orchestrator.")
 except Exception as e:

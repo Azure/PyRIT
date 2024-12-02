@@ -54,9 +54,9 @@ def orchestrator(mock_central_memory_instance: MemoryInterface, scorer_mock: Sco
     target = Mock()
     attacker = Mock()
     orchestrator = PAIROrchestrator(
-        prompt_target=target,
+        objective_target=target,
         desired_target_response_prefix="desired response",
-        red_teaming_chat=attacker,
+        adversarial_chat=attacker,
         conversation_objective="attacker objective",
         scorer=scorer_mock,
         stop_on_first_success=True,
@@ -77,7 +77,7 @@ def correctly_formatted_response_piece() -> PromptRequestPiece:
 
 @pytest.mark.asyncio
 async def test_init(orchestrator):
-    assert orchestrator._prompt_target is not None
+    assert orchestrator._objective_target is not None
     assert orchestrator._adversarial_target is not None
     assert orchestrator._scorer is not None
     assert orchestrator._conversation_objective == "attacker objective"
@@ -271,7 +271,7 @@ async def test_get_target_response_and_store(orchestrator: PAIROrchestrator) -> 
 
         orchestrator._prompt_normalizer.send_prompt_async.assert_called_with(
             normalizer_request=ANY,  # We already checked the conversation_id separately, so use ANY here
-            target=orchestrator._prompt_target,
+            target=orchestrator._objective_target,
             labels=orchestrator._global_memory_labels,
             orchestrator_identifier=orchestrator.get_identifier(),
         )

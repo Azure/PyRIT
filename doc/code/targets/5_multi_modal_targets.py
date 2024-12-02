@@ -29,13 +29,15 @@ from PIL import Image
 from IPython.display import display
 
 from pyrit.common import default_values
+from pyrit.memory import CentralMemory, DuckDBMemory
 from pyrit.models import PromptRequestPiece
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIDALLETarget
 
 
 prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 default_values.load_environment_files()
+CentralMemory.set_memory_instance(DuckDBMemory())
 
 request = PromptRequestPiece(
     role="user",
@@ -65,12 +67,9 @@ with PromptSendingOrchestrator(prompt_target=img_prompt_target) as orchestrator:
 
 # %%
 from pyrit.prompt_target import OpenAITTSTarget, OpenAIChatTarget
-from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import TranslationConverter
 
-
-default_values.load_environment_files()
 
 converter_target = OpenAIChatTarget()
 
@@ -96,20 +95,14 @@ with PromptSendingOrchestrator(
 # This demo showcases the capabilities of `AzureOpenAIGPT4OChatTarget` for generating text based on multimodal inputs, including both text and images.
 
 # %%
-from pyrit.common import default_values
 import pathlib
-from pyrit.common.path import HOME_PATH
-
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequestPiece
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest
 from pyrit.orchestrator import PromptSendingOrchestrator
-
-default_values.load_environment_files()
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
 
-image_path = pathlib.Path(HOME_PATH) / "assets" / "pyrit_architecture.png"
+image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
 data = [
     [
         {"prompt_text": "Describe this picture:", "prompt_data_type": "text"},
