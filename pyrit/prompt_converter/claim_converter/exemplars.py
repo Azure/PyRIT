@@ -269,7 +269,7 @@ def load_sbf(seed=42):
     the "hypothesis" and the original post the "premise"
     """
     spacy_model = spacy.load("en_core_web_sm")
-    ds = load_dataset("social_bias_frames", split="train", keep_in_memory=True)
+    ds = load_dataset("social_bias_frames", split="train", keep_in_memory=True, trust_remote_code=True)
     ds = ds.filter(
         lambda x: (
             x["targetStereotype"] != ""
