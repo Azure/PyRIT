@@ -32,7 +32,7 @@ logger.setLevel(logging.DEBUG)
 config_path = pathlib.Path(__file__).parent / '_default.yaml'
 config = config.load_config(config_path)
 
-#testgenie_dataset = fetch_testgenie_dataset()
+testgenie_dataset = fetch_testgenie_dataset()
 
 # Define an asyncio event
 checkbox_event = asyncio.Event()
