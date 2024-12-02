@@ -125,7 +125,7 @@ all = [
     "ml-collections==0.1.1",
     "mypy>=1.9.0",
     "mock-alchemy>=0.2.6",
-    "numpy<2",
+    "numpy>=1.26.4",
     "pre-commit>=3.3.3",
     "pytest>=7.3.1",
     "pytest-asyncio>=0.23.5",

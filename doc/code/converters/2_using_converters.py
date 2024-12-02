@@ -69,7 +69,7 @@ import warnings
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 from pyrit.common import default_values
-default_values.load_default_env()
+default_values.load_environment_files()
 
 from pyrit.prompt_target import TextTarget
 from pyrit.prompt_converter import ClaimConverter, StringJoinConverter
