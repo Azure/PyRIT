@@ -14,8 +14,6 @@ from sentence_transformers import SentenceTransformer
 from sentence_transformers.models import Transformer, Pooling
 from setfit import SetFitModel, SetFitHead, SetFitTrainer
 
-from pyrit.prompt_converter.claim_converter import utils
-
 
 class RidgeClassifierCVProb(RidgeClassifierCV):
     def predict_proba(self, X):

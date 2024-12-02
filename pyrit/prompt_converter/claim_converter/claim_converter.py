@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from textwrap import dedent
-
 import json
 import logging
 import uuid
@@ -14,14 +12,13 @@ import asyncio
 import ipywidgets as widgets
 from IPython.display import display
 
-from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_testgenie_dataset
 from pyrit.exceptions import (
     InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, TestGenieDataset
+from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.prompt_converter.claim_converter import (
     config as conf,

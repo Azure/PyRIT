@@ -1,5 +1,5 @@
 import random
-from typing import Optional, Union, Dict, List, Tuple, Any
+from typing import Optional, Union, Dict, List, Any
 
 import numpy as np
 from openai import OpenAI
