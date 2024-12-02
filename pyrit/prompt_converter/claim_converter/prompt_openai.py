@@ -1,5 +1,5 @@
 import random
-from typing import Optional, Union, Dict
+from typing import Optional, Union, Dict, List, Tuple, Any
 
 import numpy as np
 from openai import OpenAI
@@ -16,21 +16,21 @@ _OPENAI_MAX_SAMPLES = 10
 def make_prompt(
     instance: str,
     instruction: str,
-    few_shot_exemplars: Optional[Dict[str, Union[list, str]]] = None,
+    few_shot_exemplars: Optional[Dict[str, Union[List[Any], str]]] = None,
     one_output_per_exemplar: bool = False,
     sample_exemplars: Optional[int] = None,
     sample_suffixes: Optional[int] = None,
     seed=None,
-):
+) -> str:
     """
-    Make a randomized prompt from instructions and few shot examplars
+    Make a randomized prompt from instructions and few shot exemplars
 
     `instance`: the example we are doing inference for
-    `instruction`: a natural language instruction that appears before the examplars
-    `few_shot_exemplars`: a dictionary of input-output examplars
+    `instruction`: a natural language instruction that appears before the exemplars
+    `few_shot_exemplars`: a dictionary of input-output exemplars
     `one_output_per_exemplar`: if multiple outputs are provided per input as a list, then
         inputs will be repeated for each output, else, concatenated with "|"
-    `subsample_exemplars`: number of few-show exemplars to sample
+    `subsample_exemplars`: number of few-shot exemplars to sample
     `sample_suffixes`: number of outputs to sample
     """
     prompt = ""
@@ -40,12 +40,17 @@ def make_prompt(
         prompt += f"{instruction}\n-------\n"
     if few_shot_exemplars is not None:
         if isinstance(few_shot_exemplars, dict):
-            few_shot_exemplars = list(few_shot_exemplars.items())
+            few_shot_exemplars_list = list(few_shot_exemplars.items())
+        else:
+            few_shot_exemplars_list = few_shot_exemplars
 
-        random.shuffle(few_shot_exemplars)
+        random.shuffle(few_shot_exemplars_list)
         n = sample_exemplars or 1e10
-        exemplar_strings = []
-        for input, outputs in few_shot_exemplars:
+        exemplar_strings: List[str] = []
+        for input, outputs in few_shot_exemplars_list:
+            # input_str: str = str(input)
+            # outputs_list: Union[List[Any], str] = outputs
+
             # to avoid repetitive output, do not use exemplars that are the same as the instance
             if input == instance:
                 continue
@@ -57,21 +62,20 @@ def make_prompt(
                 else:
                     k = min(sample_suffixes, len(outputs))
 
-                outputs = random.sample(outputs, k)
+                sampled_outputs = random.sample(outputs, k)
                 if not one_output_per_exemplar:
-                    outputs = [" | ".join(outputs)]
+                    sampled_outputs = [" | ".join(sampled_outputs)]
             else:
-                outputs = [outputs]
+                sampled_outputs = [outputs]
 
             # clean out any newlines which will break things
-            exemplar_strings.extend(f"{input}->{output}".replace("\n", " ") for output in outputs)
+            exemplar_strings.extend(f"{input}->{output}".replace("\n", " ") for output in sampled_outputs)
             if len(exemplar_strings) >= n:
                 break
         prompt += "\n".join(exemplar_strings) + "\n"
     if instance:
         prompt += instance + ("->" * ("->" not in instance))
     return prompt
-
 
 def filter_results(results, split_output=True):
     """
