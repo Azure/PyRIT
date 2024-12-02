@@ -23,14 +23,21 @@ from pyrit.exceptions import (
 )
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, TestGenieDataset
 from pyrit.prompt_converter import PromptConverter, ConverterResult
-from pyrit.prompt_converter.claim_converter import config, utils, prompt_openai, exemplars, components, classifiers
+from pyrit.prompt_converter.claim_converter import (
+    config as conf,
+    utils,
+    prompt_openai,
+    exemplars,
+    components,
+    classifiers,
+)
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-config_path = pathlib.Path(__file__).parent / '_default.yaml'
-config = config.load_config(config_path)
+config_path = pathlib.Path(__file__).parent / "_default.yaml"
+config = conf.load_config(config_path)
 
 testgenie_dataset = fetch_testgenie_dataset()
 
@@ -58,23 +65,24 @@ sections = [
 ]
 utterances = utils.read_json(pathlib.Path(__file__).parent / config["utterances"])
 # load few shot exemplars
-few_shot_sources = {}
+few_shot_sources: dict[str, dict] = {}
 for section in sections:
     sources = config["few_shot"][section]
     few_shot_sources[section] = {}
     for source in sources:
-        # `load_few_shot_sources` is wrapped with experimental singleton so 
+        # `load_few_shot_sources` is wrapped with experimental singleton so
         # there will be no duplicated data in memory
         data = exemplars.load_few_shot_source(
             source=source,
             few_shot_dir=pathlib.Path(__file__).parent / config["few_shot"]["data_dir"],
             max_n=500,
-            premise_first=section != "inferences_to_generations", # premises are usually longer
+            premise_first=section != "inferences_to_generations",  # premises are usually longer
             max_hypothesis_toks=6,
             max_sent_toks=50,
         )
         if data is not None:
             few_shot_sources[section][source] = data
+
 
 class ClaimConverter(PromptConverter):
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template=None):
@@ -141,7 +149,7 @@ class ClaimConverter(PromptConverter):
         # Statements to claims
         ######################
         produced_claims = prompt_openai.run_pipeline_per_source(
-            instance=prompt, #utterances[0],
+            instance=prompt,  # utterances[0],
             target_n=20,
             few_shot_sources=few_shot_sources["utterances_to_claims"],
             engine=config["openai_engine"],
@@ -149,9 +157,13 @@ class ClaimConverter(PromptConverter):
 
         options = [p.capitalize() for p, _ in produced_claims]
         options = [f"[{i}] " + " " + o for i, o in enumerate(options)]
-        selected = input("\nSelect a claim from automatically extracted claims from the example statement.\n" + "\n".join(options) + "\n\n")
+        selected = input(
+            "\nSelect a claim from automatically extracted claims from the example statement.\n"
+            + "\n".join(options)
+            + "\n\n"
+        )
 
-        # select initial claim        
+        # select initial claim
         # initial_claim = st.text_input(
         #     label=(
         #         "If needed, you can use this field to edit the claim you just selected. "
@@ -170,9 +182,13 @@ class ClaimConverter(PromptConverter):
         inference_methods = ["pragmatic", "entailment", "paraphrase"]
         inference_sources = []
         if "pragmatic" in inference_methods:
-            inference_sources.extend([
-                "internal-claims_to_inferences", "internal-hyponym_inferences",
-                "imppres-implicature", "imppres-presupposition"]
+            inference_sources.extend(
+                [
+                    "internal-claims_to_inferences",
+                    "internal-hyponym_inferences",
+                    "imppres-implicature",
+                    "imppres-presupposition",
+                ]
             )
         if "entailment" in inference_methods:
             inference_sources.extend(["entailmentbank"])
@@ -183,7 +199,8 @@ class ClaimConverter(PromptConverter):
             instance=initial_claim,
             target_n=20,
             few_shot_sources={
-                k: few_shot_sources["claims_to_inferences"][k] for k in inference_sources
+                k: few_shot_sources["claims_to_inferences"][k]
+                for k in inference_sources
                 if k in few_shot_sources["claims_to_inferences"]
             },
             engine=config["openai_engine"],
@@ -191,11 +208,15 @@ class ClaimConverter(PromptConverter):
 
         inferences = [i.capitalize().rstrip(".") if i[0].islower() else i.rstrip(".") for i, _ in inferences]
         inferences = [initial_claim] + inferences
-        inferences = list(dict.fromkeys(inferences)) # maintains order while turning into a set
+        inferences = list(dict.fromkeys(inferences))  # maintains order while turning into a set
 
         options = [i.capitalize() for i in inferences]
         options = [f"[{i}] " + " " + o for i, o in enumerate(options)]
-        selected = input("\nSelect an inference from automatically extracted inferences from the example claim.\n" + "\n".join(options) + "\n\n")
+        selected = input(
+            "\nSelect an inference from automatically extracted inferences from the example claim.\n"
+            + "\n".join(options)
+            + "\n\n"
+        )
 
         inferences_selected = inferences[int(selected)]
         inf_to_gen_cfg = config["interface"]["inferences_to_generations"]
@@ -206,21 +227,20 @@ class ClaimConverter(PromptConverter):
         result = prompt_openai.run_pipeline_per_source(
             instance=inferences_selected,
             few_shot_sources=few_shot_sources["inferences_to_generations"],
-            target_n=num_gen_samples, #//len(inferences_selected),
+            target_n=num_gen_samples,  # //len(inferences_selected),
             one_output_per_exemplar=False,
             exemplars_per_prompt=3,
             engine=config["openai_engine"],
             # **sampling_kwargs,
         )
         generations.extend([(inferences_selected, out) for out, _ in result])
-            # pb_gen.progress((i+1)/len(inferences_selected))
-        generations = [g for g in generations if "->" not in g[0]+g[1]] # infrequent bug
+        # pb_gen.progress((i+1)/len(inferences_selected))
+        generations = [g for g in generations if "->" not in g[0] + g[1]]  # infrequent bug
         generations_df = pd.DataFrame(generations, columns=["claim", "inst"]).drop_duplicates(subset="inst")
         logger.info(f"TestGenie generated {len(generations_df)} statements.")
 
         sampled_df = generations_df.sample(2, random_state=config["global_seed"])
         unsampled_df = generations_df.drop(sampled_df.index)
-        
 
         # Create a list of options
         options = sampled_df["inst"].tolist()
@@ -233,25 +253,26 @@ class ClaimConverter(PromptConverter):
             options=options,
             value=[],
             # description='Select options:\n',
-            layout=widgets.Layout(width='800px', height='400px'),  # Adjust the height
-            style={'description_width': 'initial'}
+            layout=widgets.Layout(width="800px", height="400px"),  # Adjust the height
+            style={"description_width": "initial"},
         )
 
         # Define a callback function that will be called when the button is clicked
         def on_checkbox_change(change):
             # The new value is available in change['new']
-            selected_options = change['new']
+            selected_options = change["new"]
             # print(f"Selected options: {selected_options}")
             # Set the event to signal that the checkbox value has changed
             checkbox_event.set()
 
         # Attach the callback function to the 'value' trait of the checkbox widget
-        checkbox.observe(on_checkbox_change, names='value')
+        checkbox.observe(on_checkbox_change, names="value")
 
         # Create a Submit button
         submit_button = widgets.Button(description="Submit")
 
         output_area = widgets.Output()
+
         # Define a callback function that will be called when the button is clicked
         def on_button_click(b):
             with output_area:
@@ -263,9 +284,9 @@ class ClaimConverter(PromptConverter):
 
             options = checkbox.options
             labels = [option in selected_options for option in options]
-            sampled_df["label"] = labels #pd.DataFrame({'claim': options, 'label': labels})
+            sampled_df["label"] = labels  # pd.DataFrame({'claim': options, 'label': labels})
             # print(f"Sampled dataframe: {sampled_df}")
-            
+
             verified_df = pd.DataFrame(sampled_df)
             generations_labeled = pd.concat([verified_df, unsampled_df]).sort_index()
             with output_area:
@@ -277,13 +298,15 @@ class ClaimConverter(PromptConverter):
             spacy_model = components.load_spacy()
 
             insts = generations_df["inst"]
-            claims = generations_df['claim']
+            claims = generations_df["claim"]
 
             truncation_strategies = {
                 "half": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=0.5),
                 "3_toks": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=-3),
                 "root": lambda insts, _: components.truncate_text_by_root(insts, spacy_model),
-                "gpt3": lambda insts, claims: components.truncate_text_with_gpt3(insts, claims, engine=config["openai_engine"]),
+                "gpt3": lambda insts, claims: components.truncate_text_with_gpt3(
+                    insts, claims, engine=config["openai_engine"]
+                ),
                 # TODO: truncate based on classifier probability
             }
 
@@ -297,20 +320,20 @@ class ClaimConverter(PromptConverter):
             logger.info(f"Created {len(test_data)} tests/prompts. We show 10 random prompts below.")
             test_prompts = [prompt for _, (prompt, _) in test_data]
 
-            target_model = "gpt3/"+config["openai_engine"]
+            target_model = "gpt3/" + config["openai_engine"]
             num_generations = 1
             completion_data = []
             if target_model.startswith("gpt3"):
                 engine = target_model.split("/")[1]
                 completions = components.generate_from_prompts_gpt3(test_prompts, engine, num_generations)
-            else: # implies a huggingface model
+            else:  # implies a huggingface model
                 generator = components.load_hf_generator(target_model)
                 logger.info("Using target model to complete the prompts...")
                 completions = components.generate_from_prompts_hf(test_prompts, generator, num_generations)
 
             # Build dataframe to label and retrieve existing annotations
             completion_df = components.build_completion_df(test_data, completions, target_model)
-        
+
             # Predict which completions are failures
             completion_df["label"] = None
             # completion_df["label"][0] = True
@@ -319,16 +342,17 @@ class ClaimConverter(PromptConverter):
                 completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
 
             # calculate margin from random (closer to 0.5->more uncertain)
-            completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
+            completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"]) * 2
             # ignore already-labeled data
             # completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
             # print(f"Response message: {completions_estimated}")
 
-            test_sort_col = "prob" # "uncertainty"
-            completions_to_annotate = (
-                completions_estimated.sort_values(test_sort_col, ascending=False)
-            )
-            options = [f"[{index}] {row['pred']} ({row['prob']}): {row['inst']}" for index, row in completions_to_annotate.iterrows()]
+            test_sort_col = "prob"  # "uncertainty"
+            completions_to_annotate = completions_estimated.sort_values(test_sort_col, ascending=False)
+            options = [
+                f"[{index}] {row['pred']} ({row['prob']}): {row['inst']}"
+                for index, row in completions_to_annotate.iterrows()
+            ]
             # selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
 
             response_msg = "\n".join(options)
@@ -343,11 +367,11 @@ class ClaimConverter(PromptConverter):
         submit_button.on_click(on_button_click)
 
         # Create a vertical box layout with some space between the checkbox and the button
-        vbox = widgets.VBox([description, checkbox, widgets.Box(layout=widgets.Layout(height='20px')), submit_button])
+        vbox = widgets.VBox([description, checkbox, widgets.Box(layout=widgets.Layout(height="20px")), submit_button])
 
         # Display the checkbox
         display(vbox)
-        
+
         display(output_area)
 
         # await submit_event.wait()
@@ -374,7 +398,7 @@ class ClaimConverter(PromptConverter):
         sampled_df["label"][1] = False
         # verified_df = st.data_editor(sampled_df)
         verified_df = pd.DataFrame(sampled_df)
-    
+
         generations_labeled = pd.concat([verified_df, unsampled_df]).sort_index()
         generations_estimated = classifiers.fit_and_predict(claim_classifier, generations_labeled, True)
         generations_estimated = generations_estimated.loc[generations_estimated.pred == 1]
@@ -383,13 +407,15 @@ class ClaimConverter(PromptConverter):
         spacy_model = components.load_spacy()
 
         insts = generations_df["inst"]
-        claims = generations_df['claim']
+        claims = generations_df["claim"]
 
         truncation_strategies = {
             "half": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=0.5),
             "3_toks": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=-3),
             "root": lambda insts, _: components.truncate_text_by_root(insts, spacy_model),
-            "gpt3": lambda insts, claims: components.truncate_text_with_gpt3(insts, claims, engine=config["openai_engine"]),
+            "gpt3": lambda insts, claims: components.truncate_text_with_gpt3(
+                insts, claims, engine=config["openai_engine"]
+            ),
             # TODO: truncate based on classifier probability
         }
 
@@ -403,20 +429,20 @@ class ClaimConverter(PromptConverter):
         logger.info(f"Created {len(test_data)} tests/prompts. We show 10 random prompts below.")
         test_prompts = [prompt for _, (prompt, _) in test_data]
 
-        target_model = "gpt3/"+config["openai_engine"]
+        target_model = "gpt3/" + config["openai_engine"]
         num_generations = 1
         completion_data = []
         if target_model.startswith("gpt3"):
             engine = target_model.split("/")[1]
             completions = components.generate_from_prompts_gpt3(test_prompts, engine, num_generations)
-        else: # implies a huggingface model
+        else:  # implies a huggingface model
             generator = components.load_hf_generator(target_model)
             logger.info("Using target model to complete the prompts...")
             completions = components.generate_from_prompts_hf(test_prompts, generator, num_generations)
 
         # Build dataframe to label and retrieve existing annotations
         completion_df = components.build_completion_df(test_data, completions, target_model)
-       
+
         # Predict which completions are failures
         completion_df["label"] = None
         completion_df["label"][0] = True
@@ -424,7 +450,7 @@ class ClaimConverter(PromptConverter):
         completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
 
         # calculate margin from random (closer to 0.5->more uncertain)
-        completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"])*2
+        completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"]) * 2
         # ignore already-labeled data
         completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
 

@@ -7,10 +7,12 @@ import json
 # except ImportError:
 #     check_if_streamlit_running = lambda: False
 
+
 def mock_cache(func=None, *args, **kwargs):
     if func is None:
         return lambda f: f
     return func
+
 
 # Check if we are in a streamlit app: if so, expose caches
 # https://discuss.streamlit.io/t/check-if-running-in-a-streamlit-session/842/6
@@ -18,7 +20,7 @@ def mock_cache(func=None, *args, **kwargs):
 #     st_cache_data = st.cache_data
 #     st_cache_resource = st.cache_resource
 # else: # Running a standard python script; disable caches
-st_cache_data =  mock_cache
+st_cache_data = mock_cache
 st_cache_resource = mock_cache
 
 
@@ -29,7 +31,7 @@ def read_json(fpath):
 
 @st_cache_data(show_spinner=False)
 def write_json(obj, fpath):
-    with open(fpath, 'w') as outfile:
+    with open(fpath, "w") as outfile:
         json.dump(obj, outfile, indent=2)
 
 

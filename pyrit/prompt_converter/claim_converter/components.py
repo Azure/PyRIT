@@ -12,6 +12,7 @@ import spacy
 import yaml
 import numpy as np
 import pandas as pd
+
 # import streamlit as st
 from scipy.spatial.distance import cosine
 import nltk
@@ -24,12 +25,14 @@ from transformers.generation.stopping_criteria import StoppingCriteria
 
 from pyrit.prompt_converter.claim_converter import prompt_openai, exemplars
 from pyrit.prompt_converter.claim_converter.classifiers import ClaimClassifierCE, ClaimClassifierSF
+
 # from prompt_openai import make_prompt, complete_prompt, _OPENAI_MAX_PROMPTS
 # from exemplars import FEW_SHOT_INTERNAL
 
 try:
     import fasttext
     import fasttext.util
+
     _FASTTEXT_AVAILABLE = True
 except ImportError:
     _FASTTEXT_AVAILABLE = False
@@ -37,6 +40,7 @@ except ImportError:
 
 try:
     import inflect
+
     _INFLECT_AVAILABLE = True
 except ImportError:
     _INFLECT_AVAILABLE = False
@@ -62,7 +66,7 @@ def _init_styling(annotate_unrelated_failures=True):
     #         .block-container {
     #             max-width: 70%;
     #         }
-            
+
     #         textarea {
     #             font-family: "Source Code Pro", monospace !important;
     #         }
@@ -71,7 +75,7 @@ def _init_styling(annotate_unrelated_failures=True):
     # )
 
     if annotate_unrelated_failures:
-        annotator_css = Path("./annotator.css").read_text() # TODO: memoize?
+        annotator_css = Path("./annotator.css").read_text()  # TODO: memoize?
         # st.markdown(f"<style>{annotator_css}</style>", unsafe_allow_html=True)
 
 
@@ -101,28 +105,32 @@ def init_output_dir(output_dir, utterance, session_id, config):
     with open(output_dir / "config.yml", "w") as outfile:
         yaml.safe_dump(config, outfile)
     return output_dir
+
+
 # Below logic is designed to only "advance" the streamlit app once user operations
 # are complete: idea is that a user performs some actions, clicks "go", then the app
 # moves to the next stage.
-# 
+#
 # We do this by maintaining an (ephemeral) `CURRENT_STEP` counter that
 # advances as we progress through the app script, which in turn updates a persistent
 # `max_completed_step` value in the `st.session_state`. The `max_completed_step` dictates
 # where the app will stop when a widget is modified.
-# 
+#
 # This is accomplished by the `_reset_to_step()` widget callback, which will change
 # when a widget is modified. When a user changes a widget upstream, then the `max_completed_step` is
 # changed to the `CURRENT_STEP` where that widget exists.
-# 
-# The app will then stop (`st.stop()`) at either the `_proceed_to_next_step` or 
+#
+# The app will then stop (`st.stop()`) at either the `_proceed_to_next_step` or
 # `_submit_form_and_proceed_to_next_step` after the changed widget.
-# These functions present a "Continue"/"Submit" button to the user which 
+# These functions present a "Continue"/"Submit" button to the user which
 # will advance (i.e., increment by 1) both the `max_completed_step` and `CURRENT_STEP`
 def _reset_to_step(step):
     def _reset_max_step():
         pass
         # st.session_state["max_completed_step"] = step
+
     return _reset_max_step
+
 
 # def _proceed_to_next_step(current_step, label="Continue"):
 #     before_last_completed_step = current_step < st.session_state["max_completed_step"]
@@ -223,7 +231,7 @@ def _reset_to_step(step):
 #                 st.radio(
 #                     label=label,
 #                     index=int(getattr(row, "pred", 0)),
-#                     options=failure_opts, 
+#                     options=failure_opts,
 #                     format_func=lambda x: failure_opts[x],
 #                     horizontal=True,
 #                 )
@@ -244,10 +252,12 @@ def load_spacy(spacy_model="en_core_web_sm"):
 def load_fasttext():
     if not Path(f"cc.en.300.bin").exists():
         # st.write("One-time download of fasttext model...")
-        fasttext.util.download_model('en', if_exists='ignore')
+        fasttext.util.download_model("en", if_exists="ignore")
     return fasttext.load_model("./cc.en.300.bin")
 
+
 session_state = {}
+
 
 def load_classifier(
     classifier_type,
@@ -294,7 +304,7 @@ class EOSStoppingCriteria(StoppingCriteria):
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
         # have to convert at point of generation because of tokens like `."`
-        last_token = self.tokenizer.convert_ids_to_tokens(input_ids[:,-1].item())
+        last_token = self.tokenizer.convert_ids_to_tokens(input_ids[:, -1].item())
         return any(t in last_token for t in self.eos_tokens)
 
 
@@ -330,9 +340,8 @@ def _store_annotations(gen_df, target_model, is_test=True):
     to separate test annotations (i.e., of a target model) from others.
     """
     assert {"claim", "inst", "label"} == set(gen_df.columns)
-    gen_df = (
-        gen_df.dropna(subset=["label"]) # drop any unlabeled data
-              .assign(is_test=is_test, target_model=target_model)
+    gen_df = gen_df.dropna(subset=["label"]).assign(  # drop any unlabeled data
+        is_test=is_test, target_model=target_model
     )
     # if "annotated" not in st.session_state:
     #     st.session_state["annotated"] = gen_df
@@ -345,7 +354,7 @@ def _store_annotations(gen_df, target_model, is_test=True):
 
 
 def store_annotations(gen_df, target_model, is_test=True):
-    gen_df.sort_index(inplace=True) # sort to correctly trigger cache
+    gen_df.sort_index(inplace=True)  # sort to correctly trigger cache
     _store_annotations(gen_df[["claim", "inst", "label"]], target_model, is_test)
 
 
@@ -356,7 +365,7 @@ def build_completion_df(test_data, completions, target_model):
             # claim, inst (for training), completion (for review), target (for reference)
             (claim, f"{prompt}{comp}", f"{prompt}[{comp}]", target)
             for (claim, (prompt, target)), completions in zip(test_data, completions)
-            for comp in completions # can be multiple
+            for comp in completions  # can be multiple
         ],
         columns=["claim", "inst", "completion", "target"],
     )
@@ -369,7 +378,7 @@ def build_completion_df(test_data, completions, target_model):
     #     completion_df = completion_df.merge(
     #         annotated_df, how="outer", on=["claim", "inst", "is_test", "target_model"]
     #     )
-    
+
     return completion_df
 
 
@@ -388,7 +397,9 @@ PREDICATES = [
 # can add P -> M "{p_inf}" and negP ->  M "not" "{p_inf}" if desired
 CLAIM_GRAMMARS = {
     # be; "cancer is contagious", "people are dumb"
-    ("be",): """
+    (
+        "be",
+    ): """
         CLAIM -> S P O | D S P O | "some" S negP O
         D -> "not all" | "most"
         M -> "should" | "must"
@@ -398,7 +409,11 @@ CLAIM_GRAMMARS = {
         O -> "{o}"
     """,
     # do, want, cause; "vaccines cause autism", "people want to die", "people do bad things"
-    ("do", "want", "cause"): """
+    (
+        "do",
+        "want",
+        "cause",
+    ): """
         CLAIM -> S P O | D S P O | "some" S negP O
         D -> "not all" | "most"
         M -> "should" | "must"
@@ -407,12 +422,13 @@ CLAIM_GRAMMARS = {
         P -> "{p}" | Q "{p_inf}"
         negP -> "do not" "{p_inf}"
         O -> "{o}"
-    """
+    """,
 }
+
 
 def _parse_claim(claim, allowed_predicates):
     """Return S, P, O triple from a claim in correct format"""
-    if isinstance(claim, str): 
+    if isinstance(claim, str):
         claim = claim.lower()
         pred_regex = re.compile(" " + " | ".join(allowed_predicates) + " ")
         found_pred = pred_regex.findall(claim)
@@ -437,19 +453,19 @@ def generate_inferences(claim, predicates, grammars):
         s, p, o = _parse_claim(claim, predicates)
     except ValueError:
         return []
-    
+
     p_inf = predicates[p]
     filled_grammar_template = grammars[p_inf].format(s=s, p=p, o=o, p_inf=p_inf)
     prop_grammar = nltk.CFG.fromstring(filled_grammar_template)
     return [" ".join(s) for s in generate(prop_grammar)]
 
- 
+
 # Based on similar words
 # @st.cache_data
 def find_related_claims(claim, predicates, _ft_model=None, subj=True, obj=True, k=10):
-    
+
     # extract the triple
-    predicates = {c: i==1 for conjs in predicates for i, c in enumerate(conjs[1:])}
+    predicates = {c: i == 1 for conjs in predicates for i, c in enumerate(conjs[1:])}
     try:
         s, p, o = _parse_claim(claim, predicates)
     except ValueError:
@@ -464,7 +480,7 @@ def find_related_claims(claim, predicates, _ft_model=None, subj=True, obj=True, 
         if is_plural:
             eng = inflect.engine()
             related = [eng.plural_noun(w) if not eng.singular_noun(w) else w for w in related]
-        related_s += related 
+        related_s += related
     if obj:
         related = find_related_words(o, ft_model=_ft_model, ft_k=k, wn_k=k)
         related_o += list(set(related["nearest_vecs"] + related.get("hyponyms", [])))
@@ -481,21 +497,22 @@ def find_related_words(word, ft_model=None, ft_k=10, wn_k=20):
     punct = re.compile(r"[\.,!\-]")
     while len(nns) < ft_k and k_attempt < 10_000:
         nns = [
-            w for _, w in ft_model.get_nearest_neighbors(word, k=k_attempt)
-            if word not in w.lower() and not punct.search(w) # avoid returning the same word
+            w
+            for _, w in ft_model.get_nearest_neighbors(word, k=k_attempt)
+            if word not in w.lower() and not punct.search(w)  # avoid returning the same word
         ][:ft_k]
-        k_attempt = k_attempt*5
+        k_attempt = k_attempt * 5
     data["nearest_vecs"] = nns
 
     # populate hyponyms
     synsets = wordnet.synsets(word)
     if synsets:
         hyponyms = [lem.name() for hyp in synsets[0].hyponyms() for lem in hyp.lemmas()]
-        hyponyms = list(set(hyponyms)) # de-dup
+        hyponyms = list(set(hyponyms))  # de-dup
         word_vec = ft_model[word]
         dists = [cosine(word_vec, ft_model[w]) for w in hyponyms]
         top_idx = np.argsort(dists)[:wn_k]
-        data["hyponyms"] = [hyponyms[i] for i in top_idx] # TODO: explore other wordnet attrs
+        data["hyponyms"] = [hyponyms[i] for i in top_idx]  # TODO: explore other wordnet attrs
         data["_synset_def"] = synsets[0].definition()
 
     # TODO: ensure same POS
@@ -514,7 +531,7 @@ def correct_grammar_with_gpt3(phrase, seed=11235, engine="gpt-3.5-turbo-instruct
         "Cows are minerals": "Cows are minerals",
     }
     prompt = prompt_openai.make_prompt(phrase, grammar_cmd, grammar_exs, seed=seed, engine=engine)
-    return prompt_openai.complete_prompt(prompt, n=1, temperature=0)[0][0] 
+    return prompt_openai.complete_prompt(prompt, n=1, temperature=0)[0][0]
 
 
 #####################
@@ -525,7 +542,7 @@ def truncate_text_by_length(texts, _tokenizer=None, n=0.5, by_tokens=True):
     """
     Truncate input text to create a prompt. If `n` is an integer, used
     as an index slice. Otherwise, treated as a porportion of tokens
-    
+
     If `by_tokens` is True, then split on tokens (per `tokenizer`), else
     split on whitespace.
     """
@@ -533,12 +550,12 @@ def truncate_text_by_length(texts, _tokenizer=None, n=0.5, by_tokens=True):
     for text in texts:
         if by_tokens:
             toks = _tokenizer.encode(text)
-            idx = int(len(toks)*n) if np.abs(n) < 1 else n
+            idx = int(len(toks) * n) if np.abs(n) < 1 else n
             p_and_t = _tokenizer.decode(toks[:idx]), _tokenizer.decode(toks[idx:])
             prompts_and_targets.append(p_and_t)
         else:
             words = text.split(" ")
-            idx = int(len(words)*n) if np.abs(n) < 1 else n
+            idx = int(len(words) * n) if np.abs(n) < 1 else n
             p_and_t = " ".join(words[:idx]), " " + " ".join(words[idx:])
             prompts_and_targets.append(p_and_t)
     return prompts_and_targets
@@ -548,29 +565,27 @@ def truncate_text_by_length(texts, _tokenizer=None, n=0.5, by_tokens=True):
 def truncate_text_by_root(texts, _spacy_model="en_core_web_sm", use_last_root=True):
     """
     Truncate input text based on the root verb to create a prompt.
-    
+
     If `use_last_root`, then the last root verb found is used.
     Otherwise, the first one is used.
     """
     if isinstance(_spacy_model, str):
         _spacy_model = spacy.load(_spacy_model)
-    
+
     prompts_and_targets = []
-    use_last_root = -1 * use_last_root # -1 or 0
+    use_last_root = -1 * use_last_root  # -1 or 0
     for doc in _spacy_model.pipe(texts):
         root = [tok for tok in doc if tok.dep_ == "ROOT"][use_last_root]
         # check if the root is negated after its position in the sentence
         neg_is = [c.i for c in root.children if c.dep_ == "neg"]
         root_i = max([root.i] + neg_is)
-        p_and_t = doc[:root_i + 1].text, " " + doc[root_i + 1:].text
+        p_and_t = doc[: root_i + 1].text, " " + doc[root_i + 1 :].text
         prompts_and_targets.append(p_and_t)
     return prompts_and_targets
 
 
 # @st.cache_data(show_spinner="Truncating with GPT-3...")
-def truncate_text_with_gpt3(
-    texts, claims, instruction=None, few_shot_exemplars=None, engine="text-danvinci-002"
-    ):
+def truncate_text_with_gpt3(texts, claims, instruction=None, few_shot_exemplars=None, engine="text-danvinci-002"):
     """
     Truncate input text to create a prompt using GPT-3
     """
@@ -582,21 +597,19 @@ def truncate_text_with_gpt3(
 
     gpt_prompts = [
         prompt_openai.make_prompt(f"Claim: {claim} | Sentence: {text}", instruction, few_shot_exemplars)
-        for text, claim in zip(texts, claims) 
+        for text, claim in zip(texts, claims)
     ]
     batch_size = prompt_openai._OPENAI_MAX_PROMPTS
     prompts_and_targets = []
     for i in range(0, len(gpt_prompts), batch_size):
-        prompt_batch = gpt_prompts[i:i+batch_size]
-        text_batch = texts[i:i+batch_size]
+        prompt_batch = gpt_prompts[i : i + batch_size]
+        text_batch = texts[i : i + batch_size]
 
         test_prompts = prompt_openai.complete_prompt(
             prompt_batch, n=1, temperature=0.5, engine=engine, return_logp=False
         )
         prompts_and_targets.extend(
-            (prompt, text.replace(prompt, ""))
-            for (prompt, _), text in zip(test_prompts, text_batch)
-            if prompt in text
+            (prompt, text.replace(prompt, "")) for (prompt, _), text in zip(test_prompts, text_batch) if prompt in text
         )
     return prompts_and_targets
 
@@ -611,7 +624,7 @@ def generate_from_prompts_hf(prompts, _generator, repeats=1):
         [o[0]["generated_text"].replace("\n", " ") for o in _generator(prompts, return_full_text=False)]
         for _ in range(repeats)
     ]
-    return list(zip(*outputs)) # TODO: correct format?
+    return list(zip(*outputs))  # TODO: correct format?
 
 
 def generate_from_prompts_gpt3(prompts, engine, repeats=1, use_pb=True):
@@ -624,11 +637,12 @@ def generate_from_prompts_gpt3(prompts, engine, repeats=1, use_pb=True):
     # if use_pb:
     #     pb = st.progress(0.)
     for idx in range(0, len(prompts), batch_size):
-        test_batch = prompts[idx:idx+batch_size]
-        completions.extend(prompt_openai.complete_prompt(test_batch, n=repeats, top_p=0.95, max_tokens=50, engine=engine))
+        test_batch = prompts[idx : idx + batch_size]
+        completions.extend(
+            prompt_openai.complete_prompt(test_batch, n=repeats, top_p=0.95, max_tokens=50, engine=engine)
+        )
         # if use_pb:
         #     pb.progress((min(len(prompts), idx+batch_size))/len(prompts))
     return [
-        tuple(c for c, logp in completions[j:j+repeats])
-        for j in range(0, len(completions), repeats)
-    ] # must collaspe back down to account for repeats
+        tuple(c for c, logp in completions[j : j + repeats]) for j in range(0, len(completions), repeats)
+    ]  # must collaspe back down to account for repeats

@@ -4,20 +4,20 @@ import pandas as pd
 from scipy.spatial.distance import pdist
 from sentence_transformers import SentenceTransformer
 
+
 def process_sbf(input_file, data_source, model_type):
     """
     Process data by ranking models by the similarities of their annotations
     """
     data = pd.read_csv(input_file)
     data = data.dropna(subset="targetStereotype")
-    data = data.loc[data.targetStereotype.str.lower() != "trivializes harm to victims"] # special case
+    data = data.loc[data.targetStereotype.str.lower() != "trivializes harm to victims"]  # special case
 
     if data_source is not None:
-        data = data.loc[data.dataSource==data_source]
+        data = data.loc[data.dataSource == data_source]
 
     worker_counts = (
-        data.groupby("HITId", as_index=False)["WorkerId"]
-            .nunique().rename({"WorkerId": "n_workers"}, axis="columns")
+        data.groupby("HITId", as_index=False)["WorkerId"].nunique().rename({"WorkerId": "n_workers"}, axis="columns")
     )
     data = data.merge(worker_counts, how="left")
     data = data.loc[data.n_workers >= 2].copy()
@@ -28,14 +28,17 @@ def process_sbf(input_file, data_source, model_type):
 
     distances = (
         data.groupby(["HITId", "post"], as_index=False)
-            .agg({
+        .agg(
+            {
                 "rowid": lambda x: pdist(stereotype_embeds[x], "cosine").mean(),
-                "targetStereotype": lambda x: " || ".join(x)
-            })
-            .rename({"rowid": "dists"}, axis="columns")
-            .sort_values("dists")
+                "targetStereotype": lambda x: " || ".join(x),
+            }
+        )
+        .rename({"rowid": "dists"}, axis="columns")
+        .sort_values("dists")
     )
     return distances
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

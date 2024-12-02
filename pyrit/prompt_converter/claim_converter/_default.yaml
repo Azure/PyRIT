@@ -24,7 +24,7 @@ cache_dir: null
 classifier:
   type:  "setfit"
   # Experiments indicate models fine-tuned for NLI work best; have tried
-  #   "cross-encoder/nli-deberta-v3-base" and 
+  #   "cross-encoder/nli-deberta-v3-base" and
   #   "ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli"
   # both can be used with either classifier type
   # for a lighter-weight (but not thoroughly tested) model, use `cross-encoder/nli-MiniLM2-L6-H768`
@@ -54,7 +54,7 @@ interface:
     tests_to_annotate: 20
     ## Target generation model configurations
     target_model:
-      types: 
+      types:
         - gpt2 # first in list is the default
         - gpt3/gpt-3.5-turbo-instruct # if prefix is `gpt3`, will use gpt3 instead
         - gpt3/davinci-002

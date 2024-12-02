@@ -7,6 +7,7 @@ from typing import Literal, Union
 
 from pydantic import BaseModel, ConfigDict
 
+
 class TestGenieDataset(BaseModel):
     """
     Represents a dataset for question answering.

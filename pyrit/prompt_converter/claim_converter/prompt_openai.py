@@ -5,6 +5,7 @@ import numpy as np
 from openai import OpenAI
 
 from pyrit.prompt_converter.claim_converter.utils import st_cache_data
+
 # from utils import st_cache_data
 
 
@@ -13,7 +14,7 @@ _OPENAI_MAX_SAMPLES = 10
 
 
 def make_prompt(
-    instance: str, 
+    instance: str,
     instruction: str,
     few_shot_exemplars: Optional[Dict[str, Union[list, str]]] = None,
     one_output_per_exemplar: bool = False,
@@ -30,11 +31,11 @@ def make_prompt(
     `one_output_per_exemplar`: if multiple outputs are provided per input as a list, then
         inputs will be repeated for each output, else, concatenated with "|"
     `subsample_exemplars`: number of few-show exemplars to sample
-    `sample_suffixes`: number of outputs to sample  
+    `sample_suffixes`: number of outputs to sample
     """
-    prompt = ''
+    prompt = ""
     random.seed(seed)
-    
+
     if instruction:
         prompt += f"{instruction}\n-------\n"
     if few_shot_exemplars is not None:
@@ -91,21 +92,25 @@ def filter_results(results, split_output=True):
 
 
 @st_cache_data(show_spinner=False)
-def complete_prompt(prompts, n=5, top_p=1, temperature=1,  max_tokens=200, stop='\n', engine="gpt-3.5-turbo-instruct", return_logp=True):
+def complete_prompt(
+    prompts, n=5, top_p=1, temperature=1, max_tokens=200, stop="\n", engine="gpt-3.5-turbo-instruct", return_logp=True
+):
     """Pass one or more prompts to GPT-3 and calculate their log-probability"""
     if temperature < 1 and top_p < 1:
         raise ValueError("Set either temperature or top_p, but not both")
 
     client = OpenAI()
 
-    response = client.completions.create(model=engine,
-    prompt=prompts,
-    max_tokens=max_tokens,
-    n=n,
-    stop=stop,
-    logprobs=1,
-    top_p=top_p,
-    temperature=temperature)
+    response = client.completions.create(
+        model=engine,
+        prompt=prompts,
+        max_tokens=max_tokens,
+        n=n,
+        stop=stop,
+        logprobs=1,
+        top_p=top_p,
+        temperature=temperature,
+    )
     # calculate log-prob (accounting for log-probs returned  after `stop`)
     lines, scores = [], []
     for choice in response.choices:
@@ -122,7 +127,7 @@ def complete_prompt(prompts, n=5, top_p=1, temperature=1,  max_tokens=200, stop=
         scores.append(log_prob)
 
     n_prompts = 1 if isinstance(prompts, str) else len(prompts)
-    assert(len(lines) == n*n_prompts)
+    assert len(lines) == n * n_prompts
 
     return list(zip(lines, scores))
 
@@ -137,20 +142,19 @@ def run_pipeline(
     top_p=0.95,
     temperature=1,
     stop="\n",
-    engine="gpt-3.5-turbo-instruct"
+    engine="gpt-3.5-turbo-instruct",
 ):
     # determine how many prompts to create
     if one_output_per_exemplar:
         mean_outputs_per_exemplar = 1
     else:
-        mean_outputs_per_exemplar = np.mean([
-            len(ex) if isinstance(ex, (tuple, list)) else 1 
-            for ex in few_shot_exemplars.values()
-        ])
+        mean_outputs_per_exemplar = np.mean(
+            [len(ex) if isinstance(ex, (tuple, list)) else 1 for ex in few_shot_exemplars.values()]
+        )
     n_low, n_high = target_n_to_prompt_n(target_n, 1, mean_outputs_per_exemplar)
 
     # make the prompts and query the model
-    prompts  = [
+    prompts = [
         make_prompt(instance, instruction, few_shot_exemplars, one_output_per_exemplar=one_output_per_exemplar)
         for _ in range(n_high)
     ]
@@ -160,12 +164,12 @@ def run_pipeline(
 
 @st_cache_data(show_spinner=False)
 def run_pipeline_per_source(
-    instance, # target instance
+    instance,  # target instance
     few_shot_sources,
     default_instruction=None,
     target_n=None,
-    exemplars_per_prompt=8, # maximum exemplars in a prompt
-    outputs_per_exemplar=4, # maximum outputs mapped to a given input
+    exemplars_per_prompt=8,  # maximum exemplars in a prompt
+    outputs_per_exemplar=4,  # maximum outputs mapped to a given input
     one_output_per_exemplar=False,
     top_p=0.95,
     temperature=1,
@@ -179,14 +183,14 @@ def run_pipeline_per_source(
     if one_output_per_exemplar:
         mean_outputs_per_exemplar = 1
     else:
-        mean_outputs_per_exemplar = np.mean([
-            min(outputs_per_exemplar, len(ex)) if isinstance(ex, (tuple, list)) else 1 
-            for few_shot_data in few_shot_sources.values()
-            for ex in few_shot_data["exemplars"].values()
-        ])
-    n_low, n_high = target_n_to_prompt_n(
-        target_n, len(few_shot_sources), mean_outputs_per_exemplar
-    )
+        mean_outputs_per_exemplar = np.mean(
+            [
+                min(outputs_per_exemplar, len(ex)) if isinstance(ex, (tuple, list)) else 1
+                for few_shot_data in few_shot_sources.values()
+                for ex in few_shot_data["exemplars"].values()
+            ]
+        )
+    n_low, n_high = target_n_to_prompt_n(target_n, len(few_shot_sources), mean_outputs_per_exemplar)
     prompts = [
         make_prompt(
             instance,
@@ -201,15 +205,8 @@ def run_pipeline_per_source(
     ]
     results = []
     for i in range(0, len(prompts), batch_size):
-        prompt_batch = prompts[i:i+batch_size]
-        r = complete_prompt(
-            prompt_batch,
-            n=n_low,
-            top_p=top_p,
-            temperature=temperature,
-            stop=stop,
-            engine=engine
-        )
+        prompt_batch = prompts[i : i + batch_size]
+        r = complete_prompt(prompt_batch, n=n_low, top_p=top_p, temperature=temperature, stop=stop, engine=engine)
         results.extend(r)
     return filter_results(results, split_output=not one_output_per_exemplar)
 
@@ -224,12 +221,7 @@ def target_n_to_prompt_n(
     Helper function to infer the number of prompts you need to achieve the desired
     number of generated outputs
     """
-    target_n = (
-        target_n
-        / n_few_shot_sources
-        / mean_outputs_per_exemplar
-        * (1 / expected_duplicate_prob)
-    )
+    target_n = target_n / n_few_shot_sources / mean_outputs_per_exemplar * (1 / expected_duplicate_prob)
     sqrt_n = np.sqrt(target_n)
     n_samples, n_prompts = max(1, int(np.floor(sqrt_n))), int(np.ceil(sqrt_n))
     if n_samples > _OPENAI_MAX_SAMPLES:

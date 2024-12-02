@@ -16,6 +16,7 @@ from setfit import SetFitModel, SetFitHead, SetFitTrainer
 
 from pyrit.prompt_converter.claim_converter import utils
 
+
 class RidgeClassifierCVProb(RidgeClassifierCV):
     def predict_proba(self, X):
         if len(self.classes_) == 1:
@@ -31,10 +32,11 @@ class RidgeClassifierCVProb(RidgeClassifierCV):
 class ClaimClassifierBase:
     """
     Base class with public methods
-    
+
     Child classes should implement private memoized _prep_data, _fit, and _predict methods,
     while the streamlit app calls these public methods
     """
+
     def __init__(self, predict_without_fit=False):
         self.predict_without_fit = predict_without_fit
         self._is_fitted = False
@@ -51,11 +53,11 @@ class ClaimClassifierBase:
     def fit(self, train_df):
         """Up to child method to update `_is_fitted` and `_fit_counter`"""
         train_df.sort_index(inplace=True)
-        self._fit(train_df) # data+counter triggers memoization
+        self._fit(train_df)  # data+counter triggers memoization
 
     def predict(self, test_df):
         test_df.sort_index(inplace=True)
-        return self._predict(test_df, self._fit_counter) # data+counter triggers memoization
+        return self._predict(test_df, self._fit_counter)  # data+counter triggers memoization
 
     @staticmethod
     def _split_data(gen_df, remove_claims_with_homogenous_label=True, rebalance=True):
@@ -65,17 +67,11 @@ class ClaimClassifierBase:
         labeled = gen_df["label"].notna()
         train_df, test_df = gen_df.loc[labeled], gen_df.loc[~labeled]
         if remove_claims_with_homogenous_label:
-            train_df = (
-                train_df.groupby("claim", as_index=False, sort=False)
-                        .filter(lambda x: x["label"].nunique()>1)
-            )
+            train_df = train_df.groupby("claim", as_index=False, sort=False).filter(lambda x: x["label"].nunique() > 1)
         if rebalance:
             n_pos = train_df.label.sum()
             n_neg = len(train_df) - n_pos
-            train_df = (
-                train_df.groupby("label", as_index=False, sort=False)
-                        .head(min(n_pos, n_neg))
-            )
+            train_df = train_df.groupby("label", as_index=False, sort=False).head(min(n_pos, n_neg))
         return train_df, test_df
 
 
@@ -109,19 +105,17 @@ class ClaimClassifierCE(ClaimClassifierBase):
         assert {"claim", "inst", "label"}.issubset(gen_df.columns)
         ce_probs = self.encoder.predict(gen_df[["claim", "inst"]].values.tolist())
         gen_df[self.labels] = ce_probs[:, self.ids]
-        train_df, test_df = self._split_data(
-            gen_df, remove_claims_with_homogenous_label, rebalance=rebalance
-        )
+        train_df, test_df = self._split_data(gen_df, remove_claims_with_homogenous_label, rebalance=rebalance)
         return train_df, test_df
 
     # @st_cache_data(show_spinner="Fitting failure classifier...")
     def _fit(_self, train_df):
         self = _self
-        if len(train_df) > 0: # do not fit if no labels
+        if len(train_df) > 0:  # do not fit if no labels
             assert {"label", *self.labels}.issubset(train_df.columns)
             self.classifier = self.classifier_class(**self.classifier_kwargs)
             train_ce_p = train_df[self.labels].values
-            train_y = train_df['label'].values
+            train_y = train_df["label"].values
             self.classifier.fit(train_ce_p, train_y)
             self._is_fitted = True
             self._fit_counter += 1
@@ -134,11 +128,9 @@ class ClaimClassifierCE(ClaimClassifierBase):
             preds = self.classifier.predict(test_ce_p)
             probs = self.classifier.predict_proba(test_ce_p)
             pos_probs = probs[:, self.classifier.classes_.tolist().index(1)]
-        elif self.predict_without_fit: # test_x is predicted probabilities from crossencoder
+        elif self.predict_without_fit:  # test_x is predicted probabilities from crossencoder
             preds = test_df["entailment"] > test_df["contradiction"]
-            pos_probs = softmax(
-                test_df[["entailment", "contradiction"]].values, axis=1
-            )[:, 0]
+            pos_probs = softmax(test_df[["entailment", "contradiction"]].values, axis=1)[:, 0]
         else:
             raise ValueError("`self._fit()` has not been called")
         return pos_probs, preds
@@ -149,6 +141,7 @@ class ClaimClassifierSF(ClaimClassifierBase):
     Claim Classifier initialized from a `transformers.AutoModelForSequenceClassification`
     pretrained on NLI data. Model is fine-tuned using few-shot SetFit method.
     """
+
     def __init__(
         self,
         model_type="ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli",
@@ -168,7 +161,7 @@ class ClaimClassifierSF(ClaimClassifierBase):
         self.model = SetFitModelFromClassifier.from_pretrained(
             model_type,
             use_differentiable_head=use_differentiable_head,
-            sklearn_classifier=RidgeClassifierCVProb, # only used if not differentiable head
+            sklearn_classifier=RidgeClassifierCVProb,  # only used if not differentiable head
             cache_dir=cache_dir,
         )
         self.loss_class = loss_class
@@ -186,7 +179,7 @@ class ClaimClassifierSF(ClaimClassifierBase):
             self.label2id = body_config.label2id
         else:
             self.label2id = {"entailment": 1, "contradiction": 0}
-        self.annotation2id = { # covering bases
+        self.annotation2id = {  # covering bases
             1: self.label2id["entailment"],
             0: self.label2id["contradiction"],
         }
@@ -207,12 +200,8 @@ class ClaimClassifierSF(ClaimClassifierBase):
         gen_df = gen_df.copy()
         assert {"claim", "inst", "label"}.issubset(gen_df.columns)
         gen_df["text"] = gen_df["claim"] + self.sent_sep + gen_df["inst"]
-        train_df, test_df = self._split_data(
-            gen_df, remove_claims_with_homogenous_label, rebalance
-        )
-        train_df = train_df.assign(
-            label=lambda x: x['label'].astype(int).replace(self.annotation2id)
-        )
+        train_df, test_df = self._split_data(gen_df, remove_claims_with_homogenous_label, rebalance)
+        train_df = train_df.assign(label=lambda x: x["label"].astype(int).replace(self.annotation2id))
         return train_df, test_df
 
     # @st_cache_data(show_spinner="Fitting failure classifier...")
@@ -236,10 +225,10 @@ class ClaimClassifierSF(ClaimClassifierBase):
         )
         if self.use_differentiable_head:
             # must unfreeze/freeze to account for additional training w/ same model
-            trainer.unfreeze() # unfreezes head, body
-            trainer.freeze() # freezes head, not body
-            trainer.train() # trains body
-            trainer.unfreeze(keep_body_frozen=True) # freezes body
+            trainer.unfreeze()  # unfreezes head, body
+            trainer.freeze()  # freezes head, not body
+            trainer.train()  # trains body
+            trainer.unfreeze(keep_body_frozen=True)  # freezes body
             trainer.train(
                 num_epochs=self.head_num_epochs,
                 learning_rate=self.head_learning_rate,
@@ -258,7 +247,7 @@ class ClaimClassifierSF(ClaimClassifierBase):
         test_x = test_df["text"].values.tolist()
         if self._is_fitted:
             # both pulled more-or-less from SetFitModel.predict,
-            with torch.no_grad(): 
+            with torch.no_grad():
                 probs = self.model.predict_proba(test_x)
                 if isinstance(probs, torch.Tensor):
                     probs = probs.cpu().numpy()
@@ -280,11 +269,8 @@ class ClaimClassifierSF(ClaimClassifierBase):
         else:
             pos_idx, neg_idx = self.label2id["entailment"], self.label2id["contradiction"]
             preds = probs[:, pos_idx] > probs[:, neg_idx]
-            pos_probs = (
-                probs[:, pos_idx] / probs[:, [pos_idx, neg_idx]].sum(1)
-            )
+            pos_probs = probs[:, pos_idx] / probs[:, [pos_idx, neg_idx]].sum(1)
         return pos_probs, preds
-
 
 
 class TransformerForSequenceClassification(Transformer):
@@ -295,18 +281,18 @@ class TransformerForSequenceClassification(Transformer):
         if model.config.model_type in ["deberta-v2", "albert"]:
             self._classifier_weight = model.classifier.weight.detach()
             self._classifier_bias = model.classifier.bias.detach()
-            model.classifier = nn.Identity() # overwrite
+            model.classifier = nn.Identity()  # overwrite
         elif model.config.model_type == "roberta":
             self._classifier_weight = model.classifier.out_proj.weight.detach()
             self._classifier_bias = model.classifier.out_proj.bias.detach()
-            model.classifier.out_proj = nn.Identity() # overwrite
+            model.classifier.out_proj = nn.Identity()  # overwrite
         else:
             raise NotImplementedError(f"only deberta-v2 and roberta supported, you used {model.config.model_type}")
         self.auto_model = model
-    
+
     def forward(self, features):
         features = super().forward(features)
-        embeds = features["token_embeddings"] # already pooled
+        embeds = features["token_embeddings"]  # already pooled
         features["cls_token_embeddings"] = embeds
         features["token_embeddings"] = embeds.unsqueeze(1)
         return features
@@ -314,8 +300,10 @@ class TransformerForSequenceClassification(Transformer):
 
 class SentenceTransformerFromClassifier(SentenceTransformer):
     def _load_auto_model(self, model_name_or_path):
-        transformer_model = TransformerForSequenceClassification(model_name_or_path)#TODO: , tokenizer_args={"use_fast": False})
-        pooling_model = Pooling(transformer_model.get_word_embedding_dimension(), 'cls')
+        transformer_model = TransformerForSequenceClassification(
+            model_name_or_path
+        )  # TODO: , tokenizer_args={"use_fast": False})
+        pooling_model = Pooling(transformer_model.get_word_embedding_dimension(), "cls")
         self._classifier_weight = transformer_model._classifier_weight
         self._classifier_bias = transformer_model._classifier_bias
         return [transformer_model, pooling_model]
@@ -325,6 +313,7 @@ class SetFitModelFromClassifier(SetFitModel):
     """
     Initialize a SetFitModel from an existing pretrained AutoModelForSequenceClassification
     """
+
     @classmethod
     def _from_pretrained(
         cls,
@@ -337,7 +326,7 @@ class SetFitModelFromClassifier(SetFitModel):
         local_files_only: Optional[bool] = None,
         use_auth_token: Optional[Union[bool, str]] = None,
         multi_target_strategy: Optional[str] = None,
-        sklearn_classifier = None,
+        sklearn_classifier=None,
         use_differentiable_head: bool = True,
         **model_kwargs,
     ):
@@ -348,12 +337,12 @@ class SetFitModelFromClassifier(SetFitModel):
             device = model_body._target_device
             model_head = SetFitHead(
                 in_features=weight.shape[1],
-                out_features=weight.shape[0], 
+                out_features=weight.shape[0],
                 device=device,
             )
             model_head.linear.weight.data.copy_(weight)
             model_head.linear.bias.data.copy_(bias)
-            if hasattr(model_head, "predict_prob"): #bugfix before new SetFit release
+            if hasattr(model_head, "predict_prob"):  # bugfix before new SetFit release
                 model_head.predict_proba = model_head.predict_prob
         else:
             if sklearn_classifier is None:
@@ -412,15 +401,15 @@ def fit_and_predict(claim_classifier, gen_df, do_fit=True):
     train_df, test_df = claim_classifier.prep_data(
         gen_df[["claim", "inst", "label"]].loc[gen_df.label != 2],
         remove_claims_with_homogenous_label=False,
-        rebalance=True, # rebalancing may not be necessary with setfit
+        rebalance=True,  # rebalancing may not be necessary with setfit
     )
 
-    if do_fit and len(test_df) > 0: # don't re-fit if there is nothing to predict on
+    if do_fit and len(test_df) > 0:  # don't re-fit if there is nothing to predict on
         claim_classifier.fit(train_df)
     if len(test_df) > 0:
         probs, preds = claim_classifier.predict(test_df)
 
-    # add predictions to the data; some train_df could have been dropped 
+    # add predictions to the data; some train_df could have been dropped
     # because of `remove_claims_with_homogenous_labels``, so we do not concat `train_df`
     gen_df["prob"] = gen_df["label"].astype(float)
     gen_df["pred"] = gen_df["label"]

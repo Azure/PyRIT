@@ -828,24 +828,26 @@ def fetch_forbidden_questions_df() -> SeedPromptDataset:
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
+
 def fetch_testgenie_dataset() -> TestGenieDataset:
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     data_dir = os.path.dirname(os.path.abspath(sys.modules[__name__].__file__))
-    prepare_data_path = os.path.join(data_dir, '../prompt_converter/claim_converter/data/prepare_data.py')
+    prepare_data_path = os.path.join(data_dir, "../prompt_converter/claim_converter/data/prepare_data.py")
 
     prepare_data_dir = os.path.dirname(prepare_data_path)
     os.chdir(prepare_data_dir)
 
     # Run prepare_data.py
     try:
-        subprocess.run(['python', prepare_data_path], check=True)
+        subprocess.run(["python", prepare_data_path], check=True)
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while running prepare_data.py: {e}")
 
     os.chdir(current_dir)
 
     return TestGenieDataset()
+
 
 def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
     """

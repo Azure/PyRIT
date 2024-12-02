@@ -13,7 +13,7 @@ def try_read_key(key):
 def update(d, u):
     """
     Recursive update the "base" dictionary `d` with values from `u`
-    Modified from 
+    Modified from
     https://stackoverflow.com/a/3233356/5712749
     """
     for k, v in u.items():
@@ -28,13 +28,13 @@ def update(d, u):
 
 def load_config(default_fpath="configs/_default.toml"):
     """
-    Load the configuration YAML into a dictionary. 
+    Load the configuration YAML into a dictionary.
 
     `default_fpath` is a file where all settings are specified.
     """
     with open(default_fpath) as infile:
         config = yaml.safe_load(infile)
-    
+
     config["openai_api_key"] = os.getenv("OPENAI_API_KEY") or try_read_key(config["openai_api_key"])
     config["perspective_api_key"] = try_read_key(config["perspective_api_key"])
     return config
