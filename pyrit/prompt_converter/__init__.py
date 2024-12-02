@@ -101,4 +101,11 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
+    "ClaimConverter",
+    "prompt_openai",
+    "classifiers",
+    "components",
+    "exemplars",
+    "config",
+    "utils",
 ]

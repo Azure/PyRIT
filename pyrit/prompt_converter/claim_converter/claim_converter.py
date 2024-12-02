@@ -3,7 +3,6 @@
 
 import json
 import logging
-import uuid
 import pathlib
 
 import numpy as np
@@ -110,7 +109,7 @@ class ClaimConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        conversation_id = str(uuid.uuid4())
+        # conversation_id = str(uuid.uuid4())
 
         # self.converter_target.set_system_prompt(
         #     system_prompt=self.system_prompt,
@@ -216,7 +215,7 @@ class ClaimConverter(PromptConverter):
         )
 
         inferences_selected = inferences[int(selected)]
-        inf_to_gen_cfg = config["interface"]["inferences_to_generations"]
+        # inf_to_gen_cfg = config["interface"]["inferences_to_generations"]
 
         generations = []
         num_gen_samples = 20
@@ -257,7 +256,7 @@ class ClaimConverter(PromptConverter):
         # Define a callback function that will be called when the button is clicked
         def on_checkbox_change(change):
             # The new value is available in change['new']
-            selected_options = change["new"]
+            # selected_options = change["new"]
             # print(f"Selected options: {selected_options}")
             # Set the event to signal that the checkbox value has changed
             checkbox_event.set()
@@ -319,7 +318,7 @@ class ClaimConverter(PromptConverter):
 
             target_model = "gpt3/" + config["openai_engine"]
             num_generations = 1
-            completion_data = []
+            # completion_data = []
             if target_model.startswith("gpt3"):
                 engine = target_model.split("/")[1]
                 completions = components.generate_from_prompts_gpt3(test_prompts, engine, num_generations)
@@ -350,7 +349,8 @@ class ClaimConverter(PromptConverter):
                 f"[{index}] {row['pred']} ({row['prob']}): {row['inst']}"
                 for index, row in completions_to_annotate.iterrows()
             ]
-            # selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
+            # selected = input("Select a generation from extracted generations from the example inference.\n"
+            # + "\n".join(options))
 
             response_msg = "\n".join(options)
             with output_area:
@@ -386,7 +386,7 @@ class ClaimConverter(PromptConverter):
         # submit_event.clear()
 
         # Proceed with the rest of the convert_async logic
-        selected_options = checkbox.value
+        # selected_options = checkbox.value
         # print(f"Final selected options: {selected_options}")
 
         return ConverterResult(output_text="Placeholder text", output_type="text")
@@ -428,7 +428,7 @@ class ClaimConverter(PromptConverter):
 
         target_model = "gpt3/" + config["openai_engine"]
         num_generations = 1
-        completion_data = []
+        # completion_data = []
         if target_model.startswith("gpt3"):
             engine = target_model.split("/")[1]
             completions = components.generate_from_prompts_gpt3(test_prompts, engine, num_generations)
@@ -452,7 +452,8 @@ class ClaimConverter(PromptConverter):
         completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
 
         options = [f"[{i}] " + " " + p for i, p in enumerate(completions_estimated["inst"])]
-        # selected = input("Select a generation from automatically extracted generations from the example inference.\n" + "\n".join(options))
+        # selected = input("Select a generation from automatically extracted generations from the example inference.\n"
+        # + "\n".join(options))
 
         response_msg = "\n".join(options)
 

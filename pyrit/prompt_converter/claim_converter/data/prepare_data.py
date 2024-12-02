@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import os
 import subprocess
 import requests
@@ -71,7 +74,9 @@ def main():
     extract_zip("nope-v1.zip", "nope")
 
     # if not os.path.exists('data_generation_imppres'):
-    #     subprocess.run(['git', 'clone', '-b', 'imppres', '--single-branch', 'git@github.com:alexwarstadt/data_generation.git', 'data_generation_imppres'], check=True)
+    #     subprocess.run(['git', 'clone', '-b', 'imppres', '--single-branch',
+    #       'git@github.com:alexwarstadt/data_generation.git',
+    #        'data_generation_imppres'], check=True)
     # else:
     #     print("Data generation repository already cloned. Skipping.")
 

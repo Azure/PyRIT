@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import re
 import itertools
 import random
@@ -72,9 +75,9 @@ def _init_styling(annotate_unrelated_failures=True):
     #     unsafe_allow_html=True
     # )
 
-    if annotate_unrelated_failures:
-        annotator_css = Path("./annotator.css").read_text()  # TODO: memoize?
-        # st.markdown(f"<style>{annotator_css}</style>", unsafe_allow_html=True)
+    # if annotate_unrelated_failures:
+    #     annotator_css = Path("./annotator.css").read_text()  # TODO: memoize?
+    #     st.markdown(f"<style>{annotator_css}</style>", unsafe_allow_html=True)
 
 
 def _init_state():
@@ -248,7 +251,7 @@ def load_spacy(spacy_model="en_core_web_sm"):
 
 # @st.cache_resource
 def load_fasttext():
-    if not Path(f"cc.en.300.bin").exists():
+    if not Path("cc.en.300.bin").exists():
         # st.write("One-time download of fasttext model...")
         fasttext.util.download_model("en", if_exists="ignore")
     return fasttext.load_model("./cc.en.300.bin")

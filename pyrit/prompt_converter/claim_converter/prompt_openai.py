@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import random
 from typing import Optional, Union, Dict, List, Any
 
@@ -76,6 +79,7 @@ def make_prompt(
     if instance:
         prompt += instance + ("->" * ("->" not in instance))
     return prompt
+
 
 def filter_results(results, split_output=True):
     """

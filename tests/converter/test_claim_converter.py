@@ -52,9 +52,6 @@ def test_make_prompt_with_sample_exemplars():
 @patch("builtins.input", return_value="0")  # Mock user input to always return '0'
 @patch("IPython.display.display", new_callable=MagicMock())  # Mock the display function
 async def test_convert_async(mock_run_pipeline_per_source, mock_input, mock_display):
-    # mock_openai_api.add_response("Hi")
-    # The following encoded message is "Hi"
-    encoded_message = chr(0xE0001) + chr(0xE0000) + chr(0xE0048) + chr(0xE0000) + chr(0xE0069) + chr(0xE007F)
     converter = claim_converter.ClaimConverter(converter_target="text")
     result = await converter.convert_async(prompt="Test prompt")
     assert isinstance(result, ConverterResult)
