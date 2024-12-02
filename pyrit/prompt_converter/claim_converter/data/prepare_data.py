@@ -42,6 +42,11 @@ def main():
     # Check if 'unzip' command is available
     check_command('unzip')
 
+    try:
+        subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to download spaCy model: {e}")
+
     # Create sample problematic example data
     os.makedirs('sbf', exist_ok=True)
     download_file('https://maartensap.com/social-bias-frames/SBIC.v2.tgz', 'sbf/SBIC.v2.tgz')
@@ -70,11 +75,6 @@ def main():
         subprocess.run(['python', 'exemplars.py'], check=True)
     else:
         print("Exemplars already processed. Skipping.")
-
-    try:
-        subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to download spaCy model: {e}")
 
 if __name__ == '__main__':
     main()
