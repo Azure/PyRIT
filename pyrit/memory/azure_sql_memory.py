@@ -18,9 +18,9 @@ from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import AzureBlobStorageIO, PromptRequestPiece, Score
+from pyrit.models import AzureBlobStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
 
@@ -306,16 +306,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 f"with memory labels {memory_labels}. {e}"
             )
             return []
-
-    def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
-        """
-        Gets a list of scores based on prompt_request_response_ids.
-        """
-        entries = self.query_entries(
-            ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
-        )
-
-        return [entry.get_score() for entry in entries]
 
     def insert_entry(self, entry: Base) -> None:  # type: ignore
         """
