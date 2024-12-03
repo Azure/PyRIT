@@ -19,6 +19,7 @@ from pyrit.exceptions import (
 )
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
+
 from pyrit.prompt_converter.claim_converter import (
     config as conf,
     utils,
@@ -27,6 +28,7 @@ from pyrit.prompt_converter.claim_converter import (
     components,
     classifiers,
 )
+
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -235,7 +237,7 @@ class ClaimConverter(PromptConverter):
         generations_df = pd.DataFrame(generations, columns=["claim", "inst"]).drop_duplicates(subset="inst")
         logger.info(f"TestGenie generated {len(generations_df)} statements.")
 
-        sampled_df = generations_df.sample(2, random_state=config["global_seed"])
+        sampled_df = generations_df.sample(min(20, len(generations_df)), random_state=config["global_seed"])
         unsampled_df = generations_df.drop(sampled_df.index)
 
         # Create a list of options
@@ -355,6 +357,7 @@ class ClaimConverter(PromptConverter):
             response_msg = "\n".join(options)
             with output_area:
                 print(f"Response message: {response_msg}")
+            return ConverterResult(output_text="Placeholder text", output_type="text")
 
             # print(f"Button clicked!")
             # Set the event to signal that the checkbox value has changed
@@ -390,76 +393,76 @@ class ClaimConverter(PromptConverter):
         # print(f"Final selected options: {selected_options}")
 
         return ConverterResult(output_text="Placeholder text", output_type="text")
-        sampled_df["label"] = None
-        sampled_df["label"][0] = True
-        sampled_df["label"][1] = False
-        # verified_df = st.data_editor(sampled_df)
-        verified_df = pd.DataFrame(sampled_df)
+        # sampled_df["label"] = None
+        # sampled_df["label"][0] = True
+        # sampled_df["label"][1] = False
+        # # verified_df = st.data_editor(sampled_df)
+        # verified_df = pd.DataFrame(sampled_df)
 
-        generations_labeled = pd.concat([verified_df, unsampled_df]).sort_index()
-        generations_estimated = classifiers.fit_and_predict(claim_classifier, generations_labeled, True)
-        generations_estimated = generations_estimated.loc[generations_estimated.pred == 1]
+        # generations_labeled = pd.concat([verified_df, unsampled_df]).sort_index()
+        # generations_estimated = classifiers.fit_and_predict(claim_classifier, generations_labeled, True)
+        # generations_estimated = generations_estimated.loc[generations_estimated.pred == 1]
 
-        tokenizer = components.load_tokenizer("gpt2")
-        spacy_model = components.load_spacy()
+        # tokenizer = components.load_tokenizer("gpt2")
+        # spacy_model = components.load_spacy()
 
-        insts = generations_df["inst"]
-        claims = generations_df["claim"]
+        # insts = generations_df["inst"]
+        # claims = generations_df["claim"]
 
-        truncation_strategies = {
-            "half": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=0.5),
-            "3_toks": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=-3),
-            "root": lambda insts, _: components.truncate_text_by_root(insts, spacy_model),
-            "gpt3": lambda insts, claims: components.truncate_text_with_gpt3(
-                insts, claims, engine=config["openai_engine"]
-            ),
-            # TODO: truncate based on classifier probability
-        }
+        # truncation_strategies = {
+        #     "half": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=0.5),
+        #     "3_toks": lambda insts, _: components.truncate_text_by_length(insts, tokenizer, n=-3),
+        #     "root": lambda insts, _: components.truncate_text_by_root(insts, spacy_model),
+        #     "gpt3": lambda insts, claims: components.truncate_text_with_gpt3(
+        #         insts, claims, engine=config["openai_engine"]
+        #     ),
+        #     # TODO: truncate based on classifier probability
+        # }
 
-        selected_truncation = ["half", "3_toks", "root", "gpt3"]
-        test_data = []
-        for name in selected_truncation:
-            truncator = truncation_strategies[name]
-            prompts_and_targets = truncator(insts, claims)
-            test_data.extend(zip(claims, prompts_and_targets))
+        # selected_truncation = ["half", "3_toks", "root", "gpt3"]
+        # test_data = []
+        # for name in selected_truncation:
+        #     truncator = truncation_strategies[name]
+        #     prompts_and_targets = truncator(insts, claims)
+        #     test_data.extend(zip(claims, prompts_and_targets))
 
-        logger.info(f"Created {len(test_data)} tests/prompts. We show 10 random prompts below.")
-        test_prompts = [prompt for _, (prompt, _) in test_data]
+        # logger.info(f"Created {len(test_data)} tests/prompts. We show 10 random prompts below.")
+        # test_prompts = [prompt for _, (prompt, _) in test_data]
 
-        target_model = "gpt3/" + config["openai_engine"]
-        num_generations = 1
-        # completion_data = []
-        if target_model.startswith("gpt3"):
-            engine = target_model.split("/")[1]
-            completions = components.generate_from_prompts_gpt3(test_prompts, engine, num_generations)
-        else:  # implies a huggingface model
-            generator = components.load_hf_generator(target_model)
-            logger.info("Using target model to complete the prompts...")
-            completions = components.generate_from_prompts_hf(test_prompts, generator, num_generations)
+        # target_model = "gpt3/" + config["openai_engine"]
+        # num_generations = 1
+        # # completion_data = []
+        # if target_model.startswith("gpt3"):
+        #     engine = target_model.split("/")[1]
+        #     completions = components.generate_from_prompts_gpt3(test_prompts, engine, num_generations)
+        # else:  # implies a huggingface model
+        #     generator = components.load_hf_generator(target_model)
+        #     logger.info("Using target model to complete the prompts...")
+        #     completions = components.generate_from_prompts_hf(test_prompts, generator, num_generations)
 
-        # Build dataframe to label and retrieve existing annotations
-        completion_df = components.build_completion_df(test_data, completions, target_model)
+        # # Build dataframe to label and retrieve existing annotations
+        # completion_df = components.build_completion_df(test_data, completions, target_model)
 
-        # Predict which completions are failures
-        completion_df["label"] = None
-        completion_df["label"][0] = True
-        completion_df["label"][1] = False
-        completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
+        # # Predict which completions are failures
+        # completion_df["label"] = None
+        # completion_df["label"][0] = True
+        # completion_df["label"][1] = False
+        # completions_estimated = classifiers.fit_and_predict(claim_classifier, completion_df, do_fit=False)
 
-        # calculate margin from random (closer to 0.5->more uncertain)
-        completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"]) * 2
-        # ignore already-labeled data
-        completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
+        # # calculate margin from random (closer to 0.5->more uncertain)
+        # completions_estimated["uncertainty"] = 1 - np.abs(0.5 - completions_estimated["prob"]) * 2
+        # # ignore already-labeled data
+        # completions_estimated = completions_estimated.loc[completions_estimated["label"].isna()]
 
-        options = [f"[{i}] " + " " + p for i, p in enumerate(completions_estimated["inst"])]
-        # selected = input("Select a generation from automatically extracted generations from the example inference.\n"
-        # + "\n".join(options))
+        # options = [f"[{i}] " + " " + p for i, p in enumerate(completions_estimated["inst"])]
+        # # selected = input("Select a generation from extracted generations from the example inference.\n"
+        # # + "\n".join(options))
 
-        response_msg = "\n".join(options)
+        # response_msg = "\n".join(options)
 
-        # response_msg = await self.send_variation_prompt_async(request)
+        # # response_msg = await self.send_variation_prompt_async(request)
 
-        return ConverterResult(output_text=response_msg, output_type="text")
+        # return ConverterResult(output_text=response_msg, output_type="text")
 
     @pyrit_json_retry
     async def send_variation_prompt_async(self, request):
