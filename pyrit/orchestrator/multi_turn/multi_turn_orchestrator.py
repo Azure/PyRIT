@@ -36,7 +36,7 @@ class MultiTurnAttackResult:
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
-        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=self.conversation_id)
+        target_messages = self._memory.get_conversation(conversation_id=self.conversation_id)
 
         if not target_messages or len(target_messages) == 0:
             print("No conversation with the target")
@@ -54,19 +54,21 @@ class MultiTurnAttackResult:
             )
 
         for message in target_messages:
-            if message.role == "user":
-                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}:")
-                if message.converted_value != message.original_value:
-                    print(f"Original value: {message.original_value}")
-                print(f"Converted value: {message.converted_value}")
-            else:
-                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                await display_image_response(message)
+            for piece in message.request_pieces:
+                if piece.role == "user":
+                    print(f"{Style.BRIGHT}{Fore.BLUE}{piece.role}:")
+                    if piece.converted_value != piece.original_value:
+                        print(f"Original value: {piece.original_value}")
+                    print(f"Converted value: {piece.converted_value}")
+                else:
+                    print(f"{Style.NORMAL}{Fore.YELLOW}{piece.role}: {piece.converted_value}")
 
-            scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(message.id)])
-            if scores and len(scores) > 0:
-                for score in scores:
-                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
+                await display_image_response(piece)
+
+                scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[str(piece.id)])
+                if scores and len(scores) > 0:
+                    for score in scores:
+                        print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
 
 class MultiTurnOrchestrator(Orchestrator):
