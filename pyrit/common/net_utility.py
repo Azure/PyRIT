@@ -10,11 +10,11 @@ def get_httpx_client(use_async: bool = False, debug: bool = False):
     """Get the httpx client for making requests."""
 
     client_class = httpx.AsyncClient if use_async else httpx.Client
-    proxies = "http://localhost:8080" if debug else None
+    proxy = "http://localhost:8080" if debug else None
     verify_certs = not debug
 
     # fun notes; httpx default is 5 seconds, httpclient is 100, urllib in indefinite
-    return client_class(proxies=proxies, verify=verify_certs, timeout=60.0)
+    return client_class(proxt=proxy, verify=verify_certs, timeout=60.0)
 
 
 PostType = Literal["json", "data"]
