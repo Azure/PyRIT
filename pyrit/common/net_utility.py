@@ -14,7 +14,7 @@ def get_httpx_client(use_async: bool = False, debug: bool = False):
     verify_certs = not debug
 
     # fun notes; httpx default is 5 seconds, httpclient is 100, urllib in indefinite
-    return client_class(proxt=proxy, verify=verify_certs, timeout=60.0)
+    return client_class(proxy=proxy, verify=verify_certs, timeout=60.0)
 
 
 PostType = Literal["json", "data"]
