@@ -93,12 +93,13 @@ async def test_send_prompt_async_no_response_adds_memory(
 
     assert mock_memory_instance.add_request_response_to_memory.call_count == 1
 
+
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_response_exception_handled(
     mock_memory_instance, normalizer_piece: NormalizerRequestPiece
 ):
     prompt_target = AsyncMock()
-    prompt_target.send_prompt_async = AsyncMock(side_effect=EmptyResponseException("Empty response"))
+    prompt_target.send_prompt_async = AsyncMock(side_effect=EmptyResponseException(message="Empty response"))
 
     normalizer = PromptNormalizer()
     request = NormalizerRequest([normalizer_piece])
