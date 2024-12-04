@@ -51,9 +51,11 @@ def test_make_prompt_with_sample_exemplars():
 )
 @patch("builtins.input", return_value="0")  # Mock user input to always return '0'
 @patch("IPython.display.display", new_callable=MagicMock())  # Mock the display function
+# @patch("jupyter_ui_poll.ui_events", new_callable=MagicMock())  # Mock user input to always return '0'
 async def test_convert_async(mock_run_pipeline_per_source, mock_input, mock_display):
     converter = claim_converter.ClaimConverter(converter_target="text")
+    converter.clicked = True
     result = await converter.convert_async(prompt="Test prompt")
     assert isinstance(result, ConverterResult)
     assert result.output_type == "text"
-    assert result.output_text == "Placeholder text"
+    assert result.output_text == ""

@@ -8,6 +8,7 @@ import pathlib
 import numpy as np
 import pandas as pd
 import asyncio
+import time
 import ipywidgets as widgets
 from IPython.display import display
 
@@ -30,6 +31,7 @@ from pyrit.prompt_converter.claim_converter import (
 )
 
 from pyrit.prompt_target import PromptChatTarget
+from jupyter_ui_poll import ui_events
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -83,6 +85,9 @@ for section in sections:
 
 
 class ClaimConverter(PromptConverter):
+    clicked = False
+    response_msg = ""
+
     def __init__(self, *, converter_target: PromptChatTarget, prompt_template=None):
         self.converter_target = converter_target
 
@@ -276,6 +281,9 @@ class ClaimConverter(PromptConverter):
             with output_area:
                 print("The next step will take a while. Please wait...")
             submit_event.set()
+            # global clicked
+            self.clicked = True
+            
             # Proceed with the rest of the convert_async logic
             selected_options = checkbox.value
             # print(f"Final selected options: {selected_options}")
@@ -354,10 +362,11 @@ class ClaimConverter(PromptConverter):
             # selected = input("Select a generation from extracted generations from the example inference.\n"
             # + "\n".join(options))
 
-            response_msg = "\n".join(options)
-            with output_area:
-                print(f"Response message: {response_msg}")
-            return ConverterResult(output_text="Placeholder text", output_type="text")
+            # global response_msg
+            self.response_msg = "\n".join(options)
+            # with output_area:
+            #     print(f"Response message: {response_msg}")
+            return ConverterResult(output_text=self.response_msg, output_type="text")
 
             # print(f"Button clicked!")
             # Set the event to signal that the checkbox value has changed
@@ -374,6 +383,19 @@ class ClaimConverter(PromptConverter):
 
         display(output_area)
 
+        # await submit_event.wait()
+        # Create a task to wait for the submit button to be pressed
+        # await asyncio.create_task(submit_event.wait())
+        # Create a task to wait for the submit button to be pressed
+        # await asyncio.create_task(self.wait_for_submit())
+
+        if not self.clicked:
+            with ui_events() as poll:
+                while not self.clicked:
+                    poll(10) # poll queued UI events including button
+                    time.sleep(1) # wait for 1 second before checking again
+                    # print(f"debug2: clicked={clicked}")
+                
         # await submit_event.wait()
         # await asyncio.sleep(0)  # Example of non-blocking async operation
 
@@ -392,7 +414,7 @@ class ClaimConverter(PromptConverter):
         # selected_options = checkbox.value
         # print(f"Final selected options: {selected_options}")
 
-        return ConverterResult(output_text="Placeholder text", output_type="text")
+        return ConverterResult(output_text=self.response_msg, output_type="text")
         # sampled_df["label"] = None
         # sampled_df["label"][0] = True
         # sampled_df["label"][1] = False
@@ -463,6 +485,9 @@ class ClaimConverter(PromptConverter):
         # # response_msg = await self.send_variation_prompt_async(request)
 
         # return ConverterResult(output_text=response_msg, output_type="text")
+
+    async def wait_for_submit(self):
+        await submit_event.wait()
 
     @pyrit_json_retry
     async def send_variation_prompt_async(self, request):
