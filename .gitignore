@@ -175,5 +175,8 @@ doc/_autosummary/
 # ignore all VSCode settings
 .vscode/*
 
+# ignore jetbrains IDE settings
+.idea/
+
 # Ignore DS_STORE files
 **/.DS_Store
