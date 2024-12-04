@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Multi-Turn Orchestrator
+# # 2. Multi-Turn Orchestrator
 #
 # `MultiTurnOrchestrators` are orchestrators that sets up an attacker LLM (called `adveresarial_chat` to communicate with an objective target (called `objective_target`).
 #
