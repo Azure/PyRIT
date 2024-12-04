@@ -29,7 +29,7 @@
 # > https://gandalf.lakera.ai/
 #
 #
-# Gandalf contains 7 different levels. In this demo, we will show how to automatically bypass (at least) the first couple. It uses the [RedTeamingOrchestrator](../orchestrators/2_multi_turn_orchestrator.ipynb) as a strategy to solve these challenges.
+# Gandalf contains 7 different levels. In this demo, we will show how to automatically bypass (at least) the first couple. It uses the [RedTeamingOrchestrator](../orchestrators/2_multi_turn_orchestrators.ipynb) as a strategy to solve these challenges.
 #
 # Each level gets progressively more difficult. Before continuing, it may be beneficial to manually try the Gandalf challenges to get a feel for how they are solved.
 #
