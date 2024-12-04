@@ -116,8 +116,8 @@ with RedTeamingOrchestrator(
     objective_scorer=scorer,
 ) as red_teaming_orchestrator:
     # passed-in memory labels are combined with global memory labels
-    result = await red_teaming_orchestrator.run_attacks_async(objectives=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
-    for r in result:
+    results = await red_teaming_orchestrator.run_attacks_async(objectives=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
+    for r in results:
         await r.print_conversation_async()  # type: ignore
 
 # %% [markdown]
