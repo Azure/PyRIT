@@ -101,14 +101,14 @@ scorer = SelfAskTrueFalseScorer(
 )
 
 # Testing against an AzureOpenAI deployed GPT 4 instance
-objective_target = OpenAIChatTarget(
+oai_objective_target = OpenAIChatTarget(
     deployment_name=os.getenv("AZURE_OPENAI_GPT4_CHAT_DEPLOYMENT"),
     api_key=os.getenv("AZURE_OPENAI_GPT4_CHAT_KEY"),
     endpoint=os.getenv("AZURE_OPENAI_GPT4_CHAT_ENDPOINT"),
 )
 
 with RedTeamingOrchestrator(
-    objective_target=objective_target,
+    objective_target=oai_objective_target,
     adversarial_chat=adversarial_chat,
     adversarial_chat_system_prompt_path=strategy_path,
     prompt_converters=[EmojiConverter()],
@@ -117,7 +117,8 @@ with RedTeamingOrchestrator(
 ) as red_teaming_orchestrator:
     # passed-in memory labels are combined with global memory labels
     result = await red_teaming_orchestrator.run_attacks_async(objectives=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
-    await result.print_conversation_async()  # type: ignore
+    for r in result:
+        await r.print_conversation_async()  # type: ignore
 
 # %% [markdown]
 # ## Image Target Example

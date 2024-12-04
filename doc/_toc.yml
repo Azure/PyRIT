@@ -103,3 +103,5 @@ chapters:
       - file: deployment/troubleshooting_guide_hf_azureml
   - file: api.rst
   - file: blog/README
+    sections:
+    - file: blog/2024_12_3
