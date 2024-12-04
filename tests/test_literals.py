@@ -16,7 +16,7 @@ def test_prompt_data_type():
 def test_prompt_response_error():
     assert get_origin(PromptResponseError) is Literal
 
-    expected_literals = {"blocked", "none", "processing", "unknown"}
+    expected_literals = {"blocked", "none", "processing", "unknown", "empty"}
     assert set(get_args(PromptResponseError)) == expected_literals
 
 
