@@ -55,6 +55,7 @@ dependencies = [
     "huggingface-hub==0.25.0",
     "jsonpickle>=3.0.4",
     "jupyter>=1.0.0",
+    "jupyter-ui-poll>=1.0.0",
     "ipykernel>=6.29.4",
     "logzero>=1.7.0",
     "nltk>=3.9.1",
