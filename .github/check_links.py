@@ -12,6 +12,7 @@ skipped_urls = [
     "https://gandalf.lakera.ai/api/send-message",
     "https://code.visualstudio.com/Download",  # This will block python requests
     "https://platform.openai.com/docs/api-reference/introduction",  # blocks python requests
+    "https://www.anthropic.com/research/many-shot-jailbreaking/",  # blocks python requests
 ]
 
 custom_myst_references = ["notebook_tests"]
