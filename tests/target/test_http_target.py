@@ -66,12 +66,12 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient")
 async def test_send_prompt_async_client_kwargs(mock_async_client):
-    # Create client_kwargs to test
-    client_kwargs = {"timeout": 10, "verify": False}
+    # Create httpx_client_kwargs to test
+    httpx_client_kwargs = {"timeout": 10, "verify": False}
     sample_request = "GET /test HTTP/1.1\nHost: example.com\n\n"
-    # Create instance of HTTPTarget with client_kwargs
-    # Use **client_kwargs to pass them as keyword arguments
-    http_target = HTTPTarget(http_request=sample_request, **client_kwargs)
+    # Create instance of HTTPTarget with httpx_client_kwargs
+    # Use **httpx_client_kwargs to pass them as keyword arguments
+    http_target = HTTPTarget(http_request=sample_request, **httpx_client_kwargs)
     prompt_request = MagicMock()
     prompt_request.request_pieces = [MagicMock(converted_value="")]
     mock_response = MagicMock()
