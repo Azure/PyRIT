@@ -6,6 +6,7 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
+from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
@@ -58,6 +59,17 @@ class PromptNormalizer(abc.ABC):
         try:
             response = await target.send_prompt_async(prompt_request=request)
             self._memory.add_request_response_to_memory(request=request)
+        except EmptyResponseException:
+            # Empty responses are retried, but we don't want them to stop execution
+            self._memory.add_request_response_to_memory(request=request)
+
+            response = construct_response_from_request(
+                request=request.request_pieces[0],
+                response_text_pieces=[""],
+                response_type="text",
+                error="empty",
+            )
+
         except Exception as ex:
             # Ensure request to memory before processing exception
             self._memory.add_request_response_to_memory(request=request)

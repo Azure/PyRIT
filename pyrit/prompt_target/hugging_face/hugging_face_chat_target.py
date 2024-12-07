@@ -66,12 +66,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
         # Only get the Hugging Face token if a model ID is provided
         if model_id:
             self.huggingface_token = default_values.get_required_value(
-                env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, 
-                passed_value=hf_access_token
+                env_var_name=self.HUGGINGFACE_TOKEN_ENVIRONMENT_VARIABLE, passed_value=hf_access_token
             )
         else:
             self.huggingface_token = None
-
 
         try:
             import torch
@@ -96,7 +94,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             raise RuntimeError("CUDA requested but not available.")
 
         self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
-    
+
     def _load_from_path(self, path: str):
         """
         Helper function to load the model and tokenizer from a given path.

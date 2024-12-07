@@ -13,6 +13,8 @@ from pyrit.models import PromptRequestResponse
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest, PromptNormalizer
 from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.exceptions import EmptyResponseException
+
 
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
 from pyrit.prompt_target import PromptTarget
@@ -90,6 +92,25 @@ async def test_send_prompt_async_no_response_adds_memory(
     await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([normalizer_piece]), target=prompt_target)
 
     assert mock_memory_instance.add_request_response_to_memory.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_empty_response_exception_handled(
+    mock_memory_instance, normalizer_piece: NormalizerRequestPiece
+):
+    prompt_target = AsyncMock()
+    prompt_target.send_prompt_async = AsyncMock(side_effect=EmptyResponseException(message="Empty response"))
+
+    normalizer = PromptNormalizer()
+    request = NormalizerRequest([normalizer_piece])
+
+    response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
+
+    assert mock_memory_instance.add_request_response_to_memory.call_count == 2
+
+    assert response.request_pieces[0].response_error == "empty"
+    assert response.request_pieces[0].original_value == ""
+    assert response.request_pieces[0].original_value_data_type == "text"
 
 
 @pytest.mark.asyncio

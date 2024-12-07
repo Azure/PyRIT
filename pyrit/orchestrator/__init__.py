@@ -6,7 +6,6 @@ from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnOrche
 from pyrit.orchestrator.multi_turn.crescendo_orchestrator import CrescendoOrchestrator
 from pyrit.orchestrator.flip_attack_orchestrator import FlipAttackOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import FuzzerOrchestrator
-from pyrit.orchestrator.pair_orchestrator import PAIROrchestrator
 from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
@@ -17,6 +16,8 @@ from pyrit.orchestrator.xpia_orchestrator import (
     XPIAOrchestrator,
     XPIATestOrchestrator,
 )
+from pyrit.orchestrator.multi_turn.pair_orchestrator import PAIROrchestrator
+
 
 __all__ = [
     "CrescendoOrchestrator",
