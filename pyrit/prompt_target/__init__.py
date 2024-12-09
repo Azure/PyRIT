@@ -25,6 +25,7 @@ from pyrit.prompt_target.hugging_face.hugging_face_endpoint_target import Huggin
 from pyrit.prompt_target.ollama_chat_target import OllamaChatTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
 from pyrit.prompt_target.text_target import TextTarget
+from pyrit.prompt_target.playwright_target import PlaywrightTarget
 
 
 __all__ = [
@@ -46,6 +47,7 @@ __all__ = [
     "OpenAITTSTarget",
     "OpenAITarget",
     "OllamaChatTarget",
+    "PlaywrightTarget",
     "PromptChatTarget",
     "PromptShieldTarget",
     "PromptTarget",
