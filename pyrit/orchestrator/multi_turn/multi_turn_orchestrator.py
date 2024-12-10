@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import CentralMemory
-from pyrit.models import SeedPrompt, PromptRequestResponse, PromptRequestPiece
+from pyrit.models import Score, SeedPrompt, PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
@@ -139,6 +139,7 @@ class MultiTurnOrchestrator(Orchestrator):
         self._prepended_conversation: list[PromptRequestResponse] = None
         self._last_prepended_user_message: str = None
         self._last_prepended_assistant_message: PromptRequestPiece = None
+        self._last_prepended_assistant_message_scores: list[Score] = None
 
     def _get_adversarial_chat_seed_prompt(self, seed_prompt):
         if isinstance(seed_prompt, str):
@@ -193,6 +194,27 @@ class MultiTurnOrchestrator(Orchestrator):
         """
         self._prepended_conversation = prepended_conversation
 
+    def _set_globals_based_on_role(self):
+        """Sets the global variables of self._last_prepended_user_message and self._last_prepended_assistant_message
+        based on the role of the last message in the prepended conversation.
+        """
+        # There is specific handling per orchestrator depending on the last message
+        last_message = self._prepended_conversation[-1].request_pieces[0]
+        if last_message.role == "user":
+            self._last_prepended_user_message = last_message.converted_value
+        elif last_message.role == "assistant":
+            # Check assumption that there will always be a user message preceding the assistant message
+            if len(self._prepended_conversation) > 1 and self._prepended_conversation[-2].request_pieces[0].role == "user":
+                self._last_prepended_user_message = self._prepended_conversation[-2].request_pieces[0].converted_value
+                self._last_prepended_assistant_message = last_message
+            else:
+                raise ValueError("There must be a user message preceding the assistant message in prepended conversations.")
+
+            # Get scores for the last assistant message based off of the original id
+            self._last_prepended_assistant_message_scores = self._memory.get_scores_by_prompt_ids(
+                prompt_request_response_ids=[last_message.original_prompt_id]
+            )
+
     def _prepare_conversation(self, *, new_conversation_id: str) -> int:
         """Prepare the conversation by saving the prepended conversation to memory
         with the new conversation ID. This should only be called by inheriting classes.
@@ -201,10 +223,10 @@ class MultiTurnOrchestrator(Orchestrator):
             new_conversation_id (str): The ID for the new conversation.
 
         Returns:
-            num_turns (int): The number of turns in the prepended conversation, used
-                by the calling orchestrators to reset the starting turn number.
+            turn_count (int): The number of turns in the prepended conversation plus one,
+                used by the calling orchestrators to set the starting turn number.
         """
-        turn_count = 0
+        turn_count = 1
         if self._prepended_conversation:
             for request in self._prepended_conversation:
                 for piece in request.request_pieces:
@@ -216,22 +238,15 @@ class MultiTurnOrchestrator(Orchestrator):
                     if piece.role == "assistant":
                         turn_count += 1
 
+                        if turn_count > self._max_turns:
+                            raise ValueError(
+                                f"Number of turns in prepended conversation ({turn_count}) must not exceed `max_turns`"
+                                + f"current value: {self._max_turns}. Increase the number of max turns, or "
+                                + " reduce the number of turns in the prepended conversation."
+                            )
+
                 self._memory.add_request_response_to_memory(request=request)
 
-            # There is specific handling per orchestrator depending on the last message
-            last_message = self._prepended_conversation[-1].request_pieces[0]
-            if last_message.role == "user":
-                self._last_prepended_user_message = last_message.converted_value
-            elif last_message.role == "assistant":
-                # Assumption that there will always be a user message preceding the assistant message
-                self._last_prepended_user_message = self._prepended_conversation[-2].request_pieces[0].converted_value
-                self._last_prepended_assistant_message = last_message
-
-        if turn_count >= self._max_turns:
-            raise ValueError(
-                f"Number of turns in prepended conversation ({turn_count}) must not be equal to or "
-                + f"exceed `max_turns` current value: {self._max_turns}. Increase the number of max turns, or "
-                + " reduce the number of turns in the prepended conversation."
-            )
+            self._set_globals_based_on_role()
 
         return turn_count

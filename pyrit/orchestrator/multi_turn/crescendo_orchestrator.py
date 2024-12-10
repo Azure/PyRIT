@@ -106,6 +106,57 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         self._max_backtracks = max_backtracks
 
+
+    def _handle_last_prepended_assistant_message(self) -> tuple[str, Score | None]:
+        """
+        Handle the last message in the prepended conversation if it is from an assistant.
+        """
+        refused_text = ""
+        objective_score = None
+
+        # The last message is from an assistant
+        if self._last_prepended_assistant_message:
+            """
+            scores = self._memory.get_scores_by_prompt_ids(
+                prompt_request_response_ids=[self._last_prepended_assistant_message.original_prompt_id])
+            """
+            if self._last_prepended_assistant_message_scores:
+                refusal_score = None # TODO: Separate scores into `refusal_score` and `objective_score`
+                objective_score = None # TODO
+
+            if refusal_score:
+                logger.info(
+                    "REFUSAL_SCORER for target response is: "
+                    f"{refusal_score.get_value()} {refusal_score.score_rationale}"
+                )
+
+                refused_text = ""
+                if refusal_score.get_value():
+                    refused_text = self._last_prepended_user_message
+                    # Question: Should we handle backtracking for prepended messages?
+                    # Right now we provide the refused text as feedback when crafting attack prompt
+            elif objective_score:
+                logger.info(
+                    "EVAL_SCORER for target response is: "
+                    f"{objective_score.get_value()} {objective_score.score_rationale}"
+                )
+
+        return refused_text, objective_score
+
+
+    def _handle_last_prepended_user_message(self):
+        """
+        Handle the last message in the prepended conversation if it is from a user.
+        """
+        # The last message is from a user
+        attack_prompt = None
+        if self._last_prepended_user_message and not self._last_prepended_assistant_message:
+            logger.info("Using last user message from prepended conversation as Attack Prompt.")
+            attack_prompt = self._last_prepended_user_message
+
+        return attack_prompt
+
+
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
         Executes the Crescendo Attack asynchronously.
@@ -149,58 +200,18 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         )
 
         # Prepare the conversation by adding any provided messages to memory.
-        # If there is no prepended conversation, the turn count is 0.
-        # If the last message is from a user role, there will be a non-None self._custom_user_message to handle.
-        preset_turns = self._prepare_conversation(new_conversation_id=objective_target_conversation_id)
+        # If there is no prepended conversation, the turn count is 1.
+        turn_num = self._prepare_conversation(new_conversation_id=objective_target_conversation_id)
 
-        # Turn counter should be one more than preset turn count
-        turn_num = preset_turns + 1
         backtrack_count = 0
-        refused_text = ""
         achieved_objective = False
-        objective_score = None
+
+        refused_text, objective_score = self._handle_last_prepended_assistant_message()
+        attack_prompt = self._handle_last_prepended_user_message()
 
         while turn_num <= self._max_turns:
 
             logger.info(f"TURN {turn_num}\n-----------")
-
-            # Custom handling on the first turn for prepended conversation
-            attack_prompt = None
-            if turn_num == preset_turns + 1:
-                # The last message is from an assistant
-                if self._last_prepended_assistant_message:
-                    # Score last assistant response
-                    refusal_score = (
-                        await self._refusal_scorer.score_async(
-                            request_response=self._last_prepended_assistant_message,
-                            task=self._last_prepended_user_message,
-                        )
-                    )[0]
-
-                    logger.info(
-                        "REFUSAL_SCORER for target response is: "
-                        f"{refusal_score.get_value()} {refusal_score.score_rationale}"
-                    )
-
-                    if refusal_score.get_value():
-                        refused_text = self._last_prepended_user_message
-                        # Question: Should we handle backtracking for prepended messages?
-                        # Right now we provide the refused text as feedback when crafting attack prompt
-                    else:
-                        objective_score = (
-                            await self._objective_scorer.score_async(
-                                request_response=self._last_prepended_assistant_message, task=objective
-                            )
-                        )[0]
-
-                        logger.info(
-                            "EVAL_SCORER for target response is: "
-                            f"{objective_score.get_value()} {objective_score.score_rationale}"
-                        )
-                # The last message is from a user
-                elif self._last_prepended_user_message and not self._last_prepended_assistant_message:
-                    logger.info("Using last user message from prepended conversation as Attack Prompt.")
-                    attack_prompt = self._last_prepended_user_message
 
             if not attack_prompt:
                 logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
