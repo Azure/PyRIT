@@ -26,6 +26,7 @@ from pyrit.prompt_converter.fuzzer_converter import (
     FuzzerSimilarConverter,
 )
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
+from pyrit.prompt_converter.job_role_converter import JobRoleGenerator
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
@@ -70,6 +71,7 @@ __all__ = [
     "FuzzerShortenConverter",
     "FuzzerSimilarConverter",
     "HumanInTheLoopConverter",
+    "JobRoleGenerator",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
     "MaliciousQuestionGeneratorConverter",
