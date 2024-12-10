@@ -22,7 +22,7 @@ chapters:
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator
-      - file: code/orchestrators/2_red_teaming_orchestrator
+      - file: code/orchestrators/2_multi_turn_orchestrators
       - file: code/orchestrators/3_xpia_orchestrator
       - file: code/orchestrators/4_scoring_orchestrator
       - file: code/orchestrators/5_crescendo_orchestrator
@@ -103,3 +103,5 @@ chapters:
       - file: deployment/troubleshooting_guide_hf_azureml
   - file: api.rst
   - file: blog/README
+    sections:
+    - file: blog/2024_12_3

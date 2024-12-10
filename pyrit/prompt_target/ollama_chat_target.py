@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional
+from typing import Optional, Any
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
@@ -26,6 +26,7 @@ class OllamaChatTarget(PromptChatTarget):
         model_name: str = None,
         chat_message_normalizer: ChatMessageNormalizer = ChatMessageNop(),
         max_requests_per_minute: Optional[int] = None,
+        **httpx_client_kwargs: Optional[Any],
     ) -> None:
         PromptChatTarget.__init__(self, max_requests_per_minute=max_requests_per_minute)
 
@@ -36,6 +37,7 @@ class OllamaChatTarget(PromptChatTarget):
             env_var_name=self.MODEL_NAME_ENVIRONMENT_VARIABLE, passed_value=model_name
         )
         self.chat_message_normalizer = chat_message_normalizer
+        self.httpx_client_kwargs = httpx_client_kwargs or {}
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
@@ -65,7 +67,7 @@ class OllamaChatTarget(PromptChatTarget):
         payload = self._construct_http_body(messages)
 
         response = await net_utility.make_request_and_raise_if_error_async(
-            endpoint_uri=self.endpoint, method="POST", request_body=payload, headers=headers
+            endpoint_uri=self.endpoint, method="POST", request_body=payload, headers=headers, **self.httpx_client_kwargs
         )
 
         return response.json()["message"]["content"]

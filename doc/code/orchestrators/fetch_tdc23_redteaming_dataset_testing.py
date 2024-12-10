@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # TDC-23 Red Teaming Dataset - optional
 #
@@ -11,22 +26,15 @@ from pyrit.datasets import fetch_tdc23_redteaming_dataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
-# %%
 # Load environment variables
 default_values.load_environment_files()
 
-# %%
 # Set up the Azure OpenAI prompt target
 prompt_target = TextTarget()
 
-# %%
 # Note:
 # The dataset sources can be found at:
 # - HuggingFace source: https://huggingface.co/datasets/walledai/TDC23-RedTeaming
-
-# %%
-# Create the orchestrator with scorer without safe prompts included
-orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
 
 # Fetch only unsafe prompts from tdc23_redteaming dataset
 prompt_dataset = fetch_tdc23_redteaming_dataset()
@@ -35,11 +43,5 @@ prompt_dataset = fetch_tdc23_redteaming_dataset()
 prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:8]]
 
 # Send prompts using the orchestrator and capture responses
-try:
+with PromptSendingOrchestrator(objective_target=prompt_target) as orchestrator:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
-    if responses:
-        await orchestrator.print_conversations()  # type: ignore
-    else:
-        print("No valid responses were received from the orchestrator.")
-except Exception as e:
-    print(f"An error occurred while sending prompts: {e}")

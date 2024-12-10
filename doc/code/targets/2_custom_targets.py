@@ -29,7 +29,7 @@
 # > https://gandalf.lakera.ai/
 #
 #
-# Gandalf contains 7 different levels. In this demo, we will show how to automatically bypass (at least) the first couple. It uses the [RedTeamingOrchestrator](../orchestrators/2_red_teaming_orchestrator.ipynb) as a strategy to solve these challenges.
+# Gandalf contains 7 different levels. In this demo, we will show how to automatically bypass (at least) the first couple. It uses the [RedTeamingOrchestrator](../orchestrators/2_multi_turn_orchestrators.ipynb) as a strategy to solve these challenges.
 #
 # Each level gets progressively more difficult. Before continuing, it may be beneficial to manually try the Gandalf challenges to get a feel for how they are solved.
 #
@@ -97,7 +97,7 @@ with RedTeamingOrchestrator(
 import logging
 from typing import List
 
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter, Base64Converter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
@@ -119,7 +119,7 @@ aoai_target = OpenAIChatTarget()
 
 converters: List[PromptConverter] = [Base64Converter()]
 
-with PromptSendingOrchestrator(prompt_target=target, prompt_converters=converters, verbose=False) as orchestrator:
+with PromptSendingOrchestrator(objective_target=target, prompt_converters=converters, verbose=False) as orchestrator:
 
     response = (await orchestrator.send_prompts_async(prompt_list=[request]))[0]  # type: ignore
     print(response)  # type: ignore
