@@ -102,49 +102,46 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         self._max_backtracks = max_backtracks
 
+    # TODO: Test this function
     def _handle_last_prepended_assistant_message(self) -> tuple[str, Score | None]:
         """
         Handle the last message in the prepended conversation if it is from an assistant.
+
+        Evaluates whether there are existing scores for the last assistant message in the prepended conversation
+        and pulls out the refusal and objective scores. Does not perform backtracking.
+
+        Returns:
+            refused_text (str): If the last message was refused, sets the refused_text to the last user message.
+            objective_score (Score | None): The objective score for the last assistant message, if it exists.
         """
         refused_text = ""
         objective_score = None
+        scores = self._last_prepended_assistant_message_scores
 
-        # The last message is from an assistant
-        if self._last_prepended_assistant_message:
-            """
-            scores = self._memory.get_scores_by_prompt_ids(
-                prompt_request_response_ids=[self._last_prepended_assistant_message.original_prompt_id])
-            """
-            if self._last_prepended_assistant_message_scores:
-                refusal_score = None  # TODO: Separate scores into `refusal_score` and `objective_score`
-                objective_score = None  # TODO
+        if scores and len(scores) > 0:
+            for score in scores:
+                scorer_class = score.scorer_class_identifier["__type__"]
+                if scorer_class == self._refusal_scorer.get_identifier()["__type__"]:
+                    logger.info(
+                        "REFUSAL_SCORER for target response is: " f"{score.get_value()} {score.score_rationale}"
+                    )
 
-            if refusal_score:
-                logger.info(
-                    "REFUSAL_SCORER for target response is: "
-                    f"{refusal_score.get_value()} {refusal_score.score_rationale}"
-                )
+                    if score.get_value():
+                        refused_text = self._last_prepended_user_message
+                elif scorer_class == self._objective_scorer.get_identifier()["__type__"]:
+                    logger.info("EVAL_SCORER for target response is: " f"{score.get_value()} {score.score_rationale}")
 
-                refused_text = ""
-                if refusal_score.get_value():
-                    refused_text = self._last_prepended_user_message
-                    # Question: Should we handle backtracking for prepended messages?
-                    # Right now we provide the refused text as feedback when crafting attack prompt
-            elif objective_score:
-                logger.info(
-                    "EVAL_SCORER for target response is: "
-                    f"{objective_score.get_value()} {objective_score.score_rationale}"
-                )
+                    objective_score = score
 
         return refused_text, objective_score
 
-    def _handle_last_prepended_user_message(self):
+    # TODO: Test this function
+    def _handle_last_prepended_user_message(self) -> str | None:
         """
         Handle the last message in the prepended conversation if it is from a user.
         """
-        # The last message is from a user
         attack_prompt = None
-        if self._last_prepended_user_message and not self._last_prepended_assistant_message:
+        if self._last_prepended_user_message and not self._last_prepended_assistant_message_scores:
             logger.info("Using last user message from prepended conversation as Attack Prompt.")
             attack_prompt = self._last_prepended_user_message
 
@@ -216,6 +213,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             logger.info(f"TURN {turn_num}\n-----------")
 
             if not attack_prompt:
+                # This code path will always be run unless attack_prompt is set
+                # to have a value when handling last prepended user message
                 logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
                 attack_prompt = await self._get_attack_prompt(
                     adversarial_chat_conversation_id=adversarial_chat_conversation_id,
@@ -258,6 +257,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                     )
 
                     backtrack_count += 1
+                    attack_prompt = None
                     turn_num -= 1
 
                     logger.info(f"Question Backtrack Count: {backtrack_count}")
@@ -281,6 +281,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 break
 
             logger.info("Jailbreak Unsuccessful, continuing to next turn")
+
+            # Reset attack_prompt to None to get a new attack prompt in the next turn
+            attack_prompt = None
 
             turn_num += 1
 

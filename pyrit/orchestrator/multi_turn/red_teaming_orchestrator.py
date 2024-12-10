@@ -82,24 +82,30 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self._prompt_normalizer = PromptNormalizer()
         self._use_score_as_feedback = use_score_as_feedback
 
+    # TODO: Test this function
     def _handle_last_prepended_assistant_message(self) -> Score | None:
         """
         Handle the last message in the prepended conversation if it is from an assistant.
         """
-        score: Score | None = None
-        # The last message is from an assistant
-        if self._last_prepended_assistant_message:
-            scores = self._last_prepended_assistant_message_scores
-            score = None  # TODO: Get objective score from scores
+        objective_score: Score | None = None
+        scores = self._last_prepended_assistant_message_scores
 
-        return score
+        if scores and len(scores) > 0:
+            for score in scores:
+                # Extract existing score of the same type
+                if score.scorer_class_identifier["__type__"] == self._objective_scorer.get_identifier()["__type__"]:
+                    objective_score = score
+                    break
 
+        return objective_score
+
+    # TODO: Test this function
     def _handle_last_prepended_user_message(self) -> str:
         """
         Handle the last message in the prepended conversation if it is from a user.
         """
         custom_prompt = ""
-        if self._last_prepended_user_message and not self._last_prepended_assistant_message:
+        if self._last_prepended_user_message and not self._last_prepended_assistant_message_scores:
             logger.info("Sending last user message from prepended conversation to the prompt target.")
             custom_prompt = self._last_prepended_user_message
 
@@ -231,7 +237,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 adversarial_chat_conversation_id=adversarial_chat_conversation_id,
                 feedback=feedback,
                 memory_labels=memory_labels,
-        )
+            )
         else:
             prompt = custom_prompt
 

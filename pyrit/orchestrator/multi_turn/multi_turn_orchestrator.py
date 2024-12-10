@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import CentralMemory
-from pyrit.models import Score, SeedPrompt, PromptRequestResponse, PromptRequestPiece
+from pyrit.models import Score, SeedPrompt, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
@@ -135,7 +135,6 @@ class MultiTurnOrchestrator(Orchestrator):
 
         self._prepended_conversation: list[PromptRequestResponse] = None
         self._last_prepended_user_message: str = None
-        self._last_prepended_assistant_message: PromptRequestPiece = None
         self._last_prepended_assistant_message_scores: list[Score] = None
 
     def _get_adversarial_chat_seed_prompt(self, seed_prompt):
@@ -212,13 +211,12 @@ class MultiTurnOrchestrator(Orchestrator):
         if last_message.role == "user":
             self._last_prepended_user_message = last_message.converted_value
         elif last_message.role == "assistant":
-            # Check assumption that there will always be a user message preceding the assistant message
+            # Check assumption that there will be a user message preceding the assistant message
             if (
                 len(self._prepended_conversation) > 1
                 and self._prepended_conversation[-2].request_pieces[0].role == "user"
             ):
                 self._last_prepended_user_message = self._prepended_conversation[-2].request_pieces[0].converted_value
-                self._last_prepended_assistant_message = last_message
             else:
                 raise ValueError(
                     "There must be a user message preceding the assistant message in prepended conversations."
