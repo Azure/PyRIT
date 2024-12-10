@@ -48,8 +48,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             Defaults to None.
         max_backtracks (int, Optional): The maximum number of times to backtrack during the attack.
             Must be a positive integer. Defaults to 10.
-        memory_labels (Optional[dict[str, str]], Optional): Dictionary of labels for memory management.
-            Defaults to None.
         verbose (bool, Optional): Flag indicating whether to enable verbose logging. Defaults to False.
     """
 
@@ -63,7 +61,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         max_turns: int = 10,
         prompt_converters: Optional[list[PromptConverter]] = None,
         max_backtracks: int = 10,
-        memory_labels: Optional[dict[str, str]] = None,
         verbose: bool = False,
     ) -> None:
 
@@ -87,7 +84,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             adversarial_chat_system_prompt_path=adversarial_chat_system_prompt_path,
             max_turns=max_turns,
             objective_scorer=objective_scorer,
-            memory_labels=memory_labels,
             prompt_converters=prompt_converters,
             verbose=verbose,
         )
@@ -154,7 +150,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         return attack_prompt
 
-    async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
+    async def run_attack_async(
+        self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
+    ) -> MultiTurnAttackResult:
         """
         Executes the Crescendo Attack asynchronously.
 
@@ -166,12 +164,17 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         Args:
             objective (str): The ultimate goal or purpose of the attack, which the orchestrator attempts
                 to achieve through multiple turns of interaction with the target.
+            memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
+                prompts throughout the attack. Any labels passed in will be combined with self._global_memory_labels
+                (from the GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
+                the passed-in labels take precedence. Defaults to None.
 
         Returns:
             MultiTurnAttackResult: An object containing details about the attack outcome, including:
-            - conversation_id (UUID): The ID of the conversation where the objective was ultimately achieved or failed.
-            - achieved_objective (bool): Indicates if the objective was successfully achieved within the turnlimit.
-            - objective (str): The initial objective of the attack.
+                - conversation_id (UUID): The ID of the conversation where the objective was ultimately achieved or
+                    failed.
+                - achieved_objective (bool): Indicates if the objective was successfully achieved within the turnlimit.
+                - objective (str): The initial objective of the attack.
 
         Raises:
             ValueError: If `max_turns` is set to a non-positive integer.
@@ -184,6 +187,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         adversarial_chat_conversation_id = str(uuid4())
         objective_target_conversation_id = str(uuid4())
 
+        updated_memory_labels = self._combine_with_global_memory_labels(memory_labels=memory_labels)
+
         adversarial_chat_system_prompt = self._adversarial_chat_system_seed_prompt.render_template_value(
             objective=objective,
             max_turns=self._max_turns,
@@ -193,7 +198,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             system_prompt=adversarial_chat_system_prompt,
             conversation_id=adversarial_chat_conversation_id,
             orchestrator_identifier=self.get_identifier(),
-            labels=self._global_memory_labels,
+            labels=updated_memory_labels,
         )
 
         # Prepare the conversation by adding any provided messages to memory.
@@ -219,13 +224,16 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                     turn_num=turn_num,
                     max_turns=self._max_turns,
                     objective_score=objective_score,
+                    memory_labels=updated_memory_labels,
                 )
 
             refused_text = ""
             logger.info("Sending attack prompt to TARGET")
 
             last_response = await self._send_prompt_to_target_async(
-                attack_prompt=attack_prompt, objective_target_conversation_id=objective_target_conversation_id
+                attack_prompt=attack_prompt,
+                objective_target_conversation_id=objective_target_conversation_id,
+                memory_labels=updated_memory_labels,
             )
 
             if backtrack_count < self._max_backtracks:
@@ -303,6 +311,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         turn_num: int,
         max_turns: int,
         objective_score: Score = None,
+        memory_labels: Optional[dict[str, str]] = None,
     ) -> str:
 
         prompt_text = (
@@ -341,7 +350,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                     normalizer_request=normalizer_request,
                     target=self._adversarial_chat,
                     orchestrator_identifier=self.get_identifier(),
-                    labels=self._global_memory_labels,
+                    labels=memory_labels,
                 )
             )
             .request_pieces[0]
@@ -369,7 +378,11 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         return str(attack_prompt)
 
     async def _send_prompt_to_target_async(
-        self, *, attack_prompt: str, objective_target_conversation_id: str = None
+        self,
+        *,
+        attack_prompt: str,
+        objective_target_conversation_id: str = None,
+        memory_labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestPiece:
 
         # Sends the attack prompt to the objective target and returns the response
@@ -384,7 +397,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 normalizer_request=normalizer_request,
                 target=self._objective_target,
                 orchestrator_identifier=self.get_identifier(),
-                labels=self._global_memory_labels,
+                labels=memory_labels,
             )
         ).request_pieces[0]
 

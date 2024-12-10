@@ -35,6 +35,7 @@ class TreeOfAttacksNode:
         adversarial_chat_seed_prompt: SeedPrompt,
         adversarial_chat_prompt_template: SeedPrompt,
         adversarial_chat_system_seed_prompt: SeedPrompt,
+        desired_response_prefix: str,
         objective_scorer: Scorer,
         on_topic_scorer: Scorer,
         prompt_converters: list[PromptConverter],
@@ -47,6 +48,7 @@ class TreeOfAttacksNode:
         self._adversarial_chat = adversarial_chat
         self._objective_scorer = objective_scorer
         self._adversarial_chat_seed_prompt = adversarial_chat_seed_prompt
+        self._desired_response_prefix = desired_response_prefix
         self._adversarial_chat_prompt_template = adversarial_chat_prompt_template
         self._adversarial_chat_system_seed_prompt = adversarial_chat_system_seed_prompt
         self._on_topic_scorer = on_topic_scorer
@@ -140,6 +142,7 @@ class TreeOfAttacksNode:
             prompt_converters=self._prompt_converters,
             orchestrator_id=self._orchestrator_id,
             memory_labels=self._global_memory_labels,
+            desired_response_prefix=self._desired_response_prefix,
             parent_id=self.node_id,
         )
 
@@ -163,8 +166,13 @@ class TreeOfAttacksNode:
         target_messages = self._memory.get_conversation(conversation_id=self.objective_target_conversation_id)
 
         if not target_messages:
+
+            system_prompt = self._adversarial_chat_system_seed_prompt.render_template_value(
+                objective=objective, desired_prefix=self._desired_response_prefix
+            )
+
             self._adversarial_chat.set_system_prompt(
-                system_prompt=self._adversarial_chat_system_seed_prompt.render_template_value(objective=objective),
+                system_prompt=system_prompt,
                 conversation_id=self.adversarial_chat_conversation_id,
                 orchestrator_identifier=self._orchestrator_id,
                 labels=self._global_memory_labels,

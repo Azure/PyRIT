@@ -91,6 +91,8 @@ and install the built wheel file `pip install dist/pyrit-x.y.z-py3-none-any.whl`
 
 Once the package is successfully installed in the new conda environment, run `pip show pyrit`. Ensure that the version matches the release `vx.y.z` and that the package is found under the site-packages directory of the environment, like `..\anaconda3\envs\release-test-vx.y.z\Lib\site-packages`.
 
+Make sure to set up the Jupyter kernel as described in our [Jupyter setup](../setup/jupyter_setup.md) guide.
+
 To test the demos outside the PyRIT repository, copy the `doc`, `assets`, and `.env` files to a new folder created outside the PyRIT directory. For better organization, you could create a main folder called `releases` and a subfolder named `releasevx.y.z`, and then place the copied folders within this structure.
 
 Before running the demos, execute `az login` or `az login --use-device-code`, as some demos require Azure authentication and use delegation SAS.
@@ -98,7 +100,7 @@ Before running the demos, execute `az login` or `az login --use-device-code`, as
 Additionally, verify that your environment file includes all the test secrets needed to run the demos. If not, update your .env file using the secrets from the key vault.
 
 In the new location, run all notebooks.
-This can be done using `.\doc\generate_docs\pct_to_ipynb.py` or manually.
+This can be done using `python .\doc\generate_docs\pct_to_ipynb.py --run-id <run-id> --kernel-name <kernel>` or manually.
 Check the output to make sure that the notebooks succeeded.
 
 Note: copying the doc folder elsewhere is essential since we store data files

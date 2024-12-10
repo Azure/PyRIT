@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.4.1.dev0"
+version = "0.5.3.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -12,6 +12,8 @@ authors = [
     { name = "romanlutz" },
     { name = "jbolor21" },
     { name = "nina-msft" },
+    { name = "jsong468" },
+    { name = "eugeniavkim" },
 ]
 readme = "README.md"
 license = { text = "MIT" }
@@ -49,7 +51,7 @@ dependencies = [
     "datasets>=3.0.0",
     "duckdb==0.10.0",
     "duckdb-engine==0.11.2",
-    "httpx[http2]>=0.27.2",
+    "httpx[http2]==0.27.2",
     "jupyter>=1.0.0",
     "ipykernel>=6.29.4",
     "numpy>=1.26.4",

@@ -1,11 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pathlib import Path
 import pytest
 
 from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
@@ -55,6 +57,7 @@ def get_prompt_response_with_content(content: str) -> PromptRequestResponse:
                 converted_value=content,
                 original_value_data_type="text",
                 converted_value_data_type="text",
+                response_error="none",
             )
         ],
     )
@@ -91,6 +94,20 @@ def test_invalid_depth():
             depth=0,
         )
     assert e.match("The depth of the tree must be at least 1.")
+
+
+def test_system_prompt_without_desired_prefix():
+    # This is mostly valid but missing 'desired_prefix'
+    invald_system_prompt = Path(DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml")
+
+    with pytest.raises(ValueError) as e:
+        TreeOfAttacksWithPruningOrchestrator(
+            objective_target=MagicMock(),
+            adversarial_chat=MagicMock(),
+            scoring_target=MagicMock(),
+            adversarial_chat_system_prompt_path=invald_system_prompt,
+        )
+    assert e.match("Adversarial seed prompt must have a desired_prefix")
 
 
 @pytest.mark.asyncio

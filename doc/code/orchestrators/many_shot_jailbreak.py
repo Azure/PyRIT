@@ -30,16 +30,16 @@ from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_examples
 from pyrit.models import SeedPrompt
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
+from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 # Load environment variables
 default_values.load_environment_files()
 
 # We demonstrate the use of the Azure OpenAI text-only target here
 prompt_target = OpenAIChatTarget()
-template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
+template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yaml"
 
 
 # %%

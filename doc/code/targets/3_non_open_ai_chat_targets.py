@@ -69,4 +69,4 @@ await orchestrator.print_conversations()  # type: ignore
 # You can then use this cell anywhere you would use a `PromptTarget` object.
 # For example, you can create a red teaming orchestrator and use this instead of the `AzureOpenAI` target and do the [Gandalf or Crucible Demos](./2_custom_targets.ipynb) but use this AML model.
 #
-# This is also shown in the [Red Teaming Orchestrator](../orchestrators/2_red_teaming_orchestrator.ipynb) documentation.
+# This is also shown in the [Multi-Turn Orchestrator](../orchestrators/2_multi_turn_orchestrators.ipynb) documentation.
