@@ -204,11 +204,16 @@ class MultiTurnOrchestrator(Orchestrator):
             self._last_prepended_user_message = last_message.converted_value
         elif last_message.role == "assistant":
             # Check assumption that there will always be a user message preceding the assistant message
-            if len(self._prepended_conversation) > 1 and self._prepended_conversation[-2].request_pieces[0].role == "user":
+            if (
+                len(self._prepended_conversation) > 1
+                and self._prepended_conversation[-2].request_pieces[0].role == "user"
+            ):
                 self._last_prepended_user_message = self._prepended_conversation[-2].request_pieces[0].converted_value
                 self._last_prepended_assistant_message = last_message
             else:
-                raise ValueError("There must be a user message preceding the assistant message in prepended conversations.")
+                raise ValueError(
+                    "There must be a user message preceding the assistant message in prepended conversations."
+                )
 
             # Get scores for the last assistant message based off of the original id
             self._last_prepended_assistant_message_scores = self._memory.get_scores_by_prompt_ids(

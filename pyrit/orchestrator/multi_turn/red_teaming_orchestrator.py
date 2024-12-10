@@ -93,8 +93,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         # The last message is from an assistant
         if self._last_prepended_assistant_message:
             scores = self._last_prepended_assistant_message_scores
-            score = None # TODO: Get objective score from scores
-        
+            score = None  # TODO: Get objective score from scores
+
         return score
 
     def _handle_last_prepended_user_message(self) -> str:

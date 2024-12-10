@@ -106,7 +106,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         self._max_backtracks = max_backtracks
 
-
     def _handle_last_prepended_assistant_message(self) -> tuple[str, Score | None]:
         """
         Handle the last message in the prepended conversation if it is from an assistant.
@@ -121,8 +120,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 prompt_request_response_ids=[self._last_prepended_assistant_message.original_prompt_id])
             """
             if self._last_prepended_assistant_message_scores:
-                refusal_score = None # TODO: Separate scores into `refusal_score` and `objective_score`
-                objective_score = None # TODO
+                refusal_score = None  # TODO: Separate scores into `refusal_score` and `objective_score`
+                objective_score = None  # TODO
 
             if refusal_score:
                 logger.info(
@@ -143,7 +142,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         return refused_text, objective_score
 
-
     def _handle_last_prepended_user_message(self):
         """
         Handle the last message in the prepended conversation if it is from a user.
@@ -155,7 +153,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             attack_prompt = self._last_prepended_user_message
 
         return attack_prompt
-
 
     async def run_attack_async(self, *, objective: str) -> MultiTurnAttackResult:
         """
