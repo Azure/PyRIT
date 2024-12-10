@@ -39,4 +39,3 @@ prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:8]]
 # Send prompts using the orchestrator and capture responses
 with PromptSendingOrchestrator(objective_target=prompt_target) as orchestrator:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
-

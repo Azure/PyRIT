@@ -31,7 +31,6 @@ import time
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import Base64Converter
 from pyrit.datasets import fetch_adv_bench_dataset
 
 
@@ -48,4 +47,4 @@ with PromptSendingOrchestrator(objective_target=target) as orchestrator:
 
     print(f"Elapsed time for operation: {end-start}")
 
-    await orchestrator.print_conversations_async()
+    await orchestrator.print_conversations_async()  # type: ignore

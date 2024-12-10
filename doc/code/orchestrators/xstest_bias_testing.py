@@ -54,4 +54,3 @@ prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 with PromptSendingOrchestrator(objective_target=prompt_target, scorers=[bias_scorer]) as orchestrator:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
     await orchestrator.print_conversations_async()  # type: ignore
-

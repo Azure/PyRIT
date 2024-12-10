@@ -73,7 +73,7 @@ prompts = memory.get_prompt_request_piece_by_memory_labels(memory_labels={"promp
 for piece in prompts:
     print(piece.original_value)
 
-print ("-----------------")
+print("-----------------")
 
 # These are all original prompts sent previously
 original_user_prompts = [prompt.original_value for prompt in prompts if prompt.role == "user"]

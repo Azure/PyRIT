@@ -61,7 +61,6 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         self._prepended_conversation = prepended_conversation
 
-
     async def send_normalizer_requests_async(
         self,
         *,
@@ -201,4 +200,3 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_ids=prompt_ids,
                     responses_only=True,
                 )
-
