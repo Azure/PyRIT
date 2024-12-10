@@ -60,13 +60,13 @@ azure_ml_chat_target._set_env_configuration_vars(
 # Parameters such as temperature and repetition_penalty can be set using the _set_model_parameters() function.
 azure_ml_chat_target._set_model_parameters(temperature=0.9, repetition_penalty=1.3)
 
-with PromptSendingOrchestrator(prompt_target=azure_ml_chat_target) as orchestrator:
+with PromptSendingOrchestrator(objective_target=azure_ml_chat_target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=["Hello! Describe yourself and the company who developed you."])  # type: ignore
-await orchestrator.print_conversations()  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
 
 # %% [markdown]
 #
 # You can then use this cell anywhere you would use a `PromptTarget` object.
 # For example, you can create a red teaming orchestrator and use this instead of the `AzureOpenAI` target and do the [Gandalf or Crucible Demos](./2_custom_targets.ipynb) but use this AML model.
 #
-# This is also shown in the [Multi-Turn Orchestrator](../orchestrators/2_multi_turn_orchestrators.ipynb) documentation.
+# This is also shown in the [Red Teaming Orchestrator](../orchestrators/2_multi_turn_orchestrators.ipynb) documentation.

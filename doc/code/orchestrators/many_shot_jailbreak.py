@@ -53,7 +53,7 @@ template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_s
 # Set up the Harm Scorer with the same prompt target to ensure consistency
 harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
 
-orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[harm_scorer])
+orchestrator = PromptSendingOrchestrator(objective_target=prompt_target, scorers=[harm_scorer])
 
 # Load Yaml file, parse content, and create ManyShotTemplate object
 template = SeedPrompt.from_yaml_file(template_path)
@@ -74,7 +74,7 @@ filled_prompt = template.render_template_value(prompt=malicious_prompt, examples
 await orchestrator.send_prompts_async(prompt_list=[filled_prompt])  # type: ignore
 
 # Use the orchestrator's method to print conversations
-await orchestrator.print_conversations()  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
 
 
 # %%
