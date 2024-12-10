@@ -102,6 +102,54 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         self._max_backtracks = max_backtracks
 
+    def _handle_last_prepended_assistant_message(self) -> tuple[str, Score | None]:
+        """
+        Handle the last message in the prepended conversation if it is from an assistant.
+        """
+        refused_text = ""
+        objective_score = None
+
+        # The last message is from an assistant
+        if self._last_prepended_assistant_message:
+            """
+            scores = self._memory.get_scores_by_prompt_ids(
+                prompt_request_response_ids=[self._last_prepended_assistant_message.original_prompt_id])
+            """
+            if self._last_prepended_assistant_message_scores:
+                refusal_score = None  # TODO: Separate scores into `refusal_score` and `objective_score`
+                objective_score = None  # TODO
+
+            if refusal_score:
+                logger.info(
+                    "REFUSAL_SCORER for target response is: "
+                    f"{refusal_score.get_value()} {refusal_score.score_rationale}"
+                )
+
+                refused_text = ""
+                if refusal_score.get_value():
+                    refused_text = self._last_prepended_user_message
+                    # Question: Should we handle backtracking for prepended messages?
+                    # Right now we provide the refused text as feedback when crafting attack prompt
+            elif objective_score:
+                logger.info(
+                    "EVAL_SCORER for target response is: "
+                    f"{objective_score.get_value()} {objective_score.score_rationale}"
+                )
+
+        return refused_text, objective_score
+
+    def _handle_last_prepended_user_message(self):
+        """
+        Handle the last message in the prepended conversation if it is from a user.
+        """
+        # The last message is from a user
+        attack_prompt = None
+        if self._last_prepended_user_message and not self._last_prepended_assistant_message:
+            logger.info("Using last user message from prepended conversation as Attack Prompt.")
+            attack_prompt = self._last_prepended_user_message
+
+        return attack_prompt
+
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
     ) -> MultiTurnAttackResult:
@@ -153,30 +201,34 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             labels=updated_memory_labels,
         )
 
-        turn_num = 0
+        # Prepare the conversation by adding any provided messages to memory.
+        # If there is no prepended conversation, the turn count is 1.
+        turn_num = self._prepare_conversation(new_conversation_id=objective_target_conversation_id)
+
         backtrack_count = 0
-        refused_text = ""
         achieved_objective = False
-        objective_score = None
 
-        while turn_num < self._max_turns:
+        refused_text, objective_score = self._handle_last_prepended_assistant_message()
+        attack_prompt = self._handle_last_prepended_user_message()
 
-            turn_num += 1
+        while turn_num <= self._max_turns:
+
             logger.info(f"TURN {turn_num}\n-----------")
 
-            logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
-            attack_prompt = await self._get_attack_prompt(
-                adversarial_chat_conversation_id=adversarial_chat_conversation_id,
-                refused_text=refused_text,
-                objective=objective,
-                turn_num=turn_num,
-                max_turns=self._max_turns,
-                objective_score=objective_score,
-                memory_labels=updated_memory_labels,
-            )
+            if not attack_prompt:
+                logger.info("Getting Attack Prompt from RED_TEAMING_CHAT")
+                attack_prompt = await self._get_attack_prompt(
+                    adversarial_chat_conversation_id=adversarial_chat_conversation_id,
+                    refused_text=refused_text,
+                    objective=objective,
+                    turn_num=turn_num,
+                    max_turns=self._max_turns,
+                    objective_score=objective_score,
+                    memory_labels=updated_memory_labels,
+                )
 
             refused_text = ""
-            logger.info("Sending retrieved attack prompt to TARGET")
+            logger.info("Sending attack prompt to TARGET")
 
             last_response = await self._send_prompt_to_target_async(
                 attack_prompt=attack_prompt,
@@ -229,6 +281,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 break
 
             logger.info("Jailbreak Unsuccessful, continuing to next turn")
+
+            turn_num += 1
 
         if achieved_objective:
             logger.info("The crescendo orchestrator has achieved the objective.")
