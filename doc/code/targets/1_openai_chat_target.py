@@ -41,7 +41,7 @@ default_values.load_environment_files()
 
 target = OpenAIChatTarget(use_aad_auth=False)
 
-with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
+with PromptSendingOrchestrator(objective_target=target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=[jailbreak_prompt])  # type: ignore
     print(response[0])
 

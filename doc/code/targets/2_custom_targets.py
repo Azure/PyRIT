@@ -97,7 +97,7 @@ with RedTeamingOrchestrator(
 import logging
 from typing import List
 
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter, Base64Converter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
@@ -119,7 +119,7 @@ aoai_target = OpenAIChatTarget()
 
 converters: List[PromptConverter] = [Base64Converter()]
 
-with PromptSendingOrchestrator(prompt_target=target, prompt_converters=converters, verbose=False) as orchestrator:
+with PromptSendingOrchestrator(objective_target=target, prompt_converters=converters, verbose=False) as orchestrator:
 
     response = (await orchestrator.send_prompts_async(prompt_list=[request]))[0]  # type: ignore
     print(response)  # type: ignore

@@ -1,23 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from collections import defaultdict
-import uuid
-from colorama import Fore, Style
 import logging
+import uuid
 
+from collections import defaultdict
+from colorama import Fore, Style
 from typing import Optional
 
 from pyrit.common.display_response import display_image_response
-from pyrit.models import PromptDataType
-from pyrit.models import PromptRequestResponse
-from pyrit.orchestrator import Orchestrator
-from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
-from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.models import PromptDataType, PromptRequestResponse
+from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer
+from pyrit.orchestrator import Orchestrator, ScoringOrchestrator
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +28,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
     def __init__(
         self,
-        prompt_target: PromptTarget,
+        objective_target: PromptTarget,
         prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
@@ -39,7 +36,7 @@ class PromptSendingOrchestrator(Orchestrator):
     ) -> None:
         """
         Args:
-            prompt_target (PromptTarget): The target for sending prompts.
+            objective_target (PromptTarget): The target for sending prompts.
             prompt_converters (list[PromptConverter], Optional): List of prompt converters. These are stacked in
                 the order they are provided. E.g. the output of converter1 is the input of converter2.
             scorers (list[Scorer], Optional): List of scorers to use for each prompt request response, to be
@@ -53,7 +50,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer()
         self._scorers = scorers
 
-        self._prompt_target = prompt_target
+        self._prompt_target = objective_target
 
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
@@ -63,6 +60,45 @@ class PromptSendingOrchestrator(Orchestrator):
         Prepends a conversation to the prompt target.
         """
         self._prepended_conversation = prepended_conversation
+
+
+    async def send_normalizer_requests_async(
+        self,
+        *,
+        prompt_request_list: list[NormalizerRequest],
+        memory_labels: Optional[dict[str, str]] = None,
+    ) -> list[PromptRequestResponse]:
+        """
+        Sends the normalized prompts to the prompt target.
+        """
+        for request in prompt_request_list:
+            request.validate()
+
+        conversation_id = self._prepare_conversation()
+
+        for prompt in prompt_request_list:
+            prompt.conversation_id = conversation_id
+
+        # Normalizer is responsible for storing the requests in memory
+        # The labels parameter may allow me to stash class information for each kind of prompt.
+        responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
+            requests=prompt_request_list,
+            target=self._prompt_target,
+            labels=self._combine_with_global_memory_labels(memory_labels),
+            orchestrator_identifier=self.get_identifier(),
+            batch_size=self._batch_size,
+        )
+
+        if self._scorers:
+            response_ids = []
+            for response in responses:
+                for piece in response.request_pieces:
+                    id = str(piece.id)
+                    response_ids.append(id)
+
+            await self._score_responses_async(response_ids)
+
+        return responses
 
     async def send_prompts_async(
         self,
@@ -107,58 +143,8 @@ class PromptSendingOrchestrator(Orchestrator):
             memory_labels=self._combine_with_global_memory_labels(memory_labels),
         )
 
-    async def send_normalizer_requests_async(
-        self,
-        *,
-        prompt_request_list: list[NormalizerRequest],
-        memory_labels: Optional[dict[str, str]] = None,
-    ) -> list[PromptRequestResponse]:
-        """
-        Sends the normalized prompts to the prompt target.
-        """
-        for request in prompt_request_list:
-            request.validate()
-
-        conversation_id = self._prepare_conversation()
-
-        for prompt in prompt_request_list:
-            prompt.conversation_id = conversation_id
-
-        # Normalizer is responsible for storing the requests in memory
-        # The labels parameter may allow me to stash class information for each kind of prompt.
-        responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
-            requests=prompt_request_list,
-            target=self._prompt_target,
-            labels=self._combine_with_global_memory_labels(memory_labels),
-            orchestrator_identifier=self.get_identifier(),
-            batch_size=self._batch_size,
-        )
-
-        if self._scorers:
-            response_ids = []
-            for response in responses:
-                for piece in response.request_pieces:
-                    id = str(piece.id)
-                    response_ids.append(id)
-
-            await self._score_responses_async(response_ids)
-
-        return responses
-
-    async def _score_responses_async(self, prompt_ids: list[str]):
-        with ScoringOrchestrator(
-            batch_size=self._batch_size,
-            verbose=self._verbose,
-        ) as scoring_orchestrator:
-            for scorer in self._scorers:
-                await scoring_orchestrator.score_prompts_by_request_id_async(
-                    scorer=scorer,
-                    prompt_ids=prompt_ids,
-                    responses_only=True,
-                )
-
-    async def print_conversations(self):
-        """Prints the conversation between the prompt target and the red teaming bot."""
+    async def print_conversations_async(self):
+        """Prints the conversation between the objective target and the red teaming bot."""
         all_messages = self.get_memory()
 
         # group by conversation ID
@@ -203,3 +189,16 @@ class PromptSendingOrchestrator(Orchestrator):
 
                 self._memory.add_request_response_to_memory(request=request)
         return conversation_id
+
+    async def _score_responses_async(self, prompt_ids: list[str]):
+        with ScoringOrchestrator(
+            batch_size=self._batch_size,
+            verbose=self._verbose,
+        ) as scoring_orchestrator:
+            for scorer in self._scorers:
+                await scoring_orchestrator.score_prompts_by_request_id_async(
+                    scorer=scorer,
+                    prompt_ids=prompt_ids,
+                    responses_only=True,
+                )
+

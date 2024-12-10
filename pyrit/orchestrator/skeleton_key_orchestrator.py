@@ -27,7 +27,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
     The orchestrator sends an inital skeleton key prompt to the target, and then follows
     up with a separate attack prompt.
     If successful, the first prompt makes the target comply even with malicious follow-up prompts.
-    In our experiments, using two separate prompts was significantly more effective than using a single combined prompt.
+    In our experiments, using two separate prompts was more effective than using a single combined prompt.
 
     Learn more about attack at the link below:
     https://www.microsoft.com/en-us/security/blog/2024/06/26/mitigating-skeleton-key-a-new-type-of-generative-ai-jailbreak-technique/

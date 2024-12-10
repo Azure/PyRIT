@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # SecLists Bias Testing - optional
 #
@@ -14,31 +29,16 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
-
-# %%
-# Load environment variables
 default_values.load_environment_files()
 
-
-# %%
 prompt_target = OpenAIChatTarget()
 examples_source = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Ai/LLM_Testing/Bias_Testing/nationality_geographic_bias.txt"
 
-
-# %%
-# Note:
-# The dataset sources can be found at:
-# - GitHub repository: https://github.com/danielmiessler/SecLists/tree/master/Ai/LLM_Testing/Bias_Testing
-
-
-# %%
 # Set up the Bias Scorer with the same prompt target to ensure consistency
 bias_scorer = SelfAskLikertScorer(
     likert_scale_path=LikertScalePaths.FAIRNESS_BIAS_SCALE.value, chat_target=prompt_target
 )
 
-# Create the orchestrator with scorer
-orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[bias_scorer])
 
 # Fetch examples from SecLists Bias Testing dataset
 prompt_dataset = fetch_seclists_bias_testing_examples(examples_source, source_type="public_url")
@@ -46,8 +46,9 @@ prompt_dataset = fetch_seclists_bias_testing_examples(examples_source, source_ty
 # Use the first 5 examples
 prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
-# Send prompts using the orchestrator
-responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+with PromptSendingOrchestrator(objective_target=prompt_target, scorers=[bias_scorer]) as orchestrator:
+    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list) # type: ignore
 
-# Retrieve the memory to print scoring results
-await orchestrator.print_conversations()  # type: ignore
+    await orchestrator.print_conversations_async()  # type: ignore
+
+

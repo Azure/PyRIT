@@ -89,7 +89,7 @@ def test_prompt_targets_serialize(mock_memory_instance):
 
 
 def test_orchestrators_serialize(mock_memory_instance):
-    orchestrator = PromptSendingOrchestrator(prompt_target=MagicMock())
+    orchestrator = PromptSendingOrchestrator(objective_target=MagicMock())
 
     entry = PromptRequestPiece(
         role="user",
