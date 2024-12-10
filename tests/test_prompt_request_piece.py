@@ -100,7 +100,7 @@ def test_orchestrators_serialize(mock_memory_instance):
 
     assert entry.orchestrator_identifier["id"] is not None
     assert entry.orchestrator_identifier["__type__"] == "PromptSendingOrchestrator"
-    assert entry.orchestrator_identifier["__module__"] == "pyrit.orchestrator.prompt_sending_orchestrator"
+    assert entry.orchestrator_identifier["__module__"] == "pyrit.orchestrator.single_turn.prompt_sending_orchestrator"
 
 
 @pytest.mark.asyncio
