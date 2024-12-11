@@ -19,6 +19,11 @@ from pyrit.common import default_values
 logger = logging.getLogger(__name__)
 
 
+try:
+    import torch
+except ModuleNotFoundError as e:
+    logger.warning("Torch is not installed. Some functionalities may not work.")
+
 class HuggingFaceChatTarget(PromptChatTarget):
     """The HuggingFaceChatTarget interacts with HuggingFace models, specifically for conducting red teaming activities.
     Inherits from PromptTarget to comply with the current design standards.
@@ -50,7 +55,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         skip_special_tokens: bool = True,
         trust_remote_code: bool = False,
         device_map: Optional[str] = None, 
-        torch_dtype: Optional["torch.dtype"] = None,
+        torch_dtype: Optional[torch.dtype] = None,
         attn_implementation: Optional[str] = None,
 
     ) -> None:
