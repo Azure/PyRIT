@@ -21,9 +21,10 @@ logger = logging.getLogger(__name__)
 
 try:
     import torch
-except ModuleNotFoundError as e:
+except ModuleNotFoundError:
     logger.warning("Torch is not installed. Some functionalities may not work.")
     torch = None
+
 
 class HuggingFaceChatTarget(PromptChatTarget):
     """The HuggingFaceChatTarget interacts with HuggingFace models, specifically for conducting red teaming activities.
@@ -55,10 +56,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
         top_p: float = 1.0,
         skip_special_tokens: bool = True,
         trust_remote_code: bool = False,
-        device_map: Optional[str] = None, 
+        device_map: Optional[str] = None,
         torch_dtype: Optional["torch.dtype"] = None,
         attn_implementation: Optional[str] = None,
-
     ) -> None:
         super().__init__()
 
@@ -152,7 +152,6 @@ class HuggingFaceChatTarget(PromptChatTarget):
                 if value is not None
             }
 
-
             # Check if the model is already cached
             if HuggingFaceChatTarget._cache_enabled and HuggingFaceChatTarget._cached_model_id == model_identifier:
                 logger.info(f"Using cached model and tokenizer for {model_identifier}.")
@@ -191,10 +190,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
                     self.model_id, cache_dir=cache_dir, trust_remote_code=self.trust_remote_code
                 )
                 self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_id, 
-                    cache_dir=cache_dir, 
+                    self.model_id,
+                    cache_dir=cache_dir,
                     trust_remote_code=self.trust_remote_code,
-                    **optional_model_kwargs
+                    **optional_model_kwargs,
                 )
 
             # Move the model to the correct device
