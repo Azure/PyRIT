@@ -8,7 +8,7 @@ from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 # Import payloads and prompt parts from our common file
-from pyrit.common.ansi_payloads import (
+from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
     LIVE_PAYLOADS,
     ESCAPED_PAYLOADS,
     HIGH_LEVEL_TASKS,
@@ -20,7 +20,7 @@ from pyrit.common.ansi_payloads import (
 logger = logging.getLogger(__name__)
 
 
-class AnsiAllInOneConverter(PromptConverter):
+class AnsiAttackConverter(PromptConverter):
     """
     A single converter that can:
     - Use raw and escaped ANSI payloads.

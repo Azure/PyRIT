@@ -10,7 +10,8 @@ LIVE_PAYLOADS = [
     "\x1b]",
     "\x9b",
     "\x9d",
-    "\x1b]8;;https://learn.microsoft.com/en-us/security/ai-red-team/\x07Microsoft AI Red Team\x1b]8;;\x07",  # OSC8 hyperlink
+    "\x1b]8;;https://learn.microsoft.com/en-us/security/ai-red-team/\x07Microsoft AI Red Team"
+    "\x1b]8;;\x07",  # OSC8 hyperlink
     "Hello \x1b[32mTHIS IS GREEN\x1b[0m\x07",  # colour change + bell
     "Archive: demo.rar\nDetails: RAR 5\n\nAttributes      Size       Date   Time   Name\n"
     "----------- ---------  ---------- -----  ---------\n"
