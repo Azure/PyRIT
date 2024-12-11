@@ -1,12 +1,166 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
 import pytest
+import uuid
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
 from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnAttackResult
+from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrchestrator
+
+
+@pytest.fixture
+def orchestrator():
+    objective_scorer = MagicMock()
+    objective_scorer.scorer_type = "true_false"
+    orchestrator = RedTeamingOrchestrator(
+        objective_target=MagicMock(),
+        adversarial_chat=MagicMock(),
+        max_turns=2,
+        objective_scorer=objective_scorer,
+    )
+
+    orchestrator._memory = MagicMock()
+    return orchestrator
+
+
+def test_prepare_conversation_no_prepended_conversation(orchestrator):
+    orchestrator._prepended_conversation = None
+    new_conversation_id = str(uuid.uuid4())
+    num_turns = orchestrator._prepare_conversation(new_conversation_id=new_conversation_id)
+    assert num_turns == 1
+    orchestrator._memory.add_request_response_to_memory.assert_not_called()
+
+
+def test_prepare_conversation_with_prepended_conversation(orchestrator):
+    system_piece_id = uuid.uuid4()
+    orchestrator._prepended_conversation = [
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = system_piece_id,
+                    role = "system",
+                    original_value = "Hello I am a system prompt",
+            )]),
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "user",
+                    original_value = "Hello I am a user prompt",
+            )]),
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "assistant",
+                    original_value = "Hello I am an assistant prompt",
+            )]),
+    ]
+
+    system_piece = orchestrator._prepended_conversation[0].request_pieces[0]
+    user_piece = orchestrator._prepended_conversation[1].request_pieces[0]
+    assistant_piece = orchestrator._prepended_conversation[2].request_pieces[0]
+
+    mocked_score = MagicMock()
+    orchestrator._memory.get_scores_by_prompt_ids.return_value = [mocked_score]
+
+    new_conversation_id = str(uuid.uuid4())
+    turn_num = orchestrator._prepare_conversation(new_conversation_id=new_conversation_id)
+
+    # Check individual piece components are set correctly, using system piece as an example
+    assert turn_num == 2
+    assert system_piece.conversation_id == new_conversation_id
+    assert system_piece.id != system_piece_id
+    assert system_piece.original_prompt_id == system_piece_id
+    assert system_piece.orchestrator_identifier == orchestrator.get_identifier()
+
+    # Assert calls to memory
+    for request in orchestrator._prepended_conversation:
+        orchestrator._memory.add_request_response_to_memory.assert_any_call(request=request)
+
+    # Check globals are set correctly
+    assert orchestrator._last_prepended_user_message == user_piece.converted_value
+    orchestrator._memory.get_scores_by_prompt_ids.assert_called_once_with(prompt_request_response_ids=[assistant_piece.original_prompt_id])
+    assert orchestrator._last_prepended_assistant_message_scores == [mocked_score]
+
+
+def test_prepare_conversation_with_invalid_prepended_conversation(orchestrator):
+    # Invalid conversation as it is missing a user message before the assistant message
+    orchestrator._prepended_conversation = [
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "system",
+                    original_value = "Hello I am a system prompt",
+            )]),
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "assistant",
+                    original_value = "Hello I am an assistant prompt",
+            )]),
+    ]
+
+    with pytest.raises(ValueError, match="There must be a user message preceding the assistant message in prepended conversations."):
+        orchestrator._prepare_conversation(new_conversation_id=str(uuid.uuid4()))
+
+
+def test_prepare_conversation_with_custom_user_message(orchestrator):
+    orchestrator._prepended_conversation = [
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "user",
+                    original_value = "Hello I am a user prompt 1",
+            )]),
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "assistant",
+                    original_value = "Hello I am an assistant prompt",
+            )]),
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "user",
+                    original_value = "Hello I am a user prompt 2",
+            )]),
+    ]
+
+    turn_num = orchestrator._prepare_conversation(new_conversation_id=str(uuid.uuid4()))
+
+    # There is one complete turn in the prepended conversation, so turn_num should be 2
+    # as this is mid-conversation
+    assert turn_num == 2
+
+    # Assert calls to memory
+    for request in orchestrator._prepended_conversation:
+        orchestrator._memory.add_request_response_to_memory.assert_any_call(request=request)
+
+    # Check globals are set correctly
+    user_piece = orchestrator._prepended_conversation[2].request_pieces[0]
+    assert orchestrator._last_prepended_user_message == user_piece.converted_value
+    assert orchestrator._last_prepended_assistant_message_scores == None
+
+
+def test_prepare_conversation_exceeds_max_turns(orchestrator):
+    request_piece = MagicMock()
+    request_piece.role = "assistant"
+    request = MagicMock()
+    request.request_pieces = [request_piece]
+    orchestrator._prepended_conversation = [request] * (orchestrator._max_turns)
+    new_conversation_id = str(uuid.uuid4())
+
+    with pytest.raises(ValueError):
+        orchestrator._prepare_conversation(new_conversation_id=new_conversation_id)
 
 
 @pytest.mark.asyncio
