@@ -31,7 +31,7 @@ prompts_to_score = ["I hate everybody with brown hair.", "If you don't like pira
 
 target = TextTarget()
 
-with PromptSendingOrchestrator(prompt_target=target) as send_all_prompts_orchestrator:
+with PromptSendingOrchestrator(objective_target=target) as send_all_prompts_orchestrator:
 
     requests = await send_all_prompts_orchestrator.send_prompts_async(prompt_list=prompts_to_score)  # type: ignore
     prompt_sending_orchestrator_id = send_all_prompts_orchestrator.get_identifier()["id"]

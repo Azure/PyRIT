@@ -23,7 +23,7 @@
 # %%
 from pyrit.common import default_values
 
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAICompletionTarget
 
 default_values.load_environment_files()
@@ -31,7 +31,7 @@ default_values.load_environment_files()
 # Note that max_tokens will default to 16 for completions, so you may want to set the upper limit of allowed tokens for a longer response.
 target = OpenAICompletionTarget(max_tokens=2048)
 
-with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
+with PromptSendingOrchestrator(objective_target=target) as orchestrator:
     response = await orchestrator.send_prompts_async(prompt_list=["Hello! Who are you?"])  # type: ignore
     print(response[0])
 

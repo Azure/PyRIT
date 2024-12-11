@@ -87,7 +87,7 @@ sample_prompt: str = """
 Hello! Can you please retrieve the total number of sales in the document?
 """
 
-with PromptSendingOrchestrator(prompt_target=pst) as orchestrator:
+with PromptSendingOrchestrator(objective_target=pst) as orchestrator:
 
     resp = await orchestrator.send_prompts_async(prompt_list=[sample_prompt])  # type: ignore
-    await orchestrator.print_conversations()  # type: ignore
+    await orchestrator.print_conversations_async()  # type: ignore

@@ -41,13 +41,13 @@ def mock_target(mock_central_memory_instance) -> MockPromptTarget:
     return_value='{"op_name": "dummy_op"}',
 )
 def test_init_orchestrator_global_memory_labels(mock_get_non_required_value, mock_target: MockPromptTarget):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
     assert orchestrator._global_memory_labels == {"op_name": "dummy_op"}
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_no_converter(mock_target: MockPromptTarget, mock_central_memory_instance):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
     await orchestrator.send_prompts_async(prompt_list=["Hello"])
     assert mock_target.prompt_sent == ["Hello"]
@@ -55,7 +55,7 @@ async def test_send_prompt_no_converter(mock_target: MockPromptTarget, mock_cent
 
 @pytest.mark.asyncio
 async def test_send_prompts_async_no_converter(mock_target: MockPromptTarget, mock_central_memory_instance):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
     await orchestrator.send_prompts_async(prompt_list=["Hello"])
     assert mock_target.prompt_sent == ["Hello"]
@@ -63,7 +63,7 @@ async def test_send_prompts_async_no_converter(mock_target: MockPromptTarget, mo
 
 @pytest.mark.asyncio
 async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget, mock_central_memory_instance):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
     await orchestrator.send_prompts_async(prompt_list=["Hello", "my", "name"])
     assert mock_target.prompt_sent == ["Hello", "my", "name"]
@@ -72,7 +72,7 @@ async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget,
 @pytest.mark.asyncio
 async def test_send_prompts_b64_converter(mock_target: MockPromptTarget, mock_central_memory_instance):
     converter = Base64Converter()
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converters=[converter])
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, prompt_converters=[converter])
 
     await orchestrator.send_prompts_async(prompt_list=["Hello"])
     assert mock_target.prompt_sent == ["SGVsbG8="]
@@ -86,7 +86,7 @@ async def test_send_prompts_multiple_converters(mock_target: MockPromptTarget, m
     # This should base64 encode the prompt and then join the characters with an underscore
     converters = [b64_converter, join_converter]
 
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, prompt_converters=converters)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, prompt_converters=converters)
 
     await orchestrator.send_prompts_async(prompt_list=["Hello"])
     assert mock_target.prompt_sent == ["S_G_V_s_b_G_8_="]
@@ -94,7 +94,7 @@ async def test_send_prompts_multiple_converters(mock_target: MockPromptTarget, m
 
 @pytest.mark.asyncio
 async def test_send_normalizer_requests_async(mock_target: MockPromptTarget, mock_central_memory_instance):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
     orchestrator._prompt_normalizer = AsyncMock()
     orchestrator._prompt_normalizer.send_prompt_batch_to_target_async = AsyncMock(return_value=None)
 
@@ -125,7 +125,7 @@ async def test_send_prompts_and_score_async(
 
     scorer.score_async = AsyncMock()  # type: ignore
 
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, scorers=[scorer])
     orchestrator._prompt_normalizer = AsyncMock()
 
     request_pieces = []
@@ -187,7 +187,7 @@ async def test_send_prompts_and_score_async(
 @pytest.mark.parametrize("max_rpm", [30])
 async def test_max_requests_per_minute_delay(num_prompts: int, max_rpm: int, mock_central_memory_instance):
     mock_target = MockPromptTarget(rpm=max_rpm)
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, batch_size=1)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, batch_size=1)
 
     prompt_list = []
     for n in range(num_prompts):
@@ -201,21 +201,21 @@ async def test_max_requests_per_minute_delay(num_prompts: int, max_rpm: int, moc
 
 
 def test_orchestrator_sets_target_memory(mock_target: MockPromptTarget, mock_central_memory_instance):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
     assert orchestrator._memory is mock_target._memory
 
 
 def test_send_prompt_to_identifier(mock_target: MockPromptTarget, mock_central_memory_instance):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
     d = orchestrator.get_identifier()
     assert d["id"]
     assert d["__type__"] == "PromptSendingOrchestrator"
-    assert d["__module__"] == "pyrit.orchestrator.prompt_sending_orchestrator"
+    assert d["__module__"] == "pyrit.orchestrator.single_turn.prompt_sending_orchestrator"
 
 
 def test_orchestrator_get_memory(mock_target: MockPromptTarget, mock_central_memory_instance):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
     request = PromptRequestPiece(
         role="user",
@@ -238,7 +238,7 @@ def test_orchestrator_get_memory(mock_target: MockPromptTarget, mock_central_mem
 async def test_orchestrator_send_prompts_async_with_env_local_memory_labels(
     mock_get_non_required_value, mock_target: MockPromptTarget, mock_central_memory_instance
 ):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
     await orchestrator.send_prompts_async(prompt_list=["hello"])
     assert mock_target.prompt_sent == ["hello"]
 
@@ -253,7 +253,7 @@ async def test_orchestrator_send_prompts_async_with_env_local_memory_labels(
 async def test_orchestrator_send_prompts_async_with_memory_labels(
     mock_target: MockPromptTarget, mock_central_memory_instance
 ):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
     new_labels = {"op_name": "op1", "username": "name1"}
     await orchestrator.send_prompts_async(prompt_list=["hello"], memory_labels=new_labels)
     assert mock_target.prompt_sent == ["hello"]
@@ -272,7 +272,7 @@ async def test_orchestrator_send_prompts_async_with_memory_labels(
 async def test_orchestrator_send_prompts_async_with_memory_labels_collision(
     mock_get_non_required_value, mock_target: MockPromptTarget, mock_central_memory_instance
 ):
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target)
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
     new_labels = {"op_name": "op2", "username": "dummy_name"}
     await orchestrator.send_prompts_async(prompt_list=["hello"], memory_labels=new_labels)
     assert mock_target.prompt_sent == ["hello"]
@@ -286,7 +286,7 @@ async def test_orchestrator_send_prompts_async_with_memory_labels_collision(
 @pytest.mark.asyncio
 async def test_orchestrator_get_score_memory(mock_target: MockPromptTarget, mock_central_memory_instance):
     scorer = AsyncMock()
-    orchestrator = PromptSendingOrchestrator(prompt_target=mock_target, scorers=[scorer])
+    orchestrator = PromptSendingOrchestrator(objective_target=mock_target, scorers=[scorer])
 
     request = PromptRequestPiece(
         role="user",
@@ -318,7 +318,7 @@ def test_orchestrator_unique_id(orchestrator_count: int, mock_central_memory_ins
     orchestrator_ids = set()
     duplicate_found = False
     for n in range(orchestrator_count):
-        id = PromptSendingOrchestrator(prompt_target=MagicMock()).get_identifier()["id"]
+        id = PromptSendingOrchestrator(objective_target=MagicMock()).get_identifier()["id"]
 
         if id in orchestrator_ids:
             duplicate_found = True
@@ -330,12 +330,12 @@ def test_orchestrator_unique_id(orchestrator_count: int, mock_central_memory_ins
 
 
 def test_prepare_conversation_with_prepended_conversation(mock_central_memory_instance):
-    with patch("pyrit.orchestrator.prompt_sending_orchestrator.uuid.uuid4") as mock_uuid:
+    with patch("pyrit.orchestrator.single_turn.prompt_sending_orchestrator.uuid.uuid4") as mock_uuid:
 
         mock_uuid.return_value = "mocked-uuid"
-        prompt_target_mock = MagicMock()
+        objective_target_mock = MagicMock()
         memory_mock = MagicMock()
-        orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target_mock)
+        orchestrator = PromptSendingOrchestrator(objective_target=objective_target_mock)
         orchestrator._memory = memory_mock
         prepended_conversation = [PromptRequestResponse(request_pieces=[MagicMock(conversation_id=None)])]
         orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
@@ -351,8 +351,8 @@ def test_prepare_conversation_with_prepended_conversation(mock_central_memory_in
 
 
 def test_prepare_conversation_without_prepended_conversation(mock_central_memory_instance):
-    prompt_target_mock = MagicMock()
-    orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target_mock)
+    objective_target_mock = MagicMock()
+    orchestrator = PromptSendingOrchestrator(objective_target=objective_target_mock)
     memory_mock = MagicMock()
 
     orchestrator._memory = memory_mock
