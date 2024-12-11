@@ -272,7 +272,7 @@ async def test_optional_kwargs_args_passed_when_loading_model(mock_transformers)
     mock_tokenizer_from_pretrained, mock_model_from_pretrained = mock_transformers
     hf_chat = HuggingFaceChatTarget(
         model_path="./mock_local_model_path",
-        use_cuda=True,
+        use_cuda=False,
         device_map='auto',
         torch_dtype='float16',
         attn_implementation='flash_attention_2',
