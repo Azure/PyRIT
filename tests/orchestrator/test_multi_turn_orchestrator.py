@@ -110,6 +110,47 @@ def test_prepare_conversation_with_invalid_prepended_conversation(orchestrator):
         orchestrator._prepare_conversation(new_conversation_id=str(uuid.uuid4()))
 
 
+def test_prepare_conversation_with_custom_user_message(orchestrator):
+    orchestrator._prepended_conversation = [
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "user",
+                    original_value = "Hello I am a user prompt 1",
+            )]),
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "assistant",
+                    original_value = "Hello I am an assistant prompt",
+            )]),
+        PromptRequestResponse(
+            request_pieces = [
+                PromptRequestPiece(
+                    id = uuid.uuid4(),
+                    role = "user",
+                    original_value = "Hello I am a user prompt 2",
+            )]),
+    ]
+
+    turn_num = orchestrator._prepare_conversation(new_conversation_id=str(uuid.uuid4()))
+
+    # There is one complete turn in the prepended conversation, so turn_num should be 2
+    # as this is mid-conversation
+    assert turn_num == 2
+
+    # Assert calls to memory
+    for request in orchestrator._prepended_conversation:
+        orchestrator._memory.add_request_response_to_memory.assert_any_call(request=request)
+
+    # Check globals are set correctly
+    user_piece = orchestrator._prepended_conversation[2].request_pieces[0]
+    assert orchestrator._last_prepended_user_message == user_piece.converted_value
+    assert orchestrator._last_prepended_assistant_message_scores == None
+
+
 def test_prepare_conversation_exceeds_max_turns(orchestrator):
     request_piece = MagicMock()
     request_piece.role = "assistant"
