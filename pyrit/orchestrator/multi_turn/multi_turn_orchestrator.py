@@ -235,8 +235,11 @@ class MultiTurnOrchestrator(Orchestrator):
             new_conversation_id (str): The ID for the new conversation.
 
         Returns:
-            turn_count (int): The number of turns in the prepended conversation plus one,
-                used by the calling orchestrators to set the starting turn number.
+            turn_count (int): The turn number to start from, which counts
+                the number of turns in the prepended conversation. E.g. with 2
+                prepended conversations, the next turn would be turn 3. With no
+                prepended conversations, the next turn is at 1. Value used by the
+                calling orchestrators to set turn count.
         """
         turn_count = 1
         if self._prepended_conversation:
