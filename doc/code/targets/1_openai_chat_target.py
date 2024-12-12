@@ -51,7 +51,7 @@ with PromptSendingOrchestrator(objective_target=target) as orchestrator:
 #
 # All `OpenAITarget`s can communicate either to [Azure OpenAI (AOAI)](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference) or [OpenAI](https://platform.openai.com/docs/api-reference/introduction). By default, it uses Azure OpenAI (we are Microsoft funded after all!) but you can configure a target to use OpenAI by passing the `is_azure_target=False` flag.
 #
-# Like most targets, all `OpenAITarget`s need an `endpoint`, `deployment_name`, and `api_key`. These can be passed into the constructor or configured with environment variables (or in .env).
+# Like most targets, all `OpenAITarget`s need an `endpoint`, `deployment_name`, and `api_key`. These can be passed into the constructor or configured with environment variables (or in `.env `).
 #
 # - api_key: By default, these targets will use an API key configured within environment variables (or .env) to authenticate (`OPENAI_CHAT_KEY` for OpenAI and `AZURE_OPENAI_CHAT_KEY` for AOAI).
 # - endpoint: AOAI needs an endpoint URI from your deployment. For OpenAI, these are just "https://api.openai.com/v1/chat/completions" and do not need to be configured by the user.
