@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: test secret
-        run: echo $SUPER_SECRET
+        run: echo '${SUPER_SECRET}'
         env:
           SUPER_SECRET: ${{ secrets.TEST_SECRET }}
       - uses: actions/setup-python@v3
