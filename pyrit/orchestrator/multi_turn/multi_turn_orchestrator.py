@@ -134,8 +134,8 @@ class MultiTurnOrchestrator(Orchestrator):
         self._objective_scorer = objective_scorer
 
         self._prepended_conversation: list[PromptRequestResponse] = None
-        self._last_prepended_user_message: str = None
-        self._last_prepended_assistant_message_scores: list[Score] = None
+        self._last_prepended_user_message: str = ""
+        self._last_prepended_assistant_message_scores: list[Score] = []
 
     def _get_adversarial_chat_seed_prompt(self, seed_prompt):
         if isinstance(seed_prompt, str):
@@ -211,6 +211,15 @@ class MultiTurnOrchestrator(Orchestrator):
         if last_message.role == "user":
             self._last_prepended_user_message = last_message.converted_value
         elif last_message.role == "assistant":
+            # Get scores for the last assistant message based off of the original id
+            self._last_prepended_assistant_message_scores = self._memory.get_scores_by_prompt_ids(
+                prompt_request_response_ids=[last_message.original_prompt_id]
+            )
+
+            # Do not set last user message if there are no scores for the last assistant message
+            if not self._last_prepended_assistant_message_scores:
+                return
+
             # Check assumption that there will be a user message preceding the assistant message
             if (
                 len(self._prepended_conversation) > 1
@@ -221,11 +230,6 @@ class MultiTurnOrchestrator(Orchestrator):
                 raise ValueError(
                     "There must be a user message preceding the assistant message in prepended conversations."
                 )
-
-            # Get scores for the last assistant message based off of the original id
-            self._last_prepended_assistant_message_scores = self._memory.get_scores_by_prompt_ids(
-                prompt_request_response_ids=[last_message.original_prompt_id]
-            )
 
     def _prepare_conversation(self, *, new_conversation_id: str) -> int:
         """Prepare the conversation by saving the prepended conversation to memory

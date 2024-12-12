@@ -116,26 +116,21 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         """
         refused_text = ""
         objective_score = None
-        scores = self._last_prepended_assistant_message_scores
 
-        if scores and len(scores) > 0:
-            for score in scores:
-                scorer_class = score.scorer_class_identifier["__type__"]
-                if scorer_class == self._refusal_scorer.get_identifier()["__type__"]:
-                    logger.info(
-                        "REFUSAL_SCORER for target response is: " f"{score.get_value()} {score.score_rationale}"
-                    )
+        for score in self._last_prepended_assistant_message_scores:
+            scorer_class = score.scorer_class_identifier["__type__"]
+            if scorer_class == self._refusal_scorer.get_identifier()["__type__"]:
+                logger.info("REFUSAL_SCORER for target response is: " f"{score.get_value()} {score.score_rationale}")
 
-                    if score.get_value():
-                        refused_text = self._last_prepended_user_message
-                elif scorer_class == self._objective_scorer.get_identifier()["__type__"]:
-                    logger.info("EVAL_SCORER for target response is: " f"{score.get_value()} {score.score_rationale}")
+                if score.get_value():
+                    refused_text = self._last_prepended_user_message
+            elif scorer_class == self._objective_scorer.get_identifier()["__type__"]:
+                logger.info("EVAL_SCORER for target response is: " f"{score.get_value()} {score.score_rationale}")
 
-                    objective_score = score
+                objective_score = score
 
         return refused_text, objective_score
 
-    # TODO: Test this function
     def _handle_last_prepended_user_message(self) -> str | None:
         """
         Handle the last message in the prepended conversation if it is from a user.
@@ -258,7 +253,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
                     backtrack_count += 1
                     attack_prompt = None
-                    turn_num -= 1
 
                     logger.info(f"Question Backtrack Count: {backtrack_count}")
                     continue

@@ -38,26 +38,32 @@ def test_prepare_conversation_with_prepended_conversation(orchestrator):
     system_piece_id = uuid.uuid4()
     orchestrator._prepended_conversation = [
         PromptRequestResponse(
-            request_pieces = [
+            request_pieces=[
                 PromptRequestPiece(
-                    id = system_piece_id,
-                    role = "system",
-                    original_value = "Hello I am a system prompt",
-            )]),
+                    id=system_piece_id,
+                    role="system",
+                    original_value="Hello I am a system prompt",
+                )
+            ]
+        ),
         PromptRequestResponse(
-            request_pieces = [
+            request_pieces=[
                 PromptRequestPiece(
-                    id = uuid.uuid4(),
-                    role = "user",
-                    original_value = "Hello I am a user prompt",
-            )]),
+                    id=uuid.uuid4(),
+                    role="user",
+                    original_value="Hello I am a user prompt",
+                )
+            ]
+        ),
         PromptRequestResponse(
-            request_pieces = [
+            request_pieces=[
                 PromptRequestPiece(
-                    id = uuid.uuid4(),
-                    role = "assistant",
-                    original_value = "Hello I am an assistant prompt",
-            )]),
+                    id=uuid.uuid4(),
+                    role="assistant",
+                    original_value="Hello I am an assistant prompt",
+                )
+            ]
+        ),
     ]
 
     system_piece = orchestrator._prepended_conversation[0].request_pieces[0]
@@ -83,56 +89,105 @@ def test_prepare_conversation_with_prepended_conversation(orchestrator):
 
     # Check globals are set correctly
     assert orchestrator._last_prepended_user_message == user_piece.converted_value
-    orchestrator._memory.get_scores_by_prompt_ids.assert_called_once_with(prompt_request_response_ids=[assistant_piece.original_prompt_id])
+    orchestrator._memory.get_scores_by_prompt_ids.assert_called_once_with(
+        prompt_request_response_ids=[assistant_piece.original_prompt_id]
+    )
     assert orchestrator._last_prepended_assistant_message_scores == [mocked_score]
+
+
+def test_prepare_conversation_with_prepended_conversation_no_assistant_scores(orchestrator):
+    orchestrator._prepended_conversation = [
+        PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    id=uuid.uuid4(),
+                    role="user",
+                    original_value="Hello I am a user prompt",
+                )
+            ]
+        ),
+        PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    id=uuid.uuid4(),
+                    role="assistant",
+                    original_value="Hello I am an assistant prompt",
+                )
+            ]
+        ),
+    ]
+
+    assistant_piece = orchestrator._prepended_conversation[1].request_pieces[0]
+    orchestrator._memory.get_scores_by_prompt_ids.return_value = []
+    orchestrator._prepare_conversation(new_conversation_id=str(uuid.uuid4()))
+
+    # Check globals are set correctly
+    # Last prepended user message should be none as it is not needed when no scores are returned
+    assert orchestrator._last_prepended_user_message == ""
+    orchestrator._memory.get_scores_by_prompt_ids.assert_called_once_with(
+        prompt_request_response_ids=[assistant_piece.original_prompt_id]
+    )
+    assert orchestrator._last_prepended_assistant_message_scores == []
 
 
 def test_prepare_conversation_with_invalid_prepended_conversation(orchestrator):
     # Invalid conversation as it is missing a user message before the assistant message
     orchestrator._prepended_conversation = [
         PromptRequestResponse(
-            request_pieces = [
+            request_pieces=[
                 PromptRequestPiece(
-                    id = uuid.uuid4(),
-                    role = "system",
-                    original_value = "Hello I am a system prompt",
-            )]),
+                    id=uuid.uuid4(),
+                    role="system",
+                    original_value="Hello I am a system prompt",
+                )
+            ]
+        ),
         PromptRequestResponse(
-            request_pieces = [
+            request_pieces=[
                 PromptRequestPiece(
-                    id = uuid.uuid4(),
-                    role = "assistant",
-                    original_value = "Hello I am an assistant prompt",
-            )]),
+                    id=uuid.uuid4(),
+                    role="assistant",
+                    original_value="Hello I am an assistant prompt",
+                )
+            ]
+        ),
     ]
 
-    with pytest.raises(ValueError, match="There must be a user message preceding the assistant message in prepended conversations."):
+    with pytest.raises(
+        ValueError, match="There must be a user message preceding the assistant message in prepended conversations."
+    ):
         orchestrator._prepare_conversation(new_conversation_id=str(uuid.uuid4()))
 
 
 def test_prepare_conversation_with_custom_user_message(orchestrator):
     orchestrator._prepended_conversation = [
         PromptRequestResponse(
-            request_pieces = [
+            request_pieces=[
                 PromptRequestPiece(
-                    id = uuid.uuid4(),
-                    role = "user",
-                    original_value = "Hello I am a user prompt 1",
-            )]),
+                    id=uuid.uuid4(),
+                    role="user",
+                    original_value="Hello I am a user prompt 1",
+                )
+            ]
+        ),
         PromptRequestResponse(
-            request_pieces = [
+            request_pieces=[
                 PromptRequestPiece(
-                    id = uuid.uuid4(),
-                    role = "assistant",
-                    original_value = "Hello I am an assistant prompt",
-            )]),
+                    id=uuid.uuid4(),
+                    role="assistant",
+                    original_value="Hello I am an assistant prompt",
+                )
+            ]
+        ),
         PromptRequestResponse(
-            request_pieces = [
+            request_pieces=[
                 PromptRequestPiece(
-                    id = uuid.uuid4(),
-                    role = "user",
-                    original_value = "Hello I am a user prompt 2",
-            )]),
+                    id=uuid.uuid4(),
+                    role="user",
+                    original_value="Hello I am a user prompt 2",
+                )
+            ]
+        ),
     ]
 
     turn_num = orchestrator._prepare_conversation(new_conversation_id=str(uuid.uuid4()))
@@ -148,7 +203,7 @@ def test_prepare_conversation_with_custom_user_message(orchestrator):
     # Check globals are set correctly
     user_piece = orchestrator._prepended_conversation[2].request_pieces[0]
     assert orchestrator._last_prepended_user_message == user_piece.converted_value
-    assert orchestrator._last_prepended_assistant_message_scores == None
+    assert orchestrator._last_prepended_assistant_message_scores == []
 
 
 def test_prepare_conversation_exceeds_max_turns(orchestrator):

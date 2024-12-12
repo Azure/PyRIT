@@ -5,7 +5,7 @@ import pathlib
 import pytest
 
 from typing import Dict, Generator, List
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 from pyrit.memory import MemoryInterface
@@ -125,10 +125,10 @@ async def test_is_conversation_complete_scoring(score, message_count):
     mock_scorer = MagicMock(Scorer)
     mock_scorer.scorer_type = "true_false"
     mock_scorer.score_async = AsyncMock(return_value=[mock_score])
-    with patch.object(CentralMemory, "get_memory_instance", return_value=Mock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         orchestrator = RedTeamingOrchestrator(
-            adversarial_chat=Mock(),
-            objective_target=Mock(),
+            adversarial_chat=MagicMock(),
+            objective_target=MagicMock(),
             objective_scorer=mock_scorer,
         )
         # simulate back and forth between user and assistant
@@ -165,10 +165,10 @@ async def test_is_conversation_complete_scoring_non_bool():
     scorer = MagicMock(Scorer)
     scorer.scorer_type = "true_false"
     scorer.score_text_async = AsyncMock(return_value=[mock_score])
-    with patch.object(CentralMemory, "get_memory_instance", return_value=Mock()):
+    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         orchestrator = RedTeamingOrchestrator(
-            adversarial_chat=Mock(),
-            objective_target=Mock(),
+            adversarial_chat=MagicMock(),
+            objective_target=MagicMock(),
             objective_scorer=scorer,
         )
         orchestrator._memory.get_conversation = MagicMock(
@@ -317,3 +317,54 @@ async def test_apply_run_attack_async_runtime_error(
 
             with pytest.raises(RuntimeError):
                 await red_teaming_orchestrator.run_attack_async(objective="objective")
+
+
+def test_handle_last_prepended_user_message_with_prepended_message():
+    scorer = MagicMock(Scorer)
+    scorer.scorer_type = "true_false"
+    orchestrator = RedTeamingOrchestrator(
+        adversarial_chat=MagicMock(),
+        objective_target=MagicMock(),
+        objective_scorer=scorer,
+    )
+    orchestrator._last_prepended_user_message = "Last user message"
+    orchestrator._last_prepended_assistant_message_scores = []
+
+    custom_prompt = orchestrator._handle_last_prepended_user_message()
+    assert custom_prompt == "Last user message"
+
+
+def test_handle_last_prepended_assistant_message_with_scores():
+    scorer = MagicMock(Scorer)
+    scorer.scorer_type = "true_false"
+    scorer.get_identifier.return_value = {"__type__": "true_false_scorer"}
+    orchestrator = RedTeamingOrchestrator(
+        adversarial_chat=MagicMock(),
+        objective_target=MagicMock(),
+        objective_scorer=scorer,
+    )
+    score1 = MagicMock(Score)
+    score1.scorer_class_identifier = {"__type__": "true_false_scorer"}
+    score2 = MagicMock(Score)
+    score2.scorer_class_identifier = {"__type__": "other_scorer"}
+    orchestrator._last_prepended_assistant_message_scores = [score2, score1]
+
+    objective_score = orchestrator._handle_last_prepended_assistant_message()
+    assert objective_score == score1
+
+
+def test_handle_last_prepended_assistant_message_with_no_matching_score():
+    scorer = MagicMock(Scorer)
+    scorer.scorer_type = "true_false"
+    scorer.get_identifier.return_value = {"__type__": "true_false_scorer"}
+    orchestrator = RedTeamingOrchestrator(
+        adversarial_chat=MagicMock(),
+        objective_target=MagicMock(),
+        objective_scorer=scorer,
+    )
+    score = MagicMock(Score)
+    score.scorer_class_identifier = {"__type__": "other_scorer"}
+    orchestrator._last_prepended_assistant_message_scores = [score]
+
+    objective_score = orchestrator._handle_last_prepended_assistant_message()
+    assert objective_score is None
