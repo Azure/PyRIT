@@ -53,7 +53,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
         skip_special_tokens: bool = True,
         trust_remote_code: bool = False,
         device_map: Optional[str] = None,
-        torch_dtype: Optional[torch.dtype] = None,
+        torch_dtype: Optional["torch.dtype"] = None,
         attn_implementation: Optional[str] = None,
     ) -> None:
         super().__init__()
