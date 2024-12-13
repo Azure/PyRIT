@@ -77,3 +77,33 @@ def test_prompt_init_invalid_prompt_text():
             prompt_data_type="text",
             metadata=metadata,
         )
+
+
+def test_prompt_init_with_metadata():
+    prompt_converters = [MockPromptConverter()]
+    prompt_text = "Hello"
+    metadata = "meta"
+
+    prompt = NormalizerRequestPiece(
+        request_converters=prompt_converters, prompt_value=prompt_text, prompt_data_type="text", metadata=metadata
+    )
+
+    assert prompt.request_converters == prompt_converters
+    assert prompt.prompt_value == prompt_text
+    assert prompt.prompt_data_type == "text"
+    assert prompt.metadata == metadata
+
+
+def test_prompt_label():
+    prompt_converters = [MockPromptConverter()]
+    prompt_text = "Hello"
+    labels = {"harm": "sample_harm_category"}
+
+    prompt = NormalizerRequestPiece(
+        request_converters=prompt_converters, prompt_value=prompt_text, prompt_data_type="text", labels=labels
+    )
+
+    assert prompt.request_converters == prompt_converters
+    assert prompt.prompt_value == prompt_text
+    assert prompt.prompt_data_type == "text"
+    assert prompt.labels == labels
