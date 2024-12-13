@@ -119,10 +119,10 @@ data = [
 normalizer_request = NormalizerRequest(
     request_pieces=[
         NormalizerRequestPiece(
-            prompt_value="Describe this picture:", prompt_data_type="text", labels=[{"harm": "sample_harm_category"}]
+            prompt_value="Describe this picture:", prompt_data_type="text", labels={"harm": "sample_harm_category"}
         ),
         NormalizerRequestPiece(
-            prompt_value=str(image_path), prompt_data_type="image_path", labels=[{"harm": "sample_other_harm_category"}]
+            prompt_value=str(image_path), prompt_data_type="image_path", labels={"harm": "sample_other_harm_category"}
         ),
     ]
 )
