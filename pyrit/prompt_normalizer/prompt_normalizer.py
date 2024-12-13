@@ -183,8 +183,11 @@ class PromptNormalizer(abc.ABC):
 
         entries = []
 
+        # TODO: take labels in and combine with global memory labels
+
         # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
         conversation_id = request.conversation_id if request.conversation_id else str(uuid4())
+
         for request_piece in request.request_pieces:
 
             converted_prompt_text, converted_prompt_type = await self._get_converted_value_and_type(
@@ -193,6 +196,14 @@ class PromptNormalizer(abc.ABC):
                 prompt_data_type=request_piece.prompt_data_type,
             )
 
+            # Combine memory labels with the labels from the normalized request piece
+            combined_memory_labels = labels
+            for label, label_value in enumerate(request_piece.labels):
+                if labels:
+                    combined_memory_labels[label] = label_value
+                else:  # if labels is None
+                    combined_memory_labels = {label: label_value}
+
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
             prompt_request_piece = PromptRequestPiece(
                 role="user",
@@ -200,7 +211,7 @@ class PromptNormalizer(abc.ABC):
                 converted_value=converted_prompt_text,
                 conversation_id=conversation_id,
                 sequence=sequence,
-                labels=labels,
+                labels=combined_memory_labels,
                 prompt_metadata=request_piece.metadata,
                 converter_identifiers=converter_identifiers,
                 prompt_target_identifier=target.get_identifier(),
