@@ -127,8 +127,6 @@ normalizer_request = NormalizerRequest(
     ]
 )
 
-memory_labels = []
-
 with PromptSendingOrchestrator(objective_target=azure_openai_gpt4o_chat_target) as orchestrator:
     await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
     memory = orchestrator.get_memory()
