@@ -6,7 +6,8 @@
 #
 # This approach can handle both practical uses of ANSI escape codes and attack-oriented scenarios for testing purposes.
 #
-# ### Scenarios Covered:
+# ## Scenarios Covered:
+#
 # - **Practical tasks:** Examples include printing colored text or terminal effects.
 # - **Attack scenarios:** These involve crafting malicious or deceptive escape sequences.
 
