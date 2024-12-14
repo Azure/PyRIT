@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # Jailbreaking Large Language Models with Symbolic Mathematics Using the MathPromptConverter - optional
 #
@@ -41,7 +56,7 @@ math_prompt_converter = MathPromptConverter(
 
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
-    prompt_target=prompt_target,  # The target to which the prompt will be sent (e.g., Azure OpenAI or OpenAI)
+    objective_target=prompt_target,  # The target to which the prompt will be sent (e.g., Azure OpenAI or OpenAI)
     prompt_converters=[math_prompt_converter],
     verbose=False,
 ) as orchestrator:
@@ -49,4 +64,4 @@ with PromptSendingOrchestrator(
     await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 
     # Print the conversations after all prompts are processed
-    await orchestrator.print_conversations()  # type: ignore
+    await orchestrator.print_conversations_async()  # type: ignore

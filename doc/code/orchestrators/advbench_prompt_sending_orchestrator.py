@@ -31,15 +31,13 @@ import time
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import Base64Converter
 from pyrit.datasets import fetch_adv_bench_dataset
 
 
 default_values.load_environment_files()
 target = OpenAIChatTarget()
 
-# %%
-with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
+with PromptSendingOrchestrator(objective_target=target) as orchestrator:
     adv_bench_prompts = fetch_adv_bench_dataset()
     prompts = [prompt.value for prompt in adv_bench_prompts.prompts[:3]]
 
@@ -49,19 +47,4 @@ with PromptSendingOrchestrator(prompt_target=target) as orchestrator:
 
     print(f"Elapsed time for operation: {end-start}")
 
-    await orchestrator.print_conversations()  # type: ignore
-
-# %% [markdown]
-# ## Adding Converters
-#
-# Additionally, we can make it more interesting by initializing the orchestrator with different types of prompt converters.
-# This variation takes the original example, but converts the text to base64 before sending it to the target.
-
-# %%
-with PromptSendingOrchestrator(
-    prompt_target=target, prompt_converters=[Base64Converter()], batch_size=1
-) as orchestrator:
-    # this is run in a Jupyter notebook, so we can use await
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
-
-    await orchestrator.print_conversations()  # type: ignore
+    await orchestrator.print_conversations_async()  # type: ignore
