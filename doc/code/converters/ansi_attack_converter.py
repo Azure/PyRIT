@@ -15,8 +15,7 @@ from pyrit.common import default_values
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 
-# Import the ANSI all-in-one converter
-from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
+from pyrit.prompt_converter import AnsiAttackConverter
 
 default_values.load_environment_files()
 
@@ -51,12 +50,8 @@ ansi_converter = AnsiAttackConverter(
 prompt_target = OpenAIChatTarget()
 
 with PromptSendingOrchestrator(
-    prompt_target=prompt_target, prompt_converters=[ansi_converter]  # Only the ANSI converter
+    objective_target=prompt_target, prompt_converters=[ansi_converter]  # Only the ANSI converter
 ) as orchestrator:
     responses = await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 
-for i, response in enumerate(responses):
-    print(f"Response to prompt {i+1}:", response)
-
-
-# %%
+    await orchestrator.print_conversations_async()  # type: ignore
