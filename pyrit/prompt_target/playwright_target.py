@@ -32,7 +32,7 @@ class PlaywrightTarget(PromptTarget):
             self,
             *,
             interaction_func: InteractionFunction,
-            page: 'Page' = None,
+            page: 'Page',
     ) -> None:
         super().__init__()
         self._interaction_func = interaction_func
@@ -59,7 +59,8 @@ class PlaywrightTarget(PromptTarget):
         return response_entry
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
-        request_pieces = prompt_request.request_pieces
-        if len(request_pieces) != 1:
+        if len(prompt_request.request_pieces) != 1:
             raise ValueError("This target only supports a single prompt request piece.")
-            # Data type validation is removed
+
+        if prompt_request.request_pieces[0].converted_value_data_type != "text":
+            raise ValueError("This target only supports text prompt input.")
