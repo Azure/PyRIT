@@ -30,7 +30,7 @@
 # If you plan to use the Playwright integration (`PlaywrightTarget`), install PyRIT with the `playwright` extra:
 #
 # ```bash
-# pip install -e '.[dev,playwright]'
+# pip install -e '.[playwright]'
 # ```
 #
 # After installing PyRIT with Playwright, install the browser binaries:
@@ -47,15 +47,67 @@
 # ## Example: Interacting with a Web Application using `PlaywrightTarget`
 #
 # In this example, we'll interact with a simple web application running locally at `http://127.0.0.1:5000`.
+# which runs a chatbot that responds to user prompts via ollama
 # We'll define an interaction function that navigates to the web application, inputs a prompt, and retrieves the
-# response. We'll also use a scorer to evaluate the responses.
+# bot's response.
 
+# ## Start the Flask App
+# Before we can interact with the web application, we need to start the Flask app that serves the chatbot, this will be done in a subprocess
+# %%
+import subprocess
+import os
+import sys
+import time
+from urllib.request import urlopen
+from urllib.error import URLError
+
+
+def start_flask_app():
+    # Get the notebook's directory
+    notebook_dir = os.getcwd()
+
+    # Construct the path to app.py relative to the notebook directory
+    app_path = os.path.join(notebook_dir, 'playwright_demo', 'app.py')
+
+    # Ensure that app.py exists
+    if not os.path.isfile(app_path):
+        raise FileNotFoundError(f"Cannot find app.py at {app_path}")
+
+        # Start the Flask app
+    print(f"Starting Flask app from {app_path}...")
+    flask_process = subprocess.Popen(
+        [sys.executable, app_path],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+
+
+    # Wait for the app to start by checking if the server is up
+    server_url = 'http://127.0.0.1:5000'
+    server_ready = False
+    while not server_ready:
+        try:
+            response = urlopen(server_url)
+            if response.status == 200:
+                server_ready = True
+        except URLError:
+            time.sleep(0.5)  # Wait a bit before checking again
+    print("Flask app is running and ready!")
+    return flask_process
+
+
+
+# Start the Flask app
+flask_process = start_flask_app()
+
+# %% [markdown]
+# ### Interaction Function
+# This is playwright script that interacts with the chatbot web application.
 # %%
 from pyrit.common import default_values
 from playwright.async_api import Page, async_playwright
-from pyrit.prompt_target import PlaywrightTarget, OllamaChatTarget
+from pyrit.prompt_target import PlaywrightTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 from pyrit.models import PromptRequestPiece
 
 # Load environment variables (optional)
@@ -92,25 +144,12 @@ async def interact_with_my_app(page: Page, request_piece: PromptRequestPiece) ->
     return bot_response.strip()
 
 
-# Define the scoring target (replace with your model and endpoint)
-scoring_target = OllamaChatTarget(
-    model_name="dolphin-llama3:70b",
-    endpoint="http://127.0.0.1:11434/api/chat"
-)
-
-# Set up the scorer with a Likert scale for hate speech detection
-bias_scorer = SelfAskLikertScorer(
-    likert_scale_path=LikertScalePaths.HATE_SPEECH_SCALE.value,
-    chat_target=scoring_target
-)
-
 
 # %% [markdown]
 # ### Using `PlaywrightTarget` with the Interaction Function and Scorer
 #
 # Now, we can use the `PlaywrightTarget` by passing the interaction function we defined.
-# We'll use the `PromptSendingOrchestrator` to send prompts to the target, collect responses, and score them.
-
+# We'll use the `PromptSendingOrchestrator` to send prompts to the target and collects responses.
 # %%
 # Using PlaywrightTarget with the interaction function and scorer
 async def main(page: Page):
@@ -120,28 +159,17 @@ async def main(page: Page):
     )
 
     with PromptSendingOrchestrator(
-            prompt_target=target,
-            scorers=[bias_scorer],
+            objective_target=target,
     ) as orchestrator:
         all_prompts = [
             "Tell me a joke about computer programming.",
         ]
 
         await orchestrator.send_prompts_async(prompt_list=all_prompts)
+        await orchestrator.print_conversations_async()  # type: ignore
 
-        memory = orchestrator.get_memory()
-        score_memory = orchestrator.get_score_memory()
 
-        for entry in memory:
-            for score_entry in score_memory:
-                if entry.id == score_entry.prompt_request_response_id:
-                    print(
-                        f"Scored text: {entry.converted_value}\n"
-                        f"Score category: {score_entry.score_category}\n"
-                        f"Score value: {score_entry.get_value()}\n\n"
-                    )
-
-                # Run the main function
+# Run the main function
 
 
 async with async_playwright() as playwright:
@@ -150,3 +178,14 @@ async with async_playwright() as playwright:
     page: Page = await context.new_page()
     await page.goto('http://127.0.0.1:5000')
     await main(page)
+    await context.close()
+    await browser.close()
+
+# %% [markdown]
+# ## Terminate the Flask App
+
+# %%
+# Terminate the Flask app when done
+flask_process.terminate()
+flask_process.wait()  # Ensure the process has terminated
+print("Flask app has been terminated.")

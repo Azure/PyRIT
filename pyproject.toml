@@ -105,7 +105,10 @@ gcg = [
 ]
 playwright = [
     "playwright==1.49.0",
+    "flask>=3.1.0",
+    "ollama>=0.4.4"
 ]
+
 all = [
     "accelerate==0.34.2",
     "azureml-mlflow==1.57.0",
@@ -128,6 +131,8 @@ all = [
     "sentencepiece==0.2.0",
     "torch>=2.3.0",
     "playwright==1.49.0",
+    "flask>=3.1.0",
+    "ollama>=0.4.4",
     "types-PyYAML>=6.0.12.9",
 ]
 
