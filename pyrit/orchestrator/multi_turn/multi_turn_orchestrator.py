@@ -202,12 +202,11 @@ class MultiTurnOrchestrator(Orchestrator):
         """
         self._prepended_conversation = prepended_conversation
 
-    def _set_globals_based_on_role(self):
+    def _set_globals_based_on_role(self, last_message: str):
         """Sets the global variables of self._last_prepended_user_message and self._last_prepended_assistant_message
         based on the role of the last message in the prepended conversation.
         """
         # There is specific handling per orchestrator depending on the last message
-        last_message = self._prepended_conversation[-1].request_pieces[0]
         if last_message.role == "user":
             self._last_prepended_user_message = last_message.converted_value
         elif last_message.role == "assistant":
@@ -246,8 +245,15 @@ class MultiTurnOrchestrator(Orchestrator):
                 calling orchestrators to set turn count.
         """
         turn_count = 1
+        skip_add_to_memory = -1
         if self._prepended_conversation:
-            for request in self._prepended_conversation:
+            last_message = self._prepended_conversation[-1].request_pieces[0]
+            if last_message.role == "user":
+                # Do not add last user message to memory as it will be added when sent
+                # to the objective target by the orchestrator
+                skip_add_to_memory = len(self._prepended_conversation) - 1
+
+            for i, request in enumerate(self._prepended_conversation):
                 for piece in request.request_pieces:
                     piece.conversation_id = new_conversation_id
                     piece.id = uuid.uuid4()
@@ -264,8 +270,11 @@ class MultiTurnOrchestrator(Orchestrator):
                                 + " reduce the number of turns in the prepended conversation."
                             )
 
+                if i == skip_add_to_memory:
+                    continue
+
                 self._memory.add_request_response_to_memory(request=request)
 
-            self._set_globals_based_on_role()
+            self._set_globals_based_on_role(last_message=last_message)
 
         return turn_count

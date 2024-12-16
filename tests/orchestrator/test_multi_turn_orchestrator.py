@@ -197,8 +197,13 @@ def test_prepare_conversation_with_custom_user_message(orchestrator):
     assert turn_num == 2
 
     # Assert calls to memory
-    for request in orchestrator._prepended_conversation:
+    for request in orchestrator._prepended_conversation[:-1]:
         orchestrator._memory.add_request_response_to_memory.assert_any_call(request=request)
+
+    # Verify the last user message is not added to memory as part of preparing the conversation
+    calls = orchestrator._memory.add_request_response_to_memory.mock_calls
+    assert len(calls) == 2
+    assert calls[-1].kwargs["request"] == orchestrator._prepended_conversation[1]
 
     # Check globals are set correctly
     user_piece = orchestrator._prepended_conversation[2].request_pieces[0]

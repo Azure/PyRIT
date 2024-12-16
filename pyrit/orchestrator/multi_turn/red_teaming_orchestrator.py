@@ -82,7 +82,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self._prompt_normalizer = PromptNormalizer()
         self._use_score_as_feedback = use_score_as_feedback
 
-    # TODO: Test this function E2E to see what the scorer class identifiers are etc.
     def _handle_last_prepended_assistant_message(self) -> Score | None:
         """
         Handle the last message in the prepended conversation if it is from an assistant.
@@ -168,6 +167,9 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 memory_labels=updated_memory_labels,
             )
 
+            # Reset custom prompt for future turns
+            custom_prompt = None
+
             if response.response_error == "none":
                 score = await self._check_conversation_complete_async(
                     objective_target_conversation_id=objective_target_conversation_id,
@@ -204,7 +206,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id: str,
         adversarial_chat_conversation_id: str,
         feedback: Optional[str] = None,
-        custom_prompt: str = None,
+        custom_prompt: str = "",
         memory_labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestPiece:
         """
