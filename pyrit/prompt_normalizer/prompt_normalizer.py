@@ -6,6 +6,7 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
+from pyrit.common import combine_dict
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import MemoryInterface, CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
@@ -194,14 +195,7 @@ class PromptNormalizer(abc.ABC):
                 prompt_data_type=request_piece.prompt_data_type,
             )
 
-            # Combine memory labels with the labels from the normalized request piece
-            combined_memory_labels = labels
-            if request_piece.labels:
-                for label, label_value in request_piece.labels.items():
-                    if labels:
-                        combined_memory_labels[label] = label_value
-                    else:  # if labels is None
-                        combined_memory_labels = {label: label_value}
+            combined_memory_labels = combine_dict(dict1=labels, dict2=request_piece.labels)
 
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
             prompt_request_piece = PromptRequestPiece(
