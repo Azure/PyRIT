@@ -1,0 +1,57 @@
+# Builds the pyrit environment and runs integration tests
+
+name: integration_tests
+
+trigger:
+- main
+- romanlutz/integration_tests
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+
+- task: AzureKeyVault@2
+  displayName: Azure Key Vault
+  inputs:
+    azureSubscription: 'db1ba766-2ca3-42c6-a19a-0f0d43134a8c'
+    KeyVaultName: 'integration-test-env'
+    SecretsFilter: '*'
+    RunAsPreJob: false
+
+- task: CmdLine@2
+  displayName: Create file
+  inputs:
+    script: 'echo $(SECRET_NAME) > secret.txt && ls -la'
+
+# jobs:
+#   main-job:
+#     environment: integration-tests
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest]
+#         python: ["3.10", "3.11", "3.12"]
+#         package_name: ["pyrit"]
+#         package_extras: ["all"]
+#     runs-on: ${{ matrix.os }}
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: test secret
+#         run: |
+#           echo ${{ env.SUPER_SECRET }}
+#           echo ${{ secrets.TEST_SECRET }}
+#           echo ${{ secrets.GITHUB_TOKEN }}
+#           echo '${{ env.SUPER_SECRET }}'
+#           echo '${{ secrets.TEST_SECRET }}'
+#           echo '${{ secrets.GITHUB_TOKEN }}'
+#         env:
+#           SUPER_SECRET: ${{ secrets.TEST_SECRET }}
+#       - uses: actions/setup-python@v3
+#         with:
+#           python-version: ${{ matrix.python }}
+#       - name: Install setuptools and pip
+#         run: pip install --upgrade setuptools pip
+#       - name: Install PyRIT with pip
+#         run: pip install .[${{ matrix.package_extras }}]
+#       - name: Run unit tests with code coverage
+#         run: make test-cov-xml
