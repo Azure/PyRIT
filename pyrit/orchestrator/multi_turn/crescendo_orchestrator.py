@@ -102,7 +102,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         self._max_backtracks = max_backtracks
 
-    # TODO: Test this function
     def _handle_last_prepended_assistant_message(self) -> tuple[str, Score | None]:
         """
         Handle the last message in the prepended conversation if it is from an assistant.
@@ -114,8 +113,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             refused_text (str): If the last message was refused, sets the refused_text to the last user message.
             objective_score (Score | None): The objective score for the last assistant message, if it exists.
         """
-        refused_text = ""
-        objective_score = None
+        refused_text : str = ""
+        objective_score: Score | None = None
 
         for score in self._last_prepended_assistant_message_scores:
             scorer_class = score.scorer_class_identifier["__type__"]

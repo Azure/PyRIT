@@ -652,9 +652,9 @@ def test_handle_last_prepended_assistant_message_with_objective_score(orchestrat
     }
 
     orchestrator._last_prepended_assistant_message_scores = [objective_score]
-    refused_text, objective_score = orchestrator._handle_last_prepended_assistant_message()
+    refused_text, score = orchestrator._handle_last_prepended_assistant_message()
     assert refused_text == ""
-    assert objective_score == objective_score
+    assert score == objective_score
 
 
 def test_handle_last_prepended_assistant_message_with_both_scores(orchestrator: CrescendoOrchestrator):
@@ -675,6 +675,6 @@ def test_handle_last_prepended_assistant_message_with_both_scores(orchestrator: 
 
     orchestrator._last_prepended_assistant_message_scores = [refusal_score, objective_score]
     orchestrator._last_prepended_user_message = "Last user message"
-    refused_text, objective_score = orchestrator._handle_last_prepended_assistant_message()
+    refused_text, score = orchestrator._handle_last_prepended_assistant_message()
     assert refused_text == ""
-    assert objective_score == objective_score
+    assert score == objective_score
