@@ -55,31 +55,28 @@ class Orchestrator(abc.ABC, Identifier):
         """
         self._memory.dispose_engine()
 
-    def _create_normalizer_request(
+    def _create_normalizer_request(  # labels here TODO
         self,
         prompt_text: str,
         prompt_type: PromptDataType = "text",
         converters=None,
         metadata=None,
         conversation_id=None,
+        # labels: Optional None,
     ):
 
         if converters is None:
             converters = self._prompt_converters
 
         request_piece = NormalizerRequestPiece(
-            request_converters=converters, prompt_value=prompt_text, prompt_data_type=prompt_type, metadata=metadata
+            request_converters=converters,
+            prompt_value=prompt_text,
+            prompt_data_type=prompt_type,
+            metadata=metadata,  # labels=labels
         )
 
         request = NormalizerRequest(request_pieces=[request_piece], conversation_id=conversation_id)
         return request
-
-    def _combine_with_global_memory_labels(self, memory_labels: dict[str, str]) -> dict[str, str]:
-        """
-        Combines the global memory labels with the provided memory labels.
-        The passed memory_labels take precedence with collisions.
-        """
-        return {**(self._global_memory_labels or {}), **(memory_labels or {})}
 
     def get_memory(self):
         """
