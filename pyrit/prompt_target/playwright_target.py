@@ -1,4 +1,7 @@
-from typing import Optional, TYPE_CHECKING
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+from typing import TYPE_CHECKING
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from typing import Protocol
@@ -15,8 +18,7 @@ class InteractionFunction(Protocol):
     Defines the structure of interaction functions used with PlaywrightTarget.
     """
 
-    async def __call__(self, page: 'Page', request_piece: PromptRequestPiece) -> str:
-        ...
+    async def __call__(self, page: "Page", request_piece: PromptRequestPiece) -> str: ...
 
 
 class PlaywrightTarget(PromptTarget):
@@ -29,10 +31,10 @@ class PlaywrightTarget(PromptTarget):
     """
 
     def __init__(
-            self,
-            *,
-            interaction_func: InteractionFunction,
-            page: 'Page',
+        self,
+        *,
+        interaction_func: InteractionFunction,
+        page: "Page",
     ) -> None:
         super().__init__()
         self._interaction_func = interaction_func
@@ -52,10 +54,7 @@ class PlaywrightTarget(PromptTarget):
         except Exception as e:
             raise RuntimeError(f"An error occurred during interaction: {str(e)}") from e
 
-        response_entry = construct_response_from_request(
-            request=request_piece,
-            response_text_pieces=[text]
-        )
+        response_entry = construct_response_from_request(request=request_piece, response_text_pieces=[text])
         return response_entry
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:

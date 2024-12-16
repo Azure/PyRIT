@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 from unittest.mock import AsyncMock
 
@@ -34,7 +37,7 @@ def mock_interaction_func():
 
 @pytest.fixture
 def mock_page():
-    return AsyncMock(name='MockPage')
+    return AsyncMock(name="MockPage")
 
 
 def test_playwright_initializes(mock_interaction_func):
@@ -63,8 +66,8 @@ async def test_playwright_send_prompt_without_page(mock_interaction_func):
     )
     request = PromptRequestResponse(request_pieces=[request_piece])
     with pytest.raises(
-            RuntimeError,
-            match="Playwright page is not initialized. Please pass a Page object when initializing PlaywrightTarget.",
+        RuntimeError,
+        match="Playwright page is not initialized. Please pass a Page object when initializing PlaywrightTarget.",
     ):
         await target.send_prompt_async(prompt_request=request)
 
@@ -140,7 +143,5 @@ async def test_playwright_interaction_func_exception(mock_page):
     )
     request = PromptRequestResponse(request_pieces=[request_piece])
 
-    with pytest.raises(
-            RuntimeError, match="An error occurred during interaction: Interaction failed"
-    ):
+    with pytest.raises(RuntimeError, match="An error occurred during interaction: Interaction failed"):
         await target.send_prompt_async(prompt_request=request)

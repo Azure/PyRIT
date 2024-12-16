@@ -67,12 +67,12 @@ This is a guide for how to install PyRIT into a `conda` environment.
    ```bash
    pip install -e '.[dev]'
    ```
-   
+
    If you plan to use the Playwright integration (PlaywrightTarget), install with the playwright extra:
    ```bash
    pip install -e '.[dev,playwright]'
    ```
-   
+
    After installing Playwright, install the browser binaries:
    ```bash
    playwright install
