@@ -10,11 +10,12 @@ def combine_dict(dict1: dict[str, str] = None, dict2: dict[str, str] = None) -> 
         dict2: Dictionary 2
     Returns: combined dictionary
     """
-    combined_dict = dict1.copy() if dict1 else {}
-    if dict2:
-        for key, value in dict2.items():
-            if combined_dict:
-                combined_dict[key] = value
-            else:  # if labels is None
-                combined_dict = {key: value}
-    return combined_dict
+    # combined_dict = dict1.copy() if dict1 else {}
+    # if dict2:
+    #     for key, value in dict2.items():
+    #         if combined_dict:
+    #             combined_dict[key] = value
+    #         else:  # if labels is None
+    #             combined_dict = {key: value}
+    # return combined_dict
+    return {**(dict1 or {}), **(dict2 or {})}
