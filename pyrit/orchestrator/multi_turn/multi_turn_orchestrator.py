@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import CentralMemory
-from pyrit.models import Score, SeedPrompt, PromptRequestResponse
+from pyrit.models import Score, SeedPrompt, PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget, PromptChatTarget
@@ -202,7 +202,7 @@ class MultiTurnOrchestrator(Orchestrator):
         """
         self._prepended_conversation = prepended_conversation
 
-    def _set_globals_based_on_role(self, last_message: str):
+    def _set_globals_based_on_role(self, last_message: PromptRequestPiece):
         """Sets the global variables of self._last_prepended_user_message and self._last_prepended_assistant_message
         based on the role of the last message in the prepended conversation.
         """

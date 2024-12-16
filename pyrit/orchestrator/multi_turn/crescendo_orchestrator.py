@@ -113,7 +113,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             refused_text (str): If the last message was refused, sets the refused_text to the last user message.
             objective_score (Score | None): The objective score for the last assistant message, if it exists.
         """
-        refused_text : str = ""
+        refused_text: str = ""
         objective_score: Score | None = None
 
         for score in self._last_prepended_assistant_message_scores:
