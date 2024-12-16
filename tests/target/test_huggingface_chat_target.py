@@ -263,3 +263,24 @@ def test_load_model_without_model_id_or_path():
     with pytest.raises(ValueError) as excinfo:
         HuggingFaceChatTarget(use_cuda=False)
     assert "Either `model_id` or `model_path` must be provided." in str(excinfo.value)
+
+
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+@pytest.mark.asyncio
+async def test_optional_kwargs_args_passed_when_loading_model(mock_transformers):
+    """Test loading a model from a local directory (`model_path`) with optional keyword arguments."""
+    mock_tokenizer_from_pretrained, mock_model_from_pretrained = mock_transformers
+    hf_chat = HuggingFaceChatTarget(
+        model_path="./mock_local_model_path",
+        use_cuda=False,
+        device_map="auto",
+        torch_dtype="float16",
+        attn_implementation="flash_attention_2",
+    )
+    await hf_chat.load_model_and_tokenizer()
+    # Assert that from_pretrained was called with expected kwargs
+    assert mock_model_from_pretrained.called
+    call_args = mock_model_from_pretrained.call_args[1]  # Get the kwargs of the most recent call
+    assert call_args.get("device_map") == "auto"
+    assert call_args.get("torch_dtype") == "float16"
+    assert call_args.get("attn_implementation") == "flash_attention_2"
