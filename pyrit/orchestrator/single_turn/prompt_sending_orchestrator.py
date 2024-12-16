@@ -84,7 +84,7 @@ class PromptSendingOrchestrator(Orchestrator):
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._prompt_target,
-            #labels=self._combine_with_global_memory_labels(memory_labels),
+            # labels=self._combine_with_global_memory_labels(memory_labels),
             labels=combine_dict(dict1=self._global_memory_labels, dict2=memory_labels),
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
