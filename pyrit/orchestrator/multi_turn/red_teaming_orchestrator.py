@@ -115,7 +115,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id = str(uuid4())
         adversarial_chat_conversation_id = str(uuid4())
 
-        # updated_memory_labels = self._combine_with_global_memory_labels(memory_labels)
         updated_memory_labels = combine_dict(dict1=self._global_memory_labels, dict2=memory_labels)
         turn = 1
         achieved_objective = False

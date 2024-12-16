@@ -13,7 +13,7 @@ def combine_dict(dict1: dict[str, str] = None, dict2: dict[str, str] = None) -> 
     combined_dict = dict1.copy() if dict1 else {}
     if dict2:
         for key, value in dict2.items():
-            if dict1:
+            if combined_dict:
                 combined_dict[key] = value
             else:  # if labels is None
                 combined_dict = {key: value}
