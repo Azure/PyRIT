@@ -205,7 +205,13 @@ class AzureMLChatTarget(PromptChatTarget):
             endpoint_uri=self._endpoint, method="POST", request_body=payload, headers=headers
         )
 
-        return response.json()["output"]
+        try:
+            return response.json()["output"]
+        except:
+            if response.json() == {}:
+                raise EmptyResponseException(message="The chat returned an empty response.")
+            raise KeyError(f"The response from the model did not contain the expected key 'output'. Returned response: {response.json()}")
+
 
     def _construct_http_body(
         self,
