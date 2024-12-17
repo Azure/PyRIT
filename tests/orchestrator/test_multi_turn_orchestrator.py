@@ -90,7 +90,7 @@ def test_prepare_conversation_with_prepended_conversation(orchestrator):
     # Check globals are set correctly
     assert orchestrator._last_prepended_user_message == user_piece.converted_value
     orchestrator._memory.get_scores_by_prompt_ids.assert_called_once_with(
-        prompt_request_response_ids=[assistant_piece.original_prompt_id]
+        prompt_request_response_ids=[str(assistant_piece.original_prompt_id)]
     )
     assert orchestrator._last_prepended_assistant_message_scores == [mocked_score]
 
@@ -125,7 +125,7 @@ def test_prepare_conversation_with_prepended_conversation_no_assistant_scores(or
     # Last prepended user message should be none as it is not needed when no scores are returned
     assert orchestrator._last_prepended_user_message == ""
     orchestrator._memory.get_scores_by_prompt_ids.assert_called_once_with(
-        prompt_request_response_ids=[assistant_piece.original_prompt_id]
+        prompt_request_response_ids=[str(assistant_piece.original_prompt_id)]
     )
     assert orchestrator._last_prepended_assistant_message_scores == []
 
