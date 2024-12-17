@@ -12,7 +12,7 @@ steps:
   - task: AzureKeyVault@2
     displayName: Azure Key Vault
     inputs:
-      azureSubscription: 'AI Red Team Tooling'
+      azureSubscription: 'Integration test keyvault retriever'
       KeyVaultName: 'integration-test-env'
       SecretsFilter: '*'
       RunAsPreJob: false
