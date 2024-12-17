@@ -135,6 +135,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 conditions=PromptMemoryEntry.id.in_(prompt_ids),
             )
             result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            self.add_scores_to_prompt_request_pieces(prompt_request_pieces=result)
             return result
         except Exception as e:
             logger.exception(
@@ -142,7 +143,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def get_prompt_request_piece_by_memory_labels(
+    def get_prompt_request_pieces_by_memory_labels(
         self, *, memory_labels: dict[str, str] = {}
     ) -> list[PromptRequestPiece]:
         """
@@ -162,6 +163,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             query_condition = and_(*conditions)
             entries = self.query_entries(PromptMemoryEntry, conditions=query_condition)
             result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            self.add_scores_to_prompt_request_pieces(prompt_request_pieces=result)
             return result
         except Exception as e:
             logger.exception(
@@ -193,7 +195,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def _add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 

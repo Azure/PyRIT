@@ -412,7 +412,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: DuckDBMemory):
     orchestrator1_id = orchestrator1.get_identifier()["id"]
 
     # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-    retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator1_id)
+    retrieved_entries = memory_interface.get_prompt_request_pieces_by_orchestrator_id(orchestrator_id=orchestrator1_id)
 
     # Verify that the retrieved entries match the expected normalizer_id
     assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
@@ -458,7 +458,7 @@ def test_get_memories_with_memory_labels(memory_interface: DuckDBMemory):
 
     memory_interface.insert_entries(entries=entries)
 
-    retrieved_entries = memory_interface.get_prompt_request_piece_by_memory_labels(memory_labels=labels)
+    retrieved_entries = memory_interface.get_prompt_request_pieces_by_memory_labels(memory_labels=labels)
 
     assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
     for retrieved_entry in retrieved_entries:
@@ -504,7 +504,7 @@ def test_get_memories_with_zero_memory_labels(memory_interface: DuckDBMemory):
 
     memory_interface.insert_entries(entries=entries)
     labels = {"nonexistent_key": "nonexiststent_value"}
-    retrieved_entries = memory_interface.get_prompt_request_piece_by_memory_labels(memory_labels=labels)
+    retrieved_entries = memory_interface.get_prompt_request_pieces_by_memory_labels(memory_labels=labels)
 
     assert len(retrieved_entries) == 0  # zero entries found since invalid memory labels passed
 

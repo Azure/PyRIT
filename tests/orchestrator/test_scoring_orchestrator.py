@@ -40,7 +40,7 @@ async def test_score_prompts_by_orchestrator_only_responses(sample_conversations
 
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        memory.get_prompt_request_piece_by_orchestrator_id.return_value = sample_conversations
+        memory.get_prompt_request_pieces_by_orchestrator_id.return_value = sample_conversations
 
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()
@@ -62,7 +62,7 @@ async def test_score_prompts_by_orchestrator_includes_requests(sample_conversati
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-        memory.get_prompt_request_piece_by_orchestrator_id.return_value = sample_conversations
+        memory.get_prompt_request_pieces_by_orchestrator_id.return_value = sample_conversations
 
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()
@@ -86,7 +86,7 @@ async def test_score_prompts_by_memory_labels_only_responses(sample_conversation
     sample_conversations[1].labels = memory_labels
     sample_conversations[2].labels = memory_labels
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        memory.get_prompt_request_piece_by_memory_labels.return_value = sample_conversations
+        memory.get_prompt_request_pieces_by_memory_labels.return_value = sample_conversations
 
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()
@@ -105,7 +105,7 @@ async def test_score_prompts_by_memory_labels_only_responses(sample_conversation
 async def test_score_prompts_by_memory_labels_includes_requests(sample_conversations: list[PromptRequestPiece]):
 
     memory = MagicMock()
-    memory.get_prompt_request_piece_by_memory_labels.return_value = sample_conversations
+    memory.get_prompt_request_pieces_by_memory_labels.return_value = sample_conversations
     memory_labels = {"op_name": "op1", "user_name": "name1"}
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         orchestrator = ScoringOrchestrator()
@@ -137,7 +137,7 @@ async def test_score_prompts_by_memory_labels_async_raises_error_empty_memory_la
 async def test_score_prompts_by_memory_labels_async_raises_error_no_matching_labels():
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        memory.get_prompt_request_piece_by_memory_labels.return_value = []
+        memory.get_prompt_request_pieces_by_memory_labels.return_value = []
         orchestrator = ScoringOrchestrator()
 
         with pytest.raises(

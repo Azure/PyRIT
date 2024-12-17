@@ -44,7 +44,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
-            request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
+            request_pieces.extend(self._memory.get_prompt_request_pieces_by_orchestrator_id(orchestrator_id=id))
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
         request_pieces = self._remove_duplicates(request_pieces)
@@ -63,7 +63,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         if not memory_labels:
             raise ValueError("Invalid memory_labels: Please provide valid memory labels.")
-        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_piece_by_memory_labels(
+        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_pieces_by_memory_labels(
             memory_labels=memory_labels
         )
         if not request_pieces:

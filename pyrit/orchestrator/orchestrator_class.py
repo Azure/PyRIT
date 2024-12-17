@@ -85,7 +85,7 @@ class Orchestrator(abc.ABC, Identifier):
         """
         Retrieves the memory associated with this orchestrator.
         """
-        return self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=self._id)
+        return self._memory.get_prompt_request_pieces_by_orchestrator_id(orchestrator_id=self._id)
 
     def get_score_memory(self):
         """

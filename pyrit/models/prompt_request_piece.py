@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.models.score import Score
 
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
@@ -42,6 +43,7 @@ class PromptRequestPiece(abc.ABC):
         converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
+        scores (list[Score]): The scores associated with the prompt.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -68,6 +70,7 @@ class PromptRequestPiece(abc.ABC):
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
         timestamp: Optional[datetime] = None,
+        scores: Optional[List[Score]] = None,
     ):
 
         self.id = id if id else uuid4()
@@ -119,6 +122,8 @@ class PromptRequestPiece(abc.ABC):
 
         # Original prompt id defaults to id (assumes that this is the original prompt, not a duplicate)
         self.original_prompt_id = original_prompt_id or self.id
+        
+        scores = scores or []
 
     async def compute_sha256(self):
         """
@@ -168,6 +173,11 @@ class PromptRequestPiece(abc.ABC):
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
         return PromptRequestResponse([self])  # noqa F821
+
+    def add_scores(self, scores: List[Score]):
+        for score in scores:
+            score.prompt_request_response_id = self.id
+            self.scores.append(score)
 
     def __str__(self):
         return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"

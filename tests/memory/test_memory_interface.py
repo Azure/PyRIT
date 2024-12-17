@@ -565,7 +565,7 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
         mock_get.return_value = sample_conversations
         orchestrator_id = sample_conversations[0].orchestrator_identifier["id"]
 
-        response = memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator_id)
+        response = memory.get_prompt_request_pieces_by_orchestrator_id(orchestrator_id=orchestrator_id)
 
         current_value = response[0].conversation_id
         for obj in response[1:]:
@@ -703,7 +703,7 @@ def test_add_score_duplicate_prompt(memory: MemoryInterface):
     new_orchestrator_id = str(uuid4())
     memory.add_request_pieces_to_memory(request_pieces=pieces)
     memory.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
-    dupe_piece = memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=new_orchestrator_id)[0]
+    dupe_piece = memory.get_prompt_request_pieces_by_orchestrator_id(orchestrator_id=new_orchestrator_id)[0]
     dupe_id = dupe_piece.id
 
     score_id = uuid4()

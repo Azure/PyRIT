@@ -220,7 +220,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
 
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def _add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
@@ -265,6 +265,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 conditions=PromptMemoryEntry.id.in_(prompt_ids),
             )
             result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            self.add_scores_to_prompt_request_pieces(prompt_request_pieces=result)
             return result
         except Exception as e:
             logger.exception(
@@ -272,7 +273,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def get_prompt_request_piece_by_memory_labels(
+    def get_prompt_request_pieces_by_memory_labels(
         self, *, memory_labels: dict[str, str] = {}
     ) -> list[PromptRequestPiece]:
         """
@@ -299,6 +300,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
             entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)
             result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            self.add_scores_to_prompt_request_pieces(prompt_request_pieces=result)
             return result
         except Exception as e:
             logger.exception(

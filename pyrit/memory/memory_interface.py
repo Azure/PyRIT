@@ -102,10 +102,30 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+    def _add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
         """
+    
+    def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
+        """
+        Inserts a list of prompt request pieces into the memory storage.
+
+        Args:
+            request_pieces (Sequence[PromptRequestPiece]): The list of request pieces to add to the memory.
+
+        Returns:
+            None
+        """
+        
+        self._add_request_pieces_to_memory(request_pieces=request_pieces)
+
+        scorelist = []
+        for piece in request_pieces:
+            piece.add_scores(piece.scores) # TODO Where are these scores updated? 
+            scorelist.extend(piece.scores)
+        self.add_scores_to_memory(scores=scorelist)
+
 
     @abc.abstractmethod
     def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingDataEntry]) -> None:
@@ -166,6 +186,12 @@ class MemoryInterface(abc.ABC):
                 # auto-link score to the original prompt id if the prompt is a duplicate
                 if prompt_piece[0].original_prompt_id != prompt_piece[0].id:
                     score.prompt_request_response_id = prompt_piece[0].original_prompt_id
+        all_prompt_pieces = self.get_all_prompt_pieces()
+        # Add scores to the prompt request pieces
+        self.add_scores_to_prompt_request_pieces(all_prompt_pieces, scores)
+
+        # TODO update PromptRequestPiece with scores and PromptMemoryEntry?
+
         self.insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
@@ -194,7 +220,7 @@ class MemoryInterface(abc.ABC):
             list[Score]: A list of Score objects associated with the PromptRequestPiece objects
                 which match the specified orchestrator ID.
         """
-        prompt_pieces = self.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator_id)
+        prompt_pieces = self.get_prompt_request_pieces_by_orchestrator_id(orchestrator_id=orchestrator_id)
         # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
         prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
@@ -214,7 +240,7 @@ class MemoryInterface(abc.ABC):
             list[Score]: A list of Score objects associated with the PromptRequestPiece objects
                 which match the specified memory labels.
         """
-        prompt_pieces = self.get_prompt_request_piece_by_memory_labels(memory_labels=memory_labels)
+        prompt_pieces = self.get_prompt_request_pieces_by_memory_labels(memory_labels=memory_labels)
         # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
         prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
@@ -244,7 +270,7 @@ class MemoryInterface(abc.ABC):
             Sequence[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
 
-    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
+    def get_prompt_request_pieces_by_orchestrator_id(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
 
@@ -256,9 +282,10 @@ class MemoryInterface(abc.ABC):
         """
 
         prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+        self.add_scores_to_prompt_request_pieces(prompt_request_pieces=prompt_pieces)
         return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
-
-    def get_prompt_request_piece_by_memory_labels(
+    
+    def get_prompt_request_pieces_by_memory_labels(
         self, *, memory_labels: dict[str, str] = {}
     ) -> list[PromptRequestPiece]:
         """
@@ -768,3 +795,18 @@ class MemoryInterface(abc.ABC):
             file_path = RESULTS_PATH / file_name
 
         self.exporter.export_data(combined_data, file_path=file_path, export_type=export_type)
+    
+    def add_scores_to_prompt_request_pieces(self, prompt_request_pieces: Sequence[PromptRequestPiece]) -> None:
+        """
+        Adds scores to their corresponding PromptRequestPiece objects.
+
+        Args:
+            prompt_request_pieces (List[PromptRequestPiece]): The list of prompt request pieces.
+        """
+        piece_ids = [piece.id for piece in prompt_request_pieces]
+        scores = self.get_scores_by_prompt_ids(prompt_request_response_ids=piece_ids)
+        
+        piece_dict = {piece.id: piece for piece in prompt_request_pieces}
+        for score in scores:
+            if score.prompt_request_response_id in piece_dict:
+                piece_dict[score.prompt_request_response_id].scores.append(score)
