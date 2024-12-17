@@ -11,6 +11,9 @@ on:
       - "main"
       - "release/**"
   workflow_dispatch:
+  schedule:
+    # daily at midnight (Pacific Time) in UTC
+    - cron: "0 8 * * *"
 
 concurrency:
   # This ensures after each commit the old jobs are cancelled and the new ones
