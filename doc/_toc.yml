@@ -55,6 +55,7 @@ chapters:
       - file: code/targets/6_rate_limiting
       - file: code/targets/7_http_target
       - file: code/targets/open_ai_completions
+      - file: code/targets/playwright_target
       - file: code/targets/prompt_shield_target
       - file: code/targets/use_huggingface_chat_target
     - file: code/converters/0_converters
@@ -65,6 +66,7 @@ chapters:
         - file: code/converters/4_image_converters
         - file: code/converters/5_selectively_converting
         - file: code/converters/6_human_converter
+        - file: code/converters/ansi_attack_converter
         - file: code/converters/char_swap_attack_generator
         - file: code/converters/math_prompt_converter
     - file: code/scoring/0_scoring

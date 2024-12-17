@@ -1,0 +1,19 @@
+# Builds the pyrit environment and runs integration tests
+
+name: integration_tests
+
+trigger:
+- main
+
+pr:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+
+- task: CmdLine@2
+  displayName: Create file
+  inputs:
+    script: 'echo "hello world"'

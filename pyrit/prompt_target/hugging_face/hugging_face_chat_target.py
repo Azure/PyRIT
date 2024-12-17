@@ -6,6 +6,7 @@ import json
 import logging
 import os
 from typing import Optional
+from typing import TYPE_CHECKING
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 
@@ -15,8 +16,10 @@ from pyrit.models.prompt_request_response import PromptRequestResponse, construc
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
 from pyrit.common import default_values
 
-
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    import torch
 
 
 class HuggingFaceChatTarget(PromptChatTarget):
@@ -49,6 +52,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
         top_p: float = 1.0,
         skip_special_tokens: bool = True,
         trust_remote_code: bool = False,
+        device_map: Optional[str] = None,
+        torch_dtype: Optional["torch.dtype"] = None,
+        attn_implementation: Optional[str] = None,
     ) -> None:
         super().__init__()
 
@@ -62,6 +68,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
         self.use_cuda = use_cuda
         self.tensor_format = tensor_format
         self.trust_remote_code = trust_remote_code
+        self.device_map = device_map
+        self.torch_dtype = torch_dtype
+        self.attn_implementation = attn_implementation
 
         # Only get the Hugging Face token if a model ID is provided
         if model_id:
@@ -95,13 +104,13 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
 
-    def _load_from_path(self, path: str):
+    def _load_from_path(self, path: str, **kwargs):
         """
         Helper function to load the model and tokenizer from a given path.
         """
         logger.info(f"Loading model and tokenizer from path: {path}...")
         self.tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=self.trust_remote_code)
-        self.model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=self.trust_remote_code)
+        self.model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=self.trust_remote_code, **kwargs)
 
     def is_model_id_valid(self) -> bool:
         """
@@ -129,6 +138,16 @@ class HuggingFaceChatTarget(PromptChatTarget):
             # Determine the identifier for caching purposes
             model_identifier = self.model_path or self.model_id
 
+            optional_model_kwargs = {
+                key: value
+                for key, value in {
+                    "device_map": self.device_map,
+                    "torch_dtype": self.torch_dtype,
+                    "attn_implementation": self.attn_implementation,
+                }.items()
+                if value is not None
+            }
+
             # Check if the model is already cached
             if HuggingFaceChatTarget._cache_enabled and HuggingFaceChatTarget._cached_model_id == model_identifier:
                 logger.info(f"Using cached model and tokenizer for {model_identifier}.")
@@ -139,7 +158,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             if self.model_path:
                 # Load the tokenizer and model from the local directory
                 logger.info(f"Loading model from local path: {self.model_path}...")
-                self._load_from_path(self.model_path)
+                self._load_from_path(self.model_path, **optional_model_kwargs)
             else:
                 # Define the default Hugging Face cache directory
                 cache_dir = os.path.join(
@@ -167,7 +186,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
                     self.model_id, cache_dir=cache_dir, trust_remote_code=self.trust_remote_code
                 )
                 self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_id, cache_dir=cache_dir, trust_remote_code=self.trust_remote_code
+                    self.model_id,
+                    cache_dir=cache_dir,
+                    trust_remote_code=self.trust_remote_code,
+                    **optional_model_kwargs,
                 )
 
             # Move the model to the correct device
