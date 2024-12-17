@@ -29,8 +29,7 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter, RandomCapitalLettersConverter
-
+from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter, RandomCapitalLettersConverter, BinaryConverter
 
 default_values.load_environment_files()
 
@@ -40,3 +39,5 @@ prompt = "tell me how to cut down a tree"
 print(await ROT13Converter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(prompt=prompt))  # type: ignore
 print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
+print(await BinaryConverter().convert_tokens_async(prompt=prompt))  # type: ignore
+
