@@ -147,15 +147,15 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
         patch("pyrit.memory.AzureSQLMemory._create_auth_token") as create_auth_token_mock,
         patch("pyrit.memory.AzureSQLMemory._enable_azure_authorization") as enable_azure_authorization_mock,
     ):
-        os.environ[AzureSQLMemory.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = (
+        os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL] = (
             "https://test.blob.core.windows.net/test"
         )
-        os.environ[AzureSQLMemory.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
+        os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN] = "valid_sas_token"
 
         azure_sql_memory = AzureSQLMemory(
             connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server",
-            container_url=os.environ[AzureSQLMemory.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE],
-            sas_token=os.environ[AzureSQLMemory.SAS_TOKEN_ENVIRONMENT_VARIABLE],
+            results_container_url=os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL],
+            results_sas_token=os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN],
         )
 
         session_mock = UnifiedAlchemyMagicMock()
