@@ -163,7 +163,6 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                         orchestrator_id=self.get_identifier(),
                         memory_labels=updated_memory_labels,
                         desired_response_prefix=self._desired_response_prefix,
-                        prepended_conversation=self._prepended_conversation,
                     )
                     for _ in range(self._attack_width)
                 ]
