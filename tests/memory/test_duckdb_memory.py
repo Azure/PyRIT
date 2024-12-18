@@ -155,10 +155,15 @@ async def test_insert_entry(memory_interface):
         original_value="Hello",
         converted_value="Hello after conversion",
     )
-    await prompt_request_piece_entry.compute_sha256()
+    # await prompt_request_piece_entry.compute_sha256()
+
+    prompt_request_piece_entry.original_value = "Hello"
+    prompt_request_piece_entry.converted_value = "Hello after conversion"
+
+
     entry = PromptMemoryEntry(entry=prompt_request_piece_entry)
     # Use the insert_entry method to insert the entry into the database
-    memory_interface.insert_entry(entry)
+    memory_interface._insert_entry(entry)
 
     # Now, get a new session to query the database and verify the entry was inserted
     with memory_interface.get_session() as session:
@@ -317,7 +322,7 @@ def test_get_all_memory(memory_interface, sample_conversation_entries):
     memory_interface.insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
-    all_entries = memory_interface.get_all_prompt_pieces()
+    all_entries = memory_interface.get_prompt_request_pieces()
     assert len(all_entries) == 3
 
 
@@ -369,59 +374,6 @@ def test_get_memories_with_json_properties(memory_interface):
 
         labels = retrieved_entry.labels
         assert labels["normalizer_id"] == "id1"
-
-
-def test_get_memories_with_orchestrator_id(memory_interface: DuckDBMemory):
-    # Define a specific normalizer_id
-    orchestrator1 = Orchestrator()
-    orchestrator2 = Orchestrator()
-
-    # Create a list of ConversationData entries, some with the specific normalizer_id
-    entries = [
-        PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                conversation_id="123",
-                role="user",
-                original_value="Hello 1",
-                converted_value="Hello 1",
-                orchestrator_identifier=orchestrator1.get_identifier(),
-            )
-        ),
-        PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                conversation_id="456",
-                role="user",
-                original_value="Hello 2",
-                converted_value="Hello 2",
-                orchestrator_identifier=orchestrator2.get_identifier(),
-            )
-        ),
-        PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                conversation_id="789",
-                role="user",
-                original_value="Hello 3",
-                converted_value="Hello 1",
-                orchestrator_identifier=orchestrator1.get_identifier(),
-            )
-        ),
-    ]
-
-    memory_interface.insert_entries(entries=entries)
-
-    orchestrator1_id = orchestrator1.get_identifier()["id"]
-
-    # Use the get_memories_with_normalizer_id method to retrieve entries with the specific normalizer_id
-    retrieved_entries = memory_interface.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator1_id)
-
-    # Verify that the retrieved entries match the expected normalizer_id
-    assert len(retrieved_entries) == 2  # Two entries should have the specific normalizer_id
-    for retrieved_entry in retrieved_entries:
-        assert retrieved_entry.orchestrator_identifier["id"] == orchestrator1_id
-        assert "Hello" in retrieved_entry.original_value  # Basic check to ensure content is as expected
-
-
-
 
 
 def test_update_entries(memory_interface):

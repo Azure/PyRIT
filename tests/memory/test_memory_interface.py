@@ -1,11 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import tempfile
+from datetime import datetime
 from typing import Generator, Literal
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from uuid import uuid4
+import uuid
 import pytest
 import random
 from string import ascii_lowercase
@@ -548,32 +551,6 @@ def test_insert_prompt_memories_not_inserts_embedding(
         assert mock_embedding.assert_not_called
 
 
-def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
-    conversation_id = sample_conversations[0].conversation_id
-
-    # This new conversation piece should be grouped with other messages in the conversation
-    sample_conversations.append(
-        PromptRequestPiece(
-            role="user",
-            original_value="original prompt text",
-            conversation_id=conversation_id,
-        )
-    )
-
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
-
-        mock_get.return_value = sample_conversations
-        orchestrator_id = sample_conversations[0].orchestrator_identifier["id"]
-
-        response = memory.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
-
-        current_value = response[0].conversation_id
-        for obj in response[1:]:
-            new_value = obj.conversation_id
-            if new_value != current_value:
-                if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
-                    assert False, "Conversation IDs are not grouped together"
-
 
 def test_export_conversation_by_orchestrator_id_file_created(
     memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]
@@ -593,19 +570,6 @@ def test_export_conversation_by_orchestrator_id_file_created(
         # Verify file was created
         assert file_path.exists()
 
-
-def test_get_prompt_ids_by_orchestrator(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
-    orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
-
-    sample_conversation_ids = []
-    for entry in sample_conversation_entries:
-        sample_conversation_ids.append(str(entry.get_prompt_request_piece().id))
-
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
-        mock_get.return_value = sample_conversation_entries
-        prompt_ids = memory.get_prompt_ids_by_orchestrator(orchestrator_id=orchestrator1_id)
-
-        assert sample_conversation_ids == prompt_ids
 
 
 def test_get_scores_by_orchestrator_id(memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
@@ -653,7 +617,7 @@ def test_add_score_get_score(
 ):
     prompt_id = sample_conversation_entries[0].id
 
-    memory.insert_entries(entries=sample_conversation_entries)
+    memory._insert_entries(entries=sample_conversation_entries)
 
     score_value = str(True) if score_type == "true_false" else "0.8"
 
@@ -1297,10 +1261,21 @@ def test_export_all_conversations_with_scores_empty_data(memory: MemoryInterface
             memory.export_all_conversations_with_scores(file_path=file_path)
             mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
 
-# Updated tests
+
+def test_get_prompt_request_pieces_by_orchestrator(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
+    orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
+
+    sample_conversation_ids = []
+    for entry in sample_conversation_entries:
+        sample_conversation_ids.append(str(entry.get_prompt_request_piece().id))
+
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
+        mock_get.return_value = sample_conversation_entries
+        prompt_ids = memory.get_prompt_ids_by_orchestrator(orchestrator_id=orchestrator1_id)
+
+        assert sample_conversation_ids == prompt_ids
 
 def test_get_prompt_request_pieces_labels(memory: MemoryInterface):
-    orchestrator1 = Orchestrator()
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
@@ -1325,7 +1300,7 @@ def test_get_prompt_request_pieces_labels(memory: MemoryInterface):
         ),
     ]
 
-    memory.insert_entries(entries=entries)
+    memory._insert_entries(entries=entries)
 
     retrieved_entries = memory.get_prompt_request_pieces(labels=labels)
 
@@ -1335,7 +1310,170 @@ def test_get_prompt_request_pieces_labels(memory: MemoryInterface):
         assert "user_name" in retrieved_entry.labels
         assert "harm_category" in retrieved_entry.labels
 
-def test_get_memories_with_non_matching_memory_labels(memory: MemoryInterface):
+def test_get_prompt_request_pieces_id(memory: MemoryInterface):
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 1",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="assistant",
+                original_value="Hello 2",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 3",
+            )
+        ),
+    ]
+
+    id_1 = uuid.uuid4()
+    id_2 = uuid.uuid4()
+    entries[0].id = id_1
+    entries[1].id = id_2
+
+    memory._insert_entries(entries=entries)
+
+    retrieved_entries = memory.get_prompt_request_pieces(prompt_ids=[id_1, id_2])
+
+    assert len(retrieved_entries) == 2
+    assert "Hello 1" in retrieved_entries[0].original_value
+    assert "Hello 2" in retrieved_entries[1].original_value
+
+def test_get_prompt_request_pieces_sent_after(memory: MemoryInterface):
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 1",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="assistant",
+                original_value="Hello 2",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 3",
+            )
+        ),
+    ]
+
+    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
+    entries[1].timestamp =  datetime(2022, 12, 25, 15, 30, 0)
+
+    memory._insert_entries(entries=entries)
+
+    retrieved_entries = memory.get_prompt_request_pieces(sent_after=datetime(2024,1,1))
+
+    assert len(retrieved_entries) == 1
+    assert "Hello 3" in retrieved_entries[0].original_value
+
+
+def test_get_prompt_request_pieces_sent_before(memory: MemoryInterface):
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 1",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="assistant",
+                original_value="Hello 2",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 3",
+            )
+        ),
+    ]
+
+    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
+    entries[1].timestamp =  datetime(2021, 12, 25, 15, 30, 0)
+
+    memory._insert_entries(entries=entries)
+
+    retrieved_entries = memory.get_prompt_request_pieces(sent_before=datetime(2024,1,1))
+
+    assert len(retrieved_entries) == 2
+    assert "Hello 2" == retrieved_entries[0].original_value
+    assert "Hello 1" == retrieved_entries[1].original_value
+
+def test_get_prompt_request_pieces_by_value(memory: MemoryInterface):
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 1",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="assistant",
+                original_value="Hello 2",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 3",
+            )
+        ),
+    ]
+
+    memory._insert_entries(entries=entries)
+    retrieved_entries = memory.get_prompt_request_pieces(converted_values=["Hello 2", "Hello 3"])
+
+    assert len(retrieved_entries) == 2
+    assert "Hello 2" == retrieved_entries[0].original_value
+    assert "Hello 3" == retrieved_entries[1].original_value
+
+@pytest.mark.asyncio
+async def test_get_prompt_request_pieces_by_hash(memory: MemoryInterface):
+
+    filename = ""
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+        f.write(b"Hello1")
+        f.flush()
+        f.close()
+
+        entries = [
+            PromptMemoryEntry(
+                entry=PromptRequestPiece(
+                    role="user",
+                    original_value="Hello 1",
+                )
+            ),
+            PromptMemoryEntry(
+                entry=PromptRequestPiece(
+                    role="user",
+                    original_value=filename,
+                    converted_value=filename,
+                    converted_value_data_type="audio_path",
+                )
+            )
+        ]
+
+        expected_hash = "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
+
+    os.remove(filename)
+
+
+
+def test_get_prompt_request_pieces_with_non_matching_memory_labels(memory: MemoryInterface):
     orchestrator1 = Orchestrator()
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
@@ -1366,8 +1504,31 @@ def test_get_memories_with_non_matching_memory_labels(memory: MemoryInterface):
         ),
     ]
 
-    memory.insert_entries(entries=entries)
+    memory._insert_entries(entries=entries)
     labels = {"nonexistent_key": "nonexiststent_value"}
     retrieved_entries = memory.get_prompt_request_pieces(labels=labels)
 
     assert len(retrieved_entries) == 0  # zero entries found since invalid memory labels passed
+
+def test_get_prompt_request_pieces_sorts(memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
+    conversation_id = sample_conversations[0].conversation_id
+
+    # This new conversation piece should be grouped with other messages in the conversation
+    sample_conversations.append(
+        PromptRequestPiece(
+            role="user",
+            original_value="original prompt text",
+            conversation_id=conversation_id,
+        )
+    )
+
+    memory.add_request_pieces_to_memory(request_pieces=sample_conversations)
+
+    response = memory.get_prompt_request_pieces()
+
+    current_value = response[0].conversation_id
+    for obj in response[1:]:
+        new_value = obj.conversation_id
+        if new_value != current_value:
+            if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
+                assert False, "Conversation IDs are not grouped together"
