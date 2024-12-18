@@ -79,7 +79,7 @@ async def test_disk_storage_io_create_directory_if_not_exists():
 
 @pytest.mark.asyncio
 async def test_azure_blob_storage_io_read_file(azure_blob_storage_io):
-    azure_blob_storage_io._client_async = Mock()  # Use Mock since get_blob_client is sync
+    azure_blob_storage_io._client_async = AsyncMock()  # Use Mock since get_blob_client is sync
 
     mock_blob_client = AsyncMock()
     mock_blob_stream = AsyncMock()
@@ -87,6 +87,7 @@ async def test_azure_blob_storage_io_read_file(azure_blob_storage_io):
     azure_blob_storage_io._client_async.get_blob_client = Mock(return_value=mock_blob_client)
     mock_blob_client.download_blob = AsyncMock(return_value=mock_blob_stream)
     mock_blob_stream.readall = AsyncMock(return_value=b"Test file content")
+    azure_blob_storage_io._client_async.close = AsyncMock()
 
     result = await azure_blob_storage_io.read_file(
         "https://account.blob.core.windows.net/container/dir1/dir2/sample.png"
@@ -125,12 +126,13 @@ async def test_azure_blob_storage_io_write_file():
 
 @pytest.mark.asyncio
 async def test_azure_storage_io_path_exists(azure_blob_storage_io):
-    azure_blob_storage_io._client_async = Mock()
+    azure_blob_storage_io._client_async = AsyncMock()
 
     mock_blob_client = AsyncMock()
 
     azure_blob_storage_io._client_async.get_blob_client = Mock(return_value=mock_blob_client)
     mock_blob_client.get_blob_properties = AsyncMock()
+    azure_blob_storage_io._client_async.close = AsyncMock()
     file_path = "https://example.blob.core.windows.net/container/dir1/dir2/blob_name.txt"
     exists = await azure_blob_storage_io.path_exists(file_path)
     assert exists is True
@@ -138,13 +140,14 @@ async def test_azure_storage_io_path_exists(azure_blob_storage_io):
 
 @pytest.mark.asyncio
 async def test_azure_storage_io_is_file(azure_blob_storage_io):
-    azure_blob_storage_io._client_async = Mock()
+    azure_blob_storage_io._client_async = AsyncMock()
 
     mock_blob_client = AsyncMock()
 
     azure_blob_storage_io._client_async.get_blob_client = Mock(return_value=mock_blob_client)
     mock_blob_properties = Mock(size=1024)
     mock_blob_client.get_blob_properties = AsyncMock(return_value=mock_blob_properties)
+    azure_blob_storage_io._client_async.close = AsyncMock()
     file_path = "https://example.blob.core.windows.net/container/dir1/dir2/blob_name.txt"
     is_file = await azure_blob_storage_io.is_file(file_path)
     assert is_file is True

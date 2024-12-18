@@ -39,7 +39,7 @@ def strip_fragment(url):
 
 
 def resolve_relative_url(base_path, url):
-    if not url.startswith(("http://", "https://", "mailto:")):
+    if not url.startswith(("http://", "https://", "mailto:", "attachment:")):
         return os.path.abspath(os.path.join(os.path.dirname(base_path), url))
     return url
 
@@ -63,6 +63,7 @@ def check_url(url, retries=2, delay=2):
         or os.path.isfile(url)
         or os.path.isdir(url)
         or url.startswith("mailto:")
+        or url.startswith("attachment:")
     ):
         return url, True
 
