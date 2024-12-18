@@ -4,7 +4,9 @@ name: integration_tests
 
 trigger:
 - main
-- romanlutz/integration_tests
+
+pr:
+- main
 
 pool:
   vmImage: ubuntu-latest
