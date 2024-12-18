@@ -210,8 +210,10 @@ class AzureMLChatTarget(PromptChatTarget):
         except Exception as e:
             if response.json() == {}:
                 raise EmptyResponseException(message="The chat returned an empty response.")
-            raise e(f"Exception obtaining response from the target. Returned response: {response.json()}. Exception: {str(e)}")
-
+            raise e(
+                f"Exception obtaining response from the target. Returned response: {response.json()}. "
+                + f"Exception: {str(e)}"  # type: ignore
+            )
 
     def _construct_http_body(
         self,

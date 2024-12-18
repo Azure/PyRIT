@@ -133,7 +133,7 @@ class MultiTurnOrchestrator(Orchestrator):
 
         self._objective_scorer = objective_scorer
 
-        self._prepended_conversation: list[PromptRequestResponse] = None
+        self._prepended_conversation: list[PromptRequestResponse] = []
         self._last_prepended_user_message: str = ""
         self._last_prepended_assistant_message_scores: list[Score] = []
 

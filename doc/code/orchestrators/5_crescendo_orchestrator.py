@@ -28,11 +28,8 @@
 
 # %%
 import os
-import pathlib
 
 from pyrit.common import default_values
-from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPrompt
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.prompt_converter import EmojiConverter
 from pyrit.prompt_target import OpenAIChatTarget
@@ -47,22 +44,6 @@ objective_target = OpenAIChatTarget(
     deployment_name=os.environ["AZURE_OPENAI_GPT4O_CHAT_DEPLOYMENT"],
 )
 
-jailbreak_path = pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dan_1.yaml"
-
-system_prompt_str = SeedPrompt.from_yaml_file(jailbreak_path).value
-
-# this is sent as the system prompt to objective_target before any prompt
-print(f"System Prompt: {system_prompt_str}")
-
-prepend_conversation = PromptRequestResponse(
-    request_pieces=[
-        PromptRequestPiece(
-            role="system",
-            original_value=system_prompt_str,
-        )
-    ]
-)
-
 with CrescendoOrchestrator(
     objective_target=objective_target,
     adversarial_chat=OpenAIChatTarget(),
@@ -71,8 +52,6 @@ with CrescendoOrchestrator(
     scoring_target=OpenAIChatTarget(),
     prompt_converters=[EmojiConverter()],
 ) as orchestrator:
-    orchestrator.set_prepended_conversation(prepended_conversation=[prepend_conversation])
-
     # For five turns this can take a few minutes depending on LLM latency
     results = await orchestrator.run_attacks_async(objectives=conversation_objectives)  # type: ignore
 
