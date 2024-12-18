@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -131,6 +131,7 @@ with RedTeamingOrchestrator(
     objective_scorer=scorer,
 ) as red_teaming_orchestrator:
     # Set the prepended conversation to prepare the conversation with this context list
+    # Note: This will set a variable forthe orchestrator, and will be used for all attacks within the same orchestrator instance.
     red_teaming_orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
 
     result = await red_teaming_orchestrator.run_attack_async(objective=objective, memory_labels={"harm_category": "illegal"})  # type: ignore
