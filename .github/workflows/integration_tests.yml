@@ -33,16 +33,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - name: test secret
+      - name: Create environment file with access keys
         run: |
-          echo ${{ env.SUPER_SECRET }}
-          echo ${{ secrets.TEST_SECRET }}
-          echo ${{ secrets.GITHUB_TOKEN }}
-          echo '${{ env.SUPER_SECRET }}'
-          echo '${{ secrets.TEST_SECRET }}'
-          echo '${{ secrets.GITHUB_TOKEN }}'
+          echo ${{ env.ENV_SECRETS }} > .env
         env:
-          SUPER_SECRET: ${{ secrets.TEST_SECRET }}
+          ENV_SECRETS: ${{ secrets.TEST_ENV }}
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
@@ -50,5 +45,5 @@ jobs:
         run: pip install --upgrade setuptools pip
       - name: Install PyRIT with pip
         run: pip install .[${{ matrix.package_extras }}]
-      - name: Run unit tests with code coverage
-        run: make test-cov-xml
+      - name: Run integration tests
+        run: make integration-test
