@@ -205,13 +205,13 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         Inserts a list of prompt request pieces into the memory storage.
 
         """
-        self.insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
     def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingDataEntry]) -> None:
         """
         Inserts embedding data into memory storage
         """
-        self.insert_entries(entries=embedding_data)
+        self._insert_entries(entries=embedding_data)
 
     def get_all_table_models(self) -> list[Base]:  # type: ignore
         """
@@ -229,7 +229,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -244,7 +244,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
 
-    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:
@@ -281,7 +281,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
                 return []
 
-    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
 

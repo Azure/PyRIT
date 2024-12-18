@@ -170,7 +170,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts embedding data into memory storage
         """
-        self.insert_entries(entries=embedding_data)
+        self._insert_entries(entries=embedding_data)
 
     def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
@@ -235,7 +235,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Inserts a list of prompt request pieces into the memory storage.
 
         """
-        self.insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
     def dispose_engine(self):
         """
@@ -317,7 +317,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             )
             return []
 
-    def insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -335,7 +335,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     # The following methods are not part of MemoryInterface, but seem
     # common between SQLAlchemy-based implementations, regardless of engine.
     # Perhaps we should find a way to refactor
-    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:
@@ -378,7 +378,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
                 return []
 
-    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
 

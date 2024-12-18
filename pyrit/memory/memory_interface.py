@@ -145,7 +145,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -154,11 +154,11 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
 
     @abc.abstractmethod
-    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
 
@@ -181,7 +181,7 @@ class MemoryInterface(abc.ABC):
                 # auto-link score to the original prompt id if the prompt is a duplicate
                 if prompt_piece[0].original_prompt_id != prompt_piece[0].id:
                     score.prompt_request_response_id = prompt_piece[0].original_prompt_id
-        self.insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
+        self._insert_entries(entries=[ScoreEntry(entry=score) for score in scores])
 
     def get_scores_by_prompt_ids(self, *, prompt_request_response_ids: list[str]) -> list[Score]:
         """
@@ -522,7 +522,7 @@ class MemoryInterface(abc.ABC):
             return False
 
         # Use the utility function to update the entries
-        success = self.update_entries(entries=entries_to_update, update_fields=update_fields)
+        success = self._update_entries(entries=entries_to_update, update_fields=update_fields)
 
         if success:
             logger.info(f"Updated {len(entries_to_update)} entries with conversation_id {conversation_id}.")
@@ -686,7 +686,7 @@ class MemoryInterface(abc.ABC):
                 prompt.date_added = current_time
             entries.append(SeedPromptEntry(entry=prompt))
 
-        self.insert_entries(entries=entries)
+        self._insert_entries(entries=entries)
 
     def get_seed_prompt_dataset_names(self) -> list[str]:
         """
