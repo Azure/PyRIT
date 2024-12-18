@@ -4,8 +4,8 @@
 #     cell_metadata_filter: -all
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
+#       format_name: percent
+#       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: pyrit-dev
@@ -13,6 +13,7 @@
 #     name: python3
 # ---
 
+# %% [markdown]
 # # 7. PromptSendingOrchestrator with Azure SQL Memory
 #
 # This demo is about when you have a list of prompts you want to try against a target. All interactions with the target will be saved in Azure SQL Memory. It includes the ways you can send the prompts,
@@ -24,7 +25,7 @@
 #
 # The first example is as simple as it gets.
 
-# +
+# %%
 import time
 import uuid
 
@@ -52,14 +53,14 @@ with PromptSendingOrchestrator(objective_target=target) as orchestrator:
 
     print(f"Elapsed time for operation: {end-start}")
     await orchestrator.print_conversations_async()  # type: ignore
-# -
 
+# %% [markdown]
 # # Automatic Scoring with Azure SQL Memory
 #
 # The `PromptSendingOrchestrator` also has built-in support to score prompt responses in parallel. All interactions with the target and scorers will be saved in Azure SQL Memory.
 # This example shows how to pass in a list of scorers to the orchestrator.
 
-# +
+# %%
 from azure.ai.contentsafety.models import TextCategory
 
 from pyrit.common import default_values
@@ -97,8 +98,8 @@ with PromptSendingOrchestrator(
                 print(
                     f"Output scored: {entry.converted_value}\nScore category: {score_entry.score_category}\nScore value: {score_entry.get_value()}\n\n"
                 )
-# -
 
+# %% [markdown]
 # # Red Teaming Orchestrator with Multi-Modal and Multi-Turn with Azure SQL Memory
 #
 # You can utilize Azure SQL Memory to persist all interactions in multi-turn attack strategies or multi-modal scenarios simply by passing the Azure SQL Memory instance to the orchestrator.
@@ -115,7 +116,7 @@ with PromptSendingOrchestrator(
 #
 # > **Note:** Multi-modal content generated from the target, such as images, will be stored in the Azure Blob Storage Account's result container specified by the provided environment variable. Additionally, all interactions with the target and scorers will be saved in Azure SQL Memory
 
-# +
+# %%
 import logging
 import os
 from pathlib import Path
@@ -159,13 +160,13 @@ with RedTeamingOrchestrator(
 ) as orchestrator:
     result = await orchestrator.run_attack_async(objective=image_objective)  # type: ignore
     await result.print_conversation_async()  # type: ignore
-# -
 
 
+# %% [markdown]
 # ## OpenAI Chat Target using AzureSQLMemory and local image path
 # This demo highlights the integration of AzureSQLMemory with local images, leveraging `AzureOpenAIGPT4OChatTarget` to generate text from multimodal inputs, which include both text and locally stored image paths.
 
-# +
+# %%
 import pathlib
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest
@@ -201,7 +202,8 @@ CentralMemory.set_memory_instance(memory)
 
 with PromptSendingOrchestrator(objective_target=azure_openai_gpt4o_chat_target) as orchestrator:
     await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
-    memory = orchestrator.get_memory()
-    for entry in memory:
+    memory_items = orchestrator.get_memory()
+    for entry in memory_items:
         print(entry)
-# -
+
+# %%
