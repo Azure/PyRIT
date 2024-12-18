@@ -231,7 +231,8 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
                 score_type="true_false",
                 score_category="category1",
                 score_rationale="Rationale 1",
-                score_metadata={"key1": "value1"}),
+                score_metadata="Test metadata1",
+            ),
             Score(
                 score_value="0.9",
                 prompt_request_response_id=str(uuid.uuid4()),
@@ -239,7 +240,8 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
                 score_type="float_scale",
                 score_category="category2",
                 score_rationale="Rationale 2",
-                score_metadata={"key2": "value2"})
+                score_metadata="Test metadata2",
+            ),
         ]
         scores2 = [
             Score(
@@ -249,7 +251,8 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
                 score_type="true_false",
                 score_category="category3",
                 score_rationale="Rationale 3",
-                score_metadata={"key3": "value3"}),
+                score_metadata="Test metadata3",
+            ),
             Score(
                 score_value="true",
                 prompt_request_response_id=str(uuid.uuid4()),
@@ -257,9 +260,10 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
                 score_type="true_false",
                 score_category="category4",
                 score_rationale="Rationale 4",
-                score_metadata={"key4": "value4"})
+                score_metadata="Test metadata4",
+            ),
         ]
-        
+
         return [
             PromptRequestPiece(
                 role="user",

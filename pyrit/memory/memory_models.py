@@ -46,6 +46,7 @@ class PromptMemoryEntry(Base):
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         idx_conversation_id (Index): The index for the conversation ID.
         original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
+        scores (list[Score]): The scores associated with the prompt.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -81,6 +82,8 @@ class PromptMemoryEntry(Base):
 
     original_prompt_id = Column(Uuid, nullable=False)
 
+    scores = Column(JSON, nullable=True)
+
     def __init__(self, *, entry: PromptRequestPiece):
         self.id = entry.id
         self.role = entry.role
@@ -105,6 +108,8 @@ class PromptMemoryEntry(Base):
 
         self.original_prompt_id = entry.original_prompt_id
 
+        self.scores = entry.scores
+
     def get_prompt_request_piece(self) -> PromptRequestPiece:
         return PromptRequestPiece(
             role=self.role,
@@ -123,6 +128,7 @@ class PromptMemoryEntry(Base):
             response_error=self.response_error,
             original_prompt_id=self.original_prompt_id,
             timestamp=self.timestamp,
+            scores=self.scores,
         )
 
     def __str__(self):

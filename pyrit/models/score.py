@@ -115,6 +115,19 @@ class Score:
             except ValueError:
                 raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}")
 
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'score_value': self.score_value,
+            'score_value_description': self.score_value_description,
+            'score_type': self.score_type,
+            'score_category': self.score_category,
+            'score_rationale': self.score_rationale,
+            'score_metadata': self.score_metadata,
+            'prompt_request_response_id': str(self.prompt_request_response_id),
+            'timestamp': self.timestamp.isoformat()
+        }
+    
     def __str__(self):
         if self.scorer_class_identifier:
             return f"{self.scorer_class_identifier['__type__']}: {self.score_category}: {self.score_value}"

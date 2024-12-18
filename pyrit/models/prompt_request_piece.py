@@ -123,7 +123,7 @@ class PromptRequestPiece(abc.ABC):
         # Original prompt id defaults to id (assumes that this is the original prompt, not a duplicate)
         self.original_prompt_id = original_prompt_id or self.id
         
-        self.scores = scores if scores is not None else []
+        self.scores = [score.to_dict() for score in scores] if scores else []
 
     async def compute_sha256(self):
         """
