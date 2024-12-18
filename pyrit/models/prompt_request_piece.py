@@ -123,7 +123,7 @@ class PromptRequestPiece(abc.ABC):
         # Original prompt id defaults to id (assumes that this is the original prompt, not a duplicate)
         self.original_prompt_id = original_prompt_id or self.id
         
-        scores = scores or []
+        self.scores = scores if scores is not None else []
 
     async def compute_sha256(self):
         """
@@ -173,11 +173,6 @@ class PromptRequestPiece(abc.ABC):
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
         return PromptRequestResponse([self])  # noqa F821
-
-    def add_scores(self, scores: List[Score]):
-        for score in scores:
-            score.prompt_request_response_id = self.id
-            self.scores.append(score)
 
     def __str__(self):
         return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"

@@ -122,8 +122,10 @@ class MemoryInterface(abc.ABC):
 
         scorelist = []
         for piece in request_pieces:
-            piece.add_scores(piece.scores) # TODO Where are these scores updated? 
-            scorelist.extend(piece.scores)
+            if piece.scores:
+                for score in piece.scores:
+                    score.prompt_request_response_id = piece.id
+                    scorelist.append(score)
         self.add_scores_to_memory(scores=scorelist)
 
 
@@ -188,7 +190,7 @@ class MemoryInterface(abc.ABC):
                     score.prompt_request_response_id = prompt_piece[0].original_prompt_id
         all_prompt_pieces = self.get_all_prompt_pieces()
         # Add scores to the prompt request pieces
-        self.add_scores_to_prompt_request_pieces(all_prompt_pieces, scores)
+        self.add_scores_to_prompt_request_pieces(prompt_request_pieces=all_prompt_pieces)
 
         # TODO update PromptRequestPiece with scores and PromptMemoryEntry?
 
@@ -339,6 +341,9 @@ class MemoryInterface(abc.ABC):
 
             piece.conversation_id = new_conversation_id
 
+            for score in piece.scores:
+                score.prompt_request_response_id = piece.id
+
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
         return new_conversation_id
 
@@ -387,6 +392,8 @@ class MemoryInterface(abc.ABC):
             if new_orchestrator_id:
                 piece.orchestrator_identifier["id"] = new_orchestrator_id
             piece.conversation_id = new_conversation_id
+            for score in piece.scores:
+                score.prompt_request_response_id = piece.id
 
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
 

@@ -73,6 +73,62 @@ def test_duplicate_memory(memory: MemoryInterface):
     conversation_id_1 = "11111"
     conversation_id_2 = "22222"
     conversation_id_3 = "33333"
+
+    scores1 = [
+        Score(
+            score_value="0.9",
+            prompt_request_response_id=str(uuid4()),
+            score_value_description="Description 1",
+            score_type="float_scale",
+            score_category="category1",
+            score_rationale="Rationale 1",
+            score_metadata={"key1": "value1"}),
+        Score(
+            score_value="true",
+            prompt_request_response_id=str(uuid4()),
+            score_value_description="Description 2",
+            score_type="true_false",
+            score_category="category2",
+            score_rationale="Rationale 2",
+            score_metadata={"key2": "value2"})
+    ]
+    scores2 = [
+        Score(
+            score_value="true",
+            prompt_request_response_id=str(uuid4()),
+            score_value_description="Description 3",
+            score_type="true_false",
+            score_category="category3",
+            score_rationale="Rationale 3",
+            score_metadata={"key3": "value3"}),
+        Score(
+            score_value="false",
+            prompt_request_response_id=str(uuid4()),
+            score_value_description="Description 4",
+            score_type="true_false",
+            score_category="category4",
+            score_rationale="Rationale 4",
+            score_metadata={"key4": "value4"})
+    ]
+    
+    scores3 = [
+        Score(
+            score_value="0.9",
+            prompt_request_response_id=str(uuid4()),
+            score_value_description="Description 5",
+            score_type="float_scale",
+            score_category="category5",
+            score_rationale="Rationale 5",
+            score_metadata={"key5": "value5"}),
+        Score(
+            score_value="true",
+            prompt_request_response_id=str(uuid4()),
+            score_value_description="Description 6",
+            score_type="true_false",
+            score_category="category6",
+            score_rationale="Rationale 6",
+            score_metadata={"key6": "value6"})
+    ]
     pieces = [
         PromptRequestPiece(
             role="user",
@@ -81,6 +137,7 @@ def test_duplicate_memory(memory: MemoryInterface):
             conversation_id=conversation_id_1,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
+            scores=scores1
         ),
         PromptRequestPiece(
             role="assistant",
@@ -89,6 +146,7 @@ def test_duplicate_memory(memory: MemoryInterface):
             conversation_id=conversation_id_1,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
+            scores=scores1
         ),
         PromptRequestPiece(
             role="assistant",
@@ -96,6 +154,7 @@ def test_duplicate_memory(memory: MemoryInterface):
             converted_value="I'm fine, thank you!",
             conversation_id=conversation_id_3,
             orchestrator_identifier=orchestrator2.get_identifier(),
+            scores=scores3
         ),
         PromptRequestPiece(
             role="user",
@@ -104,6 +163,7 @@ def test_duplicate_memory(memory: MemoryInterface):
             conversation_id=conversation_id_2,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
+            scores=scores2
         ),
         PromptRequestPiece(
             role="assistant",
@@ -112,6 +172,7 @@ def test_duplicate_memory(memory: MemoryInterface):
             conversation_id=conversation_id_2,
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
+            scores=scores2
         ),
     ]
     memory.add_request_pieces_to_memory(request_pieces=pieces)
@@ -154,6 +215,7 @@ def test_duplicate_conversation_pieces_not_score(memory: MemoryInterface):
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
             labels=memory_labels,
+            scores=[]
         ),
         PromptRequestPiece(
             id=prompt_id_2,
@@ -164,6 +226,7 @@ def test_duplicate_conversation_pieces_not_score(memory: MemoryInterface):
             sequence=0,
             orchestrator_identifier=orchestrator1.get_identifier(),
             labels=memory_labels,
+            scores=[]
         ),
     ]
     # Ensure that the original prompt id defaults to the id of the piece
@@ -698,6 +761,7 @@ def test_add_score_duplicate_prompt(memory: MemoryInterface):
             conversation_id=conversation_id,
             sequence=0,
             orchestrator_identifier=orchestrator.get_identifier(),
+            scores=[],
         )
     ]
     new_orchestrator_id = str(uuid4())
@@ -736,6 +800,7 @@ def test_get_scores_by_memory_labels(memory: MemoryInterface):
             converted_value="Hello, how are you?",
             sequence=0,
             labels={"sample": "label"},
+            scores=[],
         )
     ]
     memory.add_request_pieces_to_memory(request_pieces=pieces)

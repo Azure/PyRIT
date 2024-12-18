@@ -16,6 +16,7 @@ from pyrit.memory import AzureSQLMemory, DuckDBMemory, MemoryInterface
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models.score import Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
@@ -221,6 +222,44 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
 
         conversation_1 = str(uuid.uuid4())
 
+        # Create sample scores
+        scores1 = [
+            Score(
+                score_value="true",
+                prompt_request_response_id=str(uuid.uuid4()),
+                score_value_description="Description 1",
+                score_type="true_false",
+                score_category="category1",
+                score_rationale="Rationale 1",
+                score_metadata={"key1": "value1"}),
+            Score(
+                score_value="0.9",
+                prompt_request_response_id=str(uuid.uuid4()),
+                score_value_description="Description 2",
+                score_type="float_scale",
+                score_category="category2",
+                score_rationale="Rationale 2",
+                score_metadata={"key2": "value2"})
+        ]
+        scores2 = [
+            Score(
+                score_value="false",
+                prompt_request_response_id=str(uuid.uuid4()),
+                score_value_description="Description 3",
+                score_type="true_false",
+                score_category="category3",
+                score_rationale="Rationale 3",
+                score_metadata={"key3": "value3"}),
+            Score(
+                score_value="true",
+                prompt_request_response_id=str(uuid.uuid4()),
+                score_value_description="Description 4",
+                score_type="true_false",
+                score_category="category4",
+                score_rationale="Rationale 4",
+                score_metadata={"key4": "value4"})
+        ]
+        
         return [
             PromptRequestPiece(
                 role="user",
@@ -229,6 +268,7 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
                 conversation_id=conversation_1,
                 sequence=0,
                 orchestrator_identifier=orchestrator1.get_identifier(),
+                scores=scores1,
             ),
             PromptRequestPiece(
                 role="assistant",
@@ -237,6 +277,7 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
                 conversation_id=conversation_1,
                 sequence=0,
                 orchestrator_identifier=orchestrator1.get_identifier(),
+                scores=scores2,
             ),
             PromptRequestPiece(
                 role="assistant",
@@ -244,6 +285,7 @@ def get_sample_conversations() -> list[PromptRequestPiece]:
                 converted_value="I'm fine, thank you!",
                 conversation_id=str(uuid.uuid4()),
                 orchestrator_identifier=orchestrator2.get_identifier(),
+                scores=scores1,
             ),
         ]
 
