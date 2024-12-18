@@ -1,0 +1,39 @@
+
+# Builds the pyrit environment and runs integration tests
+
+name: integration_tests
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: CmdLine@2
+  displayName: Create file
+  inputs:
+    script: 'echo "hello world"'
+- task: AzureKeyVault@2
+  displayName: Azure Key Vault - retrieve .env file secret
+  inputs:
+    azureSubscription: 'integration-test-service-connection'
+    KeyVaultName: 'integration-test-env'
+    SecretsFilter: 'pyrit-test'
+    RunAsPreJob: false
+- task: CmdLine@2
+  displayName: Create .env file
+  inputs:
+    script: 'echo $(pyrit-test) > .env'
+- task: CmdLine@2
+  displayName: Install setuptools and pip
+  inputs:
+    script: 'pip install --upgrade setuptools pip'
+- task: CmdLine@2
+  displayName: Install PyRIT
+  inputs:
+    script: 'pip install .[all]'
+- task: CmdLine@2
+  displayName: Run integration tests
+  inputs:
+    script: 'make integration-test'
