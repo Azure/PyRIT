@@ -77,6 +77,21 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+        """
+        Returns a list of conditions for filtering memory entries based on memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
+                These labels can be used to track all prompts sent as part of an operation, score prompts based on
+                the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
+                Users can define any key-value pairs according to their needs.
+
+        Returns:
+            list: A list of conditions for filtering memory entries based on memory labels.
+        """
+
+    @abc.abstractmethod
     def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> MutableSequence[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
@@ -231,6 +246,54 @@ class MemoryInterface(abc.ABC):
         """
         request_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
+
+    def get_prompt_request_pieces(
+            self,
+            *,
+            orchestrator_id: Optional[str] = None,
+            conversation_id: Optional[str] = None,
+            prompt_ids: Optional[list[str]] = None,
+            labels: Optional[dict[str, str]] = None,
+            sent_after: Optional[datetime] = None,
+            sent_before: Optional[datetime] = None,
+            converted_values: Optional[list[str]] = None,
+            data_type: Optional[str] = None,
+            not_data_type: Optional[str] = None,
+            data_hashes: Optional[list[str]] = None,
+    ) -> list[PromptRequestPiece]:
+        conditions = []
+        if orchestrator_id:
+            conditions.append(PromptMemoryEntry.orchestrator_identifier["id"] == orchestrator_id)
+        if conversation_id:
+            conditions.append(PromptMemoryEntry.conversation_id == conversation_id)
+        if prompt_ids:
+            conditions.append(PromptMemoryEntry.id.in_(prompt_ids))
+        if labels:
+            conditions.append(self._get_prompt_pieces_memory_label_conditions(memory_labels=labels))
+        if sent_after:
+            conditions.append(PromptMemoryEntry.timestamp >= sent_after)
+        if sent_before:
+            conditions.append(PromptMemoryEntry.timestamp <= sent_before)
+        if converted_values:
+            conditions.append(PromptMemoryEntry.converted_value.in_(converted_values))
+        if data_type:
+            conditions.append(PromptMemoryEntry.converted_value_data_type == data_type)
+        if not_data_type:
+            conditions.append(PromptMemoryEntry.converted_value_data_type != not_data_type)
+        if data_hashes:
+            conditions.append(PromptMemoryEntry.converted_value_sha256.in_(data_hashes))
+
+        try:
+            memory_entries = self.query_entries(
+                PromptMemoryEntry,
+                conditions=and_(*conditions) if conditions else None,
+            )  # type: ignore
+            prompt_pieces = [memory_entry.get_prompt_request_piece() for memory_entry in memory_entries]
+            return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
+        except Exception as e:
+            logger.exception(f"Failed to retrieve prompts with error {e}")
+            return []
+
 
     @abc.abstractmethod
     def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:

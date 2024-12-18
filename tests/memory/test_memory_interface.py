@@ -49,7 +49,7 @@ def test_memory(memory: MemoryInterface):
 
 def test_conversation_memory_empty_by_default(memory: MemoryInterface):
     expected_count = 0
-    c = memory.get_all_prompt_pieces()
+    c = memory.get_prompt_request_pieces()
     assert len(c) == expected_count
 
 
@@ -64,7 +64,7 @@ def test_add_request_pieces_to_memory(
     request_response = PromptRequestResponse(request_pieces=sample_conversations[:num_conversations])
 
     memory.add_request_response_to_memory(request=request_response)
-    assert len(memory.get_all_prompt_pieces()) == num_conversations
+    assert len(memory.get_prompt_request_pieces()) == num_conversations
 
 
 def test_duplicate_memory(memory: MemoryInterface):
@@ -115,7 +115,7 @@ def test_duplicate_memory(memory: MemoryInterface):
         ),
     ]
     memory.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(memory.get_all_prompt_pieces()) == 5
+    assert len(memory.get_prompt_request_pieces()) == 5
     orchestrator3 = Orchestrator()
     new_conversation_id1 = memory.duplicate_conversation(
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
@@ -125,7 +125,7 @@ def test_duplicate_memory(memory: MemoryInterface):
         new_orchestrator_id=orchestrator3.get_identifier()["id"],
         conversation_id=conversation_id_2,
     )
-    all_pieces = memory.get_all_prompt_pieces()
+    all_pieces = memory.get_prompt_request_pieces()
     assert len(all_pieces) == 9
     assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator1.get_identifier()["id"]]) == 4
     assert len([p for p in all_pieces if p.orchestrator_identifier["id"] == orchestrator2.get_identifier()["id"]]) == 1
@@ -198,7 +198,7 @@ def test_duplicate_conversation_pieces_not_score(memory: MemoryInterface):
         new_orchestrator_id=orchestrator2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
-    new_pieces = memory._get_prompt_pieces_with_conversation_id(conversation_id=new_conversation_id)
+    new_pieces = memory.get_prompt_request_pieces(conversation_id=new_conversation_id)
     new_pieces_ids = [str(p.id) for p in new_pieces]
     assert len(new_pieces) == 2
     assert new_pieces[0].original_prompt_id == prompt_id_1
@@ -273,10 +273,10 @@ def test_duplicate_conversation_excluding_last_turn(memory: MemoryInterface):
         conversation_id=conversation_id_1,
     )
 
-    all_memory = memory.get_all_prompt_pieces()
+    all_memory = memory.get_prompt_request_pieces()
     assert len(all_memory) == 7
 
-    duplicate_conversation = memory._get_prompt_pieces_with_conversation_id(conversation_id=new_conversation_id1)
+    duplicate_conversation = memory.get_prompt_request_pieces(conversation_id=new_conversation_id1)
     assert len(duplicate_conversation) == 2
 
     for piece in duplicate_conversation:
@@ -362,7 +362,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(memory: MemoryInte
         new_orchestrator_id=orchestrator2.get_identifier()["id"],
         conversation_id=conversation_id,
     )
-    new_pieces = memory._get_prompt_pieces_with_conversation_id(conversation_id=new_conversation_id)
+    new_pieces = memory.get_prompt_request_pieces(conversation_id=new_conversation_id)
     new_pieces_ids = [str(p.id) for p in new_pieces]
     assert len(new_pieces) == 2
     assert new_pieces[0].original_prompt_id == prompt_id_1
@@ -417,16 +417,16 @@ def test_duplicate_conversation_excluding_last_turn_same_orchestrator(memory: Me
         ),
     ]
     memory.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(memory.get_all_prompt_pieces()) == 4
+    assert len(memory.get_prompt_request_pieces()) == 4
 
     new_conversation_id1 = memory.duplicate_conversation_excluding_last_turn(
         conversation_id=conversation_id_1,
     )
 
-    all_memory = memory.get_all_prompt_pieces()
+    all_memory = memory.get_prompt_request_pieces()
     assert len(all_memory) == 6
 
-    duplicate_conversation = memory._get_prompt_pieces_with_conversation_id(conversation_id=new_conversation_id1)
+    duplicate_conversation = memory.get_prompt_request_pieces(conversation_id=new_conversation_id1)
     assert len(duplicate_conversation) == 2
 
     for piece in duplicate_conversation:
@@ -565,7 +565,7 @@ def test_get_orchestrator_conversation_sorting(memory: MemoryInterface, sample_c
         mock_get.return_value = sample_conversations
         orchestrator_id = sample_conversations[0].orchestrator_identifier["id"]
 
-        response = memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator_id)
+        response = memory.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
 
         current_value = response[0].conversation_id
         for obj in response[1:]:
@@ -1296,3 +1296,78 @@ def test_export_all_conversations_with_scores_empty_data(memory: MemoryInterface
 
             memory.export_all_conversations_with_scores(file_path=file_path)
             mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
+
+# Updated tests
+
+def test_get_prompt_request_pieces_labels(memory: MemoryInterface):
+    orchestrator1 = Orchestrator()
+    labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 1",
+                labels=labels,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="assistant",
+                original_value="Hello 2",
+                labels=labels,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 3",
+            )
+        ),
+    ]
+
+    memory.insert_entries(entries=entries)
+
+    retrieved_entries = memory.get_prompt_request_pieces(labels=labels)
+
+    assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
+    for retrieved_entry in retrieved_entries:
+        assert "op_name" in retrieved_entry.labels
+        assert "user_name" in retrieved_entry.labels
+        assert "harm_category" in retrieved_entry.labels
+
+def test_get_memories_with_non_matching_memory_labels(memory: MemoryInterface):
+    orchestrator1 = Orchestrator()
+    labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="123",
+                role="user",
+                original_value="Hello 1",
+                labels=labels,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="456",
+                role="assistant",
+                original_value="Hello 2",
+                labels=labels,
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                conversation_id="789",
+                role="user",
+                original_value="Hello 3",
+                converted_value="Hello 1",
+                orchestrator_identifier=orchestrator1.get_identifier(),
+            )
+        ),
+    ]
+
+    memory.insert_entries(entries=entries)
+    labels = {"nonexistent_key": "nonexiststent_value"}
+    retrieved_entries = memory.get_prompt_request_pieces(labels=labels)
+
+    assert len(retrieved_entries) == 0  # zero entries found since invalid memory labels passed

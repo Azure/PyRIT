@@ -10,7 +10,7 @@ from typing import MutableSequence, Optional, Sequence
 from azure.identity import DefaultAzureCredential
 from azure.core.credentials import AccessToken
 
-from sqlalchemy import create_engine, event, text, MetaData
+from sqlalchemy import BooleanClauseList, and_, create_engine, event, text, MetaData
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
@@ -219,6 +219,16 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
             return []
+
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> BooleanClauseList:
+        json_validation = "ISJSON(labels) = 1"
+        json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
+        # Combine both conditions
+        conditions = f"{json_validation} AND {json_conditions}"
+
+        # Create SQL condition using SQLAlchemy's text() with bindparams
+        # for safe parameter passing, preventing SQL injection
+        sql_condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import MutableSequence, Optional, Sequence, Union
 import logging
 
-from sqlalchemy import create_engine, MetaData, and_
+from sqlalchemy import BooleanClauseList, create_engine, MetaData, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -146,6 +146,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         self, *, memory_labels: dict[str, str] = {}
     ) -> list[PromptRequestPiece]:
         """
+
+        TODO delete
         Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
 
         Args:
@@ -168,6 +170,11 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 f"Unexpected error: Failed to retrieve ConversationData with memory labels {memory_labels}. {e}"
             )
             return []
+
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> BooleanClauseList:
+        conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
+        return and_(*conditions)
+
 
     def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
         """
