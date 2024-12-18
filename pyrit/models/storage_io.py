@@ -184,8 +184,6 @@ class AzureBlobStorageIO(StorageIO):
         content_settings = ContentSettings(content_type=f"{content_type}")
         logger.info(msg="\nUploading to Azure Storage as blob:\n\t" + file_name)
 
-        if not self._client_async:
-            await self._create_container_client_async()
         try:
             await self._client_async.upload_blob(
                 name=file_name,
@@ -259,6 +257,9 @@ class AzureBlobStorageIO(StorageIO):
         except Exception as exc:
             logger.exception(f"Failed to read file at {blob_name}: {exc}")
             raise
+        finally:
+            await self._client_async.close()
+            self._client_async = None
 
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
         """
@@ -268,9 +269,17 @@ class AzureBlobStorageIO(StorageIO):
             path (str): The full Azure Blob Storage URL
             data (bytes): The data to write.
         """
+        if not self._client_async:
+            await self._create_container_client_async()
         _, blob_name = self.parse_blob_url(str(path))
-
-        await self._upload_blob_async(file_name=blob_name, data=data, content_type=self._blob_content_type)
+        try:
+            await self._upload_blob_async(file_name=blob_name, data=data, content_type=self._blob_content_type)
+        except Exception as exc:
+            logger.exception(f"Failed to write file at {blob_name}: {exc}")
+            raise
+        finally:
+            await self._client_async.close()
+            self._client_async = None
 
     async def path_exists(self, path: Union[Path, str]) -> bool:
         """Check if a given path exists in the Azure Blob Storage container."""
@@ -283,6 +292,9 @@ class AzureBlobStorageIO(StorageIO):
             return True
         except ResourceNotFoundError:
             return False
+        finally:
+            await self._client_async.close()
+            self._client_async = None
 
     async def is_file(self, path: Union[Path, str]) -> bool:
         """Check if the path refers to a file (blob) in Azure Blob Storage."""
@@ -295,6 +307,9 @@ class AzureBlobStorageIO(StorageIO):
             return blob_properties.size > 0
         except ResourceNotFoundError:
             return False
+        finally:
+            await self._client_async.close()
+            self._client_async = None
 
     async def create_directory_if_not_exists(self, directory_path: Union[Path, str]) -> None:
         logger.info(

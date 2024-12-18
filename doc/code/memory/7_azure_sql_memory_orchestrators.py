@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-kernel
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -161,5 +161,49 @@ with RedTeamingOrchestrator(
     result = await orchestrator.run_attack_async(objective=image_objective)  # type: ignore
     await result.print_conversation_async()  # type: ignore
 
+
+# %% [markdown]
+# ## OpenAI Chat Target using AzureSQLMemory and local image path
+# This demo highlights the integration of AzureSQLMemory with local images, leveraging `AzureOpenAIGPT4OChatTarget` to generate text from multimodal inputs, which include both text and locally stored image paths.
+
+# %%
+import pathlib
+from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.memory import AzureSQLMemory, CentralMemory
+
+azure_openai_gpt4o_chat_target = OpenAIChatTarget()
+
+image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
+data = [
+    [
+        {"prompt_text": "Describe this picture:", "prompt_data_type": "text"},
+        {"prompt_text": str(image_path), "prompt_data_type": "image_path"},
+    ]
+]
+
+# This is a single request with two parts, one image and one text
+
+normalizer_request = NormalizerRequest(
+    request_pieces=[
+        NormalizerRequestPiece(
+            prompt_value="Describe this picture:",
+            prompt_data_type="text",
+        ),
+        NormalizerRequestPiece(
+            prompt_value=str(image_path),
+            prompt_data_type="image_path",
+        ),
+    ]
+)
+memory = AzureSQLMemory()
+CentralMemory.set_memory_instance(memory)
+
+with PromptSendingOrchestrator(objective_target=azure_openai_gpt4o_chat_target) as orchestrator:
+    await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
+    memory_items = orchestrator.get_memory()
+    for entry in memory_items:
+        print(entry)
 
 # %%

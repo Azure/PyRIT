@@ -34,37 +34,39 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     and session management to perform database operations.
     """
 
+    # Azure SQL configuration
     SQL_COPT_SS_ACCESS_TOKEN = 1256  # Connection option for access tokens, as defined in msodbcsql.h
     TOKEN_URL = "https://database.windows.net/.default"  # The token URL for any Azure SQL database
     AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
-    AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"
-    SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN"
+
+    # Azure Storage Account Container datasets and results environment variables
+    AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL: str = "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"
+    AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN: str = "AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN"
 
     def __init__(
         self,
         *,
         connection_string: Optional[str] = None,
-        container_url: Optional[str] = None,
-        sas_token: Optional[str] = None,
+        results_container_url: Optional[str] = None,
+        results_sas_token: Optional[str] = None,
         verbose: bool = False,
     ):
         self._connection_string = default_values.get_required_value(
             env_var_name=self.AZURE_SQL_DB_CONNECTION_STRING, passed_value=connection_string
         )
-        self._container_url: str = default_values.get_required_value(
-            env_var_name=self.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE, passed_value=container_url
+
+        self._results_container_url: str = default_values.get_required_value(
+            env_var_name=self.AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL, passed_value=results_container_url
         )
-        try:
-            self._sas_token: str = default_values.get_required_value(
-                env_var_name=self.SAS_TOKEN_ENVIRONMENT_VARIABLE, passed_value=sas_token
-            )
-        except ValueError:
-            self._sas_token = None  # To use delegation SAS
+
+        self._results_container_sas_token: Optional[str] = self._resolve_sas_token(
+            self.AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN, results_sas_token
+        )
 
         self._auth_token: Optional[AccessToken] = None
         self._auth_token_expiry: Optional[int] = None
 
-        self.results_path = self._container_url
+        self.results_path = self._results_container_url
 
         self.engine = self._create_engine(has_echo=verbose)
 
@@ -78,9 +80,28 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         super(AzureSQLMemory, self).__init__()
 
+    @staticmethod
+    def _resolve_sas_token(env_var_name: str, passed_value: Optional[str]) -> Optional[str]:
+        """
+        Resolve the SAS token value, allowing a fallback to None for delegation SAS.
+
+        Args:
+            env_var_name (str): The environment variable name to look up.
+            passed_value (Optional[str]): A passed-in value for the SAS token.
+
+        Returns:
+            Optional[str]: Resolved SAS token or None if not provided.
+        """
+        try:
+            return default_values.get_required_value(env_var_name=env_var_name, passed_value=passed_value)
+        except ValueError:
+            return None
+
     def _init_storage_io(self):
         # Handle for Azure Blob Storage when using Azure SQL memory.
-        self.storage_io = AzureBlobStorageIO(container_url=self._container_url, sas_token=self._sas_token)
+        self.results_storage_io = AzureBlobStorageIO(
+            container_url=self._results_container_url, sas_token=self._results_container_sas_token
+        )
 
     def _create_auth_token(self):
         """
