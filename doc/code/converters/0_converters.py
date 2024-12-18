@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-kernel
 #     language: python
-#     name: python3
+#     name: pyrit-kernel
 # ---
 
 # %% [markdown]
@@ -40,4 +40,3 @@ print(await ROT13Converter().convert_tokens_async(prompt=prompt))  # type: ignor
 print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(prompt=prompt))  # type: ignore
 print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await BinaryConverter().convert_tokens_async(prompt=prompt))  # type: ignore
-

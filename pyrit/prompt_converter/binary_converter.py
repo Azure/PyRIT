@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+from __future__ import annotations
 from enum import Enum
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter, ConverterResult
@@ -14,7 +18,7 @@ class BinaryConverter(PromptConverter):
         BITS_16 = 16
         BITS_32 = 32
 
-    def __init__(self, bits_per_char: 'BinaryConverter.BitsPerChar' = BitsPerChar.BITS_16):
+    def __init__(self, bits_per_char: BinaryConverter.BitsPerChar = BitsPerChar.BITS_16):
         if not isinstance(bits_per_char, BinaryConverter.BitsPerChar):
             raise TypeError("bits_per_char must be an instance of BinaryConverter.BitsPerChar Enum.")
         self.bits_per_char = bits_per_char
@@ -48,7 +52,7 @@ class BinaryConverter(PromptConverter):
             )
 
         # Convert each character in the prompt to its binary representation
-        binary_representation = ' '.join(format(ord(char), f'0{bits}b') for char in prompt)
+        binary_representation = " ".join(format(ord(char), f"0{bits}b") for char in prompt)
         return ConverterResult(output_text=binary_representation, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:

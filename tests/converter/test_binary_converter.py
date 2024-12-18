@@ -1,6 +1,10 @@
 import pytest
 from pyrit.prompt_converter import BinaryConverter, ConverterResult
 
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+
 @pytest.mark.asyncio
 async def test_binary_converter_8_bit_ascii():
     converter = BinaryConverter(bits_per_char=BinaryConverter.BitsPerChar.BITS_8)
@@ -32,8 +36,8 @@ async def test_binary_converter_32_bit_emoji():
     assert result.output_text == expected_output
     assert result.output_type == "text"
 
+
 @pytest.mark.asyncio
 async def test_binary_converter_invalid_bits_per_char():
     with pytest.raises(TypeError, match="bits_per_char must be an instance of BinaryConverter.BitsPerChar Enum."):
-        converter = BinaryConverter(bits_per_char=10)  # Invalid bits_per_char
-
+        BinaryConverter(bits_per_char=10)  # Invalid bits_per_char
