@@ -37,8 +37,6 @@ jobs:
         # The .env file has to be base64 encoded to accommodate line breaks.
         run: |
           echo "${{ env.ENV_SECRETS }}" | base64 -d > .env
-          ls -la
-          cat .env | head -n 2
         env:
           ENV_SECRETS: ${{ secrets.TEST_ENV }}
       - uses: actions/setup-python@v3
