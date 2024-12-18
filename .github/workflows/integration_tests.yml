@@ -34,8 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Create environment file with access keys
+        # The .env file has to be base64 encoded to accommodate line breaks.
         run: |
-          echo ${{ env.ENV_SECRETS }} > .env
+          echo "${{ env.ENV_SECRETS }}" | base64 -d > .env
         env:
           ENV_SECRETS: ${{ secrets.TEST_ENV }}
       - uses: actions/setup-python@v3
