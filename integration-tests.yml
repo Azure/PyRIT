@@ -10,10 +10,6 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-- task: CmdLine@2
-  displayName: Create file
-  inputs:
-    script: 'echo "hello world"'
 - task: AzureKeyVault@2
   displayName: Azure Key Vault - retrieve .env file secret
   inputs:
@@ -21,18 +17,15 @@ steps:
     KeyVaultName: 'integration-test-env'
     SecretsFilter: 'pyrit-test-base64'
     RunAsPreJob: false
-- task: CmdLine@2
-  displayName: print secrets
-  inputs:
-    script: |
-      echo $(pyrit-test-base64)
-      echo $pyrit-test-base64
-      echo $(SECRET_NAME)
-      echo $SECRET_NAME
-      echo $(SECRET_ENV_VAR)
-      echo $SECRET_ENV_VAR
-    env:
-      SECRET_ENV_VAR: $(pyrit-test-base64)
+- bash: |
+    echo $(pyrit-test-base64)
+    echo $pyrit-test-base64
+    echo $(SECRET_NAME)
+    echo $SECRET_NAME
+    echo $(SECRET_ENV_VAR)
+    echo $SECRET_ENV_VAR
+  env:
+    SECRET_ENV_VAR: $(pyrit-test-base64)
 - task: CmdLine@2
   displayName: Create .env file
   inputs:
