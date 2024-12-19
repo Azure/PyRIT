@@ -26,7 +26,7 @@ def data_serializer_factory(
     value: Optional[str] = None,
     extension: Optional[str] = None,
 ):
-    if value != None:
+    if value is not None:
         if data_type == "text":
             return TextDataTypeSerializer(prompt_text=value)
         elif data_type == "image_path":
