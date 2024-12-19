@@ -263,12 +263,13 @@ class MultiTurnOrchestrator(Orchestrator):
                     if piece.role == "assistant":
                         turn_count += 1
 
-                        if turn_count > self._max_turns:
-                            raise ValueError(
-                                f"Number of turns in prepended conversation ({turn_count}) must not exceed `max_turns`"
-                                + f"current value: {self._max_turns}. Increase the number of max turns, or "
-                                + " reduce the number of turns in the prepended conversation."
-                            )
+                if turn_count > self._max_turns:
+                    raise ValueError(
+                        f"The number of turns in the prepended conversation ({turn_count-1}) is equal to or exceeds"
+                        + f" the maximum number of turns ({self._max_turns}), which means the conversation will not"
+                        + " be able to continue. Please reduce the number of turns in the prepended conversation or"
+                        + " increase the maximum number of turns on the orchestrator and try again."
+                    )
 
                 if i == skip_add_to_memory:
                     continue
