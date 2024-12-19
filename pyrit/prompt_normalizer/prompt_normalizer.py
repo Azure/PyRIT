@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
+import asyncio
 from typing import Optional
 from uuid import uuid4
 
@@ -154,11 +155,12 @@ class PromptNormalizer(abc.ABC):
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
 
-    async def _calc_hash_and_add_request_to_memory(self, request: PromptRequestPiece):
+    async def _calc_hash_and_add_request_to_memory(self, request: PromptRequestResponse) -> None:
         """
         Adds a request to the memory.
         """
-        await request.set_sha256_values_async()
+        tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.request_pieces]
+        await asyncio.gather(*tasks)
         self._memory.add_request_response_to_memory(request=request)
 
     async def _build_prompt_request_response(
