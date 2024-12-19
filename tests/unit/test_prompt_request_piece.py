@@ -110,7 +110,7 @@ async def test_hashes_generated(set_duckdb_in_memory):
         original_value="Hello1",
         converted_value="Hello2",
     )
-    await entry.compute_sha256()
+    await entry.set_sha256_values_async()
     assert entry.original_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
     assert entry.converted_value_sha256 == "be98c2510e417405647facb89399582fc499c3de4452b3014857f92e6baad9a9"
 
@@ -130,7 +130,7 @@ async def test_hashes_generated_files(set_duckdb_in_memory):
             original_value_data_type="image_path",
             converted_value_data_type="audio_path",
         )
-        await entry.compute_sha256()
+        await entry.set_sha256_values_async()
         assert entry.original_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
         assert entry.converted_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
 
@@ -242,7 +242,7 @@ async def test_prompt_request_piece_sets_original_sha256(set_duckdb_in_memory):
     )
 
     entry.original_value = "newvalue"
-    await entry.compute_sha256()
+    await entry.set_sha256_values_async()
     assert entry.original_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
 
 
@@ -253,5 +253,5 @@ async def test_prompt_request_piece_sets_converted_sha256(set_duckdb_in_memory):
         original_value="Hello",
     )
     entry.converted_value = "newvalue"
-    await entry.compute_sha256()
+    await entry.set_sha256_values_async()
     assert entry.converted_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
