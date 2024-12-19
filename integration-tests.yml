@@ -26,6 +26,10 @@ steps:
   inputs:
     script: 'echo $(pyrit-test) > .env'
 - task: CmdLine@2
+  displayName: Check .env file
+  inputs:
+    script: 'cat .env | head -n 2'
+- task: CmdLine@2
   displayName: Install setuptools and pip
   inputs:
     script: 'pip install --upgrade setuptools pip'
