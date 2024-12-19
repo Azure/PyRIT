@@ -3,6 +3,8 @@
 
 import os
 
+from pyrit.common.default_values import load_environment_files
+
 # This limits retries and speeds up execution
 # note this needs to be set before libraries that use them are imported
 
@@ -11,3 +13,5 @@ import os
 os.environ["RETRY_MAX_NUM_ATTEMPTS"] = "2"
 os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
 os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
+
+load_environment_files()
