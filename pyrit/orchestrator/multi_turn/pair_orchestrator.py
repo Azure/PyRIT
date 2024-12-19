@@ -59,3 +59,6 @@ class PAIROrchestrator(TreeOfAttacksWithPruningOrchestrator):
             desired_response_prefix=desired_response_prefix,
             verbose=verbose,
         )
+
+    def set_prepended_conversation(self, *, prepended_conversation):
+        return super().set_prepended_conversation(prepended_conversation=prepended_conversation)
