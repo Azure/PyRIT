@@ -289,10 +289,10 @@ class MultiTurnOrchestrator(Orchestrator):
 
                         if turn_count > self._max_turns:
                             raise ValueError(
-                                f"The number of turns in the prepended conversation ({turn_count-1}) is equal to" +
-                                f" or exceeds the maximum number of turns ({self._max_turns}), which means the" +
-                                " conversation will not be able to continue. Please reduce the number of turns in" +
-                                " the prepended conversation or increase the maximum number of turns and try again."
+                                f"The number of turns in the prepended conversation ({turn_count-1}) is equal to"
+                                + f" or exceeds the maximum number of turns ({self._max_turns}), which means the"
+                                + " conversation will not be able to continue. Please reduce the number of turns in"
+                                + " the prepended conversation or increase the maximum number of turns and try again."
                             )
 
                 if not add_to_memory or i == skip_iter:
