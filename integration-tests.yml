@@ -17,32 +17,8 @@ steps:
     KeyVaultName: 'integration-test-env'
     SecretsFilter: 'pyrit-test-base64'
     RunAsPreJob: false
-- bash: |
-    echo $(pyrit-test-base64)
-    echo $pyrit-test-base64
-    echo $(SECRET_NAME)
-    echo $SECRET_NAME
-    echo $(SECRET_ENV_VAR)
-    echo $SECRET_ENV_VAR
-  env:
-    SECRET_ENV_VAR: $(pyrit-test-base64)
-- task: CmdLine@2
-  displayName: Create .env file
-  inputs:
-    script: echo $(pyrit-test-base64) | base64 -d > .env
-- task: CmdLine@2
-  displayName: Check .env file
-  inputs:
-    script: ls -la
-- task: CmdLine@2
-  displayName: Install setuptools and pip
-  inputs:
-    script: 'pip install --upgrade setuptools pip'
-- task: CmdLine@2
-  displayName: Install PyRIT
-  inputs:
-    script: 'pip install .[all]'
-- task: CmdLine@2
-  displayName: Run integration tests
-  inputs:
-    script: 'make integration-test'
+- bash: echo $(pyrit-test-base64) | base64 -d > .env
+- bash: ls -la
+- bash: pip install --upgrade setuptools pip
+- bash: pip install .[all]
+- bash: make integration-test
