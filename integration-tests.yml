@@ -24,7 +24,7 @@ steps:
 - task: CmdLine@2
   displayName: Create .env file
   inputs:
-    script: 'echo $(pyrit-test) > .env'
+    script: echo $(pyrit-test) > .env && cat .env | head -n 2
 - task: CmdLine@2
   displayName: Check .env file
   inputs:
