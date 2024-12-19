@@ -24,11 +24,11 @@ steps:
 - task: CmdLine@2
   displayName: Create .env file
   inputs:
-    script: echo $(pyrit-test) > .env && cat .env | head -n 2
+    script: echo $(pyrit-test) > secrets.txt
 - task: CmdLine@2
   displayName: Check .env file
   inputs:
-    script: 'cat .env | head -n 2'
+    script: 'cat secrets.txt | head -n 2'
 - task: CmdLine@2
   displayName: Install setuptools and pip
   inputs:
