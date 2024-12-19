@@ -100,7 +100,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.original_value_data_type = original_value_data_type
 
-        self._original_value_sha256 = None
+        self.original_value_sha256 = None
 
         self._converted_value = converted_value
 
@@ -109,7 +109,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.converted_value_data_type = converted_value_data_type
 
-        self._converted_value_sha256 = None
+        self.converted_value_sha256 = None
 
         if response_error not in get_args(PromptResponseError):
             raise ValueError(f"response_error {response_error} is not a valid response error.")
@@ -120,46 +120,25 @@ class PromptRequestPiece(abc.ABC):
         # Original prompt id defaults to id (assumes that this is the original prompt, not a duplicate)
         self.original_prompt_id = original_prompt_id or self.id
 
-    async def compute_sha256(self):
+    async def set_sha256_values_async(self):
         """
         This method computes the SHA256 hash values asynchronously.
         It should be called after object creation if `original_value` and `converted_value` are set.
+
+        Note, this method is async due to the blob retrieval. And because of that, we opted
+        to take it out of main and setter functions. The disadvantage is that it must be explicitly called.
         """
         from pyrit.models.data_type_serializer import data_serializer_factory
 
         original_serializer = data_serializer_factory(
             data_type=self.original_value_data_type, value=self._original_value
         )
-        self._original_value_sha256 = await original_serializer.get_sha256()
+        self.original_value_sha256 = await original_serializer.get_sha256()
 
         converted_serializer = data_serializer_factory(
             data_type=self.converted_value_data_type, value=self._converted_value
         )
-        self._converted_value_sha256 = await converted_serializer.get_sha256()
-
-    @property
-    def converted_value(self) -> str:
-        return self._converted_value
-
-    @converted_value.setter
-    def converted_value(self, value: str):
-        self._converted_value = value
-
-    @property
-    def converted_value_sha256(self):
-        return self._converted_value_sha256
-
-    @property
-    def original_value(self) -> str:
-        return self._original_value
-
-    @original_value.setter
-    def original_value(self, value: str):
-        self._original_value = value
-
-    @property
-    def original_value_sha256(self):
-        return self._original_value_sha256
+        self.converted_value_sha256 = await converted_serializer.get_sha256()
 
     def to_chat_message(self) -> ChatMessage:
         return ChatMessage(role=self.role, content=self.converted_value)
