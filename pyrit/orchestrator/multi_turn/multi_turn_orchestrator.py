@@ -250,6 +250,8 @@ class MultiTurnOrchestrator(Orchestrator):
             ValueError: If the objective target is not a PromptChatTarget, as PromptTargets do
                         not support setting system prompts.
         """
+        logger.log(level=logging.INFO, msg=f"Preparing conversation with ID: {new_conversation_id}")
+
         turn_count = 1
         skip_iter = -1
         if self._prepended_conversation:
