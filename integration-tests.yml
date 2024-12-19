@@ -19,16 +19,16 @@ steps:
   inputs:
     azureSubscription: 'integration-test-service-connection'
     KeyVaultName: 'integration-test-env'
-    SecretsFilter: '*'
+    SecretsFilter: 'pyrit-test-base64'
     RunAsPreJob: false
 - task: CmdLine@2
   displayName: Create .env file
   inputs:
-    script: echo $(pyrit-test) > secrets.txt
+    script: echo $(pyrit-test-base64) | base64 -d > .env
 - task: CmdLine@2
   displayName: Check .env file
   inputs:
-    script: 'cat secrets.txt | head -n 2'
+    script: 'cat .env | head -n 2'
 - task: CmdLine@2
   displayName: Install setuptools and pip
   inputs:
