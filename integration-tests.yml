@@ -19,7 +19,7 @@ steps:
   inputs:
     azureSubscription: 'integration-test-service-connection'
     KeyVaultName: 'integration-test-env'
-    SecretsFilter: 'pyrit-test'
+    SecretsFilter: '*'
     RunAsPreJob: false
 - task: CmdLine@2
   displayName: Create .env file
