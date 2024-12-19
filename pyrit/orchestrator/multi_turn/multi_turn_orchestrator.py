@@ -245,33 +245,48 @@ class MultiTurnOrchestrator(Orchestrator):
                 calling orchestrators to set turn count.
         """
         turn_count = 1
-        skip_add_to_memory = -1
+        skip_iter = -1
         if self._prepended_conversation:
             last_message = self._prepended_conversation[-1].request_pieces[0]
             if last_message.role == "user":
                 # Do not add last user message to memory as it will be added when sent
                 # to the objective target by the orchestrator
-                skip_add_to_memory = len(self._prepended_conversation) - 1
+                skip_iter = len(self._prepended_conversation) - 1
 
             for i, request in enumerate(self._prepended_conversation):
+                add_to_memory = True
+
                 for piece in request.request_pieces:
                     piece.conversation_id = new_conversation_id
                     piece.id = uuid.uuid4()
                     piece.orchestrator_identifier = self.get_identifier()
 
-                    # Number of complete turns should be the same as the number of assistant messages
-                    if piece.role == "assistant":
+                    if piece.role == "system":
+                        # Attempt to set system message if Objective Target is a PromptChatTarget, otherwise throw exception
+                        if isinstance(self._objective_target, PromptChatTarget):
+                            self._objective_target.set_system_prompt(
+                                system_prompt=piece.converted_value,
+                                conversation_id=new_conversation_id,
+                                orchestrator_identifier=piece.orchestrator_identifier,
+                                labels=piece.labels,
+                            )
+
+                            add_to_memory = False
+                        else:
+                            raise ValueError("Objective Target must be a PromptChatTarget to set system prompt.")
+                    elif piece.role == "assistant":
+                        # Number of complete turns should be the same as the number of assistant messages
                         turn_count += 1
 
-                if turn_count > self._max_turns:
-                    raise ValueError(
-                        f"The number of turns in the prepended conversation ({turn_count-1}) is equal to or exceeds"
-                        + f" the maximum number of turns ({self._max_turns}), which means the conversation will not"
-                        + " be able to continue. Please reduce the number of turns in the prepended conversation or"
-                        + " increase the maximum number of turns on the orchestrator and try again."
-                    )
+                        if turn_count > self._max_turns:
+                            raise ValueError(
+                                f"The number of turns in the prepended conversation ({turn_count-1}) is equal to or exceeds"
+                                + f" the maximum number of turns ({self._max_turns}), which means the conversation will not"
+                                + " be able to continue. Please reduce the number of turns in the prepended conversation or"
+                                + " increase the maximum number of turns on the orchestrator and try again."
+                            )
 
-                if i == skip_add_to_memory:
+                if not add_to_memory or i == skip_iter:
                     continue
 
                 self._memory.add_request_response_to_memory(request=request)

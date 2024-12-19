@@ -7,6 +7,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnAttackResult
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrchestrator
 
@@ -15,8 +16,9 @@ from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrc
 def orchestrator():
     objective_scorer = MagicMock()
     objective_scorer.scorer_type = "true_false"
+    objective_target = MagicMock(PromptChatTarget)
     orchestrator = RedTeamingOrchestrator(
-        objective_target=MagicMock(),
+        objective_target=objective_target,
         adversarial_chat=MagicMock(),
         max_turns=2,
         objective_scorer=objective_scorer,
@@ -83,8 +85,11 @@ def test_prepare_conversation_with_prepended_conversation(orchestrator):
     assert system_piece.original_prompt_id == system_piece_id
     assert system_piece.orchestrator_identifier == orchestrator.get_identifier()
 
-    # Assert calls to memory
-    for request in orchestrator._prepended_conversation:
+    # Assert system prompt set
+    orchestrator._objective_target.set_system_prompt.assert_called_once()
+
+    # Assert calls to memory for user and assistant messages
+    for request in orchestrator._prepended_conversation[-1:]:
         orchestrator._memory.add_request_response_to_memory.assert_any_call(request=request)
 
     # Check globals are set correctly
