@@ -243,6 +243,12 @@ class MultiTurnOrchestrator(Orchestrator):
                 prepended conversations, the next turn would be turn 3. With no
                 prepended conversations, the next turn is at 1. Value used by the
                 calling orchestrators to set turn count.
+
+        Raises:
+            ValueError: If the number of turns in the prepended conversation equals or exceeds
+                        the maximum number of turns.
+            ValueError: If the objective target is not a PromptChatTarget, as PromptTargets do
+                        not support setting system prompts.
         """
         turn_count = 1
         skip_iter = -1
@@ -262,7 +268,8 @@ class MultiTurnOrchestrator(Orchestrator):
                     piece.orchestrator_identifier = self.get_identifier()
 
                     if piece.role == "system":
-                        # Attempt to set system message if Objective Target is a PromptChatTarget, otherwise throw exception
+                        # Attempt to set system message if Objective Target is a PromptChatTarget
+                        # otherwise throw exception
                         if isinstance(self._objective_target, PromptChatTarget):
                             self._objective_target.set_system_prompt(
                                 system_prompt=piece.converted_value,
@@ -280,10 +287,10 @@ class MultiTurnOrchestrator(Orchestrator):
 
                         if turn_count > self._max_turns:
                             raise ValueError(
-                                f"The number of turns in the prepended conversation ({turn_count-1}) is equal to or exceeds"
-                                + f" the maximum number of turns ({self._max_turns}), which means the conversation will not"
-                                + " be able to continue. Please reduce the number of turns in the prepended conversation or"
-                                + " increase the maximum number of turns on the orchestrator and try again."
+                                f"The number of turns in the prepended conversation ({turn_count-1}) is equal to" +
+                                f" or exceeds the maximum number of turns ({self._max_turns}), which means the" +
+                                " conversation will not be able to continue. Please reduce the number of turns in" +
+                                " the prepended conversation or increase the maximum number of turns and try again."
                             )
 
                 if not add_to_memory or i == skip_iter:
