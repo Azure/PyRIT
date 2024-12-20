@@ -22,7 +22,7 @@ prompts = ["Generate a PDF report for the following data: ⟪Sales Data Q1⟫ an
 
 converters: list[PromptConverter] = [
     PDFConverter(
-        template_path="template.html",  # Provide your template path or set to None
+        template_path=None,  # Provide your template path or set to None
         font_type="Arial",
         font_size=12,
         page_width=210,
