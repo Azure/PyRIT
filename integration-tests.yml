@@ -17,7 +17,7 @@ steps:
     KeyVaultName: 'integration-test-env'
     SecretsFilter: 'pyrit-test-base64'
     RunAsPreJob: false
-- bash: echo "$PYRIT_TEST_BASE64" | base64 -d > .env
+- bash: python -c "import os; print(len(os.environ['PYRIT_TEST_BASE64']))"
   env:
     PYRIT_TEST_BASE64: $(pyrit-test-base64)
 - bash: ls -la
