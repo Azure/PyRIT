@@ -1236,7 +1236,7 @@ def test_get_seed_prompt_groups_multiple_groups_with_unique_ids(memory: MemoryIn
     assert groups[0].prompts[0].prompt_group_id != groups[1].prompts[0].prompt_group_id
 
 
-def test_export_all_conversations_with_scores_file_created(memory: MemoryInterface):
+def test_export_all_conversations_file_created(memory: MemoryInterface):
     memory.exporter = MemoryExporter()
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
@@ -1248,12 +1248,12 @@ def test_export_all_conversations_with_scores_file_created(memory: MemoryInterfa
 
             mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
             mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
-            memory.export_all_conversations_with_scores(file_path=file_path)
+            memory.export_all_conversations(file_path=file_path)
 
             assert file_path.exists()
 
 
-def test_export_all_conversations_with_scores_correct_data(memory: MemoryInterface):
+def test_export_all_conversations_correct_data(memory: MemoryInterface):
     memory.exporter = MemoryExporter()
     expected_data = [
         {
@@ -1274,13 +1274,13 @@ def test_export_all_conversations_with_scores_correct_data(memory: MemoryInterfa
             mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
             mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
 
-            memory.export_all_conversations_with_scores(file_path=file_path)
+            memory.export_all_conversations(file_path=file_path)
 
             mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
             assert mock_export_data.call_args[0][0] == expected_data
 
 
-def test_export_all_conversations_with_scores_empty_data(memory: MemoryInterface):
+def test_export_all_conversations_empty_data(memory: MemoryInterface):
     memory.exporter = MemoryExporter()
     expected_data: list = []
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
@@ -1294,5 +1294,5 @@ def test_export_all_conversations_with_scores_empty_data(memory: MemoryInterface
             mock_get_pieces.return_value = []
             mock_get_scores.return_value = []
 
-            memory.export_all_conversations_with_scores(file_path=file_path)
+            memory.export_all_conversations(file_path=file_path)
             mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
