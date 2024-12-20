@@ -74,13 +74,6 @@ class Orchestrator(abc.ABC, Identifier):
         request = NormalizerRequest(request_pieces=[request_piece], conversation_id=conversation_id)
         return request
 
-    def _combine_with_global_memory_labels(self, memory_labels: dict[str, str]) -> dict[str, str]:
-        """
-        Combines the global memory labels with the provided memory labels.
-        The passed memory_labels take precedence with collisions.
-        """
-        return {**(self._global_memory_labels or {}), **(memory_labels or {})}
-
     def get_memory(self):
         """
         Retrieves the memory associated with this orchestrator.

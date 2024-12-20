@@ -6,6 +6,7 @@ import asyncio
 from typing import Optional
 from uuid import uuid4
 
+from pyrit.common import combine_dict
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import MemoryInterface, CentralMemory
@@ -201,6 +202,8 @@ class PromptNormalizer(abc.ABC):
                 prompt_data_type=request_piece.prompt_data_type,
             )
 
+            combined_memory_labels = combine_dict(dict1=labels, dict2=request_piece.labels)
+
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
             prompt_request_piece = PromptRequestPiece(
                 role="user",
@@ -208,7 +211,7 @@ class PromptNormalizer(abc.ABC):
                 converted_value=converted_prompt_text,
                 conversation_id=conversation_id,
                 sequence=sequence,
-                labels=labels,
+                labels=combined_memory_labels,
                 prompt_metadata=request_piece.metadata,
                 converter_identifiers=converter_identifiers,
                 prompt_target_identifier=target.get_identifier(),
