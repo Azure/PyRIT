@@ -65,13 +65,14 @@ async def test_convert_async_no_template(pdf_converter_no_template):
         # Check if serializer was called to save data
         serializer_mock.save_data.assert_called_once()
         # Check that the prompt was passed to the serializer
-        mock_factory.assert_called_once_with(data_type="url", value=prompt)
+        mock_factory.assert_called_once_with(data_type="url", value=prompt, extension="pdf")
 
 
 @pytest.mark.asyncio
 async def test_convert_async_with_template(pdf_converter_with_template):
     """Test converting a prompt using a provided template."""
-    prompt = "TemplateTest"
+    prompt = {"prompt": "TemplateTest"}
+    expected_rendered_content = "This is a test template. Prompt: TemplateTest"
 
     # Mock serializer
     with patch("pyrit.prompt_converter.pdf_converter.data_serializer_factory") as mock_factory:
@@ -82,8 +83,12 @@ async def test_convert_async_with_template(pdf_converter_with_template):
         result = await pdf_converter_with_template.convert_async(prompt=prompt)
         assert isinstance(result, ConverterResult)
         # The serializer value is "mock_url", so we just assert that is returned as output
+        assert result.output_type == "url"
         assert result.output_text == "mock_url"
+
+        # Check that the rendered content was passed to the serializer
         serializer_mock.save_data.assert_called_once()
+        mock_factory.assert_called_once_with(data_type="url", value=expected_rendered_content, extension="pdf")
 
 
 @pytest.mark.asyncio

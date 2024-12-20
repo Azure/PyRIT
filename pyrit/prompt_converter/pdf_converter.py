@@ -3,7 +3,7 @@
 
 import logging
 from io import BytesIO
-from typing import Optional
+from typing import Optional, Union
 
 from fpdf import FPDF
 from jinja2 import Template
@@ -42,7 +42,7 @@ class PDFConverter(PromptConverter):
         self._page_width = page_width
         self._page_height = page_height
 
-    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: Union[str, dict], input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompt into a PDF. If a template is provided, it injects the prompt into the template,
         otherwise, it generates a simple PDF with the prompt as the content.
@@ -65,12 +65,19 @@ class PDFConverter(PromptConverter):
             try:
                 with open(self._template_path, "r") as file:
                     template = Template(file.read())
-                    content = template.render(prompt=prompt)
+                    if isinstance(prompt, dict):
+                        content = template.render(**prompt)
+                    else:
+                        raise ValueError("Prompt must be a dictionary when using a template.")
             except FileNotFoundError:
                 logger.error(f"Template file {self._template_path} not found.")
                 raise
         else:
-            content = prompt
+            # If no template, use the prompt as is
+            if isinstance(prompt, str):
+                content = prompt
+            else:
+                raise ValueError("Prompt must be a string when no template is provided.")
 
         # Generate PDF content and write to buffer
         pdf = FPDF(format=(self._page_width, self._page_height))  # Use custom page size
@@ -83,7 +90,7 @@ class PDFConverter(PromptConverter):
         pdf_bytes.seek(0)
 
         # Use DataTypeSerializer to save the file
-        pdf_serializer = data_serializer_factory(data_type="url", value=prompt)
+        pdf_serializer = data_serializer_factory(data_type="url", value=content, extension="pdf")
         await pdf_serializer.save_data(pdf_bytes.getvalue())
 
         # Return the result
