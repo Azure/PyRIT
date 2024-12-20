@@ -202,7 +202,7 @@ class PromptNormalizer(abc.ABC):
                 prompt_data_type=request_piece.prompt_data_type,
             )
 
-            combined_memory_labels = combine_dict(dict1=labels, dict2=request_piece.labels)
+            combined_memory_labels = combine_dict(existing_dict=labels, new_dict=request_piece.labels)
 
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
             prompt_request_piece = PromptRequestPiece(
