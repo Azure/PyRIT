@@ -141,7 +141,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
         best_conversation_id = None
 
-        updated_memory_labels = combine_dict(self._global_memory_labels, memory_labels)
+        updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
         for iteration in range(1, self._attack_depth + 1):
             logger.info(f"Starting iteration number: {iteration}")

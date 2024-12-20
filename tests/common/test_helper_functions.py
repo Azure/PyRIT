@@ -26,3 +26,8 @@ def test_combine_second_empty_dict():
     dict1 = {}
     dict2 = {"c": "d"}
     assert combine_dict(dict1, dict2) == {"c": "d"}
+
+def test_combine_dict_same_keys():
+    dict1 = {"c": "b"}
+    dict2 = {"c": "d"}
+    assert combine_dict(dict1, dict2) == {"c": "d"}

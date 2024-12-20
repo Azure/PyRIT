@@ -139,7 +139,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         adversarial_chat_conversation_id = str(uuid4())
         objective_target_conversation_id = str(uuid4())
-        updated_memory_labels = combine_dict(dict1=self._global_memory_labels, dict2=memory_labels)
+        updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
         adversarial_chat_system_prompt = self._adversarial_chat_system_seed_prompt.render_template_value(
             objective=objective,
