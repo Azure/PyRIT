@@ -71,7 +71,7 @@ async def test_convert_async_no_template(pdf_converter_no_template):
 
         result = await pdf_converter_no_template.convert_async(prompt=prompt)
         assert isinstance(result, ConverterResult)
-        assert result.output_type == "url_path"
+        assert result.output_type == "url"
         assert result.output_text == "mock_url"
 
         # Check if serializer was called to save data
