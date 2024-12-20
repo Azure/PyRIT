@@ -2,7 +2,7 @@
 
 PyRIT's memory component allows users to track and manage a history of interactions throughout an attack scenario. This feature enables the storage, retrieval, and sharing of conversation entries, making it easier to maintain context and continuity in ongoing interactions.
 
-To simplify memory interaction, the `prit.memory.CentralMemory` class automatically manages a shared memory instance across all components in a session. Memory is selected based on the following priority order:
+To simplify memory interaction, the `pyrit.memory.CentralMemory` class automatically manages a shared memory instance across all components in a session. Memory is selected based on the following priority order:
 
 1. **Manual Memory Setting (Highest Priority)**:
    - If set, `CentralMemory.set_memory_instance(passed_memory)` explicitly defines the memory instance to be used, overriding all other settings.
