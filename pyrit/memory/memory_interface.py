@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import MutableSequence, Optional, Sequence
+from typing import MutableSequence, Optional, Sequence, cast
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
@@ -245,10 +245,13 @@ class MemoryInterface(abc.ABC):
         for entry in entries:
             prompt_request_piece = entry.get_prompt_request_piece()
             prompt_request_piece_id = prompt_request_piece.id
-            scores : Sequence[dict[str, str]] = self.query_entries(
-                ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece_id
+            scores = cast(
+                list[Score],
+                self.query_entries(
+                    ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece_id
+                ),
             )
-            prompt_request_piece.scores = scores if scores else []
+            prompt_request_piece.scores = scores
             result.append(prompt_request_piece)
         return result
 
