@@ -15,9 +15,14 @@ steps:
   inputs:
     azureSubscription: 'integration-test-service-connection'
     KeyVaultName: 'integration-test-env'
-    SecretsFilter: 'pyrit-test'
+    SecretsFilter: 'pyrit-test-base64'
     RunAsPreJob: false
-- bash: echo $(pyrit-test) > .env
+- bash: echo "$PYRIT_TEST_BASE64" > .env
+  env:
+    PYRIT_TEST_BASE64: $(pyrit-test-base64)
+- bash: ls -la
+- bash: cat .env
+- bash: cat .env | base64 -d > .env
 - bash: ls -la
 - bash: pip install --upgrade setuptools pip
 - bash: pip install .[all]
