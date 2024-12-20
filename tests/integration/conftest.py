@@ -15,3 +15,6 @@ os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
 os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
 
 load_environment_files()
+
+print('ENV VARIABLES')
+print(os.environ["AZURE_OPENAI_CHAT_DEPLOYMENT"])
