@@ -202,7 +202,7 @@ class ScoreEntry(Base):  # type: ignore
             timestamp=self.timestamp,
             task=self.task,
         )
-    
+
     def to_dict(self) -> dict:
         return {
             "id": str(self.id),
@@ -217,6 +217,7 @@ class ScoreEntry(Base):  # type: ignore
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "task": self.task,
         }
+
 
 class ConversationMessageWithSimilarity(BaseModel):
     model_config = ConfigDict(extra="forbid")

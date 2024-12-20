@@ -3,13 +3,7 @@
 
 import csv
 import json
-from typing import Any, Dict, List, Union
-import uuid
-from datetime import datetime
 from pathlib import Path
-from collections.abc import MutableMapping
-
-from sqlalchemy.inspection import inspect
 
 from pyrit.models import PromptRequestPiece
 
@@ -101,4 +95,3 @@ class MemoryExporter:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(export_data)
-

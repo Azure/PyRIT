@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.models.score import Score
 
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
@@ -69,7 +70,7 @@ class PromptRequestPiece(abc.ABC):
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
         timestamp: Optional[datetime] = None,
-        scores: Optional[List[Dict[str, str]]] = None,
+        scores: Optional[List[Score]] = None,
     ):
 
         self.id = id if id else uuid4()
@@ -121,7 +122,7 @@ class PromptRequestPiece(abc.ABC):
 
         # Original prompt id defaults to id (assumes that this is the original prompt, not a duplicate)
         self.original_prompt_id = original_prompt_id or self.id
-        
+
         self.scores = scores if scores else []
 
     async def compute_sha256(self):
@@ -197,7 +198,7 @@ class PromptRequestPiece(abc.ABC):
             "original_prompt_id": str(self.original_prompt_id),
             "scores": [score.to_dict() for score in self.scores],
         }
-    
+
     def __str__(self):
         return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"
 

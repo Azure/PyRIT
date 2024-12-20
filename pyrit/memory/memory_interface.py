@@ -2,14 +2,13 @@
 # Licensed under the MIT license.
 
 import abc
-from collections import defaultdict
 import copy
 from datetime import datetime
 import logging
 from pathlib import Path
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import MutableSequence, Optional, Sequence, Union
+from typing import MutableSequence, Optional, Sequence
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
@@ -246,12 +245,13 @@ class MemoryInterface(abc.ABC):
         for entry in entries:
             prompt_request_piece = entry.get_prompt_request_piece()
             prompt_request_piece_id = prompt_request_piece.id
-            scores = self.query_entries(
-                ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece_id)
+            scores : Sequence[dict[str, str]] = self.query_entries(
+                ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece_id
+            )
             prompt_request_piece.scores = scores if scores else []
             result.append(prompt_request_piece)
         return result
-    
+
     @abc.abstractmethod
     def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
         """
