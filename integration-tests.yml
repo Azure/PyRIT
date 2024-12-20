@@ -10,16 +10,19 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-- task: AzureKeyVault@2
-  displayName: Azure Key Vault - retrieve .env file secret
-  inputs:
-    azureSubscription: 'integration-test-service-connection'
-    KeyVaultName: 'integration-test-env'
-    SecretsFilter: 'pyrit-test-base64'
-    RunAsPreJob: false
-- bash: echo $(pyrit-test-base64)
-- bash: echo ${{ pyrit-test-base64 }}
-- bash: echo ${{ pyrit-test-base64 }} | base64 -d > .env
+# - task: AzureKeyVault@2
+#   displayName: Azure Key Vault - retrieve .env file secret
+#   inputs:
+#     azureSubscription: 'integration-test-service-connection'
+#     KeyVaultName: 'integration-test-env'
+#     SecretsFilter: 'pyrit-test-base64'
+#     RunAsPreJob: false
+- powershell: |
+  $keyVaultName = "integration-test-service-connection"
+  $secretNames = "pyrit-test"
+  $secret = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName
+  $secretValue = $secret.SecretValue | ConvertFrom-SecureString -AsPlainText
+  $secretValue | Set-Content -Path .env
 - bash: ls -la
 - bash: pip install --upgrade setuptools pip
 - bash: pip install .[all]
