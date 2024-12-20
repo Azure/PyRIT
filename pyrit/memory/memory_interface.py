@@ -245,8 +245,10 @@ class MemoryInterface(abc.ABC):
         for entry in entries:
             prompt_request_piece = entry.get_prompt_request_piece()
             prompt_request_piece_id = prompt_request_piece.id
-            score_entries = self.query_entries(ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece_id)
-            scores = [score_entry.get_score() for score_entry in score_entries] 
+            score_entries = self.query_entries(
+                ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece_id
+            )
+            scores = [score_entry.get_score() for score_entry in score_entries]
             prompt_request_piece.scores = scores
             result.append(prompt_request_piece)
         return result
