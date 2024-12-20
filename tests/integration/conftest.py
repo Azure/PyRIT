@@ -3,7 +3,7 @@
 
 import os
 
-from pyrit.common.default_values import load_environment_files
+from pyrit.common import default_values
 
 # This limits retries and speeds up execution
 # note this needs to be set before libraries that use them are imported
@@ -14,7 +14,7 @@ os.environ["RETRY_MAX_NUM_ATTEMPTS"] = "2"
 os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
 os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
 
-load_environment_files()
+default_values.load_environment_files()
 
 print('ENV VARIABLES')
 print(os.environ["AZURE_OPENAI_CHAT_DEPLOYMENT"])

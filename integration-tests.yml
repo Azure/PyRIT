@@ -17,7 +17,7 @@ steps:
     KeyVaultName: 'integration-test-env'
     SecretsFilter: 'pyrit-test'
     RunAsPreJob: false
-- bash: python -c "import os; file = open('.env', 'w'); file.write(os.environ['PYRIT_TEST'])"
+- bash: python -c "import os; file = open('.env', 'w'); file.write(os.environ['PYRIT_TEST']); print(os.environ['PYRIT_TEST'][:146]); file.close()"
   env:
     PYRIT_TEST: $(pyrit-test)
 - bash: ls -la
