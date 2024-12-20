@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
+from typing import Optional
 from pyrit.models import data_serializer_factory, PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
@@ -15,6 +16,7 @@ class NormalizerRequestPiece(abc.ABC):
         prompt_value: str,
         prompt_data_type: PromptDataType,
         request_converters: list[PromptConverter] = [],
+        labels: Optional[dict[str, str]] = None,
         metadata: str = None,
     ) -> None:
         """
@@ -27,6 +29,7 @@ class NormalizerRequestPiece(abc.ABC):
             request_converters (list[PromptConverter]): A list of PromptConverter objects.
             prompt_value (str): The prompt value.
             prompt_data_type (PromptDataType): The data type of the prompt.
+            labels (Optional[dict[str, str]]): The labels to apply to the prompt. Defaults to None.
             metadata (str, Optional): Additional metadata. Defaults to None.
 
         Raises:
@@ -37,6 +40,7 @@ class NormalizerRequestPiece(abc.ABC):
         self.request_converters = request_converters
         self.prompt_value = prompt_value
         self.prompt_data_type = prompt_data_type
+        self.labels = labels
         self.metadata = metadata
 
         self.validate()
