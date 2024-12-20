@@ -16,7 +16,6 @@ from urllib.parse import urlparse
 from pyrit.models.literals import PromptDataType
 from pyrit.models.storage_io import DiskStorageIO
 
-
 if TYPE_CHECKING:
     from pyrit.memory import MemoryInterface
 
@@ -26,7 +25,6 @@ def data_serializer_factory(
     data_type: PromptDataType,
     value: Optional[str] = None,
     extension: Optional[str] = None,
-    memory: Optional[MemoryInterface] = None,
 ):
     if value is not None:
         if data_type == "text":
@@ -38,7 +36,7 @@ def data_serializer_factory(
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value)
         elif data_type == "url":
-            return URLDataTypeSerializer(prompt_text=value, memory=memory)
+            return URLDataTypeSerializer(prompt_text=value)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
@@ -61,16 +59,16 @@ class DataTypeSerializer(abc.ABC):
 
     data_type: PromptDataType
     value: str
-    data_sub_directory: Optional[str] = None
-    file_extension: Optional[str] = None
+    data_sub_directory: str
+    file_extension: str
 
     _file_path: Union[Path, str] = None
 
-    def __init__(self, memory: Optional[MemoryInterface] = None):
-        # Local import to prevent circular dependency
+    @property
+    def _memory(self) -> MemoryInterface:
         from pyrit.memory import CentralMemory
 
-        self._memory = memory or CentralMemory.get_memory_instance()
+        return CentralMemory.get_memory_instance()
 
     def _get_storage_io(self):
         """
@@ -218,8 +216,7 @@ class DataTypeSerializer(abc.ABC):
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: Optional[MemoryInterface] = None):
-        super().__init__(memory=memory)
+    def __init__(self, *, prompt_text: str):
         self.data_type = "text"
         self.value = prompt_text
 
@@ -228,8 +225,7 @@ class TextDataTypeSerializer(DataTypeSerializer):
 
 
 class ErrorDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: Optional[MemoryInterface] = None):
-        super().__init__(memory=memory)
+    def __init__(self, *, prompt_text: str):
         self.data_type = "error"
         self.value = prompt_text
 
@@ -238,26 +234,18 @@ class ErrorDataTypeSerializer(DataTypeSerializer):
 
 
 class URLDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, memory: Optional[MemoryInterface] = None):
-        super().__init__(memory=memory)
+    def __init__(self, *, prompt_text: str):
         self.data_type = "url"
         self.value = prompt_text
         self.data_sub_directory = "/dbdata/urls"
         self.file_extension = "txt"
 
     def data_on_disk(self) -> bool:
-        return True  # Ensures the URL data is treated as stored on disk
+        return True
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):
-    def __init__(
-        self,
-        *,
-        prompt_text: Optional[str] = None,
-        extension: Optional[str] = None,
-        memory: Optional[MemoryInterface] = None,
-    ):
-        super().__init__(memory=memory)
+    def __init__(self, *, prompt_text: Optional[str] = None, extension: Optional[str] = None):
         self.data_type = "image_path"
         self.data_sub_directory = "/dbdata/images"
         self.file_extension = extension if extension else "png"
@@ -275,9 +263,7 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
         *,
         prompt_text: Optional[str] = None,
         extension: Optional[str] = None,
-        memory: Optional[MemoryInterface] = None,
     ):
-        super().__init__(memory=memory)
         self.data_type = "audio_path"
         self.data_sub_directory = "/dbdata/audio"
         self.file_extension = extension if extension else "mp3"

@@ -8,7 +8,6 @@ from typing import Optional
 from fpdf import FPDF
 from jinja2 import Template
 
-from pyrit.memory import MemoryInterface
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
@@ -23,8 +22,6 @@ class PDFConverter(PromptConverter):
 
     Args:
         template_path (Optional[str], optional): Path to the Jinja2 template file. Defaults to None.
-        memory (Optional[MemoryInterface], optional): Memory interface instance for data storage.
-            If not provided, the default memory instance is used.
         font_type (Optional[str], optional): Font type for the PDF. Defaults to "Arial".
         font_size (Optional[int], optional): Font size for the PDF. Defaults to 12.
         page_width (Optional[int], optional): Width of the PDF page in mm. Defaults to 210 (A4 width).
@@ -34,14 +31,12 @@ class PDFConverter(PromptConverter):
     def __init__(
         self,
         template_path: Optional[str] = None,
-        memory: Optional[MemoryInterface] = None,
         font_type: Optional[str] = "Arial",
         font_size: Optional[int] = 12,
         page_width: Optional[int] = 210,
         page_height: Optional[int] = 297,
     ) -> None:
         self._template_path = template_path
-        self._memory = memory
         self._font_type = font_type
         self._font_size = font_size
         self._page_width = page_width
@@ -62,6 +57,9 @@ class PDFConverter(PromptConverter):
         Raises:
             FileNotFoundError: If the specified template file does not exist.
         """
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
+
         # Prepare the content
         if self._template_path:
             try:
@@ -80,16 +78,16 @@ class PDFConverter(PromptConverter):
         pdf.set_font(self._font_type, size=self._font_size)  # Use custom font settings
         pdf.multi_cell(0, 10, content)
 
-        buffer = BytesIO()
-        pdf.output(buffer)
-        buffer.seek(0)
+        pdf_bytes = BytesIO()
+        pdf.output(pdf_bytes)
+        pdf_bytes.seek(0)
 
         # Use DataTypeSerializer to save the file
-        serializer = data_serializer_factory(data_type="url", value=prompt, memory=self._memory)
-        await serializer.save_data(buffer.getbuffer())
+        pdf_serializer = data_serializer_factory(data_type="url", value=prompt)
+        await pdf_serializer.save_data(pdf_bytes.getvalue())
 
         # Return the result
-        return ConverterResult(output_text=serializer.value, output_type="url")
+        return ConverterResult(output_text=pdf_serializer.value, output_type="url")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         """
