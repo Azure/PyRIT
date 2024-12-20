@@ -193,53 +193,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptMemoryEntry Base objects that have the specified orchestrator ID.
-
-        Args:
-            orchestrator_id (str): The id of the orchestrator.
-                Can be retrieved by calling orchestrator.get_identifier()["id"]
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptMemoryEntry Base objects matching the specified orchestrator ID.
-        """
-        try:
-            sql_condition = text(
-                "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
-            ).bindparams(json_id=str(orchestrator_id))
-            entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)  # type: ignore
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
-            )
-            return []
-
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
-
-        Args:
-            conversation_id (str): The conversation ID to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.conversation_id == str(conversation_id),
-            )  # type: ignore
-
-            prompt_pieces: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return prompt_pieces
-
-        except Exception as e:
-            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
-            return []
 
     def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> BooleanClauseList:
         json_validation = "ISJSON(labels) = 1"
@@ -249,7 +202,12 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # for safe parameter passing, preventing SQL injection
-        sql_condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
+        return text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
+
+    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
+        return text(
+                "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
+            ).bindparams(json_id=str(orchestrator_id))
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """

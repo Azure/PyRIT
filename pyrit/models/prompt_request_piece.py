@@ -152,3 +152,36 @@ class PromptRequestPiece(abc.ABC):
         return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"
 
     __repr__ = __str__
+
+    def __eq__(self, other: PromptRequestPiece) -> bool:
+        return (
+            self.id == other.id and
+            self.role == other.role and
+            self.original_value == other.original_value and
+            self.original_value_data_type == other.original_value_data_type and
+            self.original_value_sha256 == other.original_value_sha256 and
+            self.converted_value == other.converted_value and
+            self.converted_value_data_type == other.converted_value_data_type and
+            self.converted_value_sha256 == other.converted_value_sha256 and
+            self.conversation_id == other.conversation_id and
+            self.timestamp == other.timestamp and
+            self.sequence == other.sequence
+        )
+
+
+def order_request_pieces_by_conversation(prompt_pieces: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
+    """
+    Group by conversation_id.
+    Order conversations by the earliest timestamp within each conversation_id.
+    Within each conversation, order messages by sequence.
+    """
+    earliest_timestamps = {
+    convo_id: min(x.timestamp for x in prompt_pieces if x.conversation_id == convo_id)
+    for convo_id in {x.conversation_id for x in prompt_pieces}
+    }
+
+    # Sort using the precomputed values
+    return sorted(
+        prompt_pieces,
+        key=lambda x: (earliest_timestamps[x.conversation_id], x.conversation_id, x.sequence)
+    )

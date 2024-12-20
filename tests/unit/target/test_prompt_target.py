@@ -70,7 +70,7 @@ def test_set_system_prompt(azure_openai_target: OpenAIChatTarget):
         labels={},
     )
 
-    chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(conversation_id="1")
+    chats = azure_openai_target._memory.get_prompt_request_pieces(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
     assert chats[0].role == "system"
     assert chats[0].converted_value == "system prompt"
@@ -109,7 +109,7 @@ async def test_set_system_prompt_adds_memory(azure_openai_target: OpenAIChatTarg
         labels={},
     )
 
-    chats = azure_openai_target._memory._get_prompt_pieces_with_conversation_id(conversation_id="1")
+    chats = azure_openai_target._memory.get_prompt_request_pieces(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chats, got {len(chats)}"
     assert chats[0].role == "system"
 

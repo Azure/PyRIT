@@ -99,25 +99,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         result: list[EmbeddingDataEntry] = self.query_entries(EmbeddingDataEntry)
         return result
 
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
-
-        Args:
-            conversation_id (str): The conversation ID to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == str(conversation_id)
-            )
-            prompt_pieces: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return prompt_pieces
-        except Exception as e:
-            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
-            return []
 
     def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
         """
@@ -175,30 +156,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
         return and_(*conditions)
 
-
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
-
-        Args:
-            orchestrator_id (str): The id of the orchestrator.
-                Can be retrieved by calling orchestrator.get_identifier()["id"]
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id,
-            )  # type: ignore
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
-            )
-            return []
+    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
+        return PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """

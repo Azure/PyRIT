@@ -563,7 +563,7 @@ def test_export_conversation_by_orchestrator_id_file_created(
 
     memory.exporter = MemoryExporter()
 
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get:
         mock_get.return_value = sample_conversation_entries
         memory.export_conversation_by_orchestrator_id(orchestrator_id=orchestrator1_id)
 
@@ -667,7 +667,7 @@ def test_add_score_duplicate_prompt(memory: MemoryInterface):
     new_orchestrator_id = str(uuid4())
     memory.add_request_pieces_to_memory(request_pieces=pieces)
     memory.duplicate_conversation(new_orchestrator_id=new_orchestrator_id, conversation_id=conversation_id)
-    dupe_piece = memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=new_orchestrator_id)[0]
+    dupe_piece = memory.get_prompt_request_pieces(orchestrator_id=new_orchestrator_id)[0]
     dupe_id = dupe_piece.id
 
     score_id = uuid4()
@@ -1262,19 +1262,6 @@ def test_export_all_conversations_with_scores_empty_data(memory: MemoryInterface
             mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
 
 
-def test_get_prompt_request_pieces_by_orchestrator(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
-    orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
-
-    sample_conversation_ids = []
-    for entry in sample_conversation_entries:
-        sample_conversation_ids.append(str(entry.get_prompt_request_piece().id))
-
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
-        mock_get.return_value = sample_conversation_entries
-        prompt_ids = memory.get_prompt_ids_by_orchestrator(orchestrator_id=orchestrator1_id)
-
-        assert sample_conversation_ids == prompt_ids
-
 def test_get_prompt_request_pieces_labels(memory: MemoryInterface):
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
@@ -1440,37 +1427,38 @@ def test_get_prompt_request_pieces_by_value(memory: MemoryInterface):
     assert "Hello 2" == retrieved_entries[0].original_value
     assert "Hello 3" == retrieved_entries[1].original_value
 
-@pytest.mark.asyncio
-async def test_get_prompt_request_pieces_by_hash(memory: MemoryInterface):
 
-    filename = ""
-    with tempfile.NamedTemporaryFile(delete=False) as f:
-        filename = f.name
-        f.write(b"Hello1")
-        f.flush()
-        f.close()
-
-        entries = [
-            PromptMemoryEntry(
-                entry=PromptRequestPiece(
-                    role="user",
-                    original_value="Hello 1",
-                )
-            ),
-            PromptMemoryEntry(
-                entry=PromptRequestPiece(
-                    role="user",
-                    original_value=filename,
-                    converted_value=filename,
-                    converted_value_data_type="audio_path",
-                )
+def test_get_prompt_request_pieces_by_hash(memory: MemoryInterface):
+    entries = [
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 1",
             )
-        ]
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="assistant",
+                original_value="Hello 2",
+            )
+        ),
+        PromptMemoryEntry(
+            entry=PromptRequestPiece(
+                role="user",
+                original_value="Hello 3",
+            )
+        ),
+    ]
 
-        expected_hash = "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
+    entries[0].converted_value_sha256 = "hash1"
+    entries[1].converted_value_sha256 = "hash1"
 
-    os.remove(filename)
+    memory._insert_entries(entries=entries)
+    retrieved_entries = memory.get_prompt_request_pieces(converted_value_sha256=["hash1"])
 
+    assert len(retrieved_entries) == 2
+    assert "Hello 1" == retrieved_entries[0].original_value
+    assert "Hello 2" == retrieved_entries[1].original_value
 
 
 def test_get_prompt_request_pieces_with_non_matching_memory_labels(memory: MemoryInterface):

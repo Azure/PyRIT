@@ -95,7 +95,7 @@ class FuzzerResult:
         for conversation_id in self.prompt_target_conversation_ids:
             print(f"\nConversation ID: {conversation_id}")
 
-            target_messages = memory._get_prompt_pieces_with_conversation_id(conversation_id=str(conversation_id))
+            target_messages = memory.get_prompt_request_pieces(conversation_id=str(conversation_id))
 
             if not target_messages or len(target_messages) == 0:
                 print("No conversation with the target")

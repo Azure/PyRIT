@@ -44,7 +44,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
-            request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
+            request_pieces.extend(self._memory.get_prompt_request_pieces(orchestrator_id=id))
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
         request_pieces = self._remove_duplicates(request_pieces)

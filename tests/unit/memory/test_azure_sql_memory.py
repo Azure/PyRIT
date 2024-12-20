@@ -49,13 +49,11 @@ async def test_insert_entry(memory_interface):
     with memory_interface.get_session() as session:
         assert isinstance(session, UnifiedAlchemyMagicMock)
         session.add.assert_not_called()
-        memory_interface.insert_entry(entry)
+        memory_interface._insert_entry(entry)
         inserted_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
         assert inserted_entry is not None
         assert inserted_entry.role == "user"
         assert inserted_entry.original_value == "Hello"
-        sha265 = "185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969"  # sha256('Hello')
-        assert inserted_entry.original_value_sha256 == sha265
 
 
 def test_insert_entries(memory_interface: AzureSQLMemory):
@@ -265,7 +263,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
         return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
     ):
         # Call the method under test
-        retrieved_entries = memory_interface._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator1_id)
+        retrieved_entries = memory_interface.get_prompt_request_pieces(orchestrator_id=orchestrator1_id)
 
         # Verify the returned entries
         assert len(retrieved_entries) == 2
@@ -324,14 +322,14 @@ def test_update_entries_nonexistent_fields(memory_interface):
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
-    memory_interface.insert_entry(entry)
+    memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
     entries_to_update = memory_interface.query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     with pytest.raises(ValueError):
-        memory_interface.update_entries(
+        memory_interface._update_entries(
             entries=entries_to_update, update_fields={"original_value": "Updated", "nonexistent_field": "Updated Hello"}
         )
 

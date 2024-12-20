@@ -19,8 +19,9 @@ from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
-from tests.mocks import get_duckdb_memory
-from tests.mocks import get_sample_conversation_entries
+
+from unit.mocks import get_duckdb_memory
+from unit.mocks import get_sample_conversation_entries
 
 
 @pytest.fixture
@@ -155,7 +156,7 @@ async def test_insert_entry(memory_interface):
         original_value="Hello",
         converted_value="Hello after conversion",
     )
-    # await prompt_request_piece_entry.compute_sha256()
+    await prompt_request_piece_entry.set_sha256_values_async()
 
     prompt_request_piece_entry.original_value = "Hello"
     prompt_request_piece_entry.converted_value = "Hello after conversion"
@@ -230,7 +231,7 @@ def test_insert_entries(memory_interface):
     # Now, get a new session to query the database and verify the entries were inserted
     with memory_interface.get_session() as session:
         # Use the insert_entries method to insert multiple entries into the database
-        memory_interface.insert_entries(entries=entries)
+        memory_interface._insert_entries(entries=entries)
         inserted_entries = session.query(PromptMemoryEntry).all()
         assert len(inserted_entries) == 5
         for i, entry in enumerate(inserted_entries):
@@ -247,7 +248,7 @@ def test_insert_embedding_entry(memory_interface):
     )
 
     # Insert the ConversationData entry using the insert_entry method
-    memory_interface.insert_entry(conversation_entry)
+    memory_interface._insert_entry(conversation_entry)
 
     # Re-query the ConversationData entry within a new session to ensure it's attached
     with memory_interface.get_session() as session:
@@ -257,7 +258,7 @@ def test_insert_embedding_entry(memory_interface):
 
     # Now that we have the uuid, we can create and insert the EmbeddingData entry
     embedding_entry = EmbeddingDataEntry(id=uuid, embedding=[1, 2, 3], embedding_type_name="test_type")
-    memory_interface.insert_entry(embedding_entry)
+    memory_interface._insert_entry(embedding_entry)
 
     # Verify the EmbeddingData entry was inserted correctly
     with memory_interface.get_session() as session:
@@ -303,7 +304,7 @@ def test_query_entries(memory_interface, sample_conversation_entries):
         sample_conversation_entries[i].original_value = f"Message {i}"
         sample_conversation_entries[i].converted_value = f"Message {i}"
 
-    memory_interface.insert_entries(entries=sample_conversation_entries)
+    memory_interface._insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
     queried_entries = memory_interface.query_entries(PromptMemoryEntry)
@@ -319,7 +320,7 @@ def test_query_entries(memory_interface, sample_conversation_entries):
 
 def test_get_all_memory(memory_interface, sample_conversation_entries):
 
-    memory_interface.insert_entries(entries=sample_conversation_entries)
+    memory_interface._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
     all_entries = memory_interface.get_prompt_request_pieces()
@@ -382,13 +383,13 @@ def test_update_entries(memory_interface):
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
-    memory_interface.insert_entry(entry)
+    memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
     entries_to_update = memory_interface.query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
-    memory_interface.update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
+    memory_interface._update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
 
     # Verify the entry was updated
     with memory_interface.get_session() as session:
@@ -402,14 +403,14 @@ def test_update_entries_empty_update_fields(memory_interface):
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
-    memory_interface.insert_entry(entry)
+    memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
     entries_to_update = memory_interface.query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     with pytest.raises(ValueError):
-        memory_interface.update_entries(entries=entries_to_update, update_fields={})
+        memory_interface._update_entries(entries=entries_to_update, update_fields={})
 
 
 def test_update_entries_nonexistent_fields(memory_interface):
@@ -418,14 +419,14 @@ def test_update_entries_nonexistent_fields(memory_interface):
         entry=PromptRequestPiece(conversation_id="123", role="user", original_value="Hello", converted_value="Hello")
     )
 
-    memory_interface.insert_entry(entry)
+    memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
     entries_to_update = memory_interface.query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     with pytest.raises(ValueError):
-        memory_interface.update_entries(
+        memory_interface._update_entries(
             entries=entries_to_update, update_fields={"original_value": "Updated", "nonexistent_field": "Updated Hello"}
         )
     # Verify changes were rolled back and entry was not updated
@@ -444,7 +445,7 @@ def test_update_entries_by_conversation_id(memory_interface, sample_conversation
 
     # Insert the ConversationData entries using the insert_entries method within a session
     with memory_interface.get_session() as session:
-        memory_interface.insert_entries(entries=sample_conversation_entries)
+        memory_interface._insert_entries(entries=sample_conversation_entries)
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id
@@ -482,7 +483,7 @@ def test_update_labels_by_conversation_id(memory_interface, sample_conversation_
 
     # Insert the ConversationData entries using the insert_entries method within a session
     with memory_interface.get_session() as session:
-        memory_interface.insert_entries(entries=sample_conversation_entries)
+        memory_interface._insert_entries(entries=sample_conversation_entries)
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id
@@ -519,7 +520,7 @@ def test_update_prompt_metadata_by_conversation_id(memory_interface, sample_conv
 
     # Insert the ConversationData entries using the insert_entries method within a session
     with memory_interface.get_session() as session:
-        memory_interface.insert_entries(entries=sample_conversation_entries)
+        memory_interface._insert_entries(entries=sample_conversation_entries)
         session.commit()  # Ensure all entries are committed to the database
 
         # Define the fields to update for entries with the specific conversation_id

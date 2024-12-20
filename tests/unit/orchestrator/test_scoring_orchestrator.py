@@ -40,7 +40,7 @@ async def test_score_prompts_by_orchestrator_only_responses(sample_conversations
 
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        memory.get_prompt_request_piece_by_orchestrator_id.return_value = sample_conversations
+        memory.get_prompt_request_pieces.return_value = sample_conversations
 
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()
@@ -62,7 +62,7 @@ async def test_score_prompts_by_orchestrator_includes_requests(sample_conversati
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-        memory.get_prompt_request_piece_by_orchestrator_id.return_value = sample_conversations
+        memory.get_prompt_request_pieces.return_value = sample_conversations
 
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()

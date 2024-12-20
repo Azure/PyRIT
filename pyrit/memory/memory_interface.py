@@ -16,6 +16,7 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.models import (
     ChatMessage,
     group_conversation_request_pieces_by_sequence,
+    order_request_pieces_by_conversation,
     PromptRequestResponse,
     PromptRequestPiece,
     Score,
@@ -92,28 +93,11 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> MutableSequence[PromptRequestPiece]:
+    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
         """
-        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
+        Returns a condition to retrieve based on orchestrator ID.
 
-        Args:
-            conversation_id (str): The conversation ID to match.
-
-        Returns:
-            MutableSequence[PromptRequestPiece]: A list of chat memory entries with the specified conversation ID.
-        """
-
-    @abc.abstractmethod
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> Sequence[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
-
-        Args:
-            orchestrator_id (str): The id of the orchestrator.
-                Can be retrieved by calling orchestrator.get_identifier()["id"]
-
-        Returns:
-            Sequence[PromptRequestPiece]: A list of PromptMemoryEntry objects matching the specified orchestrator ID.
+        TODO TODO 
         """
 
     @abc.abstractmethod
@@ -209,7 +193,7 @@ class MemoryInterface(abc.ABC):
             list[Score]: A list of Score objects associated with the PromptRequestPiece objects
                 which match the specified orchestrator ID.
         """
-        prompt_pieces = self.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=orchestrator_id)
+        prompt_pieces = self.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
         # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
         prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
@@ -244,7 +228,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             MutableSequence[PromptRequestResponse]: A list of chat memory entries with the specified conversation ID.
         """
-        request_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        request_pieces = self.get_prompt_request_pieces(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
     def get_prompt_request_pieces(
@@ -259,11 +243,11 @@ class MemoryInterface(abc.ABC):
             converted_values: Optional[list[str]] = None,
             data_type: Optional[str] = None,
             not_data_type: Optional[str] = None,
-            data_hashes: Optional[list[str]] = None,
+            converted_value_sha256: Optional[list[str]] = None,
     ) -> list[PromptRequestPiece]:
         conditions = []
         if orchestrator_id:
-            conditions.append(PromptMemoryEntry.orchestrator_identifier["id"] == orchestrator_id)
+            conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=orchestrator_id))
         if conversation_id:
             conditions.append(PromptMemoryEntry.conversation_id == conversation_id)
         if prompt_ids:
@@ -280,8 +264,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(PromptMemoryEntry.converted_value_data_type == data_type)
         if not_data_type:
             conditions.append(PromptMemoryEntry.converted_value_data_type != not_data_type)
-        if data_hashes:
-            conditions.append(PromptMemoryEntry.converted_value_sha256.in_(data_hashes))
+        if converted_value_sha256:
+            conditions.append(PromptMemoryEntry.converted_value_sha256.in_(converted_value_sha256))
 
         try:
             memory_entries = self.query_entries(
@@ -289,7 +273,7 @@ class MemoryInterface(abc.ABC):
                 conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
             prompt_pieces = [memory_entry.get_prompt_request_piece() for memory_entry in memory_entries]
-            return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
+            return order_request_pieces_by_conversation(prompt_pieces=prompt_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
             return []
@@ -306,20 +290,6 @@ class MemoryInterface(abc.ABC):
         Returns:
             Sequence[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
         """
-
-    def get_prompt_request_piece_by_orchestrator_id(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
-
-        Args:
-            orchestrator_id (str): The orchestrator ID to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
-        """
-
-        prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
-        return sorted(prompt_pieces, key=lambda x: (x.conversation_id, x.timestamp))
 
     def get_prompt_request_piece_by_memory_labels(
         self, *, memory_labels: dict[str, str] = {}
@@ -338,7 +308,7 @@ class MemoryInterface(abc.ABC):
         """
 
     def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: str) -> list[str]:
-        prompt_pieces = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+        prompt_pieces = self.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
 
         prompt_ids = []
         for piece in prompt_pieces:
@@ -363,7 +333,7 @@ class MemoryInterface(abc.ABC):
         """
         new_conversation_id = str(uuid.uuid4())
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
+        prompt_pieces = copy.deepcopy(self.get_prompt_request_pieces(conversation_id=conversation_id))
         for piece in prompt_pieces:
             # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
             piece.id = uuid.uuid4()
@@ -396,7 +366,7 @@ class MemoryInterface(abc.ABC):
         """
         new_conversation_id = str(uuid.uuid4())
         # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        prompt_pieces = copy.deepcopy(self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id))
+        prompt_pieces = copy.deepcopy(self.get_prompt_request_pieces(conversation_id=conversation_id))
 
         # remove the final turn from the conversation
         if len(prompt_pieces) == 0:
@@ -441,7 +411,7 @@ class MemoryInterface(abc.ABC):
             If not provided, a default path using RESULTS_PATH will be constructed.
             export_type (str): The format of the export. Defaults to "json".
         """
-        data = self._get_prompt_pieces_by_orchestrator(orchestrator_id=orchestrator_id)
+        data = self.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
@@ -487,7 +457,7 @@ class MemoryInterface(abc.ABC):
             request_pieces (list[PromptRequestPiece]): The list of request pieces to update.
         """
 
-        prev_conversations = self._get_prompt_pieces_with_conversation_id(
+        prev_conversations = self.get_prompt_request_pieces(
             conversation_id=request_pieces[0].conversation_id
         )
 
@@ -576,7 +546,7 @@ class MemoryInterface(abc.ABC):
         Returns:
             list[ChatMessage]: The list of chat messages.
         """
-        memory_entries = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        memory_entries = self.get_prompt_request_pieces(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
 
     def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
@@ -589,7 +559,7 @@ class MemoryInterface(abc.ABC):
             If not provided, a default path using RESULTS_PATH will be constructed.
             export_type (str): The format of the export. Defaults to "json".
         """
-        data = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        data = self.get_prompt_request_pieces(conversation_id=conversation_id)
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:

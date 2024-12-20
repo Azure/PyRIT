@@ -412,6 +412,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         Args:
             conversation_id (str): The ID of the conversation.
         """
-        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        target_messages = self._memory.get_prompt_request_pieces(conversation_id=conversation_id)
         for message in target_messages:
             logger.info(f"{message.role}: {message.converted_value}\n")

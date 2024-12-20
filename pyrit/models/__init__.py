@@ -23,7 +23,7 @@ from pyrit.models.seed_prompt import (
     SeedPrompt,
     SeedPromptGroup,
 )
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_piece import PromptRequestPiece, order_request_pieces_by_conversation
 from pyrit.models.prompt_request_response import (
     PromptRequestResponse,
     group_conversation_request_pieces_by_sequence,
@@ -55,6 +55,7 @@ __all__ = [
     "group_conversation_request_pieces_by_sequence",
     "Identifier",
     "ImagePathDataTypeSerializer",
+    "order_request_pieces_by_conversation",
     "PromptRequestPiece",
     "PromptResponse",
     "PromptResponseError",
