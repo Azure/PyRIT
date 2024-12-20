@@ -155,7 +155,7 @@ async def test_insert_entry(memory_interface):
         original_value="Hello",
         converted_value="Hello after conversion",
     )
-    await prompt_request_piece_entry.compute_sha256()
+    await prompt_request_piece_entry.set_sha256_values_async()
     entry = PromptMemoryEntry(entry=prompt_request_piece_entry)
     # Use the insert_entry method to insert the entry into the database
     memory_interface.insert_entry(entry)
