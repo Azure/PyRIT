@@ -28,6 +28,7 @@
 
 # %%
 import os
+
 from pyrit.common import default_values
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.prompt_converter import EmojiConverter
@@ -51,7 +52,6 @@ with CrescendoOrchestrator(
     scoring_target=OpenAIChatTarget(),
     prompt_converters=[EmojiConverter()],
 ) as orchestrator:
-
     # For five turns this can take a few minutes depending on LLM latency
     results = await orchestrator.run_attacks_async(objectives=conversation_objectives)  # type: ignore
 

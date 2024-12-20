@@ -51,7 +51,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
 
     def _init_storage_io(self):
         # Handles disk-based storage for DuckDB local memory.
-        self.storage_io = DiskStorageIO()
+        self.results_storage_io = DiskStorageIO()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
         """Creates the SQLAlchemy engine for DuckDB.

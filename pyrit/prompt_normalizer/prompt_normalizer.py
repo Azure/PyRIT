@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
+import asyncio
 from typing import Optional
 from uuid import uuid4
 
@@ -58,10 +59,10 @@ class PromptNormalizer(abc.ABC):
 
         try:
             response = await target.send_prompt_async(prompt_request=request)
-            self._memory.add_request_response_to_memory(request=request)
+            await self._calc_hash_and_add_request_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
-            self._memory.add_request_response_to_memory(request=request)
+            await self._calc_hash_and_add_request_to_memory(request=request)
 
             response = construct_response_from_request(
                 request=request.request_pieces[0],
@@ -72,7 +73,7 @@ class PromptNormalizer(abc.ABC):
 
         except Exception as ex:
             # Ensure request to memory before processing exception
-            self._memory.add_request_response_to_memory(request=request)
+            await self._calc_hash_and_add_request_to_memory(request=request)
 
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
@@ -81,7 +82,7 @@ class PromptNormalizer(abc.ABC):
                 error="processing",
             )
 
-            self._memory.add_request_response_to_memory(request=error_response)
+            await self._calc_hash_and_add_request_to_memory(request=error_response)
             raise
 
         if response is None:
@@ -91,8 +92,7 @@ class PromptNormalizer(abc.ABC):
             response_converter_configurations=normalizer_request.response_converters, prompt_response=response
         )
 
-        self._memory.add_request_response_to_memory(request=response)
-
+        await self._calc_hash_and_add_request_to_memory(request=response)
         return response
 
     async def send_prompt_batch_to_target_async(
@@ -155,6 +155,14 @@ class PromptNormalizer(abc.ABC):
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
 
+    async def _calc_hash_and_add_request_to_memory(self, request: PromptRequestResponse) -> None:
+        """
+        Adds a request to the memory.
+        """
+        tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.request_pieces]
+        await asyncio.gather(*tasks)
+        self._memory.add_request_response_to_memory(request=request)
+
     async def _build_prompt_request_response(
         self,
         *,
@@ -208,7 +216,6 @@ class PromptNormalizer(abc.ABC):
                 original_value_data_type=request_piece.prompt_data_type,
                 converted_value_data_type=converted_prompt_type,
             )
-            await prompt_request_piece.compute_sha256()
             entries.append(prompt_request_piece)
 
         return PromptRequestResponse(request_pieces=entries)

@@ -43,7 +43,7 @@ class MemoryInterface(abc.ABC):
     """
 
     memory_embedding: MemoryEmbedding = None
-    storage_io: StorageIO = None
+    results_storage_io: StorageIO = None
     results_path: str = None
 
     def __init__(self, embedding_model=None):
@@ -73,7 +73,7 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _init_storage_io(self):
         """
-        Initialize the storage IO handler storage_io.
+        Initialize the storage IO handler results_storage_io.
         """
 
     @abc.abstractmethod
