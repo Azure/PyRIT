@@ -33,7 +33,7 @@ class Score:
     # specific scorer that uses it.
     score_metadata: str
 
-    # The identifier of the scorer class, including relavent information
+    # The identifier of the scorer class, including relevant information
     # e.g. {"scorer_name": "SelfAskScorer", "classifier": "current_events.yml"}
     scorer_class_identifier: Dict[str, str]
 

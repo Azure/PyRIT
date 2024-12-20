@@ -618,3 +618,63 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
         assert objective in prompt_sent
         assert "Objective Score Rationale" in prompt_sent
         assert "Original prompt sent" in prompt_sent
+
+
+def test_handle_last_prepended_user_message_with_prepended_message(orchestrator: CrescendoOrchestrator):
+    orchestrator._last_prepended_user_message = "Last user message"
+    orchestrator._last_prepended_assistant_message_scores = []
+
+    custom_prompt = orchestrator._handle_last_prepended_user_message()
+    assert custom_prompt == "Last user message"
+
+
+def test_handle_last_prepended_assistant_message_with_refusal_score(orchestrator: CrescendoOrchestrator):
+    refusal_score = MagicMock(Score)
+    refusal_score.score_value = "true"
+    refusal_score.score_rationale = "Refusal Rationale"
+    refusal_score.scorer_class_identifier = {
+        "__type__": orchestrator._refusal_scorer.get_identifier()["__type__"],
+    }
+
+    orchestrator._last_prepended_assistant_message_scores = [refusal_score]
+    orchestrator._last_prepended_user_message = "Last user message"
+    refused_text, objective_score = orchestrator._handle_last_prepended_assistant_message()
+    assert refused_text == "Last user message"
+    assert objective_score is None
+
+
+def test_handle_last_prepended_assistant_message_with_objective_score(orchestrator: CrescendoOrchestrator):
+    objective_score = MagicMock(Score)
+    objective_score.score_value = "0.8"
+    objective_score.score_rationale = "Objective Rationale"
+    objective_score.scorer_class_identifier = {
+        "__type__": orchestrator._objective_scorer.get_identifier()["__type__"],
+    }
+
+    orchestrator._last_prepended_assistant_message_scores = [objective_score]
+    refused_text, score = orchestrator._handle_last_prepended_assistant_message()
+    assert refused_text == ""
+    assert score == objective_score
+
+
+def test_handle_last_prepended_assistant_message_with_both_scores(orchestrator: CrescendoOrchestrator):
+    refusal_score = MagicMock(Score)
+    refusal_score.score_value = "false"
+    refusal_score.score_rationale = "Refusal Rationale"
+    refusal_score.scorer_class_identifier = {
+        "__type__": orchestrator._refusal_scorer.get_identifier()["__type__"],
+    }
+    refusal_score.get_value.return_value = False
+
+    objective_score = MagicMock(Score)
+    objective_score.score_value = "0.8"
+    objective_score.score_rationale = "Objective Rationale"
+    objective_score.scorer_class_identifier = {
+        "__type__": orchestrator._objective_scorer.get_identifier()["__type__"],
+    }
+
+    orchestrator._last_prepended_assistant_message_scores = [refusal_score, objective_score]
+    orchestrator._last_prepended_user_message = "Last user message"
+    refused_text, score = orchestrator._handle_last_prepended_assistant_message()
+    assert refused_text == ""
+    assert score == objective_score

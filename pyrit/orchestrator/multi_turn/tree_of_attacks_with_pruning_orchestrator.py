@@ -113,6 +113,9 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         self._objective_achieved_score_threshhold = objective_achieved_score_threshold
         self._desired_response_prefix = desired_response_prefix
 
+    def set_prepended_conversation(self, *, prepended_conversation):
+        raise NotImplementedError("Prepending conversations is not supported in this orchestrator.")
+
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
     ) -> TAPAttackResult:
