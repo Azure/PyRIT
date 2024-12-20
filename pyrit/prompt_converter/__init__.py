@@ -96,5 +96,5 @@ __all__ = [
     "UnicodeSubstitutionConverter",
     "UrlConverter",
     "VariationConverter",
-    "PDFConverter"
+    "PDFConverter",
 ]

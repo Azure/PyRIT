@@ -2,13 +2,19 @@
 # Licensed under the MIT license.
 
 import logging
+from io import BytesIO
 from typing import Optional
-from jinja2 import Template
+
 from fpdf import FPDF
-from pyrit.models import PromptDataType
+from jinja2 import Template
+
+from pyrit.memory import MemoryInterface
+from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import PromptConverter, ConverterResult
 
+
 logger = logging.getLogger(__name__)
+
 
 class PDFConverter(PromptConverter):
     """
@@ -17,10 +23,29 @@ class PDFConverter(PromptConverter):
 
     Args:
         template_path (Optional[str], optional): Path to the Jinja2 template file. Defaults to None.
+        memory (Optional[MemoryInterface], optional): Memory interface instance for data storage.
+            If not provided, the default memory instance is used.
+        font_type (Optional[str], optional): Font type for the PDF. Defaults to "Arial".
+        font_size (Optional[int], optional): Font size for the PDF. Defaults to 12.
+        page_width (Optional[int], optional): Width of the PDF page in mm. Defaults to 210 (A4 width).
+        page_height (Optional[int], optional): Height of the PDF page in mm. Defaults to 297 (A4 height).
     """
 
-    def __init__(self, template_path: Optional[str] = None):
-        self.template_path = template_path
+    def __init__(
+        self,
+        template_path: Optional[str] = None,
+        memory: Optional[MemoryInterface] = None,
+        font_type: Optional[str] = "Arial",
+        font_size: Optional[int] = 12,
+        page_width: Optional[int] = 210,
+        page_height: Optional[int] = 297,
+    ) -> None:
+        self._template_path = template_path
+        self._memory = memory
+        self._font_type = font_type
+        self._font_size = font_size
+        self._page_width = page_width
+        self._page_height = page_height
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -33,28 +58,38 @@ class PDFConverter(PromptConverter):
 
         Returns:
             ConverterResult: The result containing the filename of the generated PDF.
+
+        Raises:
+            FileNotFoundError: If the specified template file does not exist.
         """
-        output_file = "output.pdf"
-        if self.template_path:
+        # Prepare the content
+        if self._template_path:
             try:
-                with open(self.template_path, 'r') as file:
+                with open(self._template_path, "r") as file:
                     template = Template(file.read())
                     content = template.render(prompt=prompt)
             except FileNotFoundError:
-                logger.error(f"Template file {self.template_path} not found.")
+                logger.error(f"Template file {self._template_path} not found.")
                 raise
         else:
             content = prompt
 
-        # Create the PDF
-        pdf = FPDF()
+        # Generate PDF content and write to buffer
+        pdf = FPDF(format=(self._page_width, self._page_height))  # Use custom page size
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
+        pdf.set_font(self._font_type, size=self._font_size)  # Use custom font settings
         pdf.multi_cell(0, 10, content)
-        pdf.output(output_file)
 
-        logger.info(f"PDF created successfully: {output_file}")
-        return ConverterResult(output_text=output_file, output_type="pdf")
+        buffer = BytesIO()
+        pdf.output(buffer)
+        buffer.seek(0)
+
+        # Use DataTypeSerializer to save the file
+        serializer = data_serializer_factory(data_type="url", value=prompt, memory=self._memory)
+        await serializer.save_data(buffer.getbuffer())
+
+        # Return the result
+        return ConverterResult(output_text=serializer.value, output_type="url")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         """
@@ -67,4 +102,3 @@ class PDFConverter(PromptConverter):
             bool: True if the input type is supported, False otherwise.
         """
         return input_type == "text"
-
