@@ -17,6 +17,7 @@ steps:
 #     KeyVaultName: 'integration-test-env'
 #     SecretsFilter: 'pyrit-test-base64'
 #     RunAsPreJob: false
+- powershell: Install-Module -Name AzureRM
 - powershell: |
     $keyVaultName = "integration-test-service-connection"
     $secretNames = "pyrit-test"
