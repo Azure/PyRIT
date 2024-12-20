@@ -18,11 +18,11 @@ steps:
 #     SecretsFilter: 'pyrit-test-base64'
 #     RunAsPreJob: false
 - powershell: |
-  $keyVaultName = "integration-test-service-connection"
-  $secretNames = "pyrit-test"
-  $secret = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName
-  $secretValue = $secret.SecretValue | ConvertFrom-SecureString -AsPlainText
-  $secretValue | Set-Content -Path .env
+    $keyVaultName = "integration-test-service-connection"
+    $secretNames = "pyrit-test"
+    $secret = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName
+    $secretValue = $secret.SecretValue | ConvertFrom-SecureString -AsPlainText
+    $secretValue | Set-Content -Path .env
 - bash: ls -la
 - bash: pip install --upgrade setuptools pip
 - bash: pip install .[all]
