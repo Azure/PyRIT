@@ -17,7 +17,9 @@ steps:
     KeyVaultName: 'integration-test-env'
     SecretsFilter: 'pyrit-test-base64'
     RunAsPreJob: false
-- bash: echo $(pyrit-test-base64) | base64 -d > .env
+- bash: echo $(pyrit-test-base64)
+- bash: echo ${{ pyrit-test-base64 }}
+- bash: echo ${{ pyrit-test-base64 }} | base64 -d > .env
 - bash: ls -la
 - bash: pip install --upgrade setuptools pip
 - bash: pip install .[all]
