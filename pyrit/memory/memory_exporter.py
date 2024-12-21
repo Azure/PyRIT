@@ -64,8 +64,7 @@ class MemoryExporter:
             raise ValueError("No data to export.")
         export_data = []
         for piece in data:
-            prompt_request_piece_dict = piece.to_dict()
-            export_data.append(prompt_request_piece_dict)
+            export_data.append(piece.to_dict())
         with open(file_path, "w") as f:
             json.dump(export_data, f, indent=4)
 
@@ -88,8 +87,7 @@ class MemoryExporter:
             raise ValueError("No data to export.")
         export_data = []
         for piece in data:
-            prompt_request_piece_dict = piece.to_dict()
-            export_data.append(prompt_request_piece_dict)
+            export_data.append(piece.to_dict())
         fieldnames = list(export_data[0].keys())
         with open(file_path, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
