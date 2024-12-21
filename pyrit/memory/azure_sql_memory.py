@@ -234,8 +234,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 conditions=PromptMemoryEntry.conversation_id == str(conversation_id),
             )  # type: ignore
 
-            prompt_pieces: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return prompt_pieces
+            result = self.get_prompt_request_pieces_with_scores(entries)
+            return result
 
         except Exception as e:
             logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
@@ -267,8 +267,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
-        return [entry.get_prompt_request_piece() for entry in result]
+        entries = self.query_entries(PromptMemoryEntry)
+        result = self.get_prompt_request_pieces_with_scores(entries)
+        return result
 
     def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
         """
@@ -285,7 +286,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 PromptMemoryEntry,
                 conditions=PromptMemoryEntry.id.in_(prompt_ids),
             )
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            result = self.get_prompt_request_pieces_with_scores(entries)
             return result
         except Exception as e:
             logger.exception(
@@ -319,7 +320,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             sql_condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
 
             entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
+            result = self.get_prompt_request_pieces_with_scores(entries)
             return result
         except Exception as e:
             logger.exception(
