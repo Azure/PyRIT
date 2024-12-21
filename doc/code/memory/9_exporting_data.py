@@ -59,7 +59,7 @@ for entry in entries:
 
 # Define file path for export
 json_file_path = RESULTS_PATH / "conversation_and_scores_json_example.json"
-csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
+#csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
  
 # # Export the data to a JSON file
 conversation_with_scores = memory.export_all_conversations(file_path=json_file_path, export_type="json")
@@ -68,6 +68,15 @@ print(f"Exported conversation with scores to JSON: {json_file_path}")
 # Export the data to a CSV file
 # conversation_with_scores = memory.export_all_conversations(file_path=csv_file_path, export_type="csv")
 # print(f"Exported conversation with scores to CSV: {csv_file_path}")
+
+# %% [markdown]
+# You can also use the exported JSON or CSV files to import the data as a NumPy DataFrame. This can be useful for various data manipulation and analysis tasks.
+
+# %%
+import pandas as pd  # type: ignore
+
+df = pd.read_json(json_file_path)
+df.head(1)
 
 # %% [markdown]
 # Next, we can export data from our Azure SQL database. In this example, we export the data by `conversation_id` and to a CSV file.
@@ -91,41 +100,30 @@ message_list = [
     ),
 ]
 
-memory = AzureSQLMemory()
-CentralMemory.set_memory_instance(memory)
+azure_memory = AzureSQLMemory()
+CentralMemory.set_memory_instance(azure_memory)
 
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
+azure_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
+azure_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
+azure_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
 
 
-entries = memory.get_conversation(conversation_id=conversation_id)
+entries = azure_memory.get_conversation(conversation_id=conversation_id)
 
 for entry in entries:
     print(entry)
 
 # Define file path for export
-json_file_path = RESULTS_PATH / "conversation_and_scores_json_example.json"
+# json_file_path = RESULTS_PATH / "conversation_and_scores_json_example.json"
 csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
 
 # Export the data to a JSON file
-# conversation_with_scores = memory.export_conversation_by_id(conversation_id=conversation_id, file_path=json_file_path, export_type="json")
+# conversation_with_scores = azure_memory.export_conversation_by_id(conversation_id=conversation_id, file_path=json_file_path, export_type="json")
 # print(f"Exported conversation with scores to JSON: {json_file_path}")
 
 # Export the data to a CSV file
-conversation_with_scores = memory.export_conversation_by_id(conversation_id=conversation_id, file_path=json_file_path, export_type="csv")
+conversation_with_scores = azure_memory.export_conversation_by_id(conversation_id=conversation_id, file_path=json_file_path, export_type="csv")
 print(f"Exported conversation with scores to CSV: {csv_file_path}")
 
 # Cleanup memory resources
-memory.dispose_engine()
-
-# %% [markdown]
-# You can also use the exported JSON or CSV files to import the data as a NumPy DataFrame. This can be useful for various data manipulation and analysis tasks.
-
-# %%
-import pandas as pd  # type: ignore
-
-df = pd.read_json(json_file_path)
-df.head(1)
-
-# %%
+azure_memory.dispose_engine()
