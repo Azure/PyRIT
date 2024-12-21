@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import MutableSequence, Optional, Sequence, cast
+from typing import MutableSequence, Optional, Sequence
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
