@@ -60,12 +60,6 @@ class MemoryInterface(abc.ABC):
         self.memory_embedding = None
 
     @abc.abstractmethod
-    def get_all_prompt_pieces(self) -> Sequence[PromptRequestPiece]:
-        """
-        Loads all ConversationData from the memory storage handler.
-        """
-
-    @abc.abstractmethod
     def get_all_embeddings(self) -> Sequence[EmbeddingDataEntry]:
         """
         Loads all EmbeddingData from the memory storage handler.
@@ -111,7 +105,7 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def query_entries(
+    def _query_entries(
         self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
     ) -> list[Base]:  # type: ignore
         """
@@ -172,7 +166,7 @@ class MemoryInterface(abc.ABC):
         prompt_pieces = self.get_prompt_request_pieces(prompt_ids=prompt_request_response_ids)
         # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
         prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
-        entries = self.query_entries(
+        entries = self._query_entries(
             ScoreEntry, conditions=ScoreEntry.prompt_request_response_id.in_(prompt_request_response_ids)
         )
 
@@ -211,7 +205,7 @@ class MemoryInterface(abc.ABC):
             list[Score]: A list of Score objects associated with the PromptRequestPiece objects
                 which match the specified memory labels.
         """
-        prompt_pieces = self.get_prompt_request_piece_by_memory_labels(memory_labels=memory_labels)
+        prompt_pieces = self.get_prompt_request_pieces(labels=memory_labels)
         # Since duplicate pieces do not have their own score entries, get the original prompt IDs from the pieces.
         prompt_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         return self.get_scores_by_prompt_ids(prompt_request_response_ids=prompt_ids)
@@ -266,7 +260,7 @@ class MemoryInterface(abc.ABC):
             conditions.append(PromptMemoryEntry.converted_value_sha256.in_(converted_value_sha256))
 
         try:
-            memory_entries = self.query_entries(
+            memory_entries = self._query_entries(
                 PromptMemoryEntry,
                 conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
@@ -275,32 +269,6 @@ class MemoryInterface(abc.ABC):
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
             return []
-
-
-    def get_prompt_request_piece_by_memory_labels(
-        self, *, memory_labels: dict[str, str] = {}
-    ) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
-
-        Args:
-            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
-        """
-
-    def get_prompt_ids_by_orchestrator(self, *, orchestrator_id: str) -> list[str]:
-        prompt_pieces = self.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
-
-        prompt_ids = []
-        for piece in prompt_pieces:
-            prompt_ids.append(str(piece.id))
-
-        return prompt_ids
 
     def duplicate_conversation(self, *, conversation_id: str, new_orchestrator_id: Optional[str] = None) -> str:
         """
@@ -469,7 +437,7 @@ class MemoryInterface(abc.ABC):
         if not update_fields:
             raise ValueError("update_fields must be provided to update prompt entries.")
         # Fetch the relevant entries using query_entries
-        entries_to_update = self.query_entries(
+        entries_to_update = self._query_entries(
             PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == conversation_id
         )
         # Check if there are entries to update
@@ -606,7 +574,7 @@ class MemoryInterface(abc.ABC):
         self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
 
         try:
-            memory_entries = self.query_entries(
+            memory_entries = self._query_entries(
                 SeedPromptEntry,
                 conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
@@ -649,7 +617,7 @@ class MemoryInterface(abc.ABC):
         Returns a list of all seed prompt dataset names in the memory storage.
         """
         try:
-            entries = self.query_entries(
+            entries = self._query_entries(
                 SeedPromptEntry.dataset_name,
                 conditions=and_(SeedPromptEntry.dataset_name is not None, SeedPromptEntry.dataset_name != ""),
                 distinct=True,
@@ -742,7 +710,7 @@ class MemoryInterface(abc.ABC):
         self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
 
         # Query DB for matching entries
-        memory_entries = self.query_entries(
+        memory_entries = self._query_entries(
             SeedPromptEntry,
             conditions=and_(*conditions) if conditions else None,
         )  # type: ignore
@@ -760,7 +728,7 @@ class MemoryInterface(abc.ABC):
             If not provided, a default path using RESULTS_PATH will be constructed.
             export_type (str): The format of the export. Defaults to "json".
         """
-        all_prompt_pieces = self.get_all_prompt_pieces()
+        all_prompt_pieces = self.get_prompt_request_pieces()
 
         # Group pieces by original prompt ID
         grouped_pieces: defaultdict[Union[uuid.UUID, str], list[str]] = defaultdict(list)

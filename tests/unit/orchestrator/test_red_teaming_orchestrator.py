@@ -34,7 +34,7 @@ def red_team_system_prompt_path() -> pathlib.Path:
 
 
 def _check_orchestrator_memory(memory, num_turns: int):
-    conversations = memory.get_all_prompt_pieces()
+    conversations = memory.get_prompt_request_pieces()
     # one turn has system prompt, req/resp to target, req/resp to red team target
     expected_num_memories = (4 * num_turns) + 1
 

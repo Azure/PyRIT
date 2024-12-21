@@ -228,50 +228,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self.query_entries(EmbeddingDataEntry)
+        result = self._query_entries(EmbeddingDataEntry)
         return result
-
-    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
-        """
-        Fetches all entries from the specified table and returns them as model instances.
-        """
-        result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
-        return [entry.get_prompt_request_piece() for entry in result]
-
-    def get_prompt_request_piece_by_memory_labels(
-        self, *, memory_labels: dict[str, str] = {}
-    ) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
-
-        Args:
-            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
-        """
-        try:
-            json_validation = "ISJSON(labels) = 1"
-            json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
-            # Combine both conditions
-            conditions = f"{json_validation} AND {json_conditions}"
-
-            # Create SQL condition using SQLAlchemy's text() with bindparams
-            # for safe parameter passing, preventing SQL injection
-            sql_condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
-
-            entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve {PromptMemoryEntry.__tablename__} "
-                f"with memory labels {memory_labels}. {e}"
-            )
-            return []
 
     def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
@@ -308,7 +266,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def query_entries(
+    def _query_entries(
         self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
     ) -> list[Base]:
         """

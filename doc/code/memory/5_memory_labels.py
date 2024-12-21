@@ -67,7 +67,7 @@ from pyrit.prompt_target import TextTarget
 
 default_values.load_environment_files()
 
-prompts = memory.get_prompt_request_piece_by_memory_labels(memory_labels={"prompt_group": group1})
+prompts = memory.get_prompt_request_pieces(labels={"prompt_group": group1})
 
 # Print original values of queried prompt request pieces (including responses)
 for piece in prompts:

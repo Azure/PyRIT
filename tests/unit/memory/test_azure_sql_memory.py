@@ -148,14 +148,14 @@ def test_query_entries(memory_interface: AzureSQLMemory, sample_conversation_ent
     memory_interface._insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
-    queried_entries = memory_interface.query_entries(PromptMemoryEntry)
+    queried_entries = memory_interface._query_entries(PromptMemoryEntry)
     assert len(queried_entries) == 3
 
     session = memory_interface.get_session()
     session.query.reset_mock()  # type: ignore
 
     # Query entries with a condition
-    memory_interface.query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1")
+    memory_interface._query_entries(PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1")
 
     session.query.return_value.filter.assert_called_once_with(PromptMemoryEntry.conversation_id == "1")  # type: ignore
 
@@ -165,7 +165,7 @@ def test_get_all_memory(memory_interface: AzureSQLMemory, sample_conversation_en
     memory_interface._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
-    all_entries = memory_interface.get_all_prompt_pieces()
+    all_entries = memory_interface.get_prompt_request_pieces()
     assert len(all_entries) == 3
 
 
@@ -270,7 +270,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
         assert all(piece.orchestrator_identifier["id"] == orchestrator1_id for piece in retrieved_entries)
 
         # Extract the actual SQL condition passed to query_entries
-        actual_sql_condition = memory_interface.query_entries.call_args.kwargs["conditions"]  # type: ignore
+        actual_sql_condition = memory_interface._query_entries.call_args.kwargs["conditions"]  # type: ignore
         expected_sql_condition = text(
             "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
         ).bindparams(json_id=orchestrator1_id)
@@ -289,7 +289,7 @@ def test_update_entries(memory_interface: AzureSQLMemory):
     memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = memory_interface.query_entries(
+    entries_to_update = memory_interface._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     memory_interface._update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
@@ -309,7 +309,7 @@ def test_update_entries_empty_update_fields(memory_interface: AzureSQLMemory):
     memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = memory_interface.query_entries(
+    entries_to_update = memory_interface._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     with pytest.raises(ValueError):

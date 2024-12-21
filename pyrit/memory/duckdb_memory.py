@@ -84,50 +84,13 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
-        """
-        Fetches all entries from the specified table and returns them as model instances.
-        """
-        entries = self.query_entries(PromptMemoryEntry)
-        result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-        return result
-
     def get_all_embeddings(self) -> list[EmbeddingDataEntry]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result: list[EmbeddingDataEntry] = self.query_entries(EmbeddingDataEntry)
+        result: list[EmbeddingDataEntry] = self._query_entries(EmbeddingDataEntry)
         return result
 
-
-    def get_prompt_request_piece_by_memory_labels(
-        self, *, memory_labels: dict[str, str] = {}
-    ) -> list[PromptRequestPiece]:
-        """
-
-        TODO delete
-        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
-
-        Args:
-            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
-        """
-        try:
-            conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
-            query_condition = and_(*conditions)
-            entries = self.query_entries(PromptMemoryEntry, conditions=query_condition)
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with memory labels {memory_labels}. {e}"
-            )
-            return []
 
     def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> BooleanClauseList:
         conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
@@ -191,7 +154,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
 
-    def query_entries(
+    def _query_entries(
         self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
     ) -> list[Base]:
         """
@@ -266,7 +229,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         table_models = self.get_all_table_models()
 
         for model in table_models:
-            data = self.query_entries(model)
+            data = self._query_entries(model)
             table_name = model.__tablename__
             file_extension = f".{export_type}"
             file_path = RESULTS_PATH / f"{table_name}{file_extension}"

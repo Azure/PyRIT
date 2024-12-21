@@ -63,8 +63,8 @@ class ScoringOrchestrator(Orchestrator):
         """
         if not memory_labels:
             raise ValueError("Invalid memory_labels: Please provide valid memory labels.")
-        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_piece_by_memory_labels(
-            memory_labels=memory_labels
+        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_pieces(
+            labels=memory_labels
         )
         if not request_pieces:
             raise ValueError("No entries match the provided memory labels. Please check your memory labels.")

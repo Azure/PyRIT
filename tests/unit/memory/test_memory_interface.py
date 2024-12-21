@@ -270,7 +270,7 @@ def test_duplicate_conversation_excluding_last_turn(duckdb_instance: MemoryInter
         ),
     ]
     duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(duckdb_instance.get_all_prompt_pieces()) == 5
+    assert len(duckdb_instance.get_prompt_request_pieces()) == 5
     orchestrator3 = Orchestrator()
 
     new_conversation_id1 = duckdb_instance.duplicate_conversation_excluding_last_turn(
@@ -452,7 +452,7 @@ def test_duplicate_memory_orchestrator_id_collision(duckdb_instance: MemoryInter
         ),
     ]
     duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
-    assert len(duckdb_instance.get_all_prompt_pieces()) == 1
+    assert len(duckdb_instance.get_prompt_request_pieces()) == 1
     with pytest.raises(ValueError):
         duckdb_instance.duplicate_conversation(
             new_orchestrator_id=str(orchestrator1.get_identifier()["id"]),
@@ -1207,7 +1207,7 @@ def test_export_all_conversations_with_scores_file_created(duckdb_instance: Memo
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
             patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
         ):
             file_path = Path(temp_file.name)
@@ -1231,7 +1231,7 @@ def test_export_all_conversations_with_scores_correct_data(duckdb_instance: Memo
 
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
             patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
             patch.object(duckdb_instance.exporter, "export_data") as mock_export_data,
         ):
@@ -1251,7 +1251,7 @@ def test_export_all_conversations_with_scores_empty_data(duckdb_instance: Memory
     expected_data: list = []
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
         with (
-            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get_pieces,
             patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_scores_by_prompt_ids") as mock_get_scores,
             patch.object(duckdb_instance.exporter, "export_data") as mock_export_data,
         ):

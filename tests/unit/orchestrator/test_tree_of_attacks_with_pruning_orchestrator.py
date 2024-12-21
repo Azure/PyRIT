@@ -158,7 +158,7 @@ async def test_run_attack_single_turn_success(
         assert mock_scoring_target.call_count == 2 if on_topic_checking_enabled else 1
 
         # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
-        assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
+        assert len(tap_orchestrator._memory.get_prompt_request_pieces()) == 7 if on_topic_checking_enabled else 6
 
 
 @pytest.mark.asyncio
@@ -215,7 +215,7 @@ async def test_run_attack_max_depth_reached(
         assert mock_scoring_target.call_count == 2 if on_topic_checking_enabled else 1
 
         # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
-        assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
+        assert len(tap_orchestrator._memory.get_prompt_request_pieces()) == 7 if on_topic_checking_enabled else 6
 
 
 @pytest.mark.asyncio
