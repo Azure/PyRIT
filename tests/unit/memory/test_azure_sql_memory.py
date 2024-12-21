@@ -256,7 +256,7 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
     # Mock the query_entries method
     with mock.patch.object(
         memory_interface,
-        "query_entries",
+        "_query_entries",
         return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
     ):
         # Call the method under test
@@ -322,7 +322,7 @@ def test_update_entries_nonexistent_fields(memory_interface):
     memory_interface._insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = memory_interface.query_entries(
+    entries_to_update = memory_interface._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     with pytest.raises(ValueError):

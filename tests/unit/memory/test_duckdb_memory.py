@@ -295,11 +295,11 @@ def test_query_entries(duckdb_instance, sample_conversation_entries):
     duckdb_instance._insert_entries(entries=sample_conversation_entries)
 
     # Query entries without conditions
-    queried_entries = duckdb_instance.query_entries(PromptMemoryEntry)
+    queried_entries = duckdb_instance._query_entries(PromptMemoryEntry)
     assert len(queried_entries) == 3
 
     # Query entries with a condition
-    specific_entry = duckdb_instance.query_entries(
+    specific_entry = duckdb_instance._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "1"
     )
     assert len(specific_entry) == 1
@@ -374,7 +374,7 @@ def test_update_entries(duckdb_instance):
     duckdb_instance._insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = duckdb_instance.query_entries(
+    entries_to_update = duckdb_instance._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     duckdb_instance._update_entries(entries=entries_to_update, update_fields={"original_value": "Updated Hello"})
@@ -394,7 +394,7 @@ def test_update_entries_empty_update_fields(duckdb_instance):
     duckdb_instance._insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = duckdb_instance.query_entries(
+    entries_to_update = duckdb_instance._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     with pytest.raises(ValueError):
@@ -410,7 +410,7 @@ def test_update_entries_nonexistent_fields(duckdb_instance):
     duckdb_instance._insert_entry(entry)
 
     # Fetch the entry to update and update its content
-    entries_to_update = duckdb_instance.query_entries(
+    entries_to_update = duckdb_instance._query_entries(
         PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == "123"
     )
     with pytest.raises(ValueError):
@@ -447,7 +447,7 @@ def test_update_entries_by_conversation_id(duckdb_instance, sample_conversation_
         assert update_result is True  # Ensure the update operation was reported as successful
 
         # Verify that the entries with the specific conversation_id were updated
-        updated_entries = duckdb_instance.query_entries(
+        updated_entries = duckdb_instance._query_entries(
             PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == specific_conversation_id
         )
         for entry in updated_entries:
@@ -485,7 +485,7 @@ def test_update_labels_by_conversation_id(duckdb_instance, sample_conversation_e
         assert update_result is True  # Ensure the update operation was reported as successful
 
         # Verify that the entries with the specific conversation_id were updated
-        updated_entries = duckdb_instance.query_entries(
+        updated_entries = duckdb_instance._query_entries(
             PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == specific_conversation_id
         )
         for entry in updated_entries:
@@ -521,7 +521,7 @@ def test_update_prompt_metadata_by_conversation_id(duckdb_instance, sample_conve
         assert update_result is True  # Ensure the update operation was reported as successful
 
         # Verify that the entries with the specific conversation_id were updated
-        updated_entries = duckdb_instance.query_entries(
+        updated_entries = duckdb_instance._query_entries(
             PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == specific_conversation_id
         )
         for entry in updated_entries:
