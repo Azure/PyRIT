@@ -15,7 +15,6 @@ from openai.types.completion_usage import CompletionUsage
 
 from pyrit.prompt_target import OpenAICompletionTarget
 from unit.mocks import get_sample_conversations
-from unit.mocks import get_memory_interface
 
 
 @pytest.fixture
@@ -40,21 +39,14 @@ def openai_mock_return() -> Completion:
         ),
     )
 
-
 @pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
-
-
-@pytest.fixture
-def azure_completion_target(memory) -> OpenAICompletionTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        return OpenAICompletionTarget(
-            deployment_name="gpt-35-turbo",
-            endpoint="https://mock.azure.com/",
-            api_key="mock-api-key",
-            api_version="some_version",
-        )
+def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:
+    return OpenAICompletionTarget(
+        deployment_name="gpt-35-turbo",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        api_version="some_version",
+    )
 
 
 @pytest.fixture

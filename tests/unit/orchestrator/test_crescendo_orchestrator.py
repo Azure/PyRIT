@@ -16,18 +16,11 @@ from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.models import Score
-from unit.mocks import get_memory_interface
 
 
 @pytest.fixture
-def memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
-
-
-@pytest.fixture
-def mock_target(memory_interface) -> MockPromptTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        return MockPromptTarget()
+def mock_target(patch_central_database) -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 @pytest.fixture
@@ -87,11 +80,10 @@ def false_eval_score() -> Score:
 
 
 @pytest.fixture
-def orchestrator(mock_target: MockPromptTarget, memory_interface: MemoryInterface) -> CrescendoOrchestrator:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        return CrescendoOrchestrator(
-            objective_target=mock_target, adversarial_chat=mock_target, scoring_target=mock_target
-        )
+def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
+    return CrescendoOrchestrator(
+        objective_target=mock_target, adversarial_chat=mock_target, scoring_target=mock_target
+    )
 
 
 @pytest.mark.asyncio
@@ -307,21 +299,19 @@ async def test_no_backtracks_occurred(
 
 
 @pytest.mark.asyncio
-async def test_max_turns_init_exceptions(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        with pytest.raises(ValueError):
-            CrescendoOrchestrator(
-                objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_turns=0
-            )
+async def test_max_turns_init_exceptions():
+    with pytest.raises(ValueError):
+        CrescendoOrchestrator(
+            objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_turns=0
+        )
 
 
 @pytest.mark.asyncio
-async def test_max_backtrack_init_exceptions(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        with pytest.raises(ValueError):
-            CrescendoOrchestrator(
-                objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
-            )
+async def test_max_backtrack_init_exceptions():
+    with pytest.raises(ValueError):
+        CrescendoOrchestrator(
+            objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
+        )
 
 
 @pytest.mark.asyncio
@@ -472,7 +462,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
     objective = "do something extremely bad"
 
     with (
-        patch.object(orchestrator._memory, "get_prompt_request_pieces_by_id", MagicMock(return_value=previous_prompt)),
+        patch.object(orchestrator._memory, "get_prompt_request_pieces", MagicMock(return_value=previous_prompt)),
         patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer,
     ):
 
@@ -598,7 +588,7 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
             orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
         ) as mock_prompt_normalizer,
         patch.object(
-            orchestrator._memory, "get_prompt_request_pieces_by_id", MagicMock(return_value=[objective_score_return])
+            orchestrator._memory, "get_prompt_request_pieces", MagicMock(return_value=[objective_score_return])
         ),
     ):
 

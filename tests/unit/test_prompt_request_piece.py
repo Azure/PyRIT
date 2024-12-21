@@ -3,6 +3,7 @@
 
 import os
 import tempfile
+from typing import Generator
 import uuid
 import pytest
 import time
@@ -12,7 +13,7 @@ from unittest.mock import MagicMock, patch
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse, group_conversation_request_pieces_by_sequence
-from pyrit.models.prompt_request_piece import order_request_pieces_by_conversation
+from pyrit.models.prompt_request_piece import sort_request_pieces
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 from unit.mocks import MockPromptTarget
@@ -24,19 +25,6 @@ from unit.mocks import get_sample_conversations
 @pytest.fixture
 def sample_conversations() -> list[PromptRequestPiece]:
     return get_sample_conversations()
-
-
-@pytest.fixture(scope="function")
-def set_duckdb_in_memory():
-    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    CentralMemory.set_memory_instance(duckdb_in_memory)
-
-
-@pytest.fixture
-def mock_memory_instance():
-    """Fixture to mock CentralMemory.get_memory_instance returning None"""
-    with patch.object(CentralMemory, "get_memory_instance", return_value=None) as mock:
-        yield mock
 
 
 def test_id_set():
@@ -76,7 +64,7 @@ def test_converters_serialize():
     assert converter["__module__"] == "pyrit.prompt_converter.base64_converter"
 
 
-def test_prompt_targets_serialize(mock_memory_instance):
+def test_prompt_targets_serialize(patch_central_database):
     target = MockPromptTarget()
     entry = PromptRequestPiece(
         role="user",
@@ -84,12 +72,12 @@ def test_prompt_targets_serialize(mock_memory_instance):
         converted_value="Hello",
         prompt_target_identifier=target.get_identifier(),
     )
-    assert mock_memory_instance.called
+    assert patch_central_database.called
     assert entry.prompt_target_identifier["__type__"] == "MockPromptTarget"
     assert entry.prompt_target_identifier["__module__"] == "unit.mocks"
 
 
-def test_orchestrators_serialize(mock_memory_instance):
+def test_orchestrators_serialize():
     orchestrator = PromptSendingOrchestrator(objective_target=MagicMock())
 
     entry = PromptRequestPiece(
@@ -105,7 +93,7 @@ def test_orchestrators_serialize(mock_memory_instance):
 
 
 @pytest.mark.asyncio
-async def test_hashes_generated(set_duckdb_in_memory):
+async def test_hashes_generated():
     entry = PromptRequestPiece(
         role="user",
         original_value="Hello1",
@@ -117,7 +105,7 @@ async def test_hashes_generated(set_duckdb_in_memory):
 
 
 @pytest.mark.asyncio
-async def test_hashes_generated_files(set_duckdb_in_memory):
+async def test_hashes_generated_files():
     filename = ""
     with tempfile.NamedTemporaryFile(delete=False) as f:
         filename = f.name
@@ -147,7 +135,7 @@ def test_hashes_generated_files_unknown_type():
         )
 
 
-def test_prompt_response_validate(mock_memory_instance, sample_conversations: list[PromptRequestPiece]):
+def test_prompt_response_validate(sample_conversations: list[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
         c.role = sample_conversations[0].role
@@ -173,7 +161,7 @@ def test_prompt_response_validate_conversation_id_throws(sample_conversations: l
 
 
 def test_prompt_request_response_inconsistent_roles_throws(
-    mock_memory_instance, sample_conversations: list[PromptRequestPiece]
+    sample_conversations: list[PromptRequestPiece]
 ):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
@@ -183,12 +171,12 @@ def test_prompt_request_response_inconsistent_roles_throws(
         request_response.validate()
 
 
-def test_group_conversation_request_pieces_throws(mock_memory_instance, sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces_throws(sample_conversations: list[PromptRequestPiece]):
     with pytest.raises(ValueError, match="Conversation ID must match."):
         group_conversation_request_pieces_by_sequence(sample_conversations)
 
 
-def test_group_conversation_request_pieces(mock_memory_instance, sample_conversations: list[PromptRequestPiece]):
+def test_group_conversation_request_pieces(sample_conversations: list[PromptRequestPiece]):
     convo_group = [
         entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
     ]
@@ -199,7 +187,7 @@ def test_group_conversation_request_pieces(mock_memory_instance, sample_conversa
 
 
 def test_group_conversation_request_pieces_multiple_groups(
-    mock_memory_instance, sample_conversations: list[PromptRequestPiece]
+    sample_conversations: list[PromptRequestPiece]
 ):
     convo_group = [
         entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
@@ -236,7 +224,7 @@ def test_prompt_request_piece_no_roles():
 
 
 @pytest.mark.asyncio
-async def test_prompt_request_piece_sets_original_sha256(set_duckdb_in_memory):
+async def test_prompt_request_piece_sets_original_sha256():
     entry = PromptRequestPiece(
         role="user",
         original_value="Hello",
@@ -248,7 +236,7 @@ async def test_prompt_request_piece_sets_original_sha256(set_duckdb_in_memory):
 
 
 @pytest.mark.asyncio
-async def test_prompt_request_piece_sets_converted_sha256(set_duckdb_in_memory):
+async def test_prompt_request_piece_sets_converted_sha256():
     entry = PromptRequestPiece(
         role="user",
         original_value="Hello",
@@ -312,7 +300,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
         )
     ]
 
-    ordered =  order_request_pieces_by_conversation(pieces)
+    ordered =  sort_request_pieces(pieces)
     assert ordered == expected
 
 
@@ -387,14 +375,14 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
         )
     ]
 
-    assert order_request_pieces_by_conversation(pieces) == expected
+    assert sort_request_pieces(pieces) == expected
 
 def test_order_request_pieces_by_conversation_empty_list():
         pieces = []
         expected = []
-        assert order_request_pieces_by_conversation(pieces) == expected
+        assert sort_request_pieces(pieces) == expected
 
-def test_order_request_pieces_by_conversation_single_message():
+def test_order_request_pieces_by_conversation_single_message(patch_central_database):
     pieces = [
         PromptRequestPiece(
             role="user",
@@ -413,7 +401,7 @@ def test_order_request_pieces_by_conversation_single_message():
         )
     ]
 
-    assert order_request_pieces_by_conversation(pieces) == expected
+    assert sort_request_pieces(pieces) == expected
 
 def test_order_request_pieces_by_conversation_same_timestamp_different_sequences():
     pieces = [
@@ -455,4 +443,4 @@ def test_order_request_pieces_by_conversation_same_timestamp_different_sequences
         )
     ]
 
-    assert order_request_pieces_by_conversation(pieces) == expected
+    assert sort_request_pieces(pieces) == expected

@@ -169,7 +169,7 @@ class PromptRequestPiece(abc.ABC):
         )
 
 
-def order_request_pieces_by_conversation(prompt_pieces: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
+def sort_request_pieces(prompt_pieces: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
     """
     Group by conversation_id.
     Order conversations by the earliest timestamp within each conversation_id.
@@ -180,8 +180,8 @@ def order_request_pieces_by_conversation(prompt_pieces: list[PromptRequestPiece]
     for convo_id in {x.conversation_id for x in prompt_pieces}
     }
 
-    # Sort using the precomputed values
+    # Sort using the precomputed timestamp values, then by sequence
     return sorted(
         prompt_pieces,
-        key=lambda x: (earliest_timestamps[x.conversation_id], x.conversation_id, x.sequence)
+        key=lambda x: (earliest_timestamps[x.conversation_id], x.sequence)
     )

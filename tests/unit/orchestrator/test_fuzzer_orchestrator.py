@@ -9,29 +9,14 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, SeedP
 from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, FuzzerConverter, FuzzerShortenConverter
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
-from pyrit.memory import CentralMemory
 from pyrit.score import Scorer
 from unit.mocks import MockPromptTarget
-from pyrit.memory.memory_interface import MemoryInterface
 import pathlib
 import pytest
-from unit.mocks import get_memory_interface
 
 
 @pytest.fixture
-def memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
-
-
-@pytest.fixture
-def mock_central_memory_instance(memory_interface):
-    """Fixture to mock CentralMemory.get_memory_instance"""
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface) as duck_db_memory:
-        yield duck_db_memory
-
-
-@pytest.fixture
-def scoring_target(mock_central_memory_instance) -> MockPromptTarget:
+def scoring_target() -> MockPromptTarget:
     return MockPromptTarget()
 
 

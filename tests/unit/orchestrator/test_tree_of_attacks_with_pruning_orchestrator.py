@@ -12,30 +12,22 @@ from pyrit.memory import MemoryInterface
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
-from unit.mocks import MockPromptTarget, get_memory_interface
+from unit.mocks import MockPromptTarget
 
 
 @pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
+def objective_target(patch_central_database) -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 @pytest.fixture
-def objective_target(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        return MockPromptTarget()
+def adversarial_chat(patch_central_database) -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 @pytest.fixture
-def adversarial_chat(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        return MockPromptTarget()
-
-
-@pytest.fixture
-def scoring_target(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        return MockPromptTarget()
+def scoring_target() -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 def get_single_line_string(input: str) -> str:

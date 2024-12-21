@@ -324,7 +324,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             )
 
         elif objective_score:
-            eval_score_prompt = self._memory.get_prompt_request_pieces_by_id(
+            eval_score_prompt = self._memory.get_prompt_request_pieces(
                 prompt_ids=[str(objective_score.prompt_request_response_id)]
             )[0].converted_value
 

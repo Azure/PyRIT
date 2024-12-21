@@ -23,23 +23,16 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.models import ChatMessageListDictContent
 
 from unit.mocks import get_image_request_piece
-from unit.mocks import get_memory_interface
 
 
 @pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
-
-
-@pytest.fixture
-def gpt4o_chat_engine(memory) -> OpenAIChatTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        return OpenAIChatTarget(
-            deployment_name="gpt-o",
-            endpoint="https://mock.azure.com/",
-            api_key="mock-api-key",
-            api_version="some_version",
-        )
+def gpt4o_chat_engine() -> OpenAIChatTarget:
+    return OpenAIChatTarget(
+        deployment_name="gpt-o",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        api_version="some_version",
+    )
 
 
 @pytest.fixture
@@ -99,51 +92,46 @@ async def test_complete_chat_async_return(openai_mock_return: ChatCompletion, gp
         assert ret == "hi"
 
 
-def test_init_with_no_env_var_raises(memory: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError):
-                OpenAIChatTarget(
-                    deployment_name="gpt-4",
-                    endpoint="https://mock.azure.com/",
-                    api_key="",
-                    api_version="some_version",
-                )
+def test_init_with_no_env_var_raises():
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAIChatTarget(
+                deployment_name="gpt-4",
+                endpoint="https://mock.azure.com/",
+                api_key="",
+                api_version="some_version",
+            )
 
 
-def test_init_with_no_deployment_var_raises(memory: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError):
-                OpenAIChatTarget()
+def test_init_with_no_deployment_var_raises():
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAIChatTarget()
 
 
-def test_init_with_no_endpoint_uri_var_raises(memory: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError):
-                OpenAIChatTarget(
-                    deployment_name="gpt-4",
-                    endpoint="",
-                    api_key="xxxxx",
-                    api_version="some_version",
-                )
+def test_init_with_no_endpoint_uri_var_raises():
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAIChatTarget(
+                deployment_name="gpt-4",
+                endpoint="",
+                api_key="xxxxx",
+                api_version="some_version",
+            )
 
 
-def test_init_with_no_additional_request_headers_var_raises(memory: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError):
-                OpenAIChatTarget(
-                    deployment_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
-                )
+def test_init_with_no_additional_request_headers_var_raises():
+    with patch.dict(os.environ, {}, clear=True):
+        with pytest.raises(ValueError):
+            OpenAIChatTarget(
+                deployment_name="gpt-4", endpoint="", api_key="xxxxx", api_version="some_version", headers=""
+            )
 
 
 @pytest.mark.asyncio()
-async def test_convert_image_to_data_url_file_not_found(gpt4o_chat_engine: OpenAIChatTarget, memory: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        with pytest.raises(FileNotFoundError):
-            await gpt4o_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
+async def test_convert_image_to_data_url_file_not_found(gpt4o_chat_engine: OpenAIChatTarget):
+    with pytest.raises(FileNotFoundError):
+        await gpt4o_chat_engine._convert_local_image_to_data_url("nonexistent.jpg")
 
 
 @pytest.mark.asyncio()
@@ -175,8 +163,6 @@ async def test_convert_image_to_data_url_success(
     mock_serializer_instance = MagicMock()
     mock_serializer_instance.read_data_base64 = AsyncMock(return_value="encoded_base64_string")
     mock_serializer_class.return_value = mock_serializer_instance
-    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    mock_serializer_class._memory = duckdb_in_memory
 
     assert os.path.exists(tmp_file_name)
 

@@ -16,7 +16,7 @@ from pyrit.common.path import RESULTS_PATH
 from pyrit.models import (
     ChatMessage,
     group_conversation_request_pieces_by_sequence,
-    order_request_pieces_by_conversation,
+    sort_request_pieces,
     PromptRequestResponse,
     PromptRequestPiece,
     Score,
@@ -96,8 +96,6 @@ class MemoryInterface(abc.ABC):
     def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
         """
         Returns a condition to retrieve based on orchestrator ID.
-
-        TODO TODO 
         """
 
     @abc.abstractmethod
@@ -158,7 +156,7 @@ class MemoryInterface(abc.ABC):
         for score in scores:
             if score.prompt_request_response_id:
                 prompt_request_response_id = score.prompt_request_response_id
-                prompt_piece = self.get_prompt_request_pieces_by_id(prompt_ids=[str(prompt_request_response_id)])
+                prompt_piece = self.get_prompt_request_pieces(prompt_ids=[str(prompt_request_response_id)])
                 if not prompt_piece:
                     logging.error(f"Prompt with ID {prompt_request_response_id} not found in memory.")
                     continue
@@ -171,7 +169,7 @@ class MemoryInterface(abc.ABC):
         """
         Gets a list of scores based on prompt_request_response_ids.
         """
-        prompt_pieces = self.get_prompt_request_pieces_by_id(prompt_ids=prompt_request_response_ids)
+        prompt_pieces = self.get_prompt_request_pieces(prompt_ids=prompt_request_response_ids)
         # Get the original prompt IDs from the prompt pieces so correct scores can be obtained
         prompt_request_response_ids = [str(piece.original_prompt_id) for piece in prompt_pieces]
         entries = self.query_entries(
@@ -273,23 +271,11 @@ class MemoryInterface(abc.ABC):
                 conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
             prompt_pieces = [memory_entry.get_prompt_request_piece() for memory_entry in memory_entries]
-            return order_request_pieces_by_conversation(prompt_pieces=prompt_pieces)
+            return sort_request_pieces(prompt_pieces=prompt_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
             return []
 
-
-    @abc.abstractmethod
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
-
-        Args:
-            prompt_ids (list[int]): The prompt IDs to match.
-
-        Returns:
-            Sequence[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
-        """
 
     def get_prompt_request_piece_by_memory_labels(
         self, *, memory_labels: dict[str, str] = {}

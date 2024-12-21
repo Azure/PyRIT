@@ -24,7 +24,7 @@ async def test_score_prompts_by_request_id_async(sample_conversations: list[Prom
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-        memory.get_prompt_request_pieces_by_id.return_value = sample_conversations
+        memory.get_prompt_request_pieces.return_value = sample_conversations
 
         scorer = SubStringScorer(substring="test", category="test")
         scorer.score_async = AsyncMock()  # type: ignore

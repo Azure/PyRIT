@@ -238,29 +238,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         result: list[PromptMemoryEntry] = self.query_entries(PromptMemoryEntry)
         return [entry.get_prompt_request_piece() for entry in result]
 
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
-
-        Args:
-            prompt_ids (list[str]): The prompt IDs to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
-            )
-            return []
-
     def get_prompt_request_piece_by_memory_labels(
         self, *, memory_labels: dict[str, str] = {}
     ) -> list[PromptRequestPiece]:

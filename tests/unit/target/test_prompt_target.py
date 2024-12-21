@@ -14,13 +14,8 @@ from pyrit.models import PromptRequestResponse, PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
-from unit.mocks import get_memory_interface
 from unit.mocks import get_sample_conversations
 
-
-@pytest.fixture
-def memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
 
 
 @pytest.fixture
@@ -47,19 +42,12 @@ def openai_mock_return() -> ChatCompletion:
 
 
 @pytest.fixture
-def chat_completion_engine(memory_interface: MemoryInterface) -> OpenAIChatTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        return OpenAIChatTarget(deployment_name="test", endpoint="test", api_key="test")
-
-
-@pytest.fixture
-def azure_openai_target(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        return OpenAIChatTarget(
-            deployment_name="test",
-            endpoint="test",
-            api_key="test",
-        )
+def azure_openai_target(patch_central_database):
+    return OpenAIChatTarget(
+        deployment_name="test",
+        endpoint="test",
+        api_key="test",
+    )
 
 
 def test_set_system_prompt(azure_openai_target: OpenAIChatTarget):

@@ -87,7 +87,7 @@ class ScoringOrchestrator(Orchestrator):
         Scores prompts using the Scorer for prompts with the prompt_ids
         """
         request_pieces: Sequence[PromptRequestPiece] = []
-        request_pieces = self._memory.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
+        request_pieces = self._memory.get_prompt_request_pieces(prompt_ids=prompt_ids)
 
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)

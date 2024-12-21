@@ -8,12 +8,7 @@ import pytest
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
-from unit.mocks import get_memory_interface
 
-
-@pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
 
 
 @pytest.mark.asyncio
@@ -25,20 +20,18 @@ def memory() -> Generator[MemoryInterface, None, None]:
         "![][image_ref_a32ff4ads]",
     ],
 )
-async def test_md_injection_detected(text: str, memory: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        scorer = MarkdownInjectionScorer()
-        score = (await scorer.score_text_async(text))[0]
-        assert score.get_value() is True
+async def test_md_injection_detected(text: str, patch_central_database):
+    scorer = MarkdownInjectionScorer()
+    score = (await scorer.score_text_async(text))[0]
+    assert score.get_value() is True
 
 
 @pytest.mark.asyncio
-async def test_md_injection_not_detected(memory: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        classifier = MarkdownInjectionScorer()
-        text = "this is a test"
-        score = await classifier.score_text_async(text)
-        assert score[0].get_value() is False
+async def test_md_injection_not_detected(patch_central_database):
+    classifier = MarkdownInjectionScorer()
+    text = "this is a test"
+    score = await classifier.score_text_async(text)
+    assert score[0].get_value() is False
 
 
 @pytest.mark.asyncio

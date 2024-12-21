@@ -16,8 +16,6 @@ from pyrit.models import PromptRequestPiece
 from pyrit.models import PromptRequestResponse
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 
-from unit.mocks import get_memory_interface
-
 
 @pytest.fixture
 def scorer_category_response_bullying() -> PromptRequestResponse:
@@ -53,93 +51,88 @@ def scorer_category_response_false() -> PromptRequestResponse:
     return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
 
 
-@pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
 
 
 def test_category_scorer_set_no_category_found():
     chat_target = MagicMock()
-    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        scorer = SelfAskCategoryScorer(
-            chat_target=chat_target,
-            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        )
+    scorer = SelfAskCategoryScorer(
+        chat_target=chat_target,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+    )
 
-        # assert that the category content was loaded into system prompt
-        assert scorer._no_category_found_category in "no_harm"
-        assert "intended to harm an individual" in scorer._system_prompt
+    # assert that the category content was loaded into system prompt
+    assert scorer._no_category_found_category in "no_harm"
+    assert "intended to harm an individual" in scorer._system_prompt
 
 
 @pytest.mark.asyncio
 async def test_category_scorer_set_system_prompt(
-    memory: MemoryInterface, scorer_category_response_bullying: PromptRequestResponse
+    scorer_category_response_bullying: PromptRequestResponse,
+    patch_central_database
 ):
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_bullying)
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        scorer = SelfAskCategoryScorer(
-            chat_target=chat_target,
-            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        )
+    scorer = SelfAskCategoryScorer(
+        chat_target=chat_target,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+    )
 
-        await scorer.score_text_async("this has a lot of bullying")
+    await scorer.score_text_async("this has a lot of bullying")
 
-        chat_target.set_system_prompt.assert_called_once()
+    chat_target.set_system_prompt.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_category_scorer_score(memory: MemoryInterface, scorer_category_response_bullying: PromptRequestResponse):
+async def test_category_scorer_score(scorer_category_response_bullying: PromptRequestResponse, patch_central_database):
 
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_bullying)
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-        scorer = SelfAskCategoryScorer(
-            chat_target=chat_target,
-            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        )
+    scorer = SelfAskCategoryScorer(
+        chat_target=chat_target,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+    )
 
-        score = await scorer.score_text_async("this has a lot of bullying")
+    score = await scorer.score_text_async("this has a lot of bullying")
 
-        assert len(score) == 1
+    assert len(score) == 1
 
-        assert score[0].score_value == "True"
-        assert "contains bullying" in score[0].score_rationale
-        assert score[0].score_type == "true_false"
-        assert score[0].score_category == "bullying"
-        assert score[0].prompt_request_response_id is None
+    assert score[0].score_value == "True"
+    assert "contains bullying" in score[0].score_rationale
+    assert score[0].score_type == "true_false"
+    assert score[0].score_category == "bullying"
+    assert score[0].prompt_request_response_id is None
 
 
 @pytest.mark.asyncio
 async def test_category_scorer_score_false(
-    memory: MemoryInterface, scorer_category_response_false: PromptRequestResponse
+    scorer_category_response_false: PromptRequestResponse,
+    patch_central_database
 ):
 
     chat_target = MagicMock()
 
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_false)
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
 
-        scorer = SelfAskCategoryScorer(
-            chat_target=chat_target,
-            content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        )
+    scorer = SelfAskCategoryScorer(
+        chat_target=chat_target,
+        content_classifier=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
+    )
 
-        score = await scorer.score_text_async("this has no bullying")
+    score = await scorer.score_text_async("this has no bullying")
 
-        assert len(score) == 1
+    assert len(score) == 1
 
-        assert score[0].score_value == "False"
-        assert score[0].score_type == "true_false"
-        assert score[0].score_category == "no_harm"
-        assert score[0].prompt_request_response_id is None
+    assert score[0].score_value == "False"
+    assert score[0].score_type == "true_false"
+    assert score[0].score_category == "no_harm"
+    assert score[0].prompt_request_response_id is None
 
 
 @pytest.mark.asyncio
-async def test_category_scorer_adds_to_memory(scorer_category_response_false: PromptRequestResponse):
+async def test_category_scorer_adds_to_memory(scorer_category_response_false: PromptRequestResponse, patch_central_database):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_false)
@@ -156,7 +149,7 @@ async def test_category_scorer_adds_to_memory(scorer_category_response_false: Pr
 
 
 @pytest.mark.asyncio
-async def test_self_ask_objective_scorer_bad_json_exception_retries():
+async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_central_database):
 
     chat_target = MagicMock()
 
@@ -177,7 +170,7 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries():
 
 
 @pytest.mark.asyncio
-async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
+async def test_self_ask_objective_scorer_json_missing_key_exception_retries(patch_central_database):
 
     chat_target = MagicMock()
 
@@ -213,7 +206,7 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries():
 @pytest.mark.parametrize("max_requests_per_minute", [None, 10])
 @pytest.mark.parametrize("batch_size", [1, 10])
 async def test_score_prompts_batch_async(
-    max_requests_per_minute: int, batch_size: int, scorer_category_response_false: PromptRequestResponse
+    max_requests_per_minute: int, batch_size: int, scorer_category_response_false: PromptRequestResponse, patch_central_database
 ):
     chat_target = AsyncMock()
     chat_target._max_requests_per_minute = max_requests_per_minute

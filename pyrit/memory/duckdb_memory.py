@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import MutableSequence, Optional, Sequence, Union
 import logging
 
-from sqlalchemy import BooleanClauseList, create_engine, MetaData, and_
+from sqlalchemy import BooleanClauseList, create_engine, MetaData, and_, inspect, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -99,29 +99,6 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         result: list[EmbeddingDataEntry] = self.query_entries(EmbeddingDataEntry)
         return result
 
-
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
-
-        Args:
-            prompt_ids (list[str]): The prompt IDs to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified prompt ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
-            )
-            return []
 
     def get_prompt_request_piece_by_memory_labels(
         self, *, memory_labels: dict[str, str] = {}

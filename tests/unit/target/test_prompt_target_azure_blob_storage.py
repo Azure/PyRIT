@@ -13,13 +13,7 @@ from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import AzureBlobStorageTarget
 
-from unit.mocks import get_memory_interface
 from unit.mocks import get_sample_conversations
-
-
-@pytest.fixture
-def memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
 
 
 @pytest.fixture
@@ -28,12 +22,11 @@ def sample_entries() -> list[PromptRequestPiece]:
 
 
 @pytest.fixture
-def azure_blob_storage_target(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        return AzureBlobStorageTarget(
-            container_url="https://test.blob.core.windows.net/test",
-            sas_token="valid_sas_token",
-        )
+def azure_blob_storage_target(patch_central_database):
+    return AzureBlobStorageTarget(
+        container_url="https://test.blob.core.windows.net/test",
+        sas_token="valid_sas_token",
+    )
 
 
 def test_initialization_with_required_parameters(azure_blob_storage_target: AzureBlobStorageTarget):
@@ -42,17 +35,16 @@ def test_initialization_with_required_parameters(azure_blob_storage_target: Azur
     assert azure_blob_storage_target._sas_token == "valid_sas_token"
 
 
-def test_initialization_with_required_parameters_from_env(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = (
-            "https://test.blob.core.windows.net/test"
-        )
-        os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
-        abs_target = AzureBlobStorageTarget()
-        assert (
-            abs_target._container_url == os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
-        )
-        assert abs_target._sas_token is None
+def test_initialization_with_required_parameters_from_env():
+    os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = (
+        "https://test.blob.core.windows.net/test"
+    )
+    os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
+    abs_target = AzureBlobStorageTarget()
+    assert (
+        abs_target._container_url == os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
+    )
+    assert abs_target._sas_token is None
 
 
 @patch.dict(
@@ -61,11 +53,10 @@ def test_initialization_with_required_parameters_from_env(memory_interface: Memo
         AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: "",
     },
 )
-def test_initialization_with_no_container_url_raises(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = ""
-        with pytest.raises(ValueError):
-            AzureBlobStorageTarget()
+def test_initialization_with_no_container_url_raises():
+    os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE] = ""
+    with pytest.raises(ValueError):
+        AzureBlobStorageTarget()
 
 
 @patch("azure.storage.blob.aio.ContainerClient.upload_blob")

@@ -75,7 +75,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
     print(f"Elapsed time for operation: {end-start}")
 
     for score in scores:
-        prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
+        prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
             0
         ].original_value
         print(f"{score} : {prompt_text}")
@@ -97,7 +97,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
     print(f"Elapsed time for operation: {end-start}")
 
     for score in scores:
-        prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
+        prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
             0
         ].original_value
         print(f"{score} : {prompt_text}")
