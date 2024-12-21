@@ -1,20 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
-import uuid
 import os
-import pytest
+import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from openai import BadRequestError, RateLimitError
-from unittest.mock import patch, MagicMock, AsyncMock
+from unit.mocks import get_sample_conversations
 
 from pyrit.exceptions.exception_classes import EmptyResponseException
 from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIDALLETarget
-from unit.mocks import get_sample_conversations
+
 
 @pytest.fixture
 def dalle_target() -> OpenAIDALLETarget:
@@ -48,9 +47,7 @@ def test_initialization_invalid_num_images():
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async(
-    dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece]
-):
+async def test_send_prompt_async(dalle_target: OpenAIDALLETarget, sample_conversations: list[PromptRequestPiece]):
     request = sample_conversations[0]
     with patch(
         "pyrit.prompt_target.openai.openai_dall_e_target.OpenAIDALLETarget._generate_image_response_async",

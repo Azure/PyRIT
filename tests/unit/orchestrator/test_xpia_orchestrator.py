@@ -1,21 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyrit.memory import CentralMemory
-from pyrit.score import Scorer
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import Score
-from pyrit.orchestrator import (
-    XPIATestOrchestrator,
-    XPIAOrchestrator,
-    XPIAManualProcessingOrchestrator,
-)
-from unit.mocks import  MockPromptTarget
+import pytest
+from unit.mocks import MockPromptTarget
 
+from pyrit.models import Score
+from pyrit.orchestrator import XPIAManualProcessingOrchestrator, XPIAOrchestrator, XPIATestOrchestrator
+from pyrit.score import Scorer
 
 
 @pytest.fixture
@@ -116,9 +109,7 @@ async def test_xpia_orchestrator_execute_with_memory_labels(
 
 @pytest.mark.asyncio
 @patch.object(XPIAManualProcessingOrchestrator, "_input_async", new_callable=AsyncMock, return_value="test")
-async def test_xpia_manual_processing_orchestrator_execute(
-    mock_input_async, attack_setup_target, success_scorer
-):
+async def test_xpia_manual_processing_orchestrator_execute(mock_input_async, attack_setup_target, success_scorer):
     xpia_orchestrator = XPIAManualProcessingOrchestrator(
         attack_content="test",
         attack_setup_target=attack_setup_target,
@@ -182,9 +173,7 @@ async def test_xpia_test_orchestrator_execute(attack_setup_target, processing_ta
 
 
 @pytest.mark.asyncio
-async def test_xpia_orchestrator_process_async(
-    attack_setup_target, processing_target, success_scorer
-):
+async def test_xpia_orchestrator_process_async(attack_setup_target, processing_target, success_scorer):
     with patch.object(processing_target, "send_prompt_async") as mock_send_to_processing_target:
         with patch.object(
             XPIATestOrchestrator,

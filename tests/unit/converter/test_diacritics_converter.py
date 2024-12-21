@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import pytest
+
 from pyrit.prompt_converter import ConverterResult
 from pyrit.prompt_converter.diacritic_converter import DiacriticConverter
 

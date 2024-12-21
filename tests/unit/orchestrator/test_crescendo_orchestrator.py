@@ -2,20 +2,16 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
-
 from pathlib import Path
-from pyrit.memory.memory_interface import MemoryInterface
-from unit.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from unit.mocks import MockPromptTarget
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import InvalidJsonException
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import CrescendoOrchestrator
-from pyrit.models import Score
 
 
 @pytest.fixture
@@ -81,9 +77,7 @@ def false_eval_score() -> Score:
 
 @pytest.fixture
 def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
-    return CrescendoOrchestrator(
-        objective_target=mock_target, adversarial_chat=mock_target, scoring_target=mock_target
-    )
+    return CrescendoOrchestrator(objective_target=mock_target, adversarial_chat=mock_target, scoring_target=mock_target)
 
 
 @pytest.mark.asyncio

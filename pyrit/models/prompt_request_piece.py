@@ -5,14 +5,12 @@ from __future__ import annotations
 
 import abc
 import uuid
-
 from datetime import datetime
-from typing import Dict, List, Optional, Literal, get_args
+from typing import Dict, List, Literal, Optional, get_args
 from uuid import uuid4
 
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
-
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
@@ -53,7 +51,7 @@ class PromptRequestPiece(abc.ABC):
         role: ChatMessageRole,
         original_value: str,
         converted_value: Optional[str] = None,
-        id: Optional[uuid.UUID] = None,
+        id: Optional[uuid.UUID | str] = None,
         conversation_id: Optional[str] = None,
         sequence: int = -1,
         labels: Optional[Dict[str, str]] = None,
@@ -153,19 +151,19 @@ class PromptRequestPiece(abc.ABC):
 
     __repr__ = __str__
 
-    def __eq__(self, other: PromptRequestPiece) -> bool:
+    def __eq__(self, other) -> bool:
         return (
-            self.id == other.id and
-            self.role == other.role and
-            self.original_value == other.original_value and
-            self.original_value_data_type == other.original_value_data_type and
-            self.original_value_sha256 == other.original_value_sha256 and
-            self.converted_value == other.converted_value and
-            self.converted_value_data_type == other.converted_value_data_type and
-            self.converted_value_sha256 == other.converted_value_sha256 and
-            self.conversation_id == other.conversation_id and
-            self.timestamp == other.timestamp and
-            self.sequence == other.sequence
+            self.id == other.id
+            and self.role == other.role
+            and self.original_value == other.original_value
+            and self.original_value_data_type == other.original_value_data_type
+            and self.original_value_sha256 == other.original_value_sha256
+            and self.converted_value == other.converted_value
+            and self.converted_value_data_type == other.converted_value_data_type
+            and self.converted_value_sha256 == other.converted_value_sha256
+            and self.conversation_id == other.conversation_id
+            and self.timestamp == other.timestamp
+            and self.sequence == other.sequence
         )
 
 
@@ -176,12 +174,9 @@ def sort_request_pieces(prompt_pieces: list[PromptRequestPiece]) -> list[PromptR
     Within each conversation, order messages by sequence.
     """
     earliest_timestamps = {
-    convo_id: min(x.timestamp for x in prompt_pieces if x.conversation_id == convo_id)
-    for convo_id in {x.conversation_id for x in prompt_pieces}
+        convo_id: min(x.timestamp for x in prompt_pieces if x.conversation_id == convo_id)
+        for convo_id in {x.conversation_id for x in prompt_pieces}
     }
 
     # Sort using the precomputed timestamp values, then by sequence
-    return sorted(
-        prompt_pieces,
-        key=lambda x: (earliest_timestamps[x.conversation_id], x.sequence)
-    )
+    return sorted(prompt_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.sequence))

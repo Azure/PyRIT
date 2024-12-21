@@ -2,18 +2,14 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from unit.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, patch
 
-from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
-from pyrit.prompt_converter import PersuasionConverter
+import pytest
+from unit.mocks import MockPromptTarget
 
+from pyrit.exceptions.exception_classes import InvalidJsonException
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_converter import PersuasionConverter
 
 
 def test_prompt_persuasion_init_authority_endorsement_template_not_null():
@@ -32,9 +28,7 @@ def test_prompt_persuasion_init_evidence_based_template_not_null():
 
 def test_prompt_persuasion_init_expert_endorsement_template_not_null():
     prompt_target = MockPromptTarget()
-    prompt_persuasion = PersuasionConverter(
-        converter_target=prompt_target, persuasion_technique="expert_endorsement"
-    )
+    prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="expert_endorsement")
     assert prompt_persuasion.system_prompt
 
 
@@ -46,9 +40,7 @@ def test_prompt_persuasion_init_logical_appeal_template_not_null():
 
 def test_prompt_persuasion_init_misrepresentation_template_not_null():
     prompt_target = MockPromptTarget()
-    prompt_persuasion = PersuasionConverter(
-        converter_target=prompt_target, persuasion_technique="misrepresentation"
-    )
+    prompt_persuasion = PersuasionConverter(converter_target=prompt_target, persuasion_technique="misrepresentation")
     assert prompt_persuasion.system_prompt
 
 
@@ -60,9 +52,7 @@ def test_prompt_persuasion_init_misrepresentation_template_not_null():
         "{'str' : 'json not formatted correctly'}",
     ],
 )
-async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(
-    converted_value
-):
+async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(converted_value):
 
     prompt_target = MockPromptTarget()
 

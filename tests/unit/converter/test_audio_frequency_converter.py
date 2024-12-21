@@ -2,14 +2,13 @@
 # Licensed under the MIT license.
 
 
-import pytest
 import os
 import tempfile
 
 import numpy as np
+import pytest
 from scipy.io import wavfile
 
-from pyrit.memory import MemoryInterface
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 
 

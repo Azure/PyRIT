@@ -2,18 +2,15 @@
 # Licensed under the MIT license.
 
 import os
+from textwrap import dedent
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-from textwrap import dedent
-from typing import Generator
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 
 
@@ -51,8 +48,6 @@ def scorer_category_response_false() -> PromptRequestResponse:
     return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
 
 
-
-
 def test_category_scorer_set_no_category_found():
     chat_target = MagicMock()
     scorer = SelfAskCategoryScorer(
@@ -67,8 +62,7 @@ def test_category_scorer_set_no_category_found():
 
 @pytest.mark.asyncio
 async def test_category_scorer_set_system_prompt(
-    scorer_category_response_bullying: PromptRequestResponse,
-    patch_central_database
+    scorer_category_response_bullying: PromptRequestResponse, patch_central_database
 ):
     chat_target = MagicMock()
 
@@ -108,8 +102,7 @@ async def test_category_scorer_score(scorer_category_response_bullying: PromptRe
 
 @pytest.mark.asyncio
 async def test_category_scorer_score_false(
-    scorer_category_response_false: PromptRequestResponse,
-    patch_central_database
+    scorer_category_response_false: PromptRequestResponse, patch_central_database
 ):
 
     chat_target = MagicMock()
@@ -132,7 +125,9 @@ async def test_category_scorer_score_false(
 
 
 @pytest.mark.asyncio
-async def test_category_scorer_adds_to_memory(scorer_category_response_false: PromptRequestResponse, patch_central_database):
+async def test_category_scorer_adds_to_memory(
+    scorer_category_response_false: PromptRequestResponse, patch_central_database
+):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_category_response_false)
@@ -206,7 +201,10 @@ async def test_self_ask_objective_scorer_json_missing_key_exception_retries(patc
 @pytest.mark.parametrize("max_requests_per_minute", [None, 10])
 @pytest.mark.parametrize("batch_size", [1, 10])
 async def test_score_prompts_batch_async(
-    max_requests_per_minute: int, batch_size: int, scorer_category_response_false: PromptRequestResponse, patch_central_database
+    max_requests_per_minute: int,
+    batch_size: int,
+    scorer_category_response_false: PromptRequestResponse,
+    patch_central_database,
 ):
     chat_target = AsyncMock()
     chat_target._max_requests_per_minute = max_requests_per_minute

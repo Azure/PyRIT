@@ -2,18 +2,14 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
-
 from unittest.mock import AsyncMock, patch
-from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 
-from pyrit.memory import MemoryInterface
-from pyrit.memory.central_memory import CentralMemory
+import pytest
+from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
+from unit.mocks import get_sample_conversations
+
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import AzureBlobStorageTarget
-
-from unit.mocks import get_sample_conversations
 
 
 @pytest.fixture
@@ -41,9 +37,7 @@ def test_initialization_with_required_parameters_from_env():
     )
     os.environ[AzureBlobStorageTarget.SAS_TOKEN_ENVIRONMENT_VARIABLE] = "valid_sas_token"
     abs_target = AzureBlobStorageTarget()
-    assert (
-        abs_target._container_url == os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
-    )
+    assert abs_target._container_url == os.environ[AzureBlobStorageTarget.AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE]
     assert abs_target._sas_token is None
 
 

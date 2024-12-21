@@ -1,30 +1,25 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
-from httpx import HTTPStatusError
-from openai import RateLimitError
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from httpx import HTTPStatusError
+from openai import RateLimitError
+from unit.mocks import get_sample_conversations
 
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
-from pyrit.memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAITTSTarget
-
 from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
-from unit.mocks import get_sample_conversations
 
 
 @pytest.fixture
 def sample_conversations() -> list[PromptRequestPiece]:
     return get_sample_conversations()
-
 
 
 @pytest.fixture

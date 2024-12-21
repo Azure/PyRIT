@@ -2,13 +2,13 @@
 # Licensed under the MIT license.
 
 import logging
-from openai import NotGiven, NOT_GIVEN
-from openai.types.completion import Completion
 from typing import Optional
 
-from pyrit.models import PromptResponse, PromptRequestResponse, construct_response_from_request
-from pyrit.prompt_target import limit_requests_per_minute, OpenAITarget
+from openai import NOT_GIVEN, NotGiven
+from openai.types.completion import Completion
 
+from pyrit.models import PromptRequestResponse, PromptResponse, construct_response_from_request
+from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 

@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import MagicMock
 
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.analytics.conversation_analytics import ConversationAnalytics
-from pyrit.memory.memory_models import EmbeddingDataEntry
-
+import pytest
 from unit.mocks import get_sample_conversation_entries
+
+from pyrit.analytics.conversation_analytics import ConversationAnalytics
+from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.memory.memory_models import EmbeddingDataEntry
 
 
 @pytest.fixture

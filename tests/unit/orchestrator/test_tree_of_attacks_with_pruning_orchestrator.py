@@ -2,17 +2,14 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-import pytest
-
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
+import pytest
 from unit.mocks import MockPromptTarget
+
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
 
 
 @pytest.fixture

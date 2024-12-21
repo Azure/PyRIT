@@ -1,14 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.score.markdown_injection import MarkdownInjectionScorer
-
 
 
 @pytest.mark.asyncio

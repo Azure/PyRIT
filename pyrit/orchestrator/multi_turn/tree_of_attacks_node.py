@@ -5,16 +5,15 @@ from __future__ import annotations
 
 import json
 import logging
-
-from typing import Optional
 import uuid
+from typing import Optional
 
 from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
-from pyrit.memory import MemoryInterface, CentralMemory
+from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)

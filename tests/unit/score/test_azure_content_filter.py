@@ -2,17 +2,16 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
-
 from unittest.mock import MagicMock, patch
+
+import pytest
+from azure.ai.contentsafety.models import TextCategory
 from unit.mocks import get_audio_request_piece, get_image_request_piece, get_test_request_piece
 
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory import CentralMemory
+from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.score.azure_content_filter_scorer import AzureContentFilterScorer
-from azure.ai.contentsafety.models import TextCategory
 
 
 @pytest.fixture
@@ -31,9 +30,7 @@ def text_request_piece() -> PromptRequestPiece:
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_audio(
-    audio_request_piece: PromptRequestPiece
-):
+async def test_azure_content_filter_scorer_validate_audio(audio_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
     with pytest.raises(ValueError, match="Azure Content Filter Scorer only supports text and image_path data type"):
         await scorer.validate(audio_request_piece)
@@ -42,9 +39,7 @@ async def test_azure_content_filter_scorer_validate_audio(
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_image(
-    image_request_piece: PromptRequestPiece
-):
+async def test_azure_content_filter_scorer_validate_image(image_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
 
     # should not raise an error
@@ -54,9 +49,7 @@ async def test_azure_content_filter_scorer_validate_image(
 
 
 @pytest.mark.asyncio
-async def test_azure_content_filter_scorer_validate_text(
-    text_request_piece: PromptRequestPiece
-):
+async def test_azure_content_filter_scorer_validate_text(text_request_piece: PromptRequestPiece):
     scorer = AzureContentFilterScorer(api_key="foo", endpoint="bar", harm_categories=[TextCategory.HATE])
 
     # should not raise an error

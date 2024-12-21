@@ -3,23 +3,20 @@
 
 import os
 import uuid
-
 from typing import Generator
 from unittest import mock
 
 import pytest
-
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
-
 from sqlalchemy import text
+from unit.mocks import get_azure_sql_memory, get_sample_conversation_entries
+
 from pyrit.memory import AzureSQLMemory
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingDataEntry
+from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
-from unit.mocks import get_azure_sql_memory
-from unit.mocks import get_sample_conversation_entries
 
 
 @pytest.fixture

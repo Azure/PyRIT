@@ -2,17 +2,16 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import Generator, Optional
+from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from pyrit.exceptions.exception_classes import PyritException
-from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
-from pyrit.score import GandalfScorer
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import GandalfLevel
+from pyrit.score import GandalfScorer
 
 
 def generate_password_extraction_response(
@@ -51,7 +50,9 @@ def generate_request(conversation_id: Optional[str] = None) -> PromptRequestResp
 @pytest.mark.parametrize("password_correct", [True, False])
 @pytest.mark.parametrize("level", [GandalfLevel.LEVEL_1, GandalfLevel.LEVEL_2, GandalfLevel.LEVEL_3])
 @pytest.mark.asyncio
-async def test_gandalf_scorer_score(mocked_post, duckdb_instance: MemoryInterface, level: GandalfLevel, password_correct: bool):
+async def test_gandalf_scorer_score(
+    mocked_post, duckdb_instance: MemoryInterface, level: GandalfLevel, password_correct: bool
+):
     chat_target = MagicMock()
 
     conversation_id = str(uuid.uuid4())
@@ -120,9 +121,7 @@ async def test_gandalf_scorer_adds_to_memory(level: GandalfLevel, duckdb_instanc
 
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=response)
-    with patch.object(
-        duckdb_instance, "get_prompt_request_pieces", return_value=[generated_request.request_pieces[0]]
-    ):
+    with patch.object(duckdb_instance, "get_prompt_request_pieces", return_value=[generated_request.request_pieces[0]]):
         scorer = GandalfScorer(level=level, chat_target=chat_target)
 
         await scorer.score_async(response.request_pieces[0])

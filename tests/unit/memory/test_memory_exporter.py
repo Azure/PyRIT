@@ -3,13 +3,13 @@
 
 import csv
 import json
+
 import pytest
+from sqlalchemy.inspection import inspect
+from unit.mocks import get_sample_conversation_entries
 
 from pyrit.memory.memory_exporter import MemoryExporter
 from pyrit.memory.memory_models import PromptMemoryEntry
-
-from sqlalchemy.inspection import inspect
-from unit.mocks import get_sample_conversation_entries
 
 
 @pytest.fixture

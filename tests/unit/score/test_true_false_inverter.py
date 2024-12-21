@@ -2,25 +2,20 @@
 # Licensed under the MIT license.
 
 import os
-import pytest
-
-from typing import Generator
 from unittest.mock import MagicMock, patch
 
+import pytest
+from unit.mocks import get_image_request_piece
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
-
-
 from pyrit.score import SubStringScorer, TrueFalseInverterScorer
-from unit.mocks import get_image_request_piece
 
 
 @pytest.fixture
 def image_request_piece() -> PromptRequestPiece:
     return get_image_request_piece()
-
 
 
 @pytest.mark.asyncio

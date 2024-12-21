@@ -31,10 +31,10 @@
 # %%
 import logging
 
+from pyrit.common import default_values
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RTOSystemPromptPaths
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
-from pyrit.common import default_values
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 default_values.load_environment_files()
@@ -150,12 +150,12 @@ with RedTeamingOrchestrator(
 import logging
 import os
 
+from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RTOSystemPromptPaths
 from pyrit.prompt_converter import EmojiConverter
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.common import default_values
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 default_values.load_environment_files()
@@ -202,12 +202,11 @@ with RedTeamingOrchestrator(
 # %%
 import logging
 
-from pyrit.common.path import DATASETS_PATH
-from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
+from pyrit.common.path import DATASETS_PATH
+from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
-
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
 logging.basicConfig(level=logging.WARNING)
 

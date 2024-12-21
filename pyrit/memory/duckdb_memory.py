@@ -1,21 +1,21 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
+from contextlib import closing
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence, Union
-import logging
 
-from sqlalchemy import BooleanClauseList, create_engine, MetaData, and_, inspect, text
+from sqlalchemy import MetaData, and_, create_engine
+from sqlalchemy.engine.base import Engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.engine.base import Engine
-from contextlib import closing
 
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
+from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.models import DiskStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
@@ -91,8 +91,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         result: list[EmbeddingDataEntry] = self._query_entries(EmbeddingDataEntry)
         return result
 
-
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> BooleanClauseList:
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]):
         conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
         return and_(*conditions)
 

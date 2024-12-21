@@ -1,11 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 import tempfile
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from unit.mocks import MockPromptTarget
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import PromptSendingOrchestrator
@@ -13,12 +15,11 @@ from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
 from pyrit.score import SubStringScorer
 
-from unit.mocks import MockPromptTarget
-
 
 @pytest.fixture(scope="function")
 def mock_target(patch_central_database) -> MockPromptTarget:
     return MockPromptTarget()
+
 
 @patch(
     "pyrit.common.default_values.get_non_required_value",
@@ -98,9 +99,7 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("num_conversations", [1, 10, 20])
-async def test_send_prompts_and_score_async(
-    mock_target: MockPromptTarget, num_conversations: int
-):
+async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_conversations: int):
     # Set up mocks and return values
     scorer = SubStringScorer(
         substring="test",
@@ -215,11 +214,12 @@ def test_orchestrator_get_memory(mock_target: MockPromptTarget):
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_send_prompts_async_with_env_local_memory_labels(
-    mock_target: MockPromptTarget
-):
+async def test_orchestrator_send_prompts_async_with_env_local_memory_labels(mock_target: MockPromptTarget):
 
-    with patch("os.environ.get", side_effect=lambda key, default=None: '{"op_name": "dummy_op"}' if key == "GLOBAL_MEMORY_LABELS" else default):
+    with patch(
+        "os.environ.get",
+        side_effect=lambda key, default=None: '{"op_name": "dummy_op"}' if key == "GLOBAL_MEMORY_LABELS" else default,
+    ):
         orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
         await orchestrator.send_prompts_async(prompt_list=["hello"])
         assert mock_target.prompt_sent == ["hello"]
@@ -233,9 +233,7 @@ async def test_orchestrator_send_prompts_async_with_env_local_memory_labels(
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_send_prompts_async_with_memory_labels(
-    mock_target: MockPromptTarget
-):
+async def test_orchestrator_send_prompts_async_with_memory_labels(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
     new_labels = {"op_name": "op1", "username": "name1"}
     await orchestrator.send_prompts_async(prompt_list=["hello"], memory_labels=new_labels)
@@ -247,11 +245,13 @@ async def test_orchestrator_send_prompts_async_with_memory_labels(
     assert entries[0].labels == expected_labels
     assert entries[1].labels == expected_labels
 
+
 @pytest.mark.asyncio
-async def test_orchestrator_combine_memory_labels(
-    mock_target: MockPromptTarget
-):
-    with patch("os.environ.get", side_effect=lambda key, default=None: '{"op_name": "dummy_op"}' if key == "GLOBAL_MEMORY_LABELS" else default):
+async def test_orchestrator_combine_memory_labels(mock_target: MockPromptTarget):
+    with patch(
+        "os.environ.get",
+        side_effect=lambda key, default=None: '{"op_name": "dummy_op"}' if key == "GLOBAL_MEMORY_LABELS" else default,
+    ):
         orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
         new_labels = {"op_name": "op2", "username": "dummy_name"}
         await orchestrator.send_prompts_async(prompt_list=["hello"], memory_labels=new_labels)

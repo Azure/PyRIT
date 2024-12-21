@@ -2,20 +2,15 @@
 # Licensed under the MIT license.
 
 import os
-
 from textwrap import dedent
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
-from pyrit.score import LikertScalePaths
-from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
-from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.score import LikertScalePaths, SelfAskLikertScorer, ContentClassifierPaths
 
 
 @pytest.fixture
@@ -36,7 +31,6 @@ def scorer_likert_response() -> PromptRequestResponse:
     )
 
     return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
-
 
 
 @pytest.mark.asyncio

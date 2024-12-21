@@ -8,9 +8,9 @@ import base64
 import hashlib
 import os
 import time
-from typing import Optional, TYPE_CHECKING, Union
-from pathlib import Path
 from mimetypes import guess_type
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Union
 from urllib.parse import urlparse
 
 from pyrit.models.literals import PromptDataType
@@ -89,7 +89,6 @@ class DataTypeSerializer(abc.ABC):
         """
         Returns True if the data is stored on disk.
         """
-        pass
 
     async def save_data(self, data: bytes) -> None:
         """

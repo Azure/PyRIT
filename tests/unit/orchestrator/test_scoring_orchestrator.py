@@ -1,16 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import AsyncMock, MagicMock, patch
-import pytest
 import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from unit.mocks import get_sample_conversations
 
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.score import SubStringScorer
-
-from unit.mocks import get_sample_conversations
 
 
 @pytest.fixture

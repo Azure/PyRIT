@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 import csv
-
 from pathlib import Path
 from typing import Optional
+
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
 

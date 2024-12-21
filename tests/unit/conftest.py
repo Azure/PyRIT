@@ -8,9 +8,6 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy import inspect
 
-
-
-
 # This limits retries and speeds up execution
 # note this needs to be set before libraries that use them are imported
 
@@ -21,16 +18,14 @@ os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
 os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
 
 
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.duckdb_memory import DuckDBMemory
-
+from pyrit.memory.central_memory import CentralMemory  # noqa: E402
+from pyrit.memory.duckdb_memory import DuckDBMemory  # noqa: E402
 
 
 @pytest.fixture
 def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
     # Create an in-memory DuckDB engine
-    duckdb_memory = DuckDBMemory(db_path=f":memory:")
+    duckdb_memory = DuckDBMemory(db_path=":memory:")
 
     duckdb_memory.disable_embedding()
 

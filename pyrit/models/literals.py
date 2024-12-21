@@ -3,7 +3,6 @@
 
 from typing import Literal
 
-
 PromptDataType = Literal["text", "image_path", "audio_path", "url", "error"]
 
 """

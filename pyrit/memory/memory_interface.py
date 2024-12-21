@@ -2,33 +2,33 @@
 # Licensed under the MIT license.
 
 import abc
-from collections import defaultdict
 import copy
-from datetime import datetime
 import logging
+import uuid
+from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
+from typing import MutableSequence, Optional, Sequence, Union
+
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import MutableSequence, Optional, Sequence, Union
-import uuid
 
 from pyrit.common.path import RESULTS_PATH
+from pyrit.memory.memory_embedding import MemoryEmbedding, default_memory_embedding_factory
+from pyrit.memory.memory_exporter import MemoryExporter
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry, SeedPromptEntry
 from pyrit.models import (
     ChatMessage,
-    group_conversation_request_pieces_by_sequence,
-    sort_request_pieces,
-    PromptRequestResponse,
     PromptRequestPiece,
+    PromptRequestResponse,
     Score,
     SeedPrompt,
     SeedPromptDataset,
     SeedPromptGroup,
     StorageIO,
+    group_conversation_request_pieces_by_sequence,
+    sort_request_pieces,
 )
-
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry, SeedPromptEntry
-from pyrit.memory.memory_embedding import default_memory_embedding_factory, MemoryEmbedding
-from pyrit.memory.memory_exporter import MemoryExporter
 
 logger = logging.getLogger(__name__)
 
@@ -224,22 +224,23 @@ class MemoryInterface(abc.ABC):
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
     def get_prompt_request_pieces(
-            self,
-            *,
-            orchestrator_id: Optional[str] = None,
-            conversation_id: Optional[str] = None,
-            prompt_ids: Optional[list[str]] = None,
-            labels: Optional[dict[str, str]] = None,
-            sent_after: Optional[datetime] = None,
-            sent_before: Optional[datetime] = None,
-            converted_values: Optional[list[str]] = None,
-            data_type: Optional[str] = None,
-            not_data_type: Optional[str] = None,
-            converted_value_sha256: Optional[list[str]] = None,
+        self,
+        *,
+        orchestrator_id: Optional[str | uuid.UUID] = None,
+        conversation_id: Optional[str | uuid.UUID] = None,
+        prompt_ids: Optional[list[str] | list[uuid.UUID]] = None,
+        labels: Optional[dict[str, str]] = None,
+        sent_after: Optional[datetime] = None,
+        sent_before: Optional[datetime] = None,
+        original_values: Optional[list[str]] = None,
+        converted_values: Optional[list[str]] = None,
+        data_type: Optional[str] = None,
+        not_data_type: Optional[str] = None,
+        converted_value_sha256: Optional[list[str]] = None,
     ) -> list[PromptRequestPiece]:
         conditions = []
         if orchestrator_id:
-            conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=orchestrator_id))
+            conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=str(orchestrator_id)))
         if conversation_id:
             conditions.append(PromptMemoryEntry.conversation_id == conversation_id)
         if prompt_ids:
@@ -250,6 +251,8 @@ class MemoryInterface(abc.ABC):
             conditions.append(PromptMemoryEntry.timestamp >= sent_after)
         if sent_before:
             conditions.append(PromptMemoryEntry.timestamp <= sent_before)
+        if original_values:
+            conditions.append(PromptMemoryEntry.converted_value.in_(original_values))
         if converted_values:
             conditions.append(PromptMemoryEntry.converted_value.in_(converted_values))
         if data_type:
@@ -411,9 +414,7 @@ class MemoryInterface(abc.ABC):
             request_pieces (list[PromptRequestPiece]): The list of request pieces to update.
         """
 
-        prev_conversations = self.get_prompt_request_pieces(
-            conversation_id=request_pieces[0].conversation_id
-        )
+        prev_conversations = self.get_prompt_request_pieces(conversation_id=request_pieces[0].conversation_id)
 
         sequence = 0
 

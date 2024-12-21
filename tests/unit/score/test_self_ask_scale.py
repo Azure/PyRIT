@@ -1,16 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import uuid
 from pathlib import Path
 from textwrap import dedent
-from typing import Generator
-from unittest.mock import AsyncMock, MagicMock, patch
-import uuid
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, UnvalidatedScore
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
@@ -63,7 +60,7 @@ async def test_scale_scorer_set_system_prompt(
     scorer_scale_response: PromptRequestResponse,
     scale_arguments_path: Path,
     system_prompt_path: Path,
-    patch_central_database
+    patch_central_database,
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
@@ -92,7 +89,7 @@ def test_scale_scorer_invalid_scale_file_contents():
             chat_target=chat_target,
             scale_arguments_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
             system_prompt_path=SelfAskScaleScorer.SystemPaths.GENERAL_SYSTEM_PROMPT.value,
-            )
+        )
 
 
 @pytest.mark.parametrize(

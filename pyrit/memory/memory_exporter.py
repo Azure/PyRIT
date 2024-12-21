@@ -3,11 +3,11 @@
 
 import csv
 import json
-from typing import Any, Dict, List, Union
 import uuid
+from collections.abc import MutableMapping
 from datetime import datetime
 from pathlib import Path
-from collections.abc import MutableMapping
+from typing import Any, Dict, List, Union
 
 from sqlalchemy.inspection import inspect
 

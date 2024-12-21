@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import AsyncMock
 
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, construct_response_from_request
+import pytest
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target import PlaywrightTarget
 
 

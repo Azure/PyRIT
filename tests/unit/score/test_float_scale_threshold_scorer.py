@@ -1,17 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import uuid
 
-from pyrit.memory import MemoryInterface
+from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Score
-from pyrit.memory import CentralMemory
 from pyrit.score import FloatScaleThresholdScorer
-
 
 
 @pytest.mark.parametrize("threshold", [0.3, 0.5, 0.7])

@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-from pyrit.models import ChatMessage
-from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 import textwrap
+
+import pytest
+
+from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
+from pyrit.models import ChatMessage
 
 
 @pytest.fixture

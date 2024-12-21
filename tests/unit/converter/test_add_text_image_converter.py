@@ -2,17 +2,13 @@
 # Licensed under the MIT license.
 
 
-from typing import Generator
-from unittest.mock import patch
-import pytest
 import os
-
 from io import BytesIO
+
+import pytest
 from PIL import Image, ImageFont
 
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.prompt_converter import AddTextImageConverter
-from pyrit.memory import CentralMemory
 
 
 @pytest.fixture

@@ -5,11 +5,12 @@ import uuid
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
-from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
-from sqlalchemy.types import Uuid  # type: ignore
+from sqlalchemy import ARRAY, INTEGER, JSON, Column, DateTime, Float, ForeignKey, Index, String, Unicode
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
 from sqlalchemy.orm import Mapped  # type: ignore
+from sqlalchemy.types import Uuid  # type: ignore
+
+from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 
 
 class Base(DeclarativeBase):

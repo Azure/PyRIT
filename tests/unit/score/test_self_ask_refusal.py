@@ -4,16 +4,14 @@
 import os
 import tempfile
 from textwrap import dedent
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
-
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
 
 
@@ -31,7 +29,6 @@ def scorer_true_false_response() -> PromptRequestResponse:
     )
 
     return PromptRequestResponse(request_pieces=[PromptRequestPiece(role="assistant", original_value=json_response)])
-
 
 
 @pytest.mark.asyncio
@@ -53,8 +50,7 @@ async def test_refusal_scorer_score(scorer_true_false_response: PromptRequestRes
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_set_system_prompt(
-    scorer_true_false_response: PromptRequestResponse,
-    patch_central_database
+    scorer_true_false_response: PromptRequestResponse, patch_central_database
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
@@ -93,8 +89,7 @@ async def test_refusal_scorer_with_task(scorer_true_false_response: PromptReques
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_image_non_block(
-    scorer_true_false_response: PromptRequestResponse,
-    patch_central_database
+    scorer_true_false_response: PromptRequestResponse, patch_central_database
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
@@ -171,9 +166,7 @@ async def test_score_async_filtered_response():
     chat_target = MagicMock()
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    request_piece = PromptRequestPiece(
-        role="assistant", original_value="blocked response", response_error="blocked"
-    )
+    request_piece = PromptRequestPiece(role="assistant", original_value="blocked response", response_error="blocked")
     scores = await scorer.score_async(request_piece)
 
     assert len(scores) == 1

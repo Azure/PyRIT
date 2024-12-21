@@ -2,16 +2,13 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from unit.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, patch
 
+import pytest
+from unit.mocks import MockPromptTarget
+
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import TranslationConverter
 
 
@@ -36,9 +33,7 @@ def test_translator_converter_languages_validation_throws(languages):
         "{'str' : 'json not formatted correctly'}",
     ],
 )
-async def test_translation_converter_send_prompt_async_bad_json_exception_retries(
-    converted_value
-):
+async def test_translation_converter_send_prompt_async_bad_json_exception_retries(converted_value):
 
     prompt_target = MockPromptTarget()
 

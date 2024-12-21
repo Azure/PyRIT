@@ -2,20 +2,18 @@
 # Licensed under the MIT license.
 
 import pathlib
-import pytest
-
-from typing import Dict, Generator, List
+from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-from pyrit.memory import MemoryInterface
-from pyrit.models import Score
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import PromptTarget, OpenAIChatTarget
-from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.score import Scorer
+import pytest
+
 from pyrit.common.path import DATASETS_PATH
+from pyrit.memory import CentralMemory
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.orchestrator import RedTeamingOrchestrator
+from pyrit.prompt_target import OpenAIChatTarget, PromptTarget
+from pyrit.score import Scorer
 
 
 @pytest.fixture

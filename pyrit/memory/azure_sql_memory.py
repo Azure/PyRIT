@@ -1,16 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from datetime import datetime, timedelta, timezone
 import logging
 import struct
-
 from contextlib import closing
+from datetime import datetime, timedelta, timezone
 from typing import MutableSequence, Optional, Sequence
-from azure.identity import DefaultAzureCredential
-from azure.core.credentials import AccessToken
 
-from sqlalchemy import BooleanClauseList, and_, create_engine, event, text, MetaData
+from azure.core.credentials import AccessToken
+from azure.identity import DefaultAzureCredential
+from sqlalchemy import MetaData, create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
@@ -18,8 +17,8 @@ from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.models import AzureBlobStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
@@ -193,8 +192,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         self._insert_entries(entries=embedding_data)
 
-
-    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> BooleanClauseList:
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]):
         json_validation = "ISJSON(labels) = 1"
         json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
         # Combine both conditions
@@ -206,8 +204,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
     def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
         return text(
-                "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
-            ).bindparams(json_id=str(orchestrator_id))
+            "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
+        ).bindparams(json_id=str(orchestrator_id))
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """

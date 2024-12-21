@@ -2,11 +2,12 @@
 # Licensed under the MIT license.
 
 from asyncio import Task
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from pyrit.models.prompt_request_response import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import HuggingFaceChatTarget
-from pyrit.models.prompt_request_response import PromptRequestResponse, PromptRequestPiece
 
 
 def is_torch_installed():

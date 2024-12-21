@@ -34,7 +34,6 @@ from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
 
-
 # %%
 # Load environment variables
 default_values.load_environment_files()

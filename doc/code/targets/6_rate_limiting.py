@@ -25,10 +25,9 @@
 # %%
 import time
 
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 default_values.load_environment_files()
 max_requests_per_minute = 5

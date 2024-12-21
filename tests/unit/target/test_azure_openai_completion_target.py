@@ -2,19 +2,17 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from openai.types.completion import Completion
+from openai.types.completion_choice import CompletionChoice
+from openai.types.completion_usage import CompletionUsage
+from unit.mocks import get_sample_conversations
 
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-import pytest
-from openai.types.completion import Completion
-from pyrit.memory.memory_interface import MemoryInterface
-from openai.types.completion_choice import CompletionChoice
-from openai.types.completion_usage import CompletionUsage
-
 from pyrit.prompt_target import OpenAICompletionTarget
-from unit.mocks import get_sample_conversations
 
 
 @pytest.fixture
@@ -38,6 +36,7 @@ def openai_mock_return() -> Completion:
             completion_tokens=1,
         ),
     )
+
 
 @pytest.fixture
 def azure_completion_target(patch_central_database) -> OpenAICompletionTarget:

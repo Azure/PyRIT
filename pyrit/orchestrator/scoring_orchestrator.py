@@ -4,8 +4,7 @@
 import logging
 from typing import Sequence
 
-from pyrit.models import PromptRequestPiece
-from pyrit.models import Score
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.score.scorer import Scorer
 
@@ -63,9 +62,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         if not memory_labels:
             raise ValueError("Invalid memory_labels: Please provide valid memory labels.")
-        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_pieces(
-            labels=memory_labels
-        )
+        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_pieces(labels=memory_labels)
         if not request_pieces:
             raise ValueError("No entries match the provided memory labels. Please check your memory labels.")
 

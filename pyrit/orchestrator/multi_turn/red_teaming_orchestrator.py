@@ -9,10 +9,10 @@ from uuid import uuid4
 
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)

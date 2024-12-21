@@ -2,19 +2,18 @@
 # Licensed under the MIT license.
 
 import os
-import pytest
-from pyrit.memory.memory_interface import MemoryInterface
-from unit.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, patch
 
+import pytest
+from unit.mocks import MockPromptTarget
+
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import (
-    FuzzerExpandConverter,
-    FuzzerShortenConverter,
-    FuzzerRephraseConverter,
     FuzzerCrossOverConverter,
+    FuzzerExpandConverter,
+    FuzzerRephraseConverter,
+    FuzzerShortenConverter,
     FuzzerSimilarConverter,
 )
 
@@ -57,9 +56,7 @@ def test_converter_init_templates_not_null(converter_class) -> None:
     "update",
     [True, False],
 )
-async def test_converter_send_prompt_async_bad_json_exception_retries(
-    converted_value, converter_class, update
-):
+async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class, update):
     prompt_target = MockPromptTarget()
 
     if converter_class != FuzzerCrossOverConverter:

@@ -19,10 +19,9 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import TextTarget
-from pyrit.prompt_converter import Base64Converter, PromptConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_converter import Base64Converter, PromptConverter
+from pyrit.prompt_target import TextTarget
 
 default_values.load_environment_files()
 

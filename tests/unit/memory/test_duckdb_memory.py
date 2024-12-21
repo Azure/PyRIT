@@ -2,26 +2,20 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
 import uuid
 from unittest.mock import MagicMock
 
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import inspect
-from sqlalchemy import String, DateTime, INTEGER, ARRAY
+import pytest
+from sqlalchemy import ARRAY, INTEGER, DateTime, String, inspect
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.sqltypes import NullType
-
-from pyrit.memory.duckdb_memory import DuckDBMemory
-from pyrit.memory.memory_models import PromptMemoryEntry, EmbeddingDataEntry
-from pyrit.models import PromptRequestPiece
-from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.prompt_converter.base64_converter import Base64Converter
-from pyrit.prompt_target.text_target import TextTarget
-
 from unit.mocks import get_sample_conversation_entries
 
+from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
+from pyrit.models import PromptRequestPiece
+from pyrit.prompt_converter.base64_converter import Base64Converter
+from pyrit.prompt_target.text_target import TextTarget
 
 
 @pytest.fixture
@@ -155,7 +149,6 @@ async def test_insert_entry(duckdb_instance):
 
     prompt_request_piece_entry.original_value = "Hello"
     prompt_request_piece_entry.converted_value = "Hello after conversion"
-
 
     entry = PromptMemoryEntry(entry=prompt_request_piece_entry)
     # Use the insert_entry method to insert the entry into the database

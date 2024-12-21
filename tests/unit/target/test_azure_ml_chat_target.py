@@ -1,22 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from httpx import HTTPStatusError
-import os
-from openai import RateLimitError
 import pytest
-
-from pyrit.exceptions import EmptyResponseException, RateLimitException
-from pyrit.memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import AzureMLChatTarget
-from pyrit.models import ChatMessage
-from pyrit.chat_message_normalizer import ChatMessageNop, GenericSystemSquash, ChatMessageNormalizer
+from httpx import HTTPStatusError
+from openai import RateLimitError
 from unit.mocks import get_sample_conversations
+
+from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer, GenericSystemSquash
+from pyrit.exceptions import EmptyResponseException, RateLimitException
+from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_target import AzureMLChatTarget
 
 
 @pytest.fixture

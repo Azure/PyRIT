@@ -1,18 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import aiofiles
-import os
 import logging
+import os
 from abc import ABC, abstractmethod
-from typing import Union, Optional
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
+from typing import Optional, Union
 from urllib.parse import urlparse
 
-from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
-from azure.storage.blob import ContentSettings
+import aiofiles
 from azure.core.exceptions import ClientAuthenticationError, ResourceNotFoundError
+from azure.storage.blob import ContentSettings
+from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 
 from pyrit.auth import AzureStorageAuth
 
@@ -39,35 +39,30 @@ class StorageIO(ABC):
         """
         Asynchronously reads the file (or blob) from the given path.
         """
-        pass
 
     @abstractmethod
     async def write_file(self, path: Union[Path, str], data: bytes) -> None:
         """
         Asynchronously writes data to the given path.
         """
-        pass
 
     @abstractmethod
     async def path_exists(self, path: Union[Path, str]) -> bool:
         """
         Asynchronously checks if a file or blob exists at the given path.
         """
-        pass
 
     @abstractmethod
     async def is_file(self, path: Union[Path, str]) -> bool:
         """
         Asynchronously checks if the path refers to a file (not a directory or container).
         """
-        pass
 
     @abstractmethod
     async def create_directory_if_not_exists(self, path: Union[Path, str]) -> None:
         """
         Asynchronously creates a directory or equivalent in the storage system if it doesn't exist.
         """
-        pass
 
 
 class DiskStorageIO(StorageIO):

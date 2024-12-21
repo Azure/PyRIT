@@ -1,22 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import tempfile
 import os
-
+import tempfile
+import uuid
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, Optional
-from unittest.mock import patch, MagicMock
-import uuid
+from unittest.mock import MagicMock, patch
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
-import pytest
-from sqlalchemy import inspect
 
-from pyrit.memory import AzureSQLMemory, DuckDBMemory, MemoryInterface
-from pyrit.memory import CentralMemory
+from pyrit.memory import AzureSQLMemory, CentralMemory
 from pyrit.memory.memory_models import PromptMemoryEntry
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
@@ -89,7 +85,6 @@ class MockPromptTarget(PromptChatTarget):
                 ).to_prompt_request_response()
             )
 
-
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
@@ -106,7 +101,6 @@ class MockPromptTarget(PromptChatTarget):
         """
         Validates the provided prompt request response
         """
-        pass
 
 
 def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:

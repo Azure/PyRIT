@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import unicodedata
 import logging
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+import unicodedata
+
 from pyrit.models import PromptDataType
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 

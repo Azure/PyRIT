@@ -3,23 +3,18 @@
 
 import os
 import tempfile
-from typing import Generator
-import uuid
-import pytest
 import time
-
+import uuid
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse, group_conversation_request_pieces_by_sequence
+from unittest.mock import MagicMock
+
+import pytest
+from unit.mocks import MockPromptTarget, get_sample_conversations
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, group_conversation_request_pieces_by_sequence
 from pyrit.models.prompt_request_piece import sort_request_pieces
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
-from unit.mocks import MockPromptTarget
-from pyrit.memory import DuckDBMemory
-
-from unit.mocks import get_sample_conversations
 
 
 @pytest.fixture
@@ -160,9 +155,7 @@ def test_prompt_response_validate_conversation_id_throws(sample_conversations: l
         request_response.validate()
 
 
-def test_prompt_request_response_inconsistent_roles_throws(
-    sample_conversations: list[PromptRequestPiece]
-):
+def test_prompt_request_response_inconsistent_roles_throws(sample_conversations: list[PromptRequestPiece]):
     for c in sample_conversations:
         c.conversation_id = sample_conversations[0].conversation_id
 
@@ -186,9 +179,7 @@ def test_group_conversation_request_pieces(sample_conversations: list[PromptRequ
     assert groups[0].request_pieces[0].sequence == 0
 
 
-def test_group_conversation_request_pieces_multiple_groups(
-    sample_conversations: list[PromptRequestPiece]
-):
+def test_group_conversation_request_pieces_multiple_groups(sample_conversations: list[PromptRequestPiece]):
     convo_group = [
         entry for entry in sample_conversations if entry.conversation_id == sample_conversations[0].conversation_id
     ]
@@ -245,6 +236,7 @@ async def test_prompt_request_piece_sets_converted_sha256():
     await entry.set_sha256_values_async()
     assert entry.converted_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
 
+
 def test_order_request_pieces_by_conversation_single_conversation():
     pieces = [
         PromptRequestPiece(
@@ -253,7 +245,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
             original_value="Hello 1",
             conversation_id="conv1",
             timestamp=datetime.now() - timedelta(seconds=10),
-            sequence=2
+            sequence=2,
         ),
         PromptRequestPiece(
             role="user",
@@ -261,7 +253,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
             original_value="Hello 2",
             conversation_id="conv1",
             timestamp=datetime.now() - timedelta(seconds=10),
-            sequence=1
+            sequence=1,
         ),
         PromptRequestPiece(
             role="user",
@@ -269,8 +261,8 @@ def test_order_request_pieces_by_conversation_single_conversation():
             original_value="Hello 3",
             conversation_id="conv1",
             timestamp=datetime.now(),
-            sequence=3
-        )
+            sequence=3,
+        ),
     ]
 
     expected = [
@@ -280,7 +272,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
             conversation_id="conv1",
             timestamp=pieces[1].timestamp,
             sequence=1,
-            id="prompt-2"
+            id="prompt-2",
         ),
         PromptRequestPiece(
             role="user",
@@ -288,7 +280,7 @@ def test_order_request_pieces_by_conversation_single_conversation():
             conversation_id="conv1",
             timestamp=pieces[0].timestamp,
             sequence=2,
-            id="prompt-1"
+            id="prompt-1",
         ),
         PromptRequestPiece(
             role="user",
@@ -296,11 +288,11 @@ def test_order_request_pieces_by_conversation_single_conversation():
             conversation_id="conv1",
             timestamp=pieces[2].timestamp,
             sequence=3,
-            id="prompt-3"
-        )
+            id="prompt-3",
+        ),
     ]
 
-    ordered =  sort_request_pieces(pieces)
+    ordered = sort_request_pieces(pieces)
     assert ordered == expected
 
 
@@ -312,7 +304,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             conversation_id="conv2",
             timestamp=datetime.now() - timedelta(seconds=5),
             sequence=2,
-            id="4"
+            id="4",
         ),
         PromptRequestPiece(
             role="user",
@@ -320,7 +312,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             conversation_id="conv1",
             timestamp=datetime.now() - timedelta(seconds=15),
             sequence=1,
-            id="1"
+            id="1",
         ),
         PromptRequestPiece(
             role="user",
@@ -328,7 +320,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             conversation_id="conv2",
             timestamp=datetime.now() - timedelta(seconds=10),
             sequence=1,
-            id="3"
+            id="3",
         ),
         PromptRequestPiece(
             role="user",
@@ -336,8 +328,8 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             conversation_id="conv1",
             timestamp=datetime.now() - timedelta(seconds=10),
             sequence=2,
-            id="2"
-        )
+            id="2",
+        ),
     ]
 
     expected = [
@@ -347,7 +339,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             conversation_id="conv1",
             timestamp=pieces[1].timestamp,
             sequence=1,
-            id="1"
+            id="1",
         ),
         PromptRequestPiece(
             role="user",
@@ -355,7 +347,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             conversation_id="conv1",
             timestamp=pieces[3].timestamp,
             sequence=2,
-            id="2"
+            id="2",
         ),
         PromptRequestPiece(
             role="user",
@@ -363,7 +355,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             conversation_id="conv2",
             timestamp=pieces[2].timestamp,
             sequence=1,
-            id="3"
+            id="3",
         ),
         PromptRequestPiece(
             role="user",
@@ -371,56 +363,35 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
             conversation_id="conv2",
             timestamp=pieces[0].timestamp,
             sequence=2,
-            id="4"
-        )
+            id="4",
+        ),
     ]
 
     assert sort_request_pieces(pieces) == expected
+
 
 def test_order_request_pieces_by_conversation_empty_list():
-        pieces = []
-        expected = []
-        assert sort_request_pieces(pieces) == expected
+    pieces = []
+    expected = []
+    assert sort_request_pieces(pieces) == expected
+
 
 def test_order_request_pieces_by_conversation_single_message(patch_central_database):
-    pieces = [
-        PromptRequestPiece(
-            role="user",
-            original_value="Hello 1",
-            conversation_id="conv1",
-            id="1"
-        )
-    ]
+    pieces = [PromptRequestPiece(role="user", original_value="Hello 1", conversation_id="conv1", id="1")]
 
-    expected = [
-        PromptRequestPiece(
-            role="user",
-            original_value="Hello 1",
-            conversation_id="conv1",
-            id="1"
-        )
-    ]
+    expected = [PromptRequestPiece(role="user", original_value="Hello 1", conversation_id="conv1", id="1")]
 
     assert sort_request_pieces(pieces) == expected
+
 
 def test_order_request_pieces_by_conversation_same_timestamp_different_sequences():
     pieces = [
         PromptRequestPiece(
-            role="user",
-            original_value="Hello 2",
-            conversation_id="conv1",
-            timestamp=datetime.now(),
-            sequence=2,
-            id="2"
+            role="user", original_value="Hello 2", conversation_id="conv1", timestamp=datetime.now(), sequence=2, id="2"
         ),
         PromptRequestPiece(
-            role="user",
-            original_value="Hello 1",
-            conversation_id="conv1",
-            timestamp=datetime.now(),
-            sequence=1,
-            id="1"
-        )
+            role="user", original_value="Hello 1", conversation_id="conv1", timestamp=datetime.now(), sequence=1, id="1"
+        ),
     ]
     for i, piece in enumerate(pieces):
         piece.prompt_id = f"prompt-{i}"
@@ -431,7 +402,7 @@ def test_order_request_pieces_by_conversation_same_timestamp_different_sequences
             conversation_id="conv1",
             timestamp=pieces[1].timestamp,
             sequence=1,
-            id="1"
+            id="1",
         ),
         PromptRequestPiece(
             role="user",
@@ -439,8 +410,8 @@ def test_order_request_pieces_by_conversation_same_timestamp_different_sequences
             conversation_id="conv1",
             timestamp=pieces[0].timestamp,
             sequence=2,
-            id="2"
-        )
+            id="2",
+        ),
     ]
 
     assert sort_request_pieces(pieces) == expected

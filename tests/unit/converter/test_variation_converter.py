@@ -1,18 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from unit.mocks import MockPromptTarget
-
-import pytest
 import os
 from unittest.mock import AsyncMock, patch
 
+import pytest
+from unit.mocks import MockPromptTarget
+
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import VariationConverter
 
 
@@ -30,9 +26,7 @@ def test_prompt_variation_init_templates_not_null():
         "{'str' : 'json not formatted correctly'}",
     ],
 )
-async def test_variation_converter_send_prompt_async_bad_json_exception_retries(
-    converted_value
-):
+async def test_variation_converter_send_prompt_async_bad_json_exception_retries(converted_value):
     prompt_target = MockPromptTarget()
 
     prompt_variation = VariationConverter(converter_target=prompt_target)

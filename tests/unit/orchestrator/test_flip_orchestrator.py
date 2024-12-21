@@ -1,14 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from pyrit.orchestrator import FlipAttackOrchestrator, PromptSendingOrchestrator
-from pyrit.prompt_target import PromptTarget
+
 from pyrit.memory import MemoryInterface
-from pyrit.memory import DuckDBMemory, CentralMemory
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.orchestrator import FlipAttackOrchestrator, PromptSendingOrchestrator
 from pyrit.prompt_converter import FlipConverter
+from pyrit.prompt_target import PromptTarget
 
 
 @pytest.fixture

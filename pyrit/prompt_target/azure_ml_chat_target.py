@@ -2,15 +2,19 @@
 # Licensed under the MIT license.
 
 import logging
-from httpx import HTTPStatusError
 from typing import Optional
+
+from httpx import HTTPStatusError
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
-from pyrit.exceptions import EmptyResponseException, RateLimitException
-from pyrit.exceptions import handle_bad_request_exception, pyrit_target_retry
-from pyrit.models import ChatMessage, PromptRequestResponse
-from pyrit.models import construct_response_from_request
+from pyrit.exceptions import (
+    EmptyResponseException,
+    RateLimitException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
+from pyrit.models import ChatMessage, PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

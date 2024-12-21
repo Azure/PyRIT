@@ -2,18 +2,18 @@
 # Licensed under the MIT license.
 
 import hashlib
-from PIL import Image
 import os
 import tempfile
 from unittest.mock import AsyncMock, patch
-import pytest
 
-from pyrit.memory import DuckDBMemory, CentralMemory
+import pytest
+from PIL import Image
+
 from pyrit.models import (
+    DataTypeSerializer,
+    ErrorDataTypeSerializer,
     ImagePathDataTypeSerializer,
     TextDataTypeSerializer,
-    ErrorDataTypeSerializer,
-    DataTypeSerializer,
     data_serializer_factory,
 )
 

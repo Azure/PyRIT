@@ -1,15 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import patch
-import pytest
 import os
 
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.prompt_converter import AddImageTextConverter, AddTextImageConverter
-
+import pytest
 from PIL import Image, ImageFont
+
+from pyrit.prompt_converter import AddImageTextConverter, AddTextImageConverter
 
 
 @pytest.fixture
@@ -97,9 +94,7 @@ async def test_add_image_text_converter_invalid_file_path():
 
 
 @pytest.mark.asyncio
-async def test_add_image_text_converter_convert_async(
-    image_text_converter_sample_image
-) -> None:
+async def test_add_image_text_converter_convert_async(image_text_converter_sample_image) -> None:
 
     converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
     converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
@@ -118,9 +113,7 @@ def test_text_image_converter_input_supported(image_text_converter_sample_image)
 
 
 @pytest.mark.asyncio
-async def test_add_image_text_converter_equal_to_add_text_image(
-    image_text_converter_sample_image
-) -> None:
+async def test_add_image_text_converter_equal_to_add_text_image(image_text_converter_sample_image) -> None:
     converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
     converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
     text_image_converter = AddTextImageConverter(text_to_add="Sample Text!")

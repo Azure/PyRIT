@@ -34,11 +34,11 @@
 # %%
 import uuid
 
+from pyrit.common import default_values
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.duckdb_memory import DuckDBMemory
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_target import OpenAIChatTarget
 
 default_values.load_environment_files()
 
@@ -63,7 +63,6 @@ with PromptSendingOrchestrator(objective_target=target) as orchestrator:
 from pyrit.common import default_values
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import TextTarget
-
 
 default_values.load_environment_files()
 

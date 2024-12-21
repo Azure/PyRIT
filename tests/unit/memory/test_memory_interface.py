@@ -1,31 +1,23 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
-import tempfile
-from datetime import datetime
-from typing import Generator, Literal
-from unittest.mock import MagicMock, patch
-from pathlib import Path
-from uuid import uuid4
-import uuid
-import pytest
 import random
+import tempfile
+import uuid
+from datetime import datetime
+from pathlib import Path
 from string import ascii_lowercase
+from typing import Literal
+from unittest.mock import MagicMock, patch
+from uuid import uuid4
+
+import pytest
+from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.common.path import RESULTS_PATH
-from pyrit.memory import MemoryInterface, MemoryExporter, PromptMemoryEntry
-from pyrit.models import (
-    PromptRequestPiece,
-    PromptRequestResponse,
-    Score,
-    SeedPrompt,
-    SeedPromptGroup,
-)
+from pyrit.memory import MemoryExporter, MemoryInterface, PromptMemoryEntry
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import Orchestrator
-
-from unit.mocks import get_sample_conversations, get_sample_conversation_entries
-
 
 
 @pytest.fixture
@@ -47,6 +39,7 @@ def assert_original_value_in_list(original_value: str, prompt_request_pieces: li
         if piece.original_value == original_value:
             return True
     raise AssertionError(f"Original value {original_value} not found in list")
+
 
 def test_memory(duckdb_instance: MemoryInterface):
     assert duckdb_instance
@@ -480,7 +473,9 @@ def test_add_request_pieces_to_memory_updates_sequence(
         conversation.sequence = 17
 
     with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
-        duckdb_instance.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
+        duckdb_instance.add_request_response_to_memory(
+            request=PromptRequestResponse(request_pieces=sample_conversations)
+        )
         assert mock_add.called
 
         args, kwargs = mock_add.call_args
@@ -502,7 +497,9 @@ def test_add_request_pieces_to_memory_updates_sequence_with_prev_conversation(
     duckdb_instance.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
 
     with patch("pyrit.memory.duckdb_memory.DuckDBMemory.add_request_pieces_to_memory") as mock_add:
-        duckdb_instance.add_request_response_to_memory(request=PromptRequestResponse(request_pieces=sample_conversations))
+        duckdb_instance.add_request_response_to_memory(
+            request=PromptRequestResponse(request_pieces=sample_conversations)
+        )
         assert mock_add.called
 
         args, kwargs = mock_add.call_args
@@ -553,7 +550,6 @@ def test_insert_prompt_memories_not_inserts_embedding(
         assert mock_embedding.assert_not_called
 
 
-
 def test_export_conversation_by_orchestrator_id_file_created(
     duckdb_instance: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]
 ):
@@ -573,8 +569,9 @@ def test_export_conversation_by_orchestrator_id_file_created(
         assert file_path.exists()
 
 
-
-def test_get_scores_by_orchestrator_id(duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
+def test_get_scores_by_orchestrator_id(
+    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+):
     # create list of scores that are associated with sample conversation entries
     # assert that that list of scores is the same as expected :-)
 
@@ -890,7 +887,9 @@ def test_get_seed_prompts_with_multiple_elements_list_filters(duckdb_instance: M
     ]
     duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(harm_categories=["category1", "category2"], authors=["author1", "author2"])
+    result = duckdb_instance.get_seed_prompts(
+        harm_categories=["category1", "category2"], authors=["author1", "author2"]
+    )
     assert len(result) == 1
     assert result[0].harm_categories == ["category1", "category2"]
     assert result[0].authors == ["author1", "author2"]
@@ -914,7 +913,9 @@ def test_get_seed_prompts_with_multiple_elements_list_filters_additional(duckdb_
     ]
     duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
 
-    result = duckdb_instance.get_seed_prompts(harm_categories=["category1", "category3"], authors=["author1", "author3"])
+    result = duckdb_instance.get_seed_prompts(
+        harm_categories=["category1", "category3"], authors=["author1", "author3"]
+    )
     assert len(result) == 1
     assert result[0].harm_categories == ["category1", "category3"]
     assert result[0].authors == ["author1", "author3"]
@@ -1299,6 +1300,7 @@ def test_get_prompt_request_pieces_labels(duckdb_instance: MemoryInterface):
         assert "user_name" in retrieved_entry.labels
         assert "harm_category" in retrieved_entry.labels
 
+
 def test_get_prompt_request_pieces_id(duckdb_instance: MemoryInterface):
     entries = [
         PromptMemoryEntry(
@@ -1334,6 +1336,7 @@ def test_get_prompt_request_pieces_id(duckdb_instance: MemoryInterface):
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
 
+
 def test_get_prompt_request_pieces_orchestrator(duckdb_instance: MemoryInterface):
 
     orchestrator1 = Orchestrator()
@@ -1363,14 +1366,16 @@ def test_get_prompt_request_pieces_orchestrator(duckdb_instance: MemoryInterface
         ),
     ]
 
-
     duckdb_instance._insert_entries(entries=entries)
 
-    orchestrator1_entries = duckdb_instance.get_prompt_request_pieces(orchestrator_id=orchestrator1.get_identifier()["id"])
+    orchestrator1_entries = duckdb_instance.get_prompt_request_pieces(
+        orchestrator_id=orchestrator1.get_identifier()["id"]
+    )
 
     assert len(orchestrator1_entries) == 2
     assert_original_value_in_list("Hello 1", orchestrator1_entries)
     assert_original_value_in_list("Hello 3", orchestrator1_entries)
+
 
 def test_get_prompt_request_pieces_sent_after(duckdb_instance: MemoryInterface):
     entries = [
@@ -1395,11 +1400,11 @@ def test_get_prompt_request_pieces_sent_after(duckdb_instance: MemoryInterface):
     ]
 
     entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
-    entries[1].timestamp =  datetime(2022, 12, 25, 15, 30, 0)
+    entries[1].timestamp = datetime(2022, 12, 25, 15, 30, 0)
 
     duckdb_instance._insert_entries(entries=entries)
 
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(sent_after=datetime(2024,1,1))
+    retrieved_entries = duckdb_instance.get_prompt_request_pieces(sent_after=datetime(2024, 1, 1))
 
     assert len(retrieved_entries) == 1
     assert "Hello 3" in retrieved_entries[0].original_value
@@ -1428,15 +1433,16 @@ def test_get_prompt_request_pieces_sent_before(duckdb_instance: MemoryInterface)
     ]
 
     entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
-    entries[1].timestamp =  datetime(2021, 12, 25, 15, 30, 0)
+    entries[1].timestamp = datetime(2021, 12, 25, 15, 30, 0)
 
     duckdb_instance._insert_entries(entries=entries)
 
-    retrieved_entries = duckdb_instance.get_prompt_request_pieces(sent_before=datetime(2024,1,1))
+    retrieved_entries = duckdb_instance.get_prompt_request_pieces(sent_before=datetime(2024, 1, 1))
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
+
 
 def test_get_prompt_request_pieces_by_value(duckdb_instance: MemoryInterface):
     entries = [
@@ -1538,7 +1544,10 @@ def test_get_prompt_request_pieces_with_non_matching_memory_labels(duckdb_instan
 
     assert len(retrieved_entries) == 0  # zero entries found since invalid memory labels passed
 
-def test_get_prompt_request_pieces_sorts(duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]):
+
+def test_get_prompt_request_pieces_sorts(
+    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+):
     conversation_id = sample_conversations[0].conversation_id
 
     # This new conversation piece should be grouped with other messages in the conversation

@@ -2,15 +2,14 @@
 # Licensed under the MIT license.
 
 import os
-
 from unittest.mock import AsyncMock, patch
 
-import pytest
 import httpx
-from pyrit.prompt_target import OllamaChatTarget
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.models import ChatMessage
+import pytest
 from unit.mocks import get_sample_conversations
+
+from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_target import OllamaChatTarget
 
 
 @pytest.fixture

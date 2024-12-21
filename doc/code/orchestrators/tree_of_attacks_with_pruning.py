@@ -18,10 +18,11 @@
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 
+from pyrit.common import default_values
+
 # %%
 from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.common import default_values
 
 default_values.load_environment_files()
 

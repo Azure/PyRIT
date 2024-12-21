@@ -29,10 +29,9 @@
 # %%
 
 from pyrit.common import default_values
-from pyrit.prompt_target import TextTarget, OpenAIChatTarget
-from pyrit.prompt_converter import VariationConverter, StringJoinConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_converter import StringJoinConverter, VariationConverter
+from pyrit.prompt_target import OpenAIChatTarget, TextTarget
 
 default_values.load_environment_files()
 

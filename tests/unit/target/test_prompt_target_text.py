@@ -4,23 +4,17 @@
 import io
 import os
 from tempfile import NamedTemporaryFile
-from typing import Generator
-from unittest.mock import patch
+
 import pytest
-
-from pyrit.memory import MemoryInterface
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
-from pyrit.prompt_target import TextTarget
-
 from unit.mocks import get_sample_conversations
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_target import TextTarget
 
 
 @pytest.fixture
 def sample_entries() -> list[PromptRequestPiece]:
     return get_sample_conversations()
-
 
 
 @pytest.mark.asyncio

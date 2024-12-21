@@ -2,27 +2,21 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
-
 from contextlib import AbstractAsyncContextManager
-from unittest.mock import AsyncMock, MagicMock, patch
 from tempfile import NamedTemporaryFile
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+from openai import BadRequestError, RateLimitError
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-from openai import BadRequestError, RateLimitError
+from unit.mocks import get_image_request_piece
 
 from pyrit.exceptions.exception_classes import EmptyResponseException
-from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
+from pyrit.models import ChatMessageListDictContent, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.models import ChatMessageListDictContent
-
-from unit.mocks import get_image_request_piece
 
 
 @pytest.fixture

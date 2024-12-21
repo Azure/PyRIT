@@ -1,21 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
-
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.orchestrator.orchestrator_class import Orchestrator
-from pyrit.prompt_target import OpenAIChatTarget
-
 from unit.mocks import get_sample_conversations
 
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.orchestrator.orchestrator_class import Orchestrator
+from pyrit.prompt_target import OpenAIChatTarget
 
 
 @pytest.fixture

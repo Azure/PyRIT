@@ -13,10 +13,9 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-
 from pyrit.prompt_converter import AnsiAttackConverter
+from pyrit.prompt_target import OpenAIChatTarget
 
 default_values.load_environment_files()
 

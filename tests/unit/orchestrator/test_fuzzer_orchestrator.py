@@ -1,18 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-from typing import Generator
+import pathlib
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from unit.mocks import MockPromptTarget
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, SeedPromptDataset, SeedPrompt
-from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, FuzzerConverter, FuzzerShortenConverter
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptDataset
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
+from pyrit.prompt_converter import ConverterResult, FuzzerConverter, FuzzerExpandConverter, FuzzerShortenConverter
 from pyrit.score import Scorer
-from unit.mocks import MockPromptTarget
-import pathlib
-import pytest
 
 
 @pytest.fixture

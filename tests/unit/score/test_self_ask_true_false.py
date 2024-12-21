@@ -3,7 +3,6 @@
 
 import os
 from textwrap import dedent
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,8 +10,7 @@ import pytest
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 
@@ -53,8 +51,7 @@ async def test_true_false_scorer_score(patch_central_database, scorer_true_false
 
 @pytest.mark.asyncio
 async def test_true_false_scorer_set_system_prompt(
-    patch_central_database,
-    scorer_true_false_response: PromptRequestResponse
+    patch_central_database, scorer_true_false_response: PromptRequestResponse
 ):
     chat_target = MagicMock()
     chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)

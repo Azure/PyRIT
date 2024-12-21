@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import get_args, get_origin, Literal
+from typing import Literal, get_args, get_origin
 
-from pyrit.models import PromptDataType, PromptResponseError, ChatMessageRole
+from pyrit.models import ChatMessageRole, PromptDataType, PromptResponseError
 
 
 def test_prompt_data_type():

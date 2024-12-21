@@ -1,21 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 import csv
+import os
 import tempfile
 from textwrap import dedent
-import pytest
-
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from unit.mocks import get_image_request_piece
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.substring_scorer import SubStringScorer
-from unit.mocks import get_image_request_piece
 
 
 @pytest.fixture

@@ -1,11 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, Literal, Optional, get_args
-import uuid
-
 
 ScoreType = Literal["true_false", "float_scale"]
 
