@@ -8,6 +8,7 @@ from collections import defaultdict
 from colorama import Fore, Style
 from typing import Optional
 
+from pyrit.common.utils import combine_dict
 from pyrit.common.display_response import display_image_response
 from pyrit.models import PromptDataType, PromptRequestResponse
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
@@ -83,7 +84,7 @@ class PromptSendingOrchestrator(Orchestrator):
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._prompt_target,
-            labels=self._combine_with_global_memory_labels(memory_labels),
+            labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
@@ -139,7 +140,7 @@ class PromptSendingOrchestrator(Orchestrator):
 
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
-            memory_labels=self._combine_with_global_memory_labels(memory_labels),
+            memory_labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
         )
 
     async def print_conversations_async(self):
