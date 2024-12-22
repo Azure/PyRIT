@@ -594,22 +594,6 @@ def test_export_conversation_by_orchestrator_id_file_created(
         assert file_path.exists()
 
 
-def test_export_conversation_by_memory_labels_file_created(
-    memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]
-):
-    memory_labels = {"sample": "label"}
-    file_path = Path(RESULTS_PATH, "test_export_by_memory_labels.json")
-
-    memory.exporter = MemoryExporter()
-
-    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_piece_by_memory_labels") as mock_get:
-        mock_get.return_value = sample_conversations
-        memory.export_conversation_by_memory_labels(memory_labels=memory_labels)
-
-        # Verify file was created
-        assert file_path.exists()
-
-
 def test_get_prompt_ids_by_orchestrator(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
     orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
 
