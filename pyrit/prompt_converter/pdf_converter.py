@@ -53,45 +53,18 @@ class PDFConverter(PromptConverter):
 
         Returns:
             ConverterResult: The result containing the filename of the generated PDF.
-
-        Raises:
-            FileNotFoundError: If the specified template file does not exist.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        # Prepare the content
-        if self._template_path:
-            try:
-                with open(self._template_path, "r") as file:
-                    template = Template(file.read())
-                    if isinstance(prompt, dict):
-                        content = template.render(**prompt)
-                    else:
-                        raise ValueError("Prompt must be a dictionary when using a template.")
-            except FileNotFoundError:
-                logger.error(f"Template file {self._template_path} not found.")
-                raise
-        else:
-            # If no template, use the prompt as is
-            if isinstance(prompt, str):
-                content = prompt
-            else:
-                raise ValueError("Prompt must be a string when no template is provided.")
+        # Step 1: Prepare content
+        content = self._prepare_content(prompt)
 
-        # Generate PDF content and write to buffer
-        pdf = FPDF(format=(self._page_width, self._page_height))  # Use custom page size
-        pdf.add_page()
-        pdf.set_font(self._font_type, size=self._font_size)  # Use custom font settings
-        pdf.multi_cell(0, 10, content)
+        # Step 2: Generate PDF
+        pdf_bytes = self._generate_pdf(content)
 
-        pdf_bytes = BytesIO()
-        pdf.output(pdf_bytes)
-        pdf_bytes.seek(0)
-
-        # Use DataTypeSerializer to save the file
-        pdf_serializer = data_serializer_factory(data_type="url", value=content, extension="pdf")
-        await pdf_serializer.save_data(pdf_bytes.getvalue())
+        # Step 3: Serialize PDF
+        pdf_serializer = await self._serialize_pdf(pdf_bytes, content)
 
         # Return the result
         return ConverterResult(output_text=pdf_serializer.value, output_type="url")
@@ -107,3 +80,66 @@ class PDFConverter(PromptConverter):
             bool: True if the input type is supported, False otherwise.
         """
         return input_type == "text"
+    
+    def _prepare_content(self, prompt: Union[str, dict]) -> str:
+        """
+        Prepares the content for the PDF, either from a template or directly from the prompt.
+
+        Args:
+            prompt (Union[str, dict]): The input prompt.
+
+        Returns:
+            str: The prepared content.
+        """
+        if self._template_path:
+            try:
+                with open(self._template_path, "r") as file:
+                    template = Template(file.read())
+                    if isinstance(prompt, dict):
+                        return template.render(**prompt)
+                    else:
+                        raise ValueError("Prompt must be a dictionary when using a template.")
+            except FileNotFoundError:
+                logger.error(f"Template file {self._template_path} not found.")
+                raise
+        else:
+            # If no template, use the prompt as is
+            if isinstance(prompt, str):
+                return prompt
+            else:
+                raise ValueError("Prompt must be a string when no template is provided.")
+            
+    def _generate_pdf(self, content: str) -> BytesIO:
+        """
+        Generates the PDF content and writes it to a BytesIO buffer.
+
+        Args:
+            content (str): The text content to include in the PDF.
+
+        Returns:
+            BytesIO: The generated PDF in a BytesIO buffer.
+        """
+        pdf = FPDF(format=(self._page_width, self._page_height))  # Use custom page size
+        pdf.add_page()
+        pdf.set_font(self._font_type, size=self._font_size)  # Use custom font settings
+        pdf.multi_cell(0, 10, content)
+
+        pdf_bytes = BytesIO()
+        pdf.output(pdf_bytes)
+        pdf_bytes.seek(0)
+        return pdf_bytes
+    
+    async def _serialize_pdf(self, pdf_bytes: BytesIO, content: str):
+        """
+        Serializes the generated PDF using a data serializer.
+
+        Args:
+            pdf_bytes (BytesIO): The BytesIO buffer containing the PDF.
+            content (str): The original content of the PDF.
+
+        Returns:
+            DataTypeSerializer: The serializer object containing metadata about the saved file.
+        """
+        pdf_serializer = data_serializer_factory(data_type="url", value=content, extension="pdf")
+        await pdf_serializer.save_data(pdf_bytes.getvalue())
+        return pdf_serializer
