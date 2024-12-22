@@ -162,7 +162,6 @@ class PromptRequestPiece(abc.ABC):
             and self.converted_value_data_type == other.converted_value_data_type
             and self.converted_value_sha256 == other.converted_value_sha256
             and self.conversation_id == other.conversation_id
-            and self.timestamp == other.timestamp
             and self.sequence == other.sequence
         )
 

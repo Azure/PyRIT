@@ -376,9 +376,8 @@ def test_order_request_pieces_by_conversation_empty_list():
     assert sort_request_pieces(pieces) == expected
 
 
-def test_order_request_pieces_by_conversation_single_message(patch_central_database):
+def test_order_request_pieces_by_conversation_single_message():
     pieces = [PromptRequestPiece(role="user", original_value="Hello 1", conversation_id="conv1", id="1")]
-
     expected = [PromptRequestPiece(role="user", original_value="Hello 1", conversation_id="conv1", id="1")]
 
     assert sort_request_pieces(pieces) == expected
