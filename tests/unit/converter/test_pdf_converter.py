@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+from io import BytesIO
 from typing import Generator
 from unittest.mock import MagicMock, patch
 
@@ -50,22 +51,27 @@ def pdf_converter_nonexistent_template():
 async def test_convert_async_no_template(pdf_converter_no_template):
     """Test converting a prompt without a template."""
     prompt = "Hello, PDF!"
+    mock_pdf_bytes = BytesIO(b"mock_pdf_content")
 
-    # Mock the data serializer so no real I/O happens.
-    with patch("pyrit.prompt_converter.pdf_converter.data_serializer_factory") as mock_factory:
-        serializer_mock = MagicMock(spec=DataTypeSerializer)
+    # Mock internal methods
+    with patch.object(pdf_converter_no_template, "_prepare_content", return_value=prompt) as mock_prepare, \
+         patch.object(pdf_converter_no_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate, \
+         patch.object(pdf_converter_no_template, "_serialize_pdf") as mock_serialize:
+
+        serializer_mock = MagicMock()
         serializer_mock.value = "mock_url"
-        mock_factory.return_value = serializer_mock
+        mock_serialize.return_value = serializer_mock
 
         result = await pdf_converter_no_template.convert_async(prompt=prompt)
+
+        # Assertions
+        mock_prepare.assert_called_once_with(prompt)
+        mock_generate.assert_called_once_with(prompt)
+        mock_serialize.assert_called_once_with(mock_pdf_bytes, prompt)
+
         assert isinstance(result, ConverterResult)
         assert result.output_type == "url"
         assert result.output_text == "mock_url"
-
-        # Check if serializer was called to save data
-        serializer_mock.save_data.assert_called_once()
-        # Check that the prompt was passed to the serializer
-        mock_factory.assert_called_once_with(data_type="url", value=prompt, extension="pdf")
 
 
 @pytest.mark.asyncio
@@ -73,29 +79,35 @@ async def test_convert_async_with_template(pdf_converter_with_template):
     """Test converting a prompt using a provided template."""
     prompt = {"prompt": "TemplateTest"}
     expected_rendered_content = "This is a test template. Prompt: TemplateTest"
+    mock_pdf_bytes = BytesIO(b"mock_pdf_content")
 
-    # Mock serializer
-    with patch("pyrit.prompt_converter.pdf_converter.data_serializer_factory") as mock_factory:
-        serializer_mock = MagicMock(spec=DataTypeSerializer)
+    # Mock internal methods
+    with patch.object(pdf_converter_with_template, "_prepare_content", return_value=expected_rendered_content) as mock_prepare, \
+         patch.object(pdf_converter_with_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate, \
+         patch.object(pdf_converter_with_template, "_serialize_pdf") as mock_serialize:
+
+        serializer_mock = MagicMock()
         serializer_mock.value = "mock_url"
-        mock_factory.return_value = serializer_mock
+        mock_serialize.return_value = serializer_mock
 
         result = await pdf_converter_with_template.convert_async(prompt=prompt)
+
+        # Assertions
+        mock_prepare.assert_called_once_with(prompt)
+        mock_generate.assert_called_once_with(expected_rendered_content)
+        mock_serialize.assert_called_once_with(mock_pdf_bytes, expected_rendered_content)
+
         assert isinstance(result, ConverterResult)
-        # The serializer value is "mock_url", so we just assert that is returned as output
         assert result.output_type == "url"
         assert result.output_text == "mock_url"
-
-        # Check that the rendered content was passed to the serializer
-        serializer_mock.save_data.assert_called_once()
-        mock_factory.assert_called_once_with(data_type="url", value=expected_rendered_content, extension="pdf")
 
 
 @pytest.mark.asyncio
 async def test_convert_async_nonexistent_template(pdf_converter_nonexistent_template):
     """Test behavior when the template file does not exist."""
-    with pytest.raises(FileNotFoundError):
-        await pdf_converter_nonexistent_template.convert_async(prompt="This will fail")
+    with patch.object(pdf_converter_nonexistent_template, "_prepare_content", side_effect=FileNotFoundError):
+        with pytest.raises(FileNotFoundError):
+            await pdf_converter_nonexistent_template.convert_async(prompt="This will fail")
 
 
 @pytest.mark.asyncio
@@ -140,3 +152,5 @@ async def test_convert_async_end_to_end_no_reader(tmp_path):
     assert pdf_file_path.exists()
     assert os.path.getsize(pdf_file_path) > 0
     pdf_file_path.unlink()
+
+
