@@ -599,7 +599,7 @@ def test_export_conversation_by_memory_labels_file_created(
 ):
     memory_labels = {"sample": "label"}
     file_path = Path(RESULTS_PATH, "test_export_by_memory_labels.json")
-    
+
     memory.exporter = MemoryExporter()
 
     with patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_piece_by_memory_labels") as mock_get:
