@@ -43,7 +43,7 @@ class PromptRequestPiece(abc.ABC):
         converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
-        scores (list[Dict[str, str]]): The scores associated with the prompt.
+        scores (list[Score]): The scores associated with the prompt.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
