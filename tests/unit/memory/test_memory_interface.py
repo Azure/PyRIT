@@ -593,6 +593,25 @@ def test_export_conversation_by_orchestrator_id_file_created(
         # Verify file was created
         assert file_path.exists()
 
+def test_export_conversation_by_memory_labels_file_created(memory: MemoryInterface):
+    memory_labels = {"sample": "label"}
+    pieces = [
+        PromptRequestPiece(
+            id=uuid4(),
+            role="user",
+            original_value="original prompt text",
+            converted_value="Hello, how are you?",
+            conversation_id=str(uuid4()),
+            labels=memory_labels,
+        )
+    ]
+    memory.add_request_pieces_to_memory(request_pieces=pieces)
+
+    file_name = f"test_export_by_memory_labels.json"
+    file_path = Path(RESULTS_PATH, file_name)
+    memory.export_conversation_by_memory_labels(memory_labels=memory_labels, file_path=file_path)
+    assert file_path.exists()
+
 
 def test_get_prompt_ids_by_orchestrator(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
     orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]

@@ -407,6 +407,30 @@ class MemoryInterface(abc.ABC):
 
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
+    def export_conversation_by_memory_labels(
+        self, *, memory_labels: dict[str, str], file_path: Path = None, export_type: str = "json"
+    ):
+        """
+        Exports conversation data with the given memory labels to a specified file.
+        This will contain all conversations that were sent with the same memory labels.
+
+        Args:
+            memory_labels (dict[str, str]): The memory labels to match for exporting conversations.
+            file_path (str): The path to the file where the data will be exported.
+            If not provided, a default path using RESULTS_PATH will be constructed.
+            export_type (str): The format of the export. Defaults to "json".
+        """
+        data = self.get_prompt_request_piece_by_memory_labels(memory_labels=memory_labels)
+        if not data:
+            raise ValueError("No entries match the provided memory labels. Please check your memory labels.")
+
+        # If file_path is not provided, construct a default using the exporter's results_path
+        if not file_path:
+            file_name = f"conversation_by_memory_labels.{export_type}"
+            file_path = RESULTS_PATH / file_name
+
+        self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
@@ -765,7 +789,7 @@ class MemoryInterface(abc.ABC):
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
-            file_name = f"conversations_and_scores.{export_type}"
+            file_name = f"conversations.{export_type}"
             file_path = RESULTS_PATH / file_name
 
         self.exporter.export_data(all_prompt_pieces, file_path=file_path, export_type=export_type)
