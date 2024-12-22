@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional, Union
 from uuid import uuid4
 
-from pyrit.common import combine_dict
+from pyrit.common.utils import combine_dict
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult

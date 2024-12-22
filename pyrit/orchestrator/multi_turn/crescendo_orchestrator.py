@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common import combine_dict
+from pyrit.common.utils import combine_dict
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import (
     InvalidJsonException,

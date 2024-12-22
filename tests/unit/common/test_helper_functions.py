@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.common import combine_dict
+from pyrit.common.utils import combine_dict
 
 
 def test_combine_non_empty_dict():

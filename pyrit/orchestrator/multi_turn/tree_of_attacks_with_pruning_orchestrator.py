@@ -8,7 +8,7 @@ from pathlib import Path
 from treelib import Tree
 from typing import Optional
 
-from pyrit.common import combine_dict
+from pyrit.common.utils import combine_dict
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt

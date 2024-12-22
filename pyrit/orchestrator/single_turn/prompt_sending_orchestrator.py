@@ -8,7 +8,7 @@ from collections import defaultdict
 from colorama import Fore, Style
 from typing import Optional
 
-from pyrit.common import combine_dict
+from pyrit.common.utils import combine_dict
 from pyrit.common.display_response import display_image_response
 from pyrit.models import PromptDataType, PromptRequestResponse
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer

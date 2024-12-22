@@ -6,7 +6,7 @@ import asyncio
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common import combine_dict
+from pyrit.common.utils import combine_dict
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import MemoryInterface, CentralMemory
