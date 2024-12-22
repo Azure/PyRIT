@@ -593,24 +593,21 @@ def test_export_conversation_by_orchestrator_id_file_created(
         # Verify file was created
         assert file_path.exists()
 
-def test_export_conversation_by_memory_labels_file_created(memory: MemoryInterface):
-    memory_labels = {"sample": "label"}
-    pieces = [
-        PromptRequestPiece(
-            id=uuid4(),
-            role="user",
-            original_value="original prompt text",
-            converted_value="Hello, how are you?",
-            conversation_id=str(uuid4()),
-            labels=memory_labels,
-        )
-    ]
-    memory.add_request_pieces_to_memory(request_pieces=pieces)
 
-    file_name = f"test_export_by_memory_labels.json"
-    file_path = Path(RESULTS_PATH, file_name)
-    memory.export_conversation_by_memory_labels(memory_labels=memory_labels, file_path=file_path)
-    assert file_path.exists()
+def test_export_conversation_by_memory_labels_file_created(
+    memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+):
+    memory_labels = {"sample": "label"}
+    file_path = Path(RESULTS_PATH, "test_export_by_memory_labels.json")
+    
+    memory.exporter = MemoryExporter()
+
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_piece_by_memory_labels") as mock_get:
+        mock_get.return_value = sample_conversations
+        memory.export_conversation_by_memory_labels(memory_labels=memory_labels)
+
+        # Verify file was created
+        assert file_path.exists()
 
 
 def test_get_prompt_ids_by_orchestrator(memory: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]):
