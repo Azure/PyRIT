@@ -125,7 +125,6 @@ def test_input_supported(pdf_converter_no_template):
     """Test that only 'text' input types are supported."""
     assert pdf_converter_no_template.input_supported("text") is True
     assert pdf_converter_no_template.input_supported("image") is False
-    assert pdf_converter_no_template.input_supported("text") is True
 
 
 @pytest.mark.asyncio

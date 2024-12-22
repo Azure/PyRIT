@@ -60,7 +60,6 @@ dependencies = [
     "openai>=1.52.2",
     "pillow>=10.3.0",
     "pydantic>=2.7.1",
-    "python-docx>=1.1.2",
     "pyodbc>=5.1.0",
     "pycountry>=24.6.1",
     "python-dotenv>=1.0.1",
