@@ -54,9 +54,11 @@ async def test_convert_async_no_template(pdf_converter_no_template):
     mock_pdf_bytes = BytesIO(b"mock_pdf_content")
 
     # Mock internal methods
-    with patch.object(pdf_converter_no_template, "_prepare_content", return_value=prompt) as mock_prepare, \
-         patch.object(pdf_converter_no_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate, \
-         patch.object(pdf_converter_no_template, "_serialize_pdf") as mock_serialize:
+    with (
+        patch.object(pdf_converter_no_template, "_prepare_content", return_value=prompt) as mock_prepare,
+        patch.object(pdf_converter_no_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate,
+        patch.object(pdf_converter_no_template, "_serialize_pdf") as mock_serialize,
+    ):
 
         serializer_mock = MagicMock()
         serializer_mock.value = "mock_url"
@@ -82,9 +84,13 @@ async def test_convert_async_with_template(pdf_converter_with_template):
     mock_pdf_bytes = BytesIO(b"mock_pdf_content")
 
     # Mock internal methods
-    with patch.object(pdf_converter_with_template, "_prepare_content", return_value=expected_rendered_content) as mock_prepare, \
-         patch.object(pdf_converter_with_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate, \
-         patch.object(pdf_converter_with_template, "_serialize_pdf") as mock_serialize:
+    with (
+        patch.object(
+            pdf_converter_with_template, "_prepare_content", return_value=expected_rendered_content
+        ) as mock_prepare,
+        patch.object(pdf_converter_with_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate,
+        patch.object(pdf_converter_with_template, "_serialize_pdf") as mock_serialize,
+    ):
 
         serializer_mock = MagicMock()
         serializer_mock.value = "mock_url"
@@ -152,5 +158,3 @@ async def test_convert_async_end_to_end_no_reader(tmp_path):
     assert pdf_file_path.exists()
     assert os.path.getsize(pdf_file_path) > 0
     pdf_file_path.unlink()
-
-

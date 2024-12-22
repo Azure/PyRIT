@@ -80,7 +80,7 @@ class PDFConverter(PromptConverter):
             bool: True if the input type is supported, False otherwise.
         """
         return input_type == "text"
-    
+
     def _prepare_content(self, prompt: Union[str, dict]) -> str:
         """
         Prepares the content for the PDF, either from a template or directly from the prompt.
@@ -108,7 +108,7 @@ class PDFConverter(PromptConverter):
                 return prompt
             else:
                 raise ValueError("Prompt must be a string when no template is provided.")
-            
+
     def _generate_pdf(self, content: str) -> BytesIO:
         """
         Generates the PDF content and writes it to a BytesIO buffer.
@@ -128,7 +128,7 @@ class PDFConverter(PromptConverter):
         pdf.output(pdf_bytes)
         pdf_bytes.seek(0)
         return pdf_bytes
-    
+
     async def _serialize_pdf(self, pdf_bytes: BytesIO, content: str):
         """
         Serializes the generated PDF using a data serializer.
