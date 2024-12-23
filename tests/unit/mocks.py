@@ -124,6 +124,8 @@ def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
 
+    CentralMemory.set_memory_instance(duckdb_memory)
+
     duckdb_memory.disable_embedding()
 
     # Reset the database to ensure a clean state
