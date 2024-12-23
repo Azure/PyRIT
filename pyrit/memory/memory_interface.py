@@ -2,14 +2,13 @@
 # Licensed under the MIT license.
 
 import abc
-from collections import defaultdict
 import copy
 from datetime import datetime
 import logging
 from pathlib import Path
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import MutableSequence, Optional, Sequence, Union
+from typing import MutableSequence, Optional, Sequence
 import uuid
 
 from pyrit.common.path import RESULTS_PATH
@@ -231,6 +230,27 @@ class MemoryInterface(abc.ABC):
         """
         request_pieces = self._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
+
+    def get_prompt_request_pieces_with_scores(self, entries: list[PromptMemoryEntry]) -> list[PromptRequestPiece]:
+        """
+        Processes a list of entries and retrieves corresponding PromptRequestPiece objects with their associated scores.
+
+        Args:
+            entries (list[PromptMemoryEntry]): The list of database entries to process.
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece objects with their associated scores.
+        """
+        result: list[PromptRequestPiece] = []
+        for entry in entries:
+            prompt_request_piece = entry.get_prompt_request_piece()
+            score_entries = self.query_entries(
+                ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece.id
+            )
+            scores = [score_entry.get_score() for score_entry in score_entries]
+            prompt_request_piece.scores = scores
+            result.append(prompt_request_piece)
+        return result
 
     @abc.abstractmethod
     def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> Sequence[PromptRequestPiece]:
@@ -733,7 +753,7 @@ class MemoryInterface(abc.ABC):
         seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups
 
-    def export_all_conversations_with_scores(self, *, file_path: Optional[Path] = None, export_type: str = "json"):
+    def export_all_conversations(self, *, file_path: Optional[Path] = None, export_type: str = "json"):
         """
         Exports all conversations with scores to a specified file.
         Args:
@@ -743,28 +763,9 @@ class MemoryInterface(abc.ABC):
         """
         all_prompt_pieces = self.get_all_prompt_pieces()
 
-        # Group pieces by original prompt ID
-        grouped_pieces: defaultdict[Union[uuid.UUID, str], list[str]] = defaultdict(list)
-        for piece in all_prompt_pieces:
-            grouped_pieces[piece.original_prompt_id].append(piece.converted_value)
-
-        all_scores = self.get_scores_by_prompt_ids(
-            prompt_request_response_ids=[str(key) for key in list(grouped_pieces.keys())]
-        )
-
-        # Combine data for export
-        combined_data = [
-            {
-                "prompt_request_response_id": str(score.prompt_request_response_id),
-                "conversation": grouped_pieces[score.prompt_request_response_id],
-                "score_value": score.score_value,
-            }
-            for score in all_scores
-        ]
-
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
-            file_name = f"conversations_and_scores.{export_type}"
+            file_name = f"conversations.{export_type}"
             file_path = RESULTS_PATH / file_name
 
-        self.exporter.export_data(combined_data, file_path=file_path, export_type=export_type)
+        self.exporter.export_data(all_prompt_pieces, file_path=file_path, export_type=export_type)
