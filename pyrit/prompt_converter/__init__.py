@@ -3,7 +3,6 @@
 
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
-
 from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverter
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
 from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
@@ -33,6 +32,7 @@ from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
+from pyrit.prompt_converter.pdf_converter import PDFConverter
 from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
 from pyrit.prompt_converter.qr_code_converter import QRCodeConverter
 from pyrit.prompt_converter.random_capital_letters_converter import RandomCapitalLettersConverter
@@ -80,6 +80,7 @@ __all__ = [
     "MathPromptConverter",
     "MorseConverter",
     "NoiseConverter",
+    "PDFConverter",
     "PersuasionConverter",
     "PromptConverter",
     "QRCodeConverter",
