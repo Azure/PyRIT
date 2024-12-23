@@ -1,11 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import dotenv
+import logging
 import os
 import yaml
 import argparse
 from typing import Union, Dict, Any
-from pyrit.common import default_values
+from pyrit.common import path
 from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 
 
@@ -18,6 +20,28 @@ def _load_yaml_to_dict(config_path: str) -> dict:
 MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
 ALL_MODELS = "all_models"
 MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
+
+def _load_environment_files() -> None:
+    """
+    Loads the base environment file from .env if it exists,
+    and then loads a single .env.local file if it exists, overriding previous values.
+    """
+    logger = logging.getLogger(__name__)
+
+    base_file_path = path.HOME_PATH / ".env"
+    local_file_path = path.HOME_PATH / ".env.local"
+
+    # Load the base .env file if it exists
+    if base_file_path.exists():
+        dotenv.load_dotenv(base_file_path, override=True)
+        logger.info(f"Loaded {base_file_path}")
+    else:
+        dotenv.load_dotenv()
+
+    # Load the .env.local file if it exists, to override base .env values
+    if local_file_path.exists():
+        dotenv.load_dotenv(local_file_path, override=True)
+        logger.info(f"Loaded {local_file_path}")
 
 
 def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parameters):
@@ -38,7 +62,7 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
             "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"
         )
 
-    default_values.load_environment_files()
+    _load_environment_files()
     hf_token = os.environ.get("HF_TOKEN")
     if not hf_token:
         raise ValueError("Please set the HF_TOKEN environment variable")

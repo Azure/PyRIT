@@ -5,7 +5,7 @@ import os
 from unittest import mock
 from pathlib import Path
 
-from pyrit.common import default_values
+from pyrit.common import initialize_pyrit
 
 
 @mock.patch("dotenv.load_dotenv")
@@ -20,7 +20,7 @@ def test_load_environment_files_base_only(mock_logger, mock_exists, mock_load_do
     mock_exists.side_effect = [True, False]
     mock_logger.return_value = mock.Mock()
 
-    default_values.load_environment_files()
+    initialize_pyrit._load_environment_files()
 
     assert mock_load_dotenv.call_count == 1
 
@@ -36,7 +36,7 @@ def test_load_environment_files_base_and_local(mock_logger, mock_exists, mock_lo
     mock_exists.side_effect = [True, True]
     mock_logger.return_value = mock.Mock()
 
-    default_values.load_environment_files()
+    initialize_pyrit._load_environment_files()
 
     assert mock_load_dotenv.call_count == 2
 
@@ -48,7 +48,7 @@ def test_load_environment_files_no_base_no_local(mock_logger, mock_exists, mock_
     mock_exists.side_effect = [False, False]
     mock_logger.return_value = mock.Mock()
 
-    default_values.load_environment_files()
+    initialize_pyrit._load_environment_files()
 
     mock_load_dotenv.assert_called_once()
     mock_logger.return_value.info.assert_not_called()
@@ -73,8 +73,10 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
     )
 
     # Run the function
-    default_values.load_environment_files()
+    initialize_pyrit._load_environment_files()
 
     # Check that variables from .env.local override those in .env
     assert os.getenv("TEST_VAR") == "local_value"
     assert os.getenv("COMMON_VAR") == "local_common"
+
+# TODO: Write unit tests for the main function of initialize_pyrit
