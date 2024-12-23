@@ -551,9 +551,13 @@ def test_insert_prompt_memories_not_inserts_embedding(
 
 
 def test_export_conversation_by_orchestrator_id_file_created(
+<<<<<<< HEAD
     duckdb_instance: MemoryInterface, sample_conversation_entries: list[PromptMemoryEntry]
+=======
+    memory: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+>>>>>>> main
 ):
-    orchestrator1_id = sample_conversation_entries[0].get_prompt_request_piece().orchestrator_identifier["id"]
+    orchestrator1_id = sample_conversations[0].orchestrator_identifier["id"]
 
     # Default path in export_conversation_by_orchestrator_id()
     file_name = f"{orchestrator1_id}.json"
@@ -561,9 +565,15 @@ def test_export_conversation_by_orchestrator_id_file_created(
 
     duckdb_instance.exporter = MemoryExporter()
 
+<<<<<<< HEAD
     with patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_prompt_request_pieces") as mock_get:
         mock_get.return_value = sample_conversation_entries
         duckdb_instance.export_conversation_by_orchestrator_id(orchestrator_id=orchestrator1_id)
+=======
+    with patch("pyrit.memory.duckdb_memory.DuckDBMemory._get_prompt_pieces_by_orchestrator") as mock_get:
+        mock_get.return_value = sample_conversations
+        memory.export_conversation_by_orchestrator_id(orchestrator_id=orchestrator1_id)
+>>>>>>> main
 
         # Verify file was created
         assert file_path.exists()
@@ -1203,8 +1213,13 @@ def test_get_seed_prompt_groups_multiple_groups_with_unique_ids(duckdb_instance:
     assert groups[0].prompts[0].prompt_group_id != groups[1].prompts[0].prompt_group_id
 
 
+<<<<<<< HEAD
 def test_export_all_conversations_with_scores_file_created(duckdb_instance: MemoryInterface):
     duckdb_instance.exporter = MemoryExporter()
+=======
+def test_export_all_conversations_file_created(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
+>>>>>>> main
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
         with (
@@ -1213,13 +1228,31 @@ def test_export_all_conversations_with_scores_file_created(duckdb_instance: Memo
         ):
             file_path = Path(temp_file.name)
 
+<<<<<<< HEAD
             mock_get_pieces.return_value = [MagicMock(original_prompt_id="1234", converted_value="sample piece")]
             mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
             duckdb_instance.export_all_conversations_with_scores(file_path=file_path)
+=======
+            mock_get_pieces.return_value = [
+                MagicMock(
+                    original_prompt_id="1234",
+                    converted_value="sample piece",
+                    to_dict=lambda: {"prompt_request_response_id": "1234", "conversation": ["sample piece"]},
+                )
+            ]
+            mock_get_scores.return_value = [
+                MagicMock(
+                    prompt_request_response_id="1234",
+                    score_value=10,
+                    to_dict=lambda: {"prompt_request_response_id": "1234", "score_value": 10},
+                )
+            ]
+>>>>>>> main
 
             assert file_path.exists()
 
 
+<<<<<<< HEAD
 def test_export_all_conversations_with_scores_correct_data(duckdb_instance: MemoryInterface):
     duckdb_instance.exporter = MemoryExporter()
     expected_data = [
@@ -1242,13 +1275,40 @@ def test_export_all_conversations_with_scores_correct_data(duckdb_instance: Memo
             mock_get_scores.return_value = [MagicMock(prompt_request_response_id="1234", score_value=10)]
 
             duckdb_instance.export_all_conversations_with_scores(file_path=file_path)
+=======
+def test_export_all_conversations_correct_data(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
 
+    mock_score = MagicMock(spec=Score)
+    mock_score.prompt_request_response_id = "1234"
+    mock_score.score_value = 10
+
+    mock_prompt_piece = PromptRequestPiece(role="user", original_value="sample piece", scores=[mock_score])
+
+    expected_data = [mock_prompt_piece]
+
+    with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
+        with (
+            patch("pyrit.memory.duckdb_memory.DuckDBMemory.get_all_prompt_pieces") as mock_get_pieces,
+            patch.object(memory.exporter, "export_data") as mock_export_data,
+        ):
+            file_path = Path(temp_file.name)
+
+            mock_get_pieces.return_value = [mock_prompt_piece]
+>>>>>>> main
+
+            memory.export_all_conversations(file_path=file_path)
             mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
             assert mock_export_data.call_args[0][0] == expected_data
 
 
+<<<<<<< HEAD
 def test_export_all_conversations_with_scores_empty_data(duckdb_instance: MemoryInterface):
     duckdb_instance.exporter = MemoryExporter()
+=======
+def test_export_all_conversations_empty_data(memory: MemoryInterface):
+    memory.exporter = MemoryExporter()
+>>>>>>> main
     expected_data: list = []
     with tempfile.NamedTemporaryFile(delete=True, suffix=".json") as temp_file:
         with (
@@ -1261,7 +1321,11 @@ def test_export_all_conversations_with_scores_empty_data(duckdb_instance: Memory
             mock_get_pieces.return_value = []
             mock_get_scores.return_value = []
 
+<<<<<<< HEAD
             duckdb_instance.export_all_conversations_with_scores(file_path=file_path)
+=======
+            memory.export_all_conversations(file_path=file_path)
+>>>>>>> main
             mock_export_data.assert_called_once_with(expected_data, file_path=file_path, export_type="json")
 
 

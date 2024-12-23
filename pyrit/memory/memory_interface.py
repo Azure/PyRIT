@@ -223,6 +223,26 @@ class MemoryInterface(abc.ABC):
         request_pieces = self.get_prompt_request_pieces(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
+    def populate_prompt_piece_scores(self, prompt_request_pieces: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
+        """
+        Adds scores in the database to prompt request piece objects
+
+        Args:
+            entries (list[PromptMemoryEntry]): The list of promptRequestPieces to add
+
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece objects with their associated scores.
+        """
+        result: list[PromptRequestPiece] = []
+        for prompt_request_piece in prompt_request_pieces:
+            score_entries = self.query_entries(
+                ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece.id
+            )
+            scores = [score_entry.get_score() for score_entry in score_entries]
+            prompt_request_piece.scores = scores
+
+        return result
+
     def get_prompt_request_pieces(
         self,
         *,
@@ -268,6 +288,7 @@ class MemoryInterface(abc.ABC):
                 conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
             prompt_pieces = [memory_entry.get_prompt_request_piece() for memory_entry in memory_entries]
+            self.populate_prompt_piece_scores(prompt_pieces)
             return sort_request_pieces(prompt_pieces=prompt_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
@@ -721,7 +742,7 @@ class MemoryInterface(abc.ABC):
         seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups
 
-    def export_all_conversations_with_scores(self, *, file_path: Optional[Path] = None, export_type: str = "json"):
+    def export_all_conversations(self, *, file_path: Optional[Path] = None, export_type: str = "json"):
         """
         Exports all conversations with scores to a specified file.
         Args:
@@ -731,28 +752,9 @@ class MemoryInterface(abc.ABC):
         """
         all_prompt_pieces = self.get_prompt_request_pieces()
 
-        # Group pieces by original prompt ID
-        grouped_pieces: defaultdict[Union[uuid.UUID, str], list[str]] = defaultdict(list)
-        for piece in all_prompt_pieces:
-            grouped_pieces[piece.original_prompt_id].append(piece.converted_value)
-
-        all_scores = self.get_scores_by_prompt_ids(
-            prompt_request_response_ids=[str(key) for key in list(grouped_pieces.keys())]
-        )
-
-        # Combine data for export
-        combined_data = [
-            {
-                "prompt_request_response_id": str(score.prompt_request_response_id),
-                "conversation": grouped_pieces[score.prompt_request_response_id],
-                "score_value": score.score_value,
-            }
-            for score in all_scores
-        ]
-
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
-            file_name = f"conversations_and_scores.{export_type}"
+            file_name = f"conversations.{export_type}"
             file_path = RESULTS_PATH / file_name
 
-        self.exporter.export_data(combined_data, file_path=file_path, export_type=export_type)
+        self.exporter.export_data(all_prompt_pieces, file_path=file_path, export_type=export_type)

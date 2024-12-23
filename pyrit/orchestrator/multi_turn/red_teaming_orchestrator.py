@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, Union
 from uuid import uuid4
 
+from pyrit.common.utils import combine_dict
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
@@ -139,7 +140,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id = str(uuid4())
         adversarial_chat_conversation_id = str(uuid4())
 
-        updated_memory_labels = self._combine_with_global_memory_labels(memory_labels)
+        updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
         # Prepare the conversation by adding any provided messages to memory.
         # If there is no prepended conversation, the turn count is 1.

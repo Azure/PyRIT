@@ -9,8 +9,8 @@ from sqlalchemy.inspection import inspect
 from unit.mocks import get_sample_conversation_entries
 
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.memory.memory_models import PromptMemoryEntry
 
+<<<<<<< HEAD
 
 @pytest.fixture
 def sample_conversation_entries() -> list[PromptMemoryEntry]:
@@ -20,6 +20,9 @@ def sample_conversation_entries() -> list[PromptMemoryEntry]:
 def model_to_dict(instance):
     """Converts a SQLAlchemy model instance into a dictionary."""
     return {c.key: getattr(instance, c.key) for c in inspect(instance).mapper.column_attrs}
+=======
+from unit.mocks import get_sample_conversations
+>>>>>>> main
 
 
 def read_file(file_path, export_type):
@@ -44,18 +47,18 @@ def export(export_type, exporter, data, file_path):
 
 
 @pytest.mark.parametrize("export_type", ["json", "csv"])
-def test_export_to_json_creates_file(tmp_path, sample_conversation_entries, export_type):
+def test_export_to_json_creates_file(tmp_path, export_type):
     exporter = MemoryExporter()
     file_path = tmp_path / f"conversations.{export_type}"
-
+    sample_conversation_entries = get_sample_conversations()
     export(export_type=export_type, exporter=exporter, data=sample_conversation_entries, file_path=file_path)
 
     assert file_path.exists()  # Check that the file was created
     content = read_file(file_path=file_path, export_type=export_type)
     # Perform more detailed checks on content if necessary
     assert len(content) == 3  # Simple check for the number of items
-    # Convert each ConversationStore instance to a dictionary
-    expected_content = [model_to_dict(conv) for conv in sample_conversation_entries]
+    # Convert each PromptRequestPiece instance to a dictionary
+    expected_content = [prompt_request_piece.to_dict() for prompt_request_piece in sample_conversation_entries]
 
     for expected, actual in zip(expected_content, content):
         assert expected["role"] == actual["role"]
@@ -66,8 +69,9 @@ def test_export_to_json_creates_file(tmp_path, sample_conversation_entries, expo
 
 
 @pytest.mark.parametrize("export_type", ["json", "csv"])
-def test_export_to_json_data_with_conversations(tmp_path, sample_conversation_entries, export_type):
+def test_export_to_json_data_with_conversations(tmp_path, export_type):
     exporter = MemoryExporter()
+    sample_conversation_entries = get_sample_conversations()
     conversation_id = sample_conversation_entries[0].conversation_id
 
     # Define the file path using tmp_path

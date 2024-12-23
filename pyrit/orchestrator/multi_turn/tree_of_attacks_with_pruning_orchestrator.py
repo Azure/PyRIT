@@ -6,8 +6,12 @@ import random
 from pathlib import Path
 from typing import Optional
 
+<<<<<<< HEAD
 from treelib import Tree
 
+=======
+from pyrit.common.utils import combine_dict
+>>>>>>> main
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt
@@ -142,7 +146,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
         best_conversation_id = None
 
-        updated_memory_labels = self._combine_with_global_memory_labels(memory_labels)
+        updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
         for iteration in range(1, self._attack_depth + 1):
             logger.info(f"Starting iteration number: {iteration}")

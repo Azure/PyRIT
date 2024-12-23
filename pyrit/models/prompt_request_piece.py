@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from pyrit.models.chat_message import ChatMessage, ChatMessageRole
 from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.models.score import Score
 
 Originator = Literal["orchestrator", "converter", "undefined", "scorer"]
 
@@ -40,6 +41,7 @@ class PromptRequestPiece(abc.ABC):
         converted_value (str): The text of the converted prompt. If prompt is an image, it's a link.
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
+        scores (list[Score]): The scores associated with the prompt.
 
     Methods:
         __str__(): Returns a string representation of the memory entry.
@@ -66,6 +68,7 @@ class PromptRequestPiece(abc.ABC):
         originator: Originator = "undefined",
         original_prompt_id: Optional[uuid.UUID] = None,
         timestamp: Optional[datetime] = None,
+        scores: Optional[List[Score]] = None,
     ):
 
         self.id = id if id else uuid4()
@@ -118,6 +121,8 @@ class PromptRequestPiece(abc.ABC):
         # Original prompt id defaults to id (assumes that this is the original prompt, not a duplicate)
         self.original_prompt_id = original_prompt_id or self.id
 
+        self.scores = scores if scores else []
+
     async def set_sha256_values_async(self):
         """
         This method computes the SHA256 hash values asynchronously.
@@ -145,6 +150,31 @@ class PromptRequestPiece(abc.ABC):
         from pyrit.models.prompt_request_response import PromptRequestResponse
 
         return PromptRequestResponse([self])  # noqa F821
+
+    def to_dict(self) -> dict:
+        return {
+            "id": str(self.id),
+            "role": self.role,
+            "conversation_id": self.conversation_id,
+            "sequence": self.sequence,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "labels": self.labels,
+            "prompt_metadata": self.prompt_metadata,
+            "converter_identifiers": self.converter_identifiers,
+            "prompt_target_identifier": self.prompt_target_identifier,
+            "orchestrator_identifier": self.orchestrator_identifier,
+            "scorer_identifier": self.scorer_identifier,
+            "original_value_data_type": self.original_value_data_type,
+            "original_value": self.original_value,
+            "original_value_sha256": self.original_value_sha256,
+            "converted_value_data_type": self.converted_value_data_type,
+            "converted_value": self.converted_value,
+            "converted_value_sha256": self.converted_value_sha256,
+            "response_error": self.response_error,
+            "originator": self.originator,
+            "original_prompt_id": str(self.original_prompt_id),
+            "scores": [score.to_dict() for score in self.scores],
+        }
 
     def __str__(self):
         return f"{self.prompt_target_identifier}: {self.role}: {self.converted_value}"
