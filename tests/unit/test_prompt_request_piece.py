@@ -257,43 +257,72 @@ async def test_prompt_request_piece_sets_converted_sha256(set_duckdb_in_memory):
     await entry.set_sha256_values_async()
     assert entry.converted_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
 
-@pytest.mark.asyncio
-async def test_score_to_dict():
-    sample_score= Score(
-        id=str(uuid.uuid4()),
-        score_value="false",
-        score_value_description="true false score",
-        score_type="true_false",
-        score_category="Category1",
-        score_rationale="Rationale text",
-        score_metadata={"key": "value"},
-        scorer_class_identifier="Scorer1",
-        prompt_request_response_id=str(uuid.uuid4()),
-        timestamp=datetime.now().isoformat(),
-        task="Task1"
+def test_prompt_request_piece_to_dict():
+    entry = PromptRequestPiece(
+        role="user",
+        original_value="Hello",
+        converted_value="Hello",
+        conversation_id="test_conversation",
+        sequence=1,
+        labels={"label1": "value1"},
+        prompt_metadata="metadata",
+        converter_identifiers=[{"__type__": "Base64Converter", "__module__": "pyrit.prompt_converter.base64_converter"}],
+        prompt_target_identifier={"__type__": "MockPromptTarget", "__module__": "unit.mocks"},
+        orchestrator_identifier={"id": str(uuid.uuid4()), "__type__": "PromptSendingOrchestrator", "__module__": "pyrit.orchestrator.single_turn.prompt_sending_orchestrator"},
+        scorer_identifier={"key": "value"},
+        original_value_data_type="text",
+        converted_value_data_type="text",
+        response_error="none",
+        originator="undefined",
+        original_prompt_id=uuid.uuid4(),
+        timestamp=datetime.now(),
+        scores=[Score(
+            id=str(uuid.uuid4()),
+            score_value="false",
+            score_value_description="true false score",
+            score_type="true_false",
+            score_category="Category1",
+            score_rationale="Rationale text",
+            score_metadata={"key": "value"},
+            scorer_class_identifier="Scorer1",
+            prompt_request_response_id=str(uuid.uuid4()),
+            timestamp=datetime.now(),
+            task="Task1"
+        )]
     )
-    result = sample_score.to_dict()
-    
-    # Check that all keys are present
+
+    result = entry.to_dict()
+
     expected_keys = [
-        "id", "score_value", "score_value_description", "score_type", 
-        "score_category", "score_rationale", "score_metadata", 
-        "scorer_class_identifier", "prompt_request_response_id", 
-        "timestamp", "task"
+        "id", "role", "conversation_id", "sequence", "timestamp", "labels", 
+        "prompt_metadata", "converter_identifiers", "prompt_target_identifier", 
+        "orchestrator_identifier", "scorer_identifier", "original_value_data_type", 
+        "original_value", "original_value_sha256", "converted_value_data_type", 
+        "converted_value", "converted_value_sha256", "response_error", "originator", 
+        "original_prompt_id", "scores"
     ]
-    
+
     for key in expected_keys:
         assert key in result, f"Missing key: {key}"
 
-    # Check the key values
-    assert result["id"] == str(sample_score.id)
-    assert result["score_value"] == sample_score.score_value
-    assert result["score_value_description"] == sample_score.score_value_description
-    assert result["score_type"] == sample_score.score_type
-    assert result["score_category"] == sample_score.score_category
-    assert result["score_rationale"] == sample_score.score_rationale
-    assert result["score_metadata"] == sample_score.score_metadata
-    assert result["scorer_class_identifier"] == sample_score.scorer_class_identifier
-    assert result["prompt_request_response_id"] == str(sample_score.prompt_request_response_id)
-    assert result["timestamp"] == sample_score.timestamp.isoformat()
-    assert result["task"] == sample_score.task
+    assert result["id"] == str(entry.id)
+    assert result["role"] == entry.role
+    assert result["conversation_id"] == entry.conversation_id
+    assert result["sequence"] == entry.sequence
+    assert result["timestamp"] == entry.timestamp.isoformat()
+    assert result["labels"] == entry.labels
+    assert result["prompt_metadata"] == entry.prompt_metadata
+    assert result["converter_identifiers"] == entry.converter_identifiers
+    assert result["prompt_target_identifier"] == entry.prompt_target_identifier
+    assert result["orchestrator_identifier"] == entry.orchestrator_identifier
+    assert result["scorer_identifier"] == entry.scorer_identifier
+    assert result["original_value_data_type"] == entry.original_value_data_type
+    assert result["original_value"] == entry.original_value
+    assert result["original_value_sha256"] == entry.original_value_sha256
+    assert result["converted_value_data_type"] == entry.converted_value_data_type
+    assert result["converted_value"] == entry.converted_value
+    assert result["converted_value_sha256"] == entry.converted_value_sha256
+    assert result["response_error"] == entry.response_error
+    assert result["originator"] == entry.originator
+    assert result["original_prompt_id"] == str(entry.original_prompt_id)
+    assert result["scores"] == [score.to_dict() for score in entry.scores]
