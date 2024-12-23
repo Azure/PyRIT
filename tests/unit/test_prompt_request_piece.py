@@ -8,20 +8,11 @@ import uuid
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 
-<<<<<<< HEAD
 import pytest
 from unit.mocks import MockPromptTarget, get_sample_conversations
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, group_conversation_request_pieces_by_sequence
 from pyrit.models.prompt_request_piece import sort_request_pieces
-=======
-from datetime import datetime
-from unittest.mock import MagicMock, patch
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse, group_conversation_request_pieces_by_sequence
-from pyrit.models.score import Score
->>>>>>> main
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 
@@ -246,7 +237,6 @@ async def test_prompt_request_piece_sets_converted_sha256():
     assert entry.converted_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
 
 
-<<<<<<< HEAD
 def test_order_request_pieces_by_conversation_single_conversation():
     pieces = [
         PromptRequestPiece(
@@ -424,7 +414,7 @@ def test_order_request_pieces_by_conversation_same_timestamp_different_sequences
     ]
 
     assert sort_request_pieces(pieces) == expected
-=======
+    
 def test_prompt_request_piece_to_dict():
     entry = PromptRequestPiece(
         role="user",
@@ -517,4 +507,3 @@ def test_prompt_request_piece_to_dict():
     assert result["originator"] == entry.originator
     assert result["original_prompt_id"] == str(entry.original_prompt_id)
     assert result["scores"] == [score.to_dict() for score in entry.scores]
->>>>>>> main

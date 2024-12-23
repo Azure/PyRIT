@@ -6,13 +6,10 @@ import random
 from pathlib import Path
 from typing import Optional
 
-<<<<<<< HEAD
 from treelib import Tree
 
-=======
-from pyrit.common.utils import combine_dict
->>>>>>> main
 from pyrit.common.path import DATASETS_PATH
+from pyrit.common.utils import combine_dict
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator

@@ -6,12 +6,8 @@ import uuid
 from collections import defaultdict
 from typing import Optional
 
-<<<<<<< HEAD
 from colorama import Fore, Style
 
-=======
-from pyrit.common.utils import combine_dict
->>>>>>> main
 from pyrit.common.display_response import display_image_response
 from pyrit.models import PromptDataType, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator, ScoringOrchestrator

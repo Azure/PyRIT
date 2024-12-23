@@ -235,7 +235,7 @@ class MemoryInterface(abc.ABC):
         """
         result: list[PromptRequestPiece] = []
         for prompt_request_piece in prompt_request_pieces:
-            score_entries = self.query_entries(
+            score_entries = self._query_entries(
                 ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece.id
             )
             scores = [score_entry.get_score() for score_entry in score_entries]

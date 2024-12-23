@@ -6,11 +6,11 @@ import json
 
 import pytest
 from sqlalchemy.inspection import inspect
+from pyrit.memory.memory_models import PromptMemoryEntry
 from unit.mocks import get_sample_conversation_entries
 
 from pyrit.memory.memory_exporter import MemoryExporter
 
-<<<<<<< HEAD
 
 @pytest.fixture
 def sample_conversation_entries() -> list[PromptMemoryEntry]:
@@ -20,9 +20,6 @@ def sample_conversation_entries() -> list[PromptMemoryEntry]:
 def model_to_dict(instance):
     """Converts a SQLAlchemy model instance into a dictionary."""
     return {c.key: getattr(instance, c.key) for c in inspect(instance).mapper.column_attrs}
-=======
-from unit.mocks import get_sample_conversations
->>>>>>> main
 
 
 def read_file(file_path, export_type):
