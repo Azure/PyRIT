@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-experimental
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -52,11 +52,11 @@
 import os
 from pathlib import Path
 
-from pyrit.common import default_values
+from pyrit.common.initialize_pyrit import initialize_pyrit
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type="DuckDB")
 
 # Note: parameters are not required here. They are added here to show how they can be used.
 with OpenAIChatTarget(
@@ -216,7 +216,7 @@ print(score[0])
 # - The `DuckDBMemory` class, implementation of `MemoryInterface`, specializes in handling conversation data using a DuckDB database, enabling easy manipulation and access to conversational data.
 # - The `AzureSQLMemory` class, another implementation of `MemoryInterface`, facilitates storing data in an Azure SQL Database, providing cloud-based persistence for conversation history.
 #
-# You can manually set these memory using `CentralMemory` class or configure them automatically based on environment variables. For more details, check out the memory guide [here](../doc/code/memory/0_memory.md).
+# You can manually set these memory using `CentralMemory` class. For more details, check out the memory guide [here](../doc/code/memory/0_memory.md).
 #
 # Together, these implementations ensure flexibility, allowing users to choose a storage solution that best meets their requirements.
 #
