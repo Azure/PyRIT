@@ -257,6 +257,7 @@ async def test_prompt_request_piece_sets_converted_sha256(set_duckdb_in_memory):
     await entry.set_sha256_values_async()
     assert entry.converted_value_sha256 == "70e01503173b8e904d53b40b3ebb3bded5e5d3add087d3463a4b1abe92f1a8ca"
 
+
 def test_prompt_request_piece_to_dict():
     entry = PromptRequestPiece(
         role="user",
@@ -266,9 +267,15 @@ def test_prompt_request_piece_to_dict():
         sequence=1,
         labels={"label1": "value1"},
         prompt_metadata="metadata",
-        converter_identifiers=[{"__type__": "Base64Converter", "__module__": "pyrit.prompt_converter.base64_converter"}],
+        converter_identifiers=[
+            {"__type__": "Base64Converter", "__module__": "pyrit.prompt_converter.base64_converter"}
+        ],
         prompt_target_identifier={"__type__": "MockPromptTarget", "__module__": "unit.mocks"},
-        orchestrator_identifier={"id": str(uuid.uuid4()), "__type__": "PromptSendingOrchestrator", "__module__": "pyrit.orchestrator.single_turn.prompt_sending_orchestrator"},
+        orchestrator_identifier={
+            "id": str(uuid.uuid4()),
+            "__type__": "PromptSendingOrchestrator",
+            "__module__": "pyrit.orchestrator.single_turn.prompt_sending_orchestrator",
+        },
         scorer_identifier={"key": "value"},
         original_value_data_type="text",
         converted_value_data_type="text",
@@ -276,30 +283,47 @@ def test_prompt_request_piece_to_dict():
         originator="undefined",
         original_prompt_id=uuid.uuid4(),
         timestamp=datetime.now(),
-        scores=[Score(
-            id=str(uuid.uuid4()),
-            score_value="false",
-            score_value_description="true false score",
-            score_type="true_false",
-            score_category="Category1",
-            score_rationale="Rationale text",
-            score_metadata={"key": "value"},
-            scorer_class_identifier="Scorer1",
-            prompt_request_response_id=str(uuid.uuid4()),
-            timestamp=datetime.now(),
-            task="Task1"
-        )]
+        scores=[
+            Score(
+                id=str(uuid.uuid4()),
+                score_value="false",
+                score_value_description="true false score",
+                score_type="true_false",
+                score_category="Category1",
+                score_rationale="Rationale text",
+                score_metadata={"key": "value"},
+                scorer_class_identifier="Scorer1",
+                prompt_request_response_id=str(uuid.uuid4()),
+                timestamp=datetime.now(),
+                task="Task1",
+            )
+        ],
     )
 
     result = entry.to_dict()
 
     expected_keys = [
-        "id", "role", "conversation_id", "sequence", "timestamp", "labels", 
-        "prompt_metadata", "converter_identifiers", "prompt_target_identifier", 
-        "orchestrator_identifier", "scorer_identifier", "original_value_data_type", 
-        "original_value", "original_value_sha256", "converted_value_data_type", 
-        "converted_value", "converted_value_sha256", "response_error", "originator", 
-        "original_prompt_id", "scores"
+        "id",
+        "role",
+        "conversation_id",
+        "sequence",
+        "timestamp",
+        "labels",
+        "prompt_metadata",
+        "converter_identifiers",
+        "prompt_target_identifier",
+        "orchestrator_identifier",
+        "scorer_identifier",
+        "original_value_data_type",
+        "original_value",
+        "original_value_sha256",
+        "converted_value_data_type",
+        "converted_value",
+        "converted_value_sha256",
+        "response_error",
+        "originator",
+        "original_prompt_id",
+        "scores",
     ]
 
     for key in expected_keys:

@@ -7,9 +7,10 @@ import uuid
 
 from pyrit.models.score import Score
 
+
 @pytest.mark.asyncio
 async def test_score_to_dict():
-    sample_score= Score(
+    sample_score = Score(
         id=str(uuid.uuid4()),
         score_value="false",
         score_value_description="true false score",
@@ -20,18 +21,25 @@ async def test_score_to_dict():
         scorer_class_identifier="Scorer1",
         prompt_request_response_id=str(uuid.uuid4()),
         timestamp=datetime.now(),
-        task="Task1"
+        task="Task1",
     )
     result = sample_score.to_dict()
-    
+
     # Check that all keys are present
     expected_keys = [
-        "id", "score_value", "score_value_description", "score_type", 
-        "score_category", "score_rationale", "score_metadata", 
-        "scorer_class_identifier", "prompt_request_response_id", 
-        "timestamp", "task"
+        "id",
+        "score_value",
+        "score_value_description",
+        "score_type",
+        "score_category",
+        "score_rationale",
+        "score_metadata",
+        "scorer_class_identifier",
+        "prompt_request_response_id",
+        "timestamp",
+        "task",
     ]
-    
+
     for key in expected_keys:
         assert key in result, f"Missing key: {key}"
 
