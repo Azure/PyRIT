@@ -21,6 +21,7 @@ MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
 ALL_MODELS = "all_models"
 MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
 
+
 def _load_environment_files() -> None:
     """
     Loads the base environment file from .env if it exists,

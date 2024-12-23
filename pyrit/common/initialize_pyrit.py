@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 MemoryDatabaseType = Literal["InMemory", "DuckDB", "AzureSQL"]
 
+
 def _load_environment_files() -> None:
     """
     Loads the base environment file from .env if it exists,

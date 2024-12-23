@@ -6,13 +6,14 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory, DuckDBMemory, CentralMemory
+from pyrit.memory import DuckDBMemory, CentralMemory
 
 
 @pytest.fixture(autouse=True)
 def reset_memory_instance():
     """Reset CentralMemory instance before each test."""
     CentralMemory._memory_instance = None
+
 
 def test_set_memory_instance():
     """Test that setting a memory instance overrides the default behavior."""
@@ -28,7 +29,9 @@ def test_set_memory_instance():
 
 
 def test_get_memory_instance_not_set():
-    with pytest.raises(ValueError, match="Central memory instance has not been set. Use `set_memory_instance` to set it."):
+    with pytest.raises(
+        ValueError, match="Central memory instance has not been set. Use `set_memory_instance` to set it."
+    ):
         CentralMemory.get_memory_instance()
 
 

@@ -79,4 +79,5 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
     assert os.getenv("TEST_VAR") == "local_value"
     assert os.getenv("COMMON_VAR") == "local_common"
 
+
 # TODO: Write unit tests for the main function of initialize_pyrit
