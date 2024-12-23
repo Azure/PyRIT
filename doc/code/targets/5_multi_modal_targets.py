@@ -96,13 +96,6 @@ with PromptSendingOrchestrator(
 
 # %%
 import pathlib
-<<<<<<< HEAD
-
-=======
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.memory import CentralMemory, DuckDBMemory
-from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest
->>>>>>> main
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget

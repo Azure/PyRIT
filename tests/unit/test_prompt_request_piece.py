@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 import pytest
 from unit.mocks import MockPromptTarget, get_sample_conversations
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, group_conversation_request_pieces_by_sequence
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, group_conversation_request_pieces_by_sequence
 from pyrit.models.prompt_request_piece import sort_request_pieces
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
@@ -414,7 +414,8 @@ def test_order_request_pieces_by_conversation_same_timestamp_different_sequences
     ]
 
     assert sort_request_pieces(pieces) == expected
-    
+
+
 def test_prompt_request_piece_to_dict():
     entry = PromptRequestPiece(
         role="user",

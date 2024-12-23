@@ -9,6 +9,7 @@ from typing import Optional
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
+from pyrit.common.utils import combine_dict
 from pyrit.models import PromptDataType, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator, ScoringOrchestrator
 from pyrit.prompt_converter import PromptConverter

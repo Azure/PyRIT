@@ -5,10 +5,9 @@ import abc
 import copy
 import logging
 import uuid
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import MutableSequence, Optional, Sequence, Union
+from typing import MutableSequence, Optional, Sequence
 
 from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
