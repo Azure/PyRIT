@@ -2,16 +2,33 @@
 
 PyRIT's memory component allows users to track and manage a history of interactions throughout an attack scenario. This feature enables the storage, retrieval, and sharing of conversation entries, making it easier to maintain context and continuity in ongoing interactions.
 
-To simplify memory interaction, the `pyrit.memory.CentralMemory` class automatically manages a shared memory instance across all components in a session. Memory is selected based on the following priority order:
+To simplify memory interaction, the `pyrit.memory.CentralMemory` class automatically manages a shared memory instance across all components in a session. Memory must be set explicitly.
 
-1. **Manual Memory Setting (Highest Priority)**:
-   - If set, `CentralMemory.set_memory_instance(passed_memory)` explicitly defines the memory instance to be used, overriding all other settings.
+**Manual Memory Setting**:
+
+At the beginning of each notebook, make sure to call:
+```
+from pyrit.common.initialize_pyrit import initialize_pyrit
+
+# MemoryDatabaseType = Literal["InMemory", "DuckDB", "AzureSQL"]
+initialize_pyrit(memory_db_type: MemoryDatabaseType, memory_instance_kwargs: Optional[Any])
+```
+
+The `MemoryDatabaseType` is a `Literal` with 3 options: "InMemory", "DuckDB", "AzureSQL". (Read more below)
+   - `initialize_pyrit` takes the `MemoryDatabaseType` and an argument list (`memory_instance_kwargs`), to pass to the memory instance.
+   - When called, `CentralMemory.set_memory_instance(passed_memory)` explicitly defines the memory instance to be used.
+
+###  Memory Database Type Options
+
+**DuckDB:** _Local DuckDB_
+   - Interactions will be stored in a local `DuckDBMemory` instance. See notebook [here](./1_duck_db_memory.ipynb).
+
+**AzureSQL:** _Azure SQL Database_
    - For examples on setting up `AzureSQLMemory`, please refer to the notebook [here](./7_azure_sql_memory_orchestrators.ipynb).
-
-2. **Azure SQL Database**:
-   - If no manual instance is provided, `CentralMemory` will check for Azure SQL settings in the `.env` file or environment. If the following variables are detected, `CentralMemory` automatically configures `AzureSQLMemory` for storage in an Azure SQL Database:
+   - To configure AzureSQLMemory without an extra arguemnt list, these keys should be in your `.env` file:
      - `AZURE_SQL_DB_CONNECTION_STRING`
      - `AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL`
 
-3. **Local DuckDB (Default)**:
-   - If neither a manual memory instance nor Azure SQL settings are available, `CentralMemory` defaults to `DuckDBMemory`, storing interactions locally in a DuckDB instance.
+**InMemory:** _Duck DB with db_path=":memory:"_
+   - This option is sometimes preferable when using PyRIT for quick interactions that do not require storing results in a database.
+   - **Note**: This option will not work for any functionality that checks interactions from memory, such as orchestrators.
