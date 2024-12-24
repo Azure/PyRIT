@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import List, Dict
+from typing import Dict, List
 
 
 def read_txt(file) -> List[Dict[str, str]]:

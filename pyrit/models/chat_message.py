@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional, Any
+from typing import Any, Optional
+
 from pydantic import BaseModel, ConfigDict
 
 from pyrit.models.literals import ChatMessageRole
-
 
 ALLOWED_CHAT_MESSAGE_ROLES = ["system", "user", "assistant"]
 

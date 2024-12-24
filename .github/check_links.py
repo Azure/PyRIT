@@ -1,11 +1,11 @@
+import os
 import re
 import sys
-import os
 import time
-import requests
-from urllib.parse import urlsplit, urlunsplit
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urlsplit, urlunsplit
 
+import requests
 
 skipped_urls = [
     "https://cognitiveservices.azure.com/.default",

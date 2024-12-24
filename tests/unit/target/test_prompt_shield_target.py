@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import pytest
-from unit.mocks import get_sample_conversations, get_audio_request_piece
+from unit.mocks import get_audio_request_piece, get_sample_conversations
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import PromptShieldTarget

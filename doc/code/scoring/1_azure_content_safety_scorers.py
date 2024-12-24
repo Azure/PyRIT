@@ -32,11 +32,11 @@
 
 # %%
 import os
-from pyrit.score import AzureContentFilterScorer
-from pyrit.common import default_values
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.memory import CentralMemory
 
+from pyrit.common import default_values
+from pyrit.memory import CentralMemory
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.score import AzureContentFilterScorer
 
 default_values.load_environment_files()
 

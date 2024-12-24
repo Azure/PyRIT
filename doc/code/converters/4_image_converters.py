@@ -21,15 +21,14 @@
 # %%
 import pathlib
 
-from PIL import Image
 from IPython.display import display
+from PIL import Image
 
-from pyrit.prompt_converter import AddTextImageConverter
-from pyrit.common.path import DATASETS_PATH
-from pyrit.models import SeedPrompt
 from pyrit.common import default_values
+from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory, DuckDBMemory
-
+from pyrit.models import SeedPrompt
+from pyrit.prompt_converter import AddTextImageConverter
 
 default_values.load_environment_files()
 

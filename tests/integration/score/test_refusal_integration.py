@@ -1,19 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pandas as pd
-import numpy as np
 from typing import Generator
 from unittest.mock import patch
+
+import numpy as np
+import pandas as pd
 import pytest
+from integration.mocks import get_memory_interface
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
-
 from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
-from integration.mocks import get_memory_interface
 
 
 @pytest.fixture

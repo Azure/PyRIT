@@ -2,12 +2,12 @@
 # Licensed under the MIT license.
 import json
 import logging
+from typing import Any, Dict, Literal
 
-from typing import Literal, Dict, Any
 from openai import BadRequestError
 
-from pyrit.exceptions import EmptyResponseException, pyrit_target_retry, handle_bad_request_exception
-from pyrit.models import PromptRequestResponse, data_serializer_factory, construct_response_from_request, PromptDataType
+from pyrit.exceptions import EmptyResponseException, handle_bad_request_exception, pyrit_target_retry
+from pyrit.models import PromptDataType, PromptRequestResponse, construct_response_from_request, data_serializer_factory
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

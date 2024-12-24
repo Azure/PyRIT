@@ -17,6 +17,8 @@
 #
 # This notebook shows different ways to export data from memory. This first example exports all conversations from local DuckDB memory with their respective score values in a JSON format. The data can currently be exported both as JSON file or a CSV file that will be saved in your results folder within PyRIT. The CSV export is commented out below. In this example, all conversations are exported, but by using other export functions from `memory_interface`, we can export by specific labels and other methods.
 
+from pyrit.common import default_values
+
 # %%
 from uuid import uuid4
 

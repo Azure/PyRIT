@@ -2,14 +2,12 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Optional, Any
+from typing import Any, Optional
 
 from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer
 from pyrit.common import default_values, net_utility
-from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
-from pyrit.models import construct_response_from_request
+from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
-
 
 logger = logging.getLogger(__name__)
 

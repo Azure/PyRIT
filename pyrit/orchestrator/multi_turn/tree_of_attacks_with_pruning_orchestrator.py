@@ -3,22 +3,21 @@
 
 import logging
 import random
-
 from pathlib import Path
-from treelib import Tree
 from typing import Optional
 
-from pyrit.common.utils import combine_dict
+from treelib import Tree
+
 from pyrit.common.path import DATASETS_PATH
+from pyrit.common.utils import combine_dict
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt
-from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from pyrit.score import SelfAskTrueFalseScorer, SelfAskScaleScorer, TrueFalseQuestion
-from pyrit.score.scorer import Scorer
-
+from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
+from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.score import SelfAskScaleScorer, SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 

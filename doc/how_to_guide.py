@@ -119,12 +119,11 @@ prompt = template.render_template_value(food_item="pizza", food_location="Italy"
 # %%
 import os
 from pathlib import Path
-
 from textwrap import dedent
+
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
-
 
 objective = dedent(
     """

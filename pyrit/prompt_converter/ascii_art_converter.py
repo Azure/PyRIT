@@ -1,9 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 from art import text2art
+
+from pyrit.models import PromptDataType
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class AsciiArtConverter(PromptConverter):

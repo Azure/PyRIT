@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import abc
+from typing import Generic, TypeVar
+
 from pyrit.models import ChatMessage
-from typing import TypeVar, Generic
 
 T = TypeVar("T", str, list[ChatMessage])
 
@@ -14,7 +15,6 @@ class ChatMessageNormalizer(abc.ABC, Generic[T]):
         """
         Normalizes the list of chat messages into a compatible format for the model or target
         """
-        pass
 
     @staticmethod
     def squash_system_message(messages: list[ChatMessage], squash_function) -> list[ChatMessage]:

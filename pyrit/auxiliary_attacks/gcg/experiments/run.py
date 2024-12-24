@@ -1,12 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
-import yaml
 import argparse
-from typing import Union, Dict, Any
-from pyrit.common import default_values
+import os
+from typing import Any, Dict, Union
+
+import yaml
 from train import GreedyCoordinateGradientAdversarialSuffixGenerator
+
+from pyrit.common import default_values
 
 
 def _load_yaml_to_dict(config_path: str) -> dict:

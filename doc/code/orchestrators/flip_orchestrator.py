@@ -12,6 +12,8 @@
 #     name: python3
 # ---
 
+from pyrit.common import default_values
+
 # %% [markdown]
 # # Flip Orchestrator - optional
 #
@@ -25,9 +27,6 @@
 # %%
 from pyrit.orchestrator import FlipAttackOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-
-from pyrit.common import default_values
-
 
 default_values.load_environment_files()
 

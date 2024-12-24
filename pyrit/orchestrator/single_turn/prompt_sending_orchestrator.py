@@ -3,20 +3,19 @@
 
 import logging
 import uuid
-
 from collections import defaultdict
-from colorama import Fore, Style
 from typing import Optional
 
-from pyrit.common.utils import combine_dict
+from colorama import Fore, Style
+
 from pyrit.common.display_response import display_image_response
+from pyrit.common.utils import combine_dict
 from pyrit.models import PromptDataType, PromptRequestResponse
+from pyrit.orchestrator import Orchestrator, ScoringOrchestrator
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer
-from pyrit.orchestrator import Orchestrator, ScoringOrchestrator
-
 
 logger = logging.getLogger(__name__)
 

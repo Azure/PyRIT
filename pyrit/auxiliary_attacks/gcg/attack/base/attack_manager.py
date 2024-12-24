@@ -7,16 +7,16 @@ import math
 import random
 import time
 from copy import deepcopy
-from typing import Optional, Any
+from typing import Any, Optional
 
+import mlflow
 import numpy as np
 import pandas as pd
-import mlflow
 import torch
 import torch.multiprocessing as mp
 import torch.nn as nn
-from fastchat.model import get_conversation_template
 from fastchat.conversation import Conversation, SeparatorStyle
+from fastchat.model import get_conversation_template
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -24,8 +24,8 @@ from transformers import (
     GPTJForCausalLM,
     GPTNeoXForCausalLM,
     LlamaForCausalLM,
-    MixtralForCausalLM,
     MistralForCausalLM,
+    MixtralForCausalLM,
     Phi3ForCausalLM,
 )
 

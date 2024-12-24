@@ -32,7 +32,7 @@ from pyrit.datasets import fetch_many_shot_jailbreaking_examples
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskLikertScorer, LikertScalePaths
+from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
 # Load environment variables
 default_values.load_environment_files()

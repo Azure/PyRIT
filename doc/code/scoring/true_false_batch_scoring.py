@@ -2,12 +2,13 @@
 # # Batch Scoring with SelfAskTrueFalseScorer
 # This example demonstrates how to use SelfAskTrueFalseScorer with the score_prompts_batch_async method.
 
+import uuid
+
 # %%
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 from pyrit.prompt_target import OpenAIChatTarget
-import uuid
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 # Initialize memory
 memory = DuckDBMemory()

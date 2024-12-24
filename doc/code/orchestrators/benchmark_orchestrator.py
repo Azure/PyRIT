@@ -15,14 +15,15 @@
 # %% [markdown]
 # # Benchmark Orchestrator - optional
 
+from pyrit.common import default_values
+from pyrit.datasets import fetch_wmdp_dataset
+from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
+
 # %%
 # Import necessary packages
 from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
-from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
-from pyrit.datasets import fetch_wmdp_dataset
-from pyrit.common import default_values
 
 # %%
 # Load environment variables

@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import MagicMock
 
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.analytics.conversation_analytics import ConversationAnalytics
-from pyrit.memory.memory_models import EmbeddingDataEntry
-
+import pytest
 from unit.mocks import get_sample_conversation_entries
+
+from pyrit.analytics.conversation_analytics import ConversationAnalytics
+from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.memory.memory_models import EmbeddingDataEntry
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def test_get_similar_chat_messages_by_content(mock_memory_interface, sample_conv
     sample_conversations_entries[0].converted_value = "Hello, how are you?"
     sample_conversations_entries[2].converted_value = "Hello, how are you?"
 
-    mock_memory_interface.get_all_prompt_pieces.return_value = sample_conversations_entries
+    mock_memory_interface.get_prompt_request_pieces.return_value = sample_conversations_entries
 
     analytics = ConversationAnalytics(memory_interface=mock_memory_interface)
     similar_messages = analytics.get_prompt_entries_with_same_converted_content(
@@ -60,9 +60,9 @@ def test_get_similar_chat_messages_by_embedding(mock_memory_interface, sample_co
         ),
     ]
 
-    # Mock the get_all_prompt_pieces method to return the mock EmbeddingData entries
+    # Mock the get_prompt_request_pieces method to return the mock EmbeddingData entries
     mock_memory_interface.get_all_embeddings.return_value = mock_embeddings
-    mock_memory_interface.get_all_prompt_pieces.return_value = sample_conversations_entries
+    mock_memory_interface.get_prompt_request_pieces.return_value = sample_conversations_entries
 
     analytics = ConversationAnalytics(memory_interface=mock_memory_interface)
     similar_messages = analytics.get_similar_chat_messages_by_embedding(
