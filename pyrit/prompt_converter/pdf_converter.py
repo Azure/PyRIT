@@ -98,33 +98,31 @@ class PDFConverter(PromptConverter):
             str: The prepared content.
         """
         if self._prompt_template:
+            logger.debug(f"Preparing content with template: {self._prompt_template.value}")
             try:
-                logger.debug(f"Preparing content with template: {self._prompt_template.value}")
-
                 # Parse string prompt to dictionary
-                try:
-                    dynamic_data = ast.literal_eval(prompt) if isinstance(prompt, str) else prompt
-                    logger.debug(f"Parsed dynamic data: {dynamic_data}")
-                except (ValueError, SyntaxError) as e:
-                    raise ValueError(f"Failed to parse prompt into a dictionary: {e}")
+                dynamic_data = ast.literal_eval(prompt) if isinstance(prompt, str) else prompt
+                logger.debug(f"Parsed dynamic data: {dynamic_data}")
 
-                if isinstance(dynamic_data, dict):
-                    # Use SeedPrompt's render_template_value for rendering
-                    rendered_content = self._prompt_template.render_template_value(**dynamic_data)
-                    logger.debug(f"Rendered content: {rendered_content}")
-                    return rendered_content
-                else:
+                if not isinstance(dynamic_data, dict):
                     raise ValueError("Prompt must be a dictionary-compatible object after parsing.")
+
+                # Use SeedPrompt's render_template_value for rendering
+                rendered_content = self._prompt_template.render_template_value(**dynamic_data)
+                logger.debug(f"Rendered content: {rendered_content}")
+                return rendered_content
+
             except (ValueError, KeyError) as e:
                 logger.error(f"Error rendering prompt: {e}")
                 raise ValueError(f"Failed to render the prompt: {e}")
+
+        # If no template is provided, return the raw prompt as content
+        if isinstance(prompt, str):
+            logger.debug("No template provided. Using raw prompt.")
+            return prompt
         else:
-            if isinstance(prompt, str):
-                logger.debug("No template provided. Using raw prompt.")
-                return prompt
-            else:
-                logger.error("Prompt must be a string when no template is provided.")
-                raise ValueError("Prompt must be a string when no template is provided.")
+            logger.error("Prompt must be a string when no template is provided.")
+            raise ValueError("Prompt must be a string when no template is provided.")
 
     def _generate_pdf(self, content: str) -> BytesIO:
         """
