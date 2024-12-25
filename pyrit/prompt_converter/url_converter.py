@@ -4,7 +4,7 @@
 import urllib.parse
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class UrlConverter(PromptConverter):

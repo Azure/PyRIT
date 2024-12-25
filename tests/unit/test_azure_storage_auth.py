@@ -2,11 +2,11 @@
 # Licensed under the MIT license.
 
 from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, patch
-from azure.storage.blob.aio import BlobServiceClient
 from azure.storage.blob import UserDelegationKey
+from azure.storage.blob.aio import BlobServiceClient
 
 from pyrit.auth import AzureStorageAuth
 

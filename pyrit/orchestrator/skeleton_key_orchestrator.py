@@ -3,19 +3,18 @@
 
 import logging
 from pathlib import Path
-
 from typing import Optional
 from uuid import uuid4
 
+from colorama import Fore, Style
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.models import SeedPromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import PromptRequestResponse, SeedPromptDataset
 from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter
-from colorama import Style, Fore
 
 logger = logging.getLogger(__name__)
 

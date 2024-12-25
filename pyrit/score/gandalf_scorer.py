@@ -1,16 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import uuid
 from textwrap import dedent
 from typing import Optional
 
 import requests
 from openai import BadRequestError
-import uuid
 
 from pyrit.exceptions import PyritException, pyrit_target_retry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
-from pyrit.prompt_target import PromptChatTarget, GandalfLevel
+from pyrit.prompt_target import GandalfLevel, PromptChatTarget
 from pyrit.score.scorer import Scorer
 
 

@@ -1,13 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from abc import ABC
 import json
 import logging
 import os
+from abc import ABC
+from typing import Callable
+
 from openai import RateLimitError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
-from typing import Callable
 
 from pyrit.exceptions.exceptions_helpers import log_exception
 from pyrit.models.prompt_request_piece import PromptRequestPiece

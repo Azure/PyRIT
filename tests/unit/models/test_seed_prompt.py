@@ -1,14 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 import uuid
 
-from pyrit.models import (
-    SeedPrompt,
-    SeedPromptGroup,
-    SeedPromptDataset,
-)
+import pytest
+
+from pyrit.models import SeedPrompt, SeedPromptDataset, SeedPromptGroup
 
 
 @pytest.fixture

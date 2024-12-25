@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from dataclasses import dataclass
+
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 

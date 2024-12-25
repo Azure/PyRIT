@@ -49,9 +49,9 @@
 # %%
 import textwrap
 
-from pyrit.prompt_target import GandalfTarget, GandalfLevel, OpenAIChatTarget
-from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
+from pyrit.orchestrator import RedTeamingOrchestrator
+from pyrit.prompt_target import GandalfLevel, GandalfTarget, OpenAIChatTarget
 from pyrit.score import GandalfScorer
 
 default_values.load_environment_files()
@@ -97,13 +97,11 @@ with RedTeamingOrchestrator(
 import logging
 from typing import List
 
+from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import PromptConverter, Base64Converter
+from pyrit.prompt_converter import Base64Converter, PromptConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
-
-
-from pyrit.common import default_values
 
 default_values.load_environment_files()
 
@@ -133,13 +131,11 @@ with PromptSendingOrchestrator(objective_target=target, prompt_converters=conver
 # %%
 import textwrap
 
+from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.common import default_values
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
-from pyrit.prompt_target import OpenAIChatTarget
-
-from pyrit.prompt_target import CrucibleTarget
+from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
 
 default_values.load_environment_files()

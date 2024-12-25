@@ -1,7 +1,9 @@
 # Find all .py files in the docs directory as this script and convert them to .ipynb
 # This excludes the deployment directory
 
-import argparse, os, subprocess
+import argparse
+import os
+import subprocess
 from pathlib import Path
 
 skip_files = {

@@ -2,18 +2,19 @@
 # Licensed under the MIT license.
 
 import asyncio
-from aioconsole import ainput
 import concurrent.futures
 import logging
-from typing import Callable, Optional, Union, Awaitable
+from typing import Awaitable, Callable, Optional, Union
 from uuid import uuid4
 
-from pyrit.score import Scorer
+from aioconsole import ainput
+
 from pyrit.models import Score
 from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter
+from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 

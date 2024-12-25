@@ -26,14 +26,15 @@
 #
 # Reference: [Jailbreaking Large Language Models with Symbolic Mathematics](https://arxiv.org/pdf/2409.11445)
 
+import pathlib
+
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import MathPromptConverter
-from pyrit.models import SeedPrompt
-from pyrit.common.path import DATASETS_PATH
-import pathlib
+from pyrit.prompt_target import OpenAIChatTarget
 
 # Load default environment values (API keys, endpoints, etc.)
 default_values.load_environment_files()

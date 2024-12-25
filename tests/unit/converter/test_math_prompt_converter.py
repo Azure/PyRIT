@@ -1,11 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPrompt
 from pyrit.prompt_converter import ConverterResult
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, SeedPrompt
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 
 

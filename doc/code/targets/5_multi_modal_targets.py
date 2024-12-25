@@ -24,16 +24,16 @@
 #
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
+from IPython.display import display
+
 # %%
 from PIL import Image
-from IPython.display import display
 
 from pyrit.common import default_values
 from pyrit.memory import CentralMemory, DuckDBMemory
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIDALLETarget
-
 
 prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 default_values.load_environment_files()
@@ -65,11 +65,11 @@ with PromptSendingOrchestrator(objective_target=img_prompt_target) as orchestrat
 #
 # Similarly, this example shows how to use the TTS (audio) target to convert text to speech
 
-# %%
-from pyrit.prompt_target import OpenAITTSTarget, OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import TranslationConverter
 
+# %%
+from pyrit.prompt_target import OpenAIChatTarget, OpenAITTSTarget
 
 converter_target = OpenAIChatTarget()
 
@@ -96,10 +96,9 @@ with PromptSendingOrchestrator(
 
 # %%
 import pathlib
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.memory import CentralMemory, DuckDBMemory
-from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_target import OpenAIChatTarget
 
 
 CentralMemory.set_memory_instance(DuckDBMemory())

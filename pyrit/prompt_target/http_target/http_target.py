@@ -2,13 +2,14 @@
 # Licensed under the MIT license.
 
 
-import httpx
 import json
 import logging
 import re
-from typing import Callable, Optional, Any
+from typing import Any, Callable, Optional
 
-from pyrit.models import construct_response_from_request, PromptRequestPiece, PromptRequestResponse
+import httpx
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)

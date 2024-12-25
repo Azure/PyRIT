@@ -4,9 +4,9 @@
 
 import json
 import re
-import requests
-
 from typing import Callable
+
+import requests
 
 
 def get_http_target_json_response_callback_function(key: str) -> Callable:

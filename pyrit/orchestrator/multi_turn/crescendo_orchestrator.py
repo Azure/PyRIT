@@ -9,18 +9,13 @@ from uuid import uuid4
 
 from pyrit.common.utils import combine_dict
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions import (
-    InvalidJsonException,
-    pyrit_json_retry,
-    remove_markdown_json,
-)
+from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
+from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer, SelfAskScaleScorer
-
 
 logger = logging.getLogger(__name__)
 
@@ -325,7 +320,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             )
 
         elif objective_score:
-            eval_score_prompt = self._memory.get_prompt_request_pieces_by_id(
+            eval_score_prompt = self._memory.get_prompt_request_pieces(
                 prompt_ids=[str(objective_score.prompt_request_response_id)]
             )[0].converted_value
 
@@ -413,6 +408,6 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         Args:
             conversation_id (str): The ID of the conversation.
         """
-        target_messages = self._memory._get_prompt_pieces_with_conversation_id(conversation_id=conversation_id)
+        target_messages = self._memory.get_prompt_request_pieces(conversation_id=conversation_id)
         for message in target_messages:
             logger.info(f"{message.role}: {message.converted_value}\n")

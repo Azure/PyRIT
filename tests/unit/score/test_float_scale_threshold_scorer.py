@@ -1,23 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import uuid
 
-from pyrit.memory import MemoryInterface
+from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Score
-from pyrit.memory import CentralMemory
 from pyrit.score import FloatScaleThresholdScorer
-
-from unit.mocks import get_memory_interface
-
-
-@pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
 
 
 @pytest.mark.parametrize("threshold", [0.3, 0.5, 0.7])

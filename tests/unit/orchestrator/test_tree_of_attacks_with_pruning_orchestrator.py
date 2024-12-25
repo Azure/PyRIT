@@ -2,40 +2,29 @@
 # Licensed under the MIT license.
 
 from pathlib import Path
-import pytest
-
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+from unit.mocks import MockPromptTarget
+
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import MemoryInterface
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
-from unit.mocks import MockPromptTarget, get_memory_interface
 
 
 @pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
+def objective_target(patch_central_database) -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 @pytest.fixture
-def objective_target(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        return MockPromptTarget()
+def adversarial_chat(patch_central_database) -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 @pytest.fixture
-def adversarial_chat(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        return MockPromptTarget()
-
-
-@pytest.fixture
-def scoring_target(memory) -> MockPromptTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        return MockPromptTarget()
+def scoring_target() -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 def get_single_line_string(input: str) -> str:
@@ -166,7 +155,7 @@ async def test_run_attack_single_turn_success(
         assert mock_scoring_target.call_count == 2 if on_topic_checking_enabled else 1
 
         # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
-        assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
+        assert len(tap_orchestrator._memory.get_prompt_request_pieces()) == 7 if on_topic_checking_enabled else 6
 
 
 @pytest.mark.asyncio
@@ -223,7 +212,7 @@ async def test_run_attack_max_depth_reached(
         assert mock_scoring_target.call_count == 2 if on_topic_checking_enabled else 1
 
         # 4 conversation turns and 3 system prompts, scoring prompts are not stored as of now
-        assert len(tap_orchestrator._memory.get_all_prompt_pieces()) == 7 if on_topic_checking_enabled else 6
+        assert len(tap_orchestrator._memory.get_prompt_request_pieces()) == 7 if on_topic_checking_enabled else 6
 
 
 @pytest.mark.asyncio

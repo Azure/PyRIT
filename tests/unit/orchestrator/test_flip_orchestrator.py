@@ -1,14 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from pyrit.orchestrator import FlipAttackOrchestrator, PromptSendingOrchestrator
-from pyrit.prompt_target import PromptTarget
+
 from pyrit.memory import MemoryInterface
-from pyrit.memory import DuckDBMemory, CentralMemory
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.orchestrator import FlipAttackOrchestrator, PromptSendingOrchestrator
 from pyrit.prompt_converter import FlipConverter
+from pyrit.prompt_target import PromptTarget
 
 
 @pytest.fixture
@@ -17,15 +18,7 @@ def mock_objective_target():
 
 
 @pytest.fixture
-def mock_central_memory_instance():
-    """Fixture to mock CentralMemory.get_memory_instance"""
-    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    with patch.object(CentralMemory, "get_memory_instance", return_value=duckdb_in_memory) as duck_db_memory:
-        yield duck_db_memory
-
-
-@pytest.fixture
-def flip_attack_orchestrator(mock_objective_target, mock_central_memory_instance):
+def flip_attack_orchestrator(mock_objective_target):
     return FlipAttackOrchestrator(objective_target=mock_objective_target, batch_size=5, verbose=True)
 
 

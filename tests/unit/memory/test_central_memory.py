@@ -2,11 +2,12 @@
 # Licensed under the MIT license.
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory, DuckDBMemory, CentralMemory
+from pyrit.memory import AzureSQLMemory, CentralMemory, DuckDBMemory
 
 
 @pytest.fixture(autouse=True)

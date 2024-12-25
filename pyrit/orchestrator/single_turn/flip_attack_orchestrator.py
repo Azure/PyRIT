@@ -1,20 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pathlib
 import logging
-
+import pathlib
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestResponse
+from pyrit.models import PromptRequestResponse, SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models import SeedPrompt
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
-
 
 logger = logging.getLogger(__name__)
 

@@ -3,5 +3,4 @@
 
 from pyrit.analytics.conversation_analytics import ConversationAnalytics
 
-
 __all__ = ["ConversationAnalytics"]

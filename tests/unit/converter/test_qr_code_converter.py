@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 import os
-import pytest
-
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 from pyrit.prompt_converter import QRCodeConverter
 

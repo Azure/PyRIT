@@ -32,6 +32,7 @@
 
 # %%
 import os
+
 from pyrit.common import default_values
 
 default_values.load_environment_files()
@@ -64,8 +65,10 @@ ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, 
 
 # %%
 from pathlib import Path
+
+from azure.ai.ml.entities import BuildContext, Environment
+
 from pyrit.common.path import HOME_PATH
-from azure.ai.ml.entities import Environment, BuildContext
 
 # Configure the AML environment with path to Dockerfile and dependencies
 env_docker_context = Environment(

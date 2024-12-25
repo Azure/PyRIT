@@ -32,6 +32,8 @@
 # Additionally, you need to install playwright by executing `playwright install`.
 
 
+import os
+
 # %% [markdown]
 # ## Example: Interacting with a Web Application using `PlaywrightTarget`
 #
@@ -44,11 +46,10 @@
 # Before we can interact with the web application, we need to start the Flask app that serves the chatbot, this will be done in a subprocess
 # %%
 import subprocess
-import os
 import sys
 import time
-from urllib.request import urlopen
 from urllib.error import URLError
+from urllib.request import urlopen
 
 
 def start_flask_app():
@@ -83,6 +84,8 @@ def start_flask_app():
 # Start the Flask app
 flask_process = start_flask_app()
 
+from playwright.async_api import Page, async_playwright
+
 # %% [markdown]
 # The flask app should now be running locally:
 #
@@ -92,10 +95,9 @@ flask_process = start_flask_app()
 # This is playwright script that interacts with the chatbot web application.
 # %%
 from pyrit.common import default_values
-from playwright.async_api import Page, async_playwright
-from pyrit.prompt_target import PlaywrightTarget
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.models import PromptRequestPiece
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_target import PlaywrightTarget
 
 # Load environment variables (optional)
 default_values.load_environment_files()

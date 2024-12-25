@@ -2,8 +2,10 @@
 # Licensed under the MIT license.
 
 import abc
+
 from typing import Optional
-from pyrit.models import data_serializer_factory, PromptDataType
+
+from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
 

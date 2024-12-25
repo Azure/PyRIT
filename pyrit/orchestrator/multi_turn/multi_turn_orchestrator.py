@@ -4,19 +4,19 @@
 import asyncio
 import logging
 import uuid
-
 from abc import abstractmethod
-from colorama import Fore, Style
 from pathlib import Path
 from typing import Optional, Union
 
+from colorama import Fore, Style
+
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import CentralMemory
-from pyrit.models import Score, SeedPrompt, PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
 from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)

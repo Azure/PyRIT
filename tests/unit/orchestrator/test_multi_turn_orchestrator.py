@@ -1,15 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 import uuid
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score
-from pyrit.prompt_target import PromptChatTarget
+import pytest
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnAttackResult
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrchestrator
+from pyrit.prompt_target import PromptChatTarget
 
 
 @pytest.fixture

@@ -2,7 +2,9 @@
 # Licensed under the MIT license.
 
 import asyncio
+
 import pytest
+
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 
 
