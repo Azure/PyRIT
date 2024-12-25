@@ -4,7 +4,7 @@
 from pyrit.common.logger import logger
 from io import BytesIO
 import ast
-from typing import Optional, Union
+from typing import Optional
 
 from fpdf import FPDF
 
@@ -48,7 +48,7 @@ class PDFConverter(PromptConverter):
         self._column_width = column_width
         self._row_height = row_height
 
-    async def convert_async(self, *, prompt: Union[str, dict], input_type: PromptDataType = "text") -> ConverterResult:
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Converts the given prompt into a PDF. If a template is provided, it injects the prompt into the template,
         otherwise, it generates a simple PDF with the prompt as the content.
@@ -87,12 +87,12 @@ class PDFConverter(PromptConverter):
         """
         return input_type == "text"
 
-    def _prepare_content(self, prompt: Union[str, dict]) -> str:
+    def _prepare_content(self, prompt: str) -> str:
         """
         Prepares the content for the PDF, either from a template or directly from the prompt.
 
         Args:
-            prompt (Union[str, dict]): The input prompt.
+            prompt (str): The input prompt.
 
         Returns:
             str: The prepared content.

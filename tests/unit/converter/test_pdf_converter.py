@@ -2,20 +2,12 @@
 # Licensed under the MIT license.
 
 from io import BytesIO
-from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import SeedPrompt, DataTypeSerializer
 from pyrit.prompt_converter import ConverterResult, PDFConverter
-from unit.mocks import get_memory_interface
-
-
-@pytest.fixture
-def memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
 
 
 @pytest.fixture
