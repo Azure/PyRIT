@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from io import BytesIO
 from typing import Generator
 from unittest.mock import MagicMock, patch
@@ -9,9 +8,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models.data_type_serializer import DataTypeSerializer
-from pyrit.prompt_converter import ConverterResult
-from pyrit.prompt_converter.pdf_converter import PDFConverter
+from pyrit.models import SeedPrompt, DataTypeSerializer
+from pyrit.prompt_converter import ConverterResult, PDFConverter
 from unit.mocks import get_memory_interface
 
 
@@ -23,7 +21,7 @@ def memory_interface() -> Generator[MemoryInterface, None, None]:
 @pytest.fixture
 def pdf_converter_no_template():
     """A PDFConverter with no template path provided."""
-    return PDFConverter(template_path=None)
+    return PDFConverter(prompt_template=None)
 
 
 @pytest.fixture
@@ -34,17 +32,23 @@ def pdf_converter_with_template(
     template_content = "This is a test template. Prompt: {{ prompt }}"
     template_file = tmp_path / "test_template.txt"
     template_file.write_text(template_content)
-    converter = PDFConverter(template_path=str(template_file))
+    template = SeedPrompt(
+        value=template_content,
+        data_type="text",
+        name="test_template",
+        parameters=["prompt"],
+    )
+    converter = PDFConverter(prompt_template=template)
 
     yield converter
     if template_file.exists():
-        os.remove(template_file)
+        template_file.unlink()
 
 
 @pytest.fixture
 def pdf_converter_nonexistent_template():
     """A PDFConverter with a non-existent template path."""
-    return PDFConverter(template_path="nonexistent_template_path.txt")
+    return PDFConverter(prompt_template="nonexistent_prompt_template.txt")
 
 
 @pytest.mark.asyncio
@@ -120,7 +124,7 @@ async def test_convert_async_nonexistent_template(pdf_converter_nonexistent_temp
 async def test_convert_async_custom_font_and_size():
     """Test PDF generation with custom font and size parameters."""
     converter = PDFConverter(
-        template_path=None,
+        prompt_template=None,
         font_type="Courier",
         font_size=14,
         page_width=200,
@@ -149,12 +153,12 @@ def test_input_supported(pdf_converter_no_template):
 async def test_convert_async_end_to_end_no_reader(tmp_path):
     prompt = "Test for PDF generation."
     pdf_file_path = tmp_path / "output.pdf"
-    converter = PDFConverter(template_path=None)
+    converter = PDFConverter(prompt_template=None)
 
     result = await converter.convert_async(prompt=prompt)
     with open(pdf_file_path, "wb") as pdf_file:
         pdf_file.write(result.output_text.encode("latin1"))
 
     assert pdf_file_path.exists()
-    assert os.path.getsize(pdf_file_path) > 0
+    assert pdf_file_path.stat().st_size > 0
     pdf_file_path.unlink()
