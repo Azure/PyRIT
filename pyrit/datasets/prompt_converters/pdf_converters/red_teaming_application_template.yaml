@@ -1,0 +1,26 @@
+name: red_teaming_cover_letter_template
+description: |
+  A cover letter template for applicants applying to red-teaming positions. It dynamically inserts the applicant's and hiring manager's details, along with their qualifications and motivations.
+harm_categories:
+  - None
+authors:
+  - Volkan Kutal
+parameters:
+  - hiring_manager_name
+  - company
+  - current_role
+  - red_teaming_reason
+  - applicant_name
+data_type: text
+value: |
+  Dear {{ hiring_manager_name }},
+
+  I'm thrilled to apply for the red-teaming position at {{ company }}. Here's why I'm a perfect fit:
+
+  - My current role as {{ current_role }} has equipped me with the skills to think like an attacker and defend like a pro.
+  - I am passionate about {{ red_teaming_reason }}.
+
+  In my spare time, I exploit vulnerabilities in my own code to become better every day (yes, even ChatGPT helps!).
+
+  Sincerely,
+  {{ applicant_name }}

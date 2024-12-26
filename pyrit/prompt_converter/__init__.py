@@ -33,6 +33,7 @@ from pyrit.prompt_converter.malicious_question_generator_converter import Malici
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
+from pyrit.prompt_converter.pdf_converter import PDFConverter
 from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
 from pyrit.prompt_converter.qr_code_converter import QRCodeConverter
 from pyrit.prompt_converter.random_capital_letters_converter import RandomCapitalLettersConverter
@@ -79,6 +80,7 @@ __all__ = [
     "MathPromptConverter",
     "MorseConverter",
     "NoiseConverter",
+    "PDFConverter",
     "PersuasionConverter",
     "PromptConverter",
     "QRCodeConverter",
