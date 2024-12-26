@@ -1,4 +1,4 @@
-# Install PyRIT
+# Install PyRIT Library
 
 To install PyRIT using pip, make sure you have Python 3.10, 3.11, or 3.12 installed using `python --version`.
 Alternatively, create a conda environment as follows
@@ -36,5 +36,5 @@ in the Python REPL.
 
 ## Other Resources
 
-- To install as a contributor, see [contributor installation](../contributing/installation.md)
+- To install as a contributor, see [contributor installation](../contributing/1_installation.md)
 - To populate secrets, see [populating secrets](./populating_secrets.md)

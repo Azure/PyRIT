@@ -37,7 +37,7 @@ repos:
     hooks:
     - id: check-links
       name: Check Links in Python and md Files
-      entry: python ./.github/check_links.py
+      entry: python ./build/check_links.py
       language: python
       files: ^.*\.(py|md)$
       additional_dependencies: ['requests']
@@ -59,3 +59,12 @@ repos:
         entry: mypy
         language: system
         types: [ python ]
+
+  - repo: local
+    hooks:
+      - id: website
+        name: Jupyter Book Build Check
+        entry: jb build -W -q ./doc
+        language: system
+        types: [python]
+        pass_filenames: false

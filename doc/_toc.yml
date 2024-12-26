@@ -9,13 +9,17 @@ chapters:
     - file: setup/use_azure_sql_db
   - file: contributing/README
     sections:
-    - file: contributing/exception
-    - file: contributing/git
-    - file: contributing/incorporating_research
-    - file: contributing/installation
-    - file: contributing/release_process
-    - file: contributing/style_guide
-    - file: contributing/tests
+    - file: contributing/1_installation
+    - file: contributing/2_git
+    - file: contributing/3_incorporating_research
+    - file: contributing/4_style_guide
+    - file: contributing/5_running_tests
+    - file: contributing/6_unit_tests
+    - file: contributing/7_integration_tests
+    - file: contributing/8_notebooks
+    - file: contributing/9_pre_commit
+    - file: contributing/10_exception
+    - file: contributing/11_release_process
   - file: code/architecture
   - file: code/user_guide
     sections:
@@ -68,6 +72,7 @@ chapters:
         - file: code/converters/6_human_converter
         - file: code/converters/ansi_attack_converter
         - file: code/converters/char_swap_attack_generator
+        - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
     - file: code/scoring/0_scoring
       sections:

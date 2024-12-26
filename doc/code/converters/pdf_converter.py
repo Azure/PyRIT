@@ -1,5 +1,5 @@
 # %% [markdown]
-# **PDF Converter with Multiple Modes**
+# # PDF Converter with Multiple Modes
 #
 # This script demonstrates the use of the `PDFConverter` for generating PDFs in two different modes:
 #
@@ -8,7 +8,7 @@
 #
 # The `PromptSendingOrchestrator` is used to handle the interaction with the `PDFConverter` and the mock `TextTarget` target system.
 #
-# ### Key Features
+# ## Key Features
 #
 # 1. **Template-Based Generation**:
 #    - Populate placeholders in a YAML-based template using dynamic data.
@@ -40,9 +40,7 @@ prompt_data = {
 }
 
 # Load the YAML template for the PDF generation
-template_path = (
-    pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "red_teaming_application_template.yaml"
-)
+template_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "red_teaming_application_template.yaml"
 if not template_path.exists():
     raise FileNotFoundError(f"Template file not found: {template_path}")
 
@@ -95,9 +93,9 @@ prompts = [prompt]
 
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
-    objective_target=prompt_target,
-    prompt_converters=[pdf_converter],
-    verbose=False,
+    objective_target=prompt_target,  
+    prompt_converters=[pdf_converter],  
+    verbose=False,  
 ) as orchestrator:
     await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 
