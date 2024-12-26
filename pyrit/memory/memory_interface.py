@@ -230,18 +230,16 @@ class MemoryInterface(abc.ABC):
             prompt_request_pieces (list[PromptRequestPiece]): The list of PromptRequestPieces to add scores to.
 
         Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece objects with their associated scores.
+            None
         """
-        result: list[PromptRequestPiece] = []
         for prompt_request_piece in prompt_request_pieces:
             score_entries = self._query_entries(
                 ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece.original_prompt_id
             )
             scores = [score_entry.get_score() for score_entry in score_entries]
             prompt_request_piece.scores = scores
-            result.append(prompt_request_piece)
 
-        return result
+        return None
 
     def get_prompt_request_pieces(
         self,
