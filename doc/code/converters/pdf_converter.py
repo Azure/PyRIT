@@ -1,5 +1,5 @@
 # %% [markdown]
-# **PDF Converter with Multiple Modes**
+# # PDF Converter with Multiple Modes:
 #
 # This script demonstrates the use of the `PDFConverter` for generating PDFs in two different modes:
 #
