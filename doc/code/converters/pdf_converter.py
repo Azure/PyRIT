@@ -1,5 +1,5 @@
 # %% [markdown]
-# **PDF Converter with Multiple Modes**
+# # PDF Converter with Multiple Modes:
 #
 # This script demonstrates the use of the `PDFConverter` for generating PDFs in two different modes:
 #
@@ -8,7 +8,7 @@
 #
 # The `PromptSendingOrchestrator` is used to handle the interaction with the `PDFConverter` and the mock `TextTarget` target system.
 #
-# ### Key Features
+# ## Key Features
 #
 # 1. **Template-Based Generation**:
 #    - Populate placeholders in a YAML-based template using dynamic data.
@@ -74,7 +74,9 @@ with PromptSendingOrchestrator(
 
     await orchestrator.print_conversations_async()  # type: ignore
 
-# %% Direct Prompt PDF Generation (No Template)
+# %%
+# Direct Prompt PDF Generation (No Template)
+
 # Define a simple string prompt (no templates)
 prompt = "This is a simple test string for PDF generation. No templates here!"
 

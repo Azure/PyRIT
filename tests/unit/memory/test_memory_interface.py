@@ -1576,3 +1576,55 @@ def test_get_prompt_request_pieces_sorts(
         if new_value != current_value:
             if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
                 assert False, "Conversation IDs are not grouped together"
+
+
+def test_get_prompt_request_pieces_calls_populate_prompt_piece_scores(
+    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
+):
+    conversation_id = sample_conversations[0].conversation_id
+    duckdb_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
+
+    with patch.object(duckdb_instance, "populate_prompt_piece_scores") as mock_populate:
+        duckdb_instance.get_prompt_request_pieces(conversation_id=conversation_id)
+        assert mock_populate.called
+
+
+def test_populate_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
+    original_id = uuid4()
+    duplicate_id = uuid4()
+
+    pieces = [
+        PromptRequestPiece(
+            id=original_id,
+            role="assistant",
+            original_value="prompt text",
+        ),
+        PromptRequestPiece(
+            id=duplicate_id,
+            role="assistant",
+            original_value="prompt text",
+            original_prompt_id=original_id,
+        ),
+    ]
+
+    duckdb_instance.add_request_pieces_to_memory(request_pieces=pieces)
+
+    score = Score(
+        score_value=str(0.8),
+        score_value_description="Sample description",
+        score_type="float_scale",
+        score_category="Sample category",
+        score_rationale="Sample rationale",
+        score_metadata="Sample metadata",
+        prompt_request_response_id=original_id,
+    )
+    duckdb_instance.add_scores_to_memory(scores=[score])
+
+    duckdb_instance.populate_prompt_piece_scores(pieces)
+
+    assert len(pieces[0].scores) == 1
+    assert pieces[0].scores[0].score_value == "0.8"
+
+    # Check that the duplicate piece has the same score as the original
+    assert len(pieces[1].scores) == 1
+    assert pieces[1].scores[0].score_value == "0.8"
