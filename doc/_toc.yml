@@ -74,6 +74,7 @@ chapters:
         - file: code/converters/char_swap_attack_generator
         - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
+        - file: code/converters/pdf_converter
     - file: code/scoring/0_scoring
       sections:
       - file: code/scoring/1_azure_content_safety_scorers
