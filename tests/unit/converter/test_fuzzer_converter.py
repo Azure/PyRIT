@@ -28,7 +28,7 @@ from pyrit.prompt_converter import (
         FuzzerSimilarConverter,
     ],
 )
-def test_converter_init_templates_not_null(converter_class) -> None:
+def test_converter_init_templates_not_null(converter_class, duckdb_instance) -> None:
     prompt_target = MockPromptTarget()
     converter = converter_class(converter_target=prompt_target)
     assert converter.system_prompt
@@ -56,7 +56,7 @@ def test_converter_init_templates_not_null(converter_class) -> None:
     "update",
     [True, False],
 )
-async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class, update):
+async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class, update, duckdb_instance):
     prompt_target = MockPromptTarget()
 
     if converter_class != FuzzerCrossOverConverter:
@@ -108,7 +108,7 @@ async def test_converter_send_prompt_async_bad_json_exception_retries(converted_
         FuzzerSimilarConverter,
     ],
 )
-def test_fuzzer_converter_input_supported(converter_class) -> None:
+def test_fuzzer_converter_input_supported(converter_class, duckdb_instance) -> None:
     prompt_target = MockPromptTarget()
     converter = converter_class(converter_target=prompt_target)
     assert converter.input_supported("text") is True
