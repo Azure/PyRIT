@@ -33,4 +33,3 @@ PyRIT test files can be run using `pytest`.
      ```bash
      pytest tests\test_aml_online_endpoint_chat.py::test_get_headers_with_empty_api_key
      ```
-
