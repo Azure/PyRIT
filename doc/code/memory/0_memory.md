@@ -18,7 +18,7 @@ The `MemoryDatabaseType` is a `Literal` with 3 options: "InMemory", "DuckDB", "A
    - `initialize_pyrit` takes the `MemoryDatabaseType` and an argument list (`memory_instance_kwargs`), to pass to the memory instance.
    - When called, `CentralMemory.set_memory_instance(passed_memory)` explicitly defines the memory instance to be used.
 
-###  Memory Database Type Options
+##  Memory Database Type Options
 
 **DuckDB:** _Local DuckDB_
    - Interactions will be stored in a local `DuckDBMemory` instance. See notebook [here](./1_duck_db_memory.ipynb).
