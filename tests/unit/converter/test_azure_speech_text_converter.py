@@ -1,12 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
+from unittest.mock import MagicMock, patch
+
 import azure.cognitiveservices.speech as speechsdk
+import pytest
 
 from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
-
-from unittest.mock import MagicMock, patch
 
 
 @patch("pyrit.common.default_values.get_required_value", side_effect=lambda env_var_name, passed_value: passed_value)

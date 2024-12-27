@@ -3,16 +3,16 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import uuid
-import yaml
-
+from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-from collections import defaultdict
-from jinja2 import Template, StrictUndefined
+
+import yaml
+from jinja2 import StrictUndefined, Template
 
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType

@@ -1,5 +1,6 @@
 import logging
-from flask import Flask, render_template, request, jsonify
+
+from flask import Flask, jsonify, render_template, request
 from ollama import Client
 
 # This web app is for testing the Playwright Target. Do not use it in production.

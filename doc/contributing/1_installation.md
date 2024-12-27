@@ -1,4 +1,4 @@
-# Installation
+# 1. Installation
 
 To install PyRIT as a library, the simplest way to do it is just `pip install pyrit`. This is documented [here](../setup/install_pyrit.md).
 
@@ -93,7 +93,7 @@ Alternatively, you can run the tool directly on Windows using PowerShell.
 
 ### Running Jupyter Notebooks in VS Code
 
-_note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [tests.md](notebook_tests) for more details.
+_note:_ When constructing a pull request, notebooks should not be edited directly. Instead, edit the corresponding `.py` file. See [notebooks.md](8_notebooks.md) for more details.
 
 #### Selecting a Kernel
 

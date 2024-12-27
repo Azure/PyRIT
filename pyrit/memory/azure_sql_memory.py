@@ -1,16 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from datetime import datetime, timedelta, timezone
 import logging
 import struct
-
 from contextlib import closing
+from datetime import datetime, timedelta, timezone
 from typing import MutableSequence, Optional, Sequence
-from azure.identity import DefaultAzureCredential
-from azure.core.credentials import AccessToken
 
-from sqlalchemy import create_engine, event, text, MetaData
+from azure.core.credentials import AccessToken
+from azure.identity import DefaultAzureCredential
+from sqlalchemy import MetaData, create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
@@ -18,8 +17,8 @@ from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
 from pyrit.common.singleton import Singleton
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.models import AzureBlobStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
@@ -191,62 +190,29 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Inserts embedding data into memory storage
         """
-        self.insert_entries(entries=embedding_data)
+        self._insert_entries(entries=embedding_data)
 
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptMemoryEntry Base objects that have the specified orchestrator ID.
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]):
+        json_validation = "ISJSON(labels) = 1"
+        json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
+        # Combine both conditions
+        conditions = f"{json_validation} AND {json_conditions}"
 
-        Args:
-            orchestrator_id (str): The id of the orchestrator.
-                Can be retrieved by calling orchestrator.get_identifier()["id"]
+        # Create SQL condition using SQLAlchemy's text() with bindparams
+        # for safe parameter passing, preventing SQL injection
+        return text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
 
-        Returns:
-            list[PromptRequestPiece]: A list of PromptMemoryEntry Base objects matching the specified orchestrator ID.
-        """
-        try:
-            sql_condition = text(
-                "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
-            ).bindparams(json_id=str(orchestrator_id))
-            entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)  # type: ignore
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
-            )
-            return []
-
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
-
-        Args:
-            conversation_id (str): The conversation ID to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.conversation_id == str(conversation_id),
-            )  # type: ignore
-
-            result = self.get_prompt_request_pieces_with_scores(entries)
-            return result
-
-        except Exception as e:
-            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
-            return []
+    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
+        return text(
+            "ISJSON(orchestrator_identifier) = 1 AND JSON_VALUE(orchestrator_identifier, '$.id') = :json_id"
+        ).bindparams(json_id=str(orchestrator_id))
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
         """
-        self.insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
     def dispose_engine(self):
         """
@@ -260,76 +226,10 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result = self.query_entries(EmbeddingDataEntry)
+        result = self._query_entries(EmbeddingDataEntry)
         return result
 
-    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
-        """
-        Fetches all entries from the specified table and returns them as model instances.
-        """
-        entries = self.query_entries(PromptMemoryEntry)
-        result = self.get_prompt_request_pieces_with_scores(entries)
-        return result
-
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
-
-        Args:
-            prompt_ids (list[str]): The prompt IDs to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified conversation ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )
-            result = self.get_prompt_request_pieces_with_scores(entries)
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
-            )
-            return []
-
-    def get_prompt_request_piece_by_memory_labels(
-        self, *, memory_labels: dict[str, str] = {}
-    ) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
-
-        Args:
-            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
-        """
-        try:
-            json_validation = "ISJSON(labels) = 1"
-            json_conditions = " AND ".join([f"JSON_VALUE(labels, '$.{key}') = :{key}" for key in memory_labels])
-            # Combine both conditions
-            conditions = f"{json_validation} AND {json_conditions}"
-
-            # Create SQL condition using SQLAlchemy's text() with bindparams
-            # for safe parameter passing, preventing SQL injection
-            sql_condition = text(conditions).bindparams(**{key: str(value) for key, value in memory_labels.items()})
-
-            entries = self.query_entries(PromptMemoryEntry, conditions=sql_condition)
-            result = self.get_prompt_request_pieces_with_scores(entries)
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve {PromptMemoryEntry.__tablename__} "
-                f"with memory labels {memory_labels}. {e}"
-            )
-            return []
-
-    def insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -347,7 +247,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     # The following methods are not part of MemoryInterface, but seem
     # common between SQLAlchemy-based implementations, regardless of engine.
     # Perhaps we should find a way to refactor
-    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:
@@ -364,7 +264,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def query_entries(
+    def _query_entries(
         self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
     ) -> list[Base]:
         """
@@ -390,7 +290,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
                 return []
 
-    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
 

@@ -24,9 +24,9 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
+from pyrit.prompt_target import OpenAIChatTarget
 
 # Load default environment values (API keys, endpoints, etc.)
 default_values.load_environment_files()

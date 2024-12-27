@@ -3,10 +3,10 @@
 
 import abc
 import asyncio
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 
-from pyrit.models import PromptDataType, Identifier
+from pyrit.models import Identifier, PromptDataType
 
 
 @dataclass
@@ -35,7 +35,6 @@ class PromptConverter(abc.ABC, Identifier):
         Returns:
             str: The converted representation of the prompts.
         """
-        pass
 
     @abc.abstractmethod
     def input_supported(self, input_type: PromptDataType) -> bool:
@@ -48,7 +47,6 @@ class PromptConverter(abc.ABC, Identifier):
         Returns:
             bool: True if the input type is supported, False otherwise
         """
-        pass
 
     async def convert_tokens_async(
         self, *, prompt: str, input_type: PromptDataType = "text", start_token: str = "⟪", end_token: str = "⟫"

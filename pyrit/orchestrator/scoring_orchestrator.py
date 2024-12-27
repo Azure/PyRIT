@@ -4,8 +4,7 @@
 import logging
 from typing import Sequence
 
-from pyrit.models import PromptRequestPiece
-from pyrit.models import Score
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import Orchestrator
 from pyrit.score.scorer import Scorer
 
@@ -44,7 +43,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
-            request_pieces.extend(self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=id))
+            request_pieces.extend(self._memory.get_prompt_request_pieces(orchestrator_id=id))
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)
         request_pieces = self._remove_duplicates(request_pieces)
@@ -63,9 +62,7 @@ class ScoringOrchestrator(Orchestrator):
         """
         if not memory_labels:
             raise ValueError("Invalid memory_labels: Please provide valid memory labels.")
-        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_piece_by_memory_labels(
-            memory_labels=memory_labels
-        )
+        request_pieces: list[PromptRequestPiece] = self._memory.get_prompt_request_pieces(labels=memory_labels)
         if not request_pieces:
             raise ValueError("No entries match the provided memory labels. Please check your memory labels.")
 
@@ -87,7 +84,7 @@ class ScoringOrchestrator(Orchestrator):
         Scores prompts using the Scorer for prompts with the prompt_ids
         """
         request_pieces: Sequence[PromptRequestPiece] = []
-        request_pieces = self._memory.get_prompt_request_pieces_by_id(prompt_ids=prompt_ids)
+        request_pieces = self._memory.get_prompt_request_pieces(prompt_ids=prompt_ids)
 
         if responses_only:
             request_pieces = self._extract_responses_only(request_pieces)

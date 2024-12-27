@@ -3,24 +3,23 @@
 
 from __future__ import annotations
 
-from colorama import Fore, Style
-from dataclasses import dataclass
 import logging
 import random
-from typing import Optional, Union
 import uuid
+from dataclasses import dataclass
+from typing import Optional, Union
 
 import numpy as np
+from colorama import Fore, Style
 
 from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
-from pyrit.prompt_converter import PromptConverter, FuzzerConverter
+from pyrit.prompt_converter import FuzzerConverter, PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from pyrit.score import SelfAskScaleScorer, FloatScaleThresholdScorer
-
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.score import FloatScaleThresholdScorer, SelfAskScaleScorer
 
 TEMPLATE_PLACEHOLDER = "{{ prompt }}"
 logger = logging.getLogger(__name__)
@@ -95,7 +94,7 @@ class FuzzerResult:
         for conversation_id in self.prompt_target_conversation_ids:
             print(f"\nConversation ID: {conversation_id}")
 
-            target_messages = memory._get_prompt_pieces_with_conversation_id(conversation_id=str(conversation_id))
+            target_messages = memory.get_prompt_request_pieces(conversation_id=str(conversation_id))
 
             if not target_messages or len(target_messages) == 0:
                 print("No conversation with the target")

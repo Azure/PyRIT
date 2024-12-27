@@ -4,7 +4,7 @@
 import random
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class EmojiConverter(PromptConverter):

@@ -74,7 +74,6 @@
 import os
 
 from pyrit.common import default_values
-
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptShieldTarget
 

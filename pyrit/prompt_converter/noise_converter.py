@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 import logging
+import pathlib
 import textwrap
 from typing import Optional
-import pathlib
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt

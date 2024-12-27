@@ -1,21 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import tempfile
 import os
-
+import tempfile
+import uuid
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, Optional
-from unittest.mock import patch, MagicMock
-import uuid
+from unittest.mock import MagicMock, patch
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
-from sqlalchemy import inspect
 
-from pyrit.memory import AzureSQLMemory, DuckDBMemory, MemoryInterface
-from pyrit.memory import CentralMemory
+from pyrit.memory import AzureSQLMemory, CentralMemory
 from pyrit.memory.memory_models import PromptMemoryEntry
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
@@ -88,16 +85,6 @@ class MockPromptTarget(PromptChatTarget):
                 ).to_prompt_request_response()
             )
 
-    def send_prompt(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
-        self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
-
-        return PromptRequestPiece(
-            role="assistant",
-            original_value="default",
-            conversation_id=prompt_request.request_pieces[0].conversation_id,
-            orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
-        ).to_prompt_request_response()
-
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         self.prompt_sent.append(prompt_request.request_pieces[0].converted_value)
@@ -107,39 +94,13 @@ class MockPromptTarget(PromptChatTarget):
             original_value="default",
             conversation_id=prompt_request.request_pieces[0].conversation_id,
             orchestrator_identifier=prompt_request.request_pieces[0].orchestrator_identifier,
+            labels=prompt_request.request_pieces[0].labels,
         ).to_prompt_request_response()
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """
         Validates the provided prompt request response
         """
-        pass
-
-
-def get_memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_duckdb_memory()
-
-
-def get_duckdb_memory() -> Generator[DuckDBMemory, None, None]:
-    # Create an in-memory DuckDB engine
-    duckdb_memory = DuckDBMemory(db_path=":memory:")
-
-    CentralMemory.set_memory_instance(duckdb_memory)
-
-    duckdb_memory.disable_embedding()
-
-    # Reset the database to ensure a clean state
-    duckdb_memory.reset_database()
-    inspector = inspect(duckdb_memory.engine)
-
-    # Verify that tables are created as expected
-    assert "PromptMemoryEntries" in inspector.get_table_names(), "PromptMemoryEntries table not created."
-    assert "EmbeddingData" in inspector.get_table_names(), "EmbeddingData table not created."
-    assert "ScoreEntries" in inspector.get_table_names(), "ScoreEntries table not created."
-    assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
-
-    yield duckdb_memory
-    duckdb_memory.dispose_engine()
 
 
 def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:

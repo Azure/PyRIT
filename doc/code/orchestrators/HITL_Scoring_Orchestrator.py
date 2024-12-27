@@ -14,11 +14,12 @@
 
 # # How to use HITL Scoring - optional
 
+from pyrit.common import default_values
+from pyrit.memory import CentralMemory, DuckDBMemory
+
 # +
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
-from pyrit.common import default_values
-from pyrit.memory import DuckDBMemory, CentralMemory
 
 default_values.load_environment_files()
 
@@ -41,15 +42,11 @@ with PromptSendingOrchestrator(objective_target=target) as send_all_prompts_orch
 
 import os
 import time
+
 from pyrit.memory import DuckDBMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import (
-    AzureContentFilterScorer,
-    SelfAskCategoryScorer,
-    HumanInTheLoopScorer,
-    ContentClassifierPaths,
-)
+from pyrit.score import AzureContentFilterScorer, ContentClassifierPaths, HumanInTheLoopScorer, SelfAskCategoryScorer
 
 # we need the id from the previous run to score all prompts from the orchestrator
 id = prompt_sending_orchestrator_id
@@ -75,7 +72,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
     print(f"Elapsed time for operation: {end-start}")
 
     for score in scores:
-        prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
+        prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
             0
         ].original_value
         print(f"{score} : {prompt_text}")
@@ -97,7 +94,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
     print(f"Elapsed time for operation: {end-start}")
 
     for score in scores:
-        prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
+        prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
             0
         ].original_value
         print(f"{score} : {prompt_text}")

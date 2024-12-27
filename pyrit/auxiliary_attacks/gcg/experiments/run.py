@@ -1,14 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import argparse
 import dotenv
 import logging
 import os
-import yaml
-import argparse
-from typing import Union, Dict, Any
-from pyrit.common import path
 from train import GreedyCoordinateGradientAdversarialSuffixGenerator
+from typing import Any, Dict, Union
+import yaml
+
+from pyrit.common import path
 
 
 def _load_yaml_to_dict(config_path: str) -> dict:

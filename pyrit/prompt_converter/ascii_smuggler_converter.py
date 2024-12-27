@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Literal
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 import logging
+from typing import Literal
+
+from pyrit.models import PromptDataType
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,6 @@ class AsciiSmugglerConverter(PromptConverter):
                 decoded_char = chr(code_point - 0xE0000)
                 if not 0x20 <= ord(decoded_char) <= 0x7E:
                     logger.info(f"Potential unicode tag detected: {decoded_char}")
-                    pass
                 else:
                     decoded_message += decoded_char
 

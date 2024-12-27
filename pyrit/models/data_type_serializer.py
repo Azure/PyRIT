@@ -8,9 +8,9 @@ import base64
 import hashlib
 import os
 import time
-from typing import Optional, TYPE_CHECKING, Union
-from pathlib import Path
 from mimetypes import guess_type
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Union
 from urllib.parse import urlparse
 
 from pyrit.models.literals import PromptDataType
@@ -36,7 +36,7 @@ def data_serializer_factory(
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value)
         elif data_type == "url":
-            return URLDataTypeSerializer(prompt_text=value)
+            return URLDataTypeSerializer(prompt_text=value, extension=extension)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
@@ -89,7 +89,6 @@ class DataTypeSerializer(abc.ABC):
         """
         Returns True if the data is stored on disk.
         """
-        pass
 
     async def save_data(self, data: bytes) -> None:
         """
@@ -234,12 +233,14 @@ class ErrorDataTypeSerializer(DataTypeSerializer):
 
 
 class URLDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str):
+    def __init__(self, *, prompt_text: str, extension: Optional[str] = None):
         self.data_type = "url"
         self.value = prompt_text
+        self.data_sub_directory = "/dbdata/urls"
+        self.file_extension = extension if extension else "txt"
 
     def data_on_disk(self) -> bool:
-        return False
+        return True
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):

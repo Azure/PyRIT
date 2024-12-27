@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import TYPE_CHECKING
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, construct_response_from_request
+from typing import TYPE_CHECKING, Protocol
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
-from typing import Protocol
 
 # Avoid errors for users who don't have playwright installed
 if TYPE_CHECKING:

@@ -2,9 +2,11 @@
 # Licensed under the MIT license.
 
 from __future__ import annotations
+
 from enum import Enum
+
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class BinaryConverter(PromptConverter):

@@ -3,12 +3,12 @@
 
 import os
 from pathlib import Path
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 # Import functions to test from local application files
 from pyrit.common.download_hf_model import download_specific_files
-
 
 # Define constants for testing
 MODEL_ID = "microsoft/Phi-3-mini-4k-instruct"

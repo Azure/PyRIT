@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import logging
 import uuid
-import json
 from typing import Any, Optional
 
-from pyrit.prompt_target import PromptShieldTarget
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, ScoreType
 from pyrit.memory import PromptMemoryEntry
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, ScoreType
+from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)

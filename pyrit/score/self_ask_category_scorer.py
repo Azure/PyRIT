@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import yaml
-
 import enum
 from pathlib import Path
 from typing import Dict, Optional
+
+import yaml
 
 from pyrit.common.path import CONTENT_CLASSIFIERS_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore

@@ -4,21 +4,17 @@
 import os
 import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+from unit.mocks import MockPromptTarget, get_image_request_piece
 
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptDataType
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
-from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest, PromptNormalizer
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.exceptions import EmptyResponseException
-
-
+from pyrit.memory import CentralMemory
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_converter import Base64Converter, ConverterResult, PromptConverter, StringJoinConverter
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
 from pyrit.prompt_target import PromptTarget
-from unit.mocks import MockPromptTarget, get_image_request_piece
 
 
 @pytest.fixture

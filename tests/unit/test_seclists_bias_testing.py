@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import patch
-from pyrit.datasets import fetch_seclists_bias_testing_examples
 
+import pytest
+
+from pyrit.datasets import fetch_seclists_bias_testing_examples
 
 # Mock data used for testing
 MOCKED_EXAMPLES = [

@@ -1,17 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import random
 import logging
+import random
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
-
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
-    LIVE_PAYLOADS,
+    ASKS,
     ESCAPED_PAYLOADS,
     HIGH_LEVEL_TASKS,
-    ASKS,
+    LIVE_PAYLOADS,
     REPEAT_STUBS,
     UNESCAPE_STUBS,
 )

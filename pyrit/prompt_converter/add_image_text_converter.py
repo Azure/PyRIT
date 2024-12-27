@@ -1,18 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
 import base64
+import logging
 import string
+import textwrap
+from io import BytesIO
 from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
-import textwrap
-from io import BytesIO
 
-from pyrit.models import data_serializer_factory
-from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.models import PromptDataType, data_serializer_factory
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,9 @@
 # Licensed under the MIT license.
 
 import re
+
 import pytest
+
 from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
 
 

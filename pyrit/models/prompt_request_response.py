@@ -3,8 +3,8 @@
 
 from typing import MutableSequence, Optional, Sequence
 
-from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.literals import PromptDataType, PromptResponseError
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 
 
 class PromptRequestResponse:
