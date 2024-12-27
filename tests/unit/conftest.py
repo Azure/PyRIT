@@ -39,6 +39,7 @@ def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
     assert "ScoreEntries" in inspector.get_table_names(), "ScoreEntries table not created."
     assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
 
+    CentralMemory.set_memory_instance(duckdb_memory)
     yield duckdb_memory
     duckdb_memory.dispose_engine()
 

@@ -130,8 +130,6 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
         enable_azure_authorization_mock.return_value = None
 
         azure_sql_memory.disable_embedding()
-
-        CentralMemory.set_memory_instance(azure_sql_memory)
         yield azure_sql_memory
 
     azure_sql_memory.dispose_engine()
