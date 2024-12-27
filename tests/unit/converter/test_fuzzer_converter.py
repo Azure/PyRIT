@@ -56,7 +56,9 @@ def test_converter_init_templates_not_null(converter_class, duckdb_instance) -> 
     "update",
     [True, False],
 )
-async def test_converter_send_prompt_async_bad_json_exception_retries(converted_value, converter_class, update, duckdb_instance):
+async def test_converter_send_prompt_async_bad_json_exception_retries(
+    converted_value, converter_class, update, duckdb_instance
+):
     prompt_target = MockPromptTarget()
 
     if converter_class != FuzzerCrossOverConverter:

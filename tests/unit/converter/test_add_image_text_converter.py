@@ -112,7 +112,9 @@ def test_text_image_converter_input_supported(image_text_converter_sample_image)
 
 
 @pytest.mark.asyncio
-async def test_add_image_text_converter_equal_to_add_text_image(image_text_converter_sample_image, duckdb_instance) -> None:
+async def test_add_image_text_converter_equal_to_add_text_image(
+    image_text_converter_sample_image, duckdb_instance
+) -> None:
     converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
     converted_image = await converter.convert_async(prompt="Sample Text!", input_type="text")
     text_image_converter = AddTextImageConverter(text_to_add="Sample Text!")
