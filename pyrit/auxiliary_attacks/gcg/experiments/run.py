@@ -2,14 +2,12 @@
 # Licensed under the MIT license.
 
 import argparse
-import dotenv
-import logging
 import os
 from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 from typing import Any, Dict, Union
 import yaml
 
-from pyrit.common import path
+from pyrit.common.initialize_pyrit import _load_environment_files
 
 
 def _load_yaml_to_dict(config_path: str) -> dict:
@@ -21,29 +19,6 @@ def _load_yaml_to_dict(config_path: str) -> dict:
 MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
 ALL_MODELS = "all_models"
 MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
-
-
-def _load_environment_files() -> None:
-    """
-    Loads the base environment file from .env if it exists,
-    and then loads a single .env.local file if it exists, overriding previous values.
-    """
-    logger = logging.getLogger(__name__)
-
-    base_file_path = path.HOME_PATH / ".env"
-    local_file_path = path.HOME_PATH / ".env.local"
-
-    # Load the base .env file if it exists
-    if base_file_path.exists():
-        dotenv.load_dotenv(base_file_path, override=True)
-        logger.info(f"Loaded {base_file_path}")
-    else:
-        dotenv.load_dotenv()
-
-    # Load the .env.local file if it exists, to override base .env values
-    if local_file_path.exists():
-        dotenv.load_dotenv(local_file_path, override=True)
-        logger.info(f"Loaded {local_file_path}")
 
 
 def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parameters):
