@@ -2,7 +2,7 @@
 
 Notebooks are the primary way many of our operators interact with PyRIT. As such, it's very important for us to keep them up to date.
 
-We use notebooks to help to document, and help make sure our documentation is living by connecting to actual endpoints and help ensure broad functionality is working as expected.
+We use notebooks to ensure that we can connect to actual endpoints and that broad functionality is working as expected.
 
 ## Updates using percent files
 
