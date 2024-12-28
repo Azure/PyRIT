@@ -270,12 +270,13 @@ class MemoryInterface(abc.ABC):
             converted_values (Optional[list[str]], optional): A list of converted values. Defaults to None.
             data_type (Optional[str], optional): The data type to filter by. Defaults to None.
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
-            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values. 
+            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values.
                 Defaults to None.
         Returns:
             list[PromptRequestPiece]: A list of PromptRequestPiece objects that match the specified filters.
         Raises:
-            Exception: If there is an error retrieving the prompts, an exception is logged and an empty list is returned.
+            Exception: If there is an error retrieving the prompts,
+                an exception is logged and an empty list is returned.
         """
         conditions = []
         if orchestrator_id:
@@ -734,11 +735,11 @@ class MemoryInterface(abc.ABC):
         data_type: Optional[str] = None,
         not_data_type: Optional[str] = None,
         converted_value_sha256: Optional[list[str]] = None,
-        file_path: Path = None,
+        file_path: Optional[Path] = None,
         export_type: str = "json",
     ):
         """
-        Exports conversation data with the given inputs to a specified file. 
+        Exports conversation data with the given inputs to a specified file.
             Defaults to all conversations if no filters are provided.
 
         Args:
@@ -752,9 +753,10 @@ class MemoryInterface(abc.ABC):
             converted_values (Optional[list[str]], optional): A list of converted values. Defaults to None.
             data_type (Optional[str], optional): The data type to filter by. Defaults to None.
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
-            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values. 
+            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values.
                 Defaults to None.
-            file_path (Path, optional): The path to the file where the data will be exported. Defaults to None.
+            file_path (Optional[Path], optional): The path to the file where the data will be exported.
+                Defaults to None.
             export_type (str, optional): The format of the export. Defaults to "json".
         """
         data = self.get_prompt_request_pieces(
