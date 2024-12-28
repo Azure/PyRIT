@@ -258,7 +258,7 @@ class MemoryInterface(abc.ABC):
     ) -> list[PromptRequestPiece]:
         """
         Retrieves a list of PromptRequestPiece objects based on the specified filters.
-        
+
         Args:
             orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
@@ -270,7 +270,8 @@ class MemoryInterface(abc.ABC):
             converted_values (Optional[list[str]], optional): A list of converted values. Defaults to None.
             data_type (Optional[str], optional): The data type to filter by. Defaults to None.
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
-            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values. Defaults to None.
+            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values. 
+                Defaults to None.
         Returns:
             list[PromptRequestPiece]: A list of PromptRequestPiece objects that match the specified filters.
         Raises:
@@ -393,7 +394,6 @@ class MemoryInterface(abc.ABC):
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
 
         return new_conversation_id
-
 
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
@@ -734,10 +734,12 @@ class MemoryInterface(abc.ABC):
         data_type: Optional[str] = None,
         not_data_type: Optional[str] = None,
         converted_value_sha256: Optional[list[str]] = None,
-        file_path: Path = None, export_type: str = "json"
+        file_path: Path = None,
+        export_type: str = "json",
     ):
         """
-        Exports conversation data with the given inputs to a specified file. Defaults to all conversations if no filters are provided.
+        Exports conversation data with the given inputs to a specified file. 
+            Defaults to all conversations if no filters are provided.
 
         Args:
             orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
@@ -750,24 +752,25 @@ class MemoryInterface(abc.ABC):
             converted_values (Optional[list[str]], optional): A list of converted values. Defaults to None.
             data_type (Optional[str], optional): The data type to filter by. Defaults to None.
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
-            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values. Defaults to None.
+            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values. 
+                Defaults to None.
             file_path (Path, optional): The path to the file where the data will be exported. Defaults to None.
             export_type (str, optional): The format of the export. Defaults to "json".
         """
         data = self.get_prompt_request_pieces(
-                orchestrator_id=orchestrator_id,
-                conversation_id=conversation_id,
-                prompt_ids=prompt_ids,
-                labels=labels,
-                sent_after=sent_after,
-                sent_before=sent_before,
-                original_values=original_values,
-                converted_values=converted_values,
-                data_type=data_type,
-                not_data_type=not_data_type,
-                converted_value_sha256=converted_value_sha256,
-            )
-        
+            orchestrator_id=orchestrator_id,
+            conversation_id=conversation_id,
+            prompt_ids=prompt_ids,
+            labels=labels,
+            sent_after=sent_after,
+            sent_before=sent_before,
+            original_values=original_values,
+            converted_values=converted_values,
+            data_type=data_type,
+            not_data_type=not_data_type,
+            converted_value_sha256=converted_value_sha256,
+        )
+
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
             file_name = f"{str(orchestrator_id) if orchestrator_id else 'exported_converstions'}.{export_type}"
