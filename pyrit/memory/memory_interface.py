@@ -775,7 +775,7 @@ class MemoryInterface(abc.ABC):
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
-            file_name = f"exported_conversations_on_{datetime.now().strftime("%Y_%m_%d")}.{export_type}"
+            file_name = f"exported_conversations_on_{datetime.now().strftime('%Y_%m_%d')}.{export_type}"
             file_path = RESULTS_PATH / file_name
 
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
