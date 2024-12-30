@@ -320,7 +320,7 @@ def test_prepare_conversation_with_prepended_conversation():
         prepended_conversation = [PromptRequestResponse(request_pieces=[MagicMock(conversation_id=None)])]
         orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
 
-        conversation_id = orchestrator._prepare_conversation()
+        conversation_id = orchestrator._process_prepended_conversation()
 
         assert conversation_id == "mocked-uuid"
         for request in prepended_conversation:
@@ -336,7 +336,7 @@ def test_prepare_conversation_without_prepended_conversation():
     memory_mock = MagicMock()
 
     orchestrator._memory = memory_mock
-    conversation_id = orchestrator._prepare_conversation()
+    conversation_id = orchestrator._process_prepended_conversation()
 
     assert not conversation_id
     memory_mock.add_request_response_to_memory.assert_not_called()

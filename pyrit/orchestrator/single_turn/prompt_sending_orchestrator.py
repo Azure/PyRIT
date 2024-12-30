@@ -11,6 +11,7 @@ from colorama import Fore, Style
 from pyrit.common.display_response import display_image_response
 from pyrit.common.utils import combine_dict
 from pyrit.models import PromptDataType, PromptRequestResponse
+from pyrit.models.filter_criteria import PromptFilterCriteria, PromptConverterState
 from pyrit.orchestrator import Orchestrator, ScoringOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
@@ -58,8 +59,18 @@ class PromptSendingOrchestrator(Orchestrator):
     def set_prepended_conversation(self, *, prepended_conversation: list[PromptRequestResponse]):
         """
         Prepends a conversation to the prompt target.
+
+        This is sent along with each prompt request and can be the first part of aa conversation.
         """
         self._prepended_conversation = prepended_conversation
+
+    def set_skip_criteria(self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "converted"):
+        """
+        Sets the skip criteria for the orchestrator.
+
+        If prompts match this in memory, then they won't be sent to a target.
+        """
+        self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
 
     async def send_normalizer_requests_async(
         self,
@@ -73,7 +84,7 @@ class PromptSendingOrchestrator(Orchestrator):
         for request in prompt_request_list:
             request.validate()
 
-        conversation_id = self._prepare_conversation()
+        conversation_id = self._process_prepended_conversation()
 
         for prompt in prompt_request_list:
             prompt.conversation_id = conversation_id
@@ -171,7 +182,8 @@ class PromptSendingOrchestrator(Orchestrator):
                 for score in scores:
                     print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
-    def _prepare_conversation(self):
+
+    def _process_prepended_conversation(self):
         """
         Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
         """
