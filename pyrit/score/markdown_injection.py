@@ -60,5 +60,3 @@ class MarkdownInjectionScorer(Scorer):
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.converted_value_data_type != "text":
             raise ValueError("Expected text data type")
-        if task:
-            raise ValueError("This scorer does not support tasks.")

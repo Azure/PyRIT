@@ -71,16 +71,33 @@ class Scorer(abc.ABC):
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
 
-    async def score_prompts_batch_async(
+    async def score_responses_batch_async(
         self,
         *,
         request_responses: Sequence[PromptRequestPiece],
-        tasks: Optional[Sequence[str]] = None,
         batch_size: int = 10,
     ) -> list[Score]:
-        if not tasks:
-            tasks = [None] * len(request_responses)
-        elif len(tasks) != len(request_responses):
+        """
+        Scores a batch of responses.
+
+        This will send the requests as tasks if it can. If it's complicated (e.g. non-text) it will send None.
+
+        For more control, use score_prompts_with_tasks_batch_async
+        """
+        responses = [piece for piece in request_responses if piece.role == "assistant"]
+        tasks = [self._extract_task_from_response(response) for response in responses]
+        return await self.score_prompts_with_tasks_batch_async(
+            request_responses=responses, tasks=tasks, batch_size=batch_size
+        )
+
+    async def score_prompts_with_tasks_batch_async(
+        self,
+        *,
+        request_responses: Sequence[PromptRequestPiece],
+        tasks: Optional[Sequence[str]],
+        batch_size: int = 10,
+    ) -> list[Score]:
+        if len(tasks) != len(request_responses):
             raise ValueError("The number of tasks must match the number of request_responses.")
 
         prompt_target = getattr(self, "_prompt_target", None)
@@ -147,6 +164,32 @@ class Scorer(abc.ABC):
         identifier["__module__"] = self.__class__.__module__
         identifier["sub_identifier"] = None
         return identifier
+
+    def _extract_task_from_response(self, response: PromptRequestPiece) -> str:
+        """
+        Extracts a task from the response using the last request (if it exists).
+
+        Args:
+            response (PromptRequestPiece): The response to extract the task from.
+
+        Returns:
+            str: The task extracted from the response.
+        """
+        if response.role != "assistant":
+            return ""
+
+        conversation = self._memory.get_prompt_request_pieces(conversation_id=response.conversation_id)
+
+        # Every text request piece from the last turn
+        last_turn_text = "\n".join(
+            [
+                piece.original_value
+                for piece in conversation
+                if piece.sequence == response.sequence - 1 and piece.original_value_data_type == "text"
+            ]
+        )
+
+        return last_turn_text
 
     @pyrit_json_retry
     async def _score_value_with_llm(
