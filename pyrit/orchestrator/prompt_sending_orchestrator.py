@@ -68,7 +68,7 @@ class PromptSendingOrchestrator(Orchestrator):
         if retry_scorer is not None:
             if retry_scorer.scorer_type != "true_false":
                 raise TypeError("retry_scorer must be a 'true_false' scorer")
-            self._retry_scorer = retry_scorer
+        self._retry_scorer = retry_scorer
 
         self._prompt_target = prompt_target
 
@@ -125,6 +125,7 @@ class PromptSendingOrchestrator(Orchestrator):
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
             memory_labels=self._combine_with_global_memory_labels(memory_labels),
+            max_retries_on_refusal=max_retries_on_refusal,
         )
 
     async def send_normalizer_requests_async(
@@ -171,9 +172,13 @@ class PromptSendingOrchestrator(Orchestrator):
     ) -> list[PromptRequestResponse]:
         """
         Helper function to handle the retry logic for PromptSendingOrchestrator. By default, the function
-        gets responses only once (no retries). Otherwise, a SelfAskRefusalScorer is used to determine whether
+        gets responses only once (no retries). Otherwise, a retry scorer is used to determine whether
         to re-send prompts to the target, up to a maximum number of retries.
         """
+
+        # Check that a retry scorer has been provided
+        if max_retries_on_refusal > 0 and self._retry_scorer is None:
+            raise ValueError("retry_scorer cannot be None when max_retries_on_refusal > 0. Please provide a retry_scorer when initializing PromptSendingOrchestrator.")
 
         # Initialize retry count and list of results
         retry_count = 0
@@ -197,8 +202,9 @@ class PromptSendingOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier(),
                 batch_size=self._batch_size,
             )
-            for idx, response in zip(idx_list, responses):
-                retry_result_list[idx].response = response
+            if responses:
+                for idx, response in zip(idx_list, responses):
+                    retry_result_list[idx].response = response
 
             # If max retries is zero, we don't need to score for retries and should break
             if max_retries_on_refusal == 0:
