@@ -80,7 +80,7 @@ class Scorer(abc.ABC):
         """
         Scores a batch of responses.
 
-        This will send the requests as tasks if it can. If it's complicated (e.g. non-text) it will send None.
+        This will send the lasst requests as tasks if it can. If it's complicated (e.g. non-text) it will send None.
 
         For more control, use score_prompts_with_tasks_batch_async
         """
