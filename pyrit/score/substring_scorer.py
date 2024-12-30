@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 from typing import Optional
-from pyrit.models import PromptRequestPiece
+
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
-from pyrit.models import Score
 
 
 class SubStringScorer(Scorer):

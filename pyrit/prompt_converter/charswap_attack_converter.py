@@ -1,14 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
 import math
 import random
 import re
 import string
-import logging
 
-from pyrit.prompt_converter import PromptConverter, ConverterResult
-
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 # Use logger
 logger = logging.getLogger(__name__)

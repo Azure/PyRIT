@@ -1,21 +1,21 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
+from contextlib import closing
 from pathlib import Path
 from typing import MutableSequence, Optional, Sequence, Union
-import logging
 
-from sqlalchemy import create_engine, MetaData, and_
+from sqlalchemy import MetaData, and_, create_engine
+from sqlalchemy.engine.base import Engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.engine.base import Engine
-from contextlib import closing
 
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
-from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.common.path import RESULTS_PATH
 from pyrit.common.singleton import Singleton
+from pyrit.memory.memory_interface import MemoryInterface
+from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.models import DiskStorageIO, PromptRequestPiece
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
 
     def _init_storage_io(self):
         # Handles disk-based storage for DuckDB local memory.
-        self.storage_io = DiskStorageIO()
+        self.results_storage_io = DiskStorageIO()
 
     def _create_engine(self, *, has_echo: bool) -> Engine:
         """Creates the SQLAlchemy engine for DuckDB.
@@ -84,127 +84,32 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         except Exception as e:
             logger.error(f"Error during table creation: {e}")
 
-    def get_all_prompt_pieces(self) -> list[PromptRequestPiece]:
-        """
-        Fetches all entries from the specified table and returns them as model instances.
-        """
-        entries = self.query_entries(PromptMemoryEntry)
-        result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-        return result
-
     def get_all_embeddings(self) -> list[EmbeddingDataEntry]:
         """
         Fetches all entries from the specified table and returns them as model instances.
         """
-        result: list[EmbeddingDataEntry] = self.query_entries(EmbeddingDataEntry)
+        result: list[EmbeddingDataEntry] = self._query_entries(EmbeddingDataEntry)
         return result
 
-    def _get_prompt_pieces_with_conversation_id(self, *, conversation_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified conversation ID.
+    def _get_prompt_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]):
+        conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
+        return and_(*conditions)
 
-        Args:
-            conversation_id (str): The conversation ID to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPieces with the specified conversation ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry, conditions=PromptMemoryEntry.conversation_id == str(conversation_id)
-            )
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(f"Failed to retrieve conversation_id {conversation_id} with error {e}")
-            return []
-
-    def get_prompt_request_pieces_by_id(self, *, prompt_ids: list[str]) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified prompt ids.
-
-        Args:
-            prompt_ids (list[str]): The prompt IDs to match.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified prompt ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.id.in_(prompt_ids),
-            )
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {prompt_ids}. {e}"
-            )
-            return []
-
-    def get_prompt_request_piece_by_memory_labels(
-        self, *, memory_labels: dict[str, str] = {}
-    ) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified memory labels.
-
-        Args:
-            memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
-            These labels can be used to track all prompts sent as part of an operation, score prompts based on
-            the operation ID (op_id), and tag each prompt with the relevant Responsible AI (RAI) harm category.
-            Users can define any key-value pairs according to their needs. Defaults to an empty dictionary.
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece with the specified memory labels.
-        """
-        try:
-            conditions = [PromptMemoryEntry.labels.op("->>")(key) == value for key, value in memory_labels.items()]
-            query_condition = and_(*conditions)
-            entries = self.query_entries(PromptMemoryEntry, conditions=query_condition)
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with memory labels {memory_labels}. {e}"
-            )
-            return []
-
-    def _get_prompt_pieces_by_orchestrator(self, *, orchestrator_id: str) -> list[PromptRequestPiece]:
-        """
-        Retrieves a list of PromptRequestPiece objects that have the specified orchestrator ID.
-
-        Args:
-            orchestrator_id (str): The id of the orchestrator.
-                Can be retrieved by calling orchestrator.get_identifier()["id"]
-
-        Returns:
-            list[PromptRequestPiece]: A list of PromptRequestPiece objects matching the specified orchestrator ID.
-        """
-        try:
-            entries = self.query_entries(
-                PromptMemoryEntry,
-                conditions=PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id,
-            )  # type: ignore
-            result: list[PromptRequestPiece] = [entry.get_prompt_request_piece() for entry in entries]
-            return result
-        except Exception as e:
-            logger.exception(
-                f"Unexpected error: Failed to retrieve ConversationData with orchestrator {orchestrator_id}. {e}"
-            )
-            return []
+    def _get_prompt_pieces_orchestrator_conditions(self, *, orchestrator_id: str):
+        return PromptMemoryEntry.orchestrator_identifier.op("->>")("id") == orchestrator_id
 
     def add_request_pieces_to_memory(self, *, request_pieces: Sequence[PromptRequestPiece]) -> None:
         """
         Inserts a list of prompt request pieces into the memory storage.
 
         """
-        self.insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
+        self._insert_entries(entries=[PromptMemoryEntry(entry=piece) for piece in request_pieces])
 
     def _add_embeddings_to_memory(self, *, embedding_data: list[EmbeddingDataEntry]) -> None:
         """
         Inserts embedding data into memory storage
         """
-        self.insert_entries(entries=embedding_data)
+        self._insert_entries(entries=embedding_data)
 
     def get_all_table_models(self) -> list[Base]:  # type: ignore
         """
@@ -222,7 +127,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         """
         return self.SessionFactory()
 
-    def insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:  # type: ignore
         """
         Inserts an entry into the Table.
 
@@ -237,7 +142,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 session.rollback()
                 logger.exception(f"Error inserting entry into the table: {e}")
 
-    def insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
+    def _insert_entries(self, *, entries: list[Base]) -> None:  # type: ignore
         """Inserts multiple entries into the database."""
         with closing(self.get_session()) as session:
             try:
@@ -248,7 +153,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error inserting multiple entries into the table: {e}")
                 raise
 
-    def query_entries(
+    def _query_entries(
         self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
     ) -> list[Base]:
         """
@@ -274,7 +179,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 logger.exception(f"Error fetching data from table {model.__tablename__}: {e}")
                 return []
 
-    def update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
         """
         Updates the given entries with the specified field values.
 
@@ -323,7 +228,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         table_models = self.get_all_table_models()
 
         for model in table_models:
-            data = self.query_entries(model)
+            data = self._query_entries(model)
             table_name = model.__tablename__
             file_extension = f".{export_type}"
             file_path = RESULTS_PATH / f"{table_name}{file_extension}"

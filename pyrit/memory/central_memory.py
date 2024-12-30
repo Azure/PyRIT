@@ -4,8 +4,7 @@
 import logging
 
 from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import AzureSQLMemory, DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ class CentralMemory:
         if azure_sql_db_conn_string and results_container_url:
             logger.info("Using AzureSQLMemory as central memory.")
             cls._memory_instance = AzureSQLMemory(
-                connection_string=azure_sql_db_conn_string, container_url=results_container_url
+                connection_string=azure_sql_db_conn_string, results_container_url=results_container_url
             )
         else:
             logger.info("Using DuckDBMemory due to missing Azure SQL DB configuration.")

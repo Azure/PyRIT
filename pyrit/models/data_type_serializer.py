@@ -8,12 +8,13 @@ import base64
 import hashlib
 import os
 import time
-from typing import Optional, TYPE_CHECKING, Union
-from pathlib import Path
 from mimetypes import guess_type
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Union
 from urllib.parse import urlparse
 
 from pyrit.models.literals import PromptDataType
+from pyrit.models.storage_io import DiskStorageIO
 
 if TYPE_CHECKING:
     from pyrit.memory import MemoryInterface
@@ -25,7 +26,7 @@ def data_serializer_factory(
     value: Optional[str] = None,
     extension: Optional[str] = None,
 ):
-    if value:
+    if value is not None:
         if data_type == "text":
             return TextDataTypeSerializer(prompt_text=value)
         elif data_type == "image_path":
@@ -35,7 +36,7 @@ def data_serializer_factory(
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value)
         elif data_type == "url":
-            return URLDataTypeSerializer(prompt_text=value)
+            return URLDataTypeSerializer(prompt_text=value, extension=extension)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
@@ -53,7 +54,7 @@ class DataTypeSerializer(abc.ABC):
     """
     Abstract base class for data type normalizers.
 
-    This class is responsible for saving multi-modal types to disk.
+    Responsible for reading and saving multi-modal data types to local disk or Azure Storage Account.
     """
 
     data_type: PromptDataType
@@ -69,19 +70,32 @@ class DataTypeSerializer(abc.ABC):
 
         return CentralMemory.get_memory_instance()
 
+    def _get_storage_io(self):
+        """
+        Retrieve the input datasets storage handle.
+
+        Returns:
+        StorageIO: An instance of DiskStorageIO or AzureBlobStorageIO based on the storage configuration.
+
+        Raises:
+            ValueError: If the Azure Storage URL is detected but the datasets storage handle is not set.
+        """
+        if self._is_azure_storage_url(self.value):
+            return self._memory.results_storage_io
+        return DiskStorageIO()
+
     @abc.abstractmethod
     def data_on_disk(self) -> bool:
         """
         Returns True if the data is stored on disk.
         """
-        pass
 
     async def save_data(self, data: bytes) -> None:
         """
         Saves the data to storage.
         """
         file_path = await self.get_data_filename()
-        await self._memory.storage_io.write_file(file_path, data)
+        await self._memory.results_storage_io.write_file(file_path, data)
         self.value = str(file_path)
 
     async def save_b64_image(self, data: str, output_filename: str = None) -> None:
@@ -91,30 +105,31 @@ class DataTypeSerializer(abc.ABC):
             data: string with base64 data
             output_filename (optional, str): filename to store image as. Defaults to UUID if not provided
         """
-        file_path: Union[Path, str] = None
-        if output_filename:
-            file_path = output_filename
-        else:
-            file_path = await self.get_data_filename()
+        file_path = output_filename or await self.get_data_filename()
         image_bytes = base64.b64decode(data)
-        await self._memory.storage_io.write_file(file_path, image_bytes)
+        await self._memory.results_storage_io.write_file(file_path, image_bytes)
         self.value = str(file_path)
 
     async def read_data(self) -> bytes:
         """
         Reads the data from the storage.
+
+        Returns:
+            bytes: The data read from storage.
         """
         if not self.data_on_disk():
             raise TypeError(f"Data for data Type {self.data_type} is not stored on disk")
 
         if not self.value:
             raise RuntimeError("Prompt text not set")
+
+        storage_io = self._get_storage_io()
         # Check if path exists
-        file_exists = await self._memory.storage_io.path_exists(path=self.value)
+        file_exists = await storage_io.path_exists(path=self.value)
         if not file_exists:
             raise FileNotFoundError(f"File not found: {self.value}")
         # Read the contents from the path
-        return await self._memory.storage_io.read_file(self.value)
+        return await storage_io.read_file(self.value)
 
     async def read_data_base64(self) -> str:
         """
@@ -127,7 +142,13 @@ class DataTypeSerializer(abc.ABC):
         input_bytes: bytes = None
 
         if self.data_on_disk():
-            input_bytes = await self._memory.storage_io.read_file(self.value)
+            storage_io = self._get_storage_io()
+            file_exists = await storage_io.path_exists(self.value)
+            if not file_exists:
+                raise FileNotFoundError(f"File not found: {self.value}")
+
+            # Read the data from storage
+            input_bytes = await storage_io.read_file(self.value)
         else:
             if isinstance(self.value, str):
                 input_bytes = self.value.encode("utf-8")
@@ -153,12 +174,12 @@ class DataTypeSerializer(abc.ABC):
 
         results_path = self._memory.results_path
 
-        if self.is_url(results_path):
+        if self._is_azure_storage_url(results_path):
             full_data_directory_path = results_path + self.data_sub_directory
             self._file_path = full_data_directory_path + f"/{ticks}.{self.file_extension}"
         else:
             full_data_directory_path = results_path + self.data_sub_directory
-            await self._memory.storage_io.create_directory_if_not_exists(Path(full_data_directory_path))
+            await self._memory.results_storage_io.create_directory_if_not_exists(Path(full_data_directory_path))
             self._file_path = Path(full_data_directory_path, f"{ticks}.{self.file_extension}")
 
         return self._file_path
@@ -179,11 +200,18 @@ class DataTypeSerializer(abc.ABC):
         mime_type, _ = guess_type(file_path)
         return mime_type
 
-    def is_url(self, path: str) -> bool:
+    def _is_azure_storage_url(self, path: str) -> bool:
         """
-        Helper function to check if a given path is a URL.
+        Validates if the given path is an Azure Storage URL.
+
+        Args:
+            path (str): Path or URL to check.
+
+        Returns:
+            bool: True if the path is an Azure Blob Storage URL.
         """
-        return urlparse(path).scheme in ("http", "https")
+        parsed = urlparse(path)
+        return parsed.scheme in ("http", "https") and "blob.core.windows.net" in parsed.netloc
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
@@ -205,12 +233,14 @@ class ErrorDataTypeSerializer(DataTypeSerializer):
 
 
 class URLDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str):
+    def __init__(self, *, prompt_text: str, extension: Optional[str] = None):
         self.data_type = "url"
         self.value = prompt_text
+        self.data_sub_directory = "/dbdata/urls"
+        self.file_extension = extension if extension else "txt"
 
     def data_on_disk(self) -> bool:
-        return False
+        return True
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):

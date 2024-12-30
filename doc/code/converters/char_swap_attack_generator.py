@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # Generating Perturbed Prompts Using the CharSwapGenerator - optional
 #
@@ -9,9 +24,9 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
+from pyrit.prompt_target import OpenAIChatTarget
 
 # Load default environment values (API keys, endpoints, etc.)
 default_values.load_environment_files()
@@ -27,7 +42,7 @@ char_swap_converter = CharSwapGenerator(max_iterations=3, word_swap_ratio=0.8)
 
 # Initialize the orchestrator
 with PromptSendingOrchestrator(
-    prompt_target=prompt_target,
+    objective_target=prompt_target,
     prompt_converters=[char_swap_converter],
     verbose=False,
 ) as orchestrator:
@@ -39,7 +54,7 @@ with PromptSendingOrchestrator(
         # Send the perturbed prompt to the LLM via the orchestrator
         await orchestrator.send_prompts_async(prompt_list=[converter_result.output_text])  # type: ignore
     # Print the conversations after all prompts are sent
-    await orchestrator.print_conversations()  # type: ignore
+    await orchestrator.print_conversations_async()  # type: ignore
 
 
 # %%

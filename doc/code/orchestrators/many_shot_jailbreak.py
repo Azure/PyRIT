@@ -30,16 +30,16 @@ from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_examples
 from pyrit.models import SeedPrompt
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score.self_ask_likert_scorer import SelfAskLikertScorer, LikertScalePaths
+from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
 # Load environment variables
 default_values.load_environment_files()
 
 # We demonstrate the use of the Azure OpenAI text-only target here
 prompt_target = OpenAIChatTarget()
-template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yml"
+template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_shot_template.yaml"
 
 
 # %%
@@ -53,7 +53,7 @@ template_path = Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "many_s
 # Set up the Harm Scorer with the same prompt target to ensure consistency
 harm_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=prompt_target)
 
-orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target, scorers=[harm_scorer])
+orchestrator = PromptSendingOrchestrator(objective_target=prompt_target, scorers=[harm_scorer])
 
 # Load Yaml file, parse content, and create ManyShotTemplate object
 template = SeedPrompt.from_yaml_file(template_path)
@@ -74,7 +74,7 @@ filled_prompt = template.render_template_value(prompt=malicious_prompt, examples
 await orchestrator.send_prompts_async(prompt_list=[filled_prompt])  # type: ignore
 
 # Use the orchestrator's method to print conversations
-await orchestrator.print_conversations()  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
 
 
 # %%

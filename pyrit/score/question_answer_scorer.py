@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
-from typing import Generator, Tuple
-from pydantic import BaseModel, ConfigDict
-from pyrit.models import QuestionAnsweringEntry, QuestionAnsweringDataset
-from pyrit.memory import CentralMemory
 import textwrap
+from typing import Generator, Tuple
+
+from pydantic import BaseModel, ConfigDict
+
+from pyrit.memory import CentralMemory
+from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry
 
 
 class TextScoreResult(BaseModel):

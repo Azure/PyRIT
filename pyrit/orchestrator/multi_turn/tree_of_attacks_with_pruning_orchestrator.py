@@ -3,21 +3,21 @@
 
 import logging
 import random
-
 from pathlib import Path
-from treelib import Tree
 from typing import Optional
 
+from treelib import Tree
+
 from pyrit.common.path import DATASETS_PATH
+from pyrit.common.utils import combine_dict
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt
-from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from pyrit.score import SelfAskTrueFalseScorer, SelfAskScaleScorer, TrueFalseQuestion
-from pyrit.score.scorer import Scorer
-
+from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
+from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.score import SelfAskScaleScorer, SelfAskTrueFalseScorer, TrueFalseQuestion
+from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         on_topic_checking_enabled: bool = True,
         prompt_converters: Optional[list[PromptConverter]] = None,
         objective_achieved_score_threshold: float = 0.8,
+        desired_response_prefix="Sure, here is",
         verbose: bool = False,
     ) -> None:
 
@@ -84,6 +85,11 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
             verbose=verbose,
         )
 
+        if "desired_prefix" not in self._adversarial_chat_system_seed_prompt.parameters:
+            raise ValueError(
+                f"Adversarial seed prompt must have a desired_prefix: '{adversarial_chat_system_prompt_path}'"
+            )
+
         self._adversarial_chat_prompt_template = SeedPrompt.from_yaml_file(
             Path(DATASETS_PATH / "orchestrators" / "tree_of_attacks" / "adversarial_prompt_template.yaml")
         )
@@ -105,6 +111,10 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
         self._scoring_target = scoring_target
         self._prompt_converters = prompt_converters or []
         self._objective_achieved_score_threshhold = objective_achieved_score_threshold
+        self._desired_response_prefix = desired_response_prefix
+
+    def set_prepended_conversation(self, *, prepended_conversation):
+        raise NotImplementedError("Prepending conversations is not supported in this orchestrator.")
 
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
@@ -133,7 +143,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
 
         best_conversation_id = None
 
-        updated_memory_labels = self._combine_with_global_memory_labels(memory_labels)
+        updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
         for iteration in range(1, self._attack_depth + 1):
             logger.info(f"Starting iteration number: {iteration}")
@@ -152,6 +162,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                         prompt_converters=self._prompt_converters,
                         orchestrator_id=self.get_identifier(),
                         memory_labels=updated_memory_labels,
+                        desired_response_prefix=self._desired_response_prefix,
                     )
                     for _ in range(self._attack_width)
                 ]

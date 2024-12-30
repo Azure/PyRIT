@@ -42,10 +42,12 @@
 # - `AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN`
 #
 
+from pyrit.common import default_values
+
 # %%
 from pyrit.memory import AzureSQLMemory
 
-
+default_values.load_environment_files()
 memory = AzureSQLMemory()
 
 memory.print_schema()
@@ -58,9 +60,9 @@ memory.print_schema()
 
 # %%
 from uuid import uuid4
+
 from pyrit.memory import AzureSQLMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-
 
 conversation_id = str(uuid4())
 

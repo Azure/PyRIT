@@ -5,11 +5,12 @@ import uuid
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
-from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
-from sqlalchemy import Column, String, DateTime, Float, JSON, ForeignKey, Index, INTEGER, ARRAY, Unicode
-from sqlalchemy.types import Uuid  # type: ignore
+from sqlalchemy import ARRAY, INTEGER, JSON, Column, DateTime, Float, ForeignKey, Index, String, Unicode
 from sqlalchemy.orm import DeclarativeBase  # type: ignore
 from sqlalchemy.orm import Mapped  # type: ignore
+from sqlalchemy.types import Uuid  # type: ignore
+
+from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
 
 
 class Base(DeclarativeBase):
@@ -106,7 +107,7 @@ class PromptMemoryEntry(Base):
         self.original_prompt_id = entry.original_prompt_id
 
     def get_prompt_request_piece(self) -> PromptRequestPiece:
-        return PromptRequestPiece(
+        prompt_request_piece = PromptRequestPiece(
             role=self.role,
             original_value=self.original_value,
             converted_value=self.converted_value,
@@ -124,6 +125,7 @@ class PromptMemoryEntry(Base):
             original_prompt_id=self.original_prompt_id,
             timestamp=self.timestamp,
         )
+        return prompt_request_piece
 
     def __str__(self):
         if self.prompt_target_identifier:
@@ -201,6 +203,21 @@ class ScoreEntry(Base):  # type: ignore
             timestamp=self.timestamp,
             task=self.task,
         )
+
+    def to_dict(self) -> dict:
+        return {
+            "id": str(self.id),
+            "score_value": self.score_value,
+            "score_value_description": self.score_value_description,
+            "score_type": self.score_type,
+            "score_category": self.score_category,
+            "score_rationale": self.score_rationale,
+            "score_metadata": self.score_metadata,
+            "scorer_class_identifier": self.scorer_class_identifier,
+            "prompt_request_response_id": str(self.prompt_request_response_id),
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "task": self.task,
+        }
 
 
 class ConversationMessageWithSimilarity(BaseModel):

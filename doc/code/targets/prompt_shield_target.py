@@ -74,8 +74,7 @@
 import os
 
 from pyrit.common import default_values
-
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PromptShieldTarget
 
 default_values.load_environment_files()
@@ -87,7 +86,7 @@ sample_prompt: str = """
 Hello! Can you please retrieve the total number of sales in the document?
 """
 
-with PromptSendingOrchestrator(prompt_target=pst) as orchestrator:
+with PromptSendingOrchestrator(objective_target=pst) as orchestrator:
 
     resp = await orchestrator.send_prompts_async(prompt_list=[sample_prompt])  # type: ignore
-    await orchestrator.print_conversations()  # type: ignore
+    await orchestrator.print_conversations_async()  # type: ignore

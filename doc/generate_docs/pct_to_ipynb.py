@@ -1,19 +1,23 @@
 # Find all .py files in the docs directory as this script and convert them to .ipynb
 # This excludes the deployment directory
 
-import argparse, os, subprocess
+import argparse
+import os
+import subprocess
 from pathlib import Path
 
 skip_files = {
+    "conf.py",
     "0_auxiliary_attacks.py",
     "1_gcg_azure_ml.py",
-    "7_human_converter.py",
+    "6_human_converter.py",
+    "HITL_Scoring_Orchestrator.py",
 }
 
 exec_dir = Path(os.getcwd())
 file_type = ".py"
 excluded_dir = {"deployment", "generate_docs"}
-cache_path = os.path.join(exec_dir.parent, "generate_docs", "cache")
+cache_path = os.path.join(exec_dir, "cache")
 kernel_name = "pyrit_kernel"
 
 
@@ -36,14 +40,14 @@ def main():
             for file_path in f:
                 processed_files.add(file_path)
 
-    found_files = find_files(exec_dir.parent, file_type)
+    found_files = find_files(exec_dir, file_type)
 
     for file in found_files:
         if file in processed_files:
-            print("Skipping already processed file: {file}")
+            print(f"Skipping already processed file: {file}")
             continue
-        if file in skip_files:
-            print("Skipping configured skipped file: {file}")
+        if any([skip_file in file for skip_file in skip_files]):
+            print(f"Skipping configured skipped file: {file}")
             continue
         print(f"Processing {file}")
         result = subprocess.run(

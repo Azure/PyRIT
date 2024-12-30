@@ -1,20 +1,24 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Literal
+from typing import Any, Literal, Optional
+
 import httpx
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 
-def get_httpx_client(use_async: bool = False, debug: bool = False):
+def get_httpx_client(use_async: bool = False, debug: bool = False, **httpx_client_kwargs: Optional[Any]):
     """Get the httpx client for making requests."""
 
     client_class = httpx.AsyncClient if use_async else httpx.Client
-    proxies = "http://localhost:8080" if debug else None
-    verify_certs = not debug
+    proxy = "http://localhost:8080" if debug else None
 
+    proxy = httpx_client_kwargs.pop("proxy", proxy)
+    verify_certs = httpx_client_kwargs.pop("verify", not debug)
     # fun notes; httpx default is 5 seconds, httpclient is 100, urllib in indefinite
-    return client_class(proxies=proxies, verify=verify_certs, timeout=60.0)
+    timeout = httpx_client_kwargs.pop("timeout", 60.0)
+
+    return client_class(proxy=proxy, verify=verify_certs, timeout=timeout, **httpx_client_kwargs)
 
 
 PostType = Literal["json", "data"]
@@ -29,6 +33,7 @@ async def make_request_and_raise_if_error_async(
     headers: dict[str, str] = None,
     post_type: PostType = "json",
     debug: bool = False,
+    **httpx_client_kwargs: Optional[Any],
 ) -> httpx.Response:
     """Make a request and raise an exception if it fails."""
     headers = headers or {}
@@ -36,7 +41,7 @@ async def make_request_and_raise_if_error_async(
 
     params = params or {}
 
-    async with get_httpx_client(debug=debug, use_async=True) as async_client:
+    async with get_httpx_client(debug=debug, use_async=True, **httpx_client_kwargs) as async_client:
         response = await async_client.request(
             method=method,
             params=params,

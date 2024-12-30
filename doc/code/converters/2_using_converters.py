@@ -29,10 +29,9 @@
 # %%
 
 from pyrit.common import default_values
-from pyrit.prompt_target import TextTarget, OpenAIChatTarget
-from pyrit.prompt_converter import VariationConverter, StringJoinConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_converter import StringJoinConverter, VariationConverter
+from pyrit.prompt_target import OpenAIChatTarget, TextTarget
 
 default_values.load_environment_files()
 
@@ -46,6 +45,6 @@ prompt_variation_converter = VariationConverter(converter_target=converter_targe
 target = TextTarget()
 
 with PromptSendingOrchestrator(
-    prompt_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
+    objective_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
 ) as orchestrator:
     await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore

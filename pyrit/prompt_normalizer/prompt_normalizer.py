@@ -2,17 +2,19 @@
 # Licensed under the MIT license.
 
 import abc
+import asyncio
 from typing import Optional
 from uuid import uuid4
 
+from pyrit.common.utils import combine_dict
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.memory import MemoryInterface, CentralMemory
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, PromptDataType, construct_response_from_request
+from pyrit.exceptions import EmptyResponseException
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_target import PromptTarget
-
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
+from pyrit.prompt_target import PromptTarget
 
 
 class PromptNormalizer(abc.ABC):
@@ -57,10 +59,21 @@ class PromptNormalizer(abc.ABC):
 
         try:
             response = await target.send_prompt_async(prompt_request=request)
-            self._memory.add_request_response_to_memory(request=request)
+            await self._calc_hash_and_add_request_to_memory(request=request)
+        except EmptyResponseException:
+            # Empty responses are retried, but we don't want them to stop execution
+            await self._calc_hash_and_add_request_to_memory(request=request)
+
+            response = construct_response_from_request(
+                request=request.request_pieces[0],
+                response_text_pieces=[""],
+                response_type="text",
+                error="empty",
+            )
+
         except Exception as ex:
             # Ensure request to memory before processing exception
-            self._memory.add_request_response_to_memory(request=request)
+            await self._calc_hash_and_add_request_to_memory(request=request)
 
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
@@ -69,7 +82,7 @@ class PromptNormalizer(abc.ABC):
                 error="processing",
             )
 
-            self._memory.add_request_response_to_memory(request=error_response)
+            await self._calc_hash_and_add_request_to_memory(request=error_response)
             raise
 
         if response is None:
@@ -79,8 +92,7 @@ class PromptNormalizer(abc.ABC):
             response_converter_configurations=normalizer_request.response_converters, prompt_response=response
         )
 
-        self._memory.add_request_response_to_memory(request=response)
-
+        await self._calc_hash_and_add_request_to_memory(request=response)
         return response
 
     async def send_prompt_batch_to_target_async(
@@ -143,6 +155,14 @@ class PromptNormalizer(abc.ABC):
                     response_piece.converted_value = converter_output.output_text
                     response_piece.converted_value_data_type = converter_output.output_type
 
+    async def _calc_hash_and_add_request_to_memory(self, request: PromptRequestResponse) -> None:
+        """
+        Adds a request to the memory.
+        """
+        tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.request_pieces]
+        await asyncio.gather(*tasks)
+        self._memory.add_request_response_to_memory(request=request)
+
     async def _build_prompt_request_response(
         self,
         *,
@@ -181,6 +201,8 @@ class PromptNormalizer(abc.ABC):
                 prompt_data_type=request_piece.prompt_data_type,
             )
 
+            combined_memory_labels = combine_dict(existing_dict=labels, new_dict=request_piece.labels)
+
             converter_identifiers = [converter.get_identifier() for converter in request_piece.request_converters]
             prompt_request_piece = PromptRequestPiece(
                 role="user",
@@ -188,7 +210,7 @@ class PromptNormalizer(abc.ABC):
                 converted_value=converted_prompt_text,
                 conversation_id=conversation_id,
                 sequence=sequence,
-                labels=labels,
+                labels=combined_memory_labels,
                 prompt_metadata=request_piece.metadata,
                 converter_identifiers=converter_identifiers,
                 prompt_target_identifier=target.get_identifier(),
@@ -196,7 +218,6 @@ class PromptNormalizer(abc.ABC):
                 original_value_data_type=request_piece.prompt_data_type,
                 converted_value_data_type=converted_prompt_type,
             )
-            await prompt_request_piece.compute_sha256()
             entries.append(prompt_request_piece)
 
         return PromptRequestResponse(request_pieces=entries)

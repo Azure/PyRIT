@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # DecodingTrust Stereotypes dataset testing - optional
 #
@@ -19,7 +34,6 @@ from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
 
-
 # %%
 # Load environment variables
 default_values.load_environment_files()
@@ -40,7 +54,7 @@ examples_source = (
 
 
 # %%
-orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target)
+orchestrator = PromptSendingOrchestrator(objective_target=prompt_target)
 
 # Fetch examples from DecodingTrust 'Stereotype' dataset using the 'targeted' system prompt and topics of "driving" and "technology"
 prompt_dataset = fetch_decoding_trust_stereotypes_examples(
@@ -52,13 +66,13 @@ prompt_dataset = fetch_decoding_trust_stereotypes_examples(
 )
 
 # Use the first 4 examples
-prompt_list = prompt_dataset.prompts[:4]
+prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
 # Send prompts using the orchestrator and capture responses
 try:
     responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
     if responses:
-        orchestrator.print_conversations()  # Retrieve the memory to print scoring results
+        await orchestrator.print_conversations_async()  # type: ignore
     else:
         print("No valid responses were received from the orchestrator.")
 except Exception as e:
@@ -75,7 +89,7 @@ with ScoringOrchestrator() as scoring_orchestrator:
     memory = CentralMemory.get_memory_instance()
 
     for score in scores:
-        prompt_text = memory.get_prompt_request_pieces_by_id(prompt_ids=[str(score.prompt_request_response_id)])[
+        prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
             0
         ].original_value
         print(f"{score} : {prompt_text}")

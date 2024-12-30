@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.2
+#   kernelspec:
+#     display_name: pyrit-311
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # HuggingFace Chat Target Testing - optional
 #
@@ -30,11 +45,15 @@
 
 # %%
 import time
-from pyrit.prompt_target import HuggingFaceChatTarget
+
+from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_target import HuggingFaceChatTarget
+
+default_values.load_environment_files()
 
 # models to test
-model_id = "HuggingFaceTB/SmolLM-135M-Instruct"
+model_id = "Qwen/Qwen2-0.5B-Instruct"
 
 # List of prompts to send
 prompt_list = ["What is 3*3? Give me the solution.", "What is 4*4? Give me the solution."]
@@ -49,7 +68,7 @@ try:
     target = HuggingFaceChatTarget(model_id=model_id, use_cuda=False, tensor_format="pt", max_new_tokens=30)
 
     # Initialize the orchestrator
-    orchestrator = PromptSendingOrchestrator(prompt_target=target, verbose=False)
+    orchestrator = PromptSendingOrchestrator(objective_target=target, verbose=False)
 
     # Record start time
     start_time = time.time()
@@ -68,7 +87,7 @@ try:
     print(f"Average response time for {model_id}: {avg_time:.2f} seconds\n")
 
     # Print the conversations
-    await orchestrator.print_conversations()  # type: ignore
+    await orchestrator.print_conversations_async()  # type: ignore
 
 except Exception as e:
     print(f"An error occurred with model {model_id}: {e}\n")

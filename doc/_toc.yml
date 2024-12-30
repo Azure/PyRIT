@@ -9,20 +9,24 @@ chapters:
     - file: setup/use_azure_sql_db
   - file: contributing/README
     sections:
-    - file: contributing/exception
-    - file: contributing/git
-    - file: contributing/incorporating_research
-    - file: contributing/installation
-    - file: contributing/release_process
-    - file: contributing/style_guide
-    - file: contributing/tests
+    - file: contributing/1_installation
+    - file: contributing/2_git
+    - file: contributing/3_incorporating_research
+    - file: contributing/4_style_guide
+    - file: contributing/5_running_tests
+    - file: contributing/6_unit_tests
+    - file: contributing/7_integration_tests
+    - file: contributing/8_notebooks
+    - file: contributing/9_pre_commit
+    - file: contributing/10_exception
+    - file: contributing/11_release_process
   - file: code/architecture
   - file: code/user_guide
     sections:
     - file: code/orchestrators/0_orchestrator
       sections:
       - file: code/orchestrators/1_prompt_sending_orchestrator
-      - file: code/orchestrators/2_red_teaming_orchestrator
+      - file: code/orchestrators/2_multi_turn_orchestrators
       - file: code/orchestrators/3_xpia_orchestrator
       - file: code/orchestrators/4_scoring_orchestrator
       - file: code/orchestrators/5_crescendo_orchestrator
@@ -55,6 +59,7 @@ chapters:
       - file: code/targets/6_rate_limiting
       - file: code/targets/7_http_target
       - file: code/targets/open_ai_completions
+      - file: code/targets/playwright_target
       - file: code/targets/prompt_shield_target
       - file: code/targets/use_huggingface_chat_target
     - file: code/converters/0_converters
@@ -65,7 +70,9 @@ chapters:
         - file: code/converters/4_image_converters
         - file: code/converters/5_selectively_converting
         - file: code/converters/6_human_converter
+        - file: code/converters/ansi_attack_converter
         - file: code/converters/char_swap_attack_generator
+        - file: code/converters/pdf_converter
         - file: code/converters/math_prompt_converter
     - file: code/scoring/0_scoring
       sections:
@@ -103,3 +110,5 @@ chapters:
       - file: deployment/troubleshooting_guide_hf_azureml
   - file: api.rst
   - file: blog/README
+    sections:
+    - file: blog/2024_12_3

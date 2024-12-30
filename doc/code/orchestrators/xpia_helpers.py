@@ -1,20 +1,19 @@
+import logging
 from typing import Any, Optional
 
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
-import logging
 from openai import AsyncAzureOpenAI
-from semantic_kernel.kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_prompt_execution_settings import (
     AzureChatPromptExecutionSettings,
 )
 from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import AzureChatCompletion
-from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
+from semantic_kernel.kernel import Kernel
+from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
 
 from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
-from pyrit.models import PromptRequestResponse
-from pyrit.models import construct_response_from_request
+from pyrit.models import PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -62,6 +61,9 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         max_tokens: int = 2000,
         temperature: float = 0.7,
     ) -> None:
+
+        super().__init__()
+
         self._deployment_name = default_values.get_required_value(
             env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment_name
         )

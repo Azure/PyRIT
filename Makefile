@@ -2,7 +2,7 @@
 
 CMD:=python -m
 PYMODULE:=pyrit
-TESTS:=tests
+TESTS:=tests/unit
 
 all: pre-commit
 

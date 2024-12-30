@@ -29,7 +29,7 @@
 # > https://gandalf.lakera.ai/
 #
 #
-# Gandalf contains 7 different levels. In this demo, we will show how to automatically bypass (at least) the first couple. It uses the [RedTeamingOrchestrator](../orchestrators/2_red_teaming_orchestrator.ipynb) as a strategy to solve these challenges.
+# Gandalf contains 7 different levels. In this demo, we will show how to automatically bypass (at least) the first couple. It uses the [RedTeamingOrchestrator](../orchestrators/2_multi_turn_orchestrators.ipynb) as a strategy to solve these challenges.
 #
 # Each level gets progressively more difficult. Before continuing, it may be beneficial to manually try the Gandalf challenges to get a feel for how they are solved.
 #
@@ -49,9 +49,9 @@
 # %%
 import textwrap
 
-from pyrit.prompt_target import GandalfTarget, GandalfLevel, OpenAIChatTarget
-from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.common import default_values
+from pyrit.orchestrator import RedTeamingOrchestrator
+from pyrit.prompt_target import GandalfLevel, GandalfTarget, OpenAIChatTarget
 from pyrit.score import GandalfScorer
 
 default_values.load_environment_files()
@@ -97,13 +97,11 @@ with RedTeamingOrchestrator(
 import logging
 from typing import List
 
-from pyrit.orchestrator.prompt_sending_orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import PromptConverter, Base64Converter
+from pyrit.common import default_values
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_converter import Base64Converter, PromptConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
-
-
-from pyrit.common import default_values
 
 default_values.load_environment_files()
 
@@ -119,7 +117,7 @@ aoai_target = OpenAIChatTarget()
 
 converters: List[PromptConverter] = [Base64Converter()]
 
-with PromptSendingOrchestrator(prompt_target=target, prompt_converters=converters, verbose=False) as orchestrator:
+with PromptSendingOrchestrator(objective_target=target, prompt_converters=converters, verbose=False) as orchestrator:
 
     response = (await orchestrator.send_prompts_async(prompt_list=[request]))[0]  # type: ignore
     print(response)  # type: ignore
@@ -133,13 +131,11 @@ with PromptSendingOrchestrator(prompt_target=target, prompt_converters=converter
 # %%
 import textwrap
 
+from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.common import default_values
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
-from pyrit.prompt_target import OpenAIChatTarget
-
-from pyrit.prompt_target import CrucibleTarget
+from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
 
 default_values.load_environment_files()

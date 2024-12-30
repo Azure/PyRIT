@@ -5,12 +5,11 @@ import abc
 import ast
 import logging
 import uuid
-
 from typing import Optional
 
 from pyrit.common import default_values
-from pyrit.memory import MemoryInterface, CentralMemory
-from pyrit.models import PromptDataType, Identifier
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import Identifier, PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
 
@@ -74,18 +73,11 @@ class Orchestrator(abc.ABC, Identifier):
         request = NormalizerRequest(request_pieces=[request_piece], conversation_id=conversation_id)
         return request
 
-    def _combine_with_global_memory_labels(self, memory_labels: dict[str, str]) -> dict[str, str]:
-        """
-        Combines the global memory labels with the provided memory labels.
-        The passed memory_labels take precedence with collisions.
-        """
-        return {**(self._global_memory_labels or {}), **(memory_labels or {})}
-
     def get_memory(self):
         """
         Retrieves the memory associated with this orchestrator.
         """
-        return self._memory.get_prompt_request_piece_by_orchestrator_id(orchestrator_id=self._id)
+        return self._memory.get_prompt_request_pieces(orchestrator_id=self._id)
 
     def get_score_memory(self):
         """

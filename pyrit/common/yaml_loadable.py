@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 import abc
-import yaml
 from pathlib import Path
 from typing import Type, TypeVar, Union
 
+import yaml
 
 T = TypeVar("T", bound="YamlLoadable")
 

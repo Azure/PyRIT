@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import json
-from typing import List, Dict
+from typing import Dict, List
 
 
 def read_json(file) -> List[Dict[str, str]]:

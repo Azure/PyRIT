@@ -2,16 +2,17 @@
 # Licensed under the MIT license.
 
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
-from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 
 from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverter
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
+from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
+from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
-from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
+from pyrit.prompt_converter.binary_converter import BinaryConverter
 from pyrit.prompt_converter.caesar_converter import CaesarConverter
 from pyrit.prompt_converter.character_space_converter import CharacterSpaceConverter
 from pyrit.prompt_converter.codechameleon_converter import CodeChameleonConverter
@@ -27,10 +28,12 @@ from pyrit.prompt_converter.fuzzer_converter import (
 )
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
-from pyrit.prompt_converter.morse_converter import MorseConverter
+from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
+from pyrit.prompt_converter.morse_converter import MorseConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
+from pyrit.prompt_converter.pdf_converter import PDFConverter
 from pyrit.prompt_converter.persuasion_converter import PersuasionConverter
 from pyrit.prompt_converter.qr_code_converter import QRCodeConverter
 from pyrit.prompt_converter.random_capital_letters_converter import RandomCapitalLettersConverter
@@ -47,16 +50,17 @@ from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConv
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
 
-
 __all__ = [
     "AddImageTextConverter",
     "AddTextImageConverter",
+    "AnsiAttackConverter",
     "AsciiArtConverter",
     "AtbashConverter",
     "AudioFrequencyConverter",
     "AzureSpeechAudioToTextConverter",
     "AzureSpeechTextToAudioConverter",
     "Base64Converter",
+    "BinaryConverter",
     "CaesarConverter",
     "CharacterSpaceConverter",
     "CodeChameleonConverter",
@@ -76,6 +80,7 @@ __all__ = [
     "MathPromptConverter",
     "MorseConverter",
     "NoiseConverter",
+    "PDFConverter",
     "PersuasionConverter",
     "PromptConverter",
     "QRCodeConverter",

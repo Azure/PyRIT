@@ -3,19 +3,18 @@
 
 import logging
 from pathlib import Path
-
 from typing import Optional
 from uuid import uuid4
 
+from colorama import Fore, Style
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.models import SeedPromptDataset, PromptRequestResponse
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import PromptRequestResponse, SeedPromptDataset
 from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter
-from colorama import Style, Fore
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
     The orchestrator sends an inital skeleton key prompt to the target, and then follows
     up with a separate attack prompt.
     If successful, the first prompt makes the target comply even with malicious follow-up prompts.
-    In our experiments, using two separate prompts was significantly more effective than using a single combined prompt.
+    In our experiments, using two separate prompts was more effective than using a single combined prompt.
 
     Learn more about attack at the link below:
     https://www.microsoft.com/en-us/security/blog/2024/06/26/mitigating-skeleton-key-a-new-type-of-generative-ai-jailbreak-technique/

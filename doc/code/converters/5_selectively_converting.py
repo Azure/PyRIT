@@ -19,10 +19,9 @@
 
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import TextTarget
-from pyrit.prompt_converter import Base64Converter, PromptConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_converter import Base64Converter, PromptConverter
+from pyrit.prompt_target import TextTarget
 
 default_values.load_environment_files()
 
@@ -31,5 +30,5 @@ converters: list[PromptConverter] = [Base64Converter()]
 
 target = TextTarget()
 
-with PromptSendingOrchestrator(prompt_target=target, prompt_converters=converters) as orchestrator:
+with PromptSendingOrchestrator(objective_target=target, prompt_converters=converters) as orchestrator:
     await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
