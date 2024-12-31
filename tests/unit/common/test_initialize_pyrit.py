@@ -86,12 +86,14 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
     [
         ("InMemory", {"verbose": True}),
         ("DuckDB", {"verbose": True}),
-        ("AzureSQL", 
+        (
+            "AzureSQL",
             {
                 "connection_string": "mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server",
                 "results_container_url": "https://test.blob.core.windows.net/test",
                 "results_sas_token": "valid_sas_token",
-            }),
+            },
+        ),
     ],
 )
 @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
