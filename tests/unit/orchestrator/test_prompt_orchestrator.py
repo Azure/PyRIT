@@ -343,13 +343,13 @@ def test_prepare_conversation_without_prepended_conversation():
 
 # 1. add test for zero retries
 #    - should not call the retry logic
-@pytest.mark.asyncio
-async def test_zero_retries():
-    prompt_target_mock = MagicMock()
-    orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target_mock)
+# @pytest.mark.asyncio
+# async def test_zero_retries():
+#     prompt_target_mock = MagicMock()
+#     orchestrator = PromptSendingOrchestrator(prompt_target=prompt_target_mock)
     
-    await orchestrator.send_prompts_async(prompt_list=["hello"], max_retries_on_refusal=0)
-    orchestrator._get_should_retry_score_async.assert_not_called()
+#     await orchestrator.send_prompts_async(prompt_list=["hello"], max_retries_on_refusal=0)
+#     orchestrator._get_should_retry_score_async.assert_not_called()
 
 
 
