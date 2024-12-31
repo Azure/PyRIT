@@ -64,11 +64,11 @@ json_file_path = RESULTS_PATH / "conversation_and_scores_json_example.json"
 # csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
 
 # # Export the data to a JSON file
-conversation_with_scores = memory.export_all_conversations(file_path=json_file_path, export_type="json")
+conversation_with_scores = memory.export_conversations(file_path=json_file_path, export_type="json")
 print(f"Exported conversation with scores to JSON: {json_file_path}")
 
 # Export the data to a CSV file
-# conversation_with_scores = memory.export_all_conversations(file_path=csv_file_path, export_type="csv")
+# conversation_with_scores = memory.export_conversations(file_path=csv_file_path, export_type="csv")
 # print(f"Exported conversation with scores to CSV: {csv_file_path}")
 
 # %% [markdown]
@@ -120,11 +120,11 @@ for entry in entries:
 csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
 
 # Export the data to a JSON file
-# conversation_with_scores = azure_memory.export_conversation_by_id(conversation_id=conversation_id, file_path=json_file_path, export_type="json")
+# conversation_with_scores = azure_memory.export_conversations(conversation_id=conversation_id, file_path=json_file_path, export_type="json")
 # print(f"Exported conversation with scores to JSON: {json_file_path}")
 
 # Export the data to a CSV file
-conversation_with_scores = azure_memory.export_conversation_by_id(
+conversation_with_scores = azure_memory.export_conversations(
     conversation_id=conversation_id, file_path=json_file_path, export_type="csv"
 )
 print(f"Exported conversation with scores to CSV: {csv_file_path}")
