@@ -55,7 +55,7 @@ def initialize_pyrit(memory_db_type: MemoryDatabaseType, **memory_instance_kwarg
     if memory_db_type == "InMemory":
         memory = DuckDBMemory(db_path=":memory:", **memory_instance_kwargs)
     elif memory_db_type == "DuckDB":
-        memory = DuckDBMemory(db_path=None, **memory_instance_kwargs)
+        memory = DuckDBMemory(**memory_instance_kwargs)
     else:
         memory = AzureSQLMemory(**memory_instance_kwargs)
 
