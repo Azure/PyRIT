@@ -15,20 +15,19 @@ initialize_pyrit(memory_db_type: MemoryDatabaseType, memory_instance_kwargs: Opt
 ```
 
 The `MemoryDatabaseType` is a `Literal` with 3 options: "InMemory", "DuckDB", "AzureSQL". (Read more below)
-   - `initialize_pyrit` takes the `MemoryDatabaseType` and an argument list (`memory_instance_kwargs`), to pass to the memory instance.
-   - When called, `CentralMemory.set_memory_instance(passed_memory)` explicitly defines the memory instance to be used.
+   - `initialize_pyrit` takes the `MemoryDatabaseType` and an argument list (`memory_instance_kwargs`), to initialize the shared memory instance.
 
 ##  Memory Database Type Options
 
-**DuckDB:** _Local DuckDB_
-   - Interactions will be stored in a local `DuckDBMemory` instance. See notebook [here](./1_duck_db_memory.ipynb).
+**InMemory:** _In-Memory DuckDB Database_
+   - This option can be preferable if the user does not care about storing conversations or scores in memory beyond the current process. It is used as the default in most of the PyRIT notebooks.
+   - **Note**: In in-memory mode, no data is persisted to disk, therefore, all data is lost when the process finishes (from [DuckDB docs](https://duckdb.org/docs/connect/overview.html#in-memory-database))
+
+**DuckDB:** _Persistent DuckDB Database_
+   - Interactions will be stored in a persistent `DuckDBMemory` instance with a location on-disk. See notebook [here](./1_duck_db_memory.ipynb) for more details.
 
 **AzureSQL:** _Azure SQL Database_
    - For examples on setting up `AzureSQLMemory`, please refer to the notebook [here](./7_azure_sql_memory_orchestrators.ipynb).
    - To configure AzureSQLMemory without an extra argument list, these keys should be in your `.env` file:
      - `AZURE_SQL_DB_CONNECTION_STRING`
      - `AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL`
-
-**InMemory:** _Duck DB with db_path=":memory:"_
-   - This option is sometimes preferable when using PyRIT for quick interactions that do not require storing results in a database.
-   - **Note**: This option will not work for any functionality that checks interactions from memory, such as orchestrators.
