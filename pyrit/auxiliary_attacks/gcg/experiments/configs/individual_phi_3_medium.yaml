@@ -9,10 +9,10 @@ stop_on_success: False
 verbose: True
 allow_non_ascii: False
 num_train_models: 1
-result_prefix: "results/individual_phi_3_mini"
-tokenizer_paths: ["microsoft/Phi-3-mini-4k-instruct"]
+result_prefix: "results/individual_phi_3_medium"
+tokenizer_paths: ["microsoft/Phi-3-medium-4k-instruct"]
 tokenizer_kwargs: [{"use_fast": False}]
-model_paths: ["microsoft/Phi-3-mini-4k-instruct"]
+model_paths: ["microsoft/Phi-3-medium-4k-instruct"]
 model_kwargs: [{"low_cpu_mem_usage": True, "use_cache": False}]
 conversation_templates: ["phi-3"]
 devices: ["cuda:0"]

@@ -1627,7 +1627,7 @@ def get_workers(params, eval=False):
             tokenizer.padding_side = "left"
         if "falcon" in params.tokenizer_paths[i]:
             tokenizer.padding_side = "left"
-        if "Phi-3-mini-4k-instruct" in params.tokenizer_paths[i]:
+        if "Phi-3" in params.tokenizer_paths[i]:
             tokenizer.bos_token_id = 1
             tokenizer.eos_token_id = 32000
             tokenizer.unk_token_id = 0
@@ -1642,9 +1642,9 @@ def get_workers(params, eval=False):
     for template in params.conversation_templates:
         if template in ["llama-2", "mistral", "llama-3-8b", "vicuna"]:
             raw_conv_templates.append(get_conversation_template(template)),
-        elif template in ["phi-3-mini"]:
+        elif template in ["phi-3"]:
             conv_template = Conversation(
-                name="phi-3-mini",
+                name="phi-3",
                 system_template="<|system|>\n{system_message}",
                 system_message="",
                 roles=("<|user|>", "<|assistant|>"),

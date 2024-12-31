@@ -17,7 +17,7 @@ def _load_yaml_to_dict(config_path: str) -> dict:
     return data
 
 
-MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
+MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "phi_3_small", "phi_3_medium"]
 ALL_MODELS = "all_models"
 MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
 
@@ -28,7 +28,7 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
 
     Args:
         model_name (str): The name of the model, currently supports:
-            "mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "all_models"
+            "mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "phi_3_small", "phi_3_medium", "all_models"
         setup (str): Identifier for the setup, currently supporst
             - "single": one prompt one model
             - "multiple": multiple prompts one model or multiple prompts multiple models
@@ -37,7 +37,7 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
 
     if model_name not in MODEL_NAMES:
         raise ValueError(
-            "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"
+            "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', 'phi_3_mini', 'phi_3_small', and 'phi_3_medium'"
         )
 
     default_values.load_environment_files()
@@ -72,6 +72,20 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
 
 
 def parse_arguments():
+    """
+    Command line argument parser to run the adversarial suffix trainer.
+
+    Args:
+        n_train_data (int): The number of examples to use for generating the suffix
+        n_test_data (int): The number of examples to use for testing
+        n_steps (int): The number of iterations to run GCG for. Default is 100, although more
+            steps may be required for the loss to converge.
+        batch_size (int): The batch size to use for training. Default is 512, and memory usage
+            scales with this value. 
+        random_seed (int): Random seed for reproducible training runs.
+        control_init (str): The initial GCG suffix to use at the start of training. Default is
+            all exclamation points, which was used in the original GCG paper.
+    """
     parser = argparse.ArgumentParser(description="Script to run the adversarial suffix trainer")
     parser.add_argument("--model_name", type=str, help="The name of the model")
     parser.add_argument(
@@ -86,6 +100,9 @@ def parse_arguments():
     parser.add_argument("--n_steps", type=int, default=100, help="Number of steps")
     parser.add_argument("--batch_size", type=int, default=512, help="Batch size")
     parser.add_argument("--random_seed", type=int, default=None, help="Random seed")
+    parser.add_argument(
+        "--control_init", type=str, default="! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !", help="Suffix initialization"
+    )
 
     return parser.parse_args()
 
@@ -102,4 +119,5 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         test_steps=1,
         random_seed=args.random_seed,
+        control_init=args.control_init,
     )
