@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -29,6 +29,7 @@
 
 # %%
 from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.memory import CentralMemory
 from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter, RandomCapitalLettersConverter, BinaryConverter
 
 initialize_pyrit(memory_db_type="InMemory")
@@ -40,3 +41,6 @@ print(await ROT13Converter().convert_tokens_async(prompt=prompt))  # type: ignor
 print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(prompt=prompt))  # type: ignore
 print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await BinaryConverter().convert_tokens_async(prompt=prompt))  # type: ignore
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

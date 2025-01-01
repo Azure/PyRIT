@@ -85,7 +85,6 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
 @pytest.mark.parametrize(
     "memory_db_type",
     [db_type for db_type in get_args(MemoryDatabaseType)],
-
 )
 @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
 @mock.patch("pyrit.common.initialize_pyrit._load_environment_files")

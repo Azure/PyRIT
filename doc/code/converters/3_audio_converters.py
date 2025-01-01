@@ -119,3 +119,9 @@ speech_text_converter = AzureSpeechAudioToTextConverter()
 transcript = await speech_text_converter.convert_async(prompt=prompt)  # type: ignore
 
 print(transcript)
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()
