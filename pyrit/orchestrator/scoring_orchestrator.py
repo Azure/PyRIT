@@ -31,7 +31,7 @@ class ScoringOrchestrator(Orchestrator):
 
         self._batch_size = batch_size
 
-    async def score_prompts_by_orchestrator_id_async(
+    async def score_responses_by_orchestrator_id_async(
         self,
         *,
         scorer: Scorer,
@@ -46,9 +46,9 @@ class ScoringOrchestrator(Orchestrator):
 
         request_pieces = self._remove_duplicates(request_pieces)
 
-        return await scorer.score_responses_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_responses_inferring_tasks_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
 
-    async def score_prompts_by_memory_labels_async(
+    async def score_responses_by_memory_labels_async(
         self,
         *,
         scorer: Scorer,
@@ -65,9 +65,9 @@ class ScoringOrchestrator(Orchestrator):
 
         request_pieces = self._remove_duplicates(request_pieces)
 
-        return await scorer.score_responses_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_responses_inferring_tasks_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
 
-    async def score_prompts_by_request_id_async(
+    async def score_prompts_by_id_async(
         self,
         *,
         scorer: Scorer,

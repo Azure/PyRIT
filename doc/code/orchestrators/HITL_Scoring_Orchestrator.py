@@ -64,7 +64,7 @@ azure_content_filter_scorer = AzureContentFilterScorer(
 scorer = HumanInTheLoopScorer(scorer=self_ask_scorer, re_scorers=[self_ask_scorer, azure_content_filter_scorer])
 with ScoringOrchestrator() as scoring_orchestrator:
     start = time.time()
-    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
+    scores = await scoring_orchestrator.score_responses_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[id], responses_only=False
     )
     end = time.time()
@@ -86,7 +86,7 @@ scorer = HumanInTheLoopScorer()
 with ScoringOrchestrator() as scoring_orchestrator:
     memory = DuckDBMemory()
     start = time.time()
-    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
+    scores = await scoring_orchestrator.score_responses_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[id], responses_only=False
     )
     end = time.time()

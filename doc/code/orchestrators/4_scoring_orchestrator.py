@@ -13,8 +13,6 @@
 #     name: python3
 # ---
 
-from pyrit.common import default_values
-
 # %% [markdown]
 # # 4. Scoring Orchestrator
 #
@@ -31,6 +29,8 @@ from pyrit.common import default_values
 # %%
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
+from pyrit.common import default_values
+
 
 default_values.load_environment_files()
 
@@ -43,7 +43,7 @@ target = TextTarget()
 with PromptSendingOrchestrator(objective_target=target) as send_all_prompts_orchestrator:
 
     requests = await send_all_prompts_orchestrator.send_prompts_async(prompt_list=prompts_to_score)  # type: ignore
-    prompt_sending_orchestrator_id = send_all_prompts_orchestrator.get_identifier()["id"]
+    prompt_ids = [request.id for request in send_all_prompts_orchestrator.get_memory()]
 
 
 # %% [markdown]
@@ -52,14 +52,15 @@ with PromptSendingOrchestrator(objective_target=target) as send_all_prompts_orch
 # %%
 # pylint: disable=W0611
 import time
-
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import ContentClassifierPaths, SelfAskCategoryScorer
-
-# we need the id from the previous run to score all prompts from the orchestrator
-id = prompt_sending_orchestrator_id
+from pyrit.score import (
+    AzureContentFilterScorer,
+    SelfAskCategoryScorer,
+    HumanInTheLoopScorer,
+    ContentClassifierPaths,
+)
 
 # The scorer is interchangeable with other scorers
 # scorer = AzureContentFilterScorer()
@@ -69,20 +70,15 @@ scorer = SelfAskCategoryScorer(
 )
 
 with ScoringOrchestrator() as scoring_orchestrator:
-    start = time.time()
-    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
-        scorer=scorer, orchestrator_ids=[id], responses_only=False
+    scores = await scoring_orchestrator.score_prompts_by_id_async(  # type: ignore
+        scorer=scorer, prompt_ids=prompt_ids
     )
-    end = time.time()
-
-    print(f"Elapsed time for operation: {end-start}")
 
     memory = CentralMemory.get_memory_instance()
 
     for score in scores:
-        prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
-            0
-        ].original_value
+        prompt_text = memory.get_prompt_request_pieces(
+            prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
         print(f"{score} : {prompt_text}")
 
 # %% [markdown]
@@ -96,11 +92,18 @@ with ScoringOrchestrator() as scoring_orchestrator:
 # pylint: disable=W0611
 import uuid
 
-from pyrit.common import default_values
 from pyrit.memory import CentralMemory
-from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
+from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import ContentClassifierPaths, SelfAskCategoryScorer
+from pyrit.score import (
+    AzureContentFilterScorer,
+    SelfAskCategoryScorer,
+    HumanInTheLoopScorer,
+    ContentClassifierPaths,
+)
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.common import default_values
+
 
 default_values.load_environment_files()
 
@@ -126,7 +129,7 @@ scorer = SelfAskCategoryScorer(
 
 # Scoring prompt responses based on user provided memory labels
 with ScoringOrchestrator() as scoring_orchestrator:
-    scores = await scoring_orchestrator.score_prompts_by_memory_labels_async(  # type: ignore
+    scores = await scoring_orchestrator.score_responses_by_memory_labels_async(  # type: ignore
         scorer=scorer, memory_labels=memory_labels
     )
 

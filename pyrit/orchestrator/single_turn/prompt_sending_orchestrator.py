@@ -91,7 +91,7 @@ class PromptSendingOrchestrator(Orchestrator):
             response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
 
             for scorer in self._scorers:
-                await scorer.score_responses_batch_async(request_responses=response_pieces, batch_size=self._batch_size)
+                await scorer.score_responses_inferring_tasks_batch_async(request_responses=response_pieces, batch_size=self._batch_size)
 
         return responses
 

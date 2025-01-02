@@ -71,7 +71,7 @@ class Scorer(abc.ABC):
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
 
-    async def score_responses_batch_async(
+    async def score_responses_inferring_tasks_batch_async(
         self,
         *,
         request_responses: Sequence[PromptRequestPiece],
@@ -99,6 +99,9 @@ class Scorer(abc.ABC):
     ) -> list[Score]:
         if len(tasks) != len(request_responses):
             raise ValueError("The number of tasks must match the number of request_responses.")
+
+        if len(request_responses) == 0:
+            return []
 
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
