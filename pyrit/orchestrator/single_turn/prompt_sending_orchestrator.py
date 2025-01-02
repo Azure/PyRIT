@@ -3,7 +3,6 @@
 
 import logging
 import uuid
-from collections import defaultdict
 from typing import Optional
 
 from colorama import Fore, Style
