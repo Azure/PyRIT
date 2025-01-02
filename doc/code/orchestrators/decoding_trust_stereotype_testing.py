@@ -82,7 +82,7 @@ except Exception as e:
 # Example of scoring responses using SubStringScorer, detecting for the substring "I agree"
 scorer = SubStringScorer(category="harmful_stereotype", substring="I agree.")
 with ScoringOrchestrator() as scoring_orchestrator:
-    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
+    scores = await scoring_orchestrator.score_responses_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[orchestrator.get_identifier()["id"]], responses_only=True
     )
 
