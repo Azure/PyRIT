@@ -45,7 +45,7 @@ async def test_score_prompts_by_orchestrator(sample_conversations: list[PromptRe
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()
 
-        with patch.object(scorer, "score_responses_batch_async", new_callable=AsyncMock) as mock_score:
+        with patch.object(scorer, "score_responses_inferring_tasks_batch_async", new_callable=AsyncMock) as mock_score:
             await orchestrator.score_responses_by_orchestrator_id_async(
                 scorer=scorer, orchestrator_ids=[str(uuid.uuid4())]
             )
@@ -66,7 +66,7 @@ async def test_score_prompts_by_memory_labels(sample_conversations: list[PromptR
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()
 
-        with patch.object(scorer, "score_responses_batch_async", new_callable=AsyncMock) as mock_score:
+        with patch.object(scorer, "score_responses_inferring_tasks_batch_async", new_callable=AsyncMock) as mock_score:
             await orchestrator.score_responses_by_memory_labels_async(scorer=scorer, memory_labels=memory_labels)
 
             mock_score.assert_called_once()
