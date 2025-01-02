@@ -256,6 +256,28 @@ class MemoryInterface(abc.ABC):
         not_data_type: Optional[str] = None,
         converted_value_sha256: Optional[list[str]] = None,
     ) -> list[PromptRequestPiece]:
+        """
+        Retrieves a list of PromptRequestPiece objects based on the specified filters.
+
+        Args:
+            orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
+            conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
+            prompt_ids (Optional[list[str] | list[uuid.UUID]], optional): A list of prompt IDs. Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
+            sent_after (Optional[datetime], optional): Filter for prompts sent after this datetime. Defaults to None.
+            sent_before (Optional[datetime], optional): Filter for prompts sent before this datetime. Defaults to None.
+            original_values (Optional[list[str]], optional): A list of original values. Defaults to None.
+            converted_values (Optional[list[str]], optional): A list of converted values. Defaults to None.
+            data_type (Optional[str], optional): The data type to filter by. Defaults to None.
+            not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
+            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values.
+                Defaults to None.
+        Returns:
+            list[PromptRequestPiece]: A list of PromptRequestPiece objects that match the specified filters.
+        Raises:
+            Exception: If there is an error retrieving the prompts,
+                an exception is logged and an empty list is returned.
+        """
         conditions = []
         if orchestrator_id:
             conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=str(orchestrator_id)))
@@ -373,28 +395,6 @@ class MemoryInterface(abc.ABC):
         self.add_request_pieces_to_memory(request_pieces=prompt_pieces)
 
         return new_conversation_id
-
-    def export_conversation_by_orchestrator_id(
-        self, *, orchestrator_id: str, file_path: Path = None, export_type: str = "json"
-    ):
-        """
-        Exports conversation data with the given orchestrator ID to a specified file.
-        This will contain all conversations that were sent by the same orchestrator.
-
-        Args:
-            orchestrator_id (str): The ID of the orchestrator from which to export conversations.
-            file_path (str): The path to the file where the data will be exported.
-            If not provided, a default path using RESULTS_PATH will be constructed.
-            export_type (str): The format of the export. Defaults to "json".
-        """
-        data = self.get_prompt_request_pieces(orchestrator_id=orchestrator_id)
-
-        # If file_path is not provided, construct a default using the exporter's results_path
-        if not file_path:
-            file_name = f"{str(orchestrator_id)}.{export_type}"
-            file_path = RESULTS_PATH / file_name
-
-        self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
     def add_request_response_to_memory(self, *, request: PromptRequestResponse) -> None:
         """
@@ -522,25 +522,6 @@ class MemoryInterface(abc.ABC):
         """
         memory_entries = self.get_prompt_request_pieces(conversation_id=conversation_id)
         return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
-
-    def export_conversation_by_id(self, *, conversation_id: str, file_path: Path = None, export_type: str = "json"):
-        """
-        Exports conversation data with the given conversation ID to a specified file.
-
-        Args:
-            conversation_id (str): The ID of the conversation to export.
-            file_path (str): The path to the file where the data will be exported.
-            If not provided, a default path using RESULTS_PATH will be constructed.
-            export_type (str): The format of the export. Defaults to "json".
-        """
-        data = self.get_prompt_request_pieces(conversation_id=conversation_id)
-
-        # If file_path is not provided, construct a default using the exporter's results_path
-        if not file_path:
-            file_name = f"{conversation_id}.{export_type}"
-            file_path = RESULTS_PATH / file_name
-
-        self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
     def get_seed_prompts(
         self,
@@ -740,19 +721,61 @@ class MemoryInterface(abc.ABC):
         seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups
 
-    def export_all_conversations(self, *, file_path: Optional[Path] = None, export_type: str = "json"):
+    def export_conversations(
+        self,
+        *,
+        orchestrator_id: Optional[str | uuid.UUID] = None,
+        conversation_id: Optional[str | uuid.UUID] = None,
+        prompt_ids: Optional[list[str] | list[uuid.UUID]] = None,
+        labels: Optional[dict[str, str]] = None,
+        sent_after: Optional[datetime] = None,
+        sent_before: Optional[datetime] = None,
+        original_values: Optional[list[str]] = None,
+        converted_values: Optional[list[str]] = None,
+        data_type: Optional[str] = None,
+        not_data_type: Optional[str] = None,
+        converted_value_sha256: Optional[list[str]] = None,
+        file_path: Optional[Path] = None,
+        export_type: str = "json",
+    ):
         """
-        Exports all conversations with scores to a specified file.
+        Exports conversation data with the given inputs to a specified file.
+            Defaults to all conversations if no filters are provided.
+
         Args:
-            file_path (str): The path to the file where the data will be exported.
-            If not provided, a default path using RESULTS_PATH will be constructed.
-            export_type (str): The format of the export. Defaults to "json".
+            orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
+            conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
+            prompt_ids (Optional[list[str] | list[uuid.UUID]], optional): A list of prompt IDs. Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
+            sent_after (Optional[datetime], optional): Filter for prompts sent after this datetime. Defaults to None.
+            sent_before (Optional[datetime], optional): Filter for prompts sent before this datetime. Defaults to None.
+            original_values (Optional[list[str]], optional): A list of original values. Defaults to None.
+            converted_values (Optional[list[str]], optional): A list of converted values. Defaults to None.
+            data_type (Optional[str], optional): The data type to filter by. Defaults to None.
+            not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
+            converted_value_sha256 (Optional[list[str]], optional): A list of SHA256 hashes of converted values.
+                Defaults to None.
+            file_path (Optional[Path], optional): The path to the file where the data will be exported.
+                Defaults to None.
+            export_type (str, optional): The format of the export. Defaults to "json".
         """
-        all_prompt_pieces = self.get_prompt_request_pieces()
+        data = self.get_prompt_request_pieces(
+            orchestrator_id=orchestrator_id,
+            conversation_id=conversation_id,
+            prompt_ids=prompt_ids,
+            labels=labels,
+            sent_after=sent_after,
+            sent_before=sent_before,
+            original_values=original_values,
+            converted_values=converted_values,
+            data_type=data_type,
+            not_data_type=not_data_type,
+            converted_value_sha256=converted_value_sha256,
+        )
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
-            file_name = f"conversations.{export_type}"
+            file_name = f"exported_conversations_on_{datetime.now().strftime('%Y_%m_%d')}.{export_type}"
             file_path = RESULTS_PATH / file_name
 
-        self.exporter.export_data(all_prompt_pieces, file_path=file_path, export_type=export_type)
+        self.exporter.export_data(data, file_path=file_path, export_type=export_type)
