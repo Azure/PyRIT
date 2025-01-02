@@ -88,10 +88,11 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-        response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
+        if self._scorers:
+            response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
 
-        for scorer in self._scorers:
-            await scorer.score_responses_batch_async(request_responses=response_pieces, batch_size=self._batch_size)
+            for scorer in self._scorers:
+                await scorer.score_responses_batch_async(request_responses=response_pieces, batch_size=self._batch_size)
 
         return responses
 
@@ -140,32 +141,17 @@ class PromptSendingOrchestrator(Orchestrator):
 
     async def print_conversations_async(self):
         """Prints the conversation between the objective target and the red teaming bot."""
-        all_messages = self.get_memory()
+        messages = self.get_memory()
 
-        # group by conversation ID
-        messages_by_conversation_id = defaultdict(list)
-        for message in all_messages:
-            messages_by_conversation_id[message.conversation_id].append(message)
+        for message in messages:
+            if message.role == "user" or message.role == "system":
+                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+            else:
+                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                await display_image_response(message)
 
-        for conversation_id in messages_by_conversation_id:
-            messages_by_conversation_id[conversation_id].sort(key=lambda x: x.sequence)
-
-            print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {conversation_id}")
-
-            if not messages_by_conversation_id[conversation_id]:
-                print("No conversation with the target")
-                continue
-
-            for message in messages_by_conversation_id[conversation_id]:
-                if message.role == "user":
-                    print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
-                else:
-                    print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    await display_image_response(message)
-
-                scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
-                for score in scores:
-                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
+            for score in message.scores:
+                print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
     def _prepare_conversation(self):
         """

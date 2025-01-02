@@ -89,9 +89,7 @@ class ScoringOrchestrator(Orchestrator):
         request_pieces = self._remove_duplicates(request_pieces)
 
         return await scorer.score_prompts_with_tasks_batch_async(
-            request_responses=request_pieces,
-            batch_size=self._batch_size,
-            tasks=[task for _ in range(len(request_pieces))],
+            request_responses=request_pieces, batch_size=self._batch_size, tasks=[task] * len(request_pieces)
         )
 
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
