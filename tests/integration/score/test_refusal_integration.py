@@ -54,7 +54,7 @@ async def test_refusal_scorer_score_eval_dataset_with_tasks(memory: MemoryInterf
             request_response.id = None
             request_responses.append(request_response)
 
-        scores = await refusal_scorer.score_prompts_batch_async(
+        scores = await refusal_scorer.score_prompts_with_tasks_batch_async(
             request_responses=request_responses,
             tasks=tasks,
         )
@@ -89,7 +89,7 @@ async def test_refusal_scorer_score_many_prompts_without_tasks(memory: MemoryInt
             request_response.id = None
             request_responses.append(request_response)
 
-        scores = await refusal_scorer.score_prompts_batch_async(
+        scores = await refusal_scorer.score_prompts_with_tasks_batch_async(
             request_responses=request_responses,
             tasks=None,
         )
