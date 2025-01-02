@@ -17,7 +17,13 @@ There is no single way to read the documentation, and it's perfectly fine to jum
 7. [Scorers](./code/scoring/0_scoring.md): These are how PyRIT makes decisions and records output.
 8. [Memory](./code/memory/0_memory.md): This is how PyRIT components communicate about the state of things.
 9. [Auxiliary Attacks](./code/auxiliary_attacks/0_auxiliary_attacks.ipynb): (Optional) Attacks and techniques that do not fit into the core PyRIT functionality.
+10. [Cookbooks](./cookbooks/README.md): Cookebooks put it all together. If you want to see things in action right off, this may also be a good place to start.
 
 Miscellaneous Extra Docs:
 
 - [Deployment](./deployment/README.md): Includes code to download, deploy, and score open-source models (such as those from Hugging Face) on Azure.
+
+
+Ongoing:
+
+- [Blogs](./blog/README.md): Include notable new changes and are a good way to stay up to date.
