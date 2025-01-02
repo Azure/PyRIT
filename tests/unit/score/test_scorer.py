@@ -185,7 +185,7 @@ async def test_scorer_score_responses_batch_async():
         user_piece = PromptRequestPiece(role="user", original_value="Hello user", sequence=1)
         assistant_piece = PromptRequestPiece(role="assistant", original_value="Hello from assistant", sequence=2)
 
-        results = await scorer.score_responses_batch_async(
+        results = await scorer.score_responses_inferring_tasks_batch_async(
             request_responses=[user_piece, assistant_piece], batch_size=10
         )
 

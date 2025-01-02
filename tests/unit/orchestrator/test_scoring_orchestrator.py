@@ -31,7 +31,7 @@ async def test_score_prompts_by_request_id_async(sample_conversations: list[Prom
 
         orchestrator = ScoringOrchestrator()
 
-        await orchestrator.score_prompts_by_request_id_async(scorer=scorer, prompt_ids=["id1"])
+        await orchestrator.score_prompts_by_id_async(scorer=scorer, prompt_ids=["id1"])
         assert scorer.score_async.call_count == len(sample_conversations)
 
 
@@ -46,7 +46,7 @@ async def test_score_prompts_by_orchestrator(sample_conversations: list[PromptRe
         scorer = MagicMock()
 
         with patch.object(scorer, "score_responses_batch_async", new_callable=AsyncMock) as mock_score:
-            await orchestrator.score_prompts_by_orchestrator_id_async(
+            await orchestrator.score_responses_by_orchestrator_id_async(
                 scorer=scorer, orchestrator_ids=[str(uuid.uuid4())]
             )
 
@@ -67,7 +67,7 @@ async def test_score_prompts_by_memory_labels(sample_conversations: list[PromptR
         scorer = MagicMock()
 
         with patch.object(scorer, "score_responses_batch_async", new_callable=AsyncMock) as mock_score:
-            await orchestrator.score_prompts_by_memory_labels_async(scorer=scorer, memory_labels=memory_labels)
+            await orchestrator.score_responses_by_memory_labels_async(scorer=scorer, memory_labels=memory_labels)
 
             mock_score.assert_called_once()
             _, called_kwargs = mock_score.call_args
@@ -80,7 +80,7 @@ async def test_score_prompts_by_memory_labels_async_raises_error_empty_memory_la
         orchestrator = ScoringOrchestrator()
 
         with pytest.raises(ValueError, match="Invalid memory_labels: Please provide valid memory labels."):
-            await orchestrator.score_prompts_by_memory_labels_async(scorer=MagicMock(), memory_labels={})
+            await orchestrator.score_responses_by_memory_labels_async(scorer=MagicMock(), memory_labels={})
 
 
 @pytest.mark.asyncio
@@ -93,7 +93,7 @@ async def test_score_prompts_by_memory_labels_async_raises_error_no_matching_lab
         with pytest.raises(
             ValueError, match="No entries match the provided memory labels. Please check your memory labels."
         ):
-            await orchestrator.score_prompts_by_memory_labels_async(
+            await orchestrator.score_responses_by_memory_labels_async(
                 scorer=MagicMock(),
                 memory_labels={"op_name": "nonexistent_op", "user_name": "nonexistent_user"},
             )

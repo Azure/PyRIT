@@ -70,15 +70,14 @@ scorer = SelfAskCategoryScorer(
 )
 
 with ScoringOrchestrator() as scoring_orchestrator:
-    scores = await scoring_orchestrator.score_prompts_by_id_async(  # type: ignore
-        scorer=scorer, prompt_ids=prompt_ids
-    )
+    scores = await scoring_orchestrator.score_prompts_by_id_async(scorer=scorer, prompt_ids=prompt_ids)  # type: ignore
 
     memory = CentralMemory.get_memory_instance()
 
     for score in scores:
-        prompt_text = memory.get_prompt_request_pieces(
-            prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+        prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
+            0
+        ].original_value
         print(f"{score} : {prompt_text}")
 
 # %% [markdown]
