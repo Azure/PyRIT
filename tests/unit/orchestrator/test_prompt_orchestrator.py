@@ -50,8 +50,15 @@ async def test_send_prompts_async_no_converter(mock_target: MockPromptTarget):
 async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget):
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
-    await orchestrator.send_prompts_async(prompt_list=["Hello", "my", "name"])
+    list_responses = await orchestrator.send_prompts_async(prompt_list=["Hello", "my", "name"])
     assert mock_target.prompt_sent == ["Hello", "my", "name"]
+
+    response_ids = []
+    for response in list_responses:
+        response_ids.append(response.request_pieces[0].conversation_id)
+
+    # Check that each response has a unique conversation ID from the other
+    assert len(set(response_ids)) == len(response_ids)
 
 
 @pytest.mark.asyncio

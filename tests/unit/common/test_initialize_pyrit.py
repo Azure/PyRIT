@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from unittest import mock
 
-from pyrit.common.initialize_pyrit import _load_environment_files, initialize_pyrit, MemoryDatabaseType
+from pyrit.common.initialize_pyrit import _load_environment_files, initialize_pyrit
 
 
 @mock.patch("dotenv.load_dotenv")

@@ -44,12 +44,12 @@
 
 # %%
 from pyrit.common.initialize_pyrit import initialize_pyrit
-from pyrit.memory import CentralMemory
+from pyrit.memory import CentralMemory, AzureSQLMemory
 
 initialize_pyrit(memory_db_type="AzureSQL")
 
 memory = CentralMemory.get_memory_instance()
-memory.print_schema()
+AzureSQLMemory(memory.print_schema())
 
 
 # %% [markdown]

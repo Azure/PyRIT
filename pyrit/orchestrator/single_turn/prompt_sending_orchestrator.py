@@ -73,11 +73,6 @@ class PromptSendingOrchestrator(Orchestrator):
         for request in prompt_request_list:
             request.validate()
 
-        conversation_id = self._prepare_conversation()
-
-        for prompt in prompt_request_list:
-            prompt.conversation_id = conversation_id
-
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
@@ -128,12 +123,15 @@ class PromptSendingOrchestrator(Orchestrator):
 
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
+            conversation_id = self._prepare_conversation()
+
             requests.append(
                 self._create_normalizer_request(
                     prompt_text=prompt,
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
                     metadata=metadata,
+                    conversation_id=conversation_id,
                 )
             )
 
@@ -191,13 +189,14 @@ class PromptSendingOrchestrator(Orchestrator):
         return conversation_id
 
     async def _score_responses_async(self, prompt_ids: list[str]):
-        with ScoringOrchestrator(
+        scoring_orchestrator = ScoringOrchestrator(
             batch_size=self._batch_size,
             verbose=self._verbose,
-        ) as scoring_orchestrator:
-            for scorer in self._scorers:
-                await scoring_orchestrator.score_prompts_by_request_id_async(
-                    scorer=scorer,
-                    prompt_ids=prompt_ids,
-                    responses_only=True,
-                )
+        )
+
+        for scorer in self._scorers:
+            await scoring_orchestrator.score_prompts_by_request_id_async(
+                scorer=scorer,
+                prompt_ids=prompt_ids,
+                responses_only=True,
+            )
