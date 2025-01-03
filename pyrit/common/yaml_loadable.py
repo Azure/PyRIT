@@ -41,6 +41,6 @@ class YamlLoadable(abc.ABC):
         # If this class provides a from_dict factory, use it;
         # otherwise, just instantiate directly with **yaml_data
         if hasattr(cls, "from_dict") and callable(getattr(cls, "from_dict")):
-            return cls.from_dict(yaml_data) # type: ignore
+            return cls.from_dict(yaml_data)  # type: ignore
         else:
             return cls(**yaml_data)
