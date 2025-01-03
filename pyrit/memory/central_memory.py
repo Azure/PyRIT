@@ -47,7 +47,7 @@ class CentralMemory:
             env_var_name="AZURE_SQL_DB_CONNECTION_STRING", passed_value=empty_passed_value
         )
         results_container_url = default_values.get_non_required_value(
-            env_var_name="AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL", passed_value=empty_passed_value
+            env_var_name="AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL", passed_value=empty_passed_value
         )
 
         # If both Azure SQL configs are present, use AzureSQLMemory; otherwise, use DuckDBMemory
