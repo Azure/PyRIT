@@ -178,7 +178,7 @@ async def test_send_prompts_and_score_async(mock_target: MockPromptTarget, num_c
     # Assert scoring amount is appropriate (all prompts not scored again)
     # and that the last call to the function was with the expected response object
     assert scorer.score_async.call_count == num_conversations + 1
-    scorer.score_async.assert_called_with(request_response=response2, task=None)
+    scorer.score_async.assert_called_with(request_response=response2, task="")
 
 
 @pytest.mark.asyncio

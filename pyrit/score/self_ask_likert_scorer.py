@@ -113,5 +113,4 @@ class SelfAskLikertScorer(Scorer):
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        if task:
-            raise ValueError("This scorer does not support tasks")
+        pass

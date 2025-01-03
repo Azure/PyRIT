@@ -318,5 +318,4 @@ class HumanInTheLoopScorer(Scorer):
         return await re_scorer.score_async(request_response=request_response, task=task)
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        if task:
-            raise ValueError("This scorer does not support tasks")
+        pass

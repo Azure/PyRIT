@@ -77,7 +77,7 @@ with PromptSendingOrchestrator(objective_target=aoai_chat, scorers=[scorer]) as 
 id = prompt_sending_orchestrator_id
 
 with ScoringOrchestrator() as scoring_orchestrator:
-    scores = await scoring_orchestrator.score_prompts_by_orchestrator_id_async(  # type: ignore
+    scores = await scoring_orchestrator.score_responses_by_orchestrator_id_async(  # type: ignore
         scorer=scorer, orchestrator_ids=[id], responses_only=False
     )
 
