@@ -208,4 +208,4 @@ def sort_request_pieces(prompt_pieces: list[PromptRequestPiece]) -> list[PromptR
     }
 
     # Sort using the precomputed timestamp values, then by sequence
-    return sorted(prompt_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.sequence))
+    return sorted(prompt_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.conversation_id, x.sequence))

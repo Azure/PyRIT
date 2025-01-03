@@ -49,6 +49,19 @@ class PromptRequestResponse:
             ret += str(request_piece) + "\n"
         return "\n".join([str(request_piece) for request_piece in self.request_pieces])
 
+    @staticmethod
+    def flatten_to_prompt_request_pieces(
+        request_responses: Sequence["PromptRequestResponse"],
+    ) -> list[PromptRequestPiece]:
+        if not request_responses:
+            return []
+        response_pieces = []
+
+        for response in request_responses:
+            response_pieces.extend(response.request_pieces)
+
+        return response_pieces
+
 
 def group_conversation_request_pieces_by_sequence(
     request_pieces: Sequence[PromptRequestPiece],

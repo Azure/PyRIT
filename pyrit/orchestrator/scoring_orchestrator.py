@@ -31,12 +31,11 @@ class ScoringOrchestrator(Orchestrator):
 
         self._batch_size = batch_size
 
-    async def score_prompts_by_orchestrator_id_async(
+    async def score_responses_by_orchestrator_id_async(
         self,
         *,
         scorer: Scorer,
         orchestrator_ids: list[str],
-        responses_only: bool = True,
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts correlated to the orchestrator_ids.
@@ -44,18 +43,18 @@ class ScoringOrchestrator(Orchestrator):
         request_pieces: list[PromptRequestPiece] = []
         for id in orchestrator_ids:
             request_pieces.extend(self._memory.get_prompt_request_pieces(orchestrator_id=id))
-        if responses_only:
-            request_pieces = self._extract_responses_only(request_pieces)
+
         request_pieces = self._remove_duplicates(request_pieces)
 
-        return await scorer.score_prompts_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_responses_inferring_tasks_batch_async(
+            request_responses=request_pieces, batch_size=self._batch_size
+        )
 
-    async def score_prompts_by_memory_labels_async(
+    async def score_responses_by_memory_labels_async(
         self,
         *,
         scorer: Scorer,
         memory_labels: dict[str, str] = {},
-        responses_only: bool = True,
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts based on the memory labels.
@@ -66,22 +65,24 @@ class ScoringOrchestrator(Orchestrator):
         if not request_pieces:
             raise ValueError("No entries match the provided memory labels. Please check your memory labels.")
 
-        if responses_only:
-            request_pieces = self._extract_responses_only(request_pieces)
-
         request_pieces = self._remove_duplicates(request_pieces)
 
-        return await scorer.score_prompts_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_responses_inferring_tasks_batch_async(
+            request_responses=request_pieces, batch_size=self._batch_size
+        )
 
-    async def score_prompts_by_request_id_async(
+    async def score_prompts_by_id_async(
         self,
         *,
         scorer: Scorer,
         prompt_ids: list[str],
         responses_only: bool = False,
+        task: str = "",
     ) -> list[Score]:
         """
         Scores prompts using the Scorer for prompts with the prompt_ids
+
+        The task is the task to score against.
         """
         request_pieces: Sequence[PromptRequestPiece] = []
         request_pieces = self._memory.get_prompt_request_pieces(prompt_ids=prompt_ids)
@@ -91,7 +92,9 @@ class ScoringOrchestrator(Orchestrator):
 
         request_pieces = self._remove_duplicates(request_pieces)
 
-        return await scorer.score_prompts_batch_async(request_responses=request_pieces, batch_size=self._batch_size)
+        return await scorer.score_prompts_with_tasks_batch_async(
+            request_responses=request_pieces, batch_size=self._batch_size, tasks=[task] * len(request_pieces)
+        )
 
     def _extract_responses_only(self, request_responses: Sequence[PromptRequestPiece]) -> list[PromptRequestPiece]:
         """

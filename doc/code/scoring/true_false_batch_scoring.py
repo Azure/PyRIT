@@ -41,7 +41,7 @@ for piece in request_pieces:
     memory.add_request_response_to_memory(request=PromptRequestResponse([piece]))
 
 # Perform batch scoring
-scores = await true_false_classifier.score_prompts_batch_async(  # type: ignore
+scores = await true_false_classifier.score_prompts_with_tasks_batch_async(  # type: ignore
     request_responses=request_pieces, batch_size=2
 )
 
