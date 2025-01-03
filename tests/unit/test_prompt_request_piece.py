@@ -369,6 +369,7 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
 
     assert sort_request_pieces(pieces) == expected
 
+
 def test_order_request_pieces_by_conversation_same_timestamp():
     timestamp = datetime.now()
 
