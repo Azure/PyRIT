@@ -49,7 +49,7 @@ from pyrit.memory import CentralMemory, AzureSQLMemory
 initialize_pyrit(memory_db_type="AzureSQL")
 
 memory = CentralMemory.get_memory_instance()
-memory.print_schema() # type: ignore
+memory.print_schema()  # type: ignore
 
 
 # %% [markdown]

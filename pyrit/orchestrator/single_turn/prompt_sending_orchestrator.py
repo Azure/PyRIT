@@ -5,7 +5,6 @@ import logging
 import uuid
 from typing import Optional
 
-from collections import defaultdict
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
@@ -144,15 +143,15 @@ class PromptSendingOrchestrator(Orchestrator):
         messages = self.get_memory()
 
         for message in messages:
-                if message.role == "user" or message.role == "system":
-                    print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
-                else:
-                    print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {message.conversation_id}")
-                    await display_image_response(message)
+            if message.role == "user" or message.role == "system":
+                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+            else:
+                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {message.conversation_id}")
+                await display_image_response(message)
 
-                for score in message.scores:
-                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
+            for score in message.scores:
+                print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
     def _prepare_conversation(self):
         """

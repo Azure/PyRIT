@@ -5,29 +5,28 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-kernel
 #     language: python
-#     name: python3
+#     name: pyrit-kernel
 # ---
 
 # %% [markdown]
 # # Benchmark Orchestrator - optional
 
-from pyrit.common import default_values
-from pyrit.datasets import fetch_wmdp_dataset
-from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
-
 # %%
 # Import necessary packages
+from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.datasets import fetch_wmdp_dataset
+from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 # %%
-# Load environment variables
-default_values.load_environment_files()
+# Initialize PyRIT (load environment files and set central memory instance)
+initialize_pyrit(memory_db_type="InMemory")
 
 # %%
 # Set up the Azure OpenAI prompt target
@@ -245,3 +244,10 @@ except ValueError:
     print("TEST PASS. Value Error Caught.")
 else:
     print("TEST FAILED. No ValueError Caught.")
+
+# %%
+# Close connection for memory instance
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

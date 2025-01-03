@@ -179,7 +179,4 @@ await orchestrator.print_conversations_async()  # type: ignore
 
 # %%
 # Close connection to memory after use
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()
+orchestrator.dispose_db_engine()
