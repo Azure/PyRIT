@@ -11,7 +11,7 @@ To simplify memory interaction, the `prit.memory.CentralMemory` class automatica
 2. **Azure SQL Database**:
    - If no manual instance is provided, `CentralMemory` will check for Azure SQL settings in the `.env` file or environment. If the following variables are detected, `CentralMemory` automatically configures `AzureSQLMemory` for storage in an Azure SQL Database:
      - `AZURE_SQL_DB_CONNECTION_STRING`
-     - `AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL`
+     - `AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL`
 
 3. **Local DuckDB (Default)**:
    - If neither a manual memory instance nor Azure SQL settings are available, `CentralMemory` defaults to `DuckDBMemory`, storing interactions locally in a DuckDB instance.

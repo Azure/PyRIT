@@ -23,7 +23,7 @@ from pyrit.common import default_values
 from uuid import uuid4
 
 from pyrit.common import default_values
-from pyrit.common.path import RESULTS_PATH
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import DuckDBMemory, CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
@@ -60,8 +60,8 @@ for entry in entries:
     print(entry)
 
 # Define file path for export
-json_file_path = RESULTS_PATH / "conversation_and_scores_json_example.json"
-# csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
+json_file_path = DB_DATA_PATH / "conversation_and_scores_json_example.json"
+# csv_file_path = DB_DATA_PATH / "conversation_and_scores_csv_example.csv"
 
 # # Export the data to a JSON file
 conversation_with_scores = memory.export_conversations(file_path=json_file_path, export_type="json")
@@ -116,8 +116,8 @@ for entry in entries:
     print(entry)
 
 # Define file path for export
-# json_file_path = RESULTS_PATH / "conversation_and_scores_json_example.json"
-csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
+# json_file_path = DB_DATA_PATH / "conversation_and_scores_json_example.json"
+csv_file_path = DB_DATA_PATH / "conversation_and_scores_csv_example.csv"
 
 # Export the data to a JSON file
 # conversation_with_scores = azure_memory.export_conversations(conversation_id=conversation_id, file_path=json_file_path, export_type="json")

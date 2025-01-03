@@ -22,7 +22,7 @@ def test_get_memory_instance_with_azure_sql(mock_azure_init, mock_get_value):
     """Test that CentralMemory initializes with AzureSQLMemory when Azure configuration is present."""
     mock_get_value.side_effect = lambda env_var_name, passed_value: (
         "mock_value"
-        if env_var_name in ["AZURE_SQL_DB_CONNECTION_STRING", "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"]
+        if env_var_name in ["AZURE_SQL_DB_CONNECTION_STRING", "AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL"]
         else ""
     )
 

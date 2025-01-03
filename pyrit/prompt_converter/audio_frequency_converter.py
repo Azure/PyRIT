@@ -56,7 +56,7 @@ class AudioFrequencyConverter(PromptConverter):
         try:
             # Create serializer to read audio data
             audio_serializer = data_serializer_factory(
-                data_type="audio_path", extension=self._output_format, value=prompt
+                category="prompt-memory-entries", data_type="audio_path", extension=self._output_format, value=prompt
             )
             audio_bytes = await audio_serializer.read_data()
 

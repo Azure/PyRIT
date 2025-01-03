@@ -64,7 +64,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         if prompt.strip() == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
 
-        audio_serializer = data_serializer_factory(data_type="audio_path", extension=self._output_format)
+        audio_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="audio_path", extension=self._output_format)
 
         audio_serializer_file = None
         try:
