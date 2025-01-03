@@ -5,13 +5,10 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-import yaml
 from jinja2 import StrictUndefined, Template
 
 from pyrit.common.yaml_loadable import YamlLoadable
@@ -150,21 +147,105 @@ class SeedPromptGroup(YamlLoadable):
 
 
 class SeedPromptDataset(YamlLoadable):
-    """SeedPromptDataset class helps to read a list of seed prompts, which can be loaded from a YAML file.
-    This class manages individual seed prompts, groups them by `prompt_group_id` if specified,
-    and provides structured access to grouped prompt data."""
+    """
+    SeedPromptDataset manages seed prompts plus optional top-level defaults.
+    Prompts are stored as a List[SeedPrompt], so references to prompt properties
+    are straightforward (e.g. ds.prompts[0].value).
+    """
 
-    prompts: List[SeedPrompt]
+    # Top-level or dataset-level fields
+    id: Optional[uuid.UUID]
+    data_type: Optional[str]
+    name: Optional[str]
+    dataset_name: Optional[str]
+    harm_categories: Optional[List[str]]
+    description: Optional[str]
+    authors: Optional[List[str]]
+    groups: Optional[List[str]]
+    source: Optional[str]
+    date_added: Optional[datetime]
+    added_by: Optional[str]
+    metadata: Optional[Dict[str, str]]
+    parameters: Optional[List[str]]
+    prompt_group_id: Optional[uuid.UUID]
+    sequence: Optional[int]
 
-    def __init__(self, prompts: Union[List[SeedPrompt], List[Dict[str, Any]]]):
+    # Now the actual prompts
+    prompts: List["SeedPrompt"]
+
+    def __init__(
+        self,
+        prompts: Union[List[Any], None] = None,
+        **kwargs,
+    ):
+        """
+        Initialize the dataset.
+        Typically, you'll call from_dict or from_yaml_file so that top-level defaults
+        are merged into each prompt. If you're passing prompts directly, they can be
+        either a list of SeedPrompt objects or prompt dictionaries (which then get
+        converted to SeedPrompt objects).
+        """
+        if prompts is None:
+            prompts = []
         if not prompts:
             raise ValueError("SeedPromptDataset cannot be empty.")
+
+        # Store top-level fields
+        self.id = kwargs.get("id") or uuid.uuid4()
+        self.data_type = kwargs.get("data_type")
+        self.name = kwargs.get("name")
+        self.dataset_name = kwargs.get("dataset_name")
+        hc = kwargs.get("harm_categories")
+        if isinstance(hc, str):
+            hc = [hc]
+        self.harm_categories = hc or []
+        self.description = kwargs.get("description")
+        self.authors = kwargs.get("authors") or []
+        self.groups = kwargs.get("groups") or []
+        self.source = kwargs.get("source")
+        self.date_added = kwargs.get("date_added") or datetime.now()
+        self.added_by = kwargs.get("added_by")
+        self.metadata = kwargs.get("metadata") or {}
+        self.parameters = kwargs.get("parameters") or []
+        self.prompt_group_id = kwargs.get("prompt_group_id")
+        self.sequence = kwargs.get("sequence")
+
+        # Convert any dictionaries in `prompts` to SeedPrompt objects
         self.prompts = []
-        for prompt in prompts:
-            if isinstance(prompt, SeedPrompt):
-                self.prompts.append(prompt)
-            elif isinstance(prompt, dict):
-                self.prompts.append(SeedPrompt(**prompt))
+        for p in prompts:
+            if isinstance(p, dict):
+                self.prompts.append(SeedPrompt(**p))
+            elif isinstance(p, SeedPrompt):
+                self.prompts.append(p)
+            else:
+                raise ValueError("Prompts should be either dicts or SeedPrompt objects. Got something else.")
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SeedPromptDataset":
+        """
+        Builds a SeedPromptDataset by merging top-level defaults into each item in 'prompts'.
+        """
+        # Pop out the prompts section
+        prompts_data = data.pop("prompts", [])
+        dataset_defaults = data  # everything else is top-level
+
+        merged_prompts = []
+        for p in prompts_data:
+            # Merge dataset-level fields with the prompt-level fields
+            merged = {**dataset_defaults, **p}  # prompt overrides dataset-level defaults
+
+            # If harm_categories is a single string, convert it to a list
+            if "harm_categories" in merged and isinstance(merged["harm_categories"], str):
+                merged["harm_categories"] = [merged["harm_categories"]]
+
+            # If data_type is missing, default to 'text'
+            if "data_type" not in merged or not merged["data_type"]:
+                merged["data_type"] = "text"
+
+            merged_prompts.append(merged)
+
+        # Now create the dataset with the newly merged prompt dicts
+        return cls(prompts=merged_prompts, **dataset_defaults)
 
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seed_prompts: List[SeedPrompt]) -> List[SeedPromptGroup]:
@@ -197,38 +278,3 @@ class SeedPromptDataset(YamlLoadable):
 
     def __repr__(self):
         return f"<SeedPromptDataset(prompts={len(self.prompts)} prompts)>"
-
-    @staticmethod
-    def from_yaml_file_with_uniform_metadata(file: Path, data_type="text") -> SeedPromptDataset:
-        """
-        Creates a new object from a YAML file.
-
-        In the past, PyRIT supported dataset loading from YAML with uniform metadata.
-        That means, every prompt in a dataset had to have the same harm categories,
-        same authors, same groups, etc. This method is a helper to load such datasets.
-
-        Args:
-            file: The input file path.
-            data_type: The data type of the prompts.
-
-        Returns:
-            A new object of type T.
-
-        Raises:
-            FileNotFoundError: If the input YAML file path does not exist.
-            ValueError: If the YAML file is invalid.
-        """
-        if not file.exists():
-            raise FileNotFoundError(f"File '{file}' does not exist.")
-        try:
-            yaml_data = yaml.safe_load(file.read_text("utf-8"))
-        except yaml.YAMLError as exc:
-            raise ValueError(f"Invalid YAML file '{file}': {exc}")
-        non_prompt_data = deepcopy(yaml_data)
-        del non_prompt_data["prompts"]
-        non_prompt_data["data_type"] = data_type
-        seed_prompt_dicts: List[Dict[str, Any]] = []
-        for prompt_text in yaml_data["prompts"]:
-            seed_prompt_dicts.append({"value": prompt_text, **non_prompt_data})
-        data_object = SeedPromptDataset(seed_prompt_dicts)
-        return data_object
