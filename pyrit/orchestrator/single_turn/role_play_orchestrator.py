@@ -31,7 +31,8 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         adversarial_chat: PromptChatTarget,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
-        system_prompt: str = None,
+        rephrase_as_role_play_prompt: SeedPrompt = None,
+        prepended_conversation: list[PromptRequestPiece] = None,
         verbose: bool = False,
     ) -> None:
         """
@@ -56,20 +57,12 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
-        # TODO I like this
-        # system_prompt_path = pathlib.Path(DATASETS_PATH) / "prompt_templates" / "role_play.yaml"
+    
 
-        if system_prompt:
-            self.system_prompt = PromptRequestResponse(
-                request_pieces=[
-                    PromptRequestPiece(
-                        role="system",
-                        original_value=self.system_prompt,
-                    )
-                ]
+        if not rephrase_as_role_play_prompt:
+            self.rephrase_as_roleplay_template = SeedPrompt.from_yaml_file(
+                pathlib.Path(DATASETS_PATH) / "orchestrator" / "role_play" / "rephrase_video_game.yaml"
             )
-        else:
-            self.system_prompt = None
 
         super().set_prepended_conversation(prepended_conversation=[system_prompt])
 
@@ -94,11 +87,46 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
 
-        # Format follows the paper https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json
 
         for i in range(0, len(prompt_list)):
-            prompt_list[i] = "TASK is '⟪" + prompt_list[i].replace("'", "") + "⟫'"
+            prompt_list[i] = self.rephrase_as_roleplay_template.render_template_value(objective=prompt_list[i])
 
         return await super().send_prompts_async(
             prompt_list=prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
         )
+    
+    def _set_default_conversation_start(self):
+        default_system_prompt = SeedPrompt.from_yaml_file(
+                pathlib.Path(DATASETS_PATH) / "prompt_templates" / "role_play.yaml"
+            ).render_template_value()
+
+        default_user_prompt = SeedPrompt.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "prompt_templates" / "role_play_user_prompt.yaml"
+        ).render_template_value()
+
+        default_assistant_prompt = SeedPrompt.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "prompt_templates" / "role_play_assistant_prompt.yaml"
+        ).render_template_value()
+
+        prepended_conversation = []
+
+
+        prepended_conversation = [
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="system",
+                        original_value=default_system_prompt,
+                        )
+                ]
+            ),
+            PromptRequestResponse(
+                request_pieces=[
+                    PromptRequestPiece(
+                        role="user",
+                        original_value=default_system_prompt,
+                    )
+                ]
+            )
+        ]
+
