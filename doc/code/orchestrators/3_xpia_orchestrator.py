@@ -115,3 +115,9 @@ import os
 
 azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 await azure_storage_plugin.delete_blobs_async()  # type: ignore
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()
