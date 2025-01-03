@@ -14,7 +14,7 @@ from uuid import uuid4
 import pytest
 from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
-from pyrit.common.path import RESULTS_PATH
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import MemoryExporter, MemoryInterface, PromptMemoryEntry
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import Orchestrator
@@ -557,7 +557,7 @@ def test_export_conversation_by_orchestrator_id_file_created(
 
     # Default path in export_conversations()
     file_name = f"{orchestrator1_id}.json"
-    file_path = Path(RESULTS_PATH, file_name)
+    file_path = Path(DB_DATA_PATH, file_name)
 
     duckdb_instance.exporter = MemoryExporter()
 

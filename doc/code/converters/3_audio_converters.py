@@ -32,7 +32,7 @@ import os
 import pathlib
 
 from pyrit.common import default_values
-from pyrit.common.path import RESULTS_PATH
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
 
 default_values.load_environment_files()
@@ -41,7 +41,7 @@ logger.setLevel(logging.DEBUG)
 
 # Use audio file created above
 assert os.path.exists(audio_convert_result.output_text)
-prompt = str(pathlib.Path(RESULTS_PATH) / "dbdata" / "audio" / audio_convert_result.output_text)
+prompt = str(pathlib.Path(DB_DATA_PATH) / "prompt-memory-entries" / "audio" / audio_convert_result.output_text)
 
 speech_text_converter = AzureSpeechAudioToTextConverter()
 transcript = await speech_text_converter.convert_async(prompt=prompt)  # type: ignore
@@ -61,7 +61,7 @@ import os
 import pathlib
 
 from pyrit.common import default_values
-from pyrit.common.path import RESULTS_PATH
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.prompt_converter import AudioFrequencyConverter
 
 default_values.load_environment_files()
@@ -70,7 +70,7 @@ logger.setLevel(logging.DEBUG)
 
 # Use audio file created above
 assert os.path.exists(audio_convert_result.output_text)
-prompt = str(pathlib.Path(RESULTS_PATH) / "dbdata" / "audio" / audio_convert_result.output_text)
+prompt = str(pathlib.Path(DB_DATA_PATH) / "prompt-memory-entries" / "audio" / audio_convert_result.output_text)
 
 audio_frequency_converter = AudioFrequencyConverter()
 converted_audio_file = await audio_frequency_converter.convert_async(prompt=prompt)  # type: ignore
