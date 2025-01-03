@@ -135,17 +135,7 @@ all_prompts = [
 ]
 
 await orchestrator.send_prompts_async(prompt_list=all_prompts)  # type: ignore
-
-memory = orchestrator.get_memory()
-score_memory = orchestrator.get_score_memory()
-
-for entry in memory:
-    for score_entry in score_memory:
-        # each score result correlates to a prompt entry's request response id
-        if entry.id == score_entry.prompt_request_response_id:
-            print(
-                f"Output scored: {entry.converted_value}\nScore category: {score_entry.score_category}\nScore value: {score_entry.get_value()}\n\n"
-            )
+await orchestrator.print_conversations_async()  # type: ignore
 
 # %% [markdown]
 # ## Prepending Conversations
@@ -169,9 +159,6 @@ target = OpenAIChatTarget()
 jailbreak_path = pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "dan_1.yaml"
 
 system_prompt_str = SeedPrompt.from_yaml_file(jailbreak_path).value
-
-# this is sent as the system prompt to prompt_target before any prompt
-print(f"System Prompt: {system_prompt_str}")
 
 prepend_conversation = PromptRequestResponse(
     request_pieces=[

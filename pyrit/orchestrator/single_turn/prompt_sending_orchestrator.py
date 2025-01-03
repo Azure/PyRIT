@@ -5,6 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
+from collections import defaultdict
 from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
@@ -142,15 +143,29 @@ class PromptSendingOrchestrator(Orchestrator):
         """Prints the conversation between the objective target and the red teaming bot."""
         messages = self.get_memory()
 
+        # group by conversation ID
+        messages_by_conversation_id = defaultdict(list)
         for message in messages:
-            if message.role == "user" or message.role == "system":
-                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
-            else:
-                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                await display_image_response(message)
+            messages_by_conversation_id[message.conversation_id].append(message)
 
-            for score in message.scores:
-                print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
+        for conversation_id in messages_by_conversation_id:
+            messages_by_conversation_id[conversation_id].sort(key=lambda x: x.sequence)
+
+            print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {conversation_id}")
+
+            if not messages_by_conversation_id[conversation_id]:
+                print("No conversation with the target")
+                continue
+
+            for message in messages_by_conversation_id[conversation_id]:
+                if message.role == "user" or message.role == "system":
+                    print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+                else:
+                    print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                    await display_image_response(message)
+
+                for score in message.scores:
+                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
     def _prepare_conversation(self):
         """

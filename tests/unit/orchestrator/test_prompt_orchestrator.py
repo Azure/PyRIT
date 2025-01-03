@@ -49,10 +49,12 @@ async def test_send_prompts_async_no_converter(mock_target: MockPromptTarget):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "prepended_conversation",
-    [[], [
-        PromptRequestResponse(request_pieces=[
-            PromptRequestPiece(role="system", original_value="Hello")]),
-    ]]
+    [
+        [],
+        [
+            PromptRequestResponse(request_pieces=[PromptRequestPiece(role="system", original_value="Hello")]),
+        ],
+    ],
 )
 async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget, prepended_conversation):
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
@@ -66,9 +68,10 @@ async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget,
     response_ids = []
     for response in list_responses:
         response_ids.append(response.request_pieces[0].conversation_id)
-    
+
     # Check that each response has a unique conversation ID from the other
     assert len(set(response_ids)) == len(response_ids)
+
 
 @pytest.mark.asyncio
 async def test_send_prompts_b64_converter(mock_target: MockPromptTarget):
