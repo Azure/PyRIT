@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -28,8 +28,8 @@ import logging
 import os
 import pathlib
 
-from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
+from pyrit.common.path import DATASETS_PATH
 
 jailbreak_template = SeedPrompt.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
@@ -54,11 +54,13 @@ logging.basicConfig(level=logging.INFO)
 
 # %%
 
-from xpia_helpers import AzureStoragePlugin, SemanticKernelPluginAzureOpenAIPromptTarget
+from pyrit.common.initialize_pyrit import initialize_pyrit
+from xpia_helpers import (
+    AzureStoragePlugin,
+    SemanticKernelPluginAzureOpenAIPromptTarget,
+)
 
-from pyrit.common import default_values
-
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type="InMemory")
 
 azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 
@@ -85,9 +87,9 @@ Now start summarizing:
 # %%
 
 
-from pyrit.orchestrator import XPIATestOrchestrator
 from pyrit.prompt_target import AzureBlobStorageTarget
 from pyrit.score import SubStringScorer
+from pyrit.orchestrator import XPIATestOrchestrator
 
 abs_target = AzureBlobStorageTarget(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 
@@ -107,10 +109,9 @@ with XPIATestOrchestrator(
 # %% [markdown]
 # Clean up storage container
 
-import os
-
 # %%
 from xpia_helpers import AzureStoragePlugin
+import os
 
 azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))
 await azure_storage_plugin.delete_blobs_async()  # type: ignore
