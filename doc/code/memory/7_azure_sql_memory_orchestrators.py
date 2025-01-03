@@ -29,10 +29,11 @@
 import time
 import uuid
 
-from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory, CentralMemory
-from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.common import default_values
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.memory import AzureSQLMemory, CentralMemory
+
 
 default_values.load_environment_files()
 
@@ -66,7 +67,8 @@ from pyrit.common import default_values
 from pyrit.memory import AzureSQLMemory, CentralMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import AzureContentFilterScorer, LikertScalePaths, SelfAskLikertScorer
+from pyrit.score import AzureContentFilterScorer, SelfAskLikertScorer, LikertScalePaths
+
 
 default_values.load_environment_files()
 
@@ -119,12 +121,12 @@ import logging
 import os
 from pathlib import Path
 
-from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import AzureSQLMemory, CentralMemory
-from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 from pyrit.score import SelfAskTrueFalseScorer
+from pyrit.orchestrator import RedTeamingOrchestrator
+from pyrit.common import default_values
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
+from pyrit.memory import AzureSQLMemory, CentralMemory
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -166,13 +168,14 @@ with RedTeamingOrchestrator(
 
 # %%
 import pathlib
-
-from pyrit.memory import AzureSQLMemory, CentralMemory
-from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.memory import AzureSQLMemory, CentralMemory
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
+memory = AzureSQLMemory()
+CentralMemory.set_memory_instance(memory)
 
 image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
 data = [

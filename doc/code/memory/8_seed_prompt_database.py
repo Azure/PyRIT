@@ -25,12 +25,13 @@
 # %%
 
 from pyrit.common import default_values
-from pyrit.memory import DuckDBMemory, CentralMemory
+from pyrit.memory import DuckDBMemory, CentralMemory, AzureSQLMemory
 
 default_values.load_environment_files()
 
-duckdb_memory = DuckDBMemory()
-CentralMemory.set_memory_instance(duckdb_memory)
+memory = DuckDBMemory()
+# memory = AzureSQLMemory()
+CentralMemory.set_memory_instance(memory)
 
 
 # %% [markdown]
@@ -45,7 +46,7 @@ seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PAT
 
 print(seed_prompt_dataset.prompts[0])
 
-await duckdb_memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.prompts, added_by="test")
+await memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.prompts, added_by="test")
 
 # %% [markdown]
 # ## Retrieving prompts from the database
@@ -53,7 +54,7 @@ await duckdb_memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.promp
 # First, let's get an idea of what datasets are represented in the database.
 
 # %%
-duckdb_memory.get_seed_prompt_dataset_names()
+memory.get_seed_prompt_dataset_names()
 
 # %% [markdown]
 # The dataset we just uploaded (called "test illegal") is also represented.
@@ -61,7 +62,7 @@ duckdb_memory.get_seed_prompt_dataset_names()
 
 # %%
 dataset_name = "test illegal"
-prompts = duckdb_memory.get_seed_prompts(dataset_name=dataset_name)
+prompts = memory.get_seed_prompts(dataset_name=dataset_name)
 print(f"Total number of the prompts with dataset name '{dataset_name}':", len(prompts))
 print(prompts[0].__dict__)
 
@@ -74,17 +75,19 @@ seed_prompt_group = SeedPromptGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt"
 )
 
-await duckdb_memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")
+await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")
 
 # %% [markdown]
-# ## Retrieving seed prompt groups from the memory with dataset_name as "test multimodal"
+# ## Retrieving seed prompt groups from the memory with dataset_name as "TestMultimodalTextImageAudio"
 
 # %%
 
 multimodal_dataset_name = "TestMultimodalTextImageAudio"
-seed_prompt_groups = duckdb_memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
+seed_prompt_groups = memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
 print(f"Total number of the seed prompt groups with dataset name '{multimodal_dataset_name}':", len(seed_prompt_groups))
 if seed_prompt_groups:
     print(seed_prompt_groups[0].__dict__)
+
+# %%
 
 # %%

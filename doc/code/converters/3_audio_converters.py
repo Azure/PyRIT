@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.4
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # 3. Audio Converters
 #
@@ -6,9 +21,9 @@
 # %%
 import os
 
-from pyrit.common import default_values
 from pyrit.memory import CentralMemory, DuckDBMemory
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
+from pyrit.common import default_values
 
 default_values.load_environment_files()
 
@@ -25,15 +40,14 @@ assert os.path.exists(audio_convert_result.output_text)
 # %% [markdown]
 # Similarly, below is an example of using `AzureSpeechAudioToTextConverter`, which has an input type of `audio_path` and an output type of `text`. We use the audio file created above.
 
-import logging
-
 # %%
 import os
-import pathlib
 
+from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
 from pyrit.common import default_values
 from pyrit.common.path import DB_DATA_PATH
-from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
+import pathlib
+import logging
 
 default_values.load_environment_files()
 logger = logging.getLogger(__name__)
@@ -54,15 +68,14 @@ print(transcript)
 # The **Audio Frequency Converter** increases the frequency of a given audio file, enabling the probing of audio modality targets with heightened frequencies.
 #
 
-import logging
-
 # %%
 import os
-import pathlib
 
+from pyrit.prompt_converter import AudioFrequencyConverter
 from pyrit.common import default_values
 from pyrit.common.path import DB_DATA_PATH
-from pyrit.prompt_converter import AudioFrequencyConverter
+import pathlib
+import logging
 
 default_values.load_environment_files()
 logger = logging.getLogger(__name__)
@@ -77,9 +90,6 @@ converted_audio_file = await audio_frequency_converter.convert_async(prompt=prom
 
 print(converted_audio_file)
 
-from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory, CentralMemory
-
 # %% [markdown]
 # ## Audio Converters with Azure SQL Memory
 #
@@ -88,6 +98,8 @@ from pyrit.memory import AzureSQLMemory, CentralMemory
 # In this scenario, we are explicitly setting the memory instance to `AzureSQLMemory()`, ensuring that the results will be saved to the Azure SQL database. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
+from pyrit.common import default_values
+from pyrit.memory import CentralMemory, AzureSQLMemory
 
 default_values.load_environment_files()
 
@@ -103,13 +115,11 @@ print(audio_convert_result.output_text)
 # %% [markdown]
 # Similarly, below is an example of using `AzureSpeechAudioToTextConverter`, which has an input type of `audio_path` and an output type of `text`. We use the audio file created above and Azure SQL Memory.
 
-import logging
-
-from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory, CentralMemory
-
 # %%
 from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
+from pyrit.common import default_values
+from pyrit.memory import AzureSQLMemory, CentralMemory
+import logging
 
 default_values.load_environment_files()
 logger = logging.getLogger(__name__)
