@@ -6,6 +6,7 @@ from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnAttac
 from pyrit.orchestrator.multi_turn.tree_of_attacks_with_pruning_orchestrator import TreeOfAttacksWithPruningOrchestrator
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.orchestrator.single_turn.prompt_sending_orchestrator import PromptSendingOrchestrator
+from pyrit.orchestrator.single_turn.prompt_sending_orchestrator_with_retries import PromptSendingOrchestratorWithRetries
 
 from pyrit.orchestrator.fuzzer_orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.multi_turn.crescendo_orchestrator import CrescendoOrchestrator
@@ -28,6 +29,7 @@ __all__ = [
     "Orchestrator",
     "PAIROrchestrator",
     "PromptSendingOrchestrator",
+    "PromptSendingOrchestratorWithRetries",
     "RedTeamingOrchestrator",
     "ScoringOrchestrator",
     "SkeletonKeyOrchestrator",
