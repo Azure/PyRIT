@@ -68,7 +68,9 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         if not prompt.endswith(".wav"):
             raise ValueError("Please provide a .wav audio file. Compressed formats are not currently supported.")
 
-        audio_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="audio_path", value=prompt)
+        audio_serializer = data_serializer_factory(
+            category="prompt-memory-entries", data_type="audio_path", value=prompt
+        )
         audio_bytes = await audio_serializer.read_data()
 
         try:

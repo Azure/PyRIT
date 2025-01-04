@@ -590,7 +590,7 @@ class MemoryInterface(abc.ABC):
         if values:
             for value in values:
                 conditions.append(field.contains(value))
-    
+
     async def _serialize_seed_prompt_value(self, prompt: SeedPrompt) -> str:
         """
         Serializes the value of a seed prompt based on its data type.
@@ -606,10 +606,10 @@ class MemoryInterface(abc.ABC):
         """
         extension = DataTypeSerializer.get_extension(prompt.value)
         if extension:
-            extension = extension.lstrip('.')
+            extension = extension.lstrip(".")
         serializer = data_serializer_factory(
-                category="seed-prompt-entries", data_type=prompt.data_type, value=prompt.value, extension=extension  
-            )
+            category="seed-prompt-entries", data_type=prompt.data_type, value=prompt.value, extension=extension
+        )
         serialized_prompt_value = None
         if prompt.data_type == "image_path":
             # Read the image

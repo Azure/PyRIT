@@ -10,7 +10,7 @@ import os
 import time
 from mimetypes import guess_type
 from pathlib import Path
-from typing import Literal, TYPE_CHECKING, Optional, Union
+from typing import get_args, Literal, TYPE_CHECKING, Optional, Union
 from urllib.parse import urlparse
 
 from pyrit.models.literals import PromptDataType
@@ -22,12 +22,13 @@ if TYPE_CHECKING:
 # Define allowed categories for validation
 AllowedCategories = Literal["seed-prompt-entries", "prompt-memory-entries"]
 
+
 def data_serializer_factory(
     *,
     data_type: PromptDataType,
     value: Optional[str] = None,
     extension: Optional[str] = None,
-    category: AllowedCategories
+    category: AllowedCategories,
 ):
     """
     Factory method to create a DataTypeSerializer instance.
@@ -46,7 +47,7 @@ def data_serializer_factory(
     """
     if not category:
         raise ValueError(
-            f"The 'category' argument is mandatory and must be one of the following: {AllowedCategories.__args__}."
+            f"The 'category' argument is mandatory and must be one of the following: {get_args(AllowedCategories)}."
         )
     if value is not None:
         if data_type == "text":

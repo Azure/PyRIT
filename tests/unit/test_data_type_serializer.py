@@ -64,7 +64,7 @@ async def test_data_serializer_error_read_data_throws(duckdb_instance):
 
 @pytest.mark.asyncio
 async def test_data_serializer_error_save_data_throws(duckdb_instance):
-    serializer = data_serializer_factory(data_type="error", value="test")
+    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="error", value="test")
     with pytest.raises(TypeError):
         await serializer.save_data(b"\x00")
 
@@ -95,7 +95,9 @@ async def test_image_path_read_data(duckdb_instance):
     normalizer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
     await normalizer.save_data(data)
     assert await normalizer.read_data() == data
-    read_normalizer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path", value=normalizer.value)
+    read_normalizer = data_serializer_factory(
+        category="prompt-memory-entries", data_type="image_path", value=normalizer.value
+    )
     assert await read_normalizer.read_data() == data
 
 
@@ -211,7 +213,9 @@ async def test_read_data_local_file_with_dummy_image(duckdb_instance):
             mock_storage_io.read_file.return_value = f.read()
 
         with patch("pyrit.models.data_type_serializer.DiskStorageIO", return_value=mock_storage_io):
-            serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path", value=image_path)
+            serializer = data_serializer_factory(
+                category="prompt-memory-entries", data_type="image_path", value=image_path
+            )
 
             data = await serializer.read_data()
 

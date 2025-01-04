@@ -25,7 +25,7 @@
 # %%
 
 from pyrit.common import default_values
-from pyrit.memory import DuckDBMemory, CentralMemory, AzureSQLMemory
+from pyrit.memory import DuckDBMemory, CentralMemory
 
 default_values.load_environment_files()
 
@@ -46,7 +46,7 @@ seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PAT
 
 print(seed_prompt_dataset.prompts[0])
 
-await memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.prompts, added_by="test")
+await memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.prompts, added_by="test") # type: ignore
 
 # %% [markdown]
 # ## Retrieving prompts from the database
@@ -78,7 +78,7 @@ seed_prompt_group = SeedPromptGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt"
 )
 
-await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")
+await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal") # type: ignore
 
 # %% [markdown]
 # ## Retrieving seed prompt groups from the memory with dataset_name as "TestMultimodalTextImageAudioVideo"
