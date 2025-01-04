@@ -55,6 +55,8 @@ def data_serializer_factory(
             return ImagePathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "audio_path":
             return AudioPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
+        elif data_type == "video_path":
+            return VideoPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value)
         elif data_type == "url":
@@ -66,6 +68,8 @@ def data_serializer_factory(
             return ImagePathDataTypeSerializer(category=category, extension=extension)
         elif data_type == "audio_path":
             return AudioPathDataTypeSerializer(category=category, extension=extension)
+        elif data_type == "video_path":
+            return VideoPathDataTypeSerializer(category=category, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text="")
         else:
@@ -290,6 +294,33 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
         self.data_type = "audio_path"
         self.data_sub_directory = f"/{category}/audio"
         self.file_extension = extension if extension else "mp3"
+
+        if prompt_text:
+            self.value = prompt_text
+
+    def data_on_disk(self) -> bool:
+        return True
+
+
+class VideoPathDataTypeSerializer(DataTypeSerializer):
+    def __init__(
+        self,
+        *,
+        category: str,
+        prompt_text: Optional[str] = None,
+        extension: Optional[str] = None,
+    ):
+        """
+        Serializer for video data paths.
+
+        Args:
+            category (str): The category or context for the data.
+            prompt_text (Optional[str]): The video path or identifier.
+            extension (Optional[str]): The file extension, defaults to 'mp4'.
+        """
+        self.data_type = "video_path"
+        self.data_sub_directory = f"/{category}/videos"
+        self.file_extension = extension if extension else "mp4"
 
         if prompt_text:
             self.value = prompt_text

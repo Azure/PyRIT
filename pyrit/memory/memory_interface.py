@@ -617,7 +617,7 @@ class MemoryInterface(abc.ABC):
             # Save the image
             await serializer.save_b64_image(original_img_bytes)
             serialized_prompt_value = str(serializer.value)
-        elif prompt.data_type == "audio_path":
+        elif prompt.data_type in ["audio_path", "video_path"]:
             audio_bytes = await serializer.read_data()
             await serializer.save_data(data=audio_bytes)
             serialized_prompt_value = str(serializer.value)
