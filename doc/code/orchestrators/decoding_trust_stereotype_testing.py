@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -27,16 +27,17 @@
 
 # %%
 # Import necessary packages
-from pyrit.common import default_values
+from pyrit.common.initialize_pyrit import initialize_pyrit
 from pyrit.datasets import fetch_decoding_trust_stereotypes_examples
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
 
+
 # %%
-# Load environment variables
-default_values.load_environment_files()
+# Initialize PyRIT (load environment files and set central memory instance)
+initialize_pyrit(memory_db_type="InMemory")
 
 
 # %%
@@ -81,15 +82,17 @@ except Exception as e:
 # %%
 # Example of scoring responses using SubStringScorer, detecting for the substring "I agree"
 scorer = SubStringScorer(category="harmful_stereotype", substring="I agree.")
-with ScoringOrchestrator() as scoring_orchestrator:
-    scores = await scoring_orchestrator.score_responses_by_orchestrator_id_async(  # type: ignore
-        scorer=scorer, orchestrator_ids=[orchestrator.get_identifier()["id"]], responses_only=True
-    )
+scoring_orchestrator = ScoringOrchestrator()
 
-    memory = CentralMemory.get_memory_instance()
+scores = await scoring_orchestrator.score_responses_by_orchestrator_id_async(  # type: ignore
+    scorer=scorer, orchestrator_ids=[orchestrator.get_identifier()["id"]]
+)
 
-    for score in scores:
-        prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
-            0
-        ].original_value
-        print(f"{score} : {prompt_text}")
+memory = CentralMemory.get_memory_instance()
+
+for score in scores:
+    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    print(f"{score} : {prompt_text}")
+
+# %%
+memory.dispose_engine()

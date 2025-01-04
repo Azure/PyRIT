@@ -12,14 +12,14 @@ from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import TranslationConverter
 
 
-def test_prompt_translation_init_templates_not_null():
+def test_prompt_translation_init_templates_not_null(duckdb_instance):
     prompt_target = MockPromptTarget()
     translation_converter = TranslationConverter(converter_target=prompt_target, language="en")
     assert translation_converter.system_prompt
 
 
 @pytest.mark.parametrize("languages", [None, ""])
-def test_translator_converter_languages_validation_throws(languages):
+def test_translator_converter_languages_validation_throws(languages, duckdb_instance):
     prompt_target = MockPromptTarget()
     with pytest.raises(ValueError):
         TranslationConverter(converter_target=prompt_target, language=languages)
@@ -33,7 +33,7 @@ def test_translator_converter_languages_validation_throws(languages):
         "{'str' : 'json not formatted correctly'}",
     ],
 )
-async def test_translation_converter_send_prompt_async_bad_json_exception_retries(converted_value):
+async def test_translation_converter_send_prompt_async_bad_json_exception_retries(converted_value, duckdb_instance):
 
     prompt_target = MockPromptTarget()
 
@@ -64,7 +64,7 @@ async def test_translation_converter_send_prompt_async_bad_json_exception_retrie
 
 
 @pytest.mark.asyncio
-async def test_translation_converter_send_prompt_async_json_bad_format_retries():
+async def test_translation_converter_send_prompt_async_json_bad_format_retries(duckdb_instance):
     prompt_target = MockPromptTarget()
 
     prompt_variation = TranslationConverter(converter_target=prompt_target, language="en")
@@ -94,7 +94,7 @@ async def test_translation_converter_send_prompt_async_json_bad_format_retries()
 
 
 @pytest.mark.asyncio
-async def test_translation_converter_convert_async_retrieve_key_capitalization_mismatch():
+async def test_translation_converter_convert_async_retrieve_key_capitalization_mismatch(duckdb_instance):
     prompt_target = MockPromptTarget()
 
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
@@ -111,7 +111,7 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
         assert raised is False
 
 
-def test_translation_converter_input_supported():
+def test_translation_converter_input_supported(duckdb_instance):
     prompt_target = MockPromptTarget()
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
     assert translation_converter.input_supported("text") is True

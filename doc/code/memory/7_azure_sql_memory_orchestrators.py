@@ -29,16 +29,15 @@
 import time
 import uuid
 
-from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory, CentralMemory
+from pyrit.common.initialize_pyrit import initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type="AzureSQL")
 
 target = OpenAIChatTarget()
-memory = AzureSQLMemory()
-CentralMemory.set_memory_instance(memory)
+
 # You can optionally pass memory labels to `send_prompts_async`, which will be associated with each prompt and assist in retrieving or scoring later. In the case of collisions, these take precedence over `GLOBAL_MEMORY_LABELS` in env.local.
 test_op_name = str(uuid.uuid4())
 test_user_name = str(uuid.uuid4())
@@ -62,17 +61,12 @@ with PromptSendingOrchestrator(objective_target=target) as orchestrator:
 # %%
 from azure.ai.contentsafety.models import TextCategory
 
-from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory, CentralMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import AzureContentFilterScorer, LikertScalePaths, SelfAskLikertScorer
-
-default_values.load_environment_files()
+from pyrit.score import AzureContentFilterScorer, SelfAskLikertScorer, LikertScalePaths
 
 target = OpenAIChatTarget()
-memory = AzureSQLMemory()
-CentralMemory.set_memory_instance(memory)
+
 # Set up the Azure Content Filter Scorer
 acf = AzureContentFilterScorer(harm_categories=[TextCategory.HATE])  # Options: HATE, SELF_HARM, SEXUAL, VIOLENCE
 bias_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.FAIRNESS_BIAS_SCALE.value, chat_target=target)
@@ -119,16 +113,12 @@ import logging
 import os
 from pathlib import Path
 
-from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import AzureSQLMemory, CentralMemory
+from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
-from pyrit.score import SelfAskTrueFalseScorer
 
 logging.basicConfig(level=logging.WARNING)
-
-default_values.load_environment_files()
 
 img_prompt_target = OpenAIDALLETarget(
     deployment_name=os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT"),
@@ -136,8 +126,6 @@ img_prompt_target = OpenAIDALLETarget(
     api_key=os.environ.get("AZURE_OPENAI_DALLE_API_KEY"),
 )
 red_teaming_llm = OpenAIChatTarget()
-memory = AzureSQLMemory()
-CentralMemory.set_memory_instance(memory)
 scoring_target = OpenAIChatTarget()
 
 scorer = SelfAskTrueFalseScorer(
@@ -167,9 +155,8 @@ with RedTeamingOrchestrator(
 # %%
 import pathlib
 
-from pyrit.memory import AzureSQLMemory, CentralMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest
 from pyrit.prompt_target import OpenAIChatTarget
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
@@ -196,13 +183,9 @@ normalizer_request = NormalizerRequest(
         ),
     ]
 )
-memory = AzureSQLMemory()
-CentralMemory.set_memory_instance(memory)
 
 with PromptSendingOrchestrator(objective_target=azure_openai_gpt4o_chat_target) as orchestrator:
     await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
     memory_items = orchestrator.get_memory()
     for entry in memory_items:
         print(entry)
-
-# %%

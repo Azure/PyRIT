@@ -12,12 +12,13 @@
 # - **Attack scenarios:** These involve crafting malicious or deceptive escape sequences.
 
 # %%
-from pyrit.common import default_values
-from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import AnsiAttackConverter
+from pyrit.common.initialize_pyrit import initialize_pyrit
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.orchestrator import PromptSendingOrchestrator
 
-default_values.load_environment_files()
+from pyrit.prompt_converter import AnsiAttackConverter
+
+initialize_pyrit(memory_db_type="InMemory")
 
 # Comprehensive prompts including both useful tasks and attack-oriented scenarios
 prompts = [

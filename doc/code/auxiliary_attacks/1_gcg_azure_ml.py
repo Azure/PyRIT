@@ -33,9 +33,9 @@
 # %%
 import os
 
-from pyrit.common import default_values
+from pyrit.common.initialize_pyrit import initialize_pyrit
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type="InMemory")
 
 # Enter details of your AML workspace
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")

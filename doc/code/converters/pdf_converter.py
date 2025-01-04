@@ -20,15 +20,16 @@
 
 # %%
 import pathlib
-from pyrit.common import default_values
+
+from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
+from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import PDFConverter
-from pyrit.models import SeedPrompt
-from pyrit.common.path import DATASETS_PATH
 
-# Load default environment values (e.g., API keys, endpoints)
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type="InMemory")
 
 # Define dynamic data for injection
 prompt_data = {
@@ -65,16 +66,16 @@ pdf_converter = PDFConverter(
 prompts = [str(prompt_data)]
 
 # Initialize the orchestrator
-with PromptSendingOrchestrator(
+orchestrator = PromptSendingOrchestrator(
     objective_target=prompt_target,  # Target system (Azure OpenAI or other LLM target)
     prompt_converters=[pdf_converter],  # Attach the PDFConverter
     verbose=False,  # Set to True for detailed logging
-) as orchestrator:
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+)
 
-    await orchestrator.print_conversations_async()  # type: ignore
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
 
-# %%
+# %% Direct Prompt PDF Generation (No Template)
 # Direct Prompt PDF Generation (No Template)
 
 # Define a simple string prompt (no templates)
@@ -96,11 +97,14 @@ pdf_converter = PDFConverter(
 prompts = [prompt]
 
 # Initialize the orchestrator
-with PromptSendingOrchestrator(
+orchestrator = PromptSendingOrchestrator(
     objective_target=prompt_target,
     prompt_converters=[pdf_converter],
     verbose=False,
-) as orchestrator:
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+)
 
-    await orchestrator.print_conversations_async()  # type: ignore
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
+
+# %%
+orchestrator.dispose_db_engine()
