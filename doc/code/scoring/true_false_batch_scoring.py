@@ -2,16 +2,18 @@
 # # Batch Scoring with SelfAskTrueFalseScorer
 # This example demonstrates how to use SelfAskTrueFalseScorer with the score_prompts_batch_async method.
 
+# %%
 import uuid
 
-# %%
-from pyrit.memory.duckdb_memory import DuckDBMemory
+from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
+from pyrit.prompt_target import OpenAIChatTarget
 
-# Initialize memory
-memory = DuckDBMemory()
+
+initialize_pyrit(memory_db_type="InMemory")
+memory = CentralMemory.get_memory_instance()
 
 # Set up the scorer and chat target
 azure_openai_chat_target = OpenAIChatTarget()
@@ -42,7 +44,7 @@ for piece in request_pieces:
 
 # Perform batch scoring
 scores = await true_false_classifier.score_prompts_with_tasks_batch_async(  # type: ignore
-    request_responses=request_pieces, batch_size=2
+    request_responses=request_pieces, tasks=texts_to_score, batch_size=2
 )
 
 # Display results
@@ -51,3 +53,6 @@ for i, score in enumerate(scores):
     print(f"Score Value: {score.get_value()}")
     print(f"Score Rationale: {score.score_rationale}")
     print("-" * 80)
+
+# %%
+memory.dispose_engine()
