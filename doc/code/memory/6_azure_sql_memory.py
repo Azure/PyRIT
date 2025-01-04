@@ -44,7 +44,7 @@
 
 # %%
 from pyrit.common.initialize_pyrit import initialize_pyrit
-from pyrit.memory import CentralMemory, AzureSQLMemory
+from pyrit.memory import CentralMemory
 
 initialize_pyrit(memory_db_type="AzureSQL")
 
