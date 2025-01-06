@@ -208,9 +208,9 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list, sc
         scoring_target=MagicMock(),
     )
 
-    assert fuzzer_orchestrator._max_query_limit == 80
+    assert fuzzer_orchestrator._max_query_limit == 120
 
-    fuzzer_orchestrator._total_target_query_count = 79
+    fuzzer_orchestrator._total_target_query_count = 119
     result = await fuzzer_orchestrator.execute_fuzzer()
     assert result.success is False
     assert result.description == "Query limit reached."

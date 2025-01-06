@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-kernel
+#     display_name: pyrit-311
 #     language: python
-#     name: pyrit-kernel
+#     name: pyrit-dev
 # ---
 
 # %% [markdown]
@@ -25,19 +25,16 @@
 # %%
 from pyrit.common.initialize_pyrit import initialize_pyrit
 
-initialize_pyrit(memory_db_type="AzureSQL")
-
+initialize_pyrit(memory_db_type="InMemory")
 
 # %% [markdown]
 # ## Adding prompts to the database
 
 # %%
-import pathlib
-
-from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPromptDataset
-
+from pyrit.common.path import DATASETS_PATH
+import pathlib
 
 seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
 
@@ -65,7 +62,7 @@ print(f"Total number of the prompts with dataset name '{dataset_name}':", len(pr
 print(prompts[0].__dict__)
 
 # %% [markdown]
-# # Adding seed prompt groups to the database
+# ## Adding seed prompt groups to the database
 # %%
 from pyrit.models import SeedPromptGroup
 
@@ -84,6 +81,3 @@ multimodal_dataset_name = "test multimodal"
 seed_prompt_groups = memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
 print(f"Total number of the seed prompt groups with dataset name '{multimodal_dataset_name}':", len(seed_prompt_groups))
 print(seed_prompt_groups[0].__dict__)
-
-# %%
-memory.dispose_engine()
