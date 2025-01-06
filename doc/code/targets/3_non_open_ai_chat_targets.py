@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -45,14 +45,16 @@
 # depending on the specific model. The parameters that can be set per model can usually be found in the 'Consume' tab when you navigate to your endpoint in AML Studio.
 
 # %%
-from pyrit.common import default_values
+from pyrit.common.initialize_pyrit import initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureMLChatTarget
 
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type="InMemory")
 
 # Defaults to endpoint and api_key pulled from the AZURE_ML_MANAGED_ENDPOINT and AZURE_ML_KEY environment variables
 azure_ml_chat_target = AzureMLChatTarget()
+
 # The environment variable args can be adjusted below as needed for your specific model.
 azure_ml_chat_target._set_env_configuration_vars(
     endpoint_uri_environment_variable="AZURE_ML_MANAGED_ENDPOINT", api_key_environment_variable="AZURE_ML_KEY"
@@ -60,9 +62,12 @@ azure_ml_chat_target._set_env_configuration_vars(
 # Parameters such as temperature and repetition_penalty can be set using the _set_model_parameters() function.
 azure_ml_chat_target._set_model_parameters(temperature=0.9, repetition_penalty=1.3)
 
-with PromptSendingOrchestrator(objective_target=azure_ml_chat_target) as orchestrator:
-    response = await orchestrator.send_prompts_async(prompt_list=["Hello! Describe yourself and the company who developed you."])  # type: ignore
+orchestrator = PromptSendingOrchestrator(objective_target=azure_ml_chat_target)
+
+response = await orchestrator.send_prompts_async(prompt_list=["Hello! Describe yourself and the company who developed you."])  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
+
+orchestrator.dispose_db_engine()
 
 # %% [markdown]
 #
