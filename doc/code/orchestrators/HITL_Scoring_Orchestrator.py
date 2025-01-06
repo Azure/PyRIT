@@ -68,7 +68,7 @@ scoring_orchestrator = ScoringOrchestrator()
 
 start = time.time()
 scores = await scoring_orchestrator.score_prompts_by_id_async(  # type: ignore
-    scorer=scorer, prompt_ids=[prompt.id for prompt in prompts_to_score]
+    scorer=scorer, prompt_ids=[str(prompt.id) for prompt in prompts_to_score]
 )
 end = time.time()
 

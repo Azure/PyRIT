@@ -78,7 +78,7 @@ prompts_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sendi
 
 scoring_orchestrator = ScoringOrchestrator()
 scores = await scoring_orchestrator.score_prompts_by_id_async(  # type: ignore
-    scorer=scorer, prompt_ids=[prompt.id for prompt in prompts_to_score]
+    scorer=scorer, prompt_ids=[str(prompt.id) for prompt in prompts_to_score]
 )
 
 for score in scores:
