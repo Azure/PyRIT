@@ -370,6 +370,83 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
     assert sort_request_pieces(pieces) == expected
 
 
+def test_order_request_pieces_by_conversation_same_timestamp():
+    timestamp = datetime.now()
+
+    pieces = [
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 4",
+            conversation_id="conv2",
+            timestamp=timestamp,
+            sequence=2,
+            id="4",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 1",
+            conversation_id="conv1",
+            timestamp=timestamp,
+            sequence=1,
+            id="1",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 3",
+            conversation_id="conv2",
+            timestamp=timestamp,
+            sequence=1,
+            id="3",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 2",
+            conversation_id="conv1",
+            timestamp=timestamp,
+            sequence=2,
+            id="2",
+        ),
+    ]
+
+    expected = [
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 1",
+            conversation_id="conv1",
+            timestamp=pieces[1].timestamp,
+            sequence=1,
+            id="1",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 2",
+            conversation_id="conv1",
+            timestamp=pieces[3].timestamp,
+            sequence=2,
+            id="2",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 3",
+            conversation_id="conv2",
+            timestamp=pieces[2].timestamp,
+            sequence=1,
+            id="3",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 4",
+            conversation_id="conv2",
+            timestamp=pieces[0].timestamp,
+            sequence=2,
+            id="4",
+        ),
+    ]
+
+    sorted = sort_request_pieces(pieces)
+    assert sorted == expected
+
+
 def test_order_request_pieces_by_conversation_empty_list():
     pieces = []
     expected = []
