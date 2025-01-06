@@ -1,31 +1,25 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 import csv
+import os
 import tempfile
 from textwrap import dedent
-import pytest
-
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from unit.mocks import get_image_request_piece
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.human_in_the_loop_scorer import HumanInTheLoopScorer
 from pyrit.score.substring_scorer import SubStringScorer
-from unit.mocks import get_image_request_piece, get_memory_interface
 
 
 @pytest.fixture
 def image_request_piece() -> PromptRequestPiece:
     return get_image_request_piece()
-
-
-@pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
 
 
 @pytest.fixture
@@ -42,9 +36,10 @@ def score() -> Score:
 
 
 def test_import_scores_from_csv(score: Score):
+    scorer = HumanInTheLoopScorer()
+
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        scorer = HumanInTheLoopScorer()
 
         field_names = [
             "score_value",
@@ -92,30 +87,27 @@ def test_import_scores_from_csv(score: Score):
 
 @pytest.mark.asyncio
 async def test_substring_scorer_validate(image_request_piece: PromptRequestPiece):
-    memory = MagicMock()
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        scorer = SubStringScorer(substring="test", category="new_category")
-        with pytest.raises(ValueError, match="Expected text data type"):
-            await scorer.score_async(image_request_piece)
+    scorer = SubStringScorer(substring="test", category="new_category")
+    with pytest.raises(ValueError, match="Expected text data type"):
+        await scorer.score_async(image_request_piece)
 
-        os.remove(image_request_piece.converted_value)
+    os.remove(image_request_piece.converted_value)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("sub_string", ["I can't answer", "Not present"])
-async def test_substring_scorer_score(sub_string: str, memory: MemoryInterface):
+async def test_substring_scorer_score(patch_central_database, sub_string: str):
     full_text = "blah I can't answer that too"
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        scorer = SubStringScorer(substring=sub_string, category="new_category")
+    scorer = SubStringScorer(substring=sub_string, category="new_category")
 
-        score = await scorer.score_text_async(full_text)
+    score = await scorer.score_text_async(full_text)
 
-        assert len(score) == 1
+    assert len(score) == 1
 
-        assert score[0].score_value == str(sub_string in full_text)
-        assert score[0].score_type == "true_false"
-        assert score[0].score_category == "new_category"
-        assert score[0].prompt_request_response_id is None
+    assert score[0].score_value == str(sub_string in full_text)
+    assert score[0].score_type == "true_false"
+    assert score[0].score_category == "new_category"
+    assert score[0].prompt_request_response_id is None
 
 
 @pytest.mark.asyncio

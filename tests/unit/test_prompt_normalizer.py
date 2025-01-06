@@ -4,21 +4,17 @@
 import os
 import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+from unit.mocks import MockPromptTarget, get_image_request_piece
 
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptDataType
-from pyrit.models import PromptRequestPiece
-from pyrit.models import PromptRequestResponse
-from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest, PromptNormalizer
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 from pyrit.exceptions import EmptyResponseException
-
-
+from pyrit.memory import CentralMemory
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_converter import Base64Converter, ConverterResult, PromptConverter, StringJoinConverter
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
 from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
 from pyrit.prompt_target import PromptTarget
-from unit.mocks import MockPromptTarget, get_image_request_piece
 
 
 @pytest.fixture
@@ -66,6 +62,14 @@ class MockPromptConverter(PromptConverter):
         return input_type == "text"
 
 
+def assert_prompt_piece_hashes_set(request: PromptRequestResponse):
+    assert request
+    assert request.request_pieces
+    for piece in request.request_pieces:
+        assert piece.original_value_sha256
+        assert piece.converted_value_sha256
+
+
 @pytest.mark.asyncio
 async def test_send_prompt_async_multiple_converters(mock_memory_instance, normalizer_piece: NormalizerRequestPiece):
     prompt_target = MockPromptTarget()
@@ -90,8 +94,10 @@ async def test_send_prompt_async_no_response_adds_memory(
     normalizer = PromptNormalizer()
 
     await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([normalizer_piece]), target=prompt_target)
-
     assert mock_memory_instance.add_request_response_to_memory.call_count == 1
+
+    request = mock_memory_instance.add_request_response_to_memory.call_args[1]["request"]
+    assert_prompt_piece_hashes_set(request)
 
 
 @pytest.mark.asyncio
@@ -111,6 +117,8 @@ async def test_send_prompt_async_empty_response_exception_handled(
     assert response.request_pieces[0].response_error == "empty"
     assert response.request_pieces[0].original_value == ""
     assert response.request_pieces[0].original_value_data_type == "text"
+
+    assert_prompt_piece_hashes_set(response)
 
 
 @pytest.mark.asyncio
@@ -266,12 +274,16 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
         # Mock the async read_file method
         normalizer._memory.results_storage_io.read_file = AsyncMock(return_value=b"mocked data")
 
-        await normalizer.send_prompt_async(normalizer_request=NormalizerRequest([prompt]), target=prompt_target)
+        response = await normalizer.send_prompt_async(
+            normalizer_request=NormalizerRequest([prompt]), target=prompt_target
+        )
 
         # verify the prompt target received the correct arguments from the normalizer
         sent_request = prompt_target.send_prompt_async.call_args.kwargs["prompt_request"].request_pieces[0]
         assert sent_request.converted_value == filename
         assert sent_request.converted_value_data_type == "image_path"
+
+        assert_prompt_piece_hashes_set(response)
     os.remove(filename)
 
 

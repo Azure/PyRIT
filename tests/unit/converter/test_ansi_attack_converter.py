@@ -1,19 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import patch
 
+import pytest
+
 from pyrit.prompt_converter import ConverterResult
+from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
-    LIVE_PAYLOADS,
+    ASKS,
     ESCAPED_PAYLOADS,
     HIGH_LEVEL_TASKS,
-    ASKS,
+    LIVE_PAYLOADS,
     REPEAT_STUBS,
     UNESCAPE_STUBS,
 )
-from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 
 
 @pytest.mark.asyncio

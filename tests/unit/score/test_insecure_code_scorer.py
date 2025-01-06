@@ -1,11 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyrit.models import PromptRequestPiece, Score, UnvalidatedScore
+import pytest
+
 from pyrit.exceptions.exception_classes import InvalidJsonException
+from pyrit.models import PromptRequestPiece, Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import InsecureCodeScorer
 

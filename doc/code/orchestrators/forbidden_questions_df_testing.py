@@ -26,7 +26,6 @@ from pyrit.datasets import fetch_forbidden_questions_df
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
-
 # Load environment variables
 default_values.load_environment_files()
 

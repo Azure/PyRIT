@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 from typing import Optional
-from pyrit.models import PromptRequestPiece
+
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.score.scorer import Scorer
-from pyrit.models import Score
 
 
 class SubStringScorer(Scorer):
@@ -44,5 +44,3 @@ class SubStringScorer(Scorer):
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
         if request_response.converted_value_data_type != "text":
             raise ValueError("Expected text data type")
-        if task:
-            raise ValueError("This scorer does not support tasks")

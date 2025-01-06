@@ -2,17 +2,16 @@
 # Licensed under the MIT license.
 
 import abc
-from abc import abstractmethod
 import json
-from typing import Optional, Sequence
 import uuid
+from abc import abstractmethod
+from typing import Optional, Sequence
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
-from pyrit.models import PromptDataType, PromptRequestResponse, PromptRequestPiece
+from pyrit.memory import CentralMemory, MemoryInterface
+from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, Score, ScoreType, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.models import ScoreType, Score, UnvalidatedScore
-from pyrit.memory import MemoryInterface, CentralMemory
 
 
 class Scorer(abc.ABC):
@@ -72,17 +71,37 @@ class Scorer(abc.ABC):
         request_piece.id = None
         return await self.score_async(request_piece, task=task)
 
-    async def score_prompts_batch_async(
+    async def score_responses_inferring_tasks_batch_async(
         self,
         *,
         request_responses: Sequence[PromptRequestPiece],
-        tasks: Optional[Sequence[str]] = None,
         batch_size: int = 10,
     ) -> list[Score]:
-        if not tasks:
-            tasks = [None] * len(request_responses)
-        elif len(tasks) != len(request_responses):
+        """
+        Scores a batch of responses (ignores non-assistant messages).
+
+        This will send the last requests as tasks if it can. If it's complicated (e.g. non-text) it will send None.
+
+        For more control, use score_prompts_with_tasks_batch_async
+        """
+        responses = [piece for piece in request_responses if piece.role == "assistant"]
+        tasks = [self._extract_task_from_response(response) for response in responses]
+        return await self.score_prompts_with_tasks_batch_async(
+            request_responses=responses, tasks=tasks, batch_size=batch_size
+        )
+
+    async def score_prompts_with_tasks_batch_async(
+        self,
+        *,
+        request_responses: Sequence[PromptRequestPiece],
+        tasks: Optional[Sequence[str]],
+        batch_size: int = 10,
+    ) -> list[Score]:
+        if len(tasks) != len(request_responses):
             raise ValueError("The number of tasks must match the number of request_responses.")
+
+        if len(request_responses) == 0:
+            return []
 
         prompt_target = getattr(self, "_prompt_target", None)
         results = await batch_task_async(
@@ -148,6 +167,32 @@ class Scorer(abc.ABC):
         identifier["__module__"] = self.__class__.__module__
         identifier["sub_identifier"] = None
         return identifier
+
+    def _extract_task_from_response(self, response: PromptRequestPiece) -> str:
+        """
+        Extracts a task from the response using the last request (if it exists).
+
+        Args:
+            response (PromptRequestPiece): The response to extract the task from.
+
+        Returns:
+            str: The task extracted from the response.
+        """
+        if response.role != "assistant":
+            return ""
+
+        conversation = self._memory.get_prompt_request_pieces(conversation_id=response.conversation_id)
+
+        # Every text request piece from the last turn
+        last_turn_text = "\n".join(
+            [
+                piece.original_value
+                for piece in conversation
+                if piece.sequence == response.sequence - 1 and piece.original_value_data_type == "text"
+            ]
+        )
+
+        return last_turn_text
 
     @pyrit_json_retry
     async def _score_value_with_llm(

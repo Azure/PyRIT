@@ -4,8 +4,7 @@
 import logging
 
 from pyrit.common import default_values
-from pyrit.memory import AzureSQLMemory
-from pyrit.memory import DuckDBMemory
+from pyrit.memory import AzureSQLMemory, DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
 
 logger = logging.getLogger(__name__)

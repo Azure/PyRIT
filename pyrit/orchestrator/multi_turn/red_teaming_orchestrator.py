@@ -7,12 +7,13 @@ from pathlib import Path
 from typing import Optional, Union
 from uuid import uuid4
 
+from pyrit.common.utils import combine_dict
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.models import PromptRequestPiece, Score
-from pyrit.orchestrator import MultiTurnOrchestrator, MultiTurnAttackResult
-from pyrit.prompt_normalizer import NormalizerRequestPiece, PromptNormalizer, NormalizerRequest
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
+from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -82,6 +83,31 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         self._prompt_normalizer = PromptNormalizer()
         self._use_score_as_feedback = use_score_as_feedback
 
+    def _handle_last_prepended_assistant_message(self) -> Score | None:
+        """
+        Handle the last message in the prepended conversation if it is from an assistant.
+        """
+        objective_score: Score | None = None
+
+        for score in self._last_prepended_assistant_message_scores:
+            # Extract existing score of the same type
+            if score.scorer_class_identifier["__type__"] == self._objective_scorer.get_identifier()["__type__"]:
+                objective_score = score
+                break
+
+        return objective_score
+
+    def _handle_last_prepended_user_message(self) -> str:
+        """
+        Handle the last message in the prepended conversation if it is from a user.
+        """
+        custom_prompt = ""
+        if self._last_prepended_user_message and not self._last_prepended_assistant_message_scores:
+            logger.info("Sending last user message from prepended conversation to the prompt target.")
+            custom_prompt = self._last_prepended_user_message
+
+        return custom_prompt
+
     async def run_attack_async(
         self, *, objective: str, memory_labels: Optional[dict[str, str]] = None
     ) -> MultiTurnAttackResult:
@@ -114,11 +140,18 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id = str(uuid4())
         adversarial_chat_conversation_id = str(uuid4())
 
-        updated_memory_labels = self._combine_with_global_memory_labels(memory_labels)
+        updated_memory_labels = combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels)
 
-        turn = 1
+        # Prepare the conversation by adding any provided messages to memory.
+        # If there is no prepended conversation, the turn count is 1.
+        turn = self._prepare_conversation(new_conversation_id=objective_target_conversation_id)
+
         achieved_objective = False
-        score: Score | None = None
+
+        # Custom handling on the first turn for prepended conversation
+        score = self._handle_last_prepended_assistant_message()
+        custom_prompt = self._handle_last_prepended_user_message()
+
         while turn <= self._max_turns:
             logger.info(f"Applying the attack strategy for turn {turn}.")
 
@@ -131,8 +164,12 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 objective_target_conversation_id=objective_target_conversation_id,
                 adversarial_chat_conversation_id=adversarial_chat_conversation_id,
                 feedback=feedback,
+                custom_prompt=custom_prompt,
                 memory_labels=updated_memory_labels,
             )
+
+            # Reset custom prompt for future turns
+            custom_prompt = None
 
             if response.response_error == "none":
                 score = await self._check_conversation_complete_async(
@@ -170,6 +207,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         objective_target_conversation_id: str,
         adversarial_chat_conversation_id: str,
         feedback: Optional[str] = None,
+        custom_prompt: str = "",
         memory_labels: Optional[dict[str, str]] = None,
     ) -> PromptRequestPiece:
         """
@@ -185,18 +223,23 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 For text-to-image applications, for example, there is no immediate text output
                 that can be passed back to the red teaming chat, so the scorer rationale is the
                 only way to generate feedback.
+            custom_prompt (str, optional): If provided, send this prompt to the target directly.
+                Otherwise, generate a new prompt with the red teaming LLM.
             memory_labels (dict[str, str], Optional): A free-form dictionary of labels to apply to the
                 prompts throughout the attack. These should already be combined with GLOBAL_MEMORY_LABELS.
         """
-        # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
-        logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
-        prompt = await self._get_prompt_from_adversarial_chat(
-            objective=objective,
-            objective_target_conversation_id=objective_target_conversation_id,
-            adversarial_chat_conversation_id=adversarial_chat_conversation_id,
-            feedback=feedback,
-            memory_labels=memory_labels,
-        )
+        if not custom_prompt:
+            # The prompt for the red teaming LLM needs to include the latest message from the prompt target.
+            logger.info("Generating a prompt for the prompt target using the red teaming LLM.")
+            prompt = await self._get_prompt_from_adversarial_chat(
+                objective=objective,
+                objective_target_conversation_id=objective_target_conversation_id,
+                adversarial_chat_conversation_id=adversarial_chat_conversation_id,
+                feedback=feedback,
+                memory_labels=memory_labels,
+            )
+        else:
+            prompt = custom_prompt
 
         target_prompt_obj = NormalizerRequestPiece(
             request_converters=self._prompt_converters,

@@ -2,25 +2,18 @@
 # Licensed under the MIT license.
 
 
-import pytest
 import os
 import tempfile
 
 import numpy as np
+import pytest
 from scipy.io import wavfile
 
-from pyrit.memory import DuckDBMemory, CentralMemory
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 
 
-@pytest.fixture(scope="function")
-def set_duckdb_in_memory():
-    duckdb_in_memory = DuckDBMemory(db_path=":memory:")
-    CentralMemory.set_memory_instance(duckdb_in_memory)
-
-
 @pytest.mark.asyncio
-async def test_convert_async_success(set_duckdb_in_memory):
+async def test_convert_async_success():
 
     # Simulate WAV data
     sample_rate = 44100
@@ -48,7 +41,7 @@ async def test_convert_async_success(set_duckdb_in_memory):
 
 
 @pytest.mark.asyncio
-async def test_convert_async_file_not_found(set_duckdb_in_memory):
+async def test_convert_async_file_not_found():
 
     # Create an instance of the converter
     converter = AudioFrequencyConverter(shift_value=20000)

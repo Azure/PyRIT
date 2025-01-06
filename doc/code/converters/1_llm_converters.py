@@ -20,12 +20,11 @@
 # %%
 import pathlib
 
-from pyrit.prompt_converter import VariationConverter
-from pyrit.models import SeedPrompt
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.common.path import DATASETS_PATH
-
 from pyrit.common import default_values
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
+from pyrit.prompt_converter import VariationConverter
+from pyrit.prompt_target import OpenAIChatTarget
 
 default_values.load_environment_files()
 
@@ -46,16 +45,15 @@ with OpenAIChatTarget() as attack_llm:
 
 # %%
 
+from pyrit.common import default_values
 from pyrit.prompt_converter import (
-    ToneConverter,
-    TranslationConverter,
+    MaliciousQuestionGeneratorConverter,
     NoiseConverter,
     TenseConverter,
-    MaliciousQuestionGeneratorConverter,
+    ToneConverter,
+    TranslationConverter,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-
-from pyrit.common import default_values
 
 default_values.load_environment_files()
 

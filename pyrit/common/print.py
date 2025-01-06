@@ -4,8 +4,9 @@
 import textwrap
 
 import termcolor
-from pyrit.models import ChatMessage
 from termcolor._types import Color
+
+from pyrit.models import ChatMessage
 
 
 def print_chat_messages_with_color(

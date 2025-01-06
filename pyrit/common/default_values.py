@@ -1,12 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import dotenv
-import os
 import logging
+import os
+
+import dotenv
 
 from pyrit.common import path
-
 
 logger = logging.getLogger(__name__)
 

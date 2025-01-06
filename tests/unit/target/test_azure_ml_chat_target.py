@@ -1,23 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from httpx import HTTPStatusError
-import os
-from openai import RateLimitError
 import pytest
-
-from pyrit.exceptions import EmptyResponseException, RateLimitException
-from pyrit.memory import CentralMemory
-from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import AzureMLChatTarget
-from pyrit.models import ChatMessage
-from pyrit.chat_message_normalizer import ChatMessageNop, GenericSystemSquash, ChatMessageNormalizer
+from httpx import HTTPStatusError
+from openai import RateLimitError
 from unit.mocks import get_sample_conversations
-from unit.mocks import get_memory_interface
+
+from pyrit.chat_message_normalizer import ChatMessageNop, ChatMessageNormalizer, GenericSystemSquash
+from pyrit.exceptions import EmptyResponseException, RateLimitException
+from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_target import AzureMLChatTarget
 
 
 @pytest.fixture
@@ -26,20 +21,14 @@ def sample_conversations() -> list[PromptRequestPiece]:
 
 
 @pytest.fixture
-def memory() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
-
-
-@pytest.fixture
-def aml_online_chat(memory) -> AzureMLChatTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        aml_online_chat = AzureMLChatTarget(
-            endpoint="http://aml-test-endpoint.com",
-            api_key="valid_api_key",
-            extra_param1="sample",
-            extra_param2=1.0,
-        )
-        return aml_online_chat
+def aml_online_chat() -> AzureMLChatTarget:
+    aml_online_chat = AzureMLChatTarget(
+        endpoint="http://aml-test-endpoint.com",
+        api_key="valid_api_key",
+        extra_param1="sample",
+        extra_param2=1.0,
+    )
+    return aml_online_chat
 
 
 def test_initialization_with_required_parameters(
@@ -100,16 +89,14 @@ def test_set_model_parameters_partial_update(aml_online_chat: AzureMLChatTarget)
 
 def test_initialization_with_no_key_raises():
     os.environ[AzureMLChatTarget.api_key_environment_variable] = ""
-    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        with pytest.raises(ValueError):
-            AzureMLChatTarget(endpoint="http://aml-test-endpoint.com")
+    with pytest.raises(ValueError):
+        AzureMLChatTarget(endpoint="http://aml-test-endpoint.com")
 
 
 def test_initialization_with_no_api_raises():
     os.environ[AzureMLChatTarget.endpoint_uri_environment_variable] = ""
-    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        with pytest.raises(ValueError):
-            AzureMLChatTarget(api_key="xxxxx")
+    with pytest.raises(ValueError):
+        AzureMLChatTarget(api_key="xxxxx")
 
 
 def test_get_headers_with_valid_api_key(aml_online_chat: AzureMLChatTarget):

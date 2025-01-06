@@ -2,10 +2,10 @@
 # Licensed under the MIT license.
 
 import abc
-import yaml
 from pathlib import Path
 from typing import Type, TypeVar, Union
 
+import yaml
 
 T = TypeVar("T", bound="YamlLoadable")
 
@@ -37,5 +37,10 @@ class YamlLoadable(abc.ABC):
             yaml_data = yaml.safe_load(file.read_text("utf-8"))
         except yaml.YAMLError as exc:
             raise ValueError(f"Invalid YAML file '{file}': {exc}")
-        data_object = cls(**yaml_data)
-        return data_object
+
+        # If this class provides a from_dict factory, use it;
+        # otherwise, just instantiate directly with **yaml_data
+        if hasattr(cls, "from_dict") and callable(getattr(cls, "from_dict")):
+            return cls.from_dict(yaml_data)  # type: ignore
+        else:
+            return cls(**yaml_data)

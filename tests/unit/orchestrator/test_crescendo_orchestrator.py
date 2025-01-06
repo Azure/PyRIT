@@ -2,32 +2,21 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Generator
-import pytest
-
 from pathlib import Path
-from pyrit.memory.memory_interface import MemoryInterface
-from unit.mocks import MockPromptTarget
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from unit.mocks import MockPromptTarget
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import InvalidJsonException
-from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import CrescendoOrchestrator
-from pyrit.models import Score
-from unit.mocks import get_memory_interface
 
 
 @pytest.fixture
-def memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
-
-
-@pytest.fixture
-def mock_target(memory_interface) -> MockPromptTarget:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        return MockPromptTarget()
+def mock_target(patch_central_database) -> MockPromptTarget:
+    return MockPromptTarget()
 
 
 @pytest.fixture
@@ -87,11 +76,8 @@ def false_eval_score() -> Score:
 
 
 @pytest.fixture
-def orchestrator(mock_target: MockPromptTarget, memory_interface: MemoryInterface) -> CrescendoOrchestrator:
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        return CrescendoOrchestrator(
-            objective_target=mock_target, adversarial_chat=mock_target, scoring_target=mock_target
-        )
+def orchestrator(mock_target: MockPromptTarget) -> CrescendoOrchestrator:
+    return CrescendoOrchestrator(objective_target=mock_target, adversarial_chat=mock_target, scoring_target=mock_target)
 
 
 @pytest.mark.asyncio
@@ -307,21 +293,19 @@ async def test_no_backtracks_occurred(
 
 
 @pytest.mark.asyncio
-async def test_max_turns_init_exceptions(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        with pytest.raises(ValueError):
-            CrescendoOrchestrator(
-                objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_turns=0
-            )
+async def test_max_turns_init_exceptions():
+    with pytest.raises(ValueError):
+        CrescendoOrchestrator(
+            objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_turns=0
+        )
 
 
 @pytest.mark.asyncio
-async def test_max_backtrack_init_exceptions(memory_interface: MemoryInterface):
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface):
-        with pytest.raises(ValueError):
-            CrescendoOrchestrator(
-                objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
-            )
+async def test_max_backtrack_init_exceptions():
+    with pytest.raises(ValueError):
+        CrescendoOrchestrator(
+            objective_target=MagicMock(), adversarial_chat=MagicMock(), scoring_target=MagicMock(), max_backtracks=0
+        )
 
 
 @pytest.mark.asyncio
@@ -472,7 +456,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
     objective = "do something extremely bad"
 
     with (
-        patch.object(orchestrator._memory, "get_prompt_request_pieces_by_id", MagicMock(return_value=previous_prompt)),
+        patch.object(orchestrator._memory, "get_prompt_request_pieces", MagicMock(return_value=previous_prompt)),
         patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer,
     ):
 
@@ -598,7 +582,7 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
             orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
         ) as mock_prompt_normalizer,
         patch.object(
-            orchestrator._memory, "get_prompt_request_pieces_by_id", MagicMock(return_value=[objective_score_return])
+            orchestrator._memory, "get_prompt_request_pieces", MagicMock(return_value=[objective_score_return])
         ),
     ):
 
@@ -618,3 +602,63 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
         assert objective in prompt_sent
         assert "Objective Score Rationale" in prompt_sent
         assert "Original prompt sent" in prompt_sent
+
+
+def test_handle_last_prepended_user_message_with_prepended_message(orchestrator: CrescendoOrchestrator):
+    orchestrator._last_prepended_user_message = "Last user message"
+    orchestrator._last_prepended_assistant_message_scores = []
+
+    custom_prompt = orchestrator._handle_last_prepended_user_message()
+    assert custom_prompt == "Last user message"
+
+
+def test_handle_last_prepended_assistant_message_with_refusal_score(orchestrator: CrescendoOrchestrator):
+    refusal_score = MagicMock(Score)
+    refusal_score.score_value = "true"
+    refusal_score.score_rationale = "Refusal Rationale"
+    refusal_score.scorer_class_identifier = {
+        "__type__": orchestrator._refusal_scorer.get_identifier()["__type__"],
+    }
+
+    orchestrator._last_prepended_assistant_message_scores = [refusal_score]
+    orchestrator._last_prepended_user_message = "Last user message"
+    refused_text, objective_score = orchestrator._handle_last_prepended_assistant_message()
+    assert refused_text == "Last user message"
+    assert objective_score is None
+
+
+def test_handle_last_prepended_assistant_message_with_objective_score(orchestrator: CrescendoOrchestrator):
+    objective_score = MagicMock(Score)
+    objective_score.score_value = "0.8"
+    objective_score.score_rationale = "Objective Rationale"
+    objective_score.scorer_class_identifier = {
+        "__type__": orchestrator._objective_scorer.get_identifier()["__type__"],
+    }
+
+    orchestrator._last_prepended_assistant_message_scores = [objective_score]
+    refused_text, score = orchestrator._handle_last_prepended_assistant_message()
+    assert refused_text == ""
+    assert score == objective_score
+
+
+def test_handle_last_prepended_assistant_message_with_both_scores(orchestrator: CrescendoOrchestrator):
+    refusal_score = MagicMock(Score)
+    refusal_score.score_value = "false"
+    refusal_score.score_rationale = "Refusal Rationale"
+    refusal_score.scorer_class_identifier = {
+        "__type__": orchestrator._refusal_scorer.get_identifier()["__type__"],
+    }
+    refusal_score.get_value.return_value = False
+
+    objective_score = MagicMock(Score)
+    objective_score.score_value = "0.8"
+    objective_score.score_rationale = "Objective Rationale"
+    objective_score.scorer_class_identifier = {
+        "__type__": orchestrator._objective_scorer.get_identifier()["__type__"],
+    }
+
+    orchestrator._last_prepended_assistant_message_scores = [refusal_score, objective_score]
+    orchestrator._last_prepended_user_message = "Last user message"
+    refused_text, score = orchestrator._handle_last_prepended_assistant_message()
+    assert refused_text == ""
+    assert score == objective_score

@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 from unit.mocks import get_sample_conversations
 
 from pyrit.models import PromptRequestPiece

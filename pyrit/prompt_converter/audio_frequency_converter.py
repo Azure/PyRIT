@@ -1,16 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import io
 import logging
 from typing import Literal
 
-import io
 import numpy as np
 from scipy.io import wavfile
 
 from pyrit.models import PromptDataType
 from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 

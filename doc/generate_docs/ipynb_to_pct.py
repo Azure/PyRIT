@@ -1,7 +1,8 @@
 # Find all .ipynb files in the docs directory as this script and convert them to .py
 # This excludes the deployment directory
 
-import os, subprocess
+import os
+import subprocess
 from pathlib import Path
 
 exec_dir = Path(os.getcwd())

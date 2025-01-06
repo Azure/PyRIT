@@ -1,11 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.prompt_converter import (
-    RepeatTokenConverter,
-)
-
 import pytest
+
+from pyrit.prompt_converter import RepeatTokenConverter
 
 
 @pytest.mark.asyncio

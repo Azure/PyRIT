@@ -1,11 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
-from pyrit.models.storage_io import DiskStorageIO, AzureBlobStorageIO, SupportedContentType
+import pytest
+
+from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, SupportedContentType
 
 
 @pytest.fixture

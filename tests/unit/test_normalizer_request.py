@@ -4,8 +4,8 @@
 import pytest
 
 from pyrit.models import PromptDataType
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequestPiece
-from pyrit.prompt_converter import PromptConverter, ConverterResult
 
 
 class MockPromptConverter(PromptConverter):

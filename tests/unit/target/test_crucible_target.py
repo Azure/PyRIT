@@ -3,10 +3,10 @@
 
 
 import pytest
-
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import CrucibleTarget
 from unit.mocks import get_sample_conversations
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_target import CrucibleTarget
 
 
 @pytest.fixture

@@ -13,6 +13,8 @@
 #     name: python3
 # ---
 
+from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
+
 # %% [markdown]
 # # Chat messages - optional
 #
@@ -27,7 +29,6 @@
 # Below is an example that converts a list of chat messages to chatml format and back.
 # %%
 from pyrit.models import ChatMessage
-from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 
 messages = [
     ChatMessage(role="system", content="You are a helpful AI assistant"),
@@ -67,9 +68,10 @@ print(chat_messages)
 # you can utilize `ChatMessageNormalizerTokenizerTemplate`. In the example below, we load the tokenizer for Mistral-7B-Instruct-v0.1 and apply its chat template to
 # the messages. Note that this template only adds `[INST]` and `[/INST]` tokens to the user messages for instruction fine-tuning.
 
+from transformers import AutoTokenizer
+
 # %%
 from pyrit.chat_message_normalizer import ChatMessageNormalizerTokenizerTemplate
-from transformers import AutoTokenizer
 
 messages = [
     ChatMessage(role="user", content="Hello, how are you?"),

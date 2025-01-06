@@ -1,25 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+
 from pyrit.models import SeedPrompt
-from pyrit.prompt_target import PromptTarget, PromptChatTarget
-from pyrit.score.scorer import Scorer
-from pyrit.prompt_converter import PromptConverter
 from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
+from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.score.scorer import Scorer
 
 
 @pytest.fixture
-def mock_memory():
-    memory = MagicMock()
-    memory.get_memory_instance.return_value = memory
-    memory.duplicate_conversation.return_value = "duplicated_conversation_id"
-    return memory
-
-
-@pytest.fixture
-def tree_of_attack_node(mock_memory):
+def tree_of_attack_node():
     return TreeOfAttacksNode(
         objective_target=MagicMock(spec=PromptTarget),
         adversarial_chat=MagicMock(spec=PromptChatTarget),
@@ -55,7 +49,7 @@ async def test_send_prompt_async(tree_of_attack_node):
     assert tree_of_attack_node.score == 0.9
 
 
-def test_duplicate(tree_of_attack_node, mock_memory):
+def test_duplicate(tree_of_attack_node):
     duplicate_node = tree_of_attack_node.duplicate()
 
     assert duplicate_node._desired_response_prefix == tree_of_attack_node._desired_response_prefix
@@ -66,25 +60,27 @@ def test_duplicate(tree_of_attack_node, mock_memory):
 
 
 @pytest.mark.asyncio
-async def test_generate_red_teaming_prompt_async(tree_of_attack_node, mock_memory):
-    mock_memory.get_conversation.return_value = []
-    tree_of_attack_node._adversarial_chat_seed_prompt.render_template_value = MagicMock(return_value="seed_prompt")
-    tree_of_attack_node._adversarial_chat_system_seed_prompt.render_template_value = MagicMock(
-        return_value="system_prompt"
-    )
+async def test_generate_red_teaming_prompt_async(tree_of_attack_node):
+    with patch.object(tree_of_attack_node, "_memory", create=True) as mock_memory:
+        # Set the `get_conversation` method's return value
+        mock_memory.get_conversation.return_value = []
+        tree_of_attack_node._adversarial_chat_seed_prompt.render_template_value = MagicMock(return_value="seed_prompt")
+        tree_of_attack_node._adversarial_chat_system_seed_prompt.render_template_value = MagicMock(
+            return_value="system_prompt"
+        )
 
-    tree_of_attack_node._prompt_normalizer.send_prompt_async = AsyncMock(
-        return_value=MagicMock(request_pieces=[MagicMock(converted_value='{"prompt": "generated_prompt"}')])
-    )
+        tree_of_attack_node._prompt_normalizer.send_prompt_async = AsyncMock(
+            return_value=MagicMock(request_pieces=[MagicMock(converted_value='{"prompt": "generated_prompt"}')])
+        )
 
-    prompt = await tree_of_attack_node._generate_red_teaming_prompt_async(objective="test_objective")
+        prompt = await tree_of_attack_node._generate_red_teaming_prompt_async(objective="test_objective")
 
-    assert prompt == "generated_prompt"
-    tree_of_attack_node._adversarial_chat.set_system_prompt.assert_called_once()
-    tree_of_attack_node._adversarial_chat_system_seed_prompt.render_template_value.assert_called_once()
-    _, named_args = tree_of_attack_node._adversarial_chat_system_seed_prompt.render_template_value.call_args
+        assert prompt == "generated_prompt"
+        tree_of_attack_node._adversarial_chat.set_system_prompt.assert_called_once()
+        tree_of_attack_node._adversarial_chat_system_seed_prompt.render_template_value.assert_called_once()
+        _, named_args = tree_of_attack_node._adversarial_chat_system_seed_prompt.render_template_value.call_args
 
-    assert named_args["desired_prefix"] == tree_of_attack_node._desired_response_prefix
+        assert named_args["desired_prefix"] == tree_of_attack_node._desired_response_prefix
 
 
 def test_parse_red_teaming_response(tree_of_attack_node):

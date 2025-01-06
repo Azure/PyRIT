@@ -2,16 +2,14 @@
 # Licensed under the MIT license.
 
 import logging
-from httpx import HTTPStatusError
 from typing import Literal
 
-from pyrit.common import net_utility
-from pyrit.exceptions import RateLimitException
-from pyrit.exceptions import handle_bad_request_exception
-from pyrit.models import PromptRequestResponse
-from pyrit.models import data_serializer_factory, construct_response_from_request
-from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
+from httpx import HTTPStatusError
 
+from pyrit.common import net_utility
+from pyrit.exceptions import RateLimitException, handle_bad_request_exception
+from pyrit.models import PromptRequestResponse, construct_response_from_request, data_serializer_factory
+from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
