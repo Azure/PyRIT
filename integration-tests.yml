@@ -1,10 +1,10 @@
 
 # Builds the pyrit environment and runs integration tests
 
-name: integration_tests
-
 trigger:
 - main
+
+# There are additional PR triggers for this that are configurable in ADO.
 
 pool:
   vmImage: ubuntu-latest
