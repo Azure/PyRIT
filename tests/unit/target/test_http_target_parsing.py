@@ -2,14 +2,16 @@
 # Licensed under the MIT license.
 
 
-import pytest
+from typing import Callable
 from unittest.mock import MagicMock
+
+import pytest
+
 from pyrit.prompt_target.http_target.http_target import HTTPTarget
 from pyrit.prompt_target.http_target.http_target_callback_functions import (
     get_http_target_json_response_callback_function,
     get_http_target_regex_matching_callback_function,
 )
-from typing import Callable
 
 
 @pytest.fixture

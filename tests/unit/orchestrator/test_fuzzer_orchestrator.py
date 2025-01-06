@@ -1,37 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-from typing import Generator
+import pathlib
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from unit.mocks import MockPromptTarget
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException
-from pyrit.models import PromptRequestResponse, PromptRequestPiece, Score, SeedPromptDataset, SeedPrompt
-from pyrit.prompt_converter import ConverterResult, FuzzerExpandConverter, FuzzerConverter, FuzzerShortenConverter
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptDataset
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
-from pyrit.memory import CentralMemory
+from pyrit.prompt_converter import ConverterResult, FuzzerConverter, FuzzerExpandConverter, FuzzerShortenConverter
 from pyrit.score import Scorer
-from unit.mocks import MockPromptTarget
-from pyrit.memory.memory_interface import MemoryInterface
-import pathlib
-import pytest
-from unit.mocks import get_memory_interface
 
 
 @pytest.fixture
-def memory_interface() -> Generator[MemoryInterface, None, None]:
-    yield from get_memory_interface()
-
-
-@pytest.fixture
-def mock_central_memory_instance(memory_interface):
-    """Fixture to mock CentralMemory.get_memory_instance"""
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory_interface) as duck_db_memory:
-        yield duck_db_memory
-
-
-@pytest.fixture
-def scoring_target(mock_central_memory_instance) -> MockPromptTarget:
+def scoring_target() -> MockPromptTarget:
     return MockPromptTarget()
 
 
@@ -134,13 +119,13 @@ async def test_execute_fuzzer(
                     return_value=prompt_target_response
                 )
                 fuzzer_orchestrator._scorer = AsyncMock()
-                fuzzer_orchestrator._scorer.score_prompts_batch_async = AsyncMock()
+                fuzzer_orchestrator._scorer.score_prompts_with_tasks_batch_async = AsyncMock()
                 if success_pattern == "1_per_round":
-                    fuzzer_orchestrator._scorer.score_prompts_batch_async.return_value = [false_score] * (
+                    fuzzer_orchestrator._scorer.score_prompts_with_tasks_batch_async.return_value = [false_score] * (
                         len(simple_prompts) - 1
                     ) + [true_score]
                 elif success_pattern == "1_every_other_round":
-                    fuzzer_orchestrator._scorer.score_prompts_batch_async.side_effect = [
+                    fuzzer_orchestrator._scorer.score_prompts_with_tasks_batch_async.side_effect = [
                         [false_score] * len(simple_prompts),
                         [false_score] * (len(simple_prompts) - 1) + [true_score],
                     ] * rounds
@@ -223,9 +208,9 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list, sc
         scoring_target=MagicMock(),
     )
 
-    assert fuzzer_orchestrator._max_query_limit == 80
+    assert fuzzer_orchestrator._max_query_limit == 120
 
-    fuzzer_orchestrator._total_target_query_count = 79
+    fuzzer_orchestrator._total_target_query_count = 119
     result = await fuzzer_orchestrator.execute_fuzzer()
     assert result.success is False
     assert result.description == "Query limit reached."

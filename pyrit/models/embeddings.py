@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from hashlib import sha256
 from pathlib import Path
+
 from pydantic import BaseModel, ConfigDict
 
 

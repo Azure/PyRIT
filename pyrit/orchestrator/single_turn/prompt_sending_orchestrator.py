@@ -3,19 +3,18 @@
 
 import logging
 import uuid
-
-from collections import defaultdict
-from colorama import Fore, Style
 from typing import Optional
 
+from colorama import Fore, Style
+
 from pyrit.common.display_response import display_image_response
+from pyrit.common.utils import combine_dict
 from pyrit.models import PromptDataType, PromptRequestResponse
+from pyrit.orchestrator import Orchestrator
+from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_converter import PromptConverter
 from pyrit.score import Scorer
-from pyrit.orchestrator import Orchestrator, ScoringOrchestrator
-
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +47,7 @@ class PromptSendingOrchestrator(Orchestrator):
         super().__init__(prompt_converters=prompt_converters, verbose=verbose)
 
         self._prompt_normalizer = PromptNormalizer()
-        self._scorers = scorers
+        self._scorers = scorers or []
 
         self._prompt_target = objective_target
 
@@ -83,19 +82,18 @@ class PromptSendingOrchestrator(Orchestrator):
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
             target=self._prompt_target,
-            labels=self._combine_with_global_memory_labels(memory_labels),
+            labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
 
         if self._scorers:
-            response_ids = []
-            for response in responses:
-                for piece in response.request_pieces:
-                    id = str(piece.id)
-                    response_ids.append(id)
+            response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
 
-            await self._score_responses_async(response_ids)
+            for scorer in self._scorers:
+                await scorer.score_responses_inferring_tasks_batch_async(
+                    request_responses=response_pieces, batch_size=self._batch_size
+                )
 
         return responses
 
@@ -139,37 +137,22 @@ class PromptSendingOrchestrator(Orchestrator):
 
         return await self.send_normalizer_requests_async(
             prompt_request_list=requests,
-            memory_labels=self._combine_with_global_memory_labels(memory_labels),
+            memory_labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
         )
 
     async def print_conversations_async(self):
         """Prints the conversation between the objective target and the red teaming bot."""
-        all_messages = self.get_memory()
+        messages = self.get_memory()
 
-        # group by conversation ID
-        messages_by_conversation_id = defaultdict(list)
-        for message in all_messages:
-            messages_by_conversation_id[message.conversation_id].append(message)
+        for message in messages:
+            if message.role == "user" or message.role == "system":
+                print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
+            else:
+                print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                await display_image_response(message)
 
-        for conversation_id in messages_by_conversation_id:
-            messages_by_conversation_id[conversation_id].sort(key=lambda x: x.sequence)
-
-            print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {conversation_id}")
-
-            if not messages_by_conversation_id[conversation_id]:
-                print("No conversation with the target")
-                continue
-
-            for message in messages_by_conversation_id[conversation_id]:
-                if message.role == "user":
-                    print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
-                else:
-                    print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                    await display_image_response(message)
-
-                scores = self._memory.get_scores_by_prompt_ids(prompt_request_response_ids=[message.id])
-                for score in scores:
-                    print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
+            for score in message.scores:
+                print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
     def _prepare_conversation(self):
         """
@@ -181,6 +164,7 @@ class PromptSendingOrchestrator(Orchestrator):
             for request in self._prepended_conversation:
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id
+                    piece.orchestrator_identifier = self.get_identifier()
 
                     # if the piece is retrieved from somewhere else, it needs to be unique
                     # and if not, this won't hurt anything
@@ -188,15 +172,3 @@ class PromptSendingOrchestrator(Orchestrator):
 
                 self._memory.add_request_response_to_memory(request=request)
         return conversation_id
-
-    async def _score_responses_async(self, prompt_ids: list[str]):
-        with ScoringOrchestrator(
-            batch_size=self._batch_size,
-            verbose=self._verbose,
-        ) as scoring_orchestrator:
-            for scorer in self._scorers:
-                await scoring_orchestrator.score_prompts_by_request_id_async(
-                    scorer=scorer,
-                    prompt_ids=prompt_ids,
-                    responses_only=True,
-                )

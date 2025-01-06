@@ -11,13 +11,13 @@ log_formatter = logging.Formatter(fmt=fmt, datefmt="%H:%M:%S")
 
 file_handler = logging.FileHandler(filename=LOG_PATH, mode="a+")
 file_handler.setFormatter(log_formatter)
-file_handler.setLevel(logging.DEBUG)
+file_handler.setLevel(logging.INFO)
 
 console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(log_formatter)
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.INFO)
 
 logger = logging.getLogger("ai-red-team")
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)

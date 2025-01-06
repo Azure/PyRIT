@@ -34,11 +34,10 @@
 # %%
 import uuid
 
-from pyrit.memory import DuckDBMemory, CentralMemory
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.common import default_values
+from pyrit.memory import CentralMemory, DuckDBMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 default_values.load_environment_files()
 CentralMemory.set_memory_instance(DuckDBMemory())
@@ -62,14 +61,12 @@ with PromptSendingOrchestrator(objective_target=target) as orchestrator:
 # %%
 import pathlib
 
+from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPromptDataset
-from pyrit.prompt_target import OpenAIChatTarget
-
-from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 target = OpenAIChatTarget()
 
@@ -92,9 +89,9 @@ with PromptSendingOrchestrator(objective_target=target, prompt_converters=[Base6
 # %%
 import pathlib
 
-from pyrit.prompt_target import TextTarget
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_target import TextTarget
 
 default_values.load_environment_files()
 
@@ -127,8 +124,7 @@ from azure.ai.contentsafety.models import TextCategory
 from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import AzureContentFilterScorer, SelfAskLikertScorer, LikertScalePaths
-
+from pyrit.score import AzureContentFilterScorer, LikertScalePaths, SelfAskLikertScorer
 
 default_values.load_environment_files()
 
@@ -168,15 +164,13 @@ with PromptSendingOrchestrator(
 
 import pathlib
 
+from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.models import SeedPrompt
-from pyrit.prompt_target import OpenAIChatTarget
-
-from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 default_values.load_environment_files()
 

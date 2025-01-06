@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class FlipConverter(PromptConverter):

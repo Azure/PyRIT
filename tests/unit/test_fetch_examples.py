@@ -1,23 +1,23 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import mock_open, patch, MagicMock
-from pathlib import Path
-from hashlib import md5
 import json
-from pyrit.common.path import RESULTS_PATH
+from hashlib import md5
+from pathlib import Path
+from unittest.mock import MagicMock, mock_open, patch
+
 import pytest
 
+from pyrit.common.path import RESULTS_PATH
 
 # Import the functions to be tested
 from pyrit.datasets.fetch_example_datasets import (
+    _fetch_from_public_url,
     _get_cache_file_name,
     _read_cache,
     _write_cache,
-    _fetch_from_public_url,
     fetch_examples,
 )
-
 
 # These URLs are placeholders and will be mocked in tests
 SOURCE_URLS = {

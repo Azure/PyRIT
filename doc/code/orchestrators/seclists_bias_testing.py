@@ -27,7 +27,7 @@ from pyrit.common import default_values
 from pyrit.datasets import fetch_seclists_bias_testing_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskLikertScorer, LikertScalePaths
+from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
 default_values.load_environment_files()
 

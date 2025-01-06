@@ -1,19 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pandas as pd
-import numpy as np
 from typing import Generator
 from unittest.mock import patch
+
+import numpy as np
+import pandas as pd
 import pytest
+from integration.mocks import get_memory_interface
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
-
 from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
-from integration.mocks import get_memory_interface
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ async def test_refusal_scorer_score_eval_dataset_with_tasks(memory: MemoryInterf
             request_response.id = None
             request_responses.append(request_response)
 
-        scores = await refusal_scorer.score_prompts_batch_async(
+        scores = await refusal_scorer.score_prompts_with_tasks_batch_async(
             request_responses=request_responses,
             tasks=tasks,
         )
@@ -89,7 +89,7 @@ async def test_refusal_scorer_score_many_prompts_without_tasks(memory: MemoryInt
             request_response.id = None
             request_responses.append(request_response)
 
-        scores = await refusal_scorer.score_prompts_batch_async(
+        scores = await refusal_scorer.score_prompts_with_tasks_batch_async(
             request_responses=request_responses,
             tasks=None,
         )

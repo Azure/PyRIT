@@ -3,11 +3,10 @@
 
 
 import pytest
-
-from pyrit.prompt_target import GandalfLevel
-from pyrit.models import PromptRequestResponse, PromptRequestPiece
-from pyrit.prompt_target import GandalfTarget
 from unit.mocks import get_sample_conversations
+
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.prompt_target import GandalfLevel, GandalfTarget
 
 
 @pytest.fixture

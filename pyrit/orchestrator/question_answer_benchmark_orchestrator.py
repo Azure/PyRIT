@@ -1,16 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 import textwrap
+from pathlib import Path
 from typing import Optional
-import yaml
 from uuid import uuid4
+
+import yaml
+
+from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator.orchestrator_class import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.common.path import DATASETS_PATH
-from pathlib import Path
+from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 
 class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):

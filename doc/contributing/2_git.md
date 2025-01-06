@@ -1,4 +1,4 @@
-# Contribute with Git
+# 2. Contribute with Git
 
 Before creating your first pull request, set up your fork to contribute to PyRIT by following these steps:
 

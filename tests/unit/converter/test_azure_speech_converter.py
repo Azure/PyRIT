@@ -1,13 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 import os
+from unittest.mock import MagicMock, patch
+
 import azure.cognitiveservices.speech as speechsdk
+import pytest
 
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
-
-from unittest.mock import patch, MagicMock
 
 
 @pytest.mark.asyncio

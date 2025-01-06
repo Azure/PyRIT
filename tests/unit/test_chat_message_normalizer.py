@@ -3,9 +3,8 @@
 
 import pytest
 
-
+from pyrit.chat_message_normalizer import ChatMessageNop, GenericSystemSquash
 from pyrit.models import ChatMessage
-from pyrit.chat_message_normalizer import GenericSystemSquash, ChatMessageNop
 
 
 def test_chat_message_nop():

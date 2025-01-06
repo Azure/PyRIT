@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Literal, Optional, Any
+from typing import Any, Literal, Optional
+
 import httpx
 from tenacity import retry, stop_after_attempt, wait_fixed
 

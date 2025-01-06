@@ -29,7 +29,6 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer
 
-
 blocked = PromptRequestPiece(
     role="assistant",
     original_value="",

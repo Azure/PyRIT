@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import logging
-from PIL import Image
 import io
+import logging
+
+from PIL import Image
 
 from pyrit.common.notebook_utils import is_in_ipython_session
-from pyrit.models import PromptRequestPiece
 from pyrit.memory import CentralMemory
-
+from pyrit.models import PromptRequestPiece
 
 logger = logging.getLogger(__name__)
 

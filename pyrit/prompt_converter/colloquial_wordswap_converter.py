@@ -6,7 +6,7 @@ import re
 from typing import Dict, List, Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class ColloquialWordswapConverter(PromptConverter):

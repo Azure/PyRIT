@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 from pathlib import Path
-from pyrit.models import SeedPrompt
+
+import pytest
+
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
 
 
 @pytest.fixture(scope="module")

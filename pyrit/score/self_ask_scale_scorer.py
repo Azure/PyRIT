@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import yaml
 import enum
-
 from pathlib import Path
 from typing import Optional
+
+import yaml
 
 from pyrit.common.path import SCALES_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore

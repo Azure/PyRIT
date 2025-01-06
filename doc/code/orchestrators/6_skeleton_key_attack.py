@@ -8,9 +8,8 @@
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 from pyrit.common import default_values
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator.skeleton_key_orchestrator import SkeletonKeyOrchestrator
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 default_values.load_environment_files()
 

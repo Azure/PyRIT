@@ -1,11 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
+from unittest.mock import MagicMock, patch
+
 import httpx
+import pytest
 import respx
 
-from unittest.mock import patch, MagicMock
 from pyrit.common.net_utility import get_httpx_client, make_request_and_raise_if_error_async
 
 

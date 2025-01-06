@@ -4,12 +4,11 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
 from pyrit.orchestrator import TreeOfAttacksWithPruningOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.models import SeedPrompt
 
 logger = logging.getLogger(__name__)
 
@@ -59,3 +58,6 @@ class PAIROrchestrator(TreeOfAttacksWithPruningOrchestrator):
             desired_response_prefix=desired_response_prefix,
             verbose=verbose,
         )
+
+    def set_prepended_conversation(self, *, prepended_conversation):
+        return super().set_prepended_conversation(prepended_conversation=prepended_conversation)

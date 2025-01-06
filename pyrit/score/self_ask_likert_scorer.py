@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import yaml
 import enum
-
 from pathlib import Path
 from typing import Dict, Optional
+
+import yaml
 
 from pyrit.common.path import LIKERT_SCALES_PATH
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
@@ -113,5 +113,4 @@ class SelfAskLikertScorer(Scorer):
         return [score]
 
     def validate(self, request_response: PromptRequestPiece, *, task: Optional[str] = None):
-        if task:
-            raise ValueError("This scorer does not support tasks")
+        pass

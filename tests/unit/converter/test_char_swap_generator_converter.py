@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from unittest.mock import patch
+
 import pytest
 
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
-
-from unittest.mock import patch
 
 
 # Test that the converter produces the expected number of outputs

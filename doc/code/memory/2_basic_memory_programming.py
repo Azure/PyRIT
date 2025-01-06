@@ -20,9 +20,9 @@
 
 # %%
 from uuid import uuid4
+
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-
 
 conversation_id = str(uuid4())
 

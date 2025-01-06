@@ -29,9 +29,10 @@
 #
 #
 
+import os
+
 # %%
 from dotenv import load_dotenv
-import os
 
 # Load the environment variables from the .env file
 load_dotenv()
@@ -55,9 +56,10 @@ print(f"API key: {api_key}")
 #
 # In addition, we have compiled the details of the request and response for the Hugging Face models hosted on the Azure Machine Learning (Azure ML) endpoint. Please review the [provided link](./hf_aml_model_endpoint_guide.md) to access the JSON request body and response for the Azure ML endpoint. Additionally, you can deduce the schema from the response if a bad request was sent to the inference endpoint.
 
+import json
+
 # %%
 import requests
-import json
 
 
 # Function to allow self-signed HTTPS certificates, if necessary

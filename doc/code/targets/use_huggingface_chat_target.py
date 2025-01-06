@@ -45,9 +45,10 @@
 
 # %%
 import time
-from pyrit.prompt_target import HuggingFaceChatTarget
-from pyrit.orchestrator import PromptSendingOrchestrator
+
 from pyrit.common import default_values
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_target import HuggingFaceChatTarget
 
 default_values.load_environment_files()
 
