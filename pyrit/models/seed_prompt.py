@@ -170,6 +170,7 @@ class SeedPromptDataset(YamlLoadable):
 
     def __init__(
         self,
+        *,
         prompts: Union[List[Dict[str, Any]], List[SeedPrompt]] = None,
         data_type: Optional[PromptDataType] = "text",
         name: Optional[str] = None,
@@ -245,6 +246,9 @@ class SeedPromptDataset(YamlLoadable):
                 dataset_defaults.get("groups", []),
                 p.get("groups", []),
             )
+
+            if "data_type" not in merged:
+                merged["data_type"] = dataset_defaults.get("data_type", "text")
 
             merged_prompts.append(merged)
 
