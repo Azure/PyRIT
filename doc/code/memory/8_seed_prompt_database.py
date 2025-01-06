@@ -25,7 +25,7 @@
 # %%
 
 from pyrit.common import default_values
-from pyrit.memory.duckdb_memory import DuckDBMemory
+from pyrit.memory import DuckDBMemory
 
 default_values.load_environment_files()
 

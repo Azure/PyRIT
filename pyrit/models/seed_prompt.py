@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from jinja2 import StrictUndefined, Template
 
+from pyrit.common import utils
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.literals import PromptDataType
 
@@ -153,8 +154,6 @@ class SeedPromptDataset(YamlLoadable):
     are straightforward (e.g. ds.prompts[0].value).
     """
 
-    # Top-level or dataset-level fields
-    id: Optional[uuid.UUID]
     data_type: Optional[str]
     name: Optional[str]
     dataset_name: Optional[str]
@@ -165,18 +164,23 @@ class SeedPromptDataset(YamlLoadable):
     source: Optional[str]
     date_added: Optional[datetime]
     added_by: Optional[str]
-    metadata: Optional[Dict[str, str]]
-    parameters: Optional[List[str]]
-    prompt_group_id: Optional[uuid.UUID]
-    sequence: Optional[int]
 
     # Now the actual prompts
     prompts: List["SeedPrompt"]
 
     def __init__(
         self,
-        prompts: Union[List[Any], None] = None,
-        **kwargs,
+        prompts: Union[List[Dict[str, Any]], List[SeedPrompt]] = None,
+        data_type: Optional[PromptDataType] = "text",
+        name: Optional[str] = None,
+        dataset_name: Optional[str] = None,
+        harm_categories: Optional[List[str]] = None,
+        description: Optional[str] = None,
+        authors: Optional[List[str]] = None,
+        groups: Optional[List[str]] = None,
+        source: Optional[str] = None,
+        date_added: Optional[datetime] = None,
+        added_by: Optional[str] = None,
     ):
         """
         Initialize the dataset.
@@ -191,24 +195,17 @@ class SeedPromptDataset(YamlLoadable):
             raise ValueError("SeedPromptDataset cannot be empty.")
 
         # Store top-level fields
-        self.id = kwargs.get("id") or uuid.uuid4()
-        self.data_type = kwargs.get("data_type")
-        self.name = kwargs.get("name")
-        self.dataset_name = kwargs.get("dataset_name")
-        hc = kwargs.get("harm_categories")
-        if isinstance(hc, str):
-            hc = [hc]
-        self.harm_categories = hc or []
-        self.description = kwargs.get("description")
-        self.authors = kwargs.get("authors") or []
-        self.groups = kwargs.get("groups") or []
-        self.source = kwargs.get("source")
-        self.date_added = kwargs.get("date_added") or datetime.now()
-        self.added_by = kwargs.get("added_by")
-        self.metadata = kwargs.get("metadata") or {}
-        self.parameters = kwargs.get("parameters") or []
-        self.prompt_group_id = kwargs.get("prompt_group_id")
-        self.sequence = kwargs.get("sequence")
+        self.data_type = data_type
+        self.name = name
+        self.dataset_name = dataset_name
+
+        self.harm_categories = harm_categories
+        self.description = description
+        self.authors = authors or []
+        self.groups = groups or []
+        self.source = source
+        self.date_added = date_added or datetime.now()
+        self.added_by = added_by
 
         # Convert any dictionaries in `prompts` to SeedPrompt objects
         self.prompts = []
@@ -232,15 +229,22 @@ class SeedPromptDataset(YamlLoadable):
         merged_prompts = []
         for p in prompts_data:
             # Merge dataset-level fields with the prompt-level fields
-            merged = {**dataset_defaults, **p}  # prompt overrides dataset-level defaults
+            merged = utils.combine_dict(dataset_defaults, p)
 
-            # If harm_categories is a single string, convert it to a list
-            if "harm_categories" in merged and isinstance(merged["harm_categories"], str):
-                merged["harm_categories"] = [merged["harm_categories"]]
+            merged["harm_categories"] = utils.combine_list(
+                dataset_defaults.get("harm_categories", []),
+                p.get("harm_categories", []),
+            )
 
-            # If data_type is missing, default to 'text'
-            if "data_type" not in merged or not merged["data_type"]:
-                merged["data_type"] = "text"
+            merged["authors"] = utils.combine_list(
+                dataset_defaults.get("authors", []),
+                p.get("authors", []),
+            )
+
+            merged["groups"] = utils.combine_list(
+                dataset_defaults.get("groups", []),
+                p.get("groups", []),
+            )
 
             merged_prompts.append(merged)
 
