@@ -54,7 +54,7 @@ class QRCodeConverter(PromptConverter):
         self._finder_dark_color = finder_dark_color or dark_color
         self._finder_light_color = finder_light_color or light_color
         self._border_color = border_color or light_color
-        self._img_serializer = data_serializer_factory(data_type="image_path")
+        self._img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

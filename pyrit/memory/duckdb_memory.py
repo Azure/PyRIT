@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
 
-from pyrit.common.path import RESULTS_PATH
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.singleton import Singleton
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry
@@ -42,8 +42,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         if db_path == ":memory:":
             self.db_path: Union[Path, str] = ":memory:"
         else:
-            self.db_path = Path(db_path or Path(RESULTS_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
-        self.results_path = str(RESULTS_PATH)
+            self.db_path = Path(db_path or Path(DB_DATA_PATH, self.DEFAULT_DB_FILE_NAME)).resolve()
+        self.results_path = str(DB_DATA_PATH)
 
         self.engine = self._create_engine(has_echo=verbose)
         self.SessionFactory = sessionmaker(bind=self.engine)
@@ -231,7 +231,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             data = self._query_entries(model)
             table_name = model.__tablename__
             file_extension = f".{export_type}"
-            file_path = RESULTS_PATH / f"{table_name}{file_extension}"
+            file_path = DB_DATA_PATH / f"{table_name}{file_extension}"
             self.exporter.export_data(data, file_path=file_path, export_type=export_type)
 
     def print_schema(self):
