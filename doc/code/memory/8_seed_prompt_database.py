@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
@@ -68,7 +68,7 @@ if prompts:
     print(prompts[0].__dict__)
 
 # %% [markdown]
-# # Adding seed prompt groups to the database
+# ## Adding seed prompt groups to the database
 # %%
 from pyrit.models import SeedPromptGroup
 from pyrit.common.path import DATASETS_PATH
