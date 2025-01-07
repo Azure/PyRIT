@@ -254,12 +254,10 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
 
     orchestrator1_id = orchestrator1.get_identifier()["id"]
     # Mock the query_entries method
-    with (
-        mock.patch.object(
-            memory_interface,
-            "_query_entries",
-            return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
-        )
+    with mock.patch.object(
+        memory_interface,
+        "_query_entries",
+        return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
     ):
         # Call the method under test
         memory_interface._insert_entries(entries=entries)

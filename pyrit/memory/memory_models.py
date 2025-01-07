@@ -82,10 +82,10 @@ class PromptMemoryEntry(Base):
     original_prompt_id = Column(Uuid, nullable=False)
 
     scores = relationship(
-        'ScoreEntry', 
+        "ScoreEntry",
         primaryjoin="ScoreEntry.prompt_request_response_id == PromptMemoryEntry.original_prompt_id",
-        back_populates='prompt_request_piece',
-        foreign_keys='ScoreEntry.prompt_request_response_id'
+        back_populates="prompt_request_piece",
+        foreign_keys="ScoreEntry.prompt_request_response_id",
     )
 
     def __init__(self, *, entry: PromptRequestPiece):
@@ -182,7 +182,7 @@ class ScoreEntry(Base):  # type: ignore
     prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = Column(DateTime, nullable=False)
     task = Column(String, nullable=True)
-    prompt_request_piece = relationship('PromptMemoryEntry', back_populates='scores')
+    prompt_request_piece = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
         self.id = entry.id
