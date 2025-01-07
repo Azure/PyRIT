@@ -103,7 +103,7 @@ http_prompt_target = HTTPTarget(
 )
 
 # Note, like above, a converter is used to format the prompt to be json safe without new lines/carriage returns, etc
-orchestrator = RedTeamingOrchestrator(
+red_teaming_orchestrator = RedTeamingOrchestrator(
     adversarial_chat=red_teaming_chat,
     objective_target=http_prompt_target,
     objective_scorer=scorer,
@@ -111,7 +111,7 @@ orchestrator = RedTeamingOrchestrator(
     prompt_converters=[SearchReplaceConverter(old_value=r"(?! )\s", new_value="")],
 )
 
-result = await orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
+result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
 await result.print_conversation_async()  # type: ignore
 
 # %% [markdown]
