@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import random
 import tempfile
 import uuid
@@ -744,6 +745,93 @@ async def test_get_seed_prompts_no_filters(duckdb_instance: MemoryInterface):
 
 
 @pytest.mark.asyncio
+async def test_get_seed_prompts_with_audio(duckdb_instance: MemoryInterface):
+    """Test adding and retrieving seed prompts with an audio file."""
+    temp_files = []
+    try:
+        # Create a temporary audio file
+        audio_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        audio_file.write(b"dummy audio content")
+        audio_file.close()
+        temp_files.append(audio_file.name)
+
+        # Create a seed prompt for the audio file
+        audio_prompt = SeedPrompt(value=audio_file.name, dataset_name="dataset_audio", data_type="audio_path")
+
+        # Add seed prompt to memory
+        await duckdb_instance.add_seed_prompts_to_memory(prompts=[audio_prompt], added_by="test_audio")
+
+        # Retrieve and verify the seed prompts
+        result = duckdb_instance.get_seed_prompts()
+        assert len(result) == 1
+        assert result[0].value.endswith(".wav")
+        assert result[0].data_type == "audio_path"
+
+    finally:
+        for file_path in temp_files:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+
+@pytest.mark.asyncio
+async def test_get_seed_prompts_with_video(duckdb_instance: MemoryInterface):
+    """Test adding and retrieving seed prompts with a video file."""
+    temp_files = []
+    try:
+        # Create a temporary video file
+        video_file = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+        video_file.write(b"dummy video content")
+        video_file.close()
+        temp_files.append(video_file.name)
+
+        # Create a seed prompt for the video file
+        video_prompt = SeedPrompt(value=video_file.name, dataset_name="dataset_video", data_type="video_path")
+
+        # Add seed prompt to memory
+        await duckdb_instance.add_seed_prompts_to_memory(prompts=[video_prompt], added_by="test_video")
+
+        # Retrieve and verify the seed prompts
+        result = duckdb_instance.get_seed_prompts()
+        assert len(result) == 1
+        assert result[0].value.endswith(".mp4")
+        assert result[0].data_type == "video_path"
+
+    finally:
+        for file_path in temp_files:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+
+@pytest.mark.asyncio
+async def test_get_seed_prompts_with_image(duckdb_instance: MemoryInterface):
+    """Test adding and retrieving seed prompts with an image file."""
+    temp_files = []
+    try:
+        # Create a temporary image file
+        image_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        image_file.write(b"dummy image content")
+        image_file.close()
+        temp_files.append(image_file.name)
+
+        # Create a seed prompt for the image file
+        image_prompt = SeedPrompt(value=image_file.name, dataset_name="dataset_image", data_type="image_path")
+
+        # Add seed prompt to memory
+        await duckdb_instance.add_seed_prompts_to_memory(prompts=[image_prompt], added_by="test_image")
+
+        # Retrieve and verify the seed prompts
+        result = duckdb_instance.get_seed_prompts()
+        assert len(result) == 1
+        assert result[0].value.endswith(".png")
+        assert result[0].data_type == "image_path"
+
+    finally:
+        for file_path in temp_files:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+
+@pytest.mark.asyncio
 async def test_get_seed_prompts_with_value_filter(duckdb_instance: MemoryInterface):
     seed_prompts = [
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
@@ -1129,6 +1217,124 @@ async def test_add_seed_prompt_groups_to_memory_multiple_groups_with_added_by(du
     assert groups_from_memory[0].prompts[0].id != groups_from_memory[1].prompts[1].id
     assert groups_from_memory[0].prompts[0].prompt_group_id == groups_from_memory[0].prompts[1].prompt_group_id
     assert groups_from_memory[1].prompts[0].prompt_group_id == groups_from_memory[1].prompts[1].prompt_group_id
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompt_groups_to_memory_with_all_modalities(duckdb_instance: MemoryInterface):
+    """Test adding multiple prompt groups with different modalities using temporary files."""
+    temp_files = []
+    temp_dir = tempfile.TemporaryDirectory()
+    duckdb_instance.results_path = temp_dir.name
+    try:
+        # Create a temporary image file
+        image_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        image_file.write(b"dummy image content")
+        image_file.close()
+        temp_files.append(image_file.name)
+
+        # Create a temporary audio file
+        audio_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        audio_file.write(b"dummy audio content")
+        audio_file.close()
+        temp_files.append(audio_file.name)
+
+        # Create a temporary video file
+        video_file = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+        video_file.write(b"dummy video content")
+        video_file.close()
+        temp_files.append(video_file.name)
+
+        # Create prompts with the temporary file paths
+        prompt1 = SeedPrompt(value=image_file.name, added_by="testmultimodal", data_type="image_path", sequence=0)
+        prompt2 = SeedPrompt(value=audio_file.name, added_by="testmultimodal", data_type="audio_path", sequence=1)
+        prompt3 = SeedPrompt(value=video_file.name, added_by="testmultimodal", data_type="video_path", sequence=2)
+        prompt4 = SeedPrompt(value="Test prompt 4", added_by="testmultimodal", data_type="text", sequence=3)
+
+        # Create SeedPromptGroup
+        seed_prompt_group1 = SeedPromptGroup(prompts=[prompt1, prompt2, prompt3, prompt4])
+
+        # Add prompt groups to memory
+        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group1])
+
+        # Assert the total number of prompts in memory
+        assert len(duckdb_instance.get_seed_prompts(added_by="testmultimodal")) == 4
+
+        # Retrieve and verify prompt groups from memory
+        groups_from_memory = duckdb_instance.get_seed_prompt_groups(added_by="testmultimodal")
+        assert len(groups_from_memory) == 1
+
+        # Verify prompt group IDs are consistent within each group
+        expected_prompt_group_id = groups_from_memory[0].prompts[0].prompt_group_id
+        assert groups_from_memory[0].prompts[0].prompt_group_id == expected_prompt_group_id
+        assert groups_from_memory[0].prompts[1].prompt_group_id == expected_prompt_group_id
+        assert groups_from_memory[0].prompts[2].prompt_group_id == expected_prompt_group_id
+        assert groups_from_memory[0].prompts[3].prompt_group_id == expected_prompt_group_id
+
+        # Verify the specific data types and values
+        assert groups_from_memory[0].prompts[0].data_type == "image_path"
+        assert groups_from_memory[0].prompts[0].value.endswith(".png")
+        assert groups_from_memory[0].prompts[1].data_type == "audio_path"
+        assert groups_from_memory[0].prompts[1].value.endswith(".wav")
+        assert groups_from_memory[0].prompts[2].data_type == "video_path"
+        assert groups_from_memory[0].prompts[2].value.endswith(".mp4")
+        assert groups_from_memory[0].prompts[3].data_type == "text"
+        assert groups_from_memory[0].prompts[3].value == "Test prompt 4"
+
+    finally:
+        for file_path in temp_files:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        temp_dir.cleanup()
+
+
+@pytest.mark.asyncio
+async def test_add_seed_prompt_groups_to_memory_with_textimage_modalities(duckdb_instance: MemoryInterface):
+    """Test adding multiple prompt groups with text and image modalities using temporary files."""
+    temp_files = []
+    temp_dir = tempfile.TemporaryDirectory()
+    duckdb_instance.results_path = temp_dir.name
+    try:
+        # Create a temporary image file
+        image_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        image_file.write(b"dummy image content")
+        image_file.close()
+        temp_files.append(image_file.name)
+
+        # Create prompts with the temporary file paths
+        prompt1 = SeedPrompt(
+            value=image_file.name, added_by="testtextimagemultimodal", data_type="image_path", sequence=0
+        )
+        prompt2 = SeedPrompt(value="Test prompt 2", added_by="testtextimagemultimodal", data_type="text", sequence=3)
+
+        # Create SeedPromptGroup
+        seed_prompt_group1 = SeedPromptGroup(prompts=[prompt1, prompt2])
+
+        # Add prompt groups to memory
+        await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group1])
+
+        # Assert the total number of prompts in memory
+        assert len(duckdb_instance.get_seed_prompts(added_by="testtextimagemultimodal")) == 2
+
+        # Retrieve and verify prompt groups from memory
+        groups_from_memory = duckdb_instance.get_seed_prompt_groups(added_by="testtextimagemultimodal")
+        assert len(groups_from_memory) == 1
+
+        # Verify prompt group IDs are consistent within each group
+        expected_prompt_group_id = groups_from_memory[0].prompts[0].prompt_group_id
+        assert groups_from_memory[0].prompts[0].prompt_group_id == expected_prompt_group_id
+        assert groups_from_memory[0].prompts[1].prompt_group_id == expected_prompt_group_id
+
+        # Verify the specific data types and values
+        assert groups_from_memory[0].prompts[0].data_type == "image_path"
+        assert groups_from_memory[0].prompts[0].value.endswith(".png")
+        assert groups_from_memory[0].prompts[1].data_type == "text"
+        assert groups_from_memory[0].prompts[1].value == "Test prompt 2"
+
+    finally:
+        for file_path in temp_files:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        temp_dir.cleanup()
 
 
 @pytest.mark.asyncio

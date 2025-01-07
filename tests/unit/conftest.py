@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+import tempfile
 from typing import Generator
 from unittest.mock import patch
 
@@ -26,6 +27,8 @@ from pyrit.memory.duckdb_memory import DuckDBMemory  # noqa: E402
 def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
     # Create an in-memory DuckDB engine
     duckdb_memory = DuckDBMemory(db_path=":memory:")
+    temp_dir = tempfile.TemporaryDirectory()
+    duckdb_memory.results_path = temp_dir.name
 
     duckdb_memory.disable_embedding()
 
@@ -40,6 +43,7 @@ def duckdb_instance() -> Generator[DuckDBMemory, None, None]:
     assert "SeedPromptEntries" in inspector.get_table_names(), "SeedPromptEntries table not created."
 
     yield duckdb_memory
+    temp_dir.cleanup()
     duckdb_memory.dispose_engine()
 
 

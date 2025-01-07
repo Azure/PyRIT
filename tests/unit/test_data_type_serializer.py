@@ -3,19 +3,29 @@
 
 import hashlib
 import os
+import re
 import tempfile
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from typing import get_args
 from PIL import Image
 
 from pyrit.models import (
+    AllowedCategories,
     DataTypeSerializer,
     ErrorDataTypeSerializer,
     ImagePathDataTypeSerializer,
     TextDataTypeSerializer,
     data_serializer_factory,
 )
+
+
+def test_allowed_categories():
+    entries = get_args(AllowedCategories)
+    assert len(entries) == 2
+    assert entries[0] == "seed-prompt-entries"
+    assert entries[1] == "prompt-memory-entries"
 
 
 def test_data_serializer_factory_text_no_data_throws(duckdb_instance):
@@ -67,6 +77,18 @@ async def test_data_serializer_error_save_data_throws(duckdb_instance):
     serializer = data_serializer_factory(category="prompt-memory-entries", data_type="error", value="test")
     with pytest.raises(TypeError):
         await serializer.save_data(b"\x00")
+
+
+@pytest.mark.asyncio
+async def test_data_serializer_factory_missing_category_raises_value_error():
+    expected_error_message = (
+        "The 'category' argument is mandatory and must be one of the following: "
+        "('seed-prompt-entries', 'prompt-memory-entries')."
+    )
+
+    escaped_message = re.escape(expected_error_message)
+    with pytest.raises(ValueError, match=escaped_message):
+        await data_serializer_factory(data_type="text", value="test", category=None)
 
 
 def test_image_path_normalizer_factory(duckdb_instance):
@@ -167,6 +189,41 @@ async def test_audio_path_read_data(duckdb_instance):
     await serializer.save_data(data)
     read_data = await serializer.read_data()
     assert read_data == data
+
+
+@pytest.mark.asyncio
+async def test_video_path_save_data(duckdb_instance):
+    """Test saving video data to disk."""
+    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="video_path")
+    video_data = b"video_data"
+    await serializer.save_data(video_data)
+    assert serializer.value.endswith(".mp4")  # Assuming the default extension is '.mp4'
+    assert os.path.exists(serializer.value)
+    assert os.path.isfile(serializer.value)
+
+
+@pytest.mark.asyncio
+async def test_video_path_read_data(duckdb_instance):
+    """Test reading video data from disk."""
+    video_data = b"video_content"
+    serializer = data_serializer_factory(category="prompt-memory-entries", data_type="video_path")
+    await serializer.save_data(video_data)
+    read_data = await serializer.read_data()
+    assert read_data == video_data
+
+
+@pytest.mark.asyncio
+async def test_video_path_save_with_custom_extension(duckdb_instance):
+    """Test saving video data with a custom file extension."""
+    custom_extension = "avi"
+    serializer = data_serializer_factory(
+        category="prompt-memory-entries", data_type="video_path", extension=custom_extension
+    )
+    video_data = b"video_data"
+    await serializer.save_data(video_data)
+    assert serializer.value.endswith(f".{custom_extension}")
+    assert os.path.exists(serializer.value)
+    assert os.path.isfile(serializer.value)
 
 
 @pytest.mark.asyncio
