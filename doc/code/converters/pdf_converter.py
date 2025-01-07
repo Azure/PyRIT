@@ -74,9 +74,10 @@ with PromptSendingOrchestrator(
 
     await orchestrator.print_conversations_async()  # type: ignore
 
-# %% Direct Prompt PDF Generation (No Template)
-# Direct Prompt PDF Generation (No Template)
+# %% [markdown]
+# # Direct Prompt PDF Generation (No Template)
 
+# %%
 # Define a simple string prompt (no templates)
 prompt = "This is a simple test string for PDF generation. No templates here!"
 
