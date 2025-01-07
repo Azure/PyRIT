@@ -120,4 +120,4 @@ await orchestrator.print_conversations_async()  # type: ignore
 
 # %%
 # Close connection
-orchestrator.dispose_db_engine()
+azure_openai_gpt4o_chat_target.dispose_db_engine()

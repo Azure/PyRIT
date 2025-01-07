@@ -46,7 +46,7 @@ await orchestrator.print_conversations_async()  # type: ignore
 
 
 # %%
-orchestrator.dispose_db_engine()
+target.dispose_db_engine()
 
 # %% [markdown]
 # ## OpenAI Configuration

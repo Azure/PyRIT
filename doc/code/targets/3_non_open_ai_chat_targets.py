@@ -67,7 +67,7 @@ orchestrator = PromptSendingOrchestrator(objective_target=azure_ml_chat_target)
 response = await orchestrator.send_prompts_async(prompt_list=["Hello! Describe yourself and the company who developed you."])  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
-orchestrator.dispose_db_engine()
+azure_ml_chat_target.dispose_db_engine()
 
 # %% [markdown]
 #

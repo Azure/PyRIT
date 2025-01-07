@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -46,11 +46,12 @@
 # %%
 import time
 
-from pyrit.common import default_values
-from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.common.initialize_pyrit import initialize_pyrit
 from pyrit.prompt_target import HuggingFaceChatTarget
+from pyrit.orchestrator import PromptSendingOrchestrator
 
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type="InMemory")
 
 # models to test
 model_id = "Qwen/Qwen2-0.5B-Instruct"
@@ -98,3 +99,9 @@ if model_times[model_id] is not None:
     print(f"{model_id}: {model_times[model_id]:.2f} seconds")
 else:
     print(f"{model_id}: Error occurred, no average time calculated.")
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()
