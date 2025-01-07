@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
-from pyrit.common.path import RESULTS_PATH
+from pyrit.common.path import DB_DATA_PATH
 
 # Import the functions to be tested
 from pyrit.datasets.fetch_example_datasets import (
@@ -126,7 +126,7 @@ def test_read_cache_unsupported(file_type):
     """
     Test reading data from a cache file for unsupported file types.
     """
-    cache_file_dir = RESULTS_PATH / ".pyrit_test" / "datasets"
+    cache_file_dir = DB_DATA_PATH / ".pyrit_test" / "datasets"
     cache_file = cache_file_dir / f"cache_file.{file_type}"
 
     # Ensure the file exists before testing
@@ -145,7 +145,7 @@ def test_write_cache_unsupported(file_type):
     """
     Test writing data to a cache file for unsupported file types.
     """
-    cache_file = RESULTS_PATH / ".pyrit_test" / "datasets" / f"cache_file.{file_type}"
+    cache_file = DB_DATA_PATH / ".pyrit_test" / "datasets" / f"cache_file.{file_type}"
     examples = [{"prompt": "example"}]
 
     with pytest.raises(ValueError, match="Invalid file_type. Expected one of: json, csv, txt."):
@@ -158,7 +158,7 @@ def test_fetch_examples_with_cache():
     """
 
     # Clear cache before running test
-    data_home = RESULTS_PATH / ".pyrit_test" / "datasets"
+    data_home = DB_DATA_PATH / ".pyrit_test" / "datasets"
     if data_home.exists():
         for file in data_home.iterdir():
             file.unlink()

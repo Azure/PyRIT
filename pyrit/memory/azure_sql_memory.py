@@ -39,8 +39,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
 
     # Azure Storage Account Container datasets and results environment variables
-    AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL: str = "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"
-    AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN: str = "AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN"
+    AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL: str = "AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL"
+    AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN: str = "AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN"
 
     def __init__(
         self,
@@ -55,11 +55,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         )
 
         self._results_container_url: str = default_values.get_required_value(
-            env_var_name=self.AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL, passed_value=results_container_url
+            env_var_name=self.AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL, passed_value=results_container_url
         )
 
         self._results_container_sas_token: Optional[str] = self._resolve_sas_token(
-            self.AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN, results_sas_token
+            self.AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN, results_sas_token
         )
 
         self._auth_token: Optional[AccessToken] = None

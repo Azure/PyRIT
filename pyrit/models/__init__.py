@@ -8,6 +8,7 @@ from pyrit.models.chat_message import (
     ChatMessagesDataset,
 )
 from pyrit.models.data_type_serializer import (
+    AllowedCategories,
     AudioPathDataTypeSerializer,
     DataTypeSerializer,
     ErrorDataTypeSerializer,
@@ -32,6 +33,7 @@ from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
     "ALLOWED_CHAT_MESSAGE_ROLES",
+    "AllowedCategories",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
     "ChatMessage",

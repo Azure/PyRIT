@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -21,14 +21,15 @@
 # %%
 import pathlib
 
-from IPython.display import display
 from PIL import Image
+from IPython.display import display
 
-from pyrit.common import default_values
-from pyrit.common.path import DATASETS_PATH
-from pyrit.memory import CentralMemory, DuckDBMemory
-from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import AddTextImageConverter
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
+from pyrit.common import default_values
+from pyrit.memory import CentralMemory, DuckDBMemory
+
 
 default_values.load_environment_files()
 
@@ -48,3 +49,5 @@ print(output_image_file)
 image_path = output_image_file.output_text
 image = Image.open(image_path)
 display(image)
+
+# %%
