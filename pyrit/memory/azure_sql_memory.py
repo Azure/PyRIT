@@ -280,7 +280,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         """
         with closing(self.get_session()) as session:
             try:
-                query = session.query(model).options(joinedload(PromptMemoryEntry.scores))
+                query = session.query(model)
+                if model == PromptMemoryEntry:
+                    query = query.options(joinedload(PromptMemoryEntry.scores))
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:
