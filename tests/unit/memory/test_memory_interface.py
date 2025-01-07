@@ -1578,18 +1578,7 @@ def test_get_prompt_request_pieces_sorts(
                 assert False, "Conversation IDs are not grouped together"
 
 
-def test_get_prompt_request_pieces_calls_populate_prompt_piece_scores(
-    duckdb_instance: MemoryInterface, sample_conversations: list[PromptRequestPiece]
-):
-    conversation_id = sample_conversations[0].conversation_id
-    duckdb_instance.add_request_pieces_to_memory(request_pieces=sample_conversations)
-
-    with patch.object(duckdb_instance, "populate_prompt_piece_scores") as mock_populate:
-        duckdb_instance.get_prompt_request_pieces(conversation_id=conversation_id)
-        assert mock_populate.called
-
-
-def test_populate_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
+def test_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
     original_id = uuid4()
     duplicate_id = uuid4()
 
@@ -1620,11 +1609,11 @@ def test_populate_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInt
     )
     duckdb_instance.add_scores_to_memory(scores=[score])
 
-    duckdb_instance.populate_prompt_piece_scores(pieces)
+    retrieved_pieces = duckdb_instance.get_prompt_request_pieces()
 
-    assert len(pieces[0].scores) == 1
-    assert pieces[0].scores[0].score_value == "0.8"
+    assert len(retrieved_pieces[0].scores) == 1
+    assert retrieved_pieces[0].scores[0].score_value == "0.8"
 
     # Check that the duplicate piece has the same score as the original
-    assert len(pieces[1].scores) == 1
-    assert pieces[1].scores[0].score_value == "0.8"
+    assert len(retrieved_pieces[1].scores) == 1
+    assert retrieved_pieces[1].scores[0].score_value == "0.8"

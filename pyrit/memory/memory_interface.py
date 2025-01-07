@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
+from contextlib import closing
 import copy
 import logging
 import uuid
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import MutableSequence, Optional, Sequence
 
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from pyrit.common.path import RESULTS_PATH
@@ -222,25 +224,6 @@ class MemoryInterface(abc.ABC):
         request_pieces = self.get_prompt_request_pieces(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
-    def populate_prompt_piece_scores(self, prompt_request_pieces: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
-        """
-        Adds scores in the database to prompt request piece objects
-
-        Args:
-            prompt_request_pieces (list[PromptRequestPiece]): The list of PromptRequestPieces to add scores to.
-
-        Returns:
-            None
-        """
-        for prompt_request_piece in prompt_request_pieces:
-            score_entries = self._query_entries(
-                ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece.original_prompt_id
-            )
-            scores = [score_entry.get_score() for score_entry in score_entries]
-            prompt_request_piece.scores = scores
-
-        return None
-
     def get_prompt_request_pieces(
         self,
         *,
@@ -308,7 +291,6 @@ class MemoryInterface(abc.ABC):
                 conditions=and_(*conditions) if conditions else None,
             )  # type: ignore
             prompt_pieces = [memory_entry.get_prompt_request_piece() for memory_entry in memory_entries]
-            self.populate_prompt_piece_scores(prompt_pieces)
             return sort_request_pieces(prompt_pieces=prompt_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
