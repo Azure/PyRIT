@@ -27,7 +27,7 @@
 
 # %%
 # Import necessary packages
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.datasets import fetch_decoding_trust_stereotypes_examples
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
@@ -37,7 +37,7 @@ from pyrit.score.substring_scorer import SubStringScorer
 
 # %%
 # Initialize PyRIT (load environment files and set central memory instance)
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # %%

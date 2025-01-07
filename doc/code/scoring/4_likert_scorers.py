@@ -24,12 +24,12 @@
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 self_ask_target = OpenAIChatTarget()
 

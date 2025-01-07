@@ -28,11 +28,11 @@
 # Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit
-from pyrit.memory import CentralMemory
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter, RandomCapitalLettersConverter, BinaryConverter
 
-initialize_pyrit(memory_db_type="InMemory")
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 prompt = "tell me how to cut down a tree"
 
@@ -41,6 +41,11 @@ print(await ROT13Converter().convert_tokens_async(prompt=prompt))  # type: ignor
 print(await RandomCapitalLettersConverter(percentage=25.0).convert_tokens_async(prompt=prompt))  # type: ignore
 print(await AsciiArtConverter().convert_tokens_async(prompt=prompt))  # type: ignore
 print(await BinaryConverter().convert_tokens_async(prompt=prompt))  # type: ignore
+
+
+# %%
+# Close connection
+from pyrit.memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
 memory.dispose_engine()

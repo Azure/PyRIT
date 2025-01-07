@@ -21,13 +21,13 @@
 
 # %%
 # Import necessary packages
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.datasets import fetch_forbidden_questions_df
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Set up the Azure OpenAI prompt target
 prompt_target = TextTarget()

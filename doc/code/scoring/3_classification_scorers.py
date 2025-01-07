@@ -21,13 +21,13 @@
 # Before you begin, ensure you are setup with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/populating_secrets.md).
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskCategoryScorer
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 azure_openai_chat_target = OpenAIChatTarget()
 
 harmful_content_classifier = SelfAskCategoryScorer(

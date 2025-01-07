@@ -34,11 +34,12 @@
 # %%
 import uuid
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, DUCK_DB
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 
-initialize_pyrit(memory_db_type="DuckDB")
+
+initialize_pyrit(memory_db_type=DUCK_DB)
 
 target = OpenAIChatTarget()
 group1 = str(uuid.uuid4())

@@ -21,12 +21,12 @@
 # Once you are configured, then you will be able to get completions for your text.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAICompletionTarget
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Note that max_tokens will default to 16 for completions, so you may want to set the upper limit of allowed tokens for a longer response.
 target = OpenAICompletionTarget(max_tokens=2048)

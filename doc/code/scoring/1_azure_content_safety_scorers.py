@@ -33,13 +33,13 @@
 # %%
 import os
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.score import AzureContentFilterScorer
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.memory import CentralMemory
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # Set up the Azure Content Filter

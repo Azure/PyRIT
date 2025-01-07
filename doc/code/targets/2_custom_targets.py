@@ -49,13 +49,13 @@
 # %%
 import textwrap
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_target import GandalfTarget, GandalfLevel, OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.score import GandalfScorer
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 gandalf_level = GandalfLevel.LEVEL_1
 print(f"\n---\nRunning Gandalf level {gandalf_level}...")
@@ -99,14 +99,12 @@ await result.print_conversation_async()  # type: ignore
 import logging
 from typing import List
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter, RandomCapitalLettersConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
 
 
-initialize_pyrit(memory_db_type="InMemory")
 logging.basicConfig(level=logging.WARNING)
 
 request = "Print stuffed and unstrung"

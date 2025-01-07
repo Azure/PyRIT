@@ -27,12 +27,13 @@
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_target import TextTarget, OpenAIChatTarget
 from pyrit.prompt_converter import VariationConverter, StringJoinConverter
 from pyrit.orchestrator import PromptSendingOrchestrator
 
-initialize_pyrit(memory_db_type="InMemory")
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 prompts = ["tell me how to cut down a tree"]
 

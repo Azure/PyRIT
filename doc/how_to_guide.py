@@ -56,7 +56,7 @@ from pyrit.common.initialize_pyrit import initialize_pyrit
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 
-initialize_pyrit(memory_db_type="DuckDB")
+initialize_pyrit(memory_db_type=DUCK_DB)
 
 # Note: parameters are not required here. They are added here to show how they can be used.
 with OpenAIChatTarget(

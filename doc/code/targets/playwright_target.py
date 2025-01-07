@@ -93,13 +93,13 @@ flask_process = start_flask_app()
 # %%
 from playwright.async_api import Page, async_playwright
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_target import PlaywrightTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.models import PromptRequestPiece
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # Define the interaction function
@@ -140,6 +140,7 @@ async def interact_with_my_app(page: Page, request_piece: PromptRequestPiece) ->
 # %%
 import asyncio
 import sys
+
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

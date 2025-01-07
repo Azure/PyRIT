@@ -7,7 +7,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-python312
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -36,7 +36,7 @@
 import logging
 from pathlib import Path
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_converter import (
     LeetspeakConverter,
@@ -48,7 +48,8 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.score import SelfAskTrueFalseScorer
 
-initialize_pyrit(memory_db_type="InMemory")
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -73,7 +74,7 @@ hitl_converter = HumanInTheLoopConverter(
     ]
 )
 
-with RedTeamingOrchestrator(
+red_teaming_orchestrator = RedTeamingOrchestrator(
     prompt_converters=[hitl_converter],
     adversarial_chat=adversarial_chat,
     adversarial_chat_system_prompt_path=strategy_path,
@@ -81,8 +82,9 @@ with RedTeamingOrchestrator(
     objective_scorer=scorer,
     use_score_as_feedback=True,
     verbose=True,
-) as red_teaming_orchestrator:
-    result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
-    await result.print_conversation_async()  # type: ignore
+)
 
-# %%
+result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
+await result.print_conversation_async()  # type: ignore
+
+red_teaming_orchestrator.dispose_db_engine()

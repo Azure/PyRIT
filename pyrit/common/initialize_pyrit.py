@@ -11,7 +11,10 @@ from pyrit.memory import AzureSQLMemory, CentralMemory, DuckDBMemory, MemoryInte
 
 logger = logging.getLogger(__name__)
 
-MemoryDatabaseType = Literal["InMemory", "DuckDB", "AzureSQL"]
+IN_MEMORY = "InMemory"
+DUCK_DB = "DuckDB"
+AZURE_SQL = "AzureSQL"
+MemoryDatabaseType = Literal[IN_MEMORY, DUCK_DB, AZURE_SQL]
 
 
 def _load_environment_files() -> None:
@@ -52,11 +55,14 @@ def initialize_pyrit(memory_db_type: MemoryDatabaseType, **memory_instance_kwarg
     _load_environment_files()
 
     memory: MemoryInterface = None
-    if memory_db_type == "InMemory":
+    if memory_db_type == IN_MEMORY:
+        logger.info("Using in-memory DuckDB database.")
         memory = DuckDBMemory(db_path=":memory:", **memory_instance_kwargs)
-    elif memory_db_type == "DuckDB":
+    elif memory_db_type == DUCK_DB:
+        logger.info("Using persistent DuckDB database.")
         memory = DuckDBMemory(**memory_instance_kwargs)
     else:
+        logger.info("Using AzureSQL database.")
         memory = AzureSQLMemory(**memory_instance_kwargs)
 
     CentralMemory.set_memory_instance(memory)

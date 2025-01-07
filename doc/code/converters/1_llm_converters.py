@@ -20,14 +20,14 @@
 # %%
 import pathlib
 
-from pyrit.prompt_converter import VariationConverter
-from pyrit.models import SeedPrompt
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
+from pyrit.prompt_converter import VariationConverter
+from pyrit.prompt_target import OpenAIChatTarget
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 attack_llm = OpenAIChatTarget()
 

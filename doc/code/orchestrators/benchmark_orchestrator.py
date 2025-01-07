@@ -17,7 +17,7 @@
 
 # %%
 # Import necessary packages
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.datasets import fetch_wmdp_dataset
 from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice
 from pyrit.orchestrator.question_answer_benchmark_orchestrator import QuestionAnsweringBenchmarkOrchestrator
@@ -26,7 +26,7 @@ from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 
 # %%
 # Initialize PyRIT (load environment files and set central memory instance)
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # %%
 # Set up the Azure OpenAI prompt target

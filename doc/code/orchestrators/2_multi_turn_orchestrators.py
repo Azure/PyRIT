@@ -31,13 +31,14 @@
 # %%
 import logging
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RTOSystemPromptPaths
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 
-initialize_pyrit(memory_db_type="InMemory")
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 logging.basicConfig(level=logging.WARNING)
 

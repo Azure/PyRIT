@@ -25,13 +25,13 @@
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIDALLETarget
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 

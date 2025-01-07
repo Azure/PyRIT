@@ -21,10 +21,11 @@
 # %%
 from pprint import pprint
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 
-initialize_pyrit(memory_db_type="InMemory")
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 input_text = "hello"
 ada_embedding_engine = AzureTextEmbedding()
@@ -64,3 +65,9 @@ from pyrit.common.path import RESULTS_PATH
 
 saved_embedding_path = embedding_response.save_to_file(directory_path=RESULTS_PATH)
 saved_embedding_path
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

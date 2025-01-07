@@ -25,7 +25,7 @@
 # %%
 import os
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import PromptSendingOrchestrator, RedTeamingOrchestrator
 from pyrit.prompt_converter import SearchReplaceConverter
 from pyrit.prompt_target import (
@@ -37,7 +37,7 @@ from pyrit.prompt_target import (
 from pyrit.score import SelfAskTrueFalseScorer
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 deployment_name = os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT")
 endpoint = os.environ.get("AZURE_OPENAI_CHAT_ENDPOINT")
@@ -160,6 +160,7 @@ q={PROMPT}s&qs=ds
 
 # %%
 from pyrit.prompt_converter import UrlConverter
+
 
 # Add the prompt you want to send to the URL
 prompt = "pirate raccoons celebrating Canadian Thanksgiving together"

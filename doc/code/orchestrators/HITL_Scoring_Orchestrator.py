@@ -16,12 +16,12 @@
 # # How to use HITL Scoring - optional
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # First insert the prompts into the database (remember this is often automatic)
 
@@ -49,6 +49,7 @@ from pyrit.score import (
     HumanInTheLoopScorer,
     ContentClassifierPaths,
 )
+
 
 memory = CentralMemory.get_memory_instance()
 prompt_pieces_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_orchestrator_id)

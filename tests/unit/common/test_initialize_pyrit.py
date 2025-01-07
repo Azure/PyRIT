@@ -5,9 +5,10 @@ from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 import os
 from pathlib import Path
 import pytest
+from typing import get_args
 from unittest import mock
 
-from pyrit.common.initialize_pyrit import _load_environment_files, initialize_pyrit
+from pyrit.common.initialize_pyrit import _load_environment_files, initialize_pyrit, MemoryDatabaseType
 
 
 @mock.patch("dotenv.load_dotenv")
@@ -123,3 +124,12 @@ def test_initialize_pyrit(mock_load_env_files, mock_set_memory, memory_db_type, 
 def test_initialize_pyrit_type_check_throws():
     with pytest.raises(ValueError):
         initialize_pyrit(memory_db_type="InvalidType")
+
+
+def test_validate_memory_database_type():
+    literal_args = get_args(MemoryDatabaseType)
+    assert len(literal_args) == 3
+
+    approved_values = ["InMemory", "DuckDB", "AzureSQL"]
+    for value in approved_values:
+        assert value in literal_args

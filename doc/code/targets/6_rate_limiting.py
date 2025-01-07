@@ -25,12 +25,12 @@
 # %%
 import time
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 
-initialize_pyrit(memory_db_type="InMemory")
+initialize_pyrit(memory_db_type=IN_MEMORY)
 max_requests_per_minute = 5
 
 target = OpenAIChatTarget(max_requests_per_minute=max_requests_per_minute)
