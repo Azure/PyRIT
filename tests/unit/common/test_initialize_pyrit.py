@@ -9,6 +9,7 @@ from typing import get_args
 from unittest import mock
 
 from pyrit.common.initialize_pyrit import _load_environment_files, initialize_pyrit, MemoryDatabaseType
+from pyrit.common.initialize_pyrit import AZURE_SQL, DUCK_DB, IN_MEMORY
 
 
 @mock.patch("dotenv.load_dotenv")
@@ -86,10 +87,10 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
 @pytest.mark.parametrize(
     "memory_db_type,memory_instance_kwargs",
     [
-        ("InMemory", {"verbose": True}),
-        ("DuckDB", {"verbose": True}),
+        (IN_MEMORY, {"verbose": True}),
+        (DUCK_DB, {"verbose": True}),
         (
-            "AzureSQL",
+            AZURE_SQL,
             {
                 "connection_string": "mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server",
                 "results_container_url": "https://test.blob.core.windows.net/test",
