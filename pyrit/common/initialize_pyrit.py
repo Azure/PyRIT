@@ -3,7 +3,7 @@
 
 import dotenv
 import logging
-from typing import Literal, Optional, Any, get_args
+from typing import Any, Literal, Optional, Union, get_args
 
 from pyrit.common import path
 from pyrit.memory import AzureSQLMemory, CentralMemory, DuckDBMemory, MemoryInterface
@@ -38,7 +38,7 @@ def _load_environment_files() -> None:
         logger.info(f"Loaded {local_file_path}")
 
 
-def initialize_pyrit(memory_db_type: MemoryDatabaseType, **memory_instance_kwargs: Optional[Any]) -> None:
+def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_instance_kwargs: Optional[Any]) -> None:
     """
     Initializes PyRIT with the provided memory instance and loads environment files.
 
