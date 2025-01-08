@@ -3,7 +3,7 @@
 
 import os
 
-from pyrit.common import default_values
+from pyrit.common import initialize_pyrit, IN_MEMORY
 
 # This limits retries and speeds up execution
 # note this needs to be set before libraries that use them are imported
@@ -14,4 +14,4 @@ os.environ["RETRY_MAX_NUM_ATTEMPTS"] = "2"
 os.environ["RETRY_WAIT_MIN_SECONDS"] = "0"
 os.environ["RETRY_WAIT_MAX_SECONDS"] = "1"
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
