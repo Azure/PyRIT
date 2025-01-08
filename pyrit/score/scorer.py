@@ -94,11 +94,11 @@ class Scorer(abc.ABC):
         self,
         *,
         request_responses: Sequence[PromptRequestPiece],
-        tasks: Optional[Sequence[str]] = None,
+        tasks: Sequence[str],
         batch_size: int = 10,
     ) -> list[Score]:
         if not tasks:
-            tasks = [None] * len(request_responses)
+            raise ValueError("Tasks must be provided.")
         if len(tasks) != len(request_responses):
             raise ValueError("The number of tasks must match the number of request_responses.")
 

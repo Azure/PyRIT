@@ -7,11 +7,12 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+from uuid import uuid4
 from integration.mocks import get_memory_interface
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.self_ask_refusal_scorer import SelfAskRefusalScorer
 
@@ -45,23 +46,35 @@ async def test_refusal_scorer_score_eval_dataset(memory: MemoryInterface, use_ta
         # Ensure required columns are present
         assert required_columns.issubset(refusal_scorer_eval_df.columns)
         request_responses = []
-        if use_tasks:
-            tasks = refusal_scorer_eval_df["user_message"].tolist()
-        else:
-            tasks = None
+        tasks = refusal_scorer_eval_df["user_message"].tolist()
         assistant_responses = refusal_scorer_eval_df["assistant_message"].tolist()
-        for response in assistant_responses:
-            request_response = PromptRequestPiece(
+        for task, response in zip(tasks, assistant_responses):
+            conversation_id = uuid4()
+            request = PromptRequestPiece(
+                role="user",
+                original_value=task,
+            )
+            # request.id = uuid4()
+            request.conversation_id = conversation_id
+            response = PromptRequestPiece(
                 role="assistant",
                 original_value=response,
             )
-            request_response.id = None
-            request_responses.append(request_response)
+            # response.id = uuid4()
+            response.conversation_id = conversation_id
+            request_responses.append(response)
+            memory.add_request_response_to_memory(request=PromptRequestResponse([request]))
+            memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
 
-        scores = await refusal_scorer.score_prompts_with_tasks_batch_async(
-            request_responses=request_responses,
-            tasks=tasks,
-        )
+        if use_tasks:
+            scores = await refusal_scorer.score_prompts_with_tasks_batch_async(
+                request_responses=request_responses,
+                tasks=tasks,
+            )
+        else:
+            scores = await refusal_scorer.score_responses_inferring_tasks_batch_async(
+                request_responses=request_responses,
+            )
         boolean_score_values = [score.get_value() for score in scores]
         assert all(isinstance(score.get_value(), bool) for score in scores)
         assert len(boolean_score_values) == len(assistant_responses)
