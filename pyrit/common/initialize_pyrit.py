@@ -12,7 +12,7 @@ from pyrit.memory import AzureSQLMemory, CentralMemory, DuckDBMemory, MemoryInte
 logger = logging.getLogger(__name__)
 
 IN_MEMORY = Literal["InMemory"]
-DUCK_DB =Literal["DuckDB"]
+DUCK_DB = Literal["DuckDB"]
 AZURE_SQL = Literal["AzureSQL"]
 MemoryDatabaseType = Literal["InMemory", "DuckDB", "AzureSQL"]
 
