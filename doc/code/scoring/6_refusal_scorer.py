@@ -24,7 +24,7 @@
 # The above describes why we have `SelfAskRefusalScorer` and how they work. It has code that automatically detects filtered responses as refusals, and has a specific LLM prompt to ask only whether a response is a refusal or not.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer

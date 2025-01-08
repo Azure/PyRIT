@@ -21,7 +21,7 @@
 # %%
 import os
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
 
 
@@ -99,7 +99,7 @@ memory.dispose_engine()
 #
 # In this scenario, we are explicitly setting the memory instance to `AzureSQLMemory()`, ensuring that the results will be saved to the Azure SQL database. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, AZURE_SQL
+from pyrit.common import initialize_pyrit, AZURE_SQL
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
 
 

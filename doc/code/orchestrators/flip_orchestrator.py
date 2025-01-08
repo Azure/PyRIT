@@ -23,7 +23,7 @@
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import FlipAttackOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 

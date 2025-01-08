@@ -8,8 +8,8 @@ import pytest
 from typing import get_args
 from unittest import mock
 
-from pyrit.common.initialize_pyrit import _load_environment_files, initialize_pyrit, MemoryDatabaseType
-from pyrit.common.initialize_pyrit import AZURE_SQL, DUCK_DB, IN_MEMORY
+from pyrit.common.initialization import _load_environment_files, MemoryDatabaseType
+from pyrit.common import initialize_pyrit, AZURE_SQL, DUCK_DB, IN_MEMORY
 
 
 @mock.patch("dotenv.load_dotenv")
@@ -100,7 +100,7 @@ def test_load_environment_files_override(mock_exists, mock_load_dotenv):
     ],
 )
 @mock.patch("pyrit.memory.central_memory.CentralMemory.set_memory_instance")
-@mock.patch("pyrit.common.initialize_pyrit._load_environment_files")
+@mock.patch("pyrit.common.initialization._load_environment_files")
 def test_initialize_pyrit(mock_load_env_files, mock_set_memory, memory_db_type, memory_instance_kwargs):
     with (
         mock.patch("pyrit.memory.AzureSQLMemory.get_session") as get_session_mock,

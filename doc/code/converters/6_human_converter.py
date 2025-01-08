@@ -36,7 +36,7 @@
 import logging
 from pathlib import Path
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH
 from pyrit.prompt_converter import (
     LeetspeakConverter,

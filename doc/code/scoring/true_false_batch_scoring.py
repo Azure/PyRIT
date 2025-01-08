@@ -5,7 +5,7 @@
 # %%
 import uuid
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths

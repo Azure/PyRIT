@@ -21,7 +21,7 @@
 # Once you are configured, then you will be able to get completions for your text.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAICompletionTarget
 

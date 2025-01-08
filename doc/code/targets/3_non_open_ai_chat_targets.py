@@ -45,7 +45,7 @@
 # depending on the specific model. The parameters that can be set per model can usually be found in the 'Consume' tab when you navigate to your endpoint in AML Studio.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import AzureMLChatTarget
 
