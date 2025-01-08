@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-kernel
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-kernel
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -35,22 +35,22 @@
 # Please set the following environment variables to run AzureSQLMemory interactions:
 #
 # - `AZURE_SQL_DB_CONNECTION_STRING` = "<Azure SQL DB connection string here in SQLAlchemy format>"
-# - `AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL` = "<Azure Storage Account results container URL>" (which uses delegation SAS) but needs login to Azure.
+# - `AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL` = "<Azure Storage Account results container URL>" (which uses delegation SAS) but needs login to Azure.
 #
 # To use regular key-based authentication, please also set:
 #
-# - `AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN`
+# - `AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN`
 #
 
-from pyrit.common import default_values
-
 # %%
-from pyrit.memory import AzureSQLMemory
+from pyrit.common.initialize_pyrit import initialize_pyrit, AZURE_SQL
+from pyrit.memory import CentralMemory
 
-default_values.load_environment_files()
-memory = AzureSQLMemory()
 
-memory.print_schema()
+initialize_pyrit(memory_db_type=AZURE_SQL)
+
+memory = CentralMemory.get_memory_instance()
+memory.print_schema()  # type: ignore
 
 
 # %% [markdown]
@@ -60,9 +60,8 @@ memory.print_schema()
 
 # %%
 from uuid import uuid4
-
-from pyrit.memory import AzureSQLMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
+
 
 conversation_id = str(uuid4())
 
@@ -80,8 +79,6 @@ message_list = [
     ),
 ]
 
-memory = AzureSQLMemory()
-
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
 memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
@@ -95,5 +92,3 @@ for entry in entries:
 
 # Cleanup memory resources
 memory.dispose_engine()
-
-# %%

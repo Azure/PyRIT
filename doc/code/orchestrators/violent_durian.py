@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -20,21 +20,20 @@
 # providing illegal advice or dangerous suggestions. The criminal persona is chosen randomly from a predefined list,
 # and the conversation objective is set to convince the Target LLM to act as this persona.
 
-import logging
-
 # %%
 import os
-import random
+import logging
 from pathlib import Path
+import random
 
-from pyrit.common import default_values
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH
-from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.score import SelfAskTrueFalseScorer
 
-# Load environment variables
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
@@ -115,12 +114,19 @@ initial_prompt = (
 )
 
 # Use the RedTeamingOrchestrator to handle the attack and manage the conversation
-with RedTeamingOrchestrator(
+red_teaming_orchestrator = RedTeamingOrchestrator(
     adversarial_chat=red_teaming_llm,
     objective_target=prompt_target,
     adversarial_chat_seed_prompt=initial_prompt,  # The first prompt introduces the Violent Durian persona
     objective_scorer=scorer,
     max_turns=2,
-) as red_teaming_orchestrator:
-    result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
-    await result.print_conversation_async()  # type: ignore
+)
+
+result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
+await result.print_conversation_async()  # type: ignore
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()
