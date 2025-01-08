@@ -10,7 +10,7 @@
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
-#     name: python3
+#     name: pyrit-dev
 # ---
 
 # %% [markdown]
@@ -23,29 +23,27 @@
 # benefits of sharing with other users and persisting data.
 
 # %%
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 
-from pyrit.common import default_values
-from pyrit.memory import DuckDBMemory, CentralMemory
 
-default_values.load_environment_files()
-
-memory = DuckDBMemory()
-# memory = AzureSQLMemory()
-CentralMemory.set_memory_instance(memory)
-
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # %% [markdown]
 # ## Adding prompts to the database
 
 # %%
-from pyrit.models import SeedPromptDataset
-from pyrit.common.path import DATASETS_PATH
 import pathlib
+
+from pyrit.common.path import DATASETS_PATH
+from pyrit.memory import CentralMemory
+from pyrit.models import SeedPromptDataset
+
 
 seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
 
 print(seed_prompt_dataset.prompts[0])
 
+memory = CentralMemory.get_memory_instance()
 await memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.prompts, added_by="test")  # type: ignore
 
 # %% [markdown]
@@ -70,9 +68,11 @@ if prompts:
 # %% [markdown]
 # ## Adding seed prompt groups to the database
 # %%
+import pathlib
+
 from pyrit.models import SeedPromptGroup
 from pyrit.common.path import DATASETS_PATH
-import pathlib
+
 
 seed_prompt_group = SeedPromptGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt"
@@ -84,13 +84,14 @@ await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group],
 # ## Retrieving seed prompt groups from the memory with dataset_name as "TestMultimodalTextImageAudioVideo"
 
 # %%
-
-multimodal_dataset_name = "TestMultimodalTextImageAudioVideo"
+multimodal_dataset_name = "test multimodal"
 seed_prompt_groups = memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
 print(f"Total number of the seed prompt groups with dataset name '{multimodal_dataset_name}':", len(seed_prompt_groups))
 if seed_prompt_groups:
     print(seed_prompt_groups[0].__dict__)
 
 # %%
+from pyrit.memory import CentralMemory
 
-# %%
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

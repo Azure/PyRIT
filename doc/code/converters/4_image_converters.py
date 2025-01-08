@@ -19,21 +19,17 @@
 # The converted image file will be saved in the db/results/images folder. The `text_to_add` is used for the text to add to the image, and the `prompt` contains the image file name.
 
 # %%
-import pathlib
-
-from PIL import Image
 from IPython.display import display
+import pathlib
+from PIL import Image
 
-from pyrit.prompt_converter import AddTextImageConverter
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
-from pyrit.common import default_values
-from pyrit.memory import CentralMemory, DuckDBMemory
+from pyrit.prompt_converter import AddTextImageConverter
 
 
-default_values.load_environment_files()
-
-CentralMemory.set_memory_instance(DuckDBMemory())
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 jailbreak_template = SeedPrompt.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "prompt_templates" / "jailbreak" / "jailbreak_1.yaml"
@@ -51,3 +47,7 @@ image = Image.open(image_path)
 display(image)
 
 # %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

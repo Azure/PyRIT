@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.4
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # PDF Converter with Multiple Modes:
 #
@@ -20,15 +35,16 @@
 
 # %%
 import pathlib
-from pyrit.common import default_values
+
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
+from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import PDFConverter
-from pyrit.models import SeedPrompt
-from pyrit.common.path import DATASETS_PATH
 
-# Load default environment values (e.g., API keys, endpoints)
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Define dynamic data for injection
 prompt_data = {
@@ -65,14 +81,14 @@ pdf_converter = PDFConverter(
 prompts = [str(prompt_data)]
 
 # Initialize the orchestrator
-with PromptSendingOrchestrator(
+orchestrator = PromptSendingOrchestrator(
     objective_target=prompt_target,  # Target system (Azure OpenAI or other LLM target)
     prompt_converters=[pdf_converter],  # Attach the PDFConverter
     verbose=False,  # Set to True for detailed logging
-) as orchestrator:
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+)
 
-    await orchestrator.print_conversations_async()  # type: ignore
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
 
 # %% [markdown]
 # # Direct Prompt PDF Generation (No Template)
@@ -97,13 +113,14 @@ pdf_converter = PDFConverter(
 prompts = [prompt]
 
 # Initialize the orchestrator
-with PromptSendingOrchestrator(
+orchestrator = PromptSendingOrchestrator(
     objective_target=prompt_target,
     prompt_converters=[pdf_converter],
     verbose=False,
-) as orchestrator:
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+)
 
-    await orchestrator.print_conversations_async()  # type: ignore
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
 
 # %%
+orchestrator.dispose_db_engine()

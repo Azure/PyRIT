@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-311
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -21,10 +21,11 @@
 # %%
 from pprint import pprint
 
-from pyrit.common import default_values
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 input_text = "hello"
 ada_embedding_engine = AzureTextEmbedding()
@@ -66,3 +67,7 @@ saved_embedding_path = embedding_response.save_to_file(directory_path=DB_DATA_PA
 saved_embedding_path
 
 # %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

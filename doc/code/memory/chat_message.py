@@ -30,6 +30,7 @@ from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 # %%
 from pyrit.models import ChatMessage
 
+
 messages = [
     ChatMessage(role="system", content="You are a helpful AI assistant"),
     ChatMessage(role="user", content="Hello, how are you?"),
@@ -72,6 +73,7 @@ from transformers import AutoTokenizer
 
 # %%
 from pyrit.chat_message_normalizer import ChatMessageNormalizerTokenizerTemplate
+
 
 messages = [
     ChatMessage(role="user", content="Hello, how are you?"),

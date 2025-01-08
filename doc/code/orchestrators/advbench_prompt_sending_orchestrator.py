@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -28,22 +28,26 @@
 # %%
 import time
 
-from pyrit.common import default_values
+from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.datasets import fetch_adv_bench_dataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 target = OpenAIChatTarget()
 
-with PromptSendingOrchestrator(objective_target=target) as orchestrator:
-    adv_bench_prompts = fetch_adv_bench_dataset()
-    prompts = [prompt.value for prompt in adv_bench_prompts.prompts[:3]]
+orchestrator = PromptSendingOrchestrator(objective_target=target)
 
-    start = time.time()
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
-    end = time.time()
+adv_bench_prompts = fetch_adv_bench_dataset()
+prompts = [prompt.value for prompt in adv_bench_prompts.prompts[:3]]
 
-    print(f"Elapsed time for operation: {end-start}")
+start = time.time()
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+end = time.time()
 
-    await orchestrator.print_conversations_async()  # type: ignore
+print(f"Elapsed time for operation: {end-start}")
+
+await orchestrator.print_conversations_async()  # type: ignore
+
+orchestrator.dispose_db_engine()
