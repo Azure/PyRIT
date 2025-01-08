@@ -44,7 +44,7 @@ seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PAT
 print(seed_prompt_dataset.prompts[0])
 
 memory = CentralMemory.get_memory_instance()
-await memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.prompts, added_by="test") # type: ignore
+await memory.add_seed_prompts_to_memory(prompts=seed_prompt_dataset.prompts, added_by="test")  # type: ignore
 
 # %% [markdown]
 # ## Retrieving prompts from the database
