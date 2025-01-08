@@ -52,7 +52,7 @@
 import os
 from pathlib import Path
 
-from pyrit.common.initialize_pyrit import initialize_pyrit
+from pyrit.common.initialize_pyrit import initialize_pyrit, DUCK_DB
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 

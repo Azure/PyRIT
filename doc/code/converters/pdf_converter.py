@@ -56,7 +56,9 @@ prompt_data = {
 }
 
 # Load the YAML template for the PDF generation
-template_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "red_teaming_application_template.yaml"
+template_path = (
+    pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "red_teaming_application_template.yaml"
+)
 if not template_path.exists():
     raise FileNotFoundError(f"Template file not found: {template_path}")
 

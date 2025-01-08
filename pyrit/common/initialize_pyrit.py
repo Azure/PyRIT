@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 IN_MEMORY = "InMemory"
 DUCK_DB = "DuckDB"
 AZURE_SQL = "AzureSQL"
-MemoryDatabaseType = Literal[IN_MEMORY, DUCK_DB, AZURE_SQL]
+MemoryDatabaseType = Literal["InMemory", "DuckDB", "AzureSQL"]
 
 
 def _load_environment_files() -> None:
