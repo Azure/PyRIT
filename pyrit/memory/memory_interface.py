@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import abc
-from contextlib import closing
 import copy
 import logging
 import uuid
@@ -11,7 +10,6 @@ from pathlib import Path
 from typing import MutableSequence, Optional, Sequence
 
 from sqlalchemy import and_
-from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from pyrit.common.path import DB_DATA_PATH
@@ -109,7 +107,7 @@ class MemoryInterface(abc.ABC):
 
     @abc.abstractmethod
     def _query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+        self, model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
     ) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
@@ -118,6 +116,7 @@ class MemoryInterface(abc.ABC):
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Whether to return distinct rows only. Defaults to False.
+            join_scores: Whether to join the scores table. Defaults to False.
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -289,8 +288,7 @@ class MemoryInterface(abc.ABC):
 
         try:
             memory_entries = self._query_entries(
-                PromptMemoryEntry,
-                conditions=and_(*conditions) if conditions else None,
+                PromptMemoryEntry, conditions=and_(*conditions) if conditions else None, join_scores=True
             )  # type: ignore
             prompt_pieces = [memory_entry.get_prompt_request_piece() for memory_entry in memory_entries]
             return sort_request_pieces(prompt_pieces=prompt_pieces)

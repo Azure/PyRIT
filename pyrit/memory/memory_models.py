@@ -6,7 +6,7 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import ARRAY, INTEGER, JSON, Column, DateTime, Float, ForeignKey, Index, String, Unicode
-from sqlalchemy.orm import DeclarativeBase, Mapped, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, relationship  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
 from pyrit.models import PromptDataType, PromptRequestPiece, Score, SeedPrompt
@@ -46,7 +46,7 @@ class PromptMemoryEntry(Base):
         converted_value_sha256 (str): The SHA256 hash of the original prompt data.
         idx_conversation_id (Index): The index for the conversation ID.
         original_prompt_id (UUID): The original prompt id. It is equal to id unless it is a duplicate.
-        scores (list[Score]): The list of scores associated with the prompt.
+        scores (list[ScoreEntry]): The list of scores associated with the prompt.
     Methods:
         __str__(): Returns a string representation of the memory entry.
     """
@@ -81,7 +81,7 @@ class PromptMemoryEntry(Base):
 
     original_prompt_id = Column(Uuid, nullable=False)
 
-    scores = relationship(
+    scores: Mapped[List["ScoreEntry"]] = relationship(
         "ScoreEntry",
         primaryjoin="ScoreEntry.prompt_request_response_id == PromptMemoryEntry.original_prompt_id",
         back_populates="prompt_request_piece",
@@ -182,7 +182,7 @@ class ScoreEntry(Base):  # type: ignore
     prompt_request_response_id = Column(Uuid(as_uuid=True), ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = Column(DateTime, nullable=False)
     task = Column(String, nullable=True)
-    prompt_request_piece = relationship("PromptMemoryEntry", back_populates="scores")
+    prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
         self.id = entry.id
