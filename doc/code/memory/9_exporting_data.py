@@ -84,7 +84,7 @@ df.head(1)
 # Next, we can export data from our Azure SQL database. In this example, we export the data by `conversation_id` and to a CSV file.
 
 # %%
-from pyrit.common.initialization import AZURE_SQL
+from pyrit.common import AZURE_SQL
 
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
