@@ -91,6 +91,26 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
 
 
 @pytest.mark.asyncio
+async def test_scorer_score_value_with_llm_exception_display_prompt_id():
+    chat_target = MagicMock(PromptChatTarget)
+    chat_target.send_prompt_async = AsyncMock(side_effect=Exception("Test exception"))
+
+    scorer = MockScorer()
+    scorer.scorer_type = "true_false"
+
+    with pytest.raises(Exception, match="Error scoring prompt with prompt ID: 123"):
+        await scorer._score_value_with_llm(
+            prompt_target=chat_target,
+            system_prompt="system_prompt",
+            prompt_request_value="prompt_request_value",
+            prompt_request_data_type="text",
+            scored_prompt_id="123",
+            category="category",
+            task="task",
+        )
+
+
+@pytest.mark.asyncio
 async def test_scorer_send_chat_target_async_good_response(good_json):
 
     chat_target = MagicMock(PromptChatTarget)
@@ -199,3 +219,4 @@ async def test_scorer_score_responses_batch_async():
 
         assert len(call_kwargs["tasks"]) == 1
         assert results == fake_scores
+    

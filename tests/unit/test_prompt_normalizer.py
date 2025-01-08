@@ -379,3 +379,33 @@ async def test_convert_response_values_type(mock_memory_instance, response: Prom
     )
     assert response.request_pieces[0].converted_value == "SGVsbG8="
     assert response.request_pieces[1].converted_value == "cGFydCAy"
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_exception_conv_id(mock_memory_instance, normalizer_piece: NormalizerRequestPiece):
+    prompt_target = MagicMock(PromptTarget)
+    prompt_target.send_prompt_async = AsyncMock(side_effect=Exception("Test Exception"))
+
+    normalizer_request = NormalizerRequest([normalizer_piece])
+    normalizer_request.conversation_id = "123"
+
+    normalizer = PromptNormalizer()
+
+    with pytest.raises(Exception, match="Error sending prompt with conversation ID: 123"):
+        await normalizer.send_prompt_async(
+            normalizer_request=normalizer_request, target=prompt_target
+        )
+
+    # Validate that first request is added to memory, then exception is added to memory
+    assert (
+        normalizer_piece.prompt_value
+        == mock_memory_instance.add_request_response_to_memory.call_args_list[0][1]["request"]
+        .request_pieces[0]
+        .original_value
+    )
+    assert (
+        "Test Exception"
+        == mock_memory_instance.add_request_response_to_memory.call_args_list[1][1]["request"]
+        .request_pieces[0]
+        .original_value
+    )
