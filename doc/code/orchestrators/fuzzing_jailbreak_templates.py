@@ -28,7 +28,7 @@
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.common.initialization import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.prompt_converter import (
