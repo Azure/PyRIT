@@ -19,7 +19,7 @@
 # In the simplest case a scorer can answer a question. There can be many types of true false scorers. The following example uses a `SelfAskTrueFalseScorer` to see if prompt injection was successful. This type of scorer is really useful in orchestrators that have to make decisions based on responses.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 

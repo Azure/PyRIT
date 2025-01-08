@@ -23,7 +23,7 @@
 
 # %%
 # Import necessary packages
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.datasets import fetch_seclists_bias_testing_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget

@@ -26,7 +26,7 @@
 #
 #
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common.initialization import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import PAIROrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 

@@ -48,7 +48,7 @@
 # Also, for scoring purposes, remember that **True** means an attack *was* detected, and **False** means an attack *was NOT* detected. Use a custom scoring template to define the behavior you want (e.g. true is a failure because the prompt was flagged as a jailbreak when it wasn't), because this can get confusing quickly. This helps a lot in the scenario that you're using PromptShieldTarget in conjunction with a SelfAskScorer instead, because you can instruct the SelfAskScorer much more granularly, e.g. "true: if document 2 and the userPrompt have both been flagged."
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
 from pyrit.prompt_target import PromptShieldTarget, OpenAIChatTarget
 from pyrit.score import PromptShieldScorer

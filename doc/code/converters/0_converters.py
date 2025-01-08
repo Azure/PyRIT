@@ -28,7 +28,7 @@
 # Converters can be used to perform these types of transformations. Here is a simple program that uses Rot13Converter converter, RandomCapitalLettersConverter, and AsciiArtConverter.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_converter import ROT13Converter, AsciiArtConverter, RandomCapitalLettersConverter, BinaryConverter
 
 

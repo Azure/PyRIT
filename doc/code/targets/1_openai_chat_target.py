@@ -24,7 +24,7 @@
 # %%
 import pathlib
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import PromptSendingOrchestrator

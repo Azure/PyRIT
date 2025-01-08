@@ -26,7 +26,7 @@
 # Import necessary packages
 from pathlib import Path
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common.initialization import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_examples
 from pyrit.models import SeedPrompt

@@ -21,7 +21,7 @@
 # The goal is to identify vulnerabilities, inappropriate responses, or weaknesses in the model's handling of harmful or ethically sensitive prompts.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.datasets import fetch_tdc23_redteaming_dataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
