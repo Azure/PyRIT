@@ -14,13 +14,12 @@ steps:
   displayName: Azure Key Vault - retrieve .env file secret
   inputs:
     azureSubscription: 'integration-test-service-connection'
-    KeyVaultName: 'integration-test-env'
+    KeyVaultName: 'pyrit-environment'
     SecretsFilter: 'pyrit-test'
     RunAsPreJob: false
 - bash: python -c "import os; file = open('.env', 'w'); file.write(os.environ['PYRIT_TEST']); file.close()"
   env:
     PYRIT_TEST: $(pyrit-test)
-- bash: head -c 100 .env
 - bash: pip install --upgrade setuptools pip
 - bash: pip install .[all]
 - bash: make integration-test
