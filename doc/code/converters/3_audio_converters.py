@@ -39,12 +39,12 @@ assert os.path.exists(audio_convert_result.output_text)
 # Similarly, below is an example of using `AzureSpeechAudioToTextConverter`, which has an input type of `audio_path` and an output type of `text`. We use the audio file created above.
 
 # %%
+import logging
 import os
+import pathlib
 
 from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
-from pyrit.common.path import RESULTS_PATH
-import pathlib
-import logging
+from pyrit.common.path import DB_DATA_PATH
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ logger.setLevel(logging.DEBUG)
 
 # Use audio file created above
 assert os.path.exists(audio_convert_result.output_text)
-prompt = str(pathlib.Path(RESULTS_PATH) / "dbdata" / "audio" / audio_convert_result.output_text)
+prompt = str(pathlib.Path(DB_DATA_PATH) / "dbdata" / "audio" / audio_convert_result.output_text)
 
 speech_text_converter = AzureSpeechAudioToTextConverter()
 transcript = await speech_text_converter.convert_async(prompt=prompt)  # type: ignore
@@ -66,12 +66,12 @@ print(transcript)
 #
 
 # %%
+import logging
 import os
+import pathlib
 
 from pyrit.prompt_converter import AudioFrequencyConverter
-from pyrit.common.path import RESULTS_PATH
-import pathlib
-import logging
+from pyrit.common.path import DB_DATA_PATH
 
 
 logger = logging.getLogger(__name__)
@@ -79,12 +79,18 @@ logger.setLevel(logging.DEBUG)
 
 # Use audio file created above
 assert os.path.exists(audio_convert_result.output_text)
-prompt = str(pathlib.Path(RESULTS_PATH) / "dbdata" / "audio" / audio_convert_result.output_text)
+prompt = str(pathlib.Path(DB_DATA_PATH) / "dbdata" / "audio" / audio_convert_result.output_text)
 
 audio_frequency_converter = AudioFrequencyConverter()
 converted_audio_file = await audio_frequency_converter.convert_async(prompt=prompt)  # type: ignore
 
 print(converted_audio_file)
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()
 
 # %% [markdown]
 # ## Audio Converters with Azure SQL Memory
@@ -110,8 +116,9 @@ print(audio_convert_result.output_text)
 # Similarly, below is an example of using `AzureSpeechAudioToTextConverter`, which has an input type of `audio_path` and an output type of `text`. We use the audio file created above and Azure SQL Memory.
 
 # %%
-from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
 import logging
+
+from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
 
 
 logger = logging.getLogger(__name__)

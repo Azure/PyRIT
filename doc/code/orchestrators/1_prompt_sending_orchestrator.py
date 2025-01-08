@@ -94,7 +94,7 @@ text_target = TextTarget()
 # For DuckDB/InMemory Memory
 image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
 # For Azure SQL Memory
-# image_path = "https://airtstorageaccountdev.blob.core.windows.net/results/dbdata/images/1728351978677143.png"
+# image_path = "https://airtstorageaccountdev.blob.core.windows.net/dbdata/prompt-memory-entries/images/1735941681066137.png"
 
 orchestrator = PromptSendingOrchestrator(objective_target=text_target)
 

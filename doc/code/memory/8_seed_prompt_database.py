@@ -62,28 +62,33 @@ memory.get_seed_prompt_dataset_names()
 dataset_name = "test illegal"
 prompts = memory.get_seed_prompts(dataset_name=dataset_name)
 print(f"Total number of the prompts with dataset name '{dataset_name}':", len(prompts))
-print(prompts[0].__dict__)
+if prompts:
+    print(prompts[0].__dict__)
 
 # %% [markdown]
 # ## Adding seed prompt groups to the database
 # %%
+import pathlib
+
 from pyrit.models import SeedPromptGroup
+from pyrit.common.path import DATASETS_PATH
 
 
 seed_prompt_group = SeedPromptGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt"
 )
 
-memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")
+await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group], added_by="test multimodal illegal")  # type: ignore
 
 # %% [markdown]
-# ## Retrieving seed prompt groups from the memory with dataset_name as "test multimodal"
+# ## Retrieving seed prompt groups from the memory with dataset_name as "TestMultimodalTextImageAudioVideo"
 
 # %%
 multimodal_dataset_name = "test multimodal"
 seed_prompt_groups = memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
 print(f"Total number of the seed prompt groups with dataset name '{multimodal_dataset_name}':", len(seed_prompt_groups))
-print(seed_prompt_groups[0].__dict__)
+if seed_prompt_groups:
+    print(seed_prompt_groups[0].__dict__)
 
 # %%
 from pyrit.memory import CentralMemory

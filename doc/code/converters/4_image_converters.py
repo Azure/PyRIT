@@ -19,10 +19,9 @@
 # The converted image file will be saved in the db/results/images folder. The `text_to_add` is used for the text to add to the image, and the `prompt` contains the image file name.
 
 # %%
-import pathlib
-
-from PIL import Image
 from IPython.display import display
+import pathlib
+from PIL import Image
 
 from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH

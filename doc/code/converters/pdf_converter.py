@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.4
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # PDF Converter with Multiple Modes:
 #
@@ -41,9 +56,7 @@ prompt_data = {
 }
 
 # Load the YAML template for the PDF generation
-template_path = (
-    pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "red_teaming_application_template.yaml"
-)
+template_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "red_teaming_application_template.yaml"
 if not template_path.exists():
     raise FileNotFoundError(f"Template file not found: {template_path}")
 
@@ -75,9 +88,10 @@ orchestrator = PromptSendingOrchestrator(
 await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
-# %% Direct Prompt PDF Generation (No Template)
-# Direct Prompt PDF Generation (No Template)
+# %% [markdown]
+# # Direct Prompt PDF Generation (No Template)
 
+# %%
 # Define a simple string prompt (no templates)
 prompt = "This is a simple test string for PDF generation. No templates here!"
 

@@ -64,7 +64,8 @@ from azure.ai.contentsafety.models import TextCategory
 
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import AzureContentFilterScorer, SelfAskLikertScorer, LikertScalePaths
+from pyrit.score import AzureContentFilterScorer, LikertScalePaths, SelfAskLikertScorer
+
 
 target = OpenAIChatTarget()
 

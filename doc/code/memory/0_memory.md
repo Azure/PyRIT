@@ -33,4 +33,4 @@ The `MemoryDatabaseType` is a `Literal` with 3 options: IN_MEMORY, DUCK_DB, AZUR
    - For examples on setting up `AzureSQLMemory`, please refer to the notebook [here](./7_azure_sql_memory_orchestrators.ipynb).
    - To configure AzureSQLMemory without an extra argument list, these keys should be in your `.env` file:
      - `AZURE_SQL_DB_CONNECTION_STRING`
-     - `AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL`
+     - `AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL`

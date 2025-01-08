@@ -35,11 +35,11 @@
 # Please set the following environment variables to run AzureSQLMemory interactions:
 #
 # - `AZURE_SQL_DB_CONNECTION_STRING` = "<Azure SQL DB connection string here in SQLAlchemy format>"
-# - `AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL` = "<Azure Storage Account results container URL>" (which uses delegation SAS) but needs login to Azure.
+# - `AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL` = "<Azure Storage Account results container URL>" (which uses delegation SAS) but needs login to Azure.
 #
 # To use regular key-based authentication, please also set:
 #
-# - `AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN`
+# - `AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN`
 #
 
 # %%

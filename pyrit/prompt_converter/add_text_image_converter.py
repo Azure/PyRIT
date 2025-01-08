@@ -117,7 +117,7 @@ class AddTextImageConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        img_serializer = data_serializer_factory(value=prompt, data_type="image_path")
+        img_serializer = data_serializer_factory(category="prompt-memory-entries", value=prompt, data_type="image_path")
 
         # Open the image
         original_img_bytes = await img_serializer.read_data()
