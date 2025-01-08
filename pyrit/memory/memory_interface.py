@@ -107,7 +107,7 @@ class MemoryInterface(abc.ABC):
 
     @abc.abstractmethod
     def _query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+        self, model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
     ) -> list[Base]:  # type: ignore
         """
         Fetches data from the specified table model with optional conditions.
@@ -116,6 +116,7 @@ class MemoryInterface(abc.ABC):
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Whether to return distinct rows only. Defaults to False.
+            join_scores: Whether to join the scores table. Defaults to False.
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -224,25 +225,6 @@ class MemoryInterface(abc.ABC):
         request_pieces = self.get_prompt_request_pieces(conversation_id=conversation_id)
         return group_conversation_request_pieces_by_sequence(request_pieces=request_pieces)
 
-    def populate_prompt_piece_scores(self, prompt_request_pieces: list[PromptRequestPiece]) -> list[PromptRequestPiece]:
-        """
-        Adds scores in the database to prompt request piece objects
-
-        Args:
-            prompt_request_pieces (list[PromptRequestPiece]): The list of PromptRequestPieces to add scores to.
-
-        Returns:
-            None
-        """
-        for prompt_request_piece in prompt_request_pieces:
-            score_entries = self._query_entries(
-                ScoreEntry, conditions=ScoreEntry.prompt_request_response_id == prompt_request_piece.original_prompt_id
-            )
-            scores = [score_entry.get_score() for score_entry in score_entries]
-            prompt_request_piece.scores = scores
-
-        return None
-
     def get_prompt_request_pieces(
         self,
         *,
@@ -306,11 +288,9 @@ class MemoryInterface(abc.ABC):
 
         try:
             memory_entries = self._query_entries(
-                PromptMemoryEntry,
-                conditions=and_(*conditions) if conditions else None,
+                PromptMemoryEntry, conditions=and_(*conditions) if conditions else None, join_scores=True
             )  # type: ignore
             prompt_pieces = [memory_entry.get_prompt_request_piece() for memory_entry in memory_entries]
-            self.populate_prompt_piece_scores(prompt_pieces)
             return sort_request_pieces(prompt_pieces=prompt_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")

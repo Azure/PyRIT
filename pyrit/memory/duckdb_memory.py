@@ -9,7 +9,7 @@ from typing import MutableSequence, Optional, Sequence, Union
 from sqlalchemy import MetaData, and_, create_engine
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
 
 from pyrit.common.path import DB_DATA_PATH
@@ -154,7 +154,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
                 raise
 
     def _query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+        self, model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
     ) -> list[Base]:
         """
         Fetches data from the specified table model with optional conditions.
@@ -163,6 +163,7 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (default is False).
+            join_scores: Flag to join the scores table (default is False).
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -170,6 +171,8 @@ class DuckDBMemory(MemoryInterface, metaclass=Singleton):
         with closing(self.get_session()) as session:
             try:
                 query = session.query(model)
+                if join_scores and model == PromptMemoryEntry:
+                    query = query.options(joinedload(PromptMemoryEntry.scores))
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:
