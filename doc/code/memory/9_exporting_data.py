@@ -7,9 +7,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-kernel
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-kernel
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -17,20 +17,16 @@
 #
 # This notebook shows different ways to export data from memory. This first example exports all conversations from local DuckDB memory with their respective score values in a JSON format. The data can currently be exported both as JSON file or a CSV file that will be saved in your results folder within PyRIT. The CSV export is commented out below. In this example, all conversations are exported, but by using other export functions from `memory_interface`, we can export by specific labels and other methods.
 
-from pyrit.common import default_values
-
 # %%
 from uuid import uuid4
 
-from pyrit.common import default_values
-from pyrit.common.path import RESULTS_PATH
-from pyrit.memory import DuckDBMemory, CentralMemory
+from pyrit.common import initialize_pyrit, DUCK_DB
+from pyrit.common.path import DB_DATA_PATH
+from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
-default_values.load_environment_files()
 
-memory = DuckDBMemory()
-CentralMemory.set_memory_instance(memory)
+initialize_pyrit(memory_db_type=DUCK_DB)
 
 conversation_id = str(uuid4())
 
@@ -50,26 +46,30 @@ message_list = [
     ),
 ]
 
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
-memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
+duckdb_memory = CentralMemory.get_memory_instance()
+duckdb_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
+duckdb_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
+duckdb_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
 
-entries = memory.get_conversation(conversation_id=conversation_id)
+entries = duckdb_memory.get_conversation(conversation_id=conversation_id)
 
 for entry in entries:
     print(entry)
 
 # Define file path for export
-json_file_path = RESULTS_PATH / "conversation_and_scores_json_example.json"
-# csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
+json_file_path = DB_DATA_PATH / "conversation_and_scores_json_example.json"
+# csv_file_path = DB_DATA_PATH / "conversation_and_scores_csv_example.csv"
 
-# # Export the data to a JSON file
-conversation_with_scores = memory.export_conversations(file_path=json_file_path, export_type="json")
+# Export the data to a JSON file
+conversation_with_scores = duckdb_memory.export_conversations(file_path=json_file_path, export_type="json")
 print(f"Exported conversation with scores to JSON: {json_file_path}")
 
 # Export the data to a CSV file
-# conversation_with_scores = memory.export_conversations(file_path=csv_file_path, export_type="csv")
+# conversation_with_scores = duckdb_memory.export_conversations(file_path=csv_file_path, export_type="csv")
 # print(f"Exported conversation with scores to CSV: {csv_file_path}")
+
+# Cleanup memory resources
+duckdb_memory.dispose_engine()
 
 # %% [markdown]
 # You can also use the exported JSON or CSV files to import the data as a NumPy DataFrame. This can be useful for various data manipulation and analysis tasks.
@@ -84,7 +84,11 @@ df.head(1)
 # Next, we can export data from our Azure SQL database. In this example, we export the data by `conversation_id` and to a CSV file.
 
 # %%
-from pyrit.memory import AzureSQLMemory
+from pyrit.common import AZURE_SQL
+
+
+initialize_pyrit(memory_db_type=AZURE_SQL)
+azure_memory = CentralMemory.get_memory_instance()
 
 conversation_id = str(uuid4())
 
@@ -102,9 +106,6 @@ message_list = [
     ),
 ]
 
-azure_memory = AzureSQLMemory()
-CentralMemory.set_memory_instance(azure_memory)
-
 azure_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[0]]))
 azure_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[1]]))
 azure_memory.add_request_response_to_memory(request=PromptRequestResponse([message_list[2]]))
@@ -116,8 +117,8 @@ for entry in entries:
     print(entry)
 
 # Define file path for export
-# json_file_path = RESULTS_PATH / "conversation_and_scores_json_example.json"
-csv_file_path = RESULTS_PATH / "conversation_and_scores_csv_example.csv"
+# json_file_path = DB_DATA_PATH / "conversation_and_scores_json_example.json"
+csv_file_path = DB_DATA_PATH / "conversation_and_scores_csv_example.csv"
 
 # Export the data to a JSON file
 # conversation_with_scores = azure_memory.export_conversations(conversation_id=conversation_id, file_path=json_file_path, export_type="json")

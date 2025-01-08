@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -26,16 +26,16 @@
 # Import necessary packages
 from pathlib import Path
 
-from pyrit.common import default_values
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import fetch_many_shot_jailbreaking_examples
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import LikertScalePaths, SelfAskLikertScorer
+from pyrit.score import SelfAskLikertScorer, LikertScalePaths
 
-# Load environment variables
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # We demonstrate the use of the Azure OpenAI text-only target here
 prompt_target = OpenAIChatTarget()
@@ -78,3 +78,7 @@ await orchestrator.print_conversations_async()  # type: ignore
 
 
 # %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()
