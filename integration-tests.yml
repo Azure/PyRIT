@@ -17,9 +17,9 @@ steps:
     KeyVaultName: 'pyrit-environment'
     SecretsFilter: 'env-integration-test'
     RunAsPreJob: false
-- bash: python -c "import os; file = open('.env', 'w'); file.write(os.environ['PYRIT_TEST']); file.close()"
+- bash: python -c "import os; file = open('.env', 'w'); file.write(os.environ['PYRIT_TEST_SECRET']); file.close()"
   env:
-    PYRIT_TEST: $(pyrit-test)
+    PYRIT_TEST_SECRET: $(env-integration-test)
 - bash: head -c 100 .env
 - bash: pip install --upgrade setuptools pip
 - bash: pip install .[all]
