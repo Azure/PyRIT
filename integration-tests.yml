@@ -1,19 +1,26 @@
-# Builds the pyrit environment and runs integration tests
 
-name: integration_tests
+# Builds the pyrit environment and runs integration tests
 
 trigger:
 - main
 
-pr:
-- main
+# There are additional PR triggers for this that are configurable in ADO.
 
 pool:
   vmImage: ubuntu-latest
 
 steps:
-
-- task: CmdLine@2
-  displayName: Create file
+- task: AzureKeyVault@2
+  displayName: Azure Key Vault - retrieve .env file secret
   inputs:
-    script: 'echo "hello world"'
+    azureSubscription: 'integration-test-service-connection'
+    KeyVaultName: 'pyrit-environment'
+    SecretsFilter: 'env-integration-test'
+    RunAsPreJob: false
+- bash: python -c "import os; file = open('.env', 'w'); file.write(os.environ['PYRIT_TEST_SECRET']); file.close()"
+  env:
+    PYRIT_TEST_SECRET: $(env-integration-test)
+- bash: head -c 100 .env
+- bash: pip install --upgrade setuptools pip
+- bash: pip install .[all]
+- bash: make integration-test
