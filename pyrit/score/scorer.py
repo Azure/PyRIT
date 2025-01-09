@@ -247,8 +247,10 @@ class Scorer(abc.ABC):
                 )
             ]
         )
-
-        response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
+        try:
+            response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
+        except Exception as ex:
+            raise Exception(f"Error scoring prompt with prompt ID: {scored_prompt_id}") from ex
 
         try:
             response_json = response.request_pieces[0].converted_value
