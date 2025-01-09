@@ -15,7 +15,7 @@ steps:
   inputs:
     azureSubscription: 'integration-test-service-connection'
     KeyVaultName: 'pyrit-environment'
-    SecretsFilter: 'pyrit-test'
+    SecretsFilter: 'env-integration-test'
     RunAsPreJob: false
 - bash: python -c "import os; file = open('.env', 'w'); file.write(os.environ['PYRIT_TEST']); file.close()"
   env:
