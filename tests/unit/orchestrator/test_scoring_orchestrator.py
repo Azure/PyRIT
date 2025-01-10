@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from datetime import datetime
+import pytest
 import uuid
+from unit.mocks import get_sample_conversations
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-from unit.mocks import get_sample_conversations
-
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece
+from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.score import SubStringScorer
 
@@ -36,7 +36,7 @@ async def test_score_prompts_by_request_id_async(sample_conversations: list[Prom
 
 
 @pytest.mark.asyncio
-async def test_score_prompts_by_orchestrator(sample_conversations: list[PromptRequestPiece]):
+async def test_score_prompts_by_filters_async(sample_conversations: list[PromptRequestPiece]):
 
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
@@ -45,57 +45,45 @@ async def test_score_prompts_by_orchestrator(sample_conversations: list[PromptRe
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()
 
+        test_score = Score(
+            id=str(uuid.uuid4()),
+            score_value="false",
+            score_value_description="true false score",
+            score_type="true_false",
+            score_category="Category1",
+            score_rationale="Rationale text",
+            score_metadata={"key": "value"},
+            scorer_class_identifier="Scorer1",
+            prompt_request_response_id=str(uuid.uuid4()),
+            timestamp=datetime.now(),
+            task="Task1",
+        )
+
         with patch.object(scorer, "score_responses_inferring_tasks_batch_async", new_callable=AsyncMock) as mock_score:
-            await orchestrator.score_responses_by_orchestrator_id_async(
-                scorer=scorer, orchestrator_ids=[str(uuid.uuid4())]
+            mock_score.return_value = [test_score]
+            scores = await orchestrator.score_responses_by_filters_async(
+                scorer=scorer, orchestrator_id=str(uuid.uuid4())
             )
 
+            memory.get_prompt_request_pieces.assert_called_once()
             mock_score.assert_called_once()
+            assert scores[0] == test_score
 
-
-@pytest.mark.asyncio
-async def test_score_prompts_by_memory_labels(sample_conversations: list[PromptRequestPiece]):
-
-    memory = MagicMock()
-    memory_labels = {"op_name": "op1", "user_name": "name1"}
-    sample_conversations[1].labels = memory_labels
-    sample_conversations[2].labels = memory_labels
-    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        memory.get_prompt_request_pieces.return_value = sample_conversations
-
-        orchestrator = ScoringOrchestrator()
-        scorer = MagicMock()
-
-        with patch.object(scorer, "score_responses_inferring_tasks_batch_async", new_callable=AsyncMock) as mock_score:
-            await orchestrator.score_responses_by_memory_labels_async(scorer=scorer, memory_labels=memory_labels)
-
-            mock_score.assert_called_once()
             _, called_kwargs = mock_score.call_args
-            assert len(called_kwargs["request_responses"]) == 3
+            assert len(called_kwargs["request_responses"]) == len(sample_conversations)
 
 
 @pytest.mark.asyncio
-async def test_score_prompts_by_memory_labels_async_raises_error_empty_memory_labels():
-    with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-        orchestrator = ScoringOrchestrator()
-
-        with pytest.raises(ValueError, match="Invalid memory_labels: Please provide valid memory labels."):
-            await orchestrator.score_responses_by_memory_labels_async(scorer=MagicMock(), memory_labels={})
-
-
-@pytest.mark.asyncio
-async def test_score_prompts_by_memory_labels_async_raises_error_no_matching_labels():
+async def test_score_prompts_by_filters_async_raises_error_no_matching_filters():
     memory = MagicMock()
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         memory.get_prompt_request_pieces.return_value = []
         orchestrator = ScoringOrchestrator()
 
-        with pytest.raises(
-            ValueError, match="No entries match the provided memory labels. Please check your memory labels."
-        ):
-            await orchestrator.score_responses_by_memory_labels_async(
+        with pytest.raises(ValueError, match="No entries match the provided filters. Please check your filters."):
+            await orchestrator.score_responses_by_filters_async(
                 scorer=MagicMock(),
-                memory_labels={"op_name": "nonexistent_op", "user_name": "nonexistent_user"},
+                labels={"op_name": "nonexistent_op", "user_name": "nonexistent_user"},
             )
 
 

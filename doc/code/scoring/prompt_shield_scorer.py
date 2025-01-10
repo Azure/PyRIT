@@ -75,11 +75,11 @@ from pyrit.memory import CentralMemory
 
 
 memory = CentralMemory.get_memory_instance()
-prompts_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_orchestrator_id)
+prompt_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_orchestrator_id)[0]
 
 scoring_orchestrator = ScoringOrchestrator()
 scores = await scoring_orchestrator.score_prompts_by_id_async(  # type: ignore
-    scorer=scorer, prompt_ids=[str(prompt.id) for prompt in prompts_to_score]
+    scorer=scorer, prompt_ids=[str(prompt_to_score.id)]
 )
 
 for score in scores:

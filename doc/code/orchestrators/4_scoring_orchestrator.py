@@ -70,27 +70,43 @@ scorer = SelfAskCategoryScorer(
 
 scoring_orchestrator = ScoringOrchestrator()
 
-scores = await scoring_orchestrator.score_prompts_by_id_async(scorer=scorer, prompt_ids=prompt_ids)  # type: ignore
+scores = await scoring_orchestrator.score_prompts_by_id_async(  # type: ignore
+    scorer=scorer, prompt_ids=prompt_ids
+)
 
 memory = CentralMemory.get_memory_instance()
 
 for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_prompt_request_pieces(
+        prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
     print(f"{score} : {prompt_text}")
 
 # %% [markdown]
-# # Scoring Using Memory Labels
+# # Scoring Responses Using Filters
 #
-# This allows users to score prompts based on memory labels. Remember that `GLOBAL_MEMORY_LABELS`, which will be assigned to every prompt
-# sent through an orchestrator, can be set as an environment variable (.env or env.local), and any additional custom memory labels can be
-# passed in the `PromptSendingOrchestrator` `send_prompts_async` function. (Custom memory labels passed in will have precedence over `GLOBAL_MEMORY_LABELS` in case of collisions.) For more information on memory labels, see the [Memory Labels Guide](../memory/5_memory_labels.ipynb).
+# This allows users to score response to prompts based on a number of filters (including memory labels, which are shown in this next example).
+#
+# Remember that `GLOBAL_MEMORY_LABELS`, which will be assigned to every prompt sent through an orchestrator, can be set as an environment variable (.env or env.local), and any additional custom memory labels can be passed in the `PromptSendingOrchestrator` `send_prompts_async` function. (Custom memory labels passed in will have precedence over `GLOBAL_MEMORY_LABELS` in case of collisions.) For more information on memory labels, see the [Memory Labels Guide](../memory/5_memory_labels.ipynb).
+#
+# All filters include:
+# - Orchestrator ID
+# - Conversation ID
+# - Prompt IDs
+# - Memory Labels
+# - Sent After Timestamp
+# - Sent Before Timestamp
+# - Original Values
+# - Converted Values
+# - Data Type
+# - (Not) Data Type : Data type to exclude
+# - Converted Value SHA256
 
 # %%
 # pylint: disable=W0611
 import uuid
 
 from pyrit.memory import CentralMemory
-from pyrit.orchestrator import ScoringOrchestrator, PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
@@ -122,14 +138,16 @@ scorer = SelfAskCategoryScorer(
 )
 
 # Scoring prompt responses based on user provided memory labels
-scores = await scoring_orchestrator.score_responses_by_memory_labels_async(  # type: ignore
-    scorer=scorer, memory_labels=memory_labels
+scores = await scoring_orchestrator.score_responses_by_filters_async(  # type: ignore
+    scorer=scorer, labels=memory_labels
 )
 
 memory = CentralMemory.get_memory_instance()
 
 for score in scores:
-    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[0].original_value
+    prompt_text = memory.get_prompt_request_pieces(prompt_ids=[str(score.prompt_request_response_id)])[
+        0
+    ].original_value
     print(f"{score} : {prompt_text}")
 
 # %%
