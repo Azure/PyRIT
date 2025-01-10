@@ -52,18 +52,22 @@ class OpenAICompletionTarget(OpenAITarget):
         """
         self._validate_request(prompt_request=prompt_request)
         request = prompt_request.request_pieces[0]
-
+        
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
-        text_response: Completion = await self._async_client.completions.create(
-            model=self._deployment_name,
-            prompt=request.converted_value,
-            top_p=self._top_p,
-            temperature=self._temperature,
-            frequency_penalty=self._frequency_penalty,
-            presence_penalty=self._presence_penalty,
-            max_tokens=self._max_tokens,
-        )
+        # Prepare the parameters for the create call
+        create_params = {
+            "model": self._deployment_name,
+            "prompt": request.converted_value,
+            "top_p": self._top_p,
+            "temperature": self._temperature,
+            "frequency_penalty": self._frequency_penalty,
+            "presence_penalty": self._presence_penalty,
+            "max_tokens": self._max_tokens,
+        }
+
+        text_response: Completion = await self._async_client.completions.create(**create_params)
+        
         prompt_response = PromptResponse(
             completion=text_response.choices[0].text,
             prompt=request.converted_value,
@@ -94,3 +98,7 @@ class OpenAICompletionTarget(OpenAITarget):
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
+    
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False

@@ -1,8 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
+import abc
 from typing import Optional
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import PromptTarget
 
 
@@ -38,31 +40,36 @@ class PromptChatTarget(PromptTarget):
                 labels=labels,
             ).to_prompt_request_response()
         )
-
-    async def send_chat_prompt_async(
-        self,
-        *,
-        prompt: str,
-        conversation_id: str,
-        orchestrator_identifier: Optional[dict[str, str]] = None,
-        labels: Optional[dict[str, str]] = None,
-    ) -> PromptRequestResponse:
+    
+    @abc.abstractmethod
+    def is_json_response_supported(self) -> bool:
         """
-        Sends a text prompt to the target without having to build the prompt request.
+        Abstract method to determine if JSON response format is supported by the target.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
         """
+        pass
+    
+    def is_response_format_json(self, request_piece: PromptRequestPiece) -> bool:
+        """
+        Checks if the response format is JSON and ensures the target supports it.
 
-        request = PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="user",
-                    conversation_id=conversation_id,
-                    original_value=prompt,
-                    converted_value=prompt,
-                    prompt_target_identifier=self.get_identifier(),
-                    orchestrator_identifier=orchestrator_identifier,
-                    labels=labels,
-                )
-            ]
-        )
+        Args:
+            request_piece: A PromptRequestPiece object with a `prompt_metadata` dictionary that may 
+                include a "response_format" key.
 
-        return await self.send_prompt_async(prompt_request=request)
+        Returns:
+            bool: True if the response format is JSON and supported, False otherwise.
+
+        Raises:
+            ValueError: If "json" response format is requested but unsupported.
+        """
+        if request_piece.prompt_metadata:
+            response_format = request_piece.prompt_metadata.get("response_format")
+            if response_format == "json":
+                if not self.is_json_response_supported():
+                    target_name = self.get_identifier()["__type__"]
+                    raise ValueError(f"This target {target_name} does not support JSON response format.")
+                return True
+        return False
