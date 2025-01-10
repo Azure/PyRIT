@@ -81,7 +81,7 @@ async def test_complete_chat_async_return(openai_mock_return: ChatCompletion, gp
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
         ret = await gpt4o_chat_engine._complete_chat_async(
-            messages=[ChatMessageListDictContent(role="user", content=[{"text": "hello"}])]
+            messages=[ChatMessageListDictContent(role="user", content=[{"text": "hello"}])], is_json_response=False
         )
         assert ret == "hi"
 
