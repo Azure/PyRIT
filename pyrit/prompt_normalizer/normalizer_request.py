@@ -3,13 +3,15 @@
 
 import abc
 
+from dataclasses import dataclass
 from typing import Optional
 
 from pyrit.models import PromptDataType, data_serializer_factory
+from pyrit.models.seed_prompt import SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
+from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
 
-
+# TODO delete these
 class NormalizerRequestPiece(abc.ABC):
 
     def __init__(
@@ -70,7 +72,7 @@ class NormalizerRequest:
     def __init__(
         self,
         request_pieces: list[NormalizerRequestPiece],
-        response_converters: list[PromptResponseConverterConfiguration] = [],
+        response_converters: list[PromptConverterConfiguration] = [],
         conversation_id: str = None,
     ):
         """
@@ -89,3 +91,21 @@ class NormalizerRequest:
 
         for piece in self.request_pieces:
             piece.validate()
+
+
+@dataclass
+class NormalizerRequest2(abc.ABC):
+    seed_prompt_group: SeedPromptGroup
+    request_converter_configurations: list[PromptConverterConfiguration]
+    response_converter_configurations: list[PromptConverterConfiguration]
+
+    def __init__(
+            self,
+            *,
+            seed_prompt_group: SeedPromptGroup,
+            request_converter_configurations: list[PromptConverterConfiguration] = [],
+            response_converter_configurations: list[PromptConverterConfiguration] = []
+    ):
+        self.seed_prompt_group = seed_prompt_group
+        self.request_converter_configurations = request_converter_configurations
+        self.response_converter_configurations = response_converter_configurations
