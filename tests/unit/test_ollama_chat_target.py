@@ -99,3 +99,7 @@ async def test_ollama_validate_prompt_type(
     request = PromptRequestResponse(request_pieces=[request_piece])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
         await ollama_chat_engine.send_prompt_async(prompt_request=request)
+
+
+def test_is_json_response_supported(ollama_chat_engine: OllamaChatTarget):
+    assert ollama_chat_engine.is_json_response_supported is False
