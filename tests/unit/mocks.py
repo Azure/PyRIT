@@ -101,6 +101,9 @@ class MockPromptTarget(PromptChatTarget):
         """
         Validates the provided prompt request response
         """
+    
+    def is_json_response_supported(self) -> bool:
+        return False
 
     def is_json_response_supported(self) -> bool:
         return False
