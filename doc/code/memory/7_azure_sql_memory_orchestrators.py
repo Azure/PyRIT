@@ -29,7 +29,7 @@
 import time
 import uuid
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, AZURE_SQL
+from pyrit.common import initialize_pyrit, AZURE_SQL
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 

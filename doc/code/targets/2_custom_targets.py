@@ -49,7 +49,7 @@
 # %%
 import textwrap
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_target import GandalfTarget, GandalfLevel, OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.score import GandalfScorer

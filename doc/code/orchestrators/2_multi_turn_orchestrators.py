@@ -31,7 +31,7 @@
 # %%
 import logging
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RTOSystemPromptPaths
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget

@@ -6,7 +6,6 @@ import logging
 from typing import Any, Literal, Optional, Union, get_args
 
 from pyrit.common import path
-from pyrit.memory import AzureSQLMemory, CentralMemory, DuckDBMemory, MemoryInterface
 
 
 logger = logging.getLogger(__name__)
@@ -53,6 +52,8 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
         )
 
     _load_environment_files()
+
+    from pyrit.memory import AzureSQLMemory, CentralMemory, DuckDBMemory, MemoryInterface
 
     memory: MemoryInterface = None
     if memory_db_type == IN_MEMORY:

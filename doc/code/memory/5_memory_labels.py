@@ -34,7 +34,7 @@
 # %%
 import uuid
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, DUCK_DB
+from pyrit.common import initialize_pyrit, DUCK_DB
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 

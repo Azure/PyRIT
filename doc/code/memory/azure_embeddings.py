@@ -21,7 +21,7 @@
 # %%
 from pprint import pprint
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.embedding.azure_text_embedding import AzureTextEmbedding
 
 

@@ -27,7 +27,7 @@
 
 # %%
 # Import necessary packages
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.datasets import fetch_decoding_trust_stereotypes_examples
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator

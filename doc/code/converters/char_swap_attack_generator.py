@@ -23,7 +23,7 @@
 # Reference: [Charswap Attack](https://github.com/aiverify-foundation/moonshot-data/blob/main/attack-modules/charswap_attack.py)
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_converter.charswap_attack_converter import CharSwapGenerator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator

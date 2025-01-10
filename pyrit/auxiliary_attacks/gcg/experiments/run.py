@@ -7,7 +7,7 @@ from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 from typing import Any, Dict, Union
 import yaml
 
-from pyrit.common.initialize_pyrit import _load_environment_files
+from pyrit.common.initialization import _load_environment_files
 
 
 def _load_yaml_to_dict(config_path: str) -> dict:

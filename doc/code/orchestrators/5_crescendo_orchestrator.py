@@ -28,7 +28,7 @@
 
 # %%
 import os
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.orchestrator import CrescendoOrchestrator
 from pyrit.prompt_converter import EmojiConverter
 from pyrit.prompt_target import OpenAIChatTarget
