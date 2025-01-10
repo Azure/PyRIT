@@ -102,4 +102,4 @@ async def test_ollama_validate_prompt_type(
 
 
 def test_is_json_response_supported(ollama_chat_engine: OllamaChatTarget):
-    assert ollama_chat_engine.is_json_response_supported is False
+    assert ollama_chat_engine.is_json_response_supported() is False

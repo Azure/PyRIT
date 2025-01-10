@@ -483,3 +483,38 @@ def test_validate_request_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTa
     ), "Error not raised for unsupported data types"
 
     os.remove(image_piece.original_value)
+
+
+def test_is_json_response_supported(gpt4o_chat_engine: OpenAIChatTarget):
+    assert gpt4o_chat_engine.is_json_response_supported() is True
+
+
+def test_is_response_format_json_supported(gpt4o_chat_engine: OpenAIChatTarget):
+
+    request_piece = PromptRequestPiece(
+        role="user",
+        original_value="original prompt text",
+        converted_value="Hello, how are you?",
+        conversation_id="conversation_1",
+        sequence=0,
+        prompt_metadata={"response_format": "json"},
+    )
+
+    result = gpt4o_chat_engine.is_response_format_json(request_piece)
+
+    assert result is True
+
+
+def test_is_response_format_json_no_metadata(gpt4o_chat_engine: OpenAIChatTarget):
+    request_piece = PromptRequestPiece(
+        role="user",
+        original_value="original prompt text",
+        converted_value="Hello, how are you?",
+        conversation_id="conversation_1",
+        sequence=0,
+        prompt_metadata=None,
+    )
+
+    result = gpt4o_chat_engine.is_response_format_json(request_piece)
+
+    assert result is False
