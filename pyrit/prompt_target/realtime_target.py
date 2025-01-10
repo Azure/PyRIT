@@ -26,7 +26,7 @@ class RealtimeTarget(PromptTarget):
         self,
         key: str = None,
         deployment: str = None,
-        deployment_version: str = None,
+        api_version: str = None,
         url: str = None,
         *args,
         **kwargs,
@@ -40,12 +40,27 @@ class RealtimeTarget(PromptTarget):
             env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment
         )
         self.api_version = default_values.get_required_value(
-            env_var_name=self.API_VERSION_ENVIRONMENT_VARIABLE, passed_value=deployment_version
+            env_var_name=self.API_VERSION_ENVIRONMENT_VARIABLE, passed_value=api_version
         )
 
         self.websocket = None
-
         super().__init__(*args, **kwargs)
+
+    async def connect(self):
+        """
+        Connects to the WebSocket server.
+
+        """
+        logger.info(f"Connecting to WebSocket: {self.url}")
+        headers = {"Authorization": f"Bearer {self.api_key}", "OpenAI-Beta": "realtime=v1"}
+
+        url = f"{self.url}/openai/realtime?api-version={self.api_version}"
+        url = f"{url}&deployment={self.deployment}&api-key={self.api_key}"
+        self.websocket = await websockets.connect(
+            url,
+            extra_headers=headers,
+        )
+        logger.info("Successfully connected to AzureOpenAI Realtime API")
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> list[PromptRequestResponse]:
@@ -55,7 +70,6 @@ class RealtimeTarget(PromptTarget):
         request = prompt_request.request_pieces[0]
         prompt = request.converted_value
 
-        await self.connect()
         await self.send_config()
 
         response_type = request.converted_value_data_type
@@ -89,7 +103,7 @@ class RealtimeTarget(PromptTarget):
             events = await receive_tasks
             output_audio_path = await self.save_audio(events[0])
 
-        await self.disconnect()
+        # await self.disconnect()
         response_entry = construct_response_from_request(
             request=request, response_text_pieces=[events[1]], response_type="text"
         )
@@ -99,20 +113,6 @@ class RealtimeTarget(PromptTarget):
         )
 
         return [response_entry, audio_response_entry]  # TODO: can make the transcription a flag to return or not
-
-    async def connect(self):
-        """
-        Connects to the WebSocket server.
-
-        """
-        logger.info(f"Connecting to WebSocket: {self.url}")
-        headers = {"Authorization": f"Bearer {self.api_key}", "OpenAI-Beta": "realtime=v1"}
-
-        self.websocket = await websockets.connect(
-            f"{self.url}/openai/realtime?api-version={self.api_version}&deployment={self.deployment}&api-key={self.api_key}",
-            extra_headers=headers,
-        )
-        logger.info("Successfully connected to AzureOpenAI Realtime API")
 
     async def save_audio(
         self, audio_bytes: bytes, num_channels: int = 1, sample_width: int = 2, sample_rate: int = 16000
