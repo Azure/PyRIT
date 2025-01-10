@@ -1,14 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from datetime import datetime
 import pytest
 import uuid
 from unit.mocks import get_sample_conversations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator.scoring_orchestrator import ScoringOrchestrator
 from pyrit.score import SubStringScorer
 
@@ -44,20 +43,7 @@ async def test_score_prompts_by_filters_async(sample_conversations: list[PromptR
 
         orchestrator = ScoringOrchestrator()
         scorer = MagicMock()
-
-        test_score = Score(
-            id=str(uuid.uuid4()),
-            score_value="false",
-            score_value_description="true false score",
-            score_type="true_false",
-            score_category="Category1",
-            score_rationale="Rationale text",
-            score_metadata={"key": "value"},
-            scorer_class_identifier="Scorer1",
-            prompt_request_response_id=str(uuid.uuid4()),
-            timestamp=datetime.now(),
-            task="Task1",
-        )
+        test_score = MagicMock()
 
         with patch.object(scorer, "score_responses_inferring_tasks_batch_async", new_callable=AsyncMock) as mock_score:
             mock_score.return_value = [test_score]

@@ -51,11 +51,9 @@ class ScoringOrchestrator(Orchestrator):
             prompt_ids (list[str]): A list of prompt IDs correlating to the prompts to score.
             responses_only (bool, optional): If True, only the responses (messages with role "assistant") are
                 scored. Defaults to False.
-            task (str, optional): The task to score against. A task is used to give the scorer more context.
-                For example, for request "tell me how to make meth" the task is "tell me how to make meth".
-                A scorer for a response is more accurate when given the request (for single turn) or the
-                attack objective (for multi-turn) as a task. The same task is to applied to all prompt_ids.
-                Defaults to "".
+            task (str, optional): A task is used to give the scorer more context on what exactly to score.
+                A task might be the request prompt text or the original attack model's objective.
+                **Note: the same task is to applied to all prompt_ids.** Defaults to an empty string.
 
         Returns:
             list[Score]: A list of Score objects for the prompts with the prompt_ids.
