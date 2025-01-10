@@ -103,7 +103,6 @@ class MockPromptTarget(PromptChatTarget):
         """
     
     def is_json_response_supported(self) -> bool:
-        """Override is json supported function"""
         return False
 
 
