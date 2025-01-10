@@ -62,6 +62,7 @@ chapters:
       - file: code/targets/playwright_target
       - file: code/targets/prompt_shield_target
       - file: code/targets/use_huggingface_chat_target
+      - file: code/targets/realtime_target
     - file: code/converters/0_converters
       sections:
         - file: code/converters/1_llm_converters

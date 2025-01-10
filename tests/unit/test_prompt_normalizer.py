@@ -111,7 +111,7 @@ async def test_send_prompt_async_empty_response_exception_handled(
     request = NormalizerRequest([normalizer_piece])
 
     response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
-
+    response = response[0]
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
     assert response.request_pieces[0].response_error == "empty"
@@ -358,7 +358,7 @@ async def test_convert_response_values_index(mock_memory_instance, response: Pro
     normalizer = PromptNormalizer()
 
     await normalizer.convert_response_values(
-        response_converter_configurations=[response_converter], prompt_response=response
+        response_converter_configurations=[response_converter], prompt_responses=response
     )
     assert response.request_pieces[0].converted_value == "SGVsbG8=", "Converter should be applied here"
     assert (
@@ -375,7 +375,7 @@ async def test_convert_response_values_type(mock_memory_instance, response: Prom
     normalizer = PromptNormalizer()
 
     await normalizer.convert_response_values(
-        response_converter_configurations=[response_converter], prompt_response=response
+        response_converter_configurations=[response_converter], prompt_responses=response
     )
     assert response.request_pieces[0].converted_value == "SGVsbG8="
     assert response.request_pieces[1].converted_value == "cGFydCAy"
