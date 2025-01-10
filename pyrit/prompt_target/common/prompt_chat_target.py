@@ -40,7 +40,7 @@ class PromptChatTarget(PromptTarget):
                 labels=labels,
             ).to_prompt_request_response()
         )
-    
+
     @abc.abstractmethod
     def is_json_response_supported(self) -> bool:
         """
@@ -50,13 +50,13 @@ class PromptChatTarget(PromptTarget):
             bool: True if JSON response is supported, False otherwise.
         """
         pass
-    
+
     def is_response_format_json(self, request_piece: PromptRequestPiece) -> bool:
         """
         Checks if the response format is JSON and ensures the target supports it.
 
         Args:
-            request_piece: A PromptRequestPiece object with a `prompt_metadata` dictionary that may 
+            request_piece: A PromptRequestPiece object with a `prompt_metadata` dictionary that may
                 include a "response_format" key.
 
         Returns:

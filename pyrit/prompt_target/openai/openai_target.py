@@ -158,4 +158,3 @@ class OpenAITarget(PromptChatTarget):
             bool: True if JSON response is supported, False otherwise.
         """
         pass
-    

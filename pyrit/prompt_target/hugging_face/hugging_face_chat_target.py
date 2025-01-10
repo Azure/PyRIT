@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import asyncio
-import json
 import logging
 import os
 from typing import TYPE_CHECKING, Optional
@@ -271,7 +270,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             return construct_response_from_request(
                 request=request,
                 response_text_pieces=[assistant_response],
-                prompt_metadata=json.dumps({"model_id": model_identifier}),
+                prompt_metadata={"model_id": model_identifier},
             )
 
         except Exception as e:
@@ -312,7 +311,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
-    
+
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return False

@@ -28,9 +28,10 @@ class PromptRequestPiece(abc.ABC):
             Can be the same number for multi-part requests or multi-part responses.
         timestamp (DateTime): The timestamp of the memory entry.
         labels (Dict[str, str]): The labels associated with the memory entry. Several can be standardized.
-        prompt_metadata (Dict[str, str]): The metadata associated with the prompt. This can be specific to any scenarios.
-            Because memory is how components talk with each other, this can be component specific.
-            e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
+        prompt_metadata (Dict[str, str]): The metadata associated with the prompt. This can be
+            specific to any scenarios. Because memory is how components talk with each other, this
+            can be component specific. e.g. the URI from a file uploaded to a blob store,
+            or a document type you want to upload.
         converters (list[PromptConverter]): The converters for the prompt.
         prompt_target (PromptTarget): The target for the prompt.
         orchestrator_identifier (Dict[str, str]): The orchestrator identifier for the prompt.

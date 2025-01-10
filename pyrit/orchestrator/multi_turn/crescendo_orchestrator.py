@@ -336,7 +336,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
         normalizer_request = self._create_normalizer_request(
             prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id, metadata=prompt_metadata
         )
-        
+
         response_text = (
             (
                 await self._prompt_normalizer.send_prompt_async(

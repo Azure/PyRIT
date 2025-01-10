@@ -112,7 +112,7 @@ class OpenAITTSTarget(OpenAITarget):
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
-    
+
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return True

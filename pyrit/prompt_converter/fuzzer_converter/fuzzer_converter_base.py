@@ -69,7 +69,7 @@ class FuzzerConverter(PromptConverter):
                     original_value_data_type=input_type,
                     converted_value_data_type=input_type,
                     converter_identifiers=[self.get_identifier()],
-                    prompt_metadata=prompt_metadata
+                    prompt_metadata=prompt_metadata,
                 )
             ]
         )

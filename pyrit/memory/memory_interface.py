@@ -471,13 +471,15 @@ class MemoryInterface(abc.ABC):
             conversation_id=conversation_id, update_fields={"labels": labels}
         )
 
-    def update_prompt_metadata_by_conversation_id(self, *, conversation_id: str, prompt_metadata: str) -> bool:
+    def update_prompt_metadata_by_conversation_id(
+        self, *, conversation_id: str, prompt_metadata: dict[str, str]
+    ) -> bool:
         """
         Updates the metadata of prompt entries in memory for a given conversation ID.
 
         Args:
             conversation_id (str): The conversation ID of the entries to be updated.
-            metadata (str): New metadata.
+            metadata (dict[str, str]): New metadata.
 
         Returns:
             bool: True if the update was successful, False otherwise.

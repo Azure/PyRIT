@@ -205,7 +205,9 @@ class TreeOfAttacksNode:
         prompt_metadata = {"response_format": "json"}
         adversarial_chat_request = NormalizerRequest(
             request_pieces=[
-                NormalizerRequestPiece(request_converters=[], prompt_value=prompt_text, prompt_data_type="text", metadata=prompt_metadata)
+                NormalizerRequestPiece(
+                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text", metadata=prompt_metadata
+                )
             ],
             conversation_id=self.adversarial_chat_conversation_id,
         )

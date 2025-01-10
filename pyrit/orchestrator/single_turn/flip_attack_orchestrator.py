@@ -72,7 +72,7 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
         *,
         prompt_list: list[str],
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[str] = None,
+        metadata: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target using flip attack.
