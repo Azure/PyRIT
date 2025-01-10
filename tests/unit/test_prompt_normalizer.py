@@ -110,8 +110,8 @@ async def test_send_prompt_async_empty_response_exception_handled(
     normalizer = PromptNormalizer()
     request = NormalizerRequest([normalizer_piece])
 
-    response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
-    response = response[0]
+    responses = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
+    response = responses[0]
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
     assert response.request_pieces[0].response_error == "empty"
@@ -202,7 +202,8 @@ async def test_send_prompt_async_adds_memory_twice(
 
     normalizer = PromptNormalizer()
 
-    response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
+    responses = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
+    response = responses[0]
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
 
