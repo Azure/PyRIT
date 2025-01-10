@@ -155,6 +155,8 @@ class PDFConverter(PromptConverter):
         Returns:
             DataTypeSerializer: The serializer object containing metadata about the saved file.
         """
-        pdf_serializer = data_serializer_factory(data_type="url", value=content, extension="pdf")
+        pdf_serializer = data_serializer_factory(
+            category="prompt-memory-entries", data_type="url", value=content, extension="pdf"
+        )
         await pdf_serializer.save_data(pdf_bytes.getvalue())
         return pdf_serializer

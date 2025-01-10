@@ -85,7 +85,9 @@ class OpenAITTSTarget(OpenAITarget):
 
         logger.info("Received valid response from the prompt target")
 
-        audio_response = data_serializer_factory(data_type="audio_path", extension=self._response_format)
+        audio_response = data_serializer_factory(
+            category="prompt-memory-entries", data_type="audio_path", extension=self._response_format
+        )
 
         data = response.content
 

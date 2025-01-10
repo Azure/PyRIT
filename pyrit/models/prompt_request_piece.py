@@ -134,12 +134,12 @@ class PromptRequestPiece(abc.ABC):
         from pyrit.models.data_type_serializer import data_serializer_factory
 
         original_serializer = data_serializer_factory(
-            data_type=self.original_value_data_type, value=self.original_value
+            category="prompt-memory-entries", data_type=self.original_value_data_type, value=self.original_value
         )
         self.original_value_sha256 = await original_serializer.get_sha256()
 
         converted_serializer = data_serializer_factory(
-            data_type=self.converted_value_data_type, value=self.converted_value
+            category="prompt-memory-entries", data_type=self.converted_value_data_type, value=self.converted_value
         )
         self.converted_value_sha256 = await converted_serializer.get_sha256()
 

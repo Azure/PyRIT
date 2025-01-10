@@ -65,7 +65,9 @@ class NormalizerRequestPiece(abc.ABC):
             raise ValueError("prompt_converters must be a PromptConverter List")
 
         # this validates the media exists, if needed
-        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_value)
+        data_serializer_factory(
+            category="prompt-memory-entries", data_type=self.prompt_data_type, value=self.prompt_value
+        )
 
 
 class NormalizerRequest:

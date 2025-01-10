@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -28,12 +28,13 @@
 
 
 # %%
-from pyrit.common import default_values
+from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.datasets import fetch_harmbench_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
 
-default_values.load_environment_files()
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 prompt_target = TextTarget()
 examples_source = "https://raw.githubusercontent.com/centerforaisafety/HarmBench/c0423b9/data/behavior_datasets/harmbench_behaviors_text_all.csv"
@@ -44,5 +45,8 @@ prompt_dataset = fetch_harmbench_examples(examples_source, source_type="public_u
 # Use the first 4 examples for red teaming
 prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
-with PromptSendingOrchestrator(objective_target=prompt_target) as orchestrator:
-    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+orchestrator = PromptSendingOrchestrator(objective_target=prompt_target)
+responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+
+# Close connection
+orchestrator.dispose_db_engine()

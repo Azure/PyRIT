@@ -12,7 +12,7 @@ from azure.identity import DefaultAzureCredential
 from sqlalchemy import MetaData, create_engine, event, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.orm.session import Session
 
 from pyrit.common import default_values
@@ -39,8 +39,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
     AZURE_SQL_DB_CONNECTION_STRING = "AZURE_SQL_DB_CONNECTION_STRING"
 
     # Azure Storage Account Container datasets and results environment variables
-    AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL: str = "AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL"
-    AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN: str = "AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN"
+    AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL: str = "AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL"
+    AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN: str = "AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN"
 
     def __init__(
         self,
@@ -55,11 +55,11 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         )
 
         self._results_container_url: str = default_values.get_required_value(
-            env_var_name=self.AZURE_STORAGE_ACCOUNT_RESULTS_CONTAINER_URL, passed_value=results_container_url
+            env_var_name=self.AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL, passed_value=results_container_url
         )
 
         self._results_container_sas_token: Optional[str] = self._resolve_sas_token(
-            self.AZURE_STORAGE_ACCOUNT_RESULTS_SAS_TOKEN, results_sas_token
+            self.AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN, results_sas_token
         )
 
         self._auth_token: Optional[AccessToken] = None
@@ -265,7 +265,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         return self.SessionFactory()
 
     def _query_entries(
-        self, model, *, conditions: Optional = None, distinct: bool = False  # type: ignore
+        self, model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
     ) -> list[Base]:
         """
         Fetches data from the specified table model with optional conditions.
@@ -274,6 +274,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             model: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Flag to return distinct rows (defaults to False).
+            join_scores: Flag to join the scores table with entries (defaults to False).
 
         Returns:
             List of model instances representing the rows fetched from the table.
@@ -281,6 +282,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         with closing(self.get_session()) as session:
             try:
                 query = session.query(model)
+                if join_scores and model == PromptMemoryEntry:
+                    query = query.options(joinedload(PromptMemoryEntry.scores))
                 if conditions is not None:
                     query = query.filter(conditions)
                 if distinct:
