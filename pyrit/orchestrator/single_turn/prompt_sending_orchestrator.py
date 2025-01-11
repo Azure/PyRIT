@@ -12,7 +12,7 @@ from pyrit.common.utils import combine_dict
 from pyrit.models import PromptDataType, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
+from pyrit.prompt_normalizer import NormalizerRequest2, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
@@ -63,14 +63,12 @@ class PromptSendingOrchestrator(Orchestrator):
     async def send_normalizer_requests_async(
         self,
         *,
-        prompt_request_list: list[NormalizerRequest],
+        prompt_request_list: list[NormalizerRequest2],
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the normalized prompts to the prompt target.
         """
-        for request in prompt_request_list:
-            request.validate()
 
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
@@ -119,7 +117,7 @@ class PromptSendingOrchestrator(Orchestrator):
         if isinstance(prompt_list, str):
             prompt_list = [prompt_list]
 
-        requests: list[NormalizerRequest] = []
+        requests: list[NormalizerRequest2] = []
         for prompt in prompt_list:
             conversation_id = self._prepare_conversation()
 

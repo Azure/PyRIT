@@ -36,7 +36,7 @@ class PromptNormalizer(abc.ABC):
         self,
         *,
         seed_prompt_group: SeedPromptGroup,
-        conversation_id: str = None,  #TODO can we get rid of this???
+        conversation_id: str = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
         target: PromptTarget,
@@ -133,13 +133,17 @@ class PromptNormalizer(abc.ABC):
             ],
             [
                 request.response_converter_configurations for request in requests
-            ]
+            ],
+            [
+                request.conversation_id for request in requests
+            ],
         ]
 
         batch_item_keys = [
             "seed_prompt_group",
             "request_converter_configurations",
-            "response_converter_configurations"
+            "response_converter_configurations",
+            "conversation_id",
         ]
 
         return await batch_task_async(

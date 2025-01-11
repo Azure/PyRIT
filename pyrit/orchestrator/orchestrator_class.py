@@ -10,8 +10,11 @@ from typing import Optional
 from pyrit.common import default_values
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Identifier, PromptDataType
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest2
+from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -58,19 +61,32 @@ class Orchestrator(abc.ABC, Identifier):
         self,
         prompt_text: str,
         prompt_type: PromptDataType = "text",
+        conversation_id: str = None,
         converters=None,
         metadata=None,
-        conversation_id=None,
-    ):
+    ) -> NormalizerRequest2:
 
         if converters is None:
             converters = self._prompt_converters
 
-        request_piece = NormalizerRequestPiece(
-            request_converters=converters, prompt_value=prompt_text, prompt_data_type=prompt_type, metadata=metadata
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(
+                value=prompt_text,
+                data_type=prompt_type,
+                metadata=metadata,
+            )]
         )
 
-        request = NormalizerRequest(request_pieces=[request_piece], conversation_id=conversation_id)
+        converter_configurations = [PromptConverterConfiguration(
+            converters=converters if converters else []
+        )]
+
+
+        request = NormalizerRequest2(
+            seed_prompt_group=seed_prompt_group,
+            request_converter_configurations=converter_configurations,
+            conversation_id=conversation_id,
+        )
         return request
 
     def get_memory(self):

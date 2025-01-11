@@ -7,12 +7,13 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from unit.mocks import MockPromptTarget
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer import NormalizerRequest2
 from pyrit.score import SubStringScorer
 
 
@@ -106,13 +107,21 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
 
         f.write(b"test")
         f.flush()
-        req = NormalizerRequestPiece(
-            request_converters=[Base64Converter()],
-            prompt_data_type="image_path",
-            prompt_value=f.name,
+
+        group = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=f.name,
+                    data_type="image_path",
+                )
+            ]
         )
 
-        await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
+        req = NormalizerRequest2(
+            seed_prompt_group=group,
+        )
+
+        await orchestrator.send_normalizer_requests_async(prompt_request_list=[req])
         assert orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.called
 
 
