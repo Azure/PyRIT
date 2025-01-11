@@ -148,3 +148,13 @@ class OpenAITarget(PromptChatTarget):
         which are read from .env
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def is_json_response_supported(self) -> bool:
+        """
+        Abstract method to determine if JSON response format is supported by the target.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
+        pass

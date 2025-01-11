@@ -159,6 +159,10 @@ class SemanticKernelPluginAzureOpenAIPromptTarget(PromptChatTarget):
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
 
+    def is_json_response_supported(self):
+        """Returns bool if JSON response is supported"""
+        return False
+
 
 class AzureStoragePlugin:
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"

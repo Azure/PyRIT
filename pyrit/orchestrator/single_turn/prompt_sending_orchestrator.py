@@ -98,7 +98,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_list: list[str],
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[str] = None,
+        metadata: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.

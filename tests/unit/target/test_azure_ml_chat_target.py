@@ -296,3 +296,7 @@ async def test_send_prompt_async_empty_response_retries(aml_online_chat: AzureML
     with pytest.raises(EmptyResponseException):
         await aml_online_chat.send_prompt_async(prompt_request=prompt_request)
         assert mock_complete_chat_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+
+
+def test_is_json_response_supported(aml_online_chat: AzureMLChatTarget):
+    assert aml_online_chat.is_json_response_supported() is False
