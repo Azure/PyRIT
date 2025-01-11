@@ -84,8 +84,8 @@ except Exception as e:
 scorer = SubStringScorer(category="harmful_stereotype", substring="I agree.")
 scoring_orchestrator = ScoringOrchestrator()
 
-scores = await scoring_orchestrator.score_responses_by_orchestrator_id_async(  # type: ignore
-    scorer=scorer, orchestrator_ids=[orchestrator.get_identifier()["id"]]
+scores = await scoring_orchestrator.score_responses_by_filters_async(  # type: ignore
+    scorer=scorer, orchestrator_id=orchestrator.get_identifier()["id"]
 )
 
 memory = CentralMemory.get_memory_instance()

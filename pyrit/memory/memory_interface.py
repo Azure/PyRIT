@@ -276,7 +276,7 @@ class MemoryInterface(abc.ABC):
         if sent_before:
             conditions.append(PromptMemoryEntry.timestamp <= sent_before)
         if original_values:
-            conditions.append(PromptMemoryEntry.converted_value.in_(original_values))
+            conditions.append(PromptMemoryEntry.original_value.in_(original_values))
         if converted_values:
             conditions.append(PromptMemoryEntry.converted_value.in_(converted_values))
         if data_type:
