@@ -36,10 +36,10 @@ class PromptNormalizer(abc.ABC):
         self,
         *,
         seed_prompt_group: SeedPromptGroup,
+        target: PromptTarget,
         conversation_id: str = None,
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
-        target: PromptTarget,
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
@@ -57,7 +57,7 @@ class PromptNormalizer(abc.ABC):
         request = await self._build_prompt_request_response(
             seed_prompt_group=seed_prompt_group,
             conversation_id=conversation_id,
-            request_converter_configuration=request_converter_configurations,
+            request_converter_configurations=request_converter_configurations,
             target=target,
             sequence=sequence,
             labels=labels,
@@ -207,7 +207,7 @@ class PromptNormalizer(abc.ABC):
         *,
         seed_prompt_group: SeedPromptGroup,
         conversation_id: str,
-        request_converter_configuration: list[PromptConverterConfiguration],
+        request_converter_configurations: list[PromptConverterConfiguration],
         target: PromptTarget,
         sequence: int,
         labels: dict[str, str],
@@ -248,7 +248,7 @@ class PromptNormalizer(abc.ABC):
         response = PromptRequestResponse(request_pieces=entries)
 
         await self.convert_values(
-            converter_configurations=request_converter_configuration,
+            converter_configurations=request_converter_configurations,
             request_response=response)
 
         return response

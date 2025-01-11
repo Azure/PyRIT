@@ -353,7 +353,7 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
     response = await normalizer._build_prompt_request_response(
         seed_prompt_group=seed_prompt_group,
         conversation_id=conversation_id,
-        request_converter_configuration=request_converters,
+        request_converter_configurations=request_converters,
         target=prompt_target,
         sequence=2,
         labels=labels,
