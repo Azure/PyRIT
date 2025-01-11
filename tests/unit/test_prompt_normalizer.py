@@ -4,9 +4,11 @@
 import os
 import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
+import uuid
 
 import pytest
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.prompt_normalizer import NormalizerRequest2
 from unit.mocks import MockPromptTarget, get_image_request_piece
 
 from pyrit.exceptions import EmptyResponseException
@@ -306,19 +308,23 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
         converters=[Base64Converter(), StringJoinConverter(join_value="_")]
     )
 
+    normalizer_request = NormalizerRequest2(
+        seed_prompt_group=seed_prompt_group,
+        request_converter_configurations=[request_converters],
+    )
+
     normalizer = PromptNormalizer()
 
     if max_requests_per_minute and batch_size != 1:
         with pytest.raises(ValueError):
             results = await normalizer.send_prompt_batch_to_target_async(
-                seed_prompt_group=seed_prompt_group,
-                request_converter_configurations=[request_converters],
+                requests=[normalizer_request],
                 target=prompt_target,
                 batch_size=batch_size,
             )
     else:
         results = await normalizer.send_prompt_batch_to_target_async(
-            seed_prompt_group=seed_prompt_group,
+            requests=[normalizer_request],
             target=prompt_target,
             batch_size=batch_size,
         )
@@ -328,35 +334,37 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
 
 
 @pytest.mark.asyncio
-async def test_build_prompt_request_response(mock_memory_instance):
+async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_group):
 
     labels = {"label1": "value1", "label2": "value2"}
     orchestrator_identifier = {"orchestrator_id": "123"}
 
+    conversation_id = uuid.uuid4()
+
     prompt_target = MockPromptTarget()
-    prompt_converters = [Base64Converter()]
-    prompt_text = "Hello"
-    normalizer_req_piece_1 = NormalizerRequestPiece(
-        request_converters=prompt_converters,
-        prompt_value=prompt_text,
-        prompt_data_type="text",
-    )
-    normalizer_req_piece_2 = NormalizerRequestPiece(
-        request_converters=prompt_converters,
-        prompt_value=prompt_text,
-        prompt_data_type="text",
-    )
+    request_converters = [
+        PromptConverterConfiguration(
+            converters=[Base64Converter(), StringJoinConverter(join_value="_")]
+        )
+    ]
+
     normalizer = PromptNormalizer()
 
     response = await normalizer._build_prompt_request_response(
-        request=NormalizerRequest([normalizer_req_piece_1, normalizer_req_piece_2]),
+        seed_prompt_group=seed_prompt_group,
+        conversation_id=conversation_id,
+        request_converter_configuration=request_converters,
         target=prompt_target,
+        sequence=2,
         labels=labels,
         orchestrator_identifier=orchestrator_identifier,
     )
 
     # Check all prompt pieces in the response have the same conversation ID
     assert len(set(prompt_piece.conversation_id for prompt_piece in response.request_pieces)) == 1
+
+    # Check sequence is set correctly
+    assert len(set(prompt_piece.sequence for prompt_piece in response.request_pieces)) == 1
 
 
 @pytest.mark.asyncio

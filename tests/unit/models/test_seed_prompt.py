@@ -76,10 +76,10 @@ def test_seed_prompt_group_initialization(seed_prompt_fixture):
     assert group.prompts[0].sequence == 1
 
 
-def test_seed_prompt_group_sequence_validation():
+def test_seed_prompt_group_sequence_default():
     prompt = SeedPrompt(value="Test prompt", data_type="text")
-    with pytest.raises(ValueError, match="All prompts in a group must have a sequence number."):
-        SeedPromptGroup(prompts=[prompt])
+    seed_prompt_group = SeedPromptGroup(prompts=[prompt])
+    assert seed_prompt_group.prompts[0].sequence == 0
 
 
 def test_group_seed_prompts_by_prompt_group_id(seed_prompt_fixture):

@@ -125,9 +125,15 @@ class PromptNormalizer(abc.ABC):
         """
 
         batch_items = [
-            requests.seed_prompt_group,
-            requests.request_converter_configurations,
-            requests.response_converter_configurations
+            [
+                request.seed_prompt_group for request in requests
+            ],
+            [
+                request.request_converter_configurations for request in requests
+            ],
+            [
+                request.response_converter_configurations for request in requests
+            ]
         ]
 
         batch_item_keys = [
