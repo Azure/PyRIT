@@ -1,10 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+
+from pathlib import Path
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import pytest
+from fpdf import FPDF
+from pypdf import PdfReader
 
 from pyrit.models import SeedPrompt, DataTypeSerializer
 from pyrit.prompt_converter import ConverterResult, PDFConverter
@@ -154,3 +158,117 @@ async def test_convert_async_end_to_end_no_reader(tmp_path, duckdb_instance):
     assert pdf_file_path.exists()
     assert pdf_file_path.stat().st_size > 0
     pdf_file_path.unlink()
+
+
+@pytest.fixture
+def mock_pdf_path(tmp_path):
+    """Create and return the path for a mock PDF with multiple pages."""
+    pdf_path = tmp_path / "mock_test.pdf"
+
+    # Create a multi-page PDF
+    pdf = FPDF(format="A4")
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt="Page 1 content", ln=True, align="L")
+    pdf.add_page()
+    pdf.cell(200, 10, txt="Page 2 content", ln=True, align="L")
+
+    pdf_bytes = BytesIO()
+    pdf.output(pdf_bytes)
+    pdf_bytes.seek(0)
+
+    with open(pdf_path, "wb") as pdf_file:
+        pdf_file.write(pdf_bytes.getvalue())
+
+    return pdf_path
+
+
+@pytest.mark.asyncio
+async def test_injection_into_mock_pdf(mock_pdf_path):
+    """Test injecting text into a generic mock PDF."""
+    # Define injection items
+    injection_items = [
+        {
+            "page": 0,
+            "x": 50,
+            "y": 700,
+            "text": "Injected Text",
+            "font_size": 12,
+            "font": "Helvetica",
+            "font_color": (255, 0, 0),
+        }
+    ]
+
+    # Load the mock PDF
+    with open(mock_pdf_path, "rb") as pdf_file:
+        existing_pdf = BytesIO(pdf_file.read())
+
+    # Create the PDFConverter with the mock PDF and injection items
+    converter = PDFConverter(existing_pdf=existing_pdf, injection_items=injection_items)
+
+    # Perform the injection
+    result = await converter.convert_async(prompt="")
+
+    # Get the local file path from the result
+    modified_pdf_path = Path(result.output_text)
+    assert modified_pdf_path.exists(), "Modified PDF file does not exist"
+
+    # Open and validate the modified PDF
+    with open(modified_pdf_path, "rb") as modified_pdf_file:
+        modified_pdf = PdfReader(modified_pdf_file)
+        page_content = modified_pdf.pages[0].extract_text()
+
+    # Validate the injected text
+    assert "Injected Text" in page_content, "Injected text not found on page 0"
+    modified_pdf_path.unlink()  # Clean up after the test
+
+
+@pytest.mark.asyncio
+async def test_multiple_injections_into_mock_pdf(mock_pdf_path):
+    """Test injecting text into multiple pages of a generic mock PDF."""
+    # Define multiple injection items
+    injection_items = [
+        {
+            "page": 0,
+            "x": 50,
+            "y": 700,
+            "text": "Page 0 Injection",
+            "font_size": 12,
+            "font": "Helvetica",
+            "font_color": (255, 0, 0),
+        },
+        {
+            "page": 1,
+            "x": 75,
+            "y": 650,
+            "text": "Page 1 Injection",
+            "font_size": 10,
+            "font": "Helvetica",
+            "font_color": (0, 255, 0),
+        },
+    ]
+
+    # Load the mock PDF
+    with open(mock_pdf_path, "rb") as pdf_file:
+        existing_pdf = BytesIO(pdf_file.read())
+
+    # Create the PDFConverter with the mock PDF and multiple injection items
+    converter = PDFConverter(existing_pdf=existing_pdf, injection_items=injection_items)
+
+    # Perform the injections
+    result = await converter.convert_async(prompt="")
+
+    # Get the local file path from the result
+    modified_pdf_path = Path(result.output_text)
+    assert modified_pdf_path.exists(), "Modified PDF file does not exist"
+
+    # Open and validate the modified PDF
+    with open(modified_pdf_path, "rb") as modified_pdf_file:
+        modified_pdf = PdfReader(modified_pdf_file)
+        page_0_content = modified_pdf.pages[0].extract_text()
+        page_1_content = modified_pdf.pages[1].extract_text()
+
+    # Validate the injected text
+    assert "Page 0 Injection" in page_0_content, "Injected text not found on page 0"
+    assert "Page 1 Injection" in page_1_content, "Injected text not found on page 1"
+    modified_pdf_path.unlink()  # Clean up after the test
