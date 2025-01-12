@@ -10,10 +10,11 @@ from colorama import Fore, Style
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestResponse, SeedPromptDataset
+from pyrit.models import PromptRequestResponse, SeedPromptDataset, SeedPromptGroup, SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
@@ -89,27 +90,29 @@ class SkeletonKeyOrchestrator(Orchestrator):
 
         conversation_id = str(uuid4())
 
-        target_skeleton_prompt_obj = self._create_normalizer_request(
-            prompt_text=self._skeleton_key_prompt,
-            conversation_id=conversation_id,
-            converters=self._prompt_converters,
-        )
+        skeleton_key_prompt = SeedPromptGroup(prompts=[
+            SeedPrompt(value=self._skeleton_key_prompt, data_type="text")
+        ])
+
+        converter_configuration = PromptConverterConfiguration(converters=self._prompt_converters)
 
         await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=target_skeleton_prompt_obj,
+            seed_prompt_group=skeleton_key_prompt,
+            conversation_id=conversation_id,
+            request_converter_configurations=[converter_configuration],
             target=self._prompt_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
         )
 
-        target_prompt_obj = self._create_normalizer_request(
-            prompt_text=prompt,
-            conversation_id=conversation_id,
-            converters=self._prompt_converters,
-        )
+        objective_prompt = SeedPromptGroup(prompts=[
+            SeedPrompt(value=prompt, data_type="text")
+        ])
 
         return await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=target_prompt_obj,
+            seed_prompt_group=objective_prompt,
+            conversation_id=conversation_id,
+            request_converter_configurations=[converter_configuration],
             target=self._prompt_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),

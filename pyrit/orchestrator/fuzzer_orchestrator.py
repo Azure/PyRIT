@@ -17,7 +17,7 @@ from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import FuzzerConverter, PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
+from pyrit.prompt_normalizer import NormalizerRequest2, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import FloatScaleThresholdScorer, SelfAskScaleScorer
 
@@ -309,14 +309,13 @@ class FuzzerOrchestrator(Orchestrator):
                 jailbreak_prompts.append(target_template.render_template_value(prompt=prompt))
 
             # 4. Apply prompt converter if any and send request to the target
-            requests: list[NormalizerRequest] = []
+            requests: list[NormalizerRequest2] = []
             for jailbreak_prompt in jailbreak_prompts:
                 request = self._create_normalizer_request(
                     prompt_text=jailbreak_prompt,
                     prompt_type="text",
                     converters=self._prompt_converters,
                 )
-                request.validate()
                 requests.append(request)
 
             responses = await self._prompt_normalizer.send_prompt_batch_to_target_async(
