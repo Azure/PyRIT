@@ -25,6 +25,7 @@ from pyrit.prompt_target.openai.openai_dall_e_target import OpenAIDALLETarget
 from pyrit.prompt_target.openai.openai_tts_target import OpenAITTSTarget
 from pyrit.prompt_target.playwright_target import PlaywrightTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
+from pyrit.prompt_target.realtime_target import RealtimeTarget
 from pyrit.prompt_target.text_target import TextTarget
 
 __all__ = [
@@ -50,5 +51,6 @@ __all__ = [
     "PromptChatTarget",
     "PromptShieldTarget",
     "PromptTarget",
+    "RealtimeTarget",
     "TextTarget",
 ]

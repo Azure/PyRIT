@@ -74,6 +74,7 @@ dependencies = [
     "transformers>=4.40.0",
     "treelib>=1.7.0",
     "types-requests>=2.31.0.20240406",
+    "websockets>=12.0",
 ]
 
 [project.optional-dependencies]
