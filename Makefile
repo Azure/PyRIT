@@ -28,7 +28,7 @@ unit-test-cov-xml:
 	$(CMD) pytest --cov=$(PYMODULE) $(UNIT_TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
 
 integration-test:
-	$(CMD) pytest $(INTEGRATION_TESTS) --cov=$(PYMODULE) $(UNIT_TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
+	$(CMD) pytest $(INTEGRATION_TESTS) --cov=$(PYMODULE) $(INTEGRATION_TESTS) --cov-report xml --junitxml=junit/test-results.xml --doctest-modules
 
 #clean:
 #	git clean -Xdf # Delete all files in .gitignore
