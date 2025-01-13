@@ -17,8 +17,7 @@ steps:
     KeyVaultName: 'pyrit-environment'
     SecretsFilter: 'env-integration-test'
     RunAsPreJob: false
-- displayName: create env file
-  bash: |
+- bash: |
     python -c "
     import os;
     secret = os.environ.get('PYRIT_TEST_SECRET'); 
@@ -28,11 +27,12 @@ steps:
       file.write(secret)"
   env:
     PYRIT_TEST_SECRET: $(env-integration-test)
-- displayName: upgrade pip and setuptools before installing PyRIT
-  bash: pip install --upgrade setuptools pip
-- displayName: install PyRIT
-  bash: pip install .[all]
-- displayName: run integration tests
-  bash: make integration-test
-- displayName: clean up env file
-  bash: rm -f .env
+  name: create env file
+- bash: pip install --upgrade setuptools pip
+  name: upgrade pip and setuptools before installing PyRIT
+- bash: pip install .[all]
+  name: install PyRIT
+- bash: make integration-test
+  name: run integration tests
+- bash: rm -f .env
+  name: clean up env file
