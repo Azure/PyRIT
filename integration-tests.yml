@@ -27,12 +27,12 @@ steps:
       file.write(secret)"
   env:
     PYRIT_TEST_SECRET: $(env-integration-test)
-  name: create env file
+  name: create_env_file
 - bash: pip install --upgrade setuptools pip
-  name: upgrade pip and setuptools before installing PyRIT
+  name: upgrade_pip_and_setuptools_before_installing_PyRIT
 - bash: pip install .[all]
-  name: install PyRIT
+  name: install_PyRIT
 - bash: make integration-test
-  name: run integration tests
+  name: run_integration_tests
 - bash: rm -f .env
-  name: clean up env file
+  name: clean_up_env_file
