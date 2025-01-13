@@ -203,7 +203,7 @@ async def test_send_prompt_async_adds_memory_twice(
     normalizer = PromptNormalizer()
 
     response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
-    
+
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
 
