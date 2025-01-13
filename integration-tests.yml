@@ -30,7 +30,7 @@ steps:
   name: create_env_file
 - bash: pip install --upgrade setuptools pip
   name: upgrade_pip_and_setuptools_before_installing_PyRIT
-- bash: apt-get install python3-tk
+- bash: sudo apt-get install python3-tk
   name: install_tkinter
 - bash: pip install .[all]
   name: install_PyRIT
