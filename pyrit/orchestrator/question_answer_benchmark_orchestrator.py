@@ -81,15 +81,19 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
                 prompt_text=question_prompt, conversation_id=self._conversation_id
             )
 
-            response = await self._normalizer.send_prompt_async(
+            responses = await self._normalizer.send_prompt_async(
                 normalizer_request=request,
                 target=self._chat_model_under_evaluation,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self.get_identifier(),
             )
 
-            answer = response.request_pieces[0].converted_value
-            curr_score = self._scorer.score_question(question=question_entry, answer=answer)
+            if type(responses) is not list:
+                responses = [responses]
+
+            for response in responses:
+                answer = response.request_pieces[0].converted_value
+                curr_score = self._scorer.score_question(question=question_entry, answer=answer)
 
             if self._verbose:
                 msg = textwrap.dedent(
