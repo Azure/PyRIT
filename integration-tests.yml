@@ -38,6 +38,7 @@ steps:
   name: run_integration_tests
 - bash: rm -f .env
   name: clean_up_env_file
-- task: PublishCodeCoverageResults@2
+- task: PublishTestResults@2
   inputs:
-    summaryFileLocation: junit/test-results.xml
+    testResultsFormat: 'JUnit'
+    testResultsFiles: 'junit/test-results.xml'
