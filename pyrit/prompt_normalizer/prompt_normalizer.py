@@ -64,13 +64,13 @@ class PromptNormalizer(abc.ABC):
             # Empty responses are retried, but we don't want them to stop execution
             await self._calc_hash_and_add_request_to_memory(request=request)
 
-            response = construct_response_from_request(
+            responses = construct_response_from_request(
                 request=request.request_pieces[0],
                 response_text_pieces=[""],
                 response_type="text",
                 error="empty",
             )
-            response = [response]
+            response = [responses]
 
         except Exception as ex:
             # Ensure request to memory before processing exception

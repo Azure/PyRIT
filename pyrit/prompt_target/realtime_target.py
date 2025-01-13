@@ -186,6 +186,10 @@ class RealtimeTarget(PromptTarget):
         ctr = 0
         done = False
 
+        if self.websocket is None:
+            logger.error("WebSocket connection is not established")
+            raise Exception("WebSocket connection is not established")
+
         while not done:
             audio_transcript = None
             audio_buffer = b""
