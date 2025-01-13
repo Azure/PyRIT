@@ -88,7 +88,7 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
                 orchestrator_identifier=self.get_identifier(),
             )
 
-            if type(responses) is not list:
+            if not isinstance(responses, list):
                 responses = [responses]
 
             for response in responses:

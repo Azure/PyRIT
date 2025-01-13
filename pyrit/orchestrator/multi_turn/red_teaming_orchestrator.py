@@ -10,6 +10,7 @@ from uuid import uuid4
 from pyrit.common.utils import combine_dict
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.models import PromptRequestPiece, Score
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
@@ -252,16 +253,18 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             conversation_id=objective_target_conversation_id,
         )
 
-        response_piece = (
-            await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=normalizer_request,
-                target=self._objective_target,
-                labels=memory_labels,
-                orchestrator_identifier=self.get_identifier(),
-            )
-        ).request_pieces[0]
+        response_piece = await self._prompt_normalizer.send_prompt_async(
+            normalizer_request=normalizer_request,
+            target=self._objective_target,
+            labels=memory_labels,
+            orchestrator_identifier=self.get_identifier(),
+        )
 
-        return response_piece
+        if isinstance(response_piece, PromptRequestResponse):
+            return response_piece.request_pieces[0]
+
+        else:
+            return response_piece[0].request_pieces[0]
 
     async def _check_conversation_complete_async(self, objective_target_conversation_id: str) -> Union[Score, None]:
         """
@@ -405,18 +408,18 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
             prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id
         )
 
-        response_text = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=normalizer_request,
-                    target=self._adversarial_chat,
-                    orchestrator_identifier=self.get_identifier(),
-                    labels=memory_labels,
-                )
-            )
-            .request_pieces[0]
-            .converted_value
+        response_text_values = await self._prompt_normalizer.send_prompt_async(
+            normalizer_request=normalizer_request,
+            target=self._adversarial_chat,
+            orchestrator_identifier=self.get_identifier(),
+            labels=memory_labels,
         )
+
+        if isinstance(response_text_values, PromptRequestResponse):
+            response_text = response_text_values.request_pieces[0].converted_value
+
+        else:
+            response_text = response_text_values[0].request_pieces[0].converted_value
 
         return response_text
 

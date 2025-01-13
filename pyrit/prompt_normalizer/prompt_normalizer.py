@@ -55,22 +55,22 @@ class PromptNormalizer(abc.ABC):
             orchestrator_identifier=orchestrator_identifier,
         )
 
-        response = None
+        responses: list[PromptRequestResponse] = []
 
         try:
-            response = await target.send_prompt_async(prompt_request=request)
+            responses = await target.send_prompt_async(prompt_request=request)
             await self._calc_hash_and_add_request_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
             await self._calc_hash_and_add_request_to_memory(request=request)
 
-            responses = construct_response_from_request(
+            response = construct_response_from_request(
                 request=request.request_pieces[0],
                 response_text_pieces=[""],
                 response_type="text",
                 error="empty",
             )
-            response = [responses]
+            responses = [response]
 
         except Exception as ex:
             # Ensure request to memory before processing exception
@@ -86,15 +86,15 @@ class PromptNormalizer(abc.ABC):
             await self._calc_hash_and_add_request_to_memory(request=error_response)
             raise
 
-        if response is None:
+        if responses is None:
             return None
 
         await self.convert_response_values(
-            response_converter_configurations=normalizer_request.response_converters, prompt_responses=response
+            response_converter_configurations=normalizer_request.response_converters, prompt_responses=responses
         )
 
-        await self._calc_hash_and_add_request_to_memory(request=response)
-        return response
+        await self._calc_hash_and_add_request_to_memory(request=responses)
+        return responses
 
     async def send_prompt_batch_to_target_async(
         self,
