@@ -20,16 +20,18 @@ steps:
 - bash: |
     python -c "
     import os;
-    secret = os.environ.get('PYRIT_TEST_SECRET'); 
-    if not secret: 
-      raise ValueError('PYRIT_TEST_SECRET is not set'); 
-    with open('.env', 'w') as file: 
+    secret = os.environ.get('PYRIT_TEST_SECRET');
+    if not secret:
+      raise ValueError('PYRIT_TEST_SECRET is not set');
+    with open('.env', 'w') as file:
       file.write(secret)"
   env:
     PYRIT_TEST_SECRET: $(env-integration-test)
   name: create_env_file
 - bash: pip install --upgrade setuptools pip
   name: upgrade_pip_and_setuptools_before_installing_PyRIT
+- bash: apt-get install python3-tk
+  name: install_tkinter
 - bash: pip install .[all]
   name: install_PyRIT
 - bash: make integration-test

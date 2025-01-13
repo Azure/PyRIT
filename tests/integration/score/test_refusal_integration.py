@@ -55,13 +55,13 @@ async def test_refusal_scorer_score_eval_dataset(memory: MemoryInterface, use_ta
                 original_value=task,
             )
             # request.id = uuid4()
-            request.conversation_id = conversation_id
+            request.conversation_id = str(conversation_id)
             response = PromptRequestPiece(
                 role="assistant",
                 original_value=response,
             )
             # response.id = uuid4()
-            response.conversation_id = conversation_id
+            response.conversation_id = str(conversation_id)
             request_responses.append(response)
             memory.add_request_response_to_memory(request=PromptRequestResponse([request]))
             memory.add_request_response_to_memory(request=PromptRequestResponse([response]))
