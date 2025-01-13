@@ -64,7 +64,7 @@ await orchestrator.print_conversations_async()  # type: ignore
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 
-await target.connect()
+await target.connect()  # type: ignore
 
 text_prompt_to_send = "Hi what is 2+2?"
 
@@ -103,4 +103,4 @@ await orchestrator.send_normalizer_requests_async(prompt_request_list=[second_no
 await orchestrator.print_conversations_async()  # type: ignore
 
 # %%
-await target.disconnect()
+await target.disconnect()  # type: ignore

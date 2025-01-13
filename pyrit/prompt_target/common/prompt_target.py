@@ -29,7 +29,9 @@ class PromptTarget(abc.ABC, Identifier):
             logging.basicConfig(level=logging.INFO)
 
     @abc.abstractmethod
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+    async def send_prompt_async(
+        self, *, prompt_request: PromptRequestResponse
+    ) -> PromptRequestResponse | list[PromptRequestResponse]:
         """
         Sends a normalized prompt async to the prompt target.
         """

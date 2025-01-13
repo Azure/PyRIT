@@ -11,6 +11,7 @@ from pyrit.common.utils import combine_dict
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.models import PromptRequestPiece, Score
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
@@ -336,18 +337,19 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
             prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id
         )
 
-        response_text = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=normalizer_request,
-                    target=self._adversarial_chat,
-                    orchestrator_identifier=self.get_identifier(),
-                    labels=memory_labels,
-                )
-            )
-            .request_pieces[0]
-            .converted_value
+        response_normalizer_text = await self._prompt_normalizer.send_prompt_async(
+            normalizer_request=normalizer_request,
+            target=self._adversarial_chat,
+            orchestrator_identifier=self.get_identifier(),
+            labels=memory_labels,
         )
+
+        if isinstance(response_normalizer_text, PromptRequestResponse):
+            response_text = response_normalizer_text.request_pieces[0].converted_value
+
+        else:
+            response_text = response_normalizer_text[0].request_pieces[0].converted_value
+
         response_text = remove_markdown_json(response_text)
 
         expected_output = ["generated_question", "rationale_behind_jailbreak", "last_response_summary"]

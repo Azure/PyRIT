@@ -11,6 +11,7 @@ from typing import Optional
 from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt
+from pyrit.models.prompt_request_response import PromptRequestResponse
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
@@ -105,14 +106,17 @@ class TreeOfAttacksNode:
             conversation_id=self.objective_target_conversation_id,
         )
 
-        response = (
-            await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=objective_target_request,
-                target=self._objective_target,
-                labels=self._global_memory_labels,
-                orchestrator_identifier=self._orchestrator_id,
-            )
-        ).request_pieces[0]
+        normalizer_response = await self._prompt_normalizer.send_prompt_async(
+            normalizer_request=objective_target_request,
+            target=self._objective_target,
+            labels=self._global_memory_labels,
+            orchestrator_identifier=self._orchestrator_id,
+        )
+
+        if isinstance(normalizer_response, PromptRequestResponse):
+            response = normalizer_response.request_pieces[0]
+        else:
+            response = normalizer_response[0].request_pieces[0]
 
         logger.debug(f"saving score with prompt_request_response_id: {response.id}")
 
@@ -210,18 +214,17 @@ class TreeOfAttacksNode:
             conversation_id=self.adversarial_chat_conversation_id,
         )
 
-        adversarial_chat_response = (
-            (
-                await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=adversarial_chat_request,
-                    target=self._adversarial_chat,
-                    labels=self._global_memory_labels,
-                    orchestrator_identifier=self._orchestrator_id,
-                )
-            )
-            .request_pieces[0]
-            .converted_value
+        adversarial_chat_normalizer_response = await self._prompt_normalizer.send_prompt_async(
+            normalizer_request=adversarial_chat_request,
+            target=self._adversarial_chat,
+            labels=self._global_memory_labels,
+            orchestrator_identifier=self._orchestrator_id,
         )
+
+        if isinstance(adversarial_chat_normalizer_response, PromptRequestResponse):
+            adversarial_chat_response = adversarial_chat_normalizer_response.request_pieces[0].converted_value
+        else:
+            adversarial_chat_response = adversarial_chat_normalizer_response[0].request_pieces[0].converted_value
 
         return self._parse_red_teaming_response(adversarial_chat_response)
 
