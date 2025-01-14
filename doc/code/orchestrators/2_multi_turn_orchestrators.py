@@ -31,12 +31,12 @@
 # %%
 import logging
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RTOSystemPromptPaths
+from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import \
+    RTOSystemPromptPaths
 from pyrit.prompt_target import AzureMLChatTarget, OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -153,11 +153,11 @@ await result.print_conversation_async()  # type: ignore
 import logging
 
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RTOSystemPromptPaths
+from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import \
+    RTOSystemPromptPaths
 from pyrit.prompt_converter import EmojiConverter
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -206,7 +206,6 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-
 
 logging.basicConfig(level=logging.WARNING)
 

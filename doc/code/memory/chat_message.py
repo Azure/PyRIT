@@ -14,7 +14,6 @@
 # ---
 
 from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
-
 # %% [markdown]
 # # Chat messages - optional
 #
@@ -29,7 +28,6 @@ from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 # Below is an example that converts a list of chat messages to chatml format and back.
 # %%
 from pyrit.models import ChatMessage
-
 
 messages = [
     ChatMessage(role="system", content="You are a helpful AI assistant"),
@@ -72,8 +70,8 @@ print(chat_messages)
 from transformers import AutoTokenizer
 
 # %%
-from pyrit.chat_message_normalizer import ChatMessageNormalizerTokenizerTemplate
-
+from pyrit.chat_message_normalizer import \
+    ChatMessageNormalizerTokenizerTemplate
 
 messages = [
     ChatMessage(role="user", content="Hello, how are you?"),

@@ -34,10 +34,9 @@
 # %%
 import uuid
 
-from pyrit.common import initialize_pyrit, DUCK_DB
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=DUCK_DB)
 
@@ -57,7 +56,6 @@ await orchestrator.send_prompts_async(prompt_list=all_prompts, memory_labels=mem
 from pyrit.memory import CentralMemory
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import TextTarget
-
 
 memory = CentralMemory.get_memory_instance()
 prompts = memory.get_prompt_request_pieces(labels={"prompt_group": group1})

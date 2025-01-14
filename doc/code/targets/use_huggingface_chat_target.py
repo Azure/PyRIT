@@ -46,10 +46,9 @@
 # %%
 import time
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
-from pyrit.prompt_target import HuggingFaceChatTarget
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import HuggingFaceChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

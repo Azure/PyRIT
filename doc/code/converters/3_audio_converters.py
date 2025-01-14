@@ -21,9 +21,8 @@
 # %%
 import os
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -43,9 +42,8 @@ import logging
 import os
 import pathlib
 
-from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
 from pyrit.common.path import DB_DATA_PATH
-
+from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -70,9 +68,8 @@ import logging
 import os
 import pathlib
 
-from pyrit.prompt_converter import AudioFrequencyConverter
 from pyrit.common.path import DB_DATA_PATH
-
+from pyrit.prompt_converter import AudioFrequencyConverter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -99,9 +96,8 @@ memory.dispose_engine()
 #
 # In this scenario, we are explicitly setting the memory instance to `AzureSQLMemory()`, ensuring that the results will be saved to the Azure SQL database. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
-from pyrit.common import initialize_pyrit, AZURE_SQL
+from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.prompt_converter import AzureSpeechTextToAudioConverter
-
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 
@@ -119,7 +115,6 @@ print(audio_convert_result.output_text)
 import logging
 
 from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
