@@ -110,8 +110,8 @@ async def test_send_prompt_async_empty_response_exception_handled(
     normalizer = PromptNormalizer()
     request = NormalizerRequest([normalizer_piece])
 
-    responses = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
-    response = responses[0]
+    response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
+
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
     assert response.request_pieces[0].response_error == "empty"
@@ -194,7 +194,7 @@ async def test_send_prompt_async_adds_memory_twice(
 ):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
+    prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
     normalizer_piece.request_converters = []
 
@@ -203,7 +203,6 @@ async def test_send_prompt_async_adds_memory_twice(
     normalizer = PromptNormalizer()
 
     response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
-
     assert mock_memory_instance.add_request_response_to_memory.call_count == 2
 
 
@@ -213,7 +212,7 @@ async def test_send_prompt_async_no_converters_response(
 ):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
+    prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
     normalizer_piece.request_converters = []
     request = NormalizerRequest([normalizer_piece])
@@ -222,7 +221,7 @@ async def test_send_prompt_async_no_converters_response(
 
     # Send prompt async and check the response
     response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
-    assert response[0].request_pieces[0].converted_value == "Hello", "There were no response converters"
+    assert response.request_pieces[0].converted_value == "Hello", "There were no response converters"
 
 
 @pytest.mark.asyncio
@@ -231,7 +230,7 @@ async def test_send_prompt_async_converters_response(
 ):
 
     prompt_target = MagicMock()
-    prompt_target.send_prompt_async = AsyncMock(return_value=[response])
+    prompt_target.send_prompt_async = AsyncMock(return_value=response)
 
     normalizer_piece.request_converters = []
 
@@ -242,7 +241,7 @@ async def test_send_prompt_async_converters_response(
     normalizer = PromptNormalizer()
 
     response = await normalizer.send_prompt_async(normalizer_request=request, target=prompt_target)
-    assert response[0].request_pieces[0].converted_value == "SGVsbG8="
+    assert response.request_pieces[0].converted_value == "SGVsbG8="
 
 
 @pytest.mark.asyncio
@@ -359,7 +358,7 @@ async def test_convert_response_values_index(mock_memory_instance, response: Pro
     normalizer = PromptNormalizer()
 
     await normalizer.convert_response_values(
-        response_converter_configurations=[response_converter], prompt_responses=response
+        response_converter_configurations=[response_converter], prompt_response=response
     )
     assert response.request_pieces[0].converted_value == "SGVsbG8=", "Converter should be applied here"
     assert (
@@ -376,7 +375,7 @@ async def test_convert_response_values_type(mock_memory_instance, response: Prom
     normalizer = PromptNormalizer()
 
     await normalizer.convert_response_values(
-        response_converter_configurations=[response_converter], prompt_responses=response
+        response_converter_configurations=[response_converter], prompt_response=response
     )
     assert response.request_pieces[0].converted_value == "SGVsbG8="
     assert response.request_pieces[1].converted_value == "cGFydCAy"

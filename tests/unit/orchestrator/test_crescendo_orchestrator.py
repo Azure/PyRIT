@@ -498,7 +498,7 @@ async def test_get_attack_prompt_with_refusal(orchestrator: CrescendoOrchestrato
     refused_text = "this request was refused"
 
     with patch.object(
-        orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=[red_teaming_return_value])
+        orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
     ) as mock_prompt_normalizer:
 
         await orchestrator._get_attack_prompt(
@@ -537,7 +537,7 @@ async def test_get_attack_prompt_first_turn(orchestrator: CrescendoOrchestrator)
     objective = "do something extremely bad"
 
     with patch.object(
-        orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=[red_teaming_return_value])
+        orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
     ) as mock_prompt_normalizer:
 
         await orchestrator._get_attack_prompt(
@@ -579,7 +579,7 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
 
     with (
         patch.object(
-            orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=[red_teaming_return_value])
+            orchestrator._prompt_normalizer, "send_prompt_async", AsyncMock(return_value=red_teaming_return_value)
         ) as mock_prompt_normalizer,
         patch.object(
             orchestrator._memory, "get_prompt_request_pieces", MagicMock(return_value=[objective_score_return])
