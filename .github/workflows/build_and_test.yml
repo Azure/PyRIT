@@ -43,7 +43,7 @@ jobs:
       - name: Install PyRIT with pip
         run: pip install .[${{ matrix.package_extras }}]
       - name: Run unit tests with code coverage
-        run: make test-cov-xml
+        run: make unit-test-cov-xml
       - name: Publish Pytest Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
