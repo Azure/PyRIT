@@ -7,7 +7,7 @@ repos:
           - '--keep-output'
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
         exclude: NOTICE.txt
@@ -21,13 +21,13 @@ repos:
   # https://black.readthedocs.io/en/stable/integrations/source_version_control.html
   # Using this mirror lets us use mypyc-compiled black, which is about 2x faster
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.2.0
+    rev: 24.10.0
     hooks:
       - id: black
         language_version: python3
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
+    rev: 7.1.1
     hooks:
       - id: flake8
         additional_dependencies: ['flake8-copyright']
@@ -44,14 +44,20 @@ repos:
       exclude: (release_process.md|git.md|^doc/deployment/|tests|pyrit/prompt_converter/morse_converter.py|.github|pyrit/prompt_converter/emoji_converter.py|pyrit/score/markdown_injection.py|pyrit/datasets/fetch_example_datasets.py|^pyrit/auxiliary_attacks/gcg/)
 
   - repo: https://github.com/pycqa/pylint
-    rev: v3.0.3
+    rev: v3.3.3
     hooks:
       - id: pylint
         args: [--disable=all, --enable=unused-import]
         exclude: NOTICE.txt
 
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: isort (python)
+
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.14.1
     hooks:
       - id: mypy
         args: [--install-types, --non-interactive, --ignore-missing-imports]
