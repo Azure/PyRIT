@@ -110,7 +110,8 @@ class PromptSendingOrchestrator(Orchestrator):
                 prompts. Any labels passed in will be combined with self._global_memory_labels (from the
                 GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
                 the passed-in labels take precedence. Defaults to None.
-            metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
+            metadata (Optional(dict[str, str]): Any additional information to be added to the memory entry corresponding
+                to the prompts sent.
 
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.

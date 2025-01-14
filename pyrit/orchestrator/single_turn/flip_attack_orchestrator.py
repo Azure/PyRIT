@@ -82,7 +82,8 @@ class FlipAttackOrchestrator(PromptSendingOrchestrator):
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts. Any labels passed in will be combined with self._global_memory_labels with the passed
                 in labels taking precedence in the case of collisions. Defaults to None.
-            metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
+            metadata (Optional(dict[str, str]): Any additional information to be added to the memory entry corresponding
+                to the prompts sent.
 
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.
