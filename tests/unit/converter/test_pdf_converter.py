@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from fpdf import FPDF
-from pypdf import PdfReader
+from pypdf import PdfReader, PageObject
 
 from pyrit.models import SeedPrompt, DataTypeSerializer
 from pyrit.prompt_converter import ConverterResult, PDFConverter
@@ -272,3 +272,78 @@ async def test_multiple_injections_into_mock_pdf(mock_pdf_path):
     assert "Page 0 Injection" in page_0_content, "Injected text not found on page 0"
     assert "Page 1 Injection" in page_1_content, "Injected text not found on page 1"
     modified_pdf_path.unlink()  # Clean up after the test
+
+
+@pytest.fixture
+def dummy_page():
+    """
+    Create a dummy page with a known mediabox simulating an A4 page.
+    An A4 page in points is approximately 595 x 842.
+    """
+    page = MagicMock(spec=PageObject)
+    page.mediabox = [0, 0, 595, 842]
+    return page
+
+
+def test_inject_text_negative_x(dummy_page):
+    """Test that a negative x coordinate raises a ValueError."""
+    converter = PDFConverter(prompt_template=None)
+    with pytest.raises(ValueError) as excinfo:
+        converter._inject_text_into_page(
+            page=dummy_page,
+            x=-10,
+            y=100,
+            text="Test Text",
+            font="Arial",
+            font_size=12,
+            font_color=(0, 0, 0),
+        )
+    assert "x_pos is less than 0" in str(excinfo.value)
+
+
+def test_inject_text_x_exceeds_page_width(dummy_page):
+    """Test that an x coordinate exceeding the A4 page width (595) raises a ValueError."""
+    converter = PDFConverter(prompt_template=None)
+    with pytest.raises(ValueError) as excinfo:
+        converter._inject_text_into_page(
+            page=dummy_page,
+            x=600,  # 600 exceeds the A4 width of 595
+            y=100,
+            text="Test Text",
+            font="Arial",
+            font_size=12,
+            font_color=(0, 0, 0),
+        )
+    assert "x_pos exceeds page width" in str(excinfo.value)
+
+
+def test_inject_text_negative_y(dummy_page):
+    """Test that a negative y coordinate raises a ValueError."""
+    converter = PDFConverter(prompt_template=None)
+    with pytest.raises(ValueError) as excinfo:
+        converter._inject_text_into_page(
+            page=dummy_page,
+            x=100,
+            y=-20,
+            text="Test Text",
+            font="Arial",
+            font_size=12,
+            font_color=(0, 0, 0),
+        )
+    assert "y_pos is less than 0" in str(excinfo.value)
+
+
+def test_inject_text_y_exceeds_page_height(dummy_page):
+    """Test that a y coordinate exceeding the A4 page height (842) raises a ValueError."""
+    converter = PDFConverter(prompt_template=None)
+    with pytest.raises(ValueError) as excinfo:
+        converter._inject_text_into_page(
+            page=dummy_page,
+            x=100,
+            y=850,  # 850 exceeds the A4 height of 842
+            text="Test Text",
+            font="Arial",
+            font_size=12,
+            font_color=(0, 0, 0),
+        )
+    assert "y_pos exceeds page height" in str(excinfo.value)

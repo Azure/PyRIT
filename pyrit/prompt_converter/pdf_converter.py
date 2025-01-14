@@ -200,6 +200,20 @@ class PDFConverter(PromptConverter):
         page_width = float(page.mediabox[2] - page.mediabox[0])
         page_height = float(page.mediabox[3] - page.mediabox[1])
 
+        # Out-of-Bounds Checks
+        if x < 0:
+            logger.error(f"x_pos is less than 0 and therefore out of bounds: x={x}")
+            raise ValueError(f"x_pos is less than 0 and therefore out of bounds: x={x}")
+        if x > page_width:
+            logger.error(f"x_pos exceeds page width and is out of bounds: x={x}, page_width={page_width}")
+            raise ValueError(f"x_pos exceeds page width and is out of bounds: x={x}, page_width={page_width}")
+        if y < 0:
+            logger.error(f"y_pos is less than 0 and therefore out of bounds: y={y}")
+            raise ValueError(f"y_pos is less than 0 and therefore out of bounds: y={y}")
+        if y > page_height:
+            logger.error(f"y_pos exceeds page height and is out of bounds: y={y}, page_height={page_height}")
+            raise ValueError(f"y_pos exceeds page height and is out of bounds: y={y}, page_height={page_height}")
+
         # Create a small overlay PDF in memory
         overlay_pdf = FPDF(unit="pt", format=(page_width, page_height))
         overlay_pdf.add_page()
