@@ -66,10 +66,9 @@ print(chat_messages)
 # Besides chatml, there are many other chat templates that a model might be trained on. If you would like to apply the template stored in a Hugging Face tokenizer,
 # you can utilize `ChatMessageNormalizerTokenizerTemplate`. In the example below, we load the tokenizer for Mistral-7B-Instruct-v0.1 and apply its chat template to
 # the messages. Note that this template only adds `[INST]` and `[/INST]` tokens to the user messages for instruction fine-tuning.
-
+# %%
 from transformers import AutoTokenizer
 
-# %%
 from pyrit.chat_message_normalizer import \
     ChatMessageNormalizerTokenizerTemplate
 

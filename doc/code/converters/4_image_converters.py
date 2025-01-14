@@ -17,10 +17,8 @@
 #
 # Text can be added to images by using the `AddTextImageConverter`.
 # The converted image file will be saved in the db/results/images folder. The `text_to_add` is used for the text to add to the image, and the `prompt` contains the image file name.
-
-import pathlib
-
 # %%
+import pathlib
 from IPython.display import display
 from PIL import Image
 
