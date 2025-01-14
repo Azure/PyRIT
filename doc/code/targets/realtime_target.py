@@ -34,8 +34,6 @@ target = RealtimeTarget()
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
 
-# text_prompt_to_send = "Hi what is 2+2?"
-
 prompt_to_send = "test_rt_audio1.wav"
 
 normalizer_request = NormalizerRequest(
@@ -54,6 +52,27 @@ orchestrator = PromptSendingOrchestrator(objective_target=target)
 
 await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
 
+await orchestrator.print_conversations_async()  # type: ignore
+
+# %% [markdown]
+# ## Single Turn Text Conversation
+
+# %%
+from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.orchestrator import PromptSendingOrchestrator
+
+
+await target.connect()
+prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
+
+request = PromptRequestPiece(
+    role="user",
+    original_value=prompt_to_send,
+).to_prompt_request_response()
+
+
+orchestrator = PromptSendingOrchestrator(objective_target=target)
+response = await orchestrator.send_prompts_async(prompt_list=[prompt_to_send])  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
 # %% [markdown]
@@ -96,6 +115,8 @@ await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalize
 await orchestrator.print_conversations_async()  # type: ignore
 
 # %%
+
+# %%
 orchestrator = PromptSendingOrchestrator(objective_target=target)
 
 await orchestrator.send_normalizer_requests_async(prompt_request_list=[second_normalizer_request])  # type: ignore
@@ -104,3 +125,9 @@ await orchestrator.print_conversations_async()  # type: ignore
 
 # %%
 await target.disconnect()  # type: ignore
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

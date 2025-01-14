@@ -5,22 +5,23 @@ import asyncio
 import base64
 import json
 import logging
+from typing import Optional
 import wave
 import websockets
 
 from pyrit.common import default_values
 from pyrit.models import PromptRequestResponse
-from pyrit.models.prompt_request_response import construct_response_from_request
+from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
 
 class RealtimeTarget(PromptTarget):
-    ENDPOINT_WS_URL_ENVIRONMENT_VARIABLE = "AZURE_OPENAI_REALTIME_API_WS_URL"
-    DEPLOYMENT_ENVIRONMENT_VARIABLE = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
-    API_ENVIRONMENT_VARIABLE = "AZURE_OPENAI_REALTIME_API_KEY"
-    API_VERSION_ENVIRONMENT_VARIABLE = "AZURE_OPENAI_REALTIME_API_VERSION"
+    REALTIME_ENDPOINT_WEBSOCKET_URL = "AZURE_OPENAI_REALTIME_API_WS_URL"
+    REALTIME_DEPLOYMENT = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
+    REALTIME_API_KEY = "AZURE_OPENAI_REALTIME_API_KEY"
+    REALTIME_API_VERSION = "AZURE_OPENAI_REALTIME_API_VERSION"
 
     def __init__(
         self,
@@ -32,15 +33,15 @@ class RealtimeTarget(PromptTarget):
         **kwargs,
     ) -> None:
 
-        self.api_key = default_values.get_required_value(env_var_name=self.API_ENVIRONMENT_VARIABLE, passed_value=key)
+        self.api_key = default_values.get_required_value(env_var_name=self.REALTIME_API_KEY, passed_value=key)
         self.url = default_values.get_required_value(
-            env_var_name=self.ENDPOINT_WS_URL_ENVIRONMENT_VARIABLE, passed_value=url
+            env_var_name=self.REALTIME_ENDPOINT_WEBSOCKET_URL, passed_value=url
         )
         self.deployment = default_values.get_required_value(
-            env_var_name=self.DEPLOYMENT_ENVIRONMENT_VARIABLE, passed_value=deployment
+            env_var_name=self.REALTIME_DEPLOYMENT, passed_value=deployment
         )
         self.api_version = default_values.get_required_value(
-            env_var_name=self.API_VERSION_ENVIRONMENT_VARIABLE, passed_value=api_version
+            env_var_name=self.REALTIME_API_KEY, passed_value=api_version
         )
 
         self.websocket = None
@@ -56,6 +57,7 @@ class RealtimeTarget(PromptTarget):
 
         url = f"{self.url}/openai/realtime?api-version={self.api_version}"
         url = f"{url}&deployment={self.deployment}&api-key={self.api_key}"
+        print(url)
         self.websocket = await websockets.connect(
             url,
             extra_headers=headers,
@@ -63,7 +65,7 @@ class RealtimeTarget(PromptTarget):
         logger.info("Successfully connected to AzureOpenAI Realtime API")
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> list[PromptRequestResponse]:
+    async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         # Validation function
         self._validate_request(prompt_request=prompt_request)
 
@@ -103,16 +105,53 @@ class RealtimeTarget(PromptTarget):
             events = await receive_tasks
             output_audio_path = await self.save_audio(events[0])
 
-        # await self.disconnect()
-        response_entry = construct_response_from_request(
-            request=request, response_text_pieces=[events[1]], response_type="text"
+        text_response_piece = PromptRequestPiece(
+            original_value=events[1],
+            original_value_data_type="text",
+            # converted_value=events[1],
+            role="assistant",
+            converted_value_data_type="text",
+        )
+        audio_response_piece = PromptRequestPiece(
+            original_value=output_audio_path,
+            original_value_data_type="audio_path",
+            converted_value=output_audio_path,
+            role="assistant",
+            converted_value_data_type="audio_path",
         )
 
-        audio_response_entry = construct_response_from_request(
-            request=request, response_text_pieces=[output_audio_path], response_type="audio_path"
+        response_entry = self.construct_response_from_request(
+            request=request, response_pieces=[audio_response_piece, text_response_piece]
         )
 
-        return [response_entry, audio_response_entry]  # TODO: can make the transcription a flag to return or not
+        return response_entry
+
+    def construct_response_from_request(
+        self,
+        request: PromptRequestPiece,
+        response_pieces: list[PromptRequestPiece],
+        prompt_metadata: Optional[str] = None,
+    ) -> PromptRequestResponse:
+        """
+        Constructs a response entry from a request.
+        """
+        return PromptRequestResponse(
+            request_pieces=[
+                PromptRequestPiece(
+                    role="assistant",
+                    original_value=resp_piece.original_value,
+                    conversation_id=request.conversation_id,
+                    labels=request.labels,
+                    prompt_target_identifier=request.prompt_target_identifier,
+                    orchestrator_identifier=request.orchestrator_identifier,
+                    original_value_data_type=resp_piece.original_value_data_type,
+                    converted_value_data_type=resp_piece.converted_value_data_type,
+                    converted_value=resp_piece.converted_value,
+                    prompt_metadata=prompt_metadata,
+                )
+                for resp_piece in response_pieces
+            ]
+        )
 
     async def save_audio(
         self, audio_bytes: bytes, num_channels: int = 1, sample_width: int = 2, sample_rate: int = 16000

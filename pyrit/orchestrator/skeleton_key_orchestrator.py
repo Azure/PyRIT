@@ -74,7 +74,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
         self,
         *,
         prompt: str,
-    ) -> list[PromptRequestResponse]:
+    ) -> PromptRequestResponse:
         """
         Sends a skeleton key, followed by the attack prompt to the target.
 

@@ -32,7 +32,7 @@ class PromptNormalizer(abc.ABC):
         sequence: int = -1,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
-    ) -> list[PromptRequestResponse]:
+    ) -> PromptRequestResponse:
         """
         Sends a single request to a target.
 
@@ -55,10 +55,10 @@ class PromptNormalizer(abc.ABC):
             orchestrator_identifier=orchestrator_identifier,
         )
 
-        responses: list[PromptRequestResponse] = []
+        response = None
 
         try:
-            responses = await target.send_prompt_async(prompt_request=request)
+            response = await target.send_prompt_async(prompt_request=request)
             await self._calc_hash_and_add_request_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
@@ -70,7 +70,6 @@ class PromptNormalizer(abc.ABC):
                 response_type="text",
                 error="empty",
             )
-            responses = [response]
 
         except Exception as ex:
             # Ensure request to memory before processing exception
@@ -86,15 +85,15 @@ class PromptNormalizer(abc.ABC):
             await self._calc_hash_and_add_request_to_memory(request=error_response)
             raise
 
-        if responses is None:
+        if response is None:
             return None
 
         await self.convert_response_values(
-            response_converter_configurations=normalizer_request.response_converters, prompt_responses=responses
+            response_converter_configurations=normalizer_request.response_converters, prompt_response=response
         )
 
-        await self._calc_hash_and_add_request_to_memory(request=responses)
-        return responses
+        await self._calc_hash_and_add_request_to_memory(request=response)
+        return response
 
     async def send_prompt_batch_to_target_async(
         self,
@@ -136,44 +135,33 @@ class PromptNormalizer(abc.ABC):
     async def convert_response_values(
         self,
         response_converter_configurations: list[PromptResponseConverterConfiguration],
-        prompt_responses: list[PromptRequestResponse] | PromptRequestResponse,
+        prompt_response: PromptRequestResponse,
     ):
-        if not isinstance(prompt_responses, list):
-            prompt_responses = [prompt_responses]
 
-        for prompt_response in prompt_responses:
-            for response_piece_index, response_piece in enumerate(prompt_response.request_pieces):
-                for converter_configuration in response_converter_configurations:
-                    indexes = converter_configuration.indexes_to_apply
-                    data_types = converter_configuration.prompt_data_types_to_apply
+        for response_piece_index, response_piece in enumerate(prompt_response.request_pieces):
+            for converter_configuration in response_converter_configurations:
+                indexes = converter_configuration.indexes_to_apply
+                data_types = converter_configuration.prompt_data_types_to_apply
 
-                    if indexes and response_piece_index not in indexes:
-                        continue
-                    if data_types and response_piece.original_value_data_type not in data_types:
-                        continue
+                if indexes and response_piece_index not in indexes:
+                    continue
+                if data_types and response_piece.original_value_data_type not in data_types:
+                    continue
 
-                    for converter in converter_configuration.converters:
-                        converter_output = await converter.convert_async(
-                            prompt=response_piece.original_value, input_type=response_piece.original_value_data_type
-                        )
-                        response_piece.converted_value = converter_output.output_text
-                        response_piece.converted_value_data_type = converter_output.output_type
+                for converter in converter_configuration.converters:
+                    converter_output = await converter.convert_async(
+                        prompt=response_piece.original_value, input_type=response_piece.original_value_data_type
+                    )
+                    response_piece.converted_value = converter_output.output_text
+                    response_piece.converted_value_data_type = converter_output.output_type
 
-    async def _calc_hash_and_add_request_to_memory(
-        self, request: PromptRequestResponse | list[PromptRequestResponse]
-    ) -> None:
+    async def _calc_hash_and_add_request_to_memory(self, request: PromptRequestResponse) -> None:
         """
         Adds a request to the memory.
         """
-        if not isinstance(request, list):
-            request = [request]
-        tasks = [
-            asyncio.create_task(piece.set_sha256_values_async()) for req in request for piece in req.request_pieces
-        ]
+        tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.request_pieces]
         await asyncio.gather(*tasks)
-
-        for req in request:
-            self._memory.add_request_response_to_memory(request=req)
+        self._memory.add_request_response_to_memory(request=request)
 
     async def _build_prompt_request_response(
         self,
