@@ -5,7 +5,7 @@ import asyncio
 import base64
 import json
 import logging
-from typing import Optional
+from typing import Dict, Optional
 import wave
 import websockets
 
@@ -41,7 +41,7 @@ class RealtimeTarget(PromptTarget):
             env_var_name=self.REALTIME_DEPLOYMENT, passed_value=deployment
         )
         self.api_version = default_values.get_required_value(
-            env_var_name=self.REALTIME_API_KEY, passed_value=api_version
+            env_var_name=self.REALTIME_API_VERSION, passed_value=api_version
         )
 
         self.websocket = None
@@ -57,7 +57,7 @@ class RealtimeTarget(PromptTarget):
 
         url = f"{self.url}/openai/realtime?api-version={self.api_version}"
         url = f"{url}&deployment={self.deployment}&api-key={self.api_key}"
-        print(url)
+
         self.websocket = await websockets.connect(
             url,
             extra_headers=headers,
@@ -130,7 +130,7 @@ class RealtimeTarget(PromptTarget):
         self,
         request: PromptRequestPiece,
         response_pieces: list[PromptRequestPiece],
-        prompt_metadata: Optional[str] = None,
+        prompt_metadata: Optional[Dict[str,str]] = None,
     ) -> PromptRequestResponse:
         """
         Constructs a response entry from a request.
