@@ -59,7 +59,7 @@ class PromptMemoryEntry(Base):
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     labels: Mapped[dict[str, str]] = Column(JSON)
-    prompt_metadata = Column(String, nullable=True)
+    prompt_metadata: Mapped[dict[str, str]] = Column(JSON)
     converter_identifiers: Mapped[dict[str, str]] = Column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = Column(JSON)
     orchestrator_identifier: Mapped[dict[str, str]] = Column(JSON)

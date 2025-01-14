@@ -168,3 +168,7 @@ async def test_tts_send_prompt_async_rate_limit_exception_retries(
     with pytest.raises(RateLimitError):
         await tts_target.send_prompt_async(prompt_request=request)
         assert mock_response_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+
+
+def test_is_json_response_supported(tts_target: OpenAITTSTarget):
+    assert tts_target.is_json_response_supported() is False
