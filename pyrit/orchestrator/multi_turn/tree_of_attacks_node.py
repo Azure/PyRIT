@@ -198,17 +198,10 @@ class TreeOfAttacksNode:
                 score=str(score),
             )
 
-        adversarial_chat_request = NormalizerRequest(
-            request_pieces=[
-                NormalizerRequestPiece(request_converters=[], prompt_value=prompt_text, prompt_data_type="text")
-            ],
-            conversation_id=self.adversarial_chat_conversation_id,
-        )
 
-                seed_prompt_group=SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
+        prompt_metadata = {"response_format": "json"}
+        seed_prompt_group=SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", prompt_metadata=prompt_metadata)])
         
-        atsasdf
-
         adversarial_chat_response = (
             (
                 await self._prompt_normalizer.send_prompt_async(

@@ -335,8 +335,8 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         prompt_metadata = {"response_format": "json"}
         seed_prompt_group = SeedPromptGroup(
-            prompts=[SeedPrompt(value=prompt_text, data_type="text")], metadata=prompt_metadata
-        )asdfasdf
+            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
+        )
 
         response_text = (
             (
