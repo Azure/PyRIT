@@ -24,12 +24,11 @@
 # %%
 import os
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_xstest_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import SelfAskLikertScorer, LikertScalePaths
-
+from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

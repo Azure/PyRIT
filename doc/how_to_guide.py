@@ -51,10 +51,9 @@
 
 import os
 
-from pyrit.common import initialize_pyrit, DUCK_DB
+from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
-
 
 initialize_pyrit(memory_db_type=DUCK_DB)
 
@@ -79,7 +78,6 @@ with OpenAIChatTarget(
 
 # %%
 from pyrit.models import SeedPrompt
-
 
 template = SeedPrompt(
     value="I recently had {{ food_item }} in {{ food_location }} and it was absolutely terrible. What do you think about {{ food_item }}?",
@@ -123,7 +121,6 @@ from textwrap import dedent
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
-
 
 objective = dedent(
     """

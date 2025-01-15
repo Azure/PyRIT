@@ -3,7 +3,7 @@
 
 import os
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 
 # This limits retries and speeds up execution
 # note this needs to be set before libraries that use them are imported

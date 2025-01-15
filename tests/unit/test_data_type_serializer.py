@@ -5,10 +5,10 @@ import hashlib
 import os
 import re
 import tempfile
+from typing import get_args
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from typing import get_args
 from PIL import Image
 
 from pyrit.models import (

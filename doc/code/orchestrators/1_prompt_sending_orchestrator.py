@@ -32,10 +32,9 @@
 # %%
 import uuid
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -61,10 +60,9 @@ import pathlib
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPromptDataset
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.orchestrator import PromptSendingOrchestrator
-
 
 target = OpenAIChatTarget()
 
@@ -84,9 +82,8 @@ await orchestrator.print_conversations_async()  # type: ignore
 # %%
 import pathlib
 
-from pyrit.prompt_target import TextTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import TextTarget
 
 text_target = TextTarget()
 
@@ -116,8 +113,7 @@ from azure.ai.contentsafety.models import TextCategory
 
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import AzureContentFilterScorer, SelfAskLikertScorer, LikertScalePaths
-
+from pyrit.score import AzureContentFilterScorer, LikertScalePaths, SelfAskLikertScorer
 
 target = OpenAIChatTarget()
 
@@ -147,12 +143,11 @@ await orchestrator.print_conversations_async()  # type: ignore
 import pathlib
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.models import SeedPrompt
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 target = OpenAIChatTarget()
 

@@ -5,7 +5,9 @@ import pathlib
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
-from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import FuzzerConverter
+from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
+    FuzzerConverter,
+)
 from pyrit.prompt_target import PromptChatTarget
 
 

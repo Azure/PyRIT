@@ -8,7 +8,11 @@ from httpx import HTTPStatusError
 
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException, handle_bad_request_exception
-from pyrit.models import PromptRequestResponse, construct_response_from_request, data_serializer_factory
+from pyrit.models import (
+    PromptRequestResponse,
+    construct_response_from_request,
+    data_serializer_factory,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

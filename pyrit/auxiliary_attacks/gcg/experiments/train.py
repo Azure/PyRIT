@@ -16,7 +16,11 @@ from pyrit.auxiliary_attacks.gcg.attack.base.attack_manager import (
     get_goals_and_targets,
     get_workers,
 )
-from pyrit.auxiliary_attacks.gcg.experiments.log import log_gpu_memory, log_params, log_train_goals
+from pyrit.auxiliary_attacks.gcg.experiments.log import (
+    log_gpu_memory,
+    log_params,
+    log_train_goals,
+)
 
 
 class GreedyCoordinateGradientAdversarialSuffixGenerator:

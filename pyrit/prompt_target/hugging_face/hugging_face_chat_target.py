@@ -11,7 +11,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
-from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
+from pyrit.models.prompt_request_response import (
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
