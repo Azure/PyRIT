@@ -69,7 +69,7 @@ class SeedPrompt(YamlLoadable):
         self.source = source
         self.date_added = date_added
         self.added_by = added_by
-        self.metadata = metadata or {}
+        self.metadata = metadata
         self.parameters = parameters or []
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence

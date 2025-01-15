@@ -200,8 +200,8 @@ class TreeOfAttacksNode:
 
 
         prompt_metadata = {"response_format": "json"}
-        seed_prompt_group=SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", prompt_metadata=prompt_metadata)])
-        
+        seed_prompt_group=SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)])
+
         adversarial_chat_response = (
             (
                 await self._prompt_normalizer.send_prompt_async(
