@@ -20,7 +20,7 @@ class NormalizerRequestPiece(abc.ABC):
         prompt_data_type: PromptDataType,
         request_converters: list[PromptConverter] = [],
         labels: Optional[dict[str, str]] = None,
-        metadata: str = None,
+        metadata: Optional[dict[str, str]] = None,
     ) -> None:
         """
         Represents a piece of a normalizer request.
@@ -33,7 +33,7 @@ class NormalizerRequestPiece(abc.ABC):
             prompt_value (str): The prompt value.
             prompt_data_type (PromptDataType): The data type of the prompt.
             labels (Optional[dict[str, str]]): The labels to apply to the prompt. Defaults to None.
-            metadata (str, Optional): Additional metadata. Defaults to None.
+            metadata (Optional[dict[str, str]]): Additional metadata. Defaults to None.
 
         Raises:
             ValueError: If prompt_converters is not a non-empty list of PromptConverter objects.

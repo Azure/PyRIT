@@ -340,8 +340,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 f"This is the rationale behind the score: {objective_score.score_rationale}\n\n"
             )
 
+        prompt_metadata = {"response_format": "json"}
         normalizer_request = self._create_normalizer_request(
-            prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id
+            prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id, metadata=prompt_metadata
         )
 
         response_text = (

@@ -247,7 +247,7 @@ class Scorer(abc.ABC):
             conversation_id=conversation_id,
             orchestrator_identifier=None,
         )
-
+        prompt_metadata = {"response_format": "json"}
         scorer_llm_request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -257,6 +257,7 @@ class Scorer(abc.ABC):
                     converted_value_data_type=prompt_request_data_type,
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
+                    prompt_metadata=prompt_metadata,
                 )
             ]
         )

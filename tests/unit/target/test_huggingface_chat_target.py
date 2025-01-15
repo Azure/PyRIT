@@ -288,3 +288,9 @@ async def test_optional_kwargs_args_passed_when_loading_model(mock_transformers)
     assert call_args.get("device_map") == "auto"
     assert call_args.get("torch_dtype") == "float16"
     assert call_args.get("attn_implementation") == "flash_attention_2"
+
+
+@pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
+def test_is_json_response_supported():
+    hf_chat = HuggingFaceChatTarget(model_id="dummy", use_cuda=False, trust_remote_code=True)
+    assert hf_chat.is_json_response_supported() is False
