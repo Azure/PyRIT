@@ -31,7 +31,7 @@ repos:
     hooks:
       - id: isort
         name: Import Sort (Python files)
-        exclude: __init__.py
+        exclude: (doc/|__init__.py)
         args: ["--profile", "black", "--filter-files"]
 
   - repo: https://github.com/PyCQA/flake8
