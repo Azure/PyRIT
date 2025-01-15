@@ -9,8 +9,7 @@ import numpy as np
 import pytest
 from scipy.io import wavfile
 
-from pyrit.prompt_converter.audio_frequency_converter import \
-    AudioFrequencyConverter
+from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 
 
 @pytest.mark.asyncio

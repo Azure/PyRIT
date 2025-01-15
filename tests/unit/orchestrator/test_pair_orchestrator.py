@@ -4,8 +4,9 @@
 from unittest.mock import MagicMock
 
 from pyrit.orchestrator import PAIROrchestrator
-from pyrit.orchestrator.multi_turn.tree_of_attacks_with_pruning_orchestrator import \
-    TreeOfAttacksWithPruningOrchestrator
+from pyrit.orchestrator.multi_turn.tree_of_attacks_with_pruning_orchestrator import (
+    TreeOfAttacksWithPruningOrchestrator,
+)
 
 
 def test_init():

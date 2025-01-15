@@ -5,8 +5,10 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.memory.memory_models import (ConversationMessageWithSimilarity,
-                                        EmbeddingMessageWithSimilarity)
+from pyrit.memory.memory_models import (
+    ConversationMessageWithSimilarity,
+    EmbeddingMessageWithSimilarity,
+)
 
 
 class ConversationAnalytics:

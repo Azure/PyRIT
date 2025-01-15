@@ -6,8 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.models import SeedPrompt
-from pyrit.orchestrator.multi_turn.tree_of_attacks_node import \
-    TreeOfAttacksNode
+from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score.scorer import Scorer

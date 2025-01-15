@@ -195,9 +195,12 @@ print(f"Endpoint name: {endpoint_name}")
 # Authentication mode: The authentication method for the endpoint. Choose between key-based authentication and Azure Machine Learning token-based authentication. A key doesn't expire, but a token does expire.
 
 # %%
-from azure.ai.ml.entities import (ManagedOnlineDeployment,
-                                  ManagedOnlineEndpoint, OnlineRequestSettings,
-                                  ProbeSettings)
+from azure.ai.ml.entities import (
+    ManagedOnlineDeployment,
+    ManagedOnlineEndpoint,
+    OnlineRequestSettings,
+    ProbeSettings,
+)
 
 # create an online endpoint
 endpoint = ManagedOnlineEndpoint(

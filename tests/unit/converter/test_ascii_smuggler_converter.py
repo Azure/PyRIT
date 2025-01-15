@@ -4,8 +4,7 @@
 import pytest
 
 from pyrit.prompt_converter import ConverterResult
-from pyrit.prompt_converter.ascii_smuggler_converter import \
-    AsciiSmugglerConverter
+from pyrit.prompt_converter.ascii_smuggler_converter import AsciiSmugglerConverter
 
 
 @pytest.mark.asyncio

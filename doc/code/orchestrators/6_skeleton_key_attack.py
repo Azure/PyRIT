@@ -23,8 +23,7 @@
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator.skeleton_key_orchestrator import \
-    SkeletonKeyOrchestrator
+from pyrit.orchestrator.skeleton_key_orchestrator import SkeletonKeyOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

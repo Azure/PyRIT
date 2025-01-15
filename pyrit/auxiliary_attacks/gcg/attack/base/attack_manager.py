@@ -17,14 +17,23 @@ import torch.multiprocessing as mp
 import torch.nn as nn
 from fastchat.conversation import Conversation, SeparatorStyle
 from fastchat.model import get_conversation_template
-from transformers import (AutoModelForCausalLM, AutoTokenizer, GPT2LMHeadModel,
-                          GPTJForCausalLM, GPTNeoXForCausalLM,
-                          LlamaForCausalLM, MistralForCausalLM,
-                          MixtralForCausalLM, Phi3ForCausalLM)
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    GPT2LMHeadModel,
+    GPTJForCausalLM,
+    GPTNeoXForCausalLM,
+    LlamaForCausalLM,
+    MistralForCausalLM,
+    MixtralForCausalLM,
+    Phi3ForCausalLM,
+)
 
-from pyrit.auxiliary_attacks.gcg.experiments.log import (log_gpu_memory,
-                                                         log_loss,
-                                                         log_table_summary)
+from pyrit.auxiliary_attacks.gcg.experiments.log import (
+    log_gpu_memory,
+    log_loss,
+    log_table_summary,
+)
 
 
 class NpEncoder(json.JSONEncoder):

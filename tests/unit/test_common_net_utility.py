@@ -7,8 +7,10 @@ import httpx
 import pytest
 import respx
 
-from pyrit.common.net_utility import (get_httpx_client,
-                                      make_request_and_raise_if_error_async)
+from pyrit.common.net_utility import (
+    get_httpx_client,
+    make_request_and_raise_if_error_async,
+)
 
 
 @pytest.mark.parametrize(

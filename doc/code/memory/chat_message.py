@@ -14,6 +14,7 @@
 # ---
 
 from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
+
 # %% [markdown]
 # # Chat messages - optional
 #
@@ -69,8 +70,7 @@ print(chat_messages)
 # %%
 from transformers import AutoTokenizer
 
-from pyrit.chat_message_normalizer import \
-    ChatMessageNormalizerTokenizerTemplate
+from pyrit.chat_message_normalizer import ChatMessageNormalizerTokenizerTemplate
 
 messages = [
     ChatMessage(role="user", content="Hello, how are you?"),

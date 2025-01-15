@@ -7,12 +7,20 @@ from typing import MutableSequence, Optional
 from openai import NOT_GIVEN, BadRequestError, NotGiven
 from openai.types.chat import ChatCompletion
 
-from pyrit.exceptions import (EmptyResponseException, PyritException,
-                              handle_bad_request_exception, pyrit_target_retry)
-from pyrit.models import (ChatMessageListDictContent, DataTypeSerializer,
-                          PromptRequestPiece, PromptRequestResponse,
-                          construct_response_from_request,
-                          data_serializer_factory)
+from pyrit.exceptions import (
+    EmptyResponseException,
+    PyritException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
+from pyrit.models import (
+    ChatMessageListDictContent,
+    DataTypeSerializer,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    construct_response_from_request,
+    data_serializer_factory,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

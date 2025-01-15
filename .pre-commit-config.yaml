@@ -26,6 +26,14 @@ repos:
       - id: black
         language_version: python3
 
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: Import Sort (Python files)
+        exclude: __init__.py
+        args: ["--profile", "black", "--filter-files"]
+
   - repo: https://github.com/PyCQA/flake8
     rev: 7.1.1
     hooks:
@@ -49,13 +57,6 @@ repos:
       - id: pylint
         args: [--disable=all, --enable=unused-import]
         exclude: NOTICE.txt
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort (python)
-        exclude: __init__.py
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.14.1

@@ -3,15 +3,24 @@
 
 import pytest
 
-from pyrit.prompt_converter import (AsciiArtConverter, AtbashConverter,
-                                    Base64Converter, CaesarConverter,
-                                    CharacterSpaceConverter, EmojiConverter,
-                                    FlipConverter, LeetspeakConverter,
-                                    MorseConverter,
-                                    RandomCapitalLettersConverter,
-                                    ROT13Converter, SearchReplaceConverter,
-                                    StringJoinConverter, SuffixAppendConverter,
-                                    UnicodeSubstitutionConverter, UrlConverter)
+from pyrit.prompt_converter import (
+    AsciiArtConverter,
+    AtbashConverter,
+    Base64Converter,
+    CaesarConverter,
+    CharacterSpaceConverter,
+    EmojiConverter,
+    FlipConverter,
+    LeetspeakConverter,
+    MorseConverter,
+    RandomCapitalLettersConverter,
+    ROT13Converter,
+    SearchReplaceConverter,
+    StringJoinConverter,
+    SuffixAppendConverter,
+    UnicodeSubstitutionConverter,
+    UrlConverter,
+)
 
 
 @pytest.mark.asyncio

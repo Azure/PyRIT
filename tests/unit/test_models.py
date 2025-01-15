@@ -1,8 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.models import (ChatMessage, ChatMessageListDictContent,
-                          ChatMessagesDataset)
+from pyrit.models import ChatMessage, ChatMessageListDictContent, ChatMessagesDataset
 
 
 def test_chat_messages_dataset_values_properly_set() -> None:

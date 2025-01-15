@@ -42,8 +42,12 @@ import time
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import (AzureContentFilterScorer, ContentClassifierPaths,
-                         HumanInTheLoopScorer, SelfAskCategoryScorer)
+from pyrit.score import (
+    AzureContentFilterScorer,
+    ContentClassifierPaths,
+    HumanInTheLoopScorer,
+    SelfAskCategoryScorer,
+)
 
 memory = CentralMemory.get_memory_instance()
 prompt_pieces_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_orchestrator_id)

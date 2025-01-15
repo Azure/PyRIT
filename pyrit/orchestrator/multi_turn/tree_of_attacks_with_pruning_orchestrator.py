@@ -13,12 +13,10 @@ from pyrit.common.utils import combine_dict
 from pyrit.memory import MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
-from pyrit.orchestrator.multi_turn.tree_of_attacks_node import \
-    TreeOfAttacksNode
+from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import (SelfAskScaleScorer, SelfAskTrueFalseScorer,
-                         TrueFalseQuestion)
+from pyrit.score import SelfAskScaleScorer, SelfAskTrueFalseScorer, TrueFalseQuestion
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)

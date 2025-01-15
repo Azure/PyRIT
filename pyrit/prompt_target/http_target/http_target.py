@@ -9,8 +9,11 @@ from typing import Any, Callable, Optional
 
 import httpx
 
-from pyrit.models import (PromptRequestPiece, PromptRequestResponse,
-                          construct_response_from_request)
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)

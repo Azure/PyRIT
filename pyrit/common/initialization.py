@@ -53,8 +53,12 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
 
     _load_environment_files()
 
-    from pyrit.memory import (AzureSQLMemory, CentralMemory, DuckDBMemory,
-                              MemoryInterface)
+    from pyrit.memory import (
+        AzureSQLMemory,
+        CentralMemory,
+        DuckDBMemory,
+        MemoryInterface,
+    )
 
     memory: MemoryInterface = None
     if memory_db_type == IN_MEMORY:

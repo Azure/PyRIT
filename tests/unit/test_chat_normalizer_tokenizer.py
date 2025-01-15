@@ -6,8 +6,7 @@ import textwrap
 import pytest
 from transformers import AutoTokenizer
 
-from pyrit.chat_message_normalizer import \
-    ChatMessageNormalizerTokenizerTemplate
+from pyrit.chat_message_normalizer import ChatMessageNormalizerTokenizerTemplate
 from pyrit.models import ChatMessage
 
 

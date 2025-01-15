@@ -4,8 +4,12 @@
 import logging
 import uuid
 
-from pyrit.models import (PromptDataType, PromptRequestPiece,
-                          PromptRequestResponse, SeedPrompt)
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+)
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 

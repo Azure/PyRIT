@@ -8,10 +8,17 @@ import uuid
 from textwrap import dedent
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions import (InvalidJsonException, pyrit_json_retry,
-                              remove_markdown_json)
-from pyrit.models import (PromptDataType, PromptRequestPiece,
-                          PromptRequestResponse, SeedPrompt)
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+)
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 

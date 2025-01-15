@@ -6,8 +6,11 @@ import logging
 from typing import Any, Literal, Optional
 
 from pyrit.common import default_values, net_utility
-from pyrit.models import (PromptRequestPiece, PromptRequestResponse,
-                          construct_response_from_request)
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

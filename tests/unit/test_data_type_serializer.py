@@ -11,9 +11,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from PIL import Image
 
-from pyrit.models import (AllowedCategories, DataTypeSerializer,
-                          ErrorDataTypeSerializer, ImagePathDataTypeSerializer,
-                          TextDataTypeSerializer, data_serializer_factory)
+from pyrit.models import (
+    AllowedCategories,
+    DataTypeSerializer,
+    ErrorDataTypeSerializer,
+    ImagePathDataTypeSerializer,
+    TextDataTypeSerializer,
+    data_serializer_factory,
+)
 
 
 def test_allowed_categories():

@@ -9,9 +9,11 @@ from httpx import HTTPStatusError
 from openai import RateLimitError
 from unit.mocks import get_sample_conversations
 
-from pyrit.chat_message_normalizer import (ChatMessageNop,
-                                           ChatMessageNormalizer,
-                                           GenericSystemSquash)
+from pyrit.chat_message_normalizer import (
+    ChatMessageNop,
+    ChatMessageNormalizer,
+    GenericSystemSquash,
+)
 from pyrit.exceptions import EmptyResponseException, RateLimitException
 from pyrit.models import ChatMessage, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target import AzureMLChatTarget

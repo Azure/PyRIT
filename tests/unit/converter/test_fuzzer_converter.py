@@ -9,11 +9,13 @@ from unit.mocks import MockPromptTarget
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_converter import (FuzzerCrossOverConverter,
-                                    FuzzerExpandConverter,
-                                    FuzzerRephraseConverter,
-                                    FuzzerShortenConverter,
-                                    FuzzerSimilarConverter)
+from pyrit.prompt_converter import (
+    FuzzerCrossOverConverter,
+    FuzzerExpandConverter,
+    FuzzerRephraseConverter,
+    FuzzerShortenConverter,
+    FuzzerSimilarConverter,
+)
 
 
 @pytest.mark.parametrize(

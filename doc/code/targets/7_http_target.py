@@ -26,13 +26,14 @@
 import os
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.orchestrator import (PromptSendingOrchestrator,
-                                RedTeamingOrchestrator)
+from pyrit.orchestrator import PromptSendingOrchestrator, RedTeamingOrchestrator
 from pyrit.prompt_converter import SearchReplaceConverter
 from pyrit.prompt_target import (
-    HTTPTarget, OpenAIChatTarget,
+    HTTPTarget,
+    OpenAIChatTarget,
     get_http_target_json_response_callback_function,
-    get_http_target_regex_matching_callback_function)
+    get_http_target_regex_matching_callback_function,
+)
 from pyrit.score import SelfAskTrueFalseScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)

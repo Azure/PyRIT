@@ -99,8 +99,7 @@ import logging
 from typing import List
 
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import (PromptConverter,
-                                    RandomCapitalLettersConverter)
+from pyrit.prompt_converter import PromptConverter, RandomCapitalLettersConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
 

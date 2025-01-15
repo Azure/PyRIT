@@ -10,8 +10,7 @@ from typing import Optional, Union
 from urllib.parse import urlparse
 
 import aiofiles
-from azure.core.exceptions import (ClientAuthenticationError,
-                                   ResourceNotFoundError)
+from azure.core.exceptions import ClientAuthenticationError, ResourceNotFoundError
 from azure.storage.blob import ContentSettings
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 

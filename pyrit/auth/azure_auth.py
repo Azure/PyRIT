@@ -6,13 +6,18 @@ import time
 
 import msal
 from azure.core.credentials import AccessToken
-from azure.identity import (AzureCliCredential, DefaultAzureCredential,
-                            InteractiveBrowserCredential,
-                            ManagedIdentityCredential,
-                            get_bearer_token_provider)
+from azure.identity import (
+    AzureCliCredential,
+    DefaultAzureCredential,
+    InteractiveBrowserCredential,
+    ManagedIdentityCredential,
+    get_bearer_token_provider,
+)
 
-from pyrit.auth.auth_config import (AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE,
-                                    REFRESH_TOKEN_BEFORE_MSEC)
+from pyrit.auth.auth_config import (
+    AZURE_COGNITIVE_SERVICES_DEFAULT_SCOPE,
+    REFRESH_TOKEN_BEFORE_MSEC,
+)
 from pyrit.auth.authenticator import Authenticator
 
 logger = logging.getLogger(__name__)

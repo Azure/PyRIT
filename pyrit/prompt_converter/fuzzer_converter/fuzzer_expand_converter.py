@@ -9,8 +9,9 @@ from pyrit.models import SeedPrompt
 from pyrit.models.literals import PromptDataType
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.models.prompt_request_response import PromptRequestResponse
-from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import \
-    FuzzerConverter
+from pyrit.prompt_converter.fuzzer_converter.fuzzer_converter_base import (
+    FuzzerConverter,
+)
 from pyrit.prompt_converter.prompt_converter import ConverterResult
 from pyrit.prompt_target import PromptChatTarget
 

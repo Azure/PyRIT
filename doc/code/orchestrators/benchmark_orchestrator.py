@@ -19,10 +19,14 @@
 # Import necessary packages
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_wmdp_dataset
-from pyrit.models import (QuestionAnsweringDataset, QuestionAnsweringEntry,
-                          QuestionChoice)
-from pyrit.orchestrator.question_answer_benchmark_orchestrator import \
-    QuestionAnsweringBenchmarkOrchestrator
+from pyrit.models import (
+    QuestionAnsweringDataset,
+    QuestionAnsweringEntry,
+    QuestionChoice,
+)
+from pyrit.orchestrator.question_answer_benchmark_orchestrator import (
+    QuestionAnsweringBenchmarkOrchestrator,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
 

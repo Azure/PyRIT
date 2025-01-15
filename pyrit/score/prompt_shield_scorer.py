@@ -7,8 +7,7 @@ import uuid
 from typing import Any, Optional
 
 from pyrit.memory import PromptMemoryEntry
-from pyrit.models import (PromptRequestPiece, PromptRequestResponse, Score,
-                          ScoreType)
+from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer import Scorer
 

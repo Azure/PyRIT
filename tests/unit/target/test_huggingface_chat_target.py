@@ -6,8 +6,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyrit.models.prompt_request_response import (PromptRequestPiece,
-                                                  PromptRequestResponse)
+from pyrit.models.prompt_request_response import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+)
 from pyrit.prompt_target import HuggingFaceChatTarget
 
 

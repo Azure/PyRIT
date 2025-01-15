@@ -39,10 +39,12 @@ from pathlib import Path
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import RedTeamingOrchestrator
-from pyrit.prompt_converter import (HumanInTheLoopConverter,
-                                    LeetspeakConverter,
-                                    RandomCapitalLettersConverter,
-                                    TranslationConverter)
+from pyrit.prompt_converter import (
+    HumanInTheLoopConverter,
+    LeetspeakConverter,
+    RandomCapitalLettersConverter,
+    TranslationConverter,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
 

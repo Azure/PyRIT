@@ -8,8 +8,7 @@ from typing import Optional
 
 from openai import AsyncAzureOpenAI, AsyncOpenAI
 
-from pyrit.auth.azure_auth import \
-    get_token_provider_from_default_azure_credential
+from pyrit.auth.azure_auth import get_token_provider_from_default_azure_credential
 from pyrit.common import default_values
 from pyrit.prompt_target import PromptChatTarget
 

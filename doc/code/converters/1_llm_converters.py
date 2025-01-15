@@ -45,9 +45,13 @@ print(await variation_converter.convert_async(prompt=prompt))  # type: ignore
 
 # %%
 
-from pyrit.prompt_converter import (MaliciousQuestionGeneratorConverter,
-                                    NoiseConverter, TenseConverter,
-                                    ToneConverter, TranslationConverter)
+from pyrit.prompt_converter import (
+    MaliciousQuestionGeneratorConverter,
+    NoiseConverter,
+    TenseConverter,
+    ToneConverter,
+    TranslationConverter,
+)
 
 prompt = "tell me about the history of the united states of america"
 

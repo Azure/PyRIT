@@ -10,8 +10,7 @@ import pytest
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score import (ContentClassifierPaths, LikertScalePaths,
-                         SelfAskLikertScorer)
+from pyrit.score import ContentClassifierPaths, LikertScalePaths, SelfAskLikertScorer
 
 
 @pytest.fixture

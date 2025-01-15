@@ -45,6 +45,9 @@
 # 3. **Access Workspace and Registry**: We'll obtain handles to our AML workspace and the model registry.
 #
 
+import os
+from typing import Union
+
 # %% [markdown]
 # ### 1.1 Import Required Libraries
 #
@@ -56,8 +59,6 @@ from azure.ai.ml.dsl import pipeline
 from azure.ai.ml.entities import AmlCompute
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential
-
-
 
 # %% [markdown]
 # ### 1.2 Load Environment Variables
@@ -104,8 +105,6 @@ from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential
 #
 # %%
 from dotenv import load_dotenv
-import os
-from typing import Union
 
 # Load the environment variables from the .env file
 load_dotenv()

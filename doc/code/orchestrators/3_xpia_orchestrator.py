@@ -54,8 +54,7 @@ logging.basicConfig(level=logging.INFO)
 
 # %%
 
-from xpia_helpers import (AzureStoragePlugin,
-                          SemanticKernelPluginAzureOpenAIPromptTarget)
+from xpia_helpers import AzureStoragePlugin, SemanticKernelPluginAzureOpenAIPromptTarget
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 
@@ -110,6 +109,7 @@ print(score)
 # %%
 
 import os
+
 from xpia_helpers import AzureStoragePlugin
 
 azure_storage_plugin = AzureStoragePlugin(container_url=os.environ.get("AZURE_STORAGE_ACCOUNT_CONTAINER_URL"))

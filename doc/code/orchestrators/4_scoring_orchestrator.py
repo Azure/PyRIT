@@ -53,8 +53,12 @@ prompt_ids = [request.id for request in send_all_prompts_orchestrator.get_memory
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import (AzureContentFilterScorer, ContentClassifierPaths,
-                         HumanInTheLoopScorer, SelfAskCategoryScorer)
+from pyrit.score import (
+    AzureContentFilterScorer,
+    ContentClassifierPaths,
+    HumanInTheLoopScorer,
+    SelfAskCategoryScorer,
+)
 
 # The scorer is interchangeable with other scorers
 # scorer = AzureContentFilterScorer()
@@ -100,8 +104,12 @@ import uuid
 from pyrit.memory import CentralMemory
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.score import (AzureContentFilterScorer, ContentClassifierPaths,
-                         HumanInTheLoopScorer, SelfAskCategoryScorer)
+from pyrit.score import (
+    AzureContentFilterScorer,
+    ContentClassifierPaths,
+    HumanInTheLoopScorer,
+    SelfAskCategoryScorer,
+)
 
 # First insert the prompts into the database (remember this is often automatic) along with memory labels
 

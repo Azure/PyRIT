@@ -5,8 +5,7 @@ import re
 from typing import cast
 
 from pyrit.chat_message_normalizer import ChatMessageNormalizer
-from pyrit.models import (ALLOWED_CHAT_MESSAGE_ROLES, ChatMessage,
-                          ChatMessageRole)
+from pyrit.models import ALLOWED_CHAT_MESSAGE_ROLES, ChatMessage, ChatMessageRole
 
 
 class ChatMessageNormalizerChatML(ChatMessageNormalizer[str]):

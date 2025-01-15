@@ -3,14 +3,15 @@ from typing import Any, Optional
 
 from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from openai import AsyncAzureOpenAI
-from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_prompt_execution_settings import \
-    AzureChatPromptExecutionSettings
-from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import \
-    AzureChatCompletion
+from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_prompt_execution_settings import (
+    AzureChatPromptExecutionSettings,
+)
+from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import (
+    AzureChatCompletion,
+)
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
 from semantic_kernel.kernel import Kernel
-from semantic_kernel.prompt_template.prompt_template_config import \
-    PromptTemplateConfig
+from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
 
 from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values

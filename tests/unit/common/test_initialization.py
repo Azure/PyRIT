@@ -10,8 +10,7 @@ import pytest
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from pyrit.common import AZURE_SQL, DUCK_DB, IN_MEMORY, initialize_pyrit
-from pyrit.common.initialization import (MemoryDatabaseType,
-                                         _load_environment_files)
+from pyrit.common.initialization import MemoryDatabaseType, _load_environment_files
 
 
 @mock.patch("dotenv.load_dotenv")

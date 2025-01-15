@@ -10,13 +10,17 @@ from pyrit.common.batch_helper import batch_task_async
 from pyrit.common.utils import combine_dict
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import (PromptDataType, PromptRequestPiece,
-                          PromptRequestResponse,
-                          construct_response_from_request)
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
-from pyrit.prompt_normalizer.prompt_response_converter_configuration import \
-    PromptResponseConverterConfiguration
+from pyrit.prompt_normalizer.prompt_response_converter_configuration import (
+    PromptResponseConverterConfiguration,
+)
 from pyrit.prompt_target import PromptTarget
 
 
