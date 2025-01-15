@@ -8,7 +8,8 @@ from typing import Optional
 import yaml
 
 from pyrit.common.path import SCALES_PATH
-from pyrit.models import PromptRequestPiece, Score, SeedPrompt, UnvalidatedScore
+from pyrit.models import (PromptRequestPiece, Score, SeedPrompt,
+                          UnvalidatedScore)
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 

@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, construct_response_from_request
+from pyrit.models import (PromptRequestPiece, PromptRequestResponse,
+                          construct_response_from_request)
 from pyrit.prompt_target import PlaywrightTarget
 
 

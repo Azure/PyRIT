@@ -4,7 +4,8 @@
 import logging
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
-from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
+from pyrit.models.prompt_request_response import (
+    PromptRequestResponse, construct_response_from_request)
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)

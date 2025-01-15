@@ -6,7 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
-from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, SupportedContentType
+from pyrit.models.storage_io import (AzureBlobStorageIO, DiskStorageIO,
+                                     SupportedContentType)
 
 
 @pytest.fixture

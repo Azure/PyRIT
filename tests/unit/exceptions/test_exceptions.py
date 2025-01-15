@@ -4,14 +4,10 @@
 import json
 import logging
 
-from pyrit.exceptions import (
-    BadRequestException,
-    EmptyResponseException,
-    InvalidJsonException,
-    MissingPromptPlaceholderException,
-    PyritException,
-    RateLimitException,
-)
+from pyrit.exceptions import (BadRequestException, EmptyResponseException,
+                              InvalidJsonException,
+                              MissingPromptPlaceholderException,
+                              PyritException, RateLimitException)
 
 
 def test_pyrit_exception_initialization():

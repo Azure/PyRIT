@@ -1,12 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import dotenv
 import logging
 from typing import Any, Literal, Optional, Union, get_args
 
-from pyrit.common import path
+import dotenv
 
+from pyrit.common import path
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,8 @@ def initialize_pyrit(memory_db_type: Union[MemoryDatabaseType, str], **memory_in
 
     _load_environment_files()
 
-    from pyrit.memory import AzureSQLMemory, CentralMemory, DuckDBMemory, MemoryInterface
+    from pyrit.memory import (AzureSQLMemory, CentralMemory, DuckDBMemory,
+                              MemoryInterface)
 
     memory: MemoryInterface = None
     if memory_db_type == IN_MEMORY:

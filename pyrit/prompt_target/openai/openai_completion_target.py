@@ -7,7 +7,8 @@ from typing import Optional
 from openai import NOT_GIVEN, NotGiven
 from openai.types.completion import Completion
 
-from pyrit.models import PromptRequestResponse, PromptResponse, construct_response_from_request
+from pyrit.models import (PromptRequestResponse, PromptResponse,
+                          construct_response_from_request)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

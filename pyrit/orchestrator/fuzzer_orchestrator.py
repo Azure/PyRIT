@@ -12,7 +12,8 @@ from typing import Optional, Union
 import numpy as np
 from colorama import Fore, Style
 
-from pyrit.exceptions import MissingPromptPlaceholderException, pyrit_placeholder_retry
+from pyrit.exceptions import (MissingPromptPlaceholderException,
+                              pyrit_placeholder_retry)
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import Orchestrator

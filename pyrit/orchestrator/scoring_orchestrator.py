@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from datetime import datetime
 import logging
-from typing import Optional, Sequence
 import uuid
+from datetime import datetime
+from typing import Optional, Sequence
 
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import Orchestrator

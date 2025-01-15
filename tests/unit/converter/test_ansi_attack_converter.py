@@ -6,15 +6,14 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.prompt_converter import ConverterResult
-from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
-from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
-    ASKS,
-    ESCAPED_PAYLOADS,
-    HIGH_LEVEL_TASKS,
-    LIVE_PAYLOADS,
-    REPEAT_STUBS,
-    UNESCAPE_STUBS,
-)
+from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import \
+    AnsiAttackConverter
+from pyrit.prompt_converter.ansi_escape.ansi_payloads import (ASKS,
+                                                              ESCAPED_PAYLOADS,
+                                                              HIGH_LEVEL_TASKS,
+                                                              LIVE_PAYLOADS,
+                                                              REPEAT_STUBS,
+                                                              UNESCAPE_STUBS)
 
 
 @pytest.mark.asyncio

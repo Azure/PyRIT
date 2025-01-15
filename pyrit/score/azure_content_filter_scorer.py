@@ -4,12 +4,15 @@
 from typing import Optional
 
 from azure.ai.contentsafety import ContentSafetyClient
-from azure.ai.contentsafety.models import AnalyzeImageOptions, AnalyzeTextOptions, ImageData, TextCategory
+from azure.ai.contentsafety.models import (AnalyzeImageOptions,
+                                           AnalyzeTextOptions, ImageData,
+                                           TextCategory)
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import DefaultAzureCredential
 
 from pyrit.common import default_values
-from pyrit.models import DataTypeSerializer, PromptRequestPiece, Score, data_serializer_factory
+from pyrit.models import (DataTypeSerializer, PromptRequestPiece, Score,
+                          data_serializer_factory)
 from pyrit.score.scorer import Scorer
 
 # Supported image formats for Azure as per https://learn.microsoft.com/en-us/azure/ai-services/content-safety/

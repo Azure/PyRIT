@@ -8,7 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, UnvalidatedScore
+from pyrit.models import (PromptRequestPiece, PromptRequestResponse,
+                          UnvalidatedScore)
 from pyrit.score.self_ask_category_scorer import ContentClassifierPaths
 from pyrit.score.self_ask_scale_scorer import SelfAskScaleScorer
 

@@ -5,7 +5,8 @@ import re
 
 import pytest
 
-from pyrit.prompt_converter.colloquial_wordswap_converter import ColloquialWordswapConverter
+from pyrit.prompt_converter.colloquial_wordswap_converter import \
+    ColloquialWordswapConverter
 
 
 # Test for deterministic mode

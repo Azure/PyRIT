@@ -12,7 +12,8 @@ from colorama import Fore, Style
 
 from pyrit.common.display_response import display_image_response
 from pyrit.memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt
+from pyrit.models import (PromptRequestPiece, PromptRequestResponse, Score,
+                          SeedPrompt)
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer

@@ -6,14 +6,12 @@ import random
 
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
-from pyrit.prompt_converter.ansi_escape.ansi_payloads import (
-    ASKS,
-    ESCAPED_PAYLOADS,
-    HIGH_LEVEL_TASKS,
-    LIVE_PAYLOADS,
-    REPEAT_STUBS,
-    UNESCAPE_STUBS,
-)
+from pyrit.prompt_converter.ansi_escape.ansi_payloads import (ASKS,
+                                                              ESCAPED_PAYLOADS,
+                                                              HIGH_LEVEL_TASKS,
+                                                              LIVE_PAYLOADS,
+                                                              REPEAT_STUBS,
+                                                              UNESCAPE_STUBS)
 
 logger = logging.getLogger(__name__)
 

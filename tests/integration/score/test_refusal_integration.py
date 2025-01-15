@@ -3,11 +3,11 @@
 
 from typing import Generator
 from unittest.mock import patch
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
 import pytest
-from uuid import uuid4
 from integration.mocks import get_memory_interface
 
 from pyrit.memory import CentralMemory
