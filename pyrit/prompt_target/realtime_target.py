@@ -130,7 +130,7 @@ class RealtimeTarget(PromptTarget):
         self,
         request: PromptRequestPiece,
         response_pieces: list[PromptRequestPiece],
-        prompt_metadata: Optional[Dict[str,str]] = None,
+        prompt_metadata: Optional[Dict[str, str]] = None,
     ) -> PromptRequestResponse:
         """
         Constructs a response entry from a request.

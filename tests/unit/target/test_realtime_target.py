@@ -2,11 +2,10 @@
 # Licensed under the MIT license.
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
-
-from pyrit.memory.central_memory import CentralMemory
-from pyrit.models import PromptRequestPiece, PromptRequestResponse 
+from unittest.mock import AsyncMock, patch
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_target.realtime_target import RealtimeTarget
+
 
 @pytest.fixture
 def target(duckdb_instance):
@@ -24,6 +23,7 @@ async def test_connect_success(target):
         )
         assert target.websocket == mock_connect.return_value
 
+
 @pytest.mark.asyncio
 async def test_send_prompt_async(target):
     request_piece = PromptRequestPiece(
@@ -31,15 +31,25 @@ async def test_send_prompt_async(target):
         original_value_data_type="text",
         converted_value="Hello",
         converted_value_data_type="text",
-        role="user"
+        role="user",
     )
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
-    with patch("pyrit.prompt_target.realtime_target.RealtimeTarget.receive_events", new_callable=AsyncMock) as mock_receive_events, \
-        patch("pyrit.prompt_target.realtime_target.RealtimeTarget.send_response_create", new_callable=AsyncMock) as mock_send_response_create, \
-        patch("pyrit.prompt_target.realtime_target.RealtimeTarget.send_text", new_callable=AsyncMock) as mock_send_text, \
-        patch("pyrit.prompt_target.realtime_target.RealtimeTarget.save_audio", new_callable=AsyncMock) as mock_save_audio, \
-        patch("pyrit.prompt_target.realtime_target.RealtimeTarget.send_event", new_callable=AsyncMock) as mock_send_event:
+    with (
+        patch(
+            "pyrit.prompt_target.realtime_target.RealtimeTarget.receive_events", new_callable=AsyncMock
+        ) as mock_receive_events,
+        patch(
+            "pyrit.prompt_target.realtime_target.RealtimeTarget.send_response_create", new_callable=AsyncMock
+        ) as mock_send_response_create,
+        patch("pyrit.prompt_target.realtime_target.RealtimeTarget.send_text", new_callable=AsyncMock) as mock_send_text,
+        patch(
+            "pyrit.prompt_target.realtime_target.RealtimeTarget.save_audio", new_callable=AsyncMock
+        ) as mock_save_audio,
+        patch(
+            "pyrit.prompt_target.realtime_target.RealtimeTarget.send_event", new_callable=AsyncMock
+        ) as mock_send_event,
+    ):
 
         mock_receive_events.return_value = ["", "Hello"]
         mock_save_audio.return_value = "response_audio.wav"
@@ -53,10 +63,10 @@ async def test_send_prompt_async(target):
         mock_send_event.assert_called()
 
         assert response
-        
+
         assert response.request_pieces[0].converted_value == "response_audio.wav"
         assert response.request_pieces[1].converted_value == "Hello"
-        
+
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_invalid_request(target):

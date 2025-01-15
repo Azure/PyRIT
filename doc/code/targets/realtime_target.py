@@ -46,7 +46,7 @@ normalizer_request = NormalizerRequest(
 )
 
 # %%
-await target.connect() # type: ignore
+await target.connect()  # type: ignore
 
 orchestrator = PromptSendingOrchestrator(objective_target=target)
 
@@ -62,7 +62,7 @@ from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 
-await target.connect() # type: ignore
+await target.connect()  # type: ignore
 prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
 
 request = PromptRequestPiece(
