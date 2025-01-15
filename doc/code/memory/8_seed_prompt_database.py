@@ -81,7 +81,7 @@ await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group],
 # ## Retrieving seed prompt groups from the memory with dataset_name as "TestMultimodalTextImageAudioVideo"
 
 # %%
-multimodal_dataset_name = "test multimodal"
+multimodal_dataset_name = "TestMultimodalTextImageAudioVideo"
 seed_prompt_groups = memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
 print(f"Total number of the seed prompt groups with dataset name '{multimodal_dataset_name}':", len(seed_prompt_groups))
 if seed_prompt_groups:

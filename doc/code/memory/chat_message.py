@@ -13,8 +13,6 @@
 #     name: python3
 # ---
 
-from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
-
 # %% [markdown]
 # # Chat messages - optional
 #
@@ -28,6 +26,7 @@ from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 #
 # Below is an example that converts a list of chat messages to chatml format and back.
 # %%
+from pyrit.chat_message_normalizer import ChatMessageNormalizerChatML
 from pyrit.models import ChatMessage
 
 messages = [
