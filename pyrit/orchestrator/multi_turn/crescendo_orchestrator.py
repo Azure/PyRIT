@@ -333,9 +333,10 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 f"This is the rationale behind the score: {objective_score.score_rationale}\n\n"
             )
 
+        prompt_metadata = {"response_format": "json"}
         seed_prompt_group = SeedPromptGroup(
-            prompts=[SeedPrompt(value=prompt_text, data_type="text")]
-        )
+            prompts=[SeedPrompt(value=prompt_text, data_type="text")], metadata=prompt_metadata
+        )asdfasdf
 
         response_text = (
             (
