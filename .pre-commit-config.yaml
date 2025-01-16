@@ -31,8 +31,15 @@ repos:
     hooks:
       - id: isort
         name: Import Sort (Python files)
-        exclude: (doc/|__init__.py)
-        args: ["--profile", "black", "--filter-files"]
+        exclude: __init__.py
+        args: [--profile=black, --filter-files, --treat-comment-as-code "# %%"]
+
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.3.1
+    hooks:
+    - id: nbqa-isort
+      name: Import Sort (Jupyter Notebooks)
+      args: [--profile=black]
 
   - repo: https://github.com/PyCQA/flake8
     rev: 7.1.1
