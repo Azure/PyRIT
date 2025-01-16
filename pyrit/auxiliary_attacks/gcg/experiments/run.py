@@ -3,9 +3,10 @@
 
 import argparse
 import os
-from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 from typing import Any, Dict, Union
+
 import yaml
+from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 
 from pyrit.common.initialization import _load_environment_files
 

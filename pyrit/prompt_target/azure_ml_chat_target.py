@@ -14,7 +14,11 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
-from pyrit.models import ChatMessage, PromptRequestResponse, construct_response_from_request
+from pyrit.models import (
+    ChatMessage,
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)

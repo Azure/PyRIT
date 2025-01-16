@@ -7,7 +7,11 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.models import Score
-from pyrit.orchestrator import XPIAManualProcessingOrchestrator, XPIAOrchestrator, XPIATestOrchestrator
+from pyrit.orchestrator import (
+    XPIAManualProcessingOrchestrator,
+    XPIAOrchestrator,
+    XPIATestOrchestrator,
+)
 from pyrit.score import Scorer
 
 

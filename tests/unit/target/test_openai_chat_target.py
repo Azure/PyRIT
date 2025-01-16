@@ -15,7 +15,11 @@ from unit.mocks import get_image_request_piece
 from pyrit.exceptions.exception_classes import EmptyResponseException
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import ChatMessageListDictContent, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import (
+    ChatMessageListDictContent,
+    PromptRequestPiece,
+    PromptRequestResponse,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 
 

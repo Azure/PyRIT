@@ -33,11 +33,10 @@
 # %%
 import os
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
-from pyrit.score import AzureContentFilterScorer
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
-
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
+from pyrit.score import AzureContentFilterScorer
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

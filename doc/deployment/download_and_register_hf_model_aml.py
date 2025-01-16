@@ -48,21 +48,19 @@
 # %% [markdown]
 # ### 1.1 Import Required Libraries
 #
+# %%
 # Import the Azure ML SDK components required for workspace connection and model management.
-
 import os
 from typing import Union
 
-# %%
+from dotenv import load_dotenv
+
 # Import necessary libraries for Azure ML operations and authentication
 from azure.ai.ml import MLClient, UserIdentityConfiguration
 from azure.ai.ml.dsl import pipeline
 from azure.ai.ml.entities import AmlCompute
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential
-
-# %%
-from dotenv import load_dotenv
 
 # %% [markdown]
 # ### 1.2 Load Environment Variables
@@ -107,8 +105,7 @@ from dotenv import load_dotenv
 #     - Set the duration for the Azure ML cluster to remain active before scaling down due to inactivity, ensuring efficient resource use. Typically, 3-4 hours is ideal for large size models.
 #
 #
-
-
+# %%
 # Load the environment variables from the .env file
 load_dotenv()
 

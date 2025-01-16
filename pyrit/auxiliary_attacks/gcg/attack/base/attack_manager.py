@@ -29,7 +29,11 @@ from transformers import (
     Phi3ForCausalLM,
 )
 
-from pyrit.auxiliary_attacks.gcg.experiments.log import log_gpu_memory, log_loss, log_table_summary
+from pyrit.auxiliary_attacks.gcg.experiments.log import (
+    log_gpu_memory,
+    log_loss,
+    log_table_summary,
+)
 
 
 class NpEncoder(json.JSONEncoder):
