@@ -8,14 +8,14 @@ import uuid
 
 import pytest
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
-from pyrit.prompt_normalizer import NormalizerRequest2
+from pyrit.prompt_normalizer import NormalizerRequest
 from unit.mocks import MockPromptTarget, get_image_request_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
 from pyrit.prompt_converter import Base64Converter, ConverterResult, PromptConverter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 
@@ -308,7 +308,7 @@ async def test_prompt_normalizer_send_prompt_batch_async_throws(
         converters=[Base64Converter(), StringJoinConverter(join_value="_")]
     )
 
-    normalizer_request = NormalizerRequest2(
+    normalizer_request = NormalizerRequest(
         seed_prompt_group=seed_prompt_group,
         request_converter_configurations=[request_converters],
     )

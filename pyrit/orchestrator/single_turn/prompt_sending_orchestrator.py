@@ -12,7 +12,7 @@ from pyrit.common.utils import combine_dict
 from pyrit.models import PromptDataType, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest2, PromptNormalizer
+from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
@@ -63,7 +63,7 @@ class PromptSendingOrchestrator(Orchestrator):
     async def send_normalizer_requests_async(
         self,
         *,
-        prompt_request_list: list[NormalizerRequest2],
+        prompt_request_list: list[NormalizerRequest],
         memory_labels: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
@@ -118,7 +118,7 @@ class PromptSendingOrchestrator(Orchestrator):
         if isinstance(prompt_list, str):
             prompt_list = [prompt_list]
 
-        requests: list[NormalizerRequest2] = []
+        requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
             conversation_id = self._prepare_conversation()
 

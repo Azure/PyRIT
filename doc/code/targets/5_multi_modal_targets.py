@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
@@ -86,7 +86,8 @@ print(saved_audio_path)
 import pathlib
 
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.prompt_normalizer import NormalizerRequestPiece, NormalizerRequest
+from pyrit.models import SeedPromptGroup, SeedPrompt
+from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 
@@ -103,16 +104,18 @@ data = [
 # This is a single request with two parts, one image and one text
 
 normalizer_request = NormalizerRequest(
-    request_pieces=[
-        NormalizerRequestPiece(
-            prompt_value="Describe this picture:",
-            prompt_data_type="text",
-        ),
-        NormalizerRequestPiece(
-            prompt_value=str(image_path),
-            prompt_data_type="image_path",
-        ),
-    ]
+    seed_prompt_group= SeedPromptGroup(
+        prompts= [
+            SeedPrompt(
+                value="Describe this picture:",
+                data_type="text",
+            ),
+            SeedPrompt(
+                value=str(image_path),
+                data_type="image_path",
+            ),
+        ]
+    )
 )
 
 orchestrator = PromptSendingOrchestrator(objective_target=azure_openai_gpt4o_chat_target)

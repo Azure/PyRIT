@@ -13,7 +13,7 @@ from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, construct_response_from_request
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequest2
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequest
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 
@@ -107,7 +107,7 @@ class PromptNormalizer(abc.ABC):
     async def send_prompt_batch_to_target_async(
         self,
         *,
-        requests: list[NormalizerRequest2],
+        requests: list[NormalizerRequest],
         target: PromptTarget,
         labels: Optional[dict[str, str]] = None,
         orchestrator_identifier: Optional[dict[str, str]] = None,
@@ -226,6 +226,8 @@ class PromptNormalizer(abc.ABC):
         """
 
         entries = []
+
+        # TODO SET CONVERTED DATA TYPE HERE
 
         # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())

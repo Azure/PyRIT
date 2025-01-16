@@ -12,8 +12,7 @@ from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Identifier, PromptDataType
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest2
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
 
 logger = logging.getLogger(__name__)
@@ -64,7 +63,7 @@ class Orchestrator(abc.ABC, Identifier):
         conversation_id: str = None,
         converters=None,
         metadata=None,
-    ) -> NormalizerRequest2:
+    ) -> NormalizerRequest:
 
         if converters is None:
             converters = self._prompt_converters
@@ -82,7 +81,7 @@ class Orchestrator(abc.ABC, Identifier):
         )]
 
 
-        request = NormalizerRequest2(
+        request = NormalizerRequest(
             seed_prompt_group=seed_prompt_group,
             request_converter_configurations=converter_configurations,
             conversation_id=conversation_id,

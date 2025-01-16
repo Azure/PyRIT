@@ -13,7 +13,7 @@ from unit.mocks import MockPromptTarget
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequest2
+from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.score import SubStringScorer
 
 
@@ -117,7 +117,7 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
             ]
         )
 
-        req = NormalizerRequest2(
+        req = NormalizerRequest(
             seed_prompt_group=group,
         )
 
