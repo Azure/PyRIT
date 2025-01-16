@@ -14,9 +14,8 @@
 
 # %% [markdown]
 # # REALTIME TARGET
-
-# %% [markdown]
-# ## Using PyRIT
+#
+# This notebooks shows how to interact with the Realtime Target to send text or audio prompts and receive back an audio output and the text transcript of that audio
 
 # %%
 from pyrit.prompt_target import RealtimeTarget
@@ -27,7 +26,9 @@ initialize_pyrit(memory_db_type=IN_MEMORY)
 target = RealtimeTarget()
 
 # %% [markdown]
-# ## Single Turn Audio Conversation
+# ## Audio Conversation
+#
+# The following shows how to interact with the Realtime Target with audio files as your prompt. You can either use pre-made audio files with the pcm16 format or you can use PyRIT converters to help turn your text into audio.
 
 # %%
 
@@ -49,13 +50,15 @@ normalizer_request = NormalizerRequest(
 await target.connect()  # type: ignore
 
 orchestrator = PromptSendingOrchestrator(objective_target=target)
-
 await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
-
 await orchestrator.print_conversations_async()  # type: ignore
 
+await target.disconnect()  # type: ignore
+
 # %% [markdown]
-# ## Single Turn Text Conversation
+# ## Text Conversation
+#
+# This section below shows how to interact with the Realtime Target with text prompts
 
 # %%
 from pyrit.models.prompt_request_piece import PromptRequestPiece
@@ -63,7 +66,7 @@ from pyrit.orchestrator import PromptSendingOrchestrator
 
 
 await target.connect()  # type: ignore
-prompt_to_send = "Give me an image of a raccoon pirate as a Spanish baker in Spain"
+prompt_to_send = "What is the capitol of France?"
 
 request = PromptRequestPiece(
     role="user",
@@ -73,54 +76,6 @@ request = PromptRequestPiece(
 
 orchestrator = PromptSendingOrchestrator(objective_target=target)
 response = await orchestrator.send_prompts_async(prompt_list=[prompt_to_send])  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
-
-# %% [markdown]
-# ## Multiturn Text Conversation
-
-# %%
-
-from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
-
-await target.connect()  # type: ignore
-
-text_prompt_to_send = "Hi what is 2+2?"
-
-normalizer_request = NormalizerRequest(
-    request_pieces=[
-        NormalizerRequestPiece(
-            prompt_value=text_prompt_to_send,
-            prompt_data_type="text",
-        )
-    ]
-)
-
-second_prompt_to_send = "Now add 2?"
-second_normalizer_request = NormalizerRequest(
-    request_pieces=[
-        NormalizerRequestPiece(
-            prompt_value=second_prompt_to_send,
-            prompt_data_type="text",
-        )
-    ]
-)
-
-
-# %%
-orchestrator = PromptSendingOrchestrator(objective_target=target)
-
-await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
-
-await orchestrator.print_conversations_async()  # type: ignore
-
-# %%
-
-# %%
-orchestrator = PromptSendingOrchestrator(objective_target=target)
-
-await orchestrator.send_normalizer_requests_async(prompt_request_list=[second_normalizer_request])  # type: ignore
-
 await orchestrator.print_conversations_async()  # type: ignore
 
 # %%

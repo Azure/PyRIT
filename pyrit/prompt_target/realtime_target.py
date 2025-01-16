@@ -5,92 +5,133 @@ import asyncio
 import base64
 import json
 import logging
-from typing import Dict, Optional
+from typing import Dict, Literal, Optional
 import wave
 import websockets
 
-from pyrit.common import default_values
 from pyrit.models import PromptRequestResponse
 from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target import limit_requests_per_minute
+from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
 logger = logging.getLogger(__name__)
 
+RealTimeVoice = Literal["alloy", "echo", "shimmer"]
 
-class RealtimeTarget(PromptTarget):
-    REALTIME_ENDPOINT_WEBSOCKET_URL = "AZURE_OPENAI_REALTIME_API_WS_URL"
-    REALTIME_DEPLOYMENT = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
-    REALTIME_API_KEY = "AZURE_OPENAI_REALTIME_API_KEY"
-    REALTIME_API_VERSION = "AZURE_OPENAI_REALTIME_API_VERSION"
+
+class RealtimeTarget(OpenAITarget):
 
     def __init__(
         self,
-        key: str = None,
-        deployment: str = None,
-        api_version: str = None,
-        url: str = None,
+        api_version: str = "2024-10-01-preview",
+        system_prompt: Optional[str] = "You are a helpful AI assistant",
+        voice: Optional[RealTimeVoice] = None,
         *args,
         **kwargs,
     ) -> None:
+        """
+        RealtimeTarget class for Azure OpenAI Realtime API.
+        Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
 
-        self.api_key = default_values.get_required_value(env_var_name=self.REALTIME_API_KEY, passed_value=key)
-        self.url = default_values.get_required_value(
-            env_var_name=self.REALTIME_ENDPOINT_WEBSOCKET_URL, passed_value=url
-        )
-        self.deployment = default_values.get_required_value(
-            env_var_name=self.REALTIME_DEPLOYMENT, passed_value=deployment
-        )
-        self.api_version = default_values.get_required_value(
-            env_var_name=self.REALTIME_API_VERSION, passed_value=api_version
-        )
+        Args:
+            api_version (str, Optional): The version of the Azure OpenAI API. Defaults to "2024-10-01-preview".
+            system_prompt (str, Optional): The system prompt to use. Defaults to "You are a helpful AI assistant".
+            voice (literal str, Optional): The voice to use. Defaults to None.
+                the only supported voices by the AzureOpenAI Realtime API are "alloy", "echo", and "shimmer".
+            *args: Additional positional arguments to be passed.
+            **kwargs: Additional keyword arguments to be passed.
+        """
 
+        if (kwargs.get("use_aad_auth") is not None) and (kwargs.get("use_aad_auth") is True):
+            raise NotImplementedError("AAD authentication not implemented for TTSTarget yet.")
+
+        super().__init__(api_version=api_version, *args, **kwargs)
+
+        self.system_prompt = system_prompt
+        self.voice = voice
         self.websocket = None
-        super().__init__(*args, **kwargs)
+
+    def _set_azure_openai_env_configuration_vars(self):
+        self.deployment_environment_variable = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
+        self.endpoint_uri_environment_variable = "AZURE_OPENAI_REALTIME_API_WEBSOCKET_URL"
+        self.api_key_environment_variable = "AZURE_OPENAI_REALTIME_API_KEY"
 
     async def connect(self):
-        """
-        Connects to the WebSocket server.
+        # Connects to Realtime API Target using websockets.
 
-        """
-        logger.info(f"Connecting to WebSocket: {self.url}")
-        headers = {"Authorization": f"Bearer {self.api_key}", "OpenAI-Beta": "realtime=v1"}
+        logger.info(f"Connecting to WebSocket: {self._endpoint}")
+        headers = {"Authorization": f"Bearer {self._api_key}", "OpenAI-Beta": "realtime=v1"}
 
-        url = f"{self.url}/openai/realtime?api-version={self.api_version}"
-        url = f"{url}&deployment={self.deployment}&api-key={self.api_key}"
+        websocket_url = f"{self._endpoint}/openai/realtime?api-version={self._api_version}"
+        websocket_url = f"{websocket_url}&deployment={self._deployment_name}&api-key={self._api_key}"
 
         self.websocket = await websockets.connect(
-            url,
+            websocket_url,
             extra_headers=headers,
         )
         logger.info("Successfully connected to AzureOpenAI Realtime API")
 
+    def _set_system_prompt_and_config_vars(self):
+        """
+        Sets the system prompt and configuration variables for the target.
+
+        """
+
+        session_config = {
+            "modalities": ["audio", "text"],
+            "instructions": self.system_prompt,
+            "input_audio_format": "pcm16",
+            "output_audio_format": "pcm16",
+            "turn_detection": None,  # server_vad option currently not supported but available in the API
+        }
+
+        if self.voice:
+            session_config["voice"] = self.voice
+        return session_config
+
+    async def send_event(self, event):
+        """
+        Sends an event to the WebSocket server.
+
+        Args:
+            event: Event to send.
+
+        """
+        await self.websocket.send(json.dumps(event))
+        logger.debug(f"Event sent - type: {event['type']}")
+
+    async def send_config(self):
+        # Sends the session configuration to the WebSocket server.
+
+        config_variables = self._set_system_prompt_and_config_vars()
+
+        await self.send_event({"type": "session.update", "session": config_variables})
+        logger.info("Session set up")
+        print("Session set up")
+
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
+        # Sends a prompt to the target and returns the response.
+
         # Validation function
         self._validate_request(prompt_request=prompt_request)
 
+        await self.send_config()
         request = prompt_request.request_pieces[0]
         prompt = request.converted_value
-
-        await self.send_config()
-
         response_type = request.converted_value_data_type
+
+        # Order of messages sent varies based on the data format of the prompt
         if response_type == "audio_path":
             with wave.open(prompt, "rb") as wav_file:
-                # Read WAV parameters and add small silence to audio
-                num_channels = wav_file.getnchannels()
 
+                # Read WAV parameters
+                num_channels = wav_file.getnchannels()
                 sample_width = wav_file.getsampwidth()  # Should be 2 bytes for PCM16
                 frame_rate = wav_file.getframerate()
                 num_frames = wav_file.getnframes()
 
-                silence_duration = 0.5  # 500ms
-                silence_frames = int(frame_rate * silence_duration)
-                silence = (b"\x00" * sample_width) * silence_frames * num_channels
-
-                wav_data = wav_file.readframes(num_frames)
-
-                audio_content = wav_data + silence
+                audio_content = wav_file.readframes(num_frames)
 
             receive_tasks = asyncio.create_task(self.receive_events(convo_max=1))
 
@@ -108,7 +149,7 @@ class RealtimeTarget(PromptTarget):
         text_response_piece = PromptRequestPiece(
             original_value=events[1],
             original_value_data_type="text",
-            # converted_value=events[1],
+            converted_value=events[1],
             role="assistant",
             converted_value_data_type="text",
         )
@@ -132,9 +173,9 @@ class RealtimeTarget(PromptTarget):
         response_pieces: list[PromptRequestPiece],
         prompt_metadata: Optional[Dict[str, str]] = None,
     ) -> PromptRequestResponse:
-        """
-        Constructs a response entry from a request.
-        """
+
+        # Constructs a response entry from a request.
+
         return PromptRequestResponse(
             request_pieces=[
                 PromptRequestPiece(
@@ -182,32 +223,7 @@ class RealtimeTarget(PromptTarget):
         if self.websocket:
             await self.websocket.close()
             self.websocket = None
-            logger.info(f"Disconnected from {self.url}")
-
-    async def send_event(self, event):
-        """
-        Sends event to the WebSocket server.
-        args:
-            event: Event data to send (from the user)
-        """
-        await self.websocket.send(json.dumps(event))
-        logger.debug(f"Event sent - type: {event['type']}")
-
-    async def send_config(self):
-        instructions = "You are a helpful AI"
-        session_config = {
-            "modalities": ["audio", "text"],
-            "instructions": instructions,
-            # "voice": self.voice,
-            "input_audio_format": "pcm16",
-            "output_audio_format": "pcm16",
-            "turn_detection": None,
-            # "temperature": 0.6
-        }
-
-        await self.send_event({"type": "session.update", "session": session_config})
-        logger.info("Session set up")
-        print("Session set up")
+            logger.info(f"Disconnected from {self._endpoint}")
 
     async def send_response_create(self):
         """
@@ -236,7 +252,7 @@ class RealtimeTarget(PromptTarget):
             try:
                 async for message in self.websocket:
                     event = json.loads(message)
-                    msg_response_type = event["type"]
+                    msg_response_type = event.get("type")
                     if msg_response_type:
                         if msg_response_type == "response.done":
                             logger.debug(f"event is: {json.dumps(event, indent=2)}")
@@ -261,7 +277,6 @@ class RealtimeTarget(PromptTarget):
 
                 if ctr >= convo_max:
                     done = True
-                    break
             except websockets.ConnectionClosed as e:
                 logger.error(f"WebSocket connection closed: {e}")
             except Exception as e:
@@ -317,9 +332,7 @@ class RealtimeTarget(PromptTarget):
 
         # Check the number of request pieces
         if len(prompt_request.request_pieces) != 1:
-            raise ValueError(
-                "This target only supports one request piece."
-            )  # TODO: should it support multiple? check this
+            raise ValueError("This target only supports one request piece.")
 
         converted_prompt_data_types = [
             request_piece.converted_value_data_type for request_piece in prompt_request.request_pieces
@@ -329,3 +342,7 @@ class RealtimeTarget(PromptTarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "audio_path"]:
                 raise ValueError("This target only supports text and audio_path.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False

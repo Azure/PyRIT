@@ -9,7 +9,9 @@ from pyrit.prompt_target.realtime_target import RealtimeTarget
 
 @pytest.fixture
 def target(duckdb_instance):
-    return RealtimeTarget(key="test_key", url="wss://test_url", deployment="test_deployment", api_version="v1")
+    return RealtimeTarget(
+        api_key="test_key", endpoint="wss://test_url", deployment_name="test_deployment", api_version="v1"
+    )
 
 
 @pytest.mark.asyncio
