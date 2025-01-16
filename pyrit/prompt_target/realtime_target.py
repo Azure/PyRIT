@@ -10,6 +10,7 @@ import wave
 import websockets
 
 from pyrit.models import PromptRequestResponse
+from pyrit.models.data_type_serializer import data_serializer_factory
 from pyrit.models.prompt_request_piece import PromptRequestPiece
 from pyrit.prompt_target import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
@@ -61,6 +62,7 @@ class RealtimeTarget(OpenAITarget):
 
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
         headers = {"Authorization": f"Bearer {self._api_key}", "OpenAI-Beta": "realtime=v1"}
+        # https://platform.openai.com/docs/guides/realtime-websocket for more information on the format and usage
 
         websocket_url = f"{self._endpoint}/openai/realtime?api-version={self._api_version}"
         websocket_url = f"{websocket_url}&deployment={self._deployment_name}&api-key={self._api_key}"
@@ -195,7 +197,12 @@ class RealtimeTarget(OpenAITarget):
         )
 
     async def save_audio(
-        self, audio_bytes: bytes, num_channels: int = 1, sample_width: int = 2, sample_rate: int = 16000
+        self,
+        audio_bytes: bytes,
+        num_channels: int = 1,
+        sample_width: int = 2,
+        sample_rate: int = 16000,
+        output_filename: str = None,
     ):
         """
         Saves audio bytes to a WAV file.
@@ -206,7 +213,10 @@ class RealtimeTarget(OpenAITarget):
             sample_width (int): Sample width in bytes. Defaults to 2 for the PCM16 format
             sample_rate (int): Sample rate in Hz. Defaults to 16000 Hz for the PCM16 format
         """
-        output_filename = "response_audio.wav"
+        data = data_serializer_factory(category="prompt-memory-entries", data_type="audio_path")
+        if not output_filename:
+            filename = await data.get_data_filename()
+            output_filename = str(filename)
 
         with wave.open(output_filename, "wb") as wav_file:
             wav_file.setnchannels(num_channels)
