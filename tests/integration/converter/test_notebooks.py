@@ -3,7 +3,6 @@
 
 import os
 import pathlib
-import sys
 
 import nbformat
 import pytest
@@ -28,5 +27,8 @@ def test_execute_notebooks(file_name):
 
     ep = ExecutePreprocessor(timeout=600)
 
-    # Execute notebook, test will throw exception if any cell fails
-    ep.preprocess(nb, {"metadata": {"path": nb_path.parent}})
+    try:
+        # Execute notebook, test will throw exception if any cell fails
+        ep.preprocess(nb, {"metadata": {"path": nb_path.parent}})
+    except Exception as e:
+        pytest.fail(f"Notebook '{file_name}' failed to execute: {e}")
