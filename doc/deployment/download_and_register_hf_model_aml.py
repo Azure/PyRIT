@@ -53,14 +53,13 @@
 import os
 from typing import Union
 
-from dotenv import load_dotenv
-
 # Import necessary libraries for Azure ML operations and authentication
 from azure.ai.ml import MLClient, UserIdentityConfiguration
 from azure.ai.ml.dsl import pipeline
 from azure.ai.ml.entities import AmlCompute
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential, InteractiveBrowserCredential
+from dotenv import load_dotenv
 
 # %% [markdown]
 # ### 1.2 Load Environment Variables
