@@ -6,7 +6,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_converter import MaliciousQuestionGeneratorConverter, NoiseConverter, TenseConverter, ToneConverter
+from pyrit.prompt_converter import (
+    MaliciousQuestionGeneratorConverter,
+    NoiseConverter,
+    TenseConverter,
+    ToneConverter,
+)
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 

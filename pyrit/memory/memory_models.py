@@ -5,7 +5,18 @@ import uuid
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import ARRAY, INTEGER, JSON, Column, DateTime, Float, ForeignKey, Index, String, Unicode
+from sqlalchemy import (
+    ARRAY,
+    INTEGER,
+    JSON,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    String,
+    Unicode,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, relationship  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 

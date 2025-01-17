@@ -16,10 +16,9 @@
 # # How to use HITL Scoring - optional
 
 # %%
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -45,11 +44,10 @@ from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
-    SelfAskCategoryScorer,
-    HumanInTheLoopScorer,
     ContentClassifierPaths,
+    HumanInTheLoopScorer,
+    SelfAskCategoryScorer,
 )
-
 
 memory = CentralMemory.get_memory_instance()
 prompt_pieces_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_orchestrator_id)

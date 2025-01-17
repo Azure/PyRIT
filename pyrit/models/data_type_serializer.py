@@ -11,7 +11,7 @@ import os
 import time
 from mimetypes import guess_type
 from pathlib import Path
-from typing import get_args, Literal, TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union, get_args
 from urllib.parse import urlparse
 import wave
 

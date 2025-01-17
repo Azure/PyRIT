@@ -1,15 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 import os
 from pathlib import Path
-import pytest
 from typing import get_args
 from unittest import mock
 
-from pyrit.common.initialization import _load_environment_files, MemoryDatabaseType
-from pyrit.common import initialize_pyrit, AZURE_SQL, DUCK_DB, IN_MEMORY
+import pytest
+from mock_alchemy.mocking import UnifiedAlchemyMagicMock
+
+from pyrit.common import AZURE_SQL, DUCK_DB, IN_MEMORY, initialize_pyrit
+from pyrit.common.initialization import MemoryDatabaseType, _load_environment_files
 
 
 @mock.patch("dotenv.load_dotenv")

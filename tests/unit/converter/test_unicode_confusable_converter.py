@@ -7,7 +7,9 @@ from unittest.mock import patch
 import pytest
 
 from pyrit.prompt_converter import ConverterResult
-from pyrit.prompt_converter.unicode_confusable_converter import UnicodeConfusableConverter
+from pyrit.prompt_converter.unicode_confusable_converter import (
+    UnicodeConfusableConverter,
+)
 
 
 @pytest.fixture

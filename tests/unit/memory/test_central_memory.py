@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.common import default_values
-from pyrit.memory import DuckDBMemory, CentralMemory
+from pyrit.memory import CentralMemory, DuckDBMemory
 
 
 @pytest.fixture(autouse=True)

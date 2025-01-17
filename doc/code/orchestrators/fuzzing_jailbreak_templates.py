@@ -27,8 +27,8 @@
 # %%
 import pathlib
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
-from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.prompt_converter import (
@@ -39,7 +39,6 @@ from pyrit.prompt_converter import (
     FuzzerSimilarConverter,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-
 
 # Initialize Pyrit with in-memory database
 initialize_pyrit(memory_db_type=IN_MEMORY)

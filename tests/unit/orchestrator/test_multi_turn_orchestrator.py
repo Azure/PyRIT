@@ -8,7 +8,9 @@ import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
 from pyrit.orchestrator.multi_turn.multi_turn_orchestrator import MultiTurnAttackResult
-from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import RedTeamingOrchestrator
+from pyrit.orchestrator.multi_turn.red_teaming_orchestrator import (
+    RedTeamingOrchestrator,
+)
 from pyrit.prompt_target import PromptChatTarget
 
 

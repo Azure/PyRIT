@@ -17,17 +17,16 @@
 #
 # Text can be added to images by using the `AddTextImageConverter`.
 # The converted image file will be saved in the db/results/images folder. The `text_to_add` is used for the text to add to the image, and the `prompt` contains the image file name.
-
 # %%
-from IPython.display import display
 import pathlib
+
+from IPython.display import display
 from PIL import Image
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import AddTextImageConverter
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

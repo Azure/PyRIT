@@ -11,7 +11,10 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
+from pyrit.score.self_ask_category_scorer import (
+    ContentClassifierPaths,
+    SelfAskCategoryScorer,
+)
 
 
 @pytest.fixture

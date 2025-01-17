@@ -1,9 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from datetime import datetime
-import pytest
 import uuid
+from datetime import datetime
+
+import pytest
 
 from pyrit.models.score import Score
 

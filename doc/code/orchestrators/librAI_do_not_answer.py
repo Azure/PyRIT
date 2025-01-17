@@ -7,11 +7,10 @@
 
 # %%
 # Import necessary packages
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_librAI_do_not_answer_dataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

@@ -8,11 +8,19 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer import (
+    NormalizerRequest,
+    NormalizerRequestPiece,
+    PromptNormalizer,
+)
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score.scorer import Scorer
 

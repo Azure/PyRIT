@@ -16,7 +16,12 @@ from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
 from pyrit.common.path import DATASETS_PATH, DB_DATA_PATH
 from pyrit.common.text_helper import read_txt, write_txt
-from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice, SeedPromptDataset
+from pyrit.models import (
+    QuestionAnsweringDataset,
+    QuestionAnsweringEntry,
+    QuestionChoice,
+    SeedPromptDataset,
+)
 from pyrit.models.seed_prompt import SeedPrompt
 
 # Define the type for the file handlers
