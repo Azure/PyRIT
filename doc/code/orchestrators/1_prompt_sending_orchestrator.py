@@ -179,10 +179,9 @@ await orchestrator.print_conversations_async()  # type: ignore
 # %%
 import uuid
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_target import OpenAIChatTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
