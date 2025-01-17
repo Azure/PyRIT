@@ -5,8 +5,9 @@ import asyncio
 import base64
 import json
 import logging
-from typing import Dict, Literal, Optional
 import wave
+from typing import Dict, Literal, Optional
+
 import websockets
 
 from pyrit.models import PromptRequestResponse
@@ -175,25 +176,18 @@ class RealtimeTarget(OpenAITarget):
         prompt_metadata: Optional[Dict[str, str]] = None,
     ) -> PromptRequestResponse:
 
-        # Constructs a response entry from a request.
+        # Constructs a response entry from a request with mixed types of response pieces.
+        # In this target there will be two response pieces for every response
 
-        return PromptRequestResponse(
-            request_pieces=[
-                PromptRequestPiece(
-                    role="assistant",
-                    original_value=resp_piece.original_value,
-                    conversation_id=request.conversation_id,
-                    labels=request.labels,
-                    prompt_target_identifier=request.prompt_target_identifier,
-                    orchestrator_identifier=request.orchestrator_identifier,
-                    original_value_data_type=resp_piece.original_value_data_type,
-                    converted_value_data_type=resp_piece.converted_value_data_type,
-                    converted_value=resp_piece.converted_value,
-                    prompt_metadata=prompt_metadata,
-                )
-                for resp_piece in response_pieces
-            ]
-        )
+        for response_piece in response_pieces:
+            response_piece.role = "assistant"
+            response_piece.conversation_id = request.conversation_id
+            response_piece.labels = request.labels
+            response_piece.prompt_target_identifier = request.prompt_target_identifier
+            response_piece.orchestrator_identifier = request.orchestrator_identifier
+            response_piece.prompt_metadata = prompt_metadata
+
+        return PromptRequestResponse(request_pieces=response_pieces)
 
     async def save_audio(
         self,
@@ -267,10 +261,8 @@ class RealtimeTarget(OpenAITarget):
                         logger.debug(f"event is: {json.dumps(event, indent=2)}")
                         audio_transcript = event["response"]["output"][0]["content"][0]["transcript"]
                         conversation_messages.append(audio_transcript)
-                        # ctr += 1
                         break
                     elif msg_response_type == "error":
-                        # ctr += 1
                         logger.error(f"Error, event is: {json.dumps(event, indent=2)}")
                         break
                     elif msg_response_type == "response.audio.delta":

@@ -4,17 +4,17 @@
 from __future__ import annotations
 
 import abc
-import aiofiles
 import base64
 import hashlib
 import os
 import time
+import wave
 from mimetypes import guess_type
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional, Union, get_args
 from urllib.parse import urlparse
-import wave
 
+import aiofiles
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.models.literals import PromptDataType

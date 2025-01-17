@@ -21,13 +21,12 @@
 # ## Target Initialization
 
 # %%
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.prompt_target import RealtimeTarget
-from pyrit.common import initialize_pyrit, IN_MEMORY
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 target = RealtimeTarget()
-
 
 # %%
 await target.connect()
@@ -39,8 +38,12 @@ await target.connect()
 
 # %%
 from pathlib import Path
+
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer.normalizer_request import (
+    NormalizerRequest,
+    NormalizerRequestPiece,
+)
 
 prompt_to_send = Path("../../../assets/converted_audio.wav").resolve()
 
