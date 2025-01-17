@@ -29,10 +29,9 @@
 import time
 import uuid
 
-from pyrit.common import initialize_pyrit, AZURE_SQL
+from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
-
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 
@@ -65,7 +64,6 @@ from azure.ai.contentsafety.models import TextCategory
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer, LikertScalePaths, SelfAskLikertScorer
-
 
 target = OpenAIChatTarget()
 
@@ -117,10 +115,9 @@ import os
 from pathlib import Path
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.score import SelfAskTrueFalseScorer
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIDALLETarget
-
+from pyrit.score import SelfAskTrueFalseScorer
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -160,11 +157,10 @@ await result.print_conversation_async()  # type: ignore
 # %%
 import pathlib
 
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.models import SeedPrompt, SeedPromptGroup
-
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
 

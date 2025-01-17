@@ -25,11 +25,10 @@
 # This example demonstrates how to use the image target to create an image from a text-based prompt.
 
 # %%
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIDALLETarget
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -54,11 +53,11 @@ await orchestrator.print_conversations_async()  # type: ignore
 #
 # Similarly, this example shows how to use the TTS (audio) target to convert text to speech
 
-# %%
-from pyrit.prompt_converter import TranslationConverter
-from pyrit.prompt_target import OpenAITTSTarget, OpenAIChatTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 
+# %%
+from pyrit.prompt_converter import TranslationConverter
+from pyrit.prompt_target import OpenAIChatTarget, OpenAITTSTarget
 
 converter_target = OpenAIChatTarget()
 prompt_target = OpenAITTSTarget()
@@ -85,11 +84,10 @@ print(saved_audio_path)
 # %%
 import pathlib
 
-from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.models import SeedPromptGroup, SeedPrompt
-from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.prompt_target import OpenAIChatTarget
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
 
