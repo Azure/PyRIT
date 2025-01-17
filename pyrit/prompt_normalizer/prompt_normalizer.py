@@ -7,7 +7,6 @@ from typing import Optional
 from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.common.utils import combine_dict
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
@@ -51,7 +50,20 @@ class PromptNormalizer(abc.ABC):
         Sends a single request to a target.
 
         Args:
-            TODO
+            seed_prompt_group (SeedPromptGroup): The seed prompt group to be sent.
+            target (PromptTarget): The target to which the prompt is sent.
+            conversation_id (str, optional): The ID of the conversation. Defaults to None.
+            request_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
+                converting the request. Defaults to an empty list.
+            response_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
+                converting the response. Defaults to an empty list.
+            sequence (int, optional): The sequence number of the request. Defaults to -1.
+            labels (Optional[dict[str, str]], optional): Labels associated with the request. Defaults to None.
+            orchestrator_identifier (Optional[dict[str, str]], optional): Identifier for the orchestrator. Defaults to
+                None.
+
+            Raises:
+            Exception: If an error occurs during the request processing.
 
         Returns:
             PromptRequestResponse: The response received from the target.
@@ -120,8 +132,10 @@ class PromptNormalizer(abc.ABC):
         Args:
             requests (list[NormalizerRequest]): A list of NormalizerRequest objects to be sent.
             target (PromptTarget): The target to which the prompts are sent.
-            labels (Optional[dict[str, str]], optional): A dictionary of labels to be included with the request. Defaults to None.
-            orchestrator_identifier (Optional[dict[str, str]], optional): A dictionary identifying the orchestrator. Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of labels to be included with the request.
+                Defaults to None.
+            orchestrator_identifier (Optional[dict[str, str]], optional): A dictionary identifying the orchestrator.
+                Defaults to None.
             batch_size (int, optional): The number of prompts to include in each batch. Defaults to 10.
 
         Returns:
@@ -215,15 +229,20 @@ class PromptNormalizer(abc.ABC):
         Applies parameters and converters to the prompt text and puts all the pieces together.
 
         Args:
-            TODO
+            seed_prompt_group (SeedPromptGroup): The group of seed prompts to be used.
+            conversation_id (str): The ID of the conversation.
+            request_converter_configurations (list[PromptConverterConfiguration]): List of configurations for
+                request converters.
+            target (PromptTarget): The target for the prompt.
+            sequence (int): The sequence number of the prompt.
+            labels (dict[str, str]): A dictionary of labels associated with the prompt.
+            orchestrator_identifier (Optional[dict[str, str]]): An optional dictionary for orchestrator identifiers.
 
         Returns:
             PromptRequestResponse: The prompt request response object.
         """
 
         entries = []
-
-        # TODO SET CONVERTED DATA TYPE HERE
 
         # All prompt request pieces within PromptRequestResponse needs to have same conversation ID.
         conversation_id = conversation_id if conversation_id else str(uuid4())
