@@ -9,10 +9,10 @@ from uuid import uuid4
 
 from aioconsole import ainput
 
-from pyrit.models import Score, SeedPromptGroup, SeedPrompt
+from pyrit.models import Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import PromptNormalizer, PromptConverterConfiguration
+from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
@@ -76,9 +76,7 @@ class XPIAOrchestrator(Orchestrator):
 
         converters = PromptConverterConfiguration(converters=self._prompt_converters)
 
-        seed_prompt_group = SeedPromptGroup(prompts=[
-            SeedPrompt(value=self._attack_content, data_type="text")
-        ])
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=self._attack_content, data_type="text")])
 
         response = await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,
@@ -150,7 +148,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
 
         self._processing_target = processing_target
         self._processing_conversation_id = str(uuid4())
-        self._processing_prompt = processing_prompt
+        self._processing_prompt = SeedPrompt(value=processing_prompt, data_type="text")
 
     async def _process_async(self) -> str:
 

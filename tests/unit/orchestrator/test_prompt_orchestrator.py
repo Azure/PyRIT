@@ -7,10 +7,10 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from unit.mocks import MockPromptTarget
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import NormalizerRequest

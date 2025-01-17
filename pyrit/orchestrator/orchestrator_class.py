@@ -13,7 +13,9 @@ from pyrit.models import Identifier, PromptDataType
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
-from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,17 +71,16 @@ class Orchestrator(abc.ABC, Identifier):
             converters = self._prompt_converters
 
         seed_prompt_group = SeedPromptGroup(
-            prompts=[SeedPrompt(
-                value=prompt_text,
-                data_type=prompt_type,
-                metadata=metadata,
-            )]
+            prompts=[
+                SeedPrompt(
+                    value=prompt_text,
+                    data_type=prompt_type,
+                    metadata=metadata,
+                )
+            ]
         )
 
-        converter_configurations = [PromptConverterConfiguration(
-            converters=converters if converters else []
-        )]
-
+        converter_configurations = [PromptConverterConfiguration(converters=converters if converters else [])]
 
         request = NormalizerRequest(
             seed_prompt_group=seed_prompt_group,

@@ -7,13 +7,15 @@ from pathlib import Path
 from typing import Optional, Union
 from uuid import uuid4
 
-from pyrit.common.utils import combine_dict
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
+from pyrit.common.utils import combine_dict
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
-from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
@@ -398,7 +400,6 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 orchestrator_identifier=self.get_identifier(),
                 labels=memory_labels,
             )
-
 
         seed_prompt_group = SeedPromptGroup(
             prompts=[SeedPrompt(value=prompt_text, data_type="text")],

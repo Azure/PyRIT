@@ -3,20 +3,26 @@
 
 import os
 import tempfile
-from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
-from pyrit.prompt_normalizer import NormalizerRequest
 from unit.mocks import MockPromptTarget, get_image_request_piece
 
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_converter import Base64Converter, ConverterResult, PromptConverter, StringJoinConverter
-from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
+from pyrit.prompt_converter import (
+    Base64Converter,
+    ConverterResult,
+    PromptConverter,
+    StringJoinConverter,
+)
+from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 from pyrit.prompt_target import PromptTarget
 
 
@@ -46,6 +52,7 @@ def seed_prompt_group() -> SeedPromptGroup:
             )
         ]
     )
+
 
 @pytest.fixture
 def mock_memory_instance():
@@ -79,26 +86,20 @@ def assert_prompt_piece_hashes_set(request: PromptRequestResponse):
 async def test_send_prompt_async_multiple_converters(mock_memory_instance, seed_prompt_group):
     prompt_target = MockPromptTarget()
     request_converters = [
-        PromptConverterConfiguration(
-            converters=[Base64Converter(), StringJoinConverter(join_value="_")]
-        )
+        PromptConverterConfiguration(converters=[Base64Converter(), StringJoinConverter(join_value="_")])
     ]
 
     normalizer = PromptNormalizer()
 
     await normalizer.send_prompt_async(
-        seed_prompt_group=seed_prompt_group,
-        request_converter_configurations=request_converters,
-        target=prompt_target
+        seed_prompt_group=seed_prompt_group, request_converter_configurations=request_converters, target=prompt_target
     )
 
     assert prompt_target.prompt_sent == ["S_G_V_s_b_G_8_="]
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_no_response_adds_memory(
-    mock_memory_instance, seed_prompt_group
-):
+async def test_send_prompt_async_no_response_adds_memory(mock_memory_instance, seed_prompt_group):
     prompt_target = AsyncMock()
     prompt_target.send_prompt_async = AsyncMock(return_value=None)
 
@@ -112,9 +113,7 @@ async def test_send_prompt_async_no_response_adds_memory(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_empty_response_exception_handled(
-    mock_memory_instance, seed_prompt_group
-):
+async def test_send_prompt_async_empty_response_exception_handled(mock_memory_instance, seed_prompt_group):
     prompt_target = AsyncMock()
     prompt_target.send_prompt_async = AsyncMock(side_effect=EmptyResponseException(message="Empty response"))
 
@@ -132,9 +131,7 @@ async def test_send_prompt_async_empty_response_exception_handled(
 
 
 @pytest.mark.asyncio
-async def test_send_prompt_async_request_response_added_to_memory(
-    mock_memory_instance, seed_prompt_group
-):
+async def test_send_prompt_async_request_response_added_to_memory(mock_memory_instance, seed_prompt_group):
     prompt_target = AsyncMock()
 
     response = PromptRequestPiece(role="assistant", original_value="test_response").to_prompt_request_response()
@@ -241,7 +238,7 @@ async def test_send_prompt_async_converters_response(
     response = await normalizer.send_prompt_async(
         seed_prompt_group=seed_prompt_group,
         response_converter_configurations=[response_converter],
-        target=prompt_target
+        target=prompt_target,
     )
 
     assert response.request_pieces[0].converted_value == "SGVsbG8="
@@ -264,19 +261,11 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
             output_text=filename,
         )
 
-        prompt_converters = PromptConverterConfiguration(
-            converters=[mock_image_converter]
-        )
+        prompt_converters = PromptConverterConfiguration(converters=[mock_image_converter])
 
         prompt_text = "Hello"
 
-        seed_prompt_group = SeedPromptGroup(
-            prompts=[
-                SeedPrompt(
-                    value=prompt_text,
-                    data_type="text")
-            ]
-        )
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt_text, data_type="text")])
 
         normalizer = PromptNormalizer()
         # Mock the async read_file method
@@ -285,7 +274,7 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
         response = await normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,
             target=prompt_target,
-            request_converter_configurations=[prompt_converters]
+            request_converter_configurations=[prompt_converters],
         )
 
         # verify the prompt target received the correct arguments from the normalizer
@@ -301,7 +290,8 @@ async def test_send_prompt_async_image_converter(mock_memory_instance):
 @pytest.mark.parametrize("max_requests_per_minute", [None, 10])
 @pytest.mark.parametrize("batch_size", [1, 10])
 async def test_prompt_normalizer_send_prompt_batch_async_throws(
-    mock_memory_instance, seed_prompt_group, max_requests_per_minute, batch_size):
+    mock_memory_instance, seed_prompt_group, max_requests_per_minute, batch_size
+):
     prompt_target = MockPromptTarget(rpm=max_requests_per_minute)
 
     request_converters = PromptConverterConfiguration(
@@ -343,9 +333,7 @@ async def test_build_prompt_request_response(mock_memory_instance, seed_prompt_g
 
     prompt_target = MockPromptTarget()
     request_converters = [
-        PromptConverterConfiguration(
-            converters=[Base64Converter(), StringJoinConverter(join_value="_")]
-        )
+        PromptConverterConfiguration(converters=[Base64Converter(), StringJoinConverter(join_value="_")])
     ]
 
     normalizer = PromptNormalizer()
@@ -373,9 +361,7 @@ async def test_convert_response_values_index(mock_memory_instance, response: Pro
 
     normalizer = PromptNormalizer()
 
-    await normalizer.convert_values(
-        converter_configurations=[response_converter], request_response=response
-    )
+    await normalizer.convert_values(converter_configurations=[response_converter], request_response=response)
     assert response.request_pieces[0].converted_value == "SGVsbG8=", "Converter should be applied here"
     assert (
         response.request_pieces[1].converted_value == "part 2"
@@ -390,8 +376,6 @@ async def test_convert_response_values_type(mock_memory_instance, response: Prom
 
     normalizer = PromptNormalizer()
 
-    await normalizer.convert_values(
-        converter_configurations=[response_converter], request_response=response
-    )
+    await normalizer.convert_values(converter_configurations=[response_converter], request_response=response)
     assert response.request_pieces[0].converted_value == "SGVsbG8="
     assert response.request_pieces[1].converted_value == "cGFydCAy"

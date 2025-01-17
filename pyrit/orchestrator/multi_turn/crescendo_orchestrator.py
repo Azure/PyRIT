@@ -7,16 +7,26 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common.utils import combine_dict
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.common.utils import combine_dict
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer, SelfAskScaleScorer
+from pyrit.score import (
+    FloatScaleThresholdScorer,
+    SelfAskRefusalScorer,
+    SelfAskScaleScorer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -382,13 +392,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
         # Sends the attack prompt to the objective target and returns the response
 
-        seed_prompt_group = SeedPromptGroup(
-            prompts=[SeedPrompt(value=attack_prompt, data_type="text")]
-        )
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
 
-        converter_configuration = PromptConverterConfiguration(
-            converters=self._prompt_converters
-        )
+        converter_configuration = PromptConverterConfiguration(converters=self._prompt_converters)
 
         return (
             await self._prompt_normalizer.send_prompt_async(

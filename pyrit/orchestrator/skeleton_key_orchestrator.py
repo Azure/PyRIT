@@ -10,11 +10,18 @@ from colorama import Fore, Style
 
 from pyrit.common.batch_helper import batch_task_async
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestResponse, SeedPromptDataset, SeedPromptGroup, SeedPrompt
+from pyrit.models import (
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptDataset,
+    SeedPromptGroup,
+)
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_normalizer.prompt_converter_configuration import PromptConverterConfiguration
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
@@ -90,9 +97,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
 
         conversation_id = str(uuid4())
 
-        skeleton_key_prompt = SeedPromptGroup(prompts=[
-            SeedPrompt(value=self._skeleton_key_prompt, data_type="text")
-        ])
+        skeleton_key_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=self._skeleton_key_prompt, data_type="text")])
 
         converter_configuration = PromptConverterConfiguration(converters=self._prompt_converters)
 
@@ -105,9 +110,7 @@ class SkeletonKeyOrchestrator(Orchestrator):
             orchestrator_identifier=self.get_identifier(),
         )
 
-        objective_prompt = SeedPromptGroup(prompts=[
-            SeedPrompt(value=prompt, data_type="text")
-        ])
+        objective_prompt = SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
 
         return await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=objective_prompt,

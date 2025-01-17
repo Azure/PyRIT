@@ -6,15 +6,18 @@ import asyncio
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common.utils import combine_dict
 from pyrit.common.batch_helper import batch_task_async
+from pyrit.common.utils import combine_dict
 from pyrit.exceptions import EmptyResponseException
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, construct_response_from_request
-from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
-from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest, NormalizerRequest
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    construct_response_from_request,
+)
+from pyrit.models.seed_prompt import SeedPromptGroup
 from pyrit.prompt_normalizer import PromptConverterConfiguration
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target import PromptTarget
 
 
@@ -25,7 +28,7 @@ class PromptNormalizer(abc.ABC):
         """
         Initializes the PromptNormalizer.
 
-        TODO doc start tokens
+        start_token and end_token are used to delineate which part of a prompt is converted.
         """
         self._memory = CentralMemory.get_memory_instance()
         self._start_token = start_token
@@ -97,9 +100,7 @@ class PromptNormalizer(abc.ABC):
         if response is None:
             return None
 
-        await self.convert_values(
-            converter_configurations=response_converter_configurations, request_response=response
-        )
+        await self.convert_values(converter_configurations=response_converter_configurations, request_response=response)
 
         await self._calc_hash_and_add_request_to_memory(request=response)
         return response
@@ -117,7 +118,11 @@ class PromptNormalizer(abc.ABC):
         Sends a batch of prompts to the target asynchronously.
 
         Args:
-            TODO
+            requests (list[NormalizerRequest]): A list of NormalizerRequest objects to be sent.
+            target (PromptTarget): The target to which the prompts are sent.
+            labels (Optional[dict[str, str]], optional): A dictionary of labels to be included with the request. Defaults to None.
+            orchestrator_identifier (Optional[dict[str, str]], optional): A dictionary identifying the orchestrator. Defaults to None.
+            batch_size (int, optional): The number of prompts to include in each batch. Defaults to 10.
 
         Returns:
             list[PromptRequestResponse]: A list of PromptRequestResponse objects representing the responses
@@ -125,18 +130,10 @@ class PromptNormalizer(abc.ABC):
         """
 
         batch_items = [
-            [
-                request.seed_prompt_group for request in requests
-            ],
-            [
-                request.request_converter_configurations for request in requests
-            ],
-            [
-                request.response_converter_configurations for request in requests
-            ],
-            [
-                request.conversation_id for request in requests
-            ],
+            [request.seed_prompt_group for request in requests],
+            [request.request_converter_configurations for request in requests],
+            [request.response_converter_configurations for request in requests],
+            [request.conversation_id for request in requests],
         ]
 
         batch_item_keys = [
@@ -193,7 +190,6 @@ class PromptNormalizer(abc.ABC):
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type
 
-
     async def _calc_hash_and_add_request_to_memory(self, request: PromptRequestResponse) -> None:
         """
         Adds a request to the memory.
@@ -249,8 +245,6 @@ class PromptNormalizer(abc.ABC):
 
         response = PromptRequestResponse(request_pieces=entries)
 
-        await self.convert_values(
-            converter_configurations=request_converter_configurations,
-            request_response=response)
+        await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
 
         return response
