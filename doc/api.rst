@@ -298,8 +298,7 @@ API Reference
     :toctree: _autosummary/
 
     PromptNormalizer
-    PromptResponseConverterConfiguration
-    NormalizerRequestPiece
+    PromptConverterConfiguration
     NormalizerRequest
 
 :py:mod:`pyrit.prompt_target`

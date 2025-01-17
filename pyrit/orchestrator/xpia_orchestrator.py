@@ -152,7 +152,7 @@ class XPIATestOrchestrator(XPIAOrchestrator):
 
     async def _process_async(self) -> str:
 
-        seed_prompt_group = SeedPromptGroup(prompts=[self._processing_prompt], data_type="text")
+        seed_prompt_group = SeedPromptGroup(prompts=[self._processing_prompt])
 
         processing_response = await self._prompt_normalizer.send_prompt_async(
             seed_prompt_group=seed_prompt_group,

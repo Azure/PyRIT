@@ -125,6 +125,7 @@ async def test_hashes_generated_files():
 
     os.remove(filename)
 
+
 @pytest.mark.asyncio
 async def test_converted_datatype_default():
     filename = ""

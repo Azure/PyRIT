@@ -3,7 +3,7 @@
 
 import abc
 import asyncio
-from typing import Optional
+from typing import Any, List, Optional
 from uuid import uuid4
 
 from pyrit.common.batch_helper import batch_task_async
@@ -143,7 +143,7 @@ class PromptNormalizer(abc.ABC):
                 received for each prompt.
         """
 
-        batch_items = [
+        batch_items: List[List[Any]] = [
             [request.seed_prompt_group for request in requests],
             [request.request_converter_configurations for request in requests],
             [request.response_converter_configurations for request in requests],
