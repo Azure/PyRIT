@@ -69,8 +69,6 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         Sends the normalized prompts to the prompt target.
         """
-        for request in prompt_request_list:
-            request.validate()
 
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
