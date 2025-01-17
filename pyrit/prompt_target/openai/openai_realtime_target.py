@@ -28,6 +28,7 @@ class RealtimeTarget(OpenAITarget):
         api_version: str = "2024-10-01-preview",
         system_prompt: Optional[str] = "You are a helpful AI assistant",
         voice: Optional[RealTimeVoice] = None,
+        existing_conversation: Optional[Dict] = None,
         *args,
         **kwargs,
     ) -> None:
@@ -45,13 +46,14 @@ class RealtimeTarget(OpenAITarget):
         """
 
         if (kwargs.get("use_aad_auth") is not None) and (kwargs.get("use_aad_auth") is True):
-            raise NotImplementedError("AAD authentication not implemented for TTSTarget yet.")
+            raise NotImplementedError("AAD authentication not implemented for Realtime yet.")
 
         super().__init__(api_version=api_version, *args, **kwargs)
 
         self.system_prompt = system_prompt
         self.voice = voice
         self.websocket = None
+        self._existing_conversation = existing_conversation
 
     def _set_azure_openai_env_configuration_vars(self):
         self.deployment_environment_variable = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
@@ -115,6 +117,9 @@ class RealtimeTarget(OpenAITarget):
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         # Sends a prompt to the target and returns the response.
 
+        if not self._existing_conversation:
+            await self.connect()
+
         # Validation function
         self._validate_request(prompt_request=prompt_request)
 
@@ -164,7 +169,7 @@ class RealtimeTarget(OpenAITarget):
         )
 
         response_entry = self.construct_response_from_request(
-            request=request, response_pieces=[audio_response_piece, text_response_piece]
+            request=request, response_pieces=[text_response_piece, audio_response_piece]
         )
 
         return response_entry
@@ -220,9 +225,9 @@ class RealtimeTarget(OpenAITarget):
         )
         return output_filename
 
-    async def disconnect(self):
+    async def cleanup_target(self):
         """
-        Disconnects from the WebSocket server.
+        Disconnects from the WebSocket server to clean up
         """
         if self.websocket:
             await self.websocket.close()
@@ -242,8 +247,6 @@ class RealtimeTarget(OpenAITarget):
             convo_max: Maximum number of completed conversations or errors to receive before stopping.
 
         """
-        # ctr = 0 #TODO: do we need for multiturn convo w orchestrator?
-        # done = False
 
         if self.websocket is None:
             logger.error("WebSocket connection is not established")

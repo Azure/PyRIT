@@ -90,6 +90,8 @@ class PromptSendingOrchestrator(Orchestrator):
                     request_responses=response_pieces, batch_size=self._batch_size
                 )
 
+        await self._prompt_target.cleanup_target()
+
         return responses
 
     async def send_prompts_async(

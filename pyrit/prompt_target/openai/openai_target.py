@@ -158,3 +158,11 @@ class OpenAITarget(PromptChatTarget):
             bool: True if JSON response is supported, False otherwise.
         """
         pass
+
+    @abstractmethod
+    async def cleanup_target(self) -> None:
+        """
+        Abstract method to clean up target resources.
+
+        """
+        pass

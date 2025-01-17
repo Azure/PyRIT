@@ -275,3 +275,7 @@ class AzureMLChatTarget(PromptChatTarget):
     def is_json_response_supported(self) -> bool:
         """Indicates that this target supports JSON response format."""
         return False
+
+    async def cleanup_target(self):
+        """Target does not require cleanup."""
+        pass

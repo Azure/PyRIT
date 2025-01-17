@@ -97,3 +97,7 @@ class GandalfTarget(PromptTarget):
 
         logger.info(f'Received the following response from the prompt target "{answer}"')
         return answer
+
+    async def cleanup_target(self):
+        """Target does not require cleanup."""
+        pass

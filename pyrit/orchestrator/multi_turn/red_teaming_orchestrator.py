@@ -198,6 +198,8 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 f"number of turns ({self._max_turns}).",
             )
 
+        await self._objective_target.cleanup_target()
+
         return MultiTurnAttackResult(
             conversation_id=objective_target_conversation_id,
             achieved_objective=achieved_objective,
