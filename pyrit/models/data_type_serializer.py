@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import abc
+import aiofiles
 import base64
 import hashlib
 import os
@@ -12,7 +13,10 @@ from mimetypes import guess_type
 from pathlib import Path
 from typing import get_args, Literal, TYPE_CHECKING, Optional, Union
 from urllib.parse import urlparse
+import wave
 
+
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.models.literals import PromptDataType
 from pyrit.models.storage_io import DiskStorageIO
 
@@ -138,6 +142,49 @@ class DataTypeSerializer(abc.ABC):
         await self._memory.results_storage_io.write_file(file_path, image_bytes)
         self.value = str(file_path)
 
+    async def save_formatted_audio(
+        self,
+        data: bytes,
+        output_filename: str = None,
+        num_channels: int = 1,
+        sample_width: int = 2,
+        sample_rate: int = 16000,
+    ) -> None:
+        """
+        Saves the PCM16 of other specially formatted audio data to storage.
+        Arguments:
+            data: bytes with audio data
+            output_filename (optional, str): filename to store audio as. Defaults to UUID if not provided
+            num_channels (optional, int): number of channels in audio data. Defaults to 1
+            sample_width (optional, int): sample width in bytes. Defaults to 2
+            sample_rate (optional, int): sample rate in Hz. Defaults to 16000
+        """
+        file_path = output_filename or await self.get_data_filename()
+
+        # save audio file locally first if in AzureStorageBlob so we can use wave.open to set audio parameters
+        if self._is_azure_storage_url(file_path):
+            local_temp_path = Path(DB_DATA_PATH, "temp_audio.wav")
+            with wave.open(str(local_temp_path), "wb") as wav_file:
+                wav_file.setnchannels(num_channels)
+                wav_file.setsampwidth(sample_width)
+                wav_file.setframerate(sample_rate)
+                wav_file.writeframes(data)
+
+            async with aiofiles.open(local_temp_path, "rb") as f:
+                data = await f.read()
+                await self._memory.results_storage_io.write_file(file_path, data)
+            os.remove(local_temp_path)
+
+        # If local, we can just save straight to disk and do not need to delete temp file after
+        else:
+            with wave.open(file_path, "wb") as wav_file:
+                wav_file.setnchannels(num_channels)
+                wav_file.setsampwidth(sample_width)
+                wav_file.setframerate(sample_rate)
+                wav_file.writeframes(data)
+
+        self.value = str(file_path)
+
     async def read_data(self) -> bytes:
         """
         Reads the data from the storage.
@@ -243,6 +290,7 @@ class DataTypeSerializer(abc.ABC):
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
+
     def __init__(self, *, prompt_text: str):
         self.data_type = "text"
         self.value = prompt_text

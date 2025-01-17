@@ -33,7 +33,7 @@ class RealtimeTarget(OpenAITarget):
         """
         RealtimeTarget class for Azure OpenAI Realtime API.
         Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
-
+            and https://platform.openai.com/docs/guides/realtime-websocket
         Args:
             api_version (str, Optional): The version of the Azure OpenAI API. Defaults to "2024-10-01-preview".
             system_prompt (str, Optional): The system prompt to use. Defaults to "You are a helpful AI assistant".
@@ -62,7 +62,6 @@ class RealtimeTarget(OpenAITarget):
 
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
         headers = {"Authorization": f"Bearer {self._api_key}", "OpenAI-Beta": "realtime=v1"}
-        # https://platform.openai.com/docs/guides/realtime-websocket for more information on the format and usage
 
         websocket_url = f"{self._endpoint}/openai/realtime?api-version={self._api_version}"
         websocket_url = f"{websocket_url}&deployment={self._deployment_name}&api-key={self._api_key}"
@@ -84,7 +83,7 @@ class RealtimeTarget(OpenAITarget):
             "instructions": self.system_prompt,
             "input_audio_format": "pcm16",
             "output_audio_format": "pcm16",
-            "turn_detection": None,  # server_vad option currently not supported but available in the API
+            "turn_detection": None,
         }
 
         if self.voice:
@@ -218,12 +217,13 @@ class RealtimeTarget(OpenAITarget):
             filename = await data.get_data_filename()
             output_filename = str(filename)
 
-        with wave.open(output_filename, "wb") as wav_file:
-            wav_file.setnchannels(num_channels)
-            wav_file.setsampwidth(sample_width)
-            wav_file.setframerate(sample_rate)
-            wav_file.writeframes(audio_bytes)
-
+        await data.save_formatted_audio(
+            data=audio_bytes,
+            output_filename=output_filename,
+            num_channels=num_channels,
+            sample_width=sample_width,
+            sample_rate=sample_rate,
+        )
         return output_filename
 
     async def disconnect(self):
@@ -248,49 +248,46 @@ class RealtimeTarget(OpenAITarget):
             convo_max: Maximum number of completed conversations or errors to receive before stopping.
 
         """
-        ctr = 0
-        done = False
+        # ctr = 0 #TODO: do we need for multiturn convo w orchestrator?
+        # done = False
 
         if self.websocket is None:
             logger.error("WebSocket connection is not established")
             raise Exception("WebSocket connection is not established")
 
-        while not done:
-            audio_transcript = None
-            audio_buffer = b""
-            conversation_messages = []
-            try:
-                async for message in self.websocket:
-                    event = json.loads(message)
-                    msg_response_type = event.get("type")
-                    if msg_response_type:
-                        if msg_response_type == "response.done":
-                            logger.debug(f"event is: {json.dumps(event, indent=2)}")
-                            audio_transcript = event["response"]["output"][0]["content"][0]["transcript"]
-                            conversation_messages.append(audio_transcript)
-                            ctr += 1
-                            break
-                        elif msg_response_type == "error":
-                            ctr += 1
-                            logger.error(f"Error, event is: {json.dumps(event, indent=2)}")
-                            break
-                        elif msg_response_type == "response.audio.delta":
-                            # Append audio data to buffer
-                            audio_data = base64.b64decode(event["delta"])
-                            audio_buffer += audio_data
-                            logger.debug("Audio data appended to buffer")
-                        elif msg_response_type == "response.audio.done":
-                            logger.debug(f"event is: {json.dumps(event, indent=2)}")
-                            conversation_messages.append(audio_buffer)
-                        else:
-                            logger.debug(f"event is: {json.dumps(event, indent=2)}")
+        audio_transcript = None
+        audio_buffer = b""
+        conversation_messages = []
+        try:
+            async for message in self.websocket:
+                event = json.loads(message)
+                msg_response_type = event.get("type")
+                if msg_response_type:
+                    if msg_response_type == "response.done":
+                        logger.debug(f"event is: {json.dumps(event, indent=2)}")
+                        audio_transcript = event["response"]["output"][0]["content"][0]["transcript"]
+                        conversation_messages.append(audio_transcript)
+                        # ctr += 1
+                        break
+                    elif msg_response_type == "error":
+                        # ctr += 1
+                        logger.error(f"Error, event is: {json.dumps(event, indent=2)}")
+                        break
+                    elif msg_response_type == "response.audio.delta":
+                        # Append audio data to buffer
+                        audio_data = base64.b64decode(event["delta"])
+                        audio_buffer += audio_data
+                        logger.debug("Audio data appended to buffer")
+                    elif msg_response_type == "response.audio.done":
+                        logger.debug(f"event is: {json.dumps(event, indent=2)}")
+                        conversation_messages.append(audio_buffer)
+                    else:
+                        logger.debug(f"event is: {json.dumps(event, indent=2)}")
 
-                if ctr >= convo_max:
-                    done = True
-            except websockets.ConnectionClosed as e:
-                logger.error(f"WebSocket connection closed: {e}")
-            except Exception as e:
-                logger.error(f"An unexpected error occurred: {e}")
+        except websockets.ConnectionClosed as e:
+            logger.error(f"WebSocket connection closed: {e}")
+        except Exception as e:
+            logger.error(f"An unexpected error occurred: {e}")
         return conversation_messages
 
     async def send_text(self, text):
