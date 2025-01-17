@@ -69,7 +69,7 @@ class SeedPrompt(YamlLoadable):
         self.source = source
         self.date_added = date_added
         self.added_by = added_by
-        self.metadata = metadata or {}
+        self.metadata = metadata
         self.parameters = parameters or []
         self.prompt_group_id = prompt_group_id
         self.sequence = sequence
@@ -124,9 +124,9 @@ class SeedPromptGroup(YamlLoadable):
 
         # Check sequence and sort the prompts in the same loop
         if len(self.prompts) >= 1:
-            self.prompts = sorted(self.prompts, key=lambda prompt: self._validate_and_get_sequence(prompt))
+            self.prompts = sorted(self.prompts, key=lambda prompt: self._validate_and_set_sequence(prompt))
 
-    def _validate_and_get_sequence(self, prompt: SeedPrompt) -> int:
+    def _validate_and_set_sequence(self, prompt: SeedPrompt) -> int:
         """
         Validates the sequence of a prompt and returns it.
 
@@ -140,7 +140,7 @@ class SeedPromptGroup(YamlLoadable):
             ValueError: If the prompt does not have a sequence number.
         """
         if prompt.sequence is None:
-            raise ValueError("All prompts in a group must have a sequence number.")
+            prompt.sequence = 0
         return prompt.sequence
 
     def __repr__(self):

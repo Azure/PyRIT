@@ -27,7 +27,7 @@ from pyrit.score import Scorer
 
 
 @pytest.fixture
-def scoring_target() -> MockPromptTarget:
+def scoring_target(patch_central_database) -> MockPromptTarget:
     return MockPromptTarget()
 
 
