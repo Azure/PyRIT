@@ -3,6 +3,7 @@
 
 import os
 import pathlib
+import sys
 
 import nbformat
 import pytest
@@ -25,7 +26,7 @@ def test_execute_notebooks(file_name):
     with open(nb_path) as f:
         nb = nbformat.read(f, as_version=4)
 
-    ep = ExecutePreprocessor(timeout=600, kernel_name="pyrit-dev")
+    ep = ExecutePreprocessor(timeout=600, kernel_name=os.path.basename(sys.executable))
 
     # Execute notebook, test will throw exception if any cell fails
     ep.preprocess(nb, {"metadata": {"path": nb_path.parent}})
