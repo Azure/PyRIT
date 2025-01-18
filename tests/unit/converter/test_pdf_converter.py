@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.models import SeedPrompt, DataTypeSerializer
+from pyrit.models import DataTypeSerializer, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PDFConverter
 
 
@@ -142,7 +142,7 @@ def test_input_supported(pdf_converter_no_template):
 
 
 @pytest.mark.asyncio
-async def test_convert_async_end_to_end_no_reader(tmp_path):
+async def test_convert_async_end_to_end_no_reader(tmp_path, duckdb_instance):
     prompt = "Test for PDF generation."
     pdf_file_path = tmp_path / "output.pdf"
     converter = PDFConverter(prompt_template=None)

@@ -15,7 +15,11 @@ from unit.mocks import get_image_request_piece
 from pyrit.exceptions.exception_classes import EmptyResponseException
 from pyrit.memory.duckdb_memory import DuckDBMemory
 from pyrit.memory.memory_interface import MemoryInterface
-from pyrit.models import ChatMessageListDictContent, PromptRequestPiece, PromptRequestResponse
+from pyrit.models import (
+    ChatMessageListDictContent,
+    PromptRequestPiece,
+    PromptRequestResponse,
+)
 from pyrit.prompt_target import OpenAIChatTarget
 
 
@@ -81,7 +85,7 @@ async def test_complete_chat_async_return(openai_mock_return: ChatCompletion, gp
     with patch("openai.resources.chat.Completions.create") as mock_create:
         mock_create.return_value = openai_mock_return
         ret = await gpt4o_chat_engine._complete_chat_async(
-            messages=[ChatMessageListDictContent(role="user", content=[{"text": "hello"}])]
+            messages=[ChatMessageListDictContent(role="user", content=[{"text": "hello"}])], is_json_response=False
         )
         assert ret == "hi"
 
@@ -164,7 +168,9 @@ async def test_convert_image_to_data_url_success(
     assert "data:image/jpeg;base64,encoded_base64_string" in result
 
     # Assertions for the mocks
-    mock_serializer_class.assert_called_once_with(prompt_text=tmp_file_name, extension=".jpg")
+    mock_serializer_class.assert_called_once_with(
+        category="prompt-memory-entries", prompt_text=tmp_file_name, extension=".jpg"
+    )
     mock_serializer_instance.read_data_base64.assert_called_once()
 
     os.remove(tmp_file_name)
@@ -481,3 +487,38 @@ def test_validate_request_unsupported_data_types(gpt4o_chat_engine: OpenAIChatTa
     ), "Error not raised for unsupported data types"
 
     os.remove(image_piece.original_value)
+
+
+def test_is_json_response_supported(gpt4o_chat_engine: OpenAIChatTarget):
+    assert gpt4o_chat_engine.is_json_response_supported() is True
+
+
+def test_is_response_format_json_supported(gpt4o_chat_engine: OpenAIChatTarget):
+
+    request_piece = PromptRequestPiece(
+        role="user",
+        original_value="original prompt text",
+        converted_value="Hello, how are you?",
+        conversation_id="conversation_1",
+        sequence=0,
+        prompt_metadata={"response_format": "json"},
+    )
+
+    result = gpt4o_chat_engine.is_response_format_json(request_piece)
+
+    assert result is True
+
+
+def test_is_response_format_json_no_metadata(gpt4o_chat_engine: OpenAIChatTarget):
+    request_piece = PromptRequestPiece(
+        role="user",
+        original_value="original prompt text",
+        converted_value="Hello, how are you?",
+        conversation_id="conversation_1",
+        sequence=0,
+        prompt_metadata=None,
+    )
+
+    result = gpt4o_chat_engine.is_response_format_json(request_piece)
+
+    assert result is False

@@ -8,7 +8,11 @@ from httpx import HTTPStatusError
 
 from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException, handle_bad_request_exception
-from pyrit.models import PromptRequestResponse, construct_response_from_request, data_serializer_factory
+from pyrit.models import (
+    PromptRequestResponse,
+    construct_response_from_request,
+    data_serializer_factory,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -85,7 +89,9 @@ class OpenAITTSTarget(OpenAITarget):
 
         logger.info("Received valid response from the prompt target")
 
-        audio_response = data_serializer_factory(data_type="audio_path", extension=self._response_format)
+        audio_response = data_serializer_factory(
+            category="prompt-memory-entries", data_type="audio_path", extension=self._response_format
+        )
 
         data = response.content
 
@@ -110,3 +116,7 @@ class OpenAITTSTarget(OpenAITarget):
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False

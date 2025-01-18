@@ -114,7 +114,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_list: list[str],
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[str] = None,
+        metadata: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
@@ -126,7 +126,8 @@ class PromptSendingOrchestrator(Orchestrator):
                 prompts. Any labels passed in will be combined with self._global_memory_labels (from the
                 GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
                 the passed-in labels take precedence. Defaults to None.
-            metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
+            metadata (Optional(dict[str, str]): Any additional information to be added to the memory entry corresponding
+                to the prompts sent.
 
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.
@@ -137,12 +138,15 @@ class PromptSendingOrchestrator(Orchestrator):
 
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
+            conversation_id = self._prepare_conversation()
+
             requests.append(
                 self._create_normalizer_request(
                     prompt_text=prompt,
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
                     metadata=metadata,
+                    conversation_id=conversation_id,
                 )
             )
 
@@ -160,6 +164,7 @@ class PromptSendingOrchestrator(Orchestrator):
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
+                print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {message.conversation_id}")
                 await display_image_response(message)
 
             for score in message.scores:

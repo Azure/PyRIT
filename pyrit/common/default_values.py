@@ -4,32 +4,7 @@
 import logging
 import os
 
-import dotenv
-
-from pyrit.common import path
-
 logger = logging.getLogger(__name__)
-
-
-def load_environment_files() -> None:
-    """
-    Loads the base environment file from .env if it exists,
-    and then loads a single .env.local file if it exists, overriding previous values.
-    """
-    base_file_path = path.HOME_PATH / ".env"
-    local_file_path = path.HOME_PATH / ".env.local"
-
-    # Load the base .env file if it exists
-    if base_file_path.exists():
-        dotenv.load_dotenv(base_file_path, override=True)
-        logger.info(f"Loaded {base_file_path}")
-    else:
-        dotenv.load_dotenv()
-
-    # Load the .env.local file if it exists, to override base .env values
-    if local_file_path.exists():
-        dotenv.load_dotenv(local_file_path, override=True)
-        logger.info(f"Loaded {local_file_path}")
 
 
 def get_required_value(*, env_var_name: str, passed_value: str) -> str:

@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -24,13 +24,13 @@
 # %%
 import os
 
-from pyrit.common import default_values
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.datasets import fetch_xstest_examples
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 prompt_target = OpenAIChatTarget(
     api_key=os.environ.get("AZURE_OPENAI_CHAT_KEY"),
@@ -51,6 +51,13 @@ prompt_dataset = fetch_xstest_examples(examples_source, source_type="public_url"
 # Use the first 4 examples
 prompt_list = [prompt.value for prompt in prompt_dataset.prompts[:4]]
 
-with PromptSendingOrchestrator(objective_target=prompt_target, scorers=[bias_scorer]) as orchestrator:
-    responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
-    await orchestrator.print_conversations_async()  # type: ignore
+orchestrator = PromptSendingOrchestrator(objective_target=prompt_target, scorers=[bias_scorer])
+responses = await orchestrator.send_prompts_async(prompt_list=prompt_list)  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
+
+
+# %%
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

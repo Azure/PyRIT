@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -33,12 +33,12 @@
 # %%
 import os
 
-from pyrit.common import default_values
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.score import AzureContentFilterScorer
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # Set up the Azure Content Filter
@@ -67,3 +67,4 @@ for score in scores:
     print(f"{score} {score.score_metadata}")
 
 # %%
+memory.dispose_engine()

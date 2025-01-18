@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.3
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-kernel
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-kernel
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -33,9 +33,9 @@
 # %%
 import os
 
-from pyrit.common import default_values
+from pyrit.common import IN_MEMORY, initialize_pyrit
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Enter details of your AML workspace
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
@@ -62,7 +62,6 @@ ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, 
 
 # %% [markdown]
 # To install the dependencies needed to run GCG, we create an AML environment from a [Dockerfile](../../../pyrit/auxiliary_attacks/gcg/src/Dockerfile).
-
 # %%
 from pathlib import Path
 
@@ -114,3 +113,10 @@ job = command(
 # %%
 # Submit the command
 returned_job = ml_client.create_or_update(job)
+
+# %%
+# Close connection
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

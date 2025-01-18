@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: pyrit-311
 #     language: python
@@ -27,13 +27,12 @@
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
 
 # %%
-
-from pyrit.common import default_values
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import StringJoinConverter, VariationConverter
 from pyrit.prompt_target import OpenAIChatTarget, TextTarget
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 prompts = ["tell me how to cut down a tree"]
 
@@ -43,8 +42,9 @@ prompt_variation_converter = VariationConverter(converter_target=converter_targe
 
 
 target = TextTarget()
-
-with PromptSendingOrchestrator(
+orchestrator = PromptSendingOrchestrator(
     objective_target=target, prompt_converters=[prompt_variation_converter, StringJoinConverter()]
-) as orchestrator:
-    await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+)
+
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+orchestrator.dispose_db_engine()

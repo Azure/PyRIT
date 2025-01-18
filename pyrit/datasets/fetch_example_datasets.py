@@ -14,9 +14,14 @@ from datasets import load_dataset
 
 from pyrit.common.csv_helper import read_csv, write_csv
 from pyrit.common.json_helper import read_json, write_json
-from pyrit.common.path import DATASETS_PATH, RESULTS_PATH
+from pyrit.common.path import DATASETS_PATH, DB_DATA_PATH
 from pyrit.common.text_helper import read_txt, write_txt
-from pyrit.models import QuestionAnsweringDataset, QuestionAnsweringEntry, QuestionChoice, SeedPromptDataset
+from pyrit.models import (
+    QuestionAnsweringDataset,
+    QuestionAnsweringEntry,
+    QuestionChoice,
+    SeedPromptDataset,
+)
 from pyrit.models.seed_prompt import SeedPrompt
 
 # Define the type for the file handlers
@@ -126,7 +131,7 @@ def fetch_examples(
         raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
     if not data_home:
-        data_home = RESULTS_PATH / "datasets"
+        data_home = DB_DATA_PATH / "seed-prompt-entries"
     else:
         data_home = Path(data_home)
 

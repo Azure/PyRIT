@@ -2,12 +2,13 @@
 # Licensed under the MIT license.
 
 import abc
-
 from typing import Optional
 
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer.prompt_response_converter_configuration import PromptResponseConverterConfiguration
+from pyrit.prompt_normalizer.prompt_response_converter_configuration import (
+    PromptResponseConverterConfiguration,
+)
 
 
 class NormalizerRequestPiece(abc.ABC):
@@ -19,7 +20,7 @@ class NormalizerRequestPiece(abc.ABC):
         prompt_data_type: PromptDataType,
         request_converters: list[PromptConverter] = [],
         labels: Optional[dict[str, str]] = None,
-        metadata: str = None,
+        metadata: Optional[dict[str, str]] = None,
     ) -> None:
         """
         Represents a piece of a normalizer request.
@@ -32,7 +33,7 @@ class NormalizerRequestPiece(abc.ABC):
             prompt_value (str): The prompt value.
             prompt_data_type (PromptDataType): The data type of the prompt.
             labels (Optional[dict[str, str]]): The labels to apply to the prompt. Defaults to None.
-            metadata (str, Optional): Additional metadata. Defaults to None.
+            metadata (Optional[dict[str, str]]): Additional metadata. Defaults to None.
 
         Raises:
             ValueError: If prompt_converters is not a non-empty list of PromptConverter objects.
@@ -63,7 +64,9 @@ class NormalizerRequestPiece(abc.ABC):
             raise ValueError("prompt_converters must be a PromptConverter List")
 
         # this validates the media exists, if needed
-        data_serializer_factory(data_type=self.prompt_data_type, value=self.prompt_value)
+        data_serializer_factory(
+            category="prompt-memory-entries", data_type=self.prompt_data_type, value=self.prompt_value
+        )
 
 
 class NormalizerRequest:

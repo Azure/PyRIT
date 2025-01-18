@@ -7,15 +7,23 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common.utils import combine_dict
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.common.utils import combine_dict
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 from pyrit.models import PromptRequestPiece, Score
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer, SelfAskScaleScorer
+from pyrit.score import (
+    FloatScaleThresholdScorer,
+    SelfAskRefusalScorer,
+    SelfAskScaleScorer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -332,8 +340,9 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 f"This is the rationale behind the score: {objective_score.score_rationale}\n\n"
             )
 
+        prompt_metadata = {"response_format": "json"}
         normalizer_request = self._create_normalizer_request(
-            prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id
+            prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id, metadata=prompt_metadata
         )
 
         response_text = (

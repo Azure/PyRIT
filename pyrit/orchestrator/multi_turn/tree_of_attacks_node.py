@@ -8,11 +8,19 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
+from pyrit.prompt_normalizer import (
+    NormalizerRequest,
+    NormalizerRequestPiece,
+    PromptNormalizer,
+)
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score.scorer import Scorer
 
@@ -202,10 +210,12 @@ class TreeOfAttacksNode:
                 objective=objective,
                 score=str(score),
             )
-
+        prompt_metadata = {"response_format": "json"}
         adversarial_chat_request = NormalizerRequest(
             request_pieces=[
-                NormalizerRequestPiece(request_converters=[], prompt_value=prompt_text, prompt_data_type="text")
+                NormalizerRequestPiece(
+                    request_converters=[], prompt_value=prompt_text, prompt_data_type="text", metadata=prompt_metadata
+                )
             ],
             conversation_id=self.adversarial_chat_conversation_id,
         )

@@ -6,8 +6,17 @@ from typing import Any, Dict, Literal
 
 from openai import BadRequestError
 
-from pyrit.exceptions import EmptyResponseException, handle_bad_request_exception, pyrit_target_retry
-from pyrit.models import PromptDataType, PromptRequestResponse, construct_response_from_request, data_serializer_factory
+from pyrit.exceptions import (
+    EmptyResponseException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestResponse,
+    construct_response_from_request,
+    data_serializer_factory,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -103,7 +112,7 @@ class OpenAIDALLETarget(OpenAITarget):
 
         try:
             b64_data = await self._generate_image_response_async(image_generation_args)
-            data = data_serializer_factory(data_type="image_path")
+            data = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
             await data.save_b64_image(data=b64_data)
             resp_text = data.value
             response_type: PromptDataType = "image_path"
@@ -150,3 +159,7 @@ class OpenAIDALLETarget(OpenAITarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False

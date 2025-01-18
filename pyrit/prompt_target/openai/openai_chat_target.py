@@ -7,7 +7,12 @@ from typing import MutableSequence, Optional
 from openai import NOT_GIVEN, BadRequestError, NotGiven
 from openai.types.chat import ChatCompletion
 
-from pyrit.exceptions import EmptyResponseException, PyritException, handle_bad_request_exception, pyrit_target_retry
+from pyrit.exceptions import (
+    EmptyResponseException,
+    PyritException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
 from pyrit.models import (
     ChatMessageListDictContent,
     DataTypeSerializer,
@@ -99,6 +104,8 @@ class OpenAIChatTarget(OpenAITarget):
         self._validate_request(prompt_request=prompt_request)
         request_piece: PromptRequestPiece = prompt_request.request_pieces[0]
 
+        is_json_response = self.is_response_format_json(request_piece)
+
         prompt_req_res_entries = self._memory.get_conversation(conversation_id=request_piece.conversation_id)
         prompt_req_res_entries.append(prompt_request)
 
@@ -106,7 +113,7 @@ class OpenAIChatTarget(OpenAITarget):
 
         messages = await self._build_chat_messages(prompt_req_res_entries)
         try:
-            resp_text = await self._complete_chat_async(messages=messages)
+            resp_text = await self._complete_chat_async(messages=messages, is_json_response=is_json_response)
 
             logger.info(f'Received the following response from the prompt target "{resp_text}"')
 
@@ -139,7 +146,9 @@ class OpenAIChatTarget(OpenAITarget):
         if not mime_type:
             mime_type = "application/octet-stream"
 
-        image_serializer = data_serializer_factory(value=image_path, data_type="image_path", extension=ext)
+        image_serializer = data_serializer_factory(
+            category="prompt-memory-entries", value=image_path, data_type="image_path", extension=ext
+        )
         base64_encoded_data = await image_serializer.read_data_base64()
         # Azure OpenAI GPT-4o documentation doesn't specify the local image upload format for API.
         # GPT-4o image upload format is determined using "view code" functionality in Azure OpenAI deployments
@@ -204,7 +213,7 @@ class OpenAIChatTarget(OpenAITarget):
         return response_message
 
     @pyrit_target_retry
-    async def _complete_chat_async(self, messages: list[ChatMessageListDictContent]) -> str:
+    async def _complete_chat_async(self, messages: list[ChatMessageListDictContent], is_json_response: bool) -> str:
         """
         Completes asynchronous chat request.
 
@@ -212,11 +221,11 @@ class OpenAIChatTarget(OpenAITarget):
 
         Args:
             messages (list[ChatMessageListDictContent]): The chat message objects containing the role and content.
+            is_json_response (bool): Boolean indicating if the response should be in JSON format.
 
         Returns:
             str: The generated response message.
         """
-
         response: ChatCompletion = await self._async_client.chat.completions.create(
             model=self._deployment_name,
             max_completion_tokens=self._max_completion_tokens,
@@ -229,6 +238,7 @@ class OpenAIChatTarget(OpenAITarget):
             stream=False,
             seed=self._seed,
             messages=[{"role": msg.role, "content": msg.content} for msg in messages],  # type: ignore
+            response_format={"type": "json_object"} if is_json_response else None,
         )
         finish_reason = response.choices[0].finish_reason
         extracted_response: str = ""
@@ -264,3 +274,7 @@ class OpenAIChatTarget(OpenAITarget):
         for prompt_data_type in converted_prompt_data_types:
             if prompt_data_type not in ["text", "image_path"]:
                 raise ValueError("This target only supports text and image_path.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return True

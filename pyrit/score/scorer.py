@@ -8,9 +8,20 @@ from abc import abstractmethod
 from typing import Optional, Sequence
 
 from pyrit.common.batch_helper import batch_task_async
-from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, Score, ScoreType, UnvalidatedScore
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    ScoreType,
+    UnvalidatedScore,
+)
 from pyrit.prompt_target import PromptChatTarget
 
 
@@ -94,9 +105,11 @@ class Scorer(abc.ABC):
         self,
         *,
         request_responses: Sequence[PromptRequestPiece],
-        tasks: Optional[Sequence[str]],
+        tasks: Sequence[str],
         batch_size: int = 10,
     ) -> list[Score]:
+        if not tasks:
+            raise ValueError("Tasks must be provided.")
         if len(tasks) != len(request_responses):
             raise ValueError("The number of tasks must match the number of request_responses.")
 
@@ -234,7 +247,7 @@ class Scorer(abc.ABC):
             conversation_id=conversation_id,
             orchestrator_identifier=None,
         )
-
+        prompt_metadata = {"response_format": "json"}
         scorer_llm_request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -244,6 +257,7 @@ class Scorer(abc.ABC):
                     converted_value_data_type=prompt_request_data_type,
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
+                    prompt_metadata=prompt_metadata,
                 )
             ]
         )
