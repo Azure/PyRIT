@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.prompt_target.realtime_target import RealtimeTarget
+from pyrit.prompt_target import RealtimeTarget
 
 
 @pytest.fixture
