@@ -25,17 +25,16 @@
 # %%
 import os
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator, RedTeamingOrchestrator
 from pyrit.prompt_converter import SearchReplaceConverter
 from pyrit.prompt_target import (
-    OpenAIChatTarget,
     HTTPTarget,
+    OpenAIChatTarget,
     get_http_target_json_response_callback_function,
     get_http_target_regex_matching_callback_function,
 )
 from pyrit.score import SelfAskTrueFalseScorer
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -83,7 +82,6 @@ await orchestrator.print_conversations_async()  # type: ignore
 # %%
 import logging
 from pathlib import Path
-
 
 # Logging set to lower levels will print a lot more diagnostic information about what's happening.
 logging.basicConfig(level=logging.WARNING)
@@ -160,7 +158,6 @@ q={PROMPT}s&qs=ds
 
 # %%
 from pyrit.prompt_converter import UrlConverter
-
 
 # Add the prompt you want to send to the URL
 prompt = "pirate raccoons celebrating Canadian Thanksgiving together"

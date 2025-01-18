@@ -43,9 +43,8 @@
 #
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, AZURE_SQL
+from pyrit.common import AZURE_SQL, initialize_pyrit
 from pyrit.memory import CentralMemory
-
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 
@@ -60,8 +59,8 @@ memory.print_schema()  # type: ignore
 
 # %%
 from uuid import uuid4
-from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
+from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
 conversation_id = str(uuid4())
 

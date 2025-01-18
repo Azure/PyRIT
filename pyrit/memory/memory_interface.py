@@ -13,9 +13,18 @@ from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from pyrit.common.path import DB_DATA_PATH
-from pyrit.memory.memory_embedding import MemoryEmbedding, default_memory_embedding_factory
+from pyrit.memory.memory_embedding import (
+    MemoryEmbedding,
+    default_memory_embedding_factory,
+)
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry, SeedPromptEntry
+from pyrit.memory.memory_models import (
+    Base,
+    EmbeddingDataEntry,
+    PromptMemoryEntry,
+    ScoreEntry,
+    SeedPromptEntry,
+)
 from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
@@ -276,7 +285,7 @@ class MemoryInterface(abc.ABC):
         if sent_before:
             conditions.append(PromptMemoryEntry.timestamp <= sent_before)
         if original_values:
-            conditions.append(PromptMemoryEntry.converted_value.in_(original_values))
+            conditions.append(PromptMemoryEntry.original_value.in_(original_values))
         if converted_values:
             conditions.append(PromptMemoryEntry.converted_value.in_(converted_values))
         if data_type:
@@ -471,13 +480,15 @@ class MemoryInterface(abc.ABC):
             conversation_id=conversation_id, update_fields={"labels": labels}
         )
 
-    def update_prompt_metadata_by_conversation_id(self, *, conversation_id: str, prompt_metadata: str) -> bool:
+    def update_prompt_metadata_by_conversation_id(
+        self, *, conversation_id: str, prompt_metadata: dict[str, str]
+    ) -> bool:
         """
         Updates the metadata of prompt entries in memory for a given conversation ID.
 
         Args:
             conversation_id (str): The conversation ID of the entries to be updated.
-            metadata (str): New metadata.
+            metadata (dict[str, str]): New metadata.
 
         Returns:
             bool: True if the update was successful, False otherwise.

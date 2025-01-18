@@ -3,7 +3,11 @@
 
 from typing import TYPE_CHECKING, Protocol
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, construct_response_from_request
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 # Avoid errors for users who don't have playwright installed

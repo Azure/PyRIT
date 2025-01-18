@@ -36,13 +36,12 @@
 # %%
 import pathlib
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
-from pyrit.orchestrator import PromptSendingOrchestrator
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

@@ -50,9 +50,8 @@
 # %%
 
 import os
-from pathlib import Path
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, DUCK_DB
+from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -78,7 +77,6 @@ with OpenAIChatTarget(
 # parameters to fill in. The prompt template might look as follows:
 
 # %%
-
 from pyrit.models import SeedPrompt
 
 template = SeedPrompt(
@@ -93,7 +91,6 @@ template = SeedPrompt(
 # LLM makes any objectionable statements about any of them.
 
 # %%
-
 prompt = template.render_template_value(food_item="pizza", food_location="Italy")
 
 # %% [markdown]
@@ -189,7 +186,6 @@ with RedTeamingOrchestrator(
 # can use the snipped code below:
 
 # %%
-
 text_to_be_scored = "This is amazing!"
 score = await scorer.score_text_async(text=text_to_be_scored)  # type: ignore
 print(score[0])

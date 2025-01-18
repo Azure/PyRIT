@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.models import SeedPrompt, DataTypeSerializer
+from pyrit.models import DataTypeSerializer, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PDFConverter
 
 

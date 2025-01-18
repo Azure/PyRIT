@@ -36,18 +36,17 @@
 import logging
 from pathlib import Path
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
+from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_converter import (
-    LeetspeakConverter,
     HumanInTheLoopConverter,
+    LeetspeakConverter,
     RandomCapitalLettersConverter,
     TranslationConverter,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.score import SelfAskTrueFalseScorer
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

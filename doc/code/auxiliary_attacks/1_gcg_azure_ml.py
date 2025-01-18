@@ -32,8 +32,8 @@
 
 # %%
 import os
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -47,7 +47,6 @@ print(workspace)
 # %%
 from azure.ai.ml import MLClient
 from azure.identity import DefaultAzureCredential
-
 
 # Get a handle to the workspace
 ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, workspace)
@@ -63,13 +62,12 @@ ml_client = MLClient(DefaultAzureCredential(), subscription_id, resource_group, 
 
 # %% [markdown]
 # To install the dependencies needed to run GCG, we create an AML environment from a [Dockerfile](../../../pyrit/auxiliary_attacks/gcg/src/Dockerfile).
-
 # %%
-from azure.ai.ml.entities import Environment, BuildContext
 from pathlib import Path
 
-from pyrit.common.path import HOME_PATH
+from azure.ai.ml.entities import BuildContext, Environment
 
+from pyrit.common.path import HOME_PATH
 
 # Configure the AML environment with path to Dockerfile and dependencies
 env_docker_context = Environment(
@@ -92,7 +90,6 @@ ml_client.environments.create_or_update(env_docker_context)
 
 # %%
 from azure.ai.ml import command
-
 
 # Configure the command
 job = command(

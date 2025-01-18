@@ -8,15 +8,26 @@ from unit.mocks import MockPromptTarget
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptDataset
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    SeedPrompt,
+    SeedPromptDataset,
+)
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
-from pyrit.prompt_converter import ConverterResult, FuzzerConverter, FuzzerExpandConverter, FuzzerShortenConverter
+from pyrit.prompt_converter import (
+    ConverterResult,
+    FuzzerConverter,
+    FuzzerExpandConverter,
+    FuzzerShortenConverter,
+)
 from pyrit.score import Scorer
 
 
 @pytest.fixture
-def scoring_target() -> MockPromptTarget:
+def scoring_target(patch_central_database) -> MockPromptTarget:
     return MockPromptTarget()
 
 

@@ -247,3 +247,12 @@ async def test_send_prompt_async_bad_request_adds_memory() -> None:
             await mock_dalle_target.send_prompt_async(prompt_request=request)
             mock_dalle_target._memory.add_request_response_to_memory.assert_called_once()
         assert str(bre.value) == "Bad Request"
+
+
+def test_is_json_response_supported():
+    mock_memory = MagicMock()
+    mock_memory.get_conversation.return_value = []
+    mock_memory.add_request_response_to_memory = AsyncMock()
+
+    mock_dalle_target = OpenAIDALLETarget(deployment_name="test", endpoint="test", api_key="test")
+    assert mock_dalle_target.is_json_response_supported() is False

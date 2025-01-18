@@ -6,7 +6,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from azure.ai.contentsafety.models import TextCategory
-from unit.mocks import get_audio_request_piece, get_image_request_piece, get_test_request_piece
+from unit.mocks import (
+    get_audio_request_piece,
+    get_image_request_piece,
+    get_test_request_piece,
+)
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface

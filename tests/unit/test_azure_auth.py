@@ -5,7 +5,10 @@ import time
 from unittest.mock import MagicMock, patch
 
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
-from pyrit.auth.azure_auth import AzureAuth, get_token_provider_from_default_azure_credential
+from pyrit.auth.azure_auth import (
+    AzureAuth,
+    get_token_provider_from_default_azure_credential,
+)
 
 curr_epoch_time = int(time.time())
 mock_token = "fake token"

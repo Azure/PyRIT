@@ -20,11 +20,10 @@
 # %%
 from uuid import uuid4
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, DUCK_DB
+from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-
 
 initialize_pyrit(memory_db_type=DUCK_DB)
 
@@ -84,8 +83,7 @@ df.head(1)
 # Next, we can export data from our Azure SQL database. In this example, we export the data by `conversation_id` and to a CSV file.
 
 # %%
-from pyrit.common.initialize_pyrit import AZURE_SQL
-
+from pyrit.common import AZURE_SQL
 
 initialize_pyrit(memory_db_type=AZURE_SQL)
 azure_memory = CentralMemory.get_memory_instance()

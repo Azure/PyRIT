@@ -7,7 +7,12 @@ from unit.mocks import get_sample_conversation_entries
 
 from pyrit.memory import MemoryEmbedding, PromptMemoryEntry
 from pyrit.memory.memory_embedding import default_memory_embedding_factory
-from pyrit.models import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
+from pyrit.models import (
+    EmbeddingData,
+    EmbeddingResponse,
+    EmbeddingSupport,
+    EmbeddingUsageInformation,
+)
 
 DEFAULT_EMBEDDING_DATA = EmbeddingData(embedding=[0.0], index=0, object="mock_object")
 

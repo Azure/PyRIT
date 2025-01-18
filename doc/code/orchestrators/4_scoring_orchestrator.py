@@ -27,10 +27,9 @@
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import TextTarget
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -56,9 +55,9 @@ from pyrit.orchestrator import ScoringOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
-    SelfAskCategoryScorer,
-    HumanInTheLoopScorer,
     ContentClassifierPaths,
+    HumanInTheLoopScorer,
+    SelfAskCategoryScorer,
 )
 
 # The scorer is interchangeable with other scorers
@@ -79,26 +78,38 @@ for score in scores:
     print(f"{score} : {prompt_text}")
 
 # %% [markdown]
-# # Scoring Using Memory Labels
+# # Scoring Responses Using Filters
 #
-# This allows users to score prompts based on memory labels. Remember that `GLOBAL_MEMORY_LABELS`, which will be assigned to every prompt
-# sent through an orchestrator, can be set as an environment variable (.env or env.local), and any additional custom memory labels can be
-# passed in the `PromptSendingOrchestrator` `send_prompts_async` function. (Custom memory labels passed in will have precedence over `GLOBAL_MEMORY_LABELS` in case of collisions.) For more information on memory labels, see the [Memory Labels Guide](../memory/5_memory_labels.ipynb).
+# This allows users to score response to prompts based on a number of filters (including memory labels, which are shown in this next example).
+#
+# Remember that `GLOBAL_MEMORY_LABELS`, which will be assigned to every prompt sent through an orchestrator, can be set as an environment variable (.env or env.local), and any additional custom memory labels can be passed in the `PromptSendingOrchestrator` `send_prompts_async` function. (Custom memory labels passed in will have precedence over `GLOBAL_MEMORY_LABELS` in case of collisions.) For more information on memory labels, see the [Memory Labels Guide](../memory/5_memory_labels.ipynb).
+#
+# All filters include:
+# - Orchestrator ID
+# - Conversation ID
+# - Prompt IDs
+# - Memory Labels
+# - Sent After Timestamp
+# - Sent Before Timestamp
+# - Original Values
+# - Converted Values
+# - Data Type
+# - (Not) Data Type : Data type to exclude
+# - Converted Value SHA256
 
 # %%
 # pylint: disable=W0611
 import uuid
 
 from pyrit.memory import CentralMemory
-from pyrit.orchestrator import ScoringOrchestrator, PromptSendingOrchestrator
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
-    SelfAskCategoryScorer,
-    HumanInTheLoopScorer,
     ContentClassifierPaths,
+    HumanInTheLoopScorer,
+    SelfAskCategoryScorer,
 )
-
 
 # First insert the prompts into the database (remember this is often automatic) along with memory labels
 
@@ -122,8 +133,8 @@ scorer = SelfAskCategoryScorer(
 )
 
 # Scoring prompt responses based on user provided memory labels
-scores = await scoring_orchestrator.score_responses_by_memory_labels_async(  # type: ignore
-    scorer=scorer, memory_labels=memory_labels
+scores = await scoring_orchestrator.score_responses_by_filters_async(  # type: ignore
+    scorer=scorer, labels=memory_labels
 )
 
 memory = CentralMemory.get_memory_instance()

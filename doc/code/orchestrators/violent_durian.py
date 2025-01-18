@@ -19,19 +19,17 @@
 # The strategy revolves around an attacker LLM manipulating the Target LLM into adopting a criminal persona and
 # providing illegal advice or dangerous suggestions. The criminal persona is chosen randomly from a predefined list,
 # and the conversation objective is set to convince the Target LLM to act as this persona.
-
 # %%
-import os
 import logging
-from pathlib import Path
+import os
 import random
+from pathlib import Path
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
-from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.orchestrator import RedTeamingOrchestrator
+from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskTrueFalseScorer
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

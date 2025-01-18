@@ -27,11 +27,10 @@
 # "t-e-l-l- - m-e- -h-o-w- -t-o- -c-u-t- -d-o-w-n - a- -t-r-e-e"
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
-from pyrit.prompt_target import TextTarget, OpenAIChatTarget
-from pyrit.prompt_converter import VariationConverter, StringJoinConverter
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
-
+from pyrit.prompt_converter import StringJoinConverter, VariationConverter
+from pyrit.prompt_target import OpenAIChatTarget, TextTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

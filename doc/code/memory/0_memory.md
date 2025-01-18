@@ -8,11 +8,9 @@ To simplify memory interaction, the `pyrit.memory.CentralMemory` class automatic
 
 At the beginning of each notebook, make sure to call:
 ```
-from pyrit.common.initialize_pyrit import initialize_pyrit
-
+# Import initialize_pyrit
 # Import the specific constant for the MemoryDatabaseType, or provide the literal value
-from pyrit.common.initialize_pyrit import IN_MEMORY, DUCK_DB, AZURE_SQL
-
+from pyrit.common import initialize_pyrit, IN_MEMORY, DUCK_DB, AZURE_SQL
 
 initialize_pyrit(memory_db_type: MemoryDatabaseType, memory_instance_kwargs: Optional[Any])
 ```

@@ -48,11 +48,10 @@
 # Also, for scoring purposes, remember that **True** means an attack *was* detected, and **False** means an attack *was NOT* detected. Use a custom scoring template to define the behavior you want (e.g. true is a failure because the prompt was flagged as a jailbreak when it wasn't), because this can get confusing quickly. This helps a lot in the scenario that you're using PromptShieldTarget in conjunction with a SelfAskScorer instead, because you can instruct the SelfAskScorer much more granularly, e.g. "true: if document 2 and the userPrompt have both been flagged."
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator, ScoringOrchestrator
-from pyrit.prompt_target import PromptShieldTarget, OpenAIChatTarget
+from pyrit.prompt_target import OpenAIChatTarget, PromptShieldTarget
 from pyrit.score import PromptShieldScorer
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -73,13 +72,12 @@ prompt_sending_orchestrator_id = orchestrator.get_identifier()["id"]
 # %%
 from pyrit.memory import CentralMemory
 
-
 memory = CentralMemory.get_memory_instance()
-prompts_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_orchestrator_id)
+prompt_to_score = memory.get_prompt_request_pieces(orchestrator_id=prompt_sending_orchestrator_id)[0]
 
 scoring_orchestrator = ScoringOrchestrator()
 scores = await scoring_orchestrator.score_prompts_by_id_async(  # type: ignore
-    scorer=scorer, prompt_ids=[str(prompt.id) for prompt in prompts_to_score]
+    scorer=scorer, prompt_ids=[str(prompt_to_score.id)]
 )
 
 for score in scores:

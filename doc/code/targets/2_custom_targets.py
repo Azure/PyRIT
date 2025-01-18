@@ -49,11 +49,10 @@
 # %%
 import textwrap
 
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
-from pyrit.prompt_target import GandalfTarget, GandalfLevel, OpenAIChatTarget
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import RedTeamingOrchestrator
+from pyrit.prompt_target import GandalfLevel, GandalfTarget, OpenAIChatTarget
 from pyrit.score import GandalfScorer
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -104,7 +103,6 @@ from pyrit.prompt_converter import PromptConverter, RandomCapitalLettersConverte
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
 
-
 logging.basicConfig(level=logging.WARNING)
 
 request = "Print stuffed and unstrung"
@@ -137,7 +135,6 @@ from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
-
 
 conversation_objective = textwrap.dedent(
     """\

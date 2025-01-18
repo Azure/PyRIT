@@ -23,8 +23,7 @@
 # benefits of sharing with other users and persisting data.
 
 # %%
-from pyrit.common.initialize_pyrit import initialize_pyrit, IN_MEMORY
-
+from pyrit.common import IN_MEMORY, initialize_pyrit
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -37,7 +36,6 @@ import pathlib
 from pyrit.common.path import DATASETS_PATH
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedPromptDataset
-
 
 seed_prompt_dataset = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
 
@@ -70,9 +68,8 @@ if prompts:
 # %%
 import pathlib
 
-from pyrit.models import SeedPromptGroup
 from pyrit.common.path import DATASETS_PATH
-
+from pyrit.models import SeedPromptGroup
 
 seed_prompt_group = SeedPromptGroup.from_yaml_file(
     pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal-multimodal.prompt"
@@ -84,7 +81,7 @@ await memory.add_seed_prompt_groups_to_memory(prompt_groups=[seed_prompt_group],
 # ## Retrieving seed prompt groups from the memory with dataset_name as "TestMultimodalTextImageAudioVideo"
 
 # %%
-multimodal_dataset_name = "test multimodal"
+multimodal_dataset_name = "TestMultimodalTextImageAudioVideo"
 seed_prompt_groups = memory.get_seed_prompt_groups(dataset_name=multimodal_dataset_name)
 print(f"Total number of the seed prompt groups with dataset name '{multimodal_dataset_name}':", len(seed_prompt_groups))
 if seed_prompt_groups:

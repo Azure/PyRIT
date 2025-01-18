@@ -5,7 +5,18 @@ import uuid
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import ARRAY, INTEGER, JSON, Column, DateTime, Float, ForeignKey, Index, String, Unicode
+from sqlalchemy import (
+    ARRAY,
+    INTEGER,
+    JSON,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    String,
+    Unicode,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, relationship  # type: ignore
 from sqlalchemy.types import Uuid  # type: ignore
 
@@ -59,7 +70,7 @@ class PromptMemoryEntry(Base):
     sequence = Column(INTEGER, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     labels: Mapped[dict[str, str]] = Column(JSON)
-    prompt_metadata = Column(String, nullable=True)
+    prompt_metadata: Mapped[dict[str, str]] = Column(JSON)
     converter_identifiers: Mapped[dict[str, str]] = Column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = Column(JSON)
     orchestrator_identifier: Mapped[dict[str, str]] = Column(JSON)

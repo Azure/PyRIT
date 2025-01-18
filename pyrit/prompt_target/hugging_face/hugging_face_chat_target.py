@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import asyncio
-import json
 import logging
 import os
 from typing import TYPE_CHECKING, Optional
@@ -12,7 +11,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
-from pyrit.models.prompt_request_response import PromptRequestResponse, construct_response_from_request
+from pyrit.models.prompt_request_response import (
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -271,7 +273,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             return construct_response_from_request(
                 request=request,
                 response_text_pieces=[assistant_response],
-                prompt_metadata=json.dumps({"model_id": model_identifier}),
+                prompt_metadata={"model_id": model_identifier},
             )
 
         except Exception as e:
@@ -312,6 +314,10 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False
 
     @classmethod
     def enable_cache(cls):
