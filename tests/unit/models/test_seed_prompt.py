@@ -123,3 +123,12 @@ def test_prompt_dataset_from_yaml_defaults():
     assert prompts.prompts[2].authors == ["Rich Lundeen"]
     assert "AI Red Team" in prompts.prompts[2].groups
     assert "PyRIT Team" in prompts.prompts[2].groups
+
+@pytest.mark.asyncio
+async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
+    prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
+    await duckdb_instance.add_seed_prompts_to_memory(prompts=prompts.prompts, added_by="rlundeen")
+
+    groups = duckdb_instance.get_seed_prompt_groups()
+    assert len(groups) == 3
+
