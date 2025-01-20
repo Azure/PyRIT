@@ -81,6 +81,7 @@ class PromptRequestPiece(abc.ABC):
 
         if converted_value is None:
             converted_value = original_value
+            converted_value_data_type = original_value_data_type
 
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
@@ -89,7 +90,7 @@ class PromptRequestPiece(abc.ABC):
         self.labels = labels
         self.prompt_metadata = prompt_metadata
 
-        self.converter_identifiers = converter_identifiers
+        self.converter_identifiers = converter_identifiers if converter_identifiers else []
 
         self.prompt_target_identifier = prompt_target_identifier
         self.orchestrator_identifier = orchestrator_identifier

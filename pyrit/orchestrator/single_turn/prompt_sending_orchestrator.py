@@ -80,13 +80,9 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         Sends the normalized prompts to the prompt target.
         """
-        for request in prompt_request_list:
-            request.validate()
-
-        conversation_id = self._process_prepended_conversation()
 
         for prompt in prompt_request_list:
-            prompt.conversation_id = conversation_id
+            prompt.conversation_id = self._prepare_conversation()
 
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
@@ -138,7 +134,6 @@ class PromptSendingOrchestrator(Orchestrator):
 
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
-            conversation_id = self._prepare_conversation()
 
             requests.append(
                 self._create_normalizer_request(
@@ -146,7 +141,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
                     metadata=metadata,
-                    conversation_id=conversation_id,
+                    conversation_id=uuid.uuid4(),
                 )
             )
 
@@ -171,13 +166,12 @@ class PromptSendingOrchestrator(Orchestrator):
                 print(f"{Style.RESET_ALL}score: {score} : {score.score_rationale}")
 
 
-    def _process_prepended_conversation(self):
+    def _prepare_conversation(self):
         """
         Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
         """
-        conversation_id = None
+        conversation_id = uuid.uuid4()
         if self._prepended_conversation:
-            conversation_id = uuid.uuid4()
             for request in self._prepended_conversation:
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id

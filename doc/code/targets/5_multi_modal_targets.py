@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
@@ -52,8 +52,10 @@ await orchestrator.print_conversations_async()  # type: ignore
 # ## TTS Target
 #
 # Similarly, this example shows how to use the TTS (audio) target to convert text to speech
-# %%
+
 from pyrit.orchestrator import PromptSendingOrchestrator
+
+# %%
 from pyrit.prompt_converter import TranslationConverter
 from pyrit.prompt_target import OpenAIChatTarget, OpenAITTSTarget
 
@@ -82,8 +84,9 @@ print(saved_audio_path)
 # %%
 import pathlib
 
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target import OpenAIChatTarget
 
 azure_openai_gpt4o_chat_target = OpenAIChatTarget()
@@ -99,16 +102,18 @@ data = [
 # This is a single request with two parts, one image and one text
 
 normalizer_request = NormalizerRequest(
-    request_pieces=[
-        NormalizerRequestPiece(
-            prompt_value="Describe this picture:",
-            prompt_data_type="text",
-        ),
-        NormalizerRequestPiece(
-            prompt_value=str(image_path),
-            prompt_data_type="image_path",
-        ),
-    ]
+    seed_prompt_group=SeedPromptGroup(
+        prompts=[
+            SeedPrompt(
+                value="Describe this picture:",
+                data_type="text",
+            ),
+            SeedPrompt(
+                value=str(image_path),
+                data_type="image_path",
+            ),
+        ]
+    )
 )
 
 orchestrator = PromptSendingOrchestrator(objective_target=azure_openai_gpt4o_chat_target)

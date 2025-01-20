@@ -10,9 +10,10 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.score import SubStringScorer
 
 
@@ -60,7 +61,7 @@ async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget,
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
     # Check behavior with and without prepended conversations
-    orchestrator._prepended_conversation = prepended_conversation
+    orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
 
     list_responses = await orchestrator.send_prompts_async(prompt_list=["Hello", "my", "name"])
     assert mock_target.prompt_sent == ["Hello", "my", "name"]
@@ -106,13 +107,21 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
 
         f.write(b"test")
         f.flush()
-        req = NormalizerRequestPiece(
-            request_converters=[Base64Converter()],
-            prompt_data_type="image_path",
-            prompt_value=f.name,
+
+        group = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=f.name,
+                    data_type="image_path",
+                )
+            ]
         )
 
-        await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
+        req = NormalizerRequest(
+            seed_prompt_group=group,
+        )
+
+        await orchestrator.send_normalizer_requests_async(prompt_request_list=[req])
         assert orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.called
 
 
@@ -339,7 +348,7 @@ def test_prepare_conversation_with_prepended_conversation():
         prepended_conversation = [PromptRequestResponse(request_pieces=[MagicMock(conversation_id=None)])]
         orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
 
-        conversation_id = orchestrator._process_prepended_conversation()
+        conversation_id = orchestrator._prepare_conversation()
 
         assert conversation_id == "mocked-uuid"
         for request in prepended_conversation:
@@ -349,13 +358,14 @@ def test_prepare_conversation_with_prepended_conversation():
         memory_mock.add_request_response_to_memory.assert_called_with(request=prepended_conversation[0])
 
 
-def test_prepare_conversation_without_prepended_conversation():
+def test_prepare_conversation_without_prepended_conversation(patch_central_database):
     objective_target_mock = MagicMock()
     orchestrator = PromptSendingOrchestrator(objective_target=objective_target_mock)
     memory_mock = MagicMock()
 
     orchestrator._memory = memory_mock
-    conversation_id = orchestrator._process_prepended_conversation()
+    conversation_id = orchestrator._prepare_conversation()
 
-    assert not conversation_id
+    assert conversation_id
+
     memory_mock.add_request_response_to_memory.assert_not_called()

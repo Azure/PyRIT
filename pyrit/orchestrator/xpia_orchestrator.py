@@ -9,10 +9,10 @@ from uuid import uuid4
 
 from aioconsole import ainput
 
-from pyrit.models import Score
+from pyrit.models import Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
 
@@ -74,12 +74,13 @@ class XPIAOrchestrator(Orchestrator):
             f'converter operations) "{self._attack_content}"',
         )
 
-        target_request = self._create_normalizer_request(
-            converters=self._prompt_converters, prompt_text=self._attack_content, prompt_type="text"
-        )
+        converters = PromptConverterConfiguration(converters=self._prompt_converters)
+
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=self._attack_content, data_type="text")])
 
         response = await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=target_request,
+            seed_prompt_group=seed_prompt_group,
+            request_converter_configurations=[converters],
             target=self._attack_setup_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
@@ -147,15 +148,14 @@ class XPIATestOrchestrator(XPIAOrchestrator):
 
         self._processing_target = processing_target
         self._processing_conversation_id = str(uuid4())
-        self._processing_prompt = processing_prompt
+        self._processing_prompt = SeedPrompt(value=processing_prompt, data_type="text")
 
     async def _process_async(self) -> str:
-        processing_prompt_req = self._create_normalizer_request(
-            converters=[], prompt_text=self._processing_prompt, prompt_type="text"
-        )
+
+        seed_prompt_group = SeedPromptGroup(prompts=[self._processing_prompt])
 
         processing_response = await self._prompt_normalizer.send_prompt_async(
-            normalizer_request=processing_prompt_req,
+            seed_prompt_group=seed_prompt_group,
             target=self._processing_target,
             labels=self._global_memory_labels,
             orchestrator_identifier=self.get_identifier(),
