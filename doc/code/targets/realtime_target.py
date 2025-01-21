@@ -36,22 +36,27 @@ target = RealtimeTarget()
 # %%
 from pathlib import Path
 
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_normalizer.normalizer_request import (
-    NormalizerRequest,
-    NormalizerRequestPiece,
-)
+from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 
-prompt_to_send = Path("../../../assets/converted_audio.wav").resolve()
+audio_path = Path("../../../assets/converted_audio.wav").resolve()
 
 normalizer_request = NormalizerRequest(
-    request_pieces=[
-        NormalizerRequestPiece(
-            prompt_value=str(prompt_to_send),
-            prompt_data_type="audio_path",
-        ),
-    ]
+    seed_prompt_group=SeedPromptGroup(
+        prompts=[
+            SeedPrompt(
+                value=str(audio_path),
+                data_type="audio_path",
+            ),
+        ]
+    )
 )
+
+orchestrator = PromptSendingOrchestrator(objective_target=target)
+
+await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
 
 # %%
 orchestrator = PromptSendingOrchestrator(objective_target=target)
@@ -86,7 +91,6 @@ memory.dispose_engine()
 # ## MULTITURN:
 
 # %%
-
 import logging
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
