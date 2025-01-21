@@ -184,6 +184,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                     logger.info(
                         "The red teaming orchestrator has completed the conversation and achieved the objective.",
                     )
+                    await self._objective_target.cleanup_target()
                     break
             elif response.response_error == "blocked":
                 score = None
@@ -197,8 +198,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 "The red teaming orchestrator has not achieved the objective after the maximum "
                 f"number of turns ({self._max_turns}).",
             )
-
-        await self._objective_target.cleanup_target()
+            await self._objective_target.cleanup_target()
 
         return MultiTurnAttackResult(
             conversation_id=objective_target_conversation_id,

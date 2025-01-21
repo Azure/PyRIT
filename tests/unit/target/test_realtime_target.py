@@ -85,6 +85,7 @@ async def test_send_prompt_async_invalid_request(target):
     )
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
-    # Send prompt async and expect a ValueError
-    with pytest.raises(ValueError, match="This target only supports text and audio_path."):
-        await target.send_prompt_async(prompt_request=prompt_request)
+    with pytest.raises(ValueError) as excinfo:
+        target._validate_request(prompt_request=prompt_request)
+
+    assert "This target only supports text and audio_path prompt input." in str(excinfo.value)

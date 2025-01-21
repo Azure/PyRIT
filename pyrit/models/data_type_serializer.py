@@ -162,7 +162,7 @@ class DataTypeSerializer(abc.ABC):
         file_path = output_filename or await self.get_data_filename()
 
         # save audio file locally first if in AzureStorageBlob so we can use wave.open to set audio parameters
-        if self._is_azure_storage_url(file_path):
+        if self._is_azure_storage_url(str(file_path)):
             local_temp_path = Path(DB_DATA_PATH, "temp_audio.wav")
             with wave.open(str(local_temp_path), "wb") as wav_file:
                 wav_file.setnchannels(num_channels)
@@ -177,7 +177,7 @@ class DataTypeSerializer(abc.ABC):
 
         # If local, we can just save straight to disk and do not need to delete temp file after
         else:
-            with wave.open(file_path, "wb") as wav_file:
+            with wave.open(str(file_path), "wb") as wav_file:
                 wav_file.setnchannels(num_channels)
                 wav_file.setsampwidth(sample_width)
                 wav_file.setframerate(sample_rate)
