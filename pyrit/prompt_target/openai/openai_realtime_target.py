@@ -7,6 +7,7 @@ import json
 import logging
 import wave
 from typing import Dict, Literal, Optional
+from urllib.parse import urlencode
 
 import websockets
 
@@ -64,15 +65,17 @@ class RealtimeTarget(OpenAITarget):
         # Connects to Realtime API Target using websockets.
 
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
-        headers = {"Authorization": f"Bearer {self._api_key}", "OpenAI-Beta": "realtime=v1"}
 
-        websocket_url = f"{self._endpoint}/openai/realtime?api-version={self._api_version}"
-        websocket_url = f"{websocket_url}&deployment={self._deployment_name}&api-key={self._api_key}"
+        websocket_url = f"{self._endpoint}/openai/realtime"
+        query_params = {
+            "api-version": self._api_version,
+            "deployment": self._deployment_name,
+            "api-key": self._api_key,
+            "OpenAI-Beta": "realtime=v1",
+        }
+        url = f"{websocket_url}?{urlencode(query_params)}"
 
-        self.websocket = await websockets.connect(
-            websocket_url,
-            extra_headers=headers,
-        )
+        self.websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
 
     def _set_system_prompt_and_config_vars(self):
