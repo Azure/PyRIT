@@ -40,14 +40,19 @@ async def test_send_prompt_async(target):
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
     with (
-        patch("pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.connect", next_callable=AsyncMock) as mock_connect,
+        patch(
+            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.connect", next_callable=AsyncMock
+        ) as mock_connect,
         patch(
             "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.receive_events", new_callable=AsyncMock
         ) as mock_receive_events,
         patch(
-            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_response_create", new_callable=AsyncMock
+            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_response_create",
+            new_callable=AsyncMock,
         ) as mock_send_response_create,
-        patch("pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_text", new_callable=AsyncMock) as mock_send_text,
+        patch(
+            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_text", new_callable=AsyncMock
+        ) as mock_send_text,
         patch(
             "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.save_audio", new_callable=AsyncMock
         ) as mock_save_audio,
@@ -72,7 +77,6 @@ async def test_send_prompt_async(target):
 
         assert response.request_pieces[0].converted_value == "Hello"
         assert response.request_pieces[1].converted_value == "response_audio.wav"
-        
 
 
 @pytest.mark.asyncio
