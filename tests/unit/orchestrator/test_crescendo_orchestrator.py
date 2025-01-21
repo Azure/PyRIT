@@ -380,14 +380,14 @@ async def test_get_attack_sets_default_prompt(orchestrator: CrescendoOrchestrato
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    red_teaming_return_value = PromptRequestResponse(
+    adversarial_target_return_value = PromptRequestResponse(
         request_pieces=[PromptRequestPiece(role="assistant", original_value=red_team_response)]
     )
 
     objective = "do something extremely bad"
 
     with patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer:
-        mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
+        mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=adversarial_target_return_value)
         await orchestrator._get_attack_prompt(
             adversarial_chat_conversation_id="123",
             objective=objective,
@@ -397,7 +397,7 @@ async def test_get_attack_sets_default_prompt(orchestrator: CrescendoOrchestrato
             objective_score=None,
         )
         _, kwargs = mock_prompt_normalizer.send_prompt_async.call_args
-        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+        prompt_sent = kwargs["seed_prompt_group"].prompts[0].value
 
         # number of turns and conversation objective should be included dynamically
         assert "This is the turn 3 of 7 turns." in prompt_sent
@@ -412,14 +412,14 @@ async def test_get_attack_sets_refused_text(orchestrator: CrescendoOrchestrator)
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    red_teaming_return_value = PromptRequestResponse(
+    adversarial_target_return_value = PromptRequestResponse(
         request_pieces=[PromptRequestPiece(role="assistant", original_value=red_team_response)]
     )
 
     objective = "do something extremely bad"
 
     with patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer:
-        mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=red_teaming_return_value)
+        mock_prompt_normalizer.send_prompt_async = AsyncMock(return_value=adversarial_target_return_value)
         await orchestrator._get_attack_prompt(
             adversarial_chat_conversation_id="123",
             objective=objective,
@@ -429,7 +429,7 @@ async def test_get_attack_sets_refused_text(orchestrator: CrescendoOrchestrator)
             objective_score=None,
         )
         _, kwargs = mock_prompt_normalizer.send_prompt_async.call_args
-        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+        prompt_sent = kwargs["seed_prompt_group"].prompts[0].value
 
         # number of turns and conversation objective should be included dynamically
         assert "This is the turn 3 of 7 turns." in prompt_sent
@@ -446,7 +446,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
         '"rationale_behind_jailbreak": "Rationale Behind Jailbreak"}'
     )
 
-    red_teaming_return_value = PromptRequestResponse(
+    adversarial_target_return_value = PromptRequestResponse(
         request_pieces=[PromptRequestPiece(role="assistant", original_value=red_team_response)]
     )
 
@@ -460,7 +460,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
         patch.object(orchestrator, "_prompt_normalizer", AsyncMock()) as mock_prompt_normalizer,
     ):
 
-        mock_prompt_normalizer.send_prompt_async.return_value = red_teaming_return_value
+        mock_prompt_normalizer.send_prompt_async.return_value = adversarial_target_return_value
         await orchestrator._get_attack_prompt(
             adversarial_chat_conversation_id="123",
             objective=objective,
@@ -470,7 +470,7 @@ async def test_get_attack_includes_objective_score(orchestrator: CrescendoOrches
             objective_score=false_eval_score,
         )
         _, kwargs = mock_prompt_normalizer.send_prompt_async.call_args
-        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+        prompt_sent = kwargs["seed_prompt_group"].prompts[0].value
 
         assert "This is the turn 3 of 7 turns." in prompt_sent
         assert objective in prompt_sent
@@ -511,7 +511,7 @@ async def test_get_attack_prompt_with_refusal(orchestrator: CrescendoOrchestrato
         )
 
         _, kwargs = mock_prompt_normalizer.call_args
-        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+        prompt_sent = kwargs["seed_prompt_group"].prompts[0].value
 
         assert "This is the turn 3 of 7 turns." in prompt_sent
         assert objective in prompt_sent
@@ -550,7 +550,7 @@ async def test_get_attack_prompt_first_turn(orchestrator: CrescendoOrchestrator)
         )
 
         _, kwargs = mock_prompt_normalizer.call_args
-        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+        prompt_sent = kwargs["seed_prompt_group"].prompts[0].value
 
         assert "This is the turn 3 of 7 turns." in prompt_sent
         assert objective in prompt_sent
@@ -596,7 +596,7 @@ async def test_get_attack_prompt_objective_score(orchestrator: CrescendoOrchestr
         )
 
         _, kwargs = mock_prompt_normalizer.call_args
-        prompt_sent = kwargs["normalizer_request"].request_pieces[0].prompt_value
+        prompt_sent = kwargs["seed_prompt_group"].prompts[0].value
 
         assert "This is the turn 3 of 7 turns." in prompt_sent
         assert objective in prompt_sent

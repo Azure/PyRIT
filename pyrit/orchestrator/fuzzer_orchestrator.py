@@ -316,7 +316,6 @@ class FuzzerOrchestrator(Orchestrator):
                     prompt_type="text",
                     converters=self._prompt_converters,
                 )
-                request.validate()
                 requests.append(request)
 
             responses = await self._prompt_normalizer.send_prompt_batch_to_target_async(

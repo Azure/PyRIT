@@ -1865,3 +1865,28 @@ def test_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
     # Check that the duplicate piece has the same score as the original
     assert len(retrieved_pieces[1].scores) == 1
     assert retrieved_pieces[1].scores[0].score_value == "0.8"
+
+
+@pytest.mark.asyncio
+async def test_prompt_piece_hash_stored_and_retrieved(duckdb_instance: MemoryInterface):
+    entries = [
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 1",
+        ),
+        PromptRequestPiece(
+            role="assistant",
+            original_value="Hello 2",
+        ),
+    ]
+
+    for entry in entries:
+        await entry.set_sha256_values_async()
+
+    duckdb_instance.add_request_pieces_to_memory(request_pieces=entries)
+    retrieved_entries = duckdb_instance.get_prompt_request_pieces()
+
+    assert len(retrieved_entries) == 2
+    for prompt in retrieved_entries:
+        assert prompt.converted_value_sha256
+        assert prompt.original_value_sha256

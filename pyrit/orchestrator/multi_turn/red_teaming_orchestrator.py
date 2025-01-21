@@ -9,13 +9,12 @@ from uuid import uuid4
 
 from pyrit.common.path import RED_TEAM_ORCHESTRATOR_PATH
 from pyrit.common.utils import combine_dict
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import (
-    NormalizerRequest,
-    NormalizerRequestPiece,
-    PromptNormalizer,
+from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
@@ -247,20 +246,17 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
         else:
             prompt = custom_prompt
 
-        target_prompt_obj = NormalizerRequestPiece(
-            request_converters=self._prompt_converters,
-            prompt_value=prompt,
-            prompt_data_type="text",
-        )
+        converter_configurations = PromptConverterConfiguration(converters=self._prompt_converters)
 
-        normalizer_request = NormalizerRequest(
-            request_pieces=[target_prompt_obj],
-            conversation_id=objective_target_conversation_id,
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value=prompt, data_type="text")],
         )
 
         response_piece = (
             await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=normalizer_request,
+                seed_prompt_group=seed_prompt_group,
+                conversation_id=objective_target_conversation_id,
+                request_converter_configurations=[converter_configurations],
                 target=self._objective_target,
                 labels=memory_labels,
                 orchestrator_identifier=self.get_identifier(),
@@ -407,14 +403,15 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                 labels=memory_labels,
             )
 
-        normalizer_request = self._create_normalizer_request(
-            prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value=prompt_text, data_type="text")],
         )
 
         response_text = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=normalizer_request,
+                    seed_prompt_group=seed_prompt_group,
+                    conversation_id=adversarial_chat_conversation_id,
                     target=self._adversarial_chat,
                     orchestrator_identifier=self.get_identifier(),
                     labels=memory_labels,

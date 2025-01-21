@@ -126,6 +126,25 @@ async def test_hashes_generated_files():
     os.remove(filename)
 
 
+@pytest.mark.asyncio
+async def test_converted_datatype_default():
+    filename = ""
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+        f.write(b"Hello1")
+        f.flush()
+        f.close()
+        entry = PromptRequestPiece(
+            role="user",
+            original_value=filename,
+            original_value_data_type="image_path",
+        )
+        assert entry.converted_value_data_type == "image_path"
+        assert entry.converted_value == filename
+
+    os.remove(filename)
+
+
 def test_hashes_generated_files_unknown_type():
     with pytest.raises(ValueError, match="is not a valid data type."):
         PromptRequestPiece(
