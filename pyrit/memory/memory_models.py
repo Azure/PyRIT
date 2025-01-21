@@ -127,7 +127,9 @@ class PromptMemoryEntry(Base):
         prompt_request_piece = PromptRequestPiece(
             role=self.role,
             original_value=self.original_value,
+            original_value_sha256=self.original_value_sha256,
             converted_value=self.converted_value,
+            converted_value_sha256=self.converted_value_sha256,
             id=self.id,
             conversation_id=self.conversation_id,
             sequence=self.sequence,

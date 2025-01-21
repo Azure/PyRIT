@@ -53,7 +53,9 @@ class PromptRequestPiece(abc.ABC):
         *,
         role: ChatMessageRole,
         original_value: str,
+        original_value_sha256: Optional[str] = None,
         converted_value: Optional[str] = None,
+        converted_value_sha256: Optional[str] = None,
         id: Optional[uuid.UUID | str] = None,
         conversation_id: Optional[str] = None,
         sequence: int = -1,
@@ -103,7 +105,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.original_value_data_type = original_value_data_type
 
-        self.original_value_sha256 = None
+        self.original_value_sha256 = original_value_sha256
 
         self.converted_value = converted_value
 
@@ -112,7 +114,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.converted_value_data_type = converted_value_data_type
 
-        self.converted_value_sha256 = None
+        self.converted_value_sha256 = converted_value_sha256
 
         if response_error not in get_args(PromptResponseError):
             raise ValueError(f"response_error {response_error} is not a valid response error.")
