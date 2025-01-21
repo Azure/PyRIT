@@ -40,18 +40,19 @@ async def test_send_prompt_async(target):
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
     with (
+        patch("pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.connect", next_callable=AsyncMock) as mock_connect,
         patch(
-            "pyrit.prompt_target.realtime_target.RealtimeTarget.receive_events", new_callable=AsyncMock
+            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.receive_events", new_callable=AsyncMock
         ) as mock_receive_events,
         patch(
-            "pyrit.prompt_target.realtime_target.RealtimeTarget.send_response_create", new_callable=AsyncMock
+            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_response_create", new_callable=AsyncMock
         ) as mock_send_response_create,
-        patch("pyrit.prompt_target.realtime_target.RealtimeTarget.send_text", new_callable=AsyncMock) as mock_send_text,
+        patch("pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_text", new_callable=AsyncMock) as mock_send_text,
         patch(
-            "pyrit.prompt_target.realtime_target.RealtimeTarget.save_audio", new_callable=AsyncMock
+            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.save_audio", new_callable=AsyncMock
         ) as mock_save_audio,
         patch(
-            "pyrit.prompt_target.realtime_target.RealtimeTarget.send_event", new_callable=AsyncMock
+            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_event", new_callable=AsyncMock
         ) as mock_send_event,
     ):
 
@@ -60,6 +61,7 @@ async def test_send_prompt_async(target):
 
         response = await target.send_prompt_async(prompt_request=prompt_request)
 
+        mock_connect.assert_called_once()
         mock_send_response_create.assert_called_once()
         mock_send_text.assert_called_once_with("Hello")
         mock_receive_events.assert_called_once()
@@ -68,8 +70,9 @@ async def test_send_prompt_async(target):
 
         assert response
 
-        assert response.request_pieces[0].converted_value == "response_audio.wav"
-        assert response.request_pieces[1].converted_value == "Hello"
+        assert response.request_pieces[0].converted_value == "Hello"
+        assert response.request_pieces[1].converted_value == "response_audio.wav"
+        
 
 
 @pytest.mark.asyncio
@@ -88,4 +91,4 @@ async def test_send_prompt_async_invalid_request(target):
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(prompt_request=prompt_request)
 
-    assert "This target only supports text and audio_path prompt input." in str(excinfo.value)
+    assert "This target only supports text and audio_path prompt input." == str(excinfo.value)
