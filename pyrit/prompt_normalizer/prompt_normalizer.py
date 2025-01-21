@@ -165,7 +165,7 @@ class PromptNormalizer(abc.ABC):
             "conversation_id",
         ]
 
-        return await batch_task_async(
+        responses = await batch_task_async(
             prompt_target=target,
             batch_size=batch_size,
             items_to_batch=batch_items,
@@ -175,6 +175,9 @@ class PromptNormalizer(abc.ABC):
             labels=labels,
             orchestrator_identifier=orchestrator_identifier,
         )
+
+        # send_prompt_async can return None if the prompt is skipped
+        return [response for response in responses if response is not None]
 
     async def convert_values(
         self,
@@ -224,6 +227,7 @@ class PromptNormalizer(abc.ABC):
         self._skip_criteria = skip_criteria
 
         self._prompts_to_skip = self._memory.get_prompt_request_pieces(
+            role="user",
             orchestrator_id=self._skip_criteria.orchestrator_id,
             conversation_id=self._skip_criteria.conversation_id,
             prompt_ids=self._skip_criteria.prompt_ids,
@@ -369,5 +373,4 @@ class PromptNormalizer(abc.ABC):
         response = PromptRequestResponse(request_pieces=entries)
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
-
         return response

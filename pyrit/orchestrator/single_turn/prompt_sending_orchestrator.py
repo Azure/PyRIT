@@ -94,7 +94,7 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-        if self._scorers:
+        if self._scorers and responses:
             response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
 
             for scorer in self._scorers:
