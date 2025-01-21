@@ -27,8 +27,5 @@ def test_execute_notebooks(file_name):
 
     ep = ExecutePreprocessor(timeout=600)
 
-    try:
-        # Execute notebook, test will throw exception if any cell fails
-        ep.preprocess(nb, {"metadata": {"path": nb_path.parent}})
-    except Exception as e:
-        pytest.fail(f"Notebook '{file_name}' failed to execute: {e}")
+    # Execute notebook, test will throw exception if any cell fails
+    ep.preprocess(nb, {"metadata": {"path": nb_path.parent}})

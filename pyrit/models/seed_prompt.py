@@ -55,7 +55,7 @@ class SeedPrompt(YamlLoadable):
         metadata: Optional[Dict[str, str]] = None,
         parameters: Optional[List[str]] = None,
         prompt_group_id: Optional[uuid.UUID] = None,
-        sequence: Optional[int] = None,
+        sequence: Optional[int] = 0,
     ):
         self.id = id if id else uuid.uuid4()
         self.value = value
@@ -272,6 +272,8 @@ class SeedPromptDataset(YamlLoadable):
         for prompt in seed_prompts:
             if prompt.prompt_group_id:
                 grouped_prompts[prompt.prompt_group_id].append(prompt)
+            else:
+                grouped_prompts[uuid.uuid4()].append(prompt)
 
         # Create SeedPromptGroup instances from grouped prompts
         seed_prompt_groups = []
