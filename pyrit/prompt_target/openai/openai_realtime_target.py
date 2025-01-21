@@ -12,7 +12,7 @@ import websockets
 
 from pyrit.models import PromptRequestResponse
 from pyrit.models.data_type_serializer import data_serializer_factory
-from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.prompt_request_response import construct_response_from_request
 from pyrit.prompt_target import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
@@ -153,46 +153,16 @@ class RealtimeTarget(OpenAITarget):
             events = await receive_tasks
             output_audio_path = await self.save_audio(events[0])
 
-        text_response_piece = PromptRequestPiece(
-            original_value=events[1],
-            original_value_data_type="text",
-            converted_value=events[1],
-            role="assistant",
-            converted_value_data_type="text",
-        )
-        audio_response_piece = PromptRequestPiece(
-            original_value=output_audio_path,
-            original_value_data_type="audio_path",
-            converted_value=output_audio_path,
-            role="assistant",
-            converted_value_data_type="audio_path",
-        )
+        text_response_piece = construct_response_from_request(
+            request=request, response_text_pieces=[events[1]], response_type="text"
+        ).request_pieces[0]
 
-        response_entry = self.construct_response_from_request(
-            request=request, response_pieces=[text_response_piece, audio_response_piece]
-        )
+        audio_response_piece = construct_response_from_request(
+            request=request, response_text_pieces=[output_audio_path], response_type="audio_path"
+        ).request_pieces[0]
 
+        response_entry = PromptRequestResponse(request_pieces=[text_response_piece, audio_response_piece])
         return response_entry
-
-    def construct_response_from_request(
-        self,
-        request: PromptRequestPiece,
-        response_pieces: list[PromptRequestPiece],
-        prompt_metadata: Optional[Dict[str, str]] = None,
-    ) -> PromptRequestResponse:
-
-        # Constructs a response entry from a request with mixed types of response pieces.
-        # In this target there will be two response pieces for every response
-
-        for response_piece in response_pieces:
-            response_piece.role = "assistant"
-            response_piece.conversation_id = request.conversation_id
-            response_piece.labels = request.labels
-            response_piece.prompt_target_identifier = request.prompt_target_identifier
-            response_piece.orchestrator_identifier = request.orchestrator_identifier
-            response_piece.prompt_metadata = prompt_metadata
-
-        return PromptRequestResponse(request_pieces=response_pieces)
 
     async def save_audio(
         self,
