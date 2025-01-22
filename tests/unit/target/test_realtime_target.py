@@ -11,19 +11,18 @@ from pyrit.prompt_target import RealtimeTarget
 
 @pytest.fixture
 def target(duckdb_instance):
-    return RealtimeTarget(
-        api_key="test_key", endpoint="wss://test_url", deployment_name="test_deployment", api_version="v1"
-    )
+    return RealtimeTarget(api_key="test_key", endpoint="wss://test_url", deployment_name="test", api_version="v1")
 
 
 @pytest.mark.asyncio
 async def test_connect_success(target):
     # Mock the websockets.connect method
+    url = ("wss://test_url/openai/realtime?api-version=v1&deployment=test&api-key=test_key&OpenAI-Beta=realtime%3Dv1",)
+
     with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
         await target.connect()
         mock_connect.assert_called_once_with(
-            "wss://test_url/openai/realtime?api-version=v1&deployment=test_deployment&api-key=test_key",
-            extra_headers={"Authorization": "Bearer test_key", "OpenAI-Beta": "realtime=v1"},
+            url,
         )
         assert target.websocket == mock_connect.return_value
 

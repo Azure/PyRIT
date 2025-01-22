@@ -66,14 +66,14 @@ class RealtimeTarget(OpenAITarget):
 
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
-        websocket_url = f"{self._endpoint}/openai/realtime"
+        base_url = f"{self._endpoint}/openai/realtime"
         query_params = {
             "api-version": self._api_version,
             "deployment": self._deployment_name,
             "api-key": self._api_key,
             "OpenAI-Beta": "realtime=v1",
         }
-        url = f"{websocket_url}?{urlencode(query_params)}"
+        url = f"{base_url}?{urlencode(query_params)}"
 
         self.websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
