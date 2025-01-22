@@ -131,7 +131,8 @@ async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
     await duckdb_instance.add_seed_prompts_to_memory(prompts=prompts.prompts, added_by="rlundeen")
 
     groups = duckdb_instance.get_seed_prompt_groups()
-    assert len(groups) == 3
+    # there are 5 seedPrompts, 4 groups
+    assert len(groups) == 4
 
 
 def test_group_id_from_empty_group_set_equally():
@@ -163,7 +164,7 @@ def test_group_id_set_equally_success():
 
 def test_group_id_set_unequally_raises():
     with pytest.raises(ValueError) as exc_info:
-        group = SeedPromptGroup(
+        SeedPromptGroup(
             prompts=[
                 SeedPrompt(value="Hello", data_type="text", prompt_group_id=uuid.uuid4()),
                 SeedPrompt(value="World", data_type="text", prompt_group_id=uuid.uuid4()),
