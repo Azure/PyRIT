@@ -3,11 +3,11 @@
 
 
 import uuid
+
 import pytest
 
 from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_normalizer import NormalizerRequest
-
 
 
 def test_normalizer_request_validates_sequence():
@@ -29,6 +29,7 @@ def test_normalizer_request_validates_sequence():
         request.validate()
 
     assert "Sequence must be equal for every piece of a single normalizer request." in str(exc_info.value)
+
 
 def test_normalizer_request_validates_empty_group():
     request = NormalizerRequest(

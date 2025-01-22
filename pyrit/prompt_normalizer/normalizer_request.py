@@ -15,6 +15,7 @@ class NormalizerRequest(abc.ABC):
     """
     Represents a single request sent to normalizer.
     """
+
     seed_prompt_group: SeedPromptGroup
     request_converter_configurations: list[PromptConverterConfiguration]
     response_converter_configurations: list[PromptConverterConfiguration]

@@ -140,10 +140,7 @@ class SeedPromptGroup(YamlLoadable):
         Raises:
             ValueError: If multiple different group IDs exist among the prompts.
         """
-        existing_group_ids = {
-            prompt.prompt_group_id for prompt in self.prompts
-            if prompt.prompt_group_id is not None
-        }
+        existing_group_ids = {prompt.prompt_group_id for prompt in self.prompts if prompt.prompt_group_id is not None}
 
         if len(existing_group_ids) > 1:
             # More than one distinct group ID found among prompts.
@@ -158,7 +155,6 @@ class SeedPromptGroup(YamlLoadable):
             new_group_id = uuid.uuid4()
             for prompt in self.prompts:
                 prompt.prompt_group_id = new_group_id
-
 
     def is_single_request(self) -> bool:
         unique_sequences = {prompt.sequence for prompt in self.prompts}
@@ -273,11 +269,14 @@ class SeedPromptDataset(YamlLoadable):
 
             merged_prompts.append(merged)
 
+        for prompt in merged_prompts:
+            if "prompt_group_id" in prompt:
+                raise ValueError("prompt_group_id should not be set in prompt data")
+
         SeedPromptDataset._set_seed_prompt_group_id_by_alias(seed_prompts=merged_prompts)
 
         # Now create the dataset with the newly merged prompt dicts
         return cls(prompts=merged_prompts, **dataset_defaults)
-
 
     @staticmethod
     def _set_seed_prompt_group_id_by_alias(seed_prompts: List[dict]):
@@ -296,7 +295,6 @@ class SeedPromptDataset(YamlLoadable):
                 prompt["prompt_group_id"] = alias_to_group_id[alias]
             else:
                 prompt["prompt_group_id"] = uuid.uuid4()
-
 
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seed_prompts: List[SeedPrompt]) -> List[SeedPromptGroup]:
