@@ -132,3 +132,42 @@ async def test_group_seed_prompt_groups_from_yaml(duckdb_instance):
 
     groups = duckdb_instance.get_seed_prompt_groups()
     assert len(groups) == 3
+
+
+def test_group_id_from_empty_group_set_equally():
+    group = SeedPromptGroup(
+        prompts=[
+            SeedPrompt(value="Hello", data_type="text"),
+            SeedPrompt(value="World", data_type="text"),
+        ]
+    )
+
+    assert group.prompts[0].prompt_group_id
+
+    for prompt in group.prompts:
+        assert prompt.prompt_group_id == group.prompts[0].prompt_group_id
+
+
+def test_group_id_set_equally_success():
+    id = uuid.uuid4()
+    group = SeedPromptGroup(
+        prompts=[
+            SeedPrompt(value="Hello", data_type="text", prompt_group_id=id),
+            SeedPrompt(value="World", data_type="text", prompt_group_id=id),
+        ]
+    )
+
+    assert len(group.prompts) == 2
+    assert group.prompts[0].prompt_group_id == id
+
+
+def test_group_id_set_unequally_raises():
+    with pytest.raises(ValueError) as exc_info:
+        group = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(value="Hello", data_type="text", prompt_group_id=uuid.uuid4()),
+                SeedPrompt(value="World", data_type="text", prompt_group_id=uuid.uuid4()),
+            ]
+        )
+
+    assert "Inconsistent group IDs found across prompts" in str(exc_info.value)

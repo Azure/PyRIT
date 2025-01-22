@@ -12,6 +12,9 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
 
 @dataclass
 class NormalizerRequest(abc.ABC):
+    """
+    Represents a single request sent to normalizer.
+    """
     seed_prompt_group: SeedPromptGroup
     request_converter_configurations: list[PromptConverterConfiguration]
     response_converter_configurations: list[PromptConverterConfiguration]
@@ -29,3 +32,10 @@ class NormalizerRequest(abc.ABC):
         self.request_converter_configurations = request_converter_configurations
         self.response_converter_configurations = response_converter_configurations
         self.conversation_id = conversation_id
+
+    def validate(self):
+        if not self.seed_prompt_group or len(self.seed_prompt_group.prompts) < 1:
+            raise ValueError("Seed prompt group must be provided.")
+
+        if not self.seed_prompt_group.is_single_request():
+            raise ValueError("Sequence must be equal for every piece of a single normalizer request.")
