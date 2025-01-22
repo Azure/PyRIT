@@ -103,6 +103,9 @@ class RealtimeTarget(OpenAITarget):
             event (dict): Event to send in dictionary format.
 
         """
+        if self.websocket is None:
+            logger.error("WebSocket connection is not established")
+            raise Exception("WebSocket connection is not established")
         await self.websocket.send(json.dumps(event))
         logger.debug(f"Event sent - type: {event['type']}")
 
