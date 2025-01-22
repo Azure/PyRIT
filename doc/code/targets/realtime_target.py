@@ -53,14 +53,9 @@ normalizer_request = NormalizerRequest(
     )
 )
 
-orchestrator = PromptSendingOrchestrator(objective_target=target)
-
-await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
-await orchestrator.print_conversations_async()  # type: ignore
-
 # %%
 orchestrator = PromptSendingOrchestrator(objective_target=target)
-await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request, normalizer_request])  # type: ignore
+await orchestrator.send_normalizer_requests_async(prompt_request_list=[normalizer_request])  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
 # %% [markdown]
@@ -74,8 +69,8 @@ await orchestrator.print_conversations_async()  # type: ignore
 from pyrit.orchestrator import PromptSendingOrchestrator
 
 prompt_to_send = "What is the capitol of France?"
-second_prompt_to_send = "What is the capitol of Germany?"
-
+second_prompt_to_send = "What is the size of that city?"
+# Showing how to send multiple prompts but each is its own conversation, ie the second prompt is not a follow up to the first
 
 orchestrator = PromptSendingOrchestrator(objective_target=target)
 response = await orchestrator.send_prompts_async(prompt_list=[prompt_to_send, second_prompt_to_send])  # type: ignore

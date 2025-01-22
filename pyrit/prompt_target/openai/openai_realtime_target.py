@@ -66,14 +66,13 @@ class RealtimeTarget(OpenAITarget):
 
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
-        base_url = f"{self._endpoint}/openai/realtime"
         query_params = {
             "api-version": self._api_version,
             "deployment": self._deployment_name,
             "api-key": self._api_key,
             "OpenAI-Beta": "realtime=v1",
         }
-        url = f"{base_url}?{urlencode(query_params)}"
+        url = f"{self._endpoint}?{urlencode(query_params)}"
 
         self.websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
@@ -96,12 +95,12 @@ class RealtimeTarget(OpenAITarget):
             session_config["voice"] = self.voice
         return session_config
 
-    async def send_event(self, event):
+    async def send_event(self, event: dict):
         """
         Sends an event to the WebSocket server.
 
         Args:
-            event: Event to send.
+            event (dict): Event to send in dictionary format.
 
         """
         await self.websocket.send(json.dumps(event))

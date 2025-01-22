@@ -16,13 +16,10 @@ def target(duckdb_instance):
 
 @pytest.mark.asyncio
 async def test_connect_success(target):
-    # Mock the websockets.connect method
-    url = ("wss://test_url/openai/realtime?api-version=v1&deployment=test&api-key=test_key&OpenAI-Beta=realtime%3Dv1",)
-
     with patch("websockets.connect", new_callable=AsyncMock) as mock_connect:
         await target.connect()
         mock_connect.assert_called_once_with(
-            url,
+            "wss://test_url?api-version=v1&deployment=test&api-key=test_key&OpenAI-Beta=realtime%3Dv1"
         )
         assert target.websocket == mock_connect.return_value
 
