@@ -14,9 +14,9 @@ prompts:
     data_type: text
     authors: Rich Lundeen
     groups: PyRIT Team
-  - value: assets\pyrit_architecture.png
-    data_type: image_path
+  - value: part 1 of a request
+    data_type: text
     prompt_group_alias: image_request_1
-  - value: describe this image
+  - value: part 2 of a request
     data_type: text
     prompt_group_alias: image_request_1
