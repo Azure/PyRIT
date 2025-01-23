@@ -215,7 +215,7 @@ class RealtimeTarget(OpenAITarget):
         for conversation_id, websocket in self._existing_conversation.items():
             if websocket:
                 await websocket.close()
-                logger.info(f"Disconnected from {self._endpoint}")
+                logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
         self._existing_conversation = {}
         self.websocket = None
 
