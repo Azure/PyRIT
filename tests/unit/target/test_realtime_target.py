@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -21,58 +21,38 @@ async def test_connect_success(target):
         mock_connect.assert_called_once_with(
             "wss://test_url?api-version=v1&deployment=test&api-key=test_key&OpenAI-Beta=realtime%3Dv1"
         )
-        assert target.websocket == mock_connect.return_value
 
 
 @pytest.mark.asyncio
 async def test_send_prompt_async(target):
+    # Mock the necessary methods
+    target.connect = AsyncMock(return_value=MagicMock())
+    target.send_config = AsyncMock()
+    target.send_text_async = AsyncMock(return_value=("output.wav", ["file", "hello"]))
+    target.set_system_prompt = MagicMock()
+
+    # Create a mock PromptRequestResponse with a valid data type
     request_piece = PromptRequestPiece(
         original_value="Hello",
         original_value_data_type="text",
         converted_value="Hello",
         converted_value_data_type="text",
         role="user",
+        conversation_id="test_conversation_id",
     )
     prompt_request = PromptRequestResponse(request_pieces=[request_piece])
 
-    with (
-        patch(
-            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.connect", next_callable=AsyncMock
-        ) as mock_connect,
-        patch(
-            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.receive_events", new_callable=AsyncMock
-        ) as mock_receive_events,
-        patch(
-            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_response_create",
-            new_callable=AsyncMock,
-        ) as mock_send_response_create,
-        patch(
-            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_text", new_callable=AsyncMock
-        ) as mock_send_text,
-        patch(
-            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.save_audio", new_callable=AsyncMock
-        ) as mock_save_audio,
-        patch(
-            "pyrit.prompt_target.openai.openai_realtime_target.RealtimeTarget.send_event", new_callable=AsyncMock
-        ) as mock_send_event,
-    ):
+    # Call the send_prompt_async method
+    response = await target.send_prompt_async(prompt_request=prompt_request)
 
-        mock_receive_events.return_value = ["", "Hello"]
-        mock_save_audio.return_value = "response_audio.wav"
+    assert response
 
-        response = await target.send_prompt_async(prompt_request=prompt_request)
-
-        mock_connect.assert_called_once()
-        mock_send_response_create.assert_called_once()
-        mock_send_text.assert_called_once_with("Hello")
-        mock_receive_events.assert_called_once()
-        mock_save_audio.assert_called_once()
-        mock_send_event.assert_called()
-
-        assert response
-
-        assert response.request_pieces[0].converted_value == "Hello"
-        assert response.request_pieces[1].converted_value == "response_audio.wav"
+    target.send_text_async.assert_called_once_with(
+        text="Hello",
+        conversation_id="test_conversation_id",
+    )
+    assert response.request_pieces[0].converted_value == "hello"
+    assert response.request_pieces[1].converted_value == "output.wav"
 
 
 @pytest.mark.asyncio
@@ -92,3 +72,80 @@ async def test_send_prompt_async_invalid_request(target):
         target._validate_request(prompt_request=prompt_request)
 
     assert "This target only supports text and audio_path prompt input." == str(excinfo.value)
+
+
+@pytest.mark.asyncio
+async def test_send_prompt_async_adds_system_prompt_to_memory(target):
+    # Mock the necessary methods
+    target.connect = AsyncMock(return_value=MagicMock())
+    target.send_config = AsyncMock()
+    target.send_text_async = AsyncMock(return_value=("output_audio_path", ["event1", "event2"]))
+    target.set_system_prompt = MagicMock()
+
+    # Create a mock PromptRequestResponse with a valid data type
+    request_piece = PromptRequestPiece(
+        original_value="Hello",
+        original_value_data_type="text",
+        converted_value="Hello",
+        converted_value_data_type="text",
+        role="user",
+        conversation_id="test_conversation_id",
+    )
+    prompt_request = PromptRequestResponse(request_pieces=[request_piece])
+
+    # Call the send_prompt_async method
+    await target.send_prompt_async(prompt_request=prompt_request)
+
+    # Assert that set_system_prompt was called with the correct arguments
+    target.set_system_prompt.assert_called_once_with(
+        system_prompt=target.system_prompt,
+        conversation_id="test_conversation_id",
+        orchestrator_identifier=target.get_identifier(),
+    )
+
+    # Assert that the system_prompt is the default value
+    assert target.system_prompt == "You are a helpful AI assistant"
+
+
+@pytest.mark.asyncio
+async def test_multiple_websockets_created_for_multiple_conversations(target):
+    # Mock the necessary methods
+    target.connect = AsyncMock(return_value=MagicMock())
+    target.send_config = AsyncMock()
+    target.send_text_async = AsyncMock(return_value=("output_audio_path", ["event1", "event2"]))
+    target.set_system_prompt = MagicMock()
+
+    # Create mock PromptRequestResponses for two different conversations
+    request_piece_1 = PromptRequestPiece(
+        original_value="Hello",
+        original_value_data_type="text",
+        converted_value="Hello",
+        converted_value_data_type="text",
+        role="user",
+        conversation_id="conversation_1",
+    )
+    prompt_request_1 = PromptRequestResponse(request_pieces=[request_piece_1])
+
+    request_piece_2 = PromptRequestPiece(
+        original_value="Hi",
+        original_value_data_type="text",
+        converted_value="Hi",
+        converted_value_data_type="text",
+        role="user",
+        conversation_id="conversation_2",
+    )
+    prompt_request_2 = PromptRequestResponse(request_pieces=[request_piece_2])
+
+    # Call the send_prompt_async method for both conversations
+    await target.send_prompt_async(prompt_request=prompt_request_1)
+    await target.send_prompt_async(prompt_request=prompt_request_2)
+
+    # Assert that two different WebSocket connections were created
+    assert len(target._existing_conversation) == 2
+    assert "conversation_1" in target._existing_conversation
+    assert "conversation_2" in target._existing_conversation
+
+    await target.cleanup_target()
+    assert target._existing_conversation == {}
+
+    
