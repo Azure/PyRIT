@@ -6,7 +6,7 @@ import base64
 import json
 import logging
 import wave
-from typing import Dict, Literal, Optional
+from typing import Literal, Optional
 from urllib.parse import urlencode
 
 import websockets
@@ -29,7 +29,7 @@ class RealtimeTarget(OpenAITarget):
         api_version: str = "2024-10-01-preview",
         system_prompt: Optional[str] = "You are a helpful AI assistant",
         voice: Optional[RealTimeVoice] = None,
-        existing_conversation: Optional[Dict] = None,
+        existing_convo: Optional[dict[str, websockets.WebSocketClientProtocol]] = {},
         *args,
         **kwargs,
     ) -> None:
@@ -42,6 +42,7 @@ class RealtimeTarget(OpenAITarget):
             system_prompt (str, Optional): The system prompt to use. Defaults to "You are a helpful AI assistant".
             voice (literal str, Optional): The voice to use. Defaults to None.
                 the only supported voices by the AzureOpenAI Realtime API are "alloy", "echo", and "shimmer".
+            existing_convo (dict[str, websockets.WebSocketClientProtocol], Optional): Existing conversations.
             *args: Additional positional arguments to be passed.
             **kwargs: Additional keyword arguments to be passed.
         """
@@ -53,16 +54,18 @@ class RealtimeTarget(OpenAITarget):
 
         self.system_prompt = system_prompt
         self.voice = voice
-        self.websocket = None
-        self._existing_conversation = existing_conversation
+        self._existing_conversation = existing_convo
 
     def _set_azure_openai_env_configuration_vars(self):
         self.deployment_environment_variable = "AZURE_OPENAI_REALTIME_DEPLOYMENT"
         self.endpoint_uri_environment_variable = "AZURE_OPENAI_REALTIME_API_WEBSOCKET_URL"
         self.api_key_environment_variable = "AZURE_OPENAI_REALTIME_API_KEY"
 
-    async def connect(self):
-        # Connects to Realtime API Target using websockets.
+    async def connect(self) -> websockets.WebSocketClientProtocol:
+        """
+        Connects to Realtime API Target using websockets.
+        Returns the WebSocket connection.
+        """
 
         logger.info(f"Connecting to WebSocket: {self._endpoint}")
 
@@ -74,15 +77,12 @@ class RealtimeTarget(OpenAITarget):
         }
         url = f"{self._endpoint}?{urlencode(query_params)}"
 
-        self.websocket = await websockets.connect(url)
-        # self._existing_conversation = {conversation_id: self.websocket}
+        websocket = await websockets.connect(url)
         logger.info("Successfully connected to AzureOpenAI Realtime API")
+        return websocket
 
-    def _set_system_prompt_and_config_vars(self):
-        """
-        Sets the system prompt and configuration variables for the target.
-
-        """
+    def _set_system_prompt_and_config_vars(self, conversation_id: str):
+        # Sets the system prompt and configuration variables for the target.
 
         session_config = {
             "modalities": ["audio", "text"],
@@ -94,77 +94,75 @@ class RealtimeTarget(OpenAITarget):
 
         if self.voice:
             session_config["voice"] = self.voice
+
         return session_config
 
-    async def send_event(self, event: dict):
+    async def send_event(self, event: dict, conversation_id: str):
         """
         Sends an event to the WebSocket server.
 
         Args:
             event (dict): Event to send in dictionary format.
-
+            conversation_id (str): Conversation ID
         """
-        if self.websocket is None:
+        websocket = self._existing_conversation.get(conversation_id)
+
+        if websocket is None:
             logger.error("WebSocket connection is not established")
             raise Exception("WebSocket connection is not established")
-        await self.websocket.send(json.dumps(event))
+        await websocket.send(json.dumps(event))
         logger.debug(f"Event sent - type: {event['type']}")
 
-    async def send_config(self):
-        # Sends the session configuration to the WebSocket server.
+    async def send_config(self, conversation_id: str):
+        """
+        Sends the session configuration to the WebSocket server.
 
-        config_variables = self._set_system_prompt_and_config_vars()
+        Args:
+            conversation_id (str): Conversation ID
+        """
 
-        await self.send_event({"type": "session.update", "session": config_variables})
+        config_variables = self._set_system_prompt_and_config_vars(conversation_id)
+
+        await self.send_event(
+            event={"type": "session.update", "session": config_variables}, conversation_id=conversation_id
+        )
         logger.info("Session set up")
-        print("Session set up")
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, prompt_request: PromptRequestResponse) -> PromptRequestResponse:
         # Sends a prompt to the target and returns the response.
 
         convo_id = prompt_request.request_pieces[0].conversation_id
-        if not self._existing_conversation:
-            await self.connect()
-            self._existing_conversation = {prompt_request.request_pieces[0].conversation_id: self.websocket}
-        elif convo_id not in self._existing_conversation:
-            await self.connect()
-            self._existing_conversation[prompt_request.request_pieces[0].conversation_id] = self.websocket
-        else:
-            self.websocket = self._existing_conversation[prompt_request.request_pieces[0].conversation_id]
+        if convo_id not in self._existing_conversation:
+            websocket = await self.connect()
+            self._existing_conversation[convo_id] = websocket
+
+            # Store system prompt in memory:
+            self.set_system_prompt(
+                system_prompt=self.system_prompt,
+                conversation_id=convo_id,
+                orchestrator_identifier=self.get_identifier(),
+            )
+
+        websocket = self._existing_conversation[convo_id]
 
         # Validation function
         self._validate_request(prompt_request=prompt_request)
 
-        await self.send_config()
+        await self.send_config(conversation_id=convo_id)
         request = prompt_request.request_pieces[0]
-        prompt = request.converted_value
         response_type = request.converted_value_data_type
 
         # Order of messages sent varies based on the data format of the prompt
         if response_type == "audio_path":
-            with wave.open(prompt, "rb") as wav_file:
-
-                # Read WAV parameters
-                num_channels = wav_file.getnchannels()
-                sample_width = wav_file.getsampwidth()  # Should be 2 bytes for PCM16
-                frame_rate = wav_file.getframerate()
-                num_frames = wav_file.getnframes()
-
-                audio_content = wav_file.readframes(num_frames)
-
-            receive_tasks = asyncio.create_task(self.receive_events(convo_max=1))
-
-            await self.send_audio(audio=audio_content)
-            events = await receive_tasks
-            output_audio_path = await self.save_audio(events[0], num_channels, sample_width, frame_rate)
+            output_audio_path, events = await self.send_audio_async(
+                filename=request.converted_value, conversation_id=convo_id
+            )
 
         elif response_type == "text":
-            await self.send_response_create()
-            receive_tasks = asyncio.create_task(self.receive_events(convo_max=1))
-            await self.send_text(prompt)
-            events = await receive_tasks
-            output_audio_path = await self.save_audio(events[0])
+            output_audio_path, events = await self.send_text_async(
+                text=request.converted_value, conversation_id=convo_id
+            )
 
         text_response_piece = construct_response_from_request(
             request=request, response_text_pieces=[events[1]], response_type="text"
@@ -210,30 +208,38 @@ class RealtimeTarget(OpenAITarget):
 
     async def cleanup_target(self):
         """
-        Disconnects from the WebSocket server to clean up
+        Disconnects from the WebSocket server to clean up, cleaning up all existing conversations.
         """
         for conversation_id, websocket in self._existing_conversation.items():
             if websocket:
                 await websocket.close()
                 logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
         self._existing_conversation = {}
-        self.websocket = None
 
-    async def send_response_create(self):
+    async def cleanup_conversation(self, conversation_id: str):
+        """
+        Disconnects from the WebSocket server for a specific conversation
+        """
+        websocket = self._existing_conversation.get(conversation_id)
+        if websocket:
+            await websocket.close()
+            logger.info(f"Disconnected from {self._endpoint} with conversation ID: {conversation_id}")
+            del self._existing_conversation[conversation_id]
+
+    async def send_response_create(self, conversation_id: str):
         """
         Sends response.create message to the WebSocket server.
         """
-        await self.send_event({"type": "response.create"})
+        await self.send_event(event={"type": "response.create"}, conversation_id=conversation_id)
 
-    async def receive_events(self, convo_max) -> list:
+    async def receive_events(self, conversation_id: str) -> list:
         """
         Continuously receive events from the WebSocket server.
         Args:
-            convo_max: Maximum number of completed conversations or errors to receive before stopping.
-
+            conversation_id: conversation ID
         """
-
-        if self.websocket is None:  # change this to existing_conversation.websocket
+        websocket = self._existing_conversation[conversation_id]
+        if websocket is None:  # change this to existing_conversation.websocket
             logger.error("WebSocket connection is not established")
             raise Exception("WebSocket connection is not established")
 
@@ -241,7 +247,7 @@ class RealtimeTarget(OpenAITarget):
         audio_buffer = b""
         conversation_messages = []
         try:
-            async for message in self.websocket:
+            async for message in websocket:
                 event = json.loads(message)
                 msg_response_type = event.get("type")
                 if msg_response_type:
@@ -270,41 +276,68 @@ class RealtimeTarget(OpenAITarget):
             logger.error(f"An unexpected error occurred: {e}")
         return conversation_messages
 
-    async def send_text(self, text):
+    async def send_text_async(self, text: str, conversation_id: str):
         """
         Sends text prompt to the WebSocket server.
         Args:
             text: prompt to send.
+            conversation_id: conversation ID
         """
+        await self.send_response_create(conversation_id=conversation_id)
+
+        # Listen for responses
+        receive_tasks = asyncio.create_task(self.receive_events(conversation_id=conversation_id))
+
         logger.info(f"Sending text message: {text}")
         event = {
             "type": "conversation.item.create",
             "item": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": text}]},
         }
-        await self.send_event(event)
+        await self.send_event(event=event, conversation_id=conversation_id)
 
-    async def send_audio(self, audio):
+        events = await receive_tasks  # Wait for all responses to be received
+
+        output_audio_path = await self.save_audio(events[0])
+        return output_audio_path, events
+
+    async def send_audio_async(self, filename: str, conversation_id: str):
         """
         Send an audio message to the WebSocket server.
 
         Args:
-            audio: Audio message to send.
+            filename (str): The path to the audio file.
         """
+        with wave.open(filename, "rb") as wav_file:
+
+            # Read WAV parameters
+            num_channels = wav_file.getnchannels()
+            sample_width = wav_file.getsampwidth()  # Should be 2 bytes for PCM16
+            frame_rate = wav_file.getframerate()
+            num_frames = wav_file.getnframes()
+
+            audio_content = wav_file.readframes(num_frames)
+
+        receive_tasks = asyncio.create_task(self.receive_events(conversation_id=conversation_id))
+
         try:
-            audio_base64 = base64.b64encode(audio).decode("utf-8")
+            audio_base64 = base64.b64encode(audio_content).decode("utf-8")
 
             event = {"type": "input_audio_buffer.append", "audio": audio_base64}
 
             # await asyncio.sleep(0.1)
-            await self.send_event(event)
+            await self.send_event(event=event, conversation_id=conversation_id)
 
         except Exception as e:
             logger.info(f"Error sending audio: {e}")
             return
         event = {"type": "input_audio_buffer.commit"}
         await asyncio.sleep(0.1)
-        await self.send_event(event)
-        await self.send_response_create()  # Sends response.create message
+        await self.send_event(event, conversation_id=conversation_id)
+        await self.send_response_create(conversation_id=conversation_id)  # Sends response.create message
+
+        responses = await receive_tasks
+        output_audio_path = await self.save_audio(responses[0], num_channels, sample_width, frame_rate)
+        return output_audio_path, responses
 
     def _validate_request(self, *, prompt_request: PromptRequestResponse) -> None:
         """Validates the structure and content of a prompt request for compatibility of this target.

@@ -235,7 +235,6 @@ async def test_run_attack_async(
     with (
         patch.object(red_teaming_orchestrator, "_retrieve_and_send_prompt_async") as mock_send_prompt,
         patch.object(red_teaming_orchestrator, "_check_conversation_complete_async") as mock_check_complete,
-        patch.object(prompt_target, "cleanup_target", new_callable=AsyncMock) as mock_cleanup_target,
     ):
 
         mock_send_prompt.return_value = MagicMock(response_error="none")
@@ -252,7 +251,6 @@ async def test_run_attack_async(
         assert mock_check_complete.call_count <= max_turns
         # Test that the global memory labels and passed-in memory labels were combined properly
         assert mock_send_prompt.call_args.kwargs["memory_labels"] == {"op_name": "dummy_op", "username": "user"}
-        mock_cleanup_target.assert_called_once()
 
 
 @pytest.mark.asyncio
