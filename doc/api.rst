@@ -70,7 +70,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-
+    initialize_pyrit
 
 :py:mod:`pyrit.datasets`
 ========================
