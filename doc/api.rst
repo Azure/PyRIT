@@ -70,7 +70,24 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    batch_task_async
+    combine_dict
+    combine_list
+    display_image_response
+    download_chunk
+    download_file
+    download_files
+    download_specific_files
+    get_available_files
+    get_httpx_client
+    get_non_required_value
+    get_required_value
     initialize_pyrit
+    is_in_ipython_session
+    make_request_and_raise_if_error_async
+    print_chat_messages_with_color
+    Singleton
+    YamlLoadable
 
 :py:mod:`pyrit.datasets`
 ========================
