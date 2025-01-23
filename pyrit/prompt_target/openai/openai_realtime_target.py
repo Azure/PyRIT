@@ -218,10 +218,6 @@ class RealtimeTarget(OpenAITarget):
                 logger.info(f"Disconnected from {self._endpoint}")
         self._existing_conversation = {}
         self.websocket = None
-        # if self.websocket:
-        #     await self.websocket.close()
-        #     self.websocket = None
-        #     logger.info(f"Disconnected from {self._endpoint}")
 
     async def send_response_create(self):
         """
