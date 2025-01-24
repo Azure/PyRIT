@@ -29,7 +29,7 @@ class RealtimeTarget(OpenAITarget):
         api_version: str = "2024-10-01-preview",
         system_prompt: Optional[str] = "You are a helpful AI assistant",
         voice: Optional[RealTimeVoice] = None,
-        existing_convo: Optional[dict[str, websockets.WebSocketClientProtocol]] = {},
+        existing_convo: Optional[dict] = {},
         *args,
         **kwargs,
     ) -> None:
@@ -81,7 +81,7 @@ class RealtimeTarget(OpenAITarget):
         logger.info("Successfully connected to AzureOpenAI Realtime API")
         return websocket
 
-    def _set_system_prompt_and_config_vars(self, conversation_id: str):
+    def _set_system_prompt_and_config_vars(self):
         # Sets the system prompt and configuration variables for the target.
 
         session_config = {
@@ -121,7 +121,7 @@ class RealtimeTarget(OpenAITarget):
             conversation_id (str): Conversation ID
         """
 
-        config_variables = self._set_system_prompt_and_config_vars(conversation_id)
+        config_variables = self._set_system_prompt_and_config_vars()
 
         await self.send_event(
             event={"type": "session.update", "session": config_variables}, conversation_id=conversation_id
