@@ -180,7 +180,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                 # Initialize branch nodes that execute a single branch of the attack
                 nodes = [
                     TreeOfAttacksNode(
-                        objective_target=self._objective_target,
+                        objective_target=self._objective_target,  # type: ignore
                         adversarial_chat=self._adversarial_chat,
                         adversarial_chat_seed_prompt=self._adversarial_chat_seed_prompt,
                         adversarial_chat_system_seed_prompt=self._adversarial_chat_system_seed_prompt,
