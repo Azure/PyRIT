@@ -21,14 +21,16 @@ A `PromptRequestResponse` object is a normalized object with all the information
 
 ## PromptChatTargets vs PromptTargets
 
-A `PromptTarget` is a generic place to send a prompt. With PyRIT, the idea is that it will eventually be consumed by an AI application, but that doesn't have to be immediate. For example, you could have a SharePoint target. Everything you send a prompt to is a `PromptTarget`.
+A `PromptTarget` is a generic place to send a prompt. With PyRIT, the idea is that it will eventually be consumed by an AI application, but that doesn't have to be immediate. For example, you could have a SharePoint target. Everything you send a prompt to is a `PromptTarget`. Many attacks work generically with any `PromptTarget` including `RedTeamingOrchestrator` and `PromptSendingOrchestrator`.
 
-With some algorithms, you want to send a prompt, set a system prompt, and modify conversation history. These often require a `PromptChatTarget`, which implies you can modify a conversation history. `PromptChatTarget` is a subclass of `PromptTarget`.
+With some algorithms, you want to send a prompt, set a system prompt, and modify conversation history (including PAIR, TAP, flip attack). These often require a `PromptChatTarget`, which implies you can modify a conversation history. `PromptChatTarget` is a subclass of `PromptTarget`.
 
 Here are some examples:
 
-- `OpenAIChatTarget` (e.g., GPT-4o) is a `PromptChatTarget`.
-- `OllamaChatTarget` (e.g., Llama3) is a `PromptChatTarget`.
-- `OpenAIDALLETarget` is NOT a `PromptChatTarget`.
-- `HTTPTarget` is currently NOT a `PromptChatTarget` because it is generic, even though in some cases the underlying application may allow you to set conversation history.
-- `AzureBlobStorageTarget` is NOT a `PromptChatTarget`.
+| Example                             | Is `PromptChatTarget`?               | Notes                                                                                           |
+|-------------------------------------|---------------------------------------|-------------------------------------------------------------------------------------------------|
+| **OpenAIChatTarget** (e.g., GPT-4)  | **Yes** (`PromptChatTarget`)         | Designed for conversational prompts (system messages, conversation history, etc.).               |
+| **OllamaChatTarget** (e.g., Llama3) | **Yes** (`PromptChatTarget`)         | Also handles conversation history similarly to OpenAIChatTarget.                                 |
+| **OpenAIDALLETarget**               | **No** (not a `PromptChatTarget`)    | Used for image generation; does not manage conversation history.                                 |
+| **HTTPTarget**                      | **No** (not a `PromptChatTarget`)    | Generic HTTP target. Some apps might allow conversation history, but this target doesn't handle it. |
+| **AzureBlobStorageTarget**          | **No** (not a `PromptChatTarget`)    | Used primarily for storage; not for conversation-based AI.                                       |
