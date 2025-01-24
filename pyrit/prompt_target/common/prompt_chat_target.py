@@ -10,7 +10,7 @@ from pyrit.prompt_target import PromptTarget
 
 class PromptChatTarget(PromptTarget):
     """
-    A propmt chat target is a target where you can explicitly set the conversation history using memory.
+    A prompt chat target is a target where you can explicitly set the conversation history using memory.
 
     Some algorithms require conversation to be modified (e.g. deleting the last message) or set explicitly.
     These algorithms will require PromptChatTargets be used.
