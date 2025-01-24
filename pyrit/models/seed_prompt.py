@@ -22,6 +22,7 @@ class SeedPrompt(YamlLoadable):
 
     id: Optional[uuid.UUID]
     value: str
+    value_sha256: str
     data_type: PromptDataType
     name: Optional[str]
     dataset_name: Optional[str]
@@ -42,6 +43,7 @@ class SeedPrompt(YamlLoadable):
         *,
         id: Optional[uuid.UUID] = None,
         value: str,
+        value_sha256: Optional[str] = None,
         data_type: PromptDataType,
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
@@ -59,6 +61,7 @@ class SeedPrompt(YamlLoadable):
     ):
         self.id = id if id else uuid.uuid4()
         self.value = value
+        self.value_sha256 = value_sha256
         self.data_type = data_type
         self.name = name
         self.dataset_name = dataset_name

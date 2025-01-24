@@ -270,6 +270,7 @@ class SeedPromptEntry(Base):
         __table_args__ (dict): Additional arguments for the database table.
         id (Uuid): The unique identifier for the memory entry.
         value (str): The value of the seed prompt.
+        value_sha256 (str): The SHA256 hash of the value of the seed prompt data.
         data_type (PromptDataType): The data type of the seed prompt.
         dataset_name (str): The name of the dataset the seed prompt belongs to.
         harm_categories (List[str]): The harm categories associated with the seed prompt.
@@ -296,6 +297,7 @@ class SeedPromptEntry(Base):
     __table_args__ = {"extend_existing": True}
     id = Column(Uuid, nullable=False, primary_key=True)
     value = Column(Unicode, nullable=False)
+    value_sha256 = Column(Unicode, nullable=True)
     data_type: Mapped[PromptDataType] = Column(String, nullable=False)
     name = Column(String, nullable=True)
     dataset_name = Column(String, nullable=True)
@@ -314,6 +316,7 @@ class SeedPromptEntry(Base):
     def __init__(self, *, entry: SeedPrompt):
         self.id = entry.id
         self.value = entry.value
+        self.value_sha256 = entry.value_sha256
         self.data_type = entry.data_type
         self.name = entry.name
         self.dataset_name = entry.dataset_name
@@ -333,6 +336,7 @@ class SeedPromptEntry(Base):
         return SeedPrompt(
             id=self.id,
             value=self.value,
+            value_sha256=self.value_sha256,
             data_type=self.data_type,
             name=self.name,
             dataset_name=self.dataset_name,

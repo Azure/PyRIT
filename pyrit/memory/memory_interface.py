@@ -613,6 +613,24 @@ class MemoryInterface(abc.ABC):
             await serializer.save_data(data=audio_bytes)
             serialized_prompt_value = str(serializer.value)
         return serialized_prompt_value
+    
+    async def get_sha256_value_async(self, prompt : SeedPrompt) -> str:
+        """
+        This method computes the SHA256 hash value asynchronously.
+        It should be called after prompt `value` is serialized to text,
+        as file paths used in the `value` may have changed from local to memory storage paths.
+
+        Note, this method is async due to the blob retrieval. And because of that, we opted
+        to take it out of main and setter functions. The disadvantage is that it must be explicitly called.
+        """
+        from pyrit.models.data_type_serializer import data_serializer_factory
+
+        original_serializer = data_serializer_factory(
+            category="seed-prompt-entries", data_type=prompt.data_type, value=prompt.value
+        )
+        value_sha256 = await original_serializer.get_sha256()
+
+        return value_sha256
 
     async def add_seed_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str] = None) -> None:
         """
@@ -634,9 +652,13 @@ class MemoryInterface(abc.ABC):
                 )
             if prompt.date_added is None:
                 prompt.date_added = current_time
+
             serialized_prompt_value = await self._serialize_seed_prompt_value(prompt)
             if serialized_prompt_value:
                 prompt.value = serialized_prompt_value
+
+            prompt.value_sha256 = await self.get_sha256_value_async(prompt)
+
             entries.append(SeedPromptEntry(entry=prompt))
 
         self._insert_entries(entries=entries)
