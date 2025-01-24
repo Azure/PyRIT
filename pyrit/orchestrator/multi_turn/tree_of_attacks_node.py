@@ -20,7 +20,7 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class TreeOfAttacksNode:
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_seed_prompt: SeedPrompt,
         adversarial_chat_prompt_template: SeedPrompt,
