@@ -61,7 +61,7 @@ class RealtimeTarget(OpenAITarget):
         self.endpoint_uri_environment_variable = "AZURE_OPENAI_REALTIME_API_WEBSOCKET_URL"
         self.api_key_environment_variable = "AZURE_OPENAI_REALTIME_API_KEY"
 
-    async def connect(self) -> websockets.WebSocketClientProtocol:
+    async def connect(self):
         """
         Connects to Realtime API Target using websockets.
         Returns the WebSocket connection.
