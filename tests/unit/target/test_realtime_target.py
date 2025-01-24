@@ -136,6 +136,7 @@ async def test_multiple_websockets_created_for_multiple_conversations(target):
     await target.cleanup_target()
     assert target._existing_conversation == {}
 
+
 @pytest.mark.asyncio
 async def test_send_prompt_async_invalid_request(target):
 
