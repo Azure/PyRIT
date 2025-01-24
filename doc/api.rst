@@ -70,7 +70,6 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    batch_task_async
     combine_dict
     combine_list
     display_image_response

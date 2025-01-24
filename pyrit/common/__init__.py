@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.common.batch_helper import batch_task_async
+# from pyrit.common.batch_helper import batch_task_async
 from pyrit.common.default_values import get_non_required_value, get_required_value
 from pyrit.common.display_response import display_image_response
 from pyrit.common.download_hf_model import (
@@ -28,7 +28,7 @@ __all__ = [
     "AZURE_SQL",
     "DUCK_DB",
     "IN_MEMORY",
-    "batch_task_async",
+    # "batch_task_async",
     "combine_dict",
     "combine_list",
     "display_image_response",
