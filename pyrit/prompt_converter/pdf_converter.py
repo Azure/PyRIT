@@ -58,7 +58,12 @@ class PDFConverter(PromptConverter):
         self._page_height = page_height
         self._column_width = column_width
         self._row_height = row_height
-        self._existing_pdf = existing_pdf
+
+        # Keeping the user's path here
+        self._existing_pdf_path: Optional[Path] = existing_pdf
+        # We store the file data in a separate BytesIO because of a mypy error
+        self._existing_pdf_bytes: Optional[BytesIO] = None
+
         self._injection_items = injection_items or []
 
         # Validate font color
@@ -72,7 +77,7 @@ class PDFConverter(PromptConverter):
 
             # Read the file contents into a BytesIO stream
             with open(existing_pdf, "rb") as pdf_file:
-                self._existing_pdf = BytesIO(pdf_file.read())
+                self._existing_pdf_bytes = BytesIO(pdf_file.read())
         else:
             # No existing PDF path was provided
             self._existing_pdf = None
@@ -100,7 +105,7 @@ class PDFConverter(PromptConverter):
         content = self._prepare_content(prompt)
 
         # Step 2: Generate or modify the PDF (Overlay, if existing PDF)
-        if self._existing_pdf:
+        if self._existing_pdf_bytes:
             pdf_bytes = self._modify_existing_pdf()
         else:
             pdf_bytes = self._generate_pdf(content)
@@ -190,10 +195,10 @@ class PDFConverter(PromptConverter):
         Raises:
             ValueError: If the existing PDF or injection items are not provided.
         """
-        if not self._existing_pdf or not self._injection_items:
+        if not self._existing_pdf_bytes or not self._injection_items:
             raise ValueError("Existing PDF and injection items are required for modification.")
 
-        reader = PdfReader(self._existing_pdf)
+        reader = PdfReader(self._existing_pdf_bytes)
         writer = PdfWriter()
 
         # Keep a list of overlay buffers to close them after final write

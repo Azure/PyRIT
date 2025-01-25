@@ -125,16 +125,18 @@ await orchestrator.print_conversations_async()  # type: ignore
 # %% [markdown]
 # # Modify Existing PDF with Injection Items
 # %%
-from pyrit.common.path import get_default_dbdata_path
+from pathlib import Path
+
+from pyrit.common.path import HOME_PATH
 from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
 
+
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-dbdata_path = get_default_dbdata_path()
-cv_pdf_path = dbdata_path / "volkan_kutal_cv.pdf"  # Dynamically resolve the CV PDF path
+cv_pdf_path = Path(HOME_PATH) / "assets" / "dummy.pdf"
 
 # Define injection items
 injection_items = [
