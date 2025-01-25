@@ -59,7 +59,3 @@ class PromptTarget(abc.ABC, Identifier):
         public_attributes["__type__"] = self.__class__.__name__
         public_attributes["__module__"] = self.__class__.__module__
         return public_attributes
-
-    async def cleanup_target(self):
-        """Target does not require cleanup."""
-        pass

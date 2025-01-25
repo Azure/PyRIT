@@ -160,7 +160,3 @@ class AzureBlobStorageTarget(PromptTarget):
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
-
-    async def cleanup_target(self):
-        """Target does not require cleanup."""
-        pass

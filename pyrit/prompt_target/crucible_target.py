@@ -80,7 +80,3 @@ class CrucibleTarget(PromptTarget):
 
         logger.info(f'Received the following response from the prompt target "{resp.text}"')
         return resp.text
-
-    async def cleanup_target(self):
-        """Target does not require cleanup."""
-        pass

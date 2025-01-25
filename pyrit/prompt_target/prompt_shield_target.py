@@ -176,7 +176,3 @@ class PromptShieldTarget(PromptTarget):
                         documents.append(contents[0])
 
                 return {"userPrompt": user_prompt, "documents": documents if documents else []}
-
-    async def cleanup_target(self):
-        """Target does not require cleanup."""
-        pass

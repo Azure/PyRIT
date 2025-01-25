@@ -67,7 +67,3 @@ class PlaywrightTarget(PromptTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
-
-    async def cleanup_target(self):
-        """Target does not require cleanup."""
-        pass

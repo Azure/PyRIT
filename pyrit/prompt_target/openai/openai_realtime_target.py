@@ -146,7 +146,6 @@ class RealtimeTarget(OpenAITarget):
 
         websocket = self._existing_conversation[convo_id]
 
-        # Validation function
         self._validate_request(prompt_request=prompt_request)
 
         await self.send_config(conversation_id=convo_id)
