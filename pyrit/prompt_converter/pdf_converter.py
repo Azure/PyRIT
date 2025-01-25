@@ -4,6 +4,7 @@
 from pyrit.common.logger import logger
 from io import BytesIO
 import ast
+from pathlib import Path
 from typing import Optional, List, Dict
 
 from fpdf import FPDF
@@ -16,21 +17,24 @@ from pyrit.prompt_converter import PromptConverter, ConverterResult
 class PDFConverter(PromptConverter):
     """
     Converts a text prompt into a PDF file. Supports various modes:
-    1. **Template-Based Generation**: If a `SeedPrompt` is provided, dynamic data can be injected into the
+    1. Template-Based Generation: If a `SeedPrompt` is provided, dynamic data can be injected into the
        template using the `SeedPrompt.render_template_value` method, and the resulting content is converted to a PDF.
-    2. **Direct Text-Based Generation**: If no template is provided, the raw string prompt is converted directly
+    2. Direct Text-Based Generation: If no template is provided, the raw string prompt is converted directly
        into a PDF.
-    3. **Modify Existing PDFs** (Overlay approach): Enables injecting text into existing PDFs at specified
+    3. Modify Existing PDFs (Overlay approach): Enables injecting text into existing PDFs at specified
        coordinates, merging a new "overlay layer" onto the original PDF.
 
     Args:
         prompt_template (Optional[SeedPrompt], optional): A `SeedPrompt` object representing a template.
         font_type (Optional[str], optional): Font type for the PDF. Defaults to "Arial".
         font_size (Optional[int], optional): Font size for the PDF. Defaults to 12.
+        font_color (Optional[tuple], optional): Font color for the PDF in RGB format. Defaults to (255, 255, 255).
         page_width (Optional[int], optional): Width of the PDF page in mm. Defaults to 210 (A4 width).
         page_height (Optional[int], optional): Height of the PDF page in mm. Defaults to 297 (A4 height).
         column_width (Optional[int], optional): Width of each column in the PDF. Defaults to 0 (full page width).
         row_height (Optional[int], optional): Height of each row in the PDF. Defaults to 10.
+        existing_pdf (Optional[Path], optional): Path to an existing PDF file. Defaults to None.
+        injection_items (Optional[List[Dict]], optional): A list of injection items for modifying an existing PDF.
     """
 
     def __init__(
@@ -43,7 +47,7 @@ class PDFConverter(PromptConverter):
         page_height: Optional[int] = 297,
         column_width: Optional[int] = 0,
         row_height: Optional[int] = 10,
-        existing_pdf: Optional[BytesIO] = None,
+        existing_pdf: Optional[Path] = None,
         injection_items: Optional[List[Dict]] = None,
     ) -> None:
         self._prompt_template = prompt_template
@@ -55,7 +59,27 @@ class PDFConverter(PromptConverter):
         self._column_width = column_width
         self._row_height = row_height
         self._existing_pdf = existing_pdf
-        self._injection_items = injection_items
+        self._injection_items = injection_items or []
+
+        # Validate font color
+        if not (isinstance(font_color, tuple) and len(font_color) == 3 and all(0 <= c <= 255 for c in font_color)):
+            raise ValueError(f"Invalid font_color: {font_color}. Must be a tuple of three integers (0-255).")
+
+        # If a valid path is provided, load it into memory as BytesIO
+        if existing_pdf is not None:
+            if not existing_pdf.is_file():
+                raise FileNotFoundError(f"PDF file not found at: {existing_pdf}")
+
+            # Read the file contents into a BytesIO stream
+            with open(existing_pdf, "rb") as pdf_file:
+                self._existing_pdf = BytesIO(pdf_file.read())
+        else:
+            # No existing PDF path was provided
+            self._existing_pdf = None
+
+        # Validate injection items
+        if not all(isinstance(item, dict) for item in self._injection_items):
+            raise ValueError("Each injection item must be a dictionary.")
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -136,15 +160,15 @@ class PDFConverter(PromptConverter):
             logger.error("Prompt must be a string when no template is provided.")
             raise ValueError("Prompt must be a string when no template is provided.")
 
-    def _generate_pdf(self, content: str) -> BytesIO:
+    def _generate_pdf(self, content: str) -> bytes:
         """
-        Generates the PDF content and writes it to a BytesIO buffer.
+        Generates a PDF with the given content.
 
         Args:
             content (str): The text content to include in the PDF.
 
         Returns:
-            BytesIO: The generated PDF in a BytesIO buffer.
+            bytes: The generated PDF content in bytes.
         """
         pdf = FPDF(format=(self._page_width, self._page_height))  # Use custom page size
         pdf.add_page()
@@ -153,13 +177,18 @@ class PDFConverter(PromptConverter):
 
         pdf_bytes = BytesIO()
         pdf.output(pdf_bytes)
-        pdf_bytes.seek(0)
-        return pdf_bytes
+        return pdf_bytes.getvalue()
 
-    def _modify_existing_pdf(self) -> BytesIO:
+    def _modify_existing_pdf(self) -> bytes:
         """
-        Creates an overlay for each injection item and merges it onto the corresponding page
-        in the existing PDF.
+        The method loops over each page, checks for matching injection items, and merges
+        a small "overlay PDF" for each item.
+
+        Returns:
+            bytes: The modified PDF content in bytes.
+
+        Raises:
+            ValueError: If the existing PDF or injection items are not provided.
         """
         if not self._existing_pdf or not self._injection_items:
             raise ValueError("Existing PDF and injection items are required for modification.")
@@ -167,10 +196,24 @@ class PDFConverter(PromptConverter):
         reader = PdfReader(self._existing_pdf)
         writer = PdfWriter()
 
+        # Keep a list of overlay buffers to close them after final write
+        overlay_buffers = []
+
         for page_number, page in enumerate(reader.pages):
+            # We know page_number is valid because enumerate() only provides indices in range(total_pages).
+            # Therefore, no extra check needed here.
+
+            logger.info(f"Processing page {page_number} with {len(self._injection_items)} injection items.")
+
+            # Extract page dimensions for early coordinate checks
+            page_width = float(page.mediabox[2] - page.mediabox[0])
+            page_height = float(page.mediabox[3] - page.mediabox[1])
+
             # For each item that belongs on this page, create and merge an overlay
             for item in self._injection_items:
                 if item.get("page", 0) == page_number:
+                    # Default to a small offset (10 points) from the top-left corner if no coordinates are provided.
+                    # This prevents injected text from starting at (0,0) and potentially running off the edges.
                     x = item.get("x", 10)
                     y = item.get("y", 10)
                     text = item.get("text", "")
@@ -178,23 +221,52 @@ class PDFConverter(PromptConverter):
                     font_size = item.get("font_size", self._font_size)
                     font_color = item.get("font_color", self._font_color)
 
-                    # Create an overlay page and merge it
-                    overlay_page = self._inject_text_into_page(page, x, y, text, font, font_size, font_color)
+                    # Coordinate validation before calling _inject_text_into_page
+                    if not (0 <= x <= page_width and 0 <= y <= page_height):
+                        raise ValueError(f"Coordinates x={x}, y={y} out of bounds for page {page_number}.")
+
+                    # (1) Build the overlay PageObject + buffer
+                    overlay_page, overlay_buffer = self._inject_text_into_page(
+                        page, x, y, text, font, font_size, font_color
+                    )
+
+                    # (2) Merge onto the page
                     page.merge_page(overlay_page)
 
+                    # (3) Store overlay buffer to close later
+                    overlay_buffers.append(overlay_buffer)
+
+            # Add the modified page to the writer
             writer.add_page(page)
 
+        # Finalize the PDF
         output_pdf = BytesIO()
         writer.write(output_pdf)
         output_pdf.seek(0)
-        return output_pdf
+
+        # Safe to close all overlays AFTER writing is finished
+        for buf in overlay_buffers:
+            buf.close()
+
+        return output_pdf.getvalue()
 
     def _inject_text_into_page(
         self, page: PageObject, x: float, y: float, text: str, font: str, font_size: int, font_color: tuple
-    ) -> PageObject:
+    ) -> tuple[PageObject, BytesIO]:
         """
-        Generates a single-page PDF "overlay" that places `text` at coordinates (x, y).
-        Returns that overlay page as a PageObject, which can then be merged onto the base page.
+        Generates an overlay PDF with the given text injected at the specified coordinates.
+
+        Args:
+            page (PageObject): The original PDF page to overlay on.
+            x (float): The x-coordinate for the text.
+            y (float): The y-coordinate for the text.
+            text (str): The text to inject.
+            font (str): The font type.
+            font_size (int): The font size.
+            font_color (tuple): The font color in RGB format.
+
+        Returns:
+            tuple[PageObject, BytesIO]: The overlay page object and its corresponding buffer.
         """
         # Determine page size from the original page's MediaBox
         page_width = float(page.mediabox[2] - page.mediabox[0])
@@ -230,21 +302,23 @@ class PDFConverter(PromptConverter):
         # Insert the text
         overlay_pdf.cell(0, 0, text)
 
-        # Convert overlay PDF to a PageObject
+        # Convert overlay FPDF to bytes
         overlay_buffer = BytesIO()
         overlay_pdf.output(overlay_buffer)
         overlay_buffer.seek(0)
 
+        # Create a pypdf PageObject from the overlay
         overlay_reader = PdfReader(overlay_buffer)
         overlay_page = overlay_reader.pages[0]
-        return overlay_page
 
-    async def _serialize_pdf(self, pdf_bytes: BytesIO, content: str):
+        return overlay_page, overlay_buffer
+
+    async def _serialize_pdf(self, pdf_bytes: bytes, content: str):
         """
         Serializes the generated PDF using a data serializer.
 
         Args:
-            pdf_bytes (BytesIO): The BytesIO buffer containing the PDF.
+            pdf_bytes (bytes): The generated PDF content in bytes.
             content (str): The original content of the PDF.
 
         Returns:
@@ -253,5 +327,5 @@ class PDFConverter(PromptConverter):
         pdf_serializer = data_serializer_factory(
             category="prompt-memory-entries", data_type="url", value=content, extension="pdf"
         )
-        await pdf_serializer.save_data(pdf_bytes.getvalue())
+        await pdf_serializer.save_data(pdf_bytes)
         return pdf_serializer

@@ -199,12 +199,8 @@ async def test_injection_into_mock_pdf(mock_pdf_path):
         }
     ]
 
-    # Load the mock PDF
-    with open(mock_pdf_path, "rb") as pdf_file:
-        existing_pdf = BytesIO(pdf_file.read())
-
     # Create the PDFConverter with the mock PDF and injection items
-    converter = PDFConverter(existing_pdf=existing_pdf, injection_items=injection_items)
+    converter = PDFConverter(existing_pdf=mock_pdf_path, injection_items=injection_items)
 
     # Perform the injection
     result = await converter.convert_async(prompt="")
@@ -248,12 +244,8 @@ async def test_multiple_injections_into_mock_pdf(mock_pdf_path):
         },
     ]
 
-    # Load the mock PDF
-    with open(mock_pdf_path, "rb") as pdf_file:
-        existing_pdf = BytesIO(pdf_file.read())
-
     # Create the PDFConverter with the mock PDF and multiple injection items
-    converter = PDFConverter(existing_pdf=existing_pdf, injection_items=injection_items)
+    converter = PDFConverter(existing_pdf=mock_pdf_path, injection_items=injection_items)
 
     # Perform the injections
     result = await converter.convert_async(prompt="")
@@ -347,3 +339,128 @@ def test_inject_text_y_exceeds_page_height(dummy_page):
             font_color=(0, 0, 0),
         )
     assert "y_pos exceeds page height" in str(excinfo.value)
+
+
+def test_pdf_reader_repeated_access():
+    # Create a simple PDF in memory
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt="Test Content", ln=True)
+    pdf_bytes = BytesIO()
+    pdf.output(pdf_bytes)
+    pdf_bytes.seek(0)
+
+    # Use PdfReader to read the PDF
+    reader = PdfReader(pdf_bytes)
+    first_access = reader.pages[0].extract_text()
+    second_access = reader.pages[0].extract_text()
+
+    # Assertions to verify behavior
+    assert first_access == second_access, "Repeated access should return consistent data"
+
+
+@pytest.mark.asyncio
+async def test_empty_injection_items(mock_pdf_path):
+    """Test that an empty list of injection items raises a ValueError."""
+    converter = PDFConverter(existing_pdf=mock_pdf_path, injection_items=[])
+    with pytest.raises(ValueError, match="Existing PDF and injection items are required"):
+        await converter.convert_async(prompt="")
+
+
+@pytest.mark.asyncio
+async def test_injection_items_non_existent_page_number(mock_pdf_path):
+    """
+    Test the PDFConverter's handling of injection items with a non-existent page number.
+    """
+
+    injection_items = [
+        {
+            "page": 2,  # Out of range for a 2-page PDF
+            "x": 50,
+            "y": 700,
+            "text": "InvisibleText",
+            "font_size": 12,
+            "font": "Helvetica",
+            "font_color": (255, 0, 0),
+        }
+    ]
+    converter = PDFConverter(existing_pdf=mock_pdf_path, injection_items=injection_items)
+
+    result = await converter.convert_async(prompt="")
+    modified_pdf_path = Path(result.output_text)
+    assert modified_pdf_path.exists(), "Modified PDF file not created"
+
+    # Read final PDF and confirm 'InvisibleText' is nowhere
+    with open(modified_pdf_path, "rb") as f:
+        reader = PdfReader(f)
+        page_0_text = reader.pages[0].extract_text()
+        page_1_text = reader.pages[1].extract_text()
+
+    assert "InvisibleText" not in page_0_text
+    assert "InvisibleText" not in page_1_text
+
+    modified_pdf_path.unlink()
+
+
+@pytest.mark.asyncio
+async def test_non_standard_font_usage():
+    """
+    Test the ability to use a non-standard font (Times) in PDF generation.
+    """
+    converter = PDFConverter(
+        prompt_template=None,
+        font_type="Times",
+        font_size=12,
+        page_width=210,
+        page_height=297,
+    )
+
+    prompt = "Testing Times font usage."
+    result = await converter.convert_async(prompt=prompt)
+    assert isinstance(result, ConverterResult), "Expected a ConverterResult"
+
+    output_path = Path(result.output_text)
+    assert output_path.exists(), "No output PDF was created"
+
+    # Optionally, read the PDF to confirm text presence
+    with open(output_path, "rb") as f:
+        reader = PdfReader(f)
+        page_text = reader.pages[0].extract_text()
+    assert "Testing Times font usage." in page_text
+
+    output_path.unlink()
+
+
+@pytest.mark.asyncio
+async def test_injection_on_last_page(mock_pdf_path):
+    """
+    Test injecting text on the last page of a multi-page PDF
+    """
+    injection_items = [
+        {
+            "page": 1,
+            "x": 40,
+            "y": 600,
+            "text": "LastPageText",
+            "font_size": 12,
+            "font": "Helvetica",
+            "font_color": (0, 0, 255),
+        }
+    ]
+    converter = PDFConverter(existing_pdf=mock_pdf_path, injection_items=injection_items)
+
+    result = await converter.convert_async(prompt="")
+    modified_pdf_path = Path(result.output_text)
+    assert modified_pdf_path.exists(), "Modified PDF was not created"
+
+    # Check that the text is on page 1 only
+    with open(modified_pdf_path, "rb") as f:
+        reader = PdfReader(f)
+        page_0_text = reader.pages[0].extract_text()
+        page_1_text = reader.pages[1].extract_text()
+
+    assert "LastPageText" not in page_0_text
+    assert "LastPageText" in page_1_text
+
+    modified_pdf_path.unlink()

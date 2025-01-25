@@ -130,16 +130,11 @@ from pyrit.common import initialize_pyrit, IN_MEMORY
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
 from pyrit.orchestrator import PromptSendingOrchestrator
-from io import BytesIO
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
 dbdata_path = get_default_dbdata_path()
 cv_pdf_path = dbdata_path / "volkan_kutal_cv.pdf"  # Dynamically resolve the CV PDF path
-
-# Example: Load an existing PDF
-with open(cv_pdf_path, "rb") as pdf_file:
-    existing_pdf = BytesIO(pdf_file.read())
 
 # Define injection items
 injection_items = [
@@ -176,7 +171,7 @@ pdf_converter = PDFConverter(
     font_size=12,
     page_width=210,
     page_height=297,
-    existing_pdf=existing_pdf,  # Provide the existing PDF
+    existing_pdf=cv_pdf_path,  # Provide the existing PDF
     injection_items=injection_items,  # Provide the injection items
 )
 
