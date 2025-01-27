@@ -19,6 +19,7 @@ async def display_image_response(response_piece: PromptRequestPiece) -> None:
         response_piece (PromptRequestPiece): The response piece to display.
     """
     from pyrit.memory import CentralMemory
+
     memory = CentralMemory.get_memory_instance()
     if (
         response_piece.response_error == "none"
