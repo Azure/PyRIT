@@ -212,7 +212,7 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list, sc
     prompt_expand_converter = FuzzerExpandConverter(converter_target=scoring_target)
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
-        prompts=simple_prompts,
+        prompts=simple_prompts[:3],
         prompt_templates=simple_prompt_templates,
         prompt_target=scoring_target,
         template_converters=template_converters,
