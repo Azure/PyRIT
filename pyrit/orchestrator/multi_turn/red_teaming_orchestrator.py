@@ -183,6 +183,7 @@ class RedTeamingOrchestrator(MultiTurnOrchestrator):
                     logger.info(
                         "The red teaming orchestrator has completed the conversation and achieved the objective.",
                     )
+
                     break
             elif response.response_error == "blocked":
                 score = None
