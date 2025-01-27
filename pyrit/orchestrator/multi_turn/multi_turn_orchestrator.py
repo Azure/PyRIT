@@ -31,7 +31,7 @@ class MultiTurnAttackResult:
         self.objective = objective
         self._memory = CentralMemory.get_memory_instance()
 
-    def get_conversation(self) -> MutableSequence[PromptRequestPiece]:
+    def get_conversation(self) -> MutableSequence[PromptRequestResponse]:
         """Returns the conversation between the objective target and the adversarial chat."""
         messages = self._memory.get_conversation(conversation_id=self.conversation_id)
         return messages
