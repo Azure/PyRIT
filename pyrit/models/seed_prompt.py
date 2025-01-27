@@ -99,6 +99,23 @@ class SeedPrompt(YamlLoadable):
             return jinja_template.render(**kwargs)
         except Exception as e:
             raise ValueError(f"Error applying parameters: {str(e)}")
+        
+    async def set_sha256_value_async(self):
+        """
+        This method computes the SHA256 hash value asynchronously.
+        It should be called after prompt `value` is serialized to text,
+        as file paths used in the `value` may have changed from local to memory storage paths.
+
+        Note, this method is async due to the blob retrieval. And because of that, we opted
+        to take it out of main and setter functions. The disadvantage is that it must be explicitly called.
+        """
+        from pyrit.models.data_type_serializer import data_serializer_factory
+
+        original_serializer = data_serializer_factory(
+            category="seed-prompt-entries", data_type=self.data_type, value=self.value
+        )
+
+        self.value_sha256 = await original_serializer.get_sha256()
 
 
 class SeedPromptGroup(YamlLoadable):

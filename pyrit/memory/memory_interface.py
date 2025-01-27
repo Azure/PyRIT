@@ -520,6 +520,7 @@ class MemoryInterface(abc.ABC):
         self,
         *,
         value: Optional[str] = None,
+        value_sha256: Optional[str] = None,
         dataset_name: Optional[str] = None,
         harm_categories: Optional[list[str]] = None,
         added_by: Optional[str] = None,
@@ -533,6 +534,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             value (str): The value to match by substring. If None, all values are returned.
+            value_sha256 (str): The SHA256 hash of the value to match. If None, all values are returned.
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
             harm_categories (list[str]): A list of harm categories to filter by. If None,
             all harm categories are considered.
@@ -555,6 +557,8 @@ class MemoryInterface(abc.ABC):
         # Apply filters for non-list fields
         if value:
             conditions.append(SeedPromptEntry.value.contains(value))
+        if value_sha256:
+            conditions.append(SeedPromptEntry.value_sha256 == value_sha256)
         if dataset_name:
             conditions.append(SeedPromptEntry.dataset_name == dataset_name)
         if added_by:
@@ -613,24 +617,6 @@ class MemoryInterface(abc.ABC):
             await serializer.save_data(data=audio_bytes)
             serialized_prompt_value = str(serializer.value)
         return serialized_prompt_value
-    
-    async def get_sha256_value_async(self, prompt : SeedPrompt) -> str:
-        """
-        This method computes the SHA256 hash value asynchronously.
-        It should be called after prompt `value` is serialized to text,
-        as file paths used in the `value` may have changed from local to memory storage paths.
-
-        Note, this method is async due to the blob retrieval. And because of that, we opted
-        to take it out of main and setter functions. The disadvantage is that it must be explicitly called.
-        """
-        from pyrit.models.data_type_serializer import data_serializer_factory
-
-        original_serializer = data_serializer_factory(
-            category="seed-prompt-entries", data_type=prompt.data_type, value=prompt.value
-        )
-        value_sha256 = await original_serializer.get_sha256()
-
-        return value_sha256
 
     async def add_seed_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str] = None) -> None:
         """
@@ -657,7 +643,7 @@ class MemoryInterface(abc.ABC):
             if serialized_prompt_value:
                 prompt.value = serialized_prompt_value
 
-            prompt.value_sha256 = await self.get_sha256_value_async(prompt)
+            await prompt.set_sha256_value_async()
 
             entries.append(SeedPromptEntry(entry=prompt))
 
@@ -719,6 +705,7 @@ class MemoryInterface(abc.ABC):
     def get_seed_prompt_groups(
         self,
         *,
+        value_sha256: Optional[str] = None,
         dataset_name: Optional[str] = None,
         data_types: Optional[list[str]] = None,
         harm_categories: Optional[list[str]] = None,
@@ -730,6 +717,7 @@ class MemoryInterface(abc.ABC):
         """Retrieves groups of seed prompts based on the provided filtering criteria._summary_
 
         Args:
+            value_sha256 (Optional[str], Optional): SHA256 hash of value to filter seed prompt groups by.
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
             data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
@@ -745,6 +733,8 @@ class MemoryInterface(abc.ABC):
         conditions = []
 
         # Apply basic filters if provided
+        if  value_sha256:
+            conditions.append(SeedPromptEntry.value_sha256 == value_sha256)
         if dataset_name:
             conditions.append(SeedPromptEntry.dataset_name == dataset_name)
         if added_by:
