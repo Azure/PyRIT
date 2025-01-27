@@ -76,7 +76,7 @@ image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architec
 
 seed_prompt_group = SeedPromptGroup(
     prompts=[
-        SeedPrompt(value="Describe the image in the image_path", data_type="text", prompt_group_id=""),
+        SeedPrompt(value="Describe the image in the image_path", data_type="text"),
         SeedPrompt(
             value=str(image_path),
             data_type="image_path",
