@@ -14,3 +14,9 @@ prompts:
     data_type: text
     authors: Rich Lundeen
     groups: PyRIT Team
+  - value: part 1 of a request
+    data_type: text
+    prompt_group_alias: image_request_1
+  - value: part 2 of a request
+    data_type: text
+    prompt_group_alias: image_request_1
