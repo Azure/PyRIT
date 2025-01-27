@@ -7,12 +7,15 @@ from typing import List, Union
 
 def combine_dict(existing_dict: dict = None, new_dict: dict = None) -> dict:
     """
-    Combines two dictionaries containing string keys and values into one
+    Combines two dictionaries containing string keys and values into one.
+
     Args:
         existing_dict: Dictionary with existing values
         new_dict: Dictionary with new values to be added to the existing dictionary.
             Note if there's a key clash, the value in new_dict will be used.
-    Returns: combined dictionary
+
+    Returns:
+        dict: combined dictionary
     """
     result = {**(existing_dict or {})}
     result.update(new_dict or {})
@@ -21,12 +24,15 @@ def combine_dict(existing_dict: dict = None, new_dict: dict = None) -> dict:
 
 def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> list:
     """
-    Combines two lists containing string keys, keeping only unique values
+    Combines two lists containing string keys, keeping only unique values.
+
     Args:
         existing_dict: Dictionary with existing values
         new_dict: Dictionary with new values to be added to the existing dictionary.
             Note if there's a key clash, the value in new_dict will be used.
-    Returns: combined dictionary
+
+    Returns:
+        list: combined dictionary
     """
     if isinstance(list1, str):
         list1 = [list1]
