@@ -6,7 +6,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional, MutableSequence, Union
+from typing import MutableSequence, Optional, Union
 
 from colorama import Fore, Style
 
