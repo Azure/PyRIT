@@ -6,7 +6,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, MutableSequence, Union
 
 from colorama import Fore, Style
 
@@ -31,13 +31,18 @@ class MultiTurnAttackResult:
         self.objective = objective
         self._memory = CentralMemory.get_memory_instance()
 
+    def get_conversation(self) -> MutableSequence[PromptRequestPiece]:
+        """Returns the conversation between the objective target and the adversarial chat."""
+        messages = self._memory.get_conversation(conversation_id=self.conversation_id)
+        return messages
+
     async def print_conversation_async(self):
         """Prints the conversation between the objective target and the adversarial chat, including the scores.
 
         Args:
             prompt_target_conversation_id (str): the conversation ID for the prompt target.
         """
-        target_messages = self._memory.get_conversation(conversation_id=self.conversation_id)
+        target_messages = self.get_conversation()
 
         if not target_messages or len(target_messages) == 0:
             print("No conversation with the target")
