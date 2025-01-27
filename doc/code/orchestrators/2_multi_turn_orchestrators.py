@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit-311
 #     language: python
 #     name: python3
 # ---
@@ -241,4 +241,4 @@ memory.dispose_engine()
 # %% [markdown]
 # ## Other Multi-Turn Orchestrators
 #
-# The above attacks should work using other `MultiTurnOrchestrators` with minimal modification. If you want to use [PAIR](./pair_orchestrator.ipynb), [TAP](./tree_of_attacks_with_pruning.ipynb), or [Crescendo](./5_crescendo_orchestrator.ipynb) - this should be almost as easy as swapping out the orchestrator initialization.
+# The above attacks should work using other `MultiTurnOrchestrators` with minimal modification. If you want to use [PAIR](./pair_orchestrator.ipynb), [TAP](./tree_of_attacks_with_pruning.ipynb), or [Crescendo](./5_crescendo_orchestrator.ipynb) - this should be almost as easy as swapping out the orchestrator initialization. These algorithms are always more effective than `RedTeamingOrchestrator`, which is a simiple algorithm. However, `RedTeamingOrchestrator` by its nature supports more targets - because it doesn't modify conversation history it can support any `PromptTarget` and not only `PromptChatTargets`.

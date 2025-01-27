@@ -21,7 +21,7 @@ from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import (
     FloatScaleThresholdScorer,
     SelfAskRefusalScorer,
@@ -43,7 +43,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
     https://crescendo-the-multiturn-jailbreak.github.io/
 
     Args:
-        objective_target (PromptTarget): The target that prompts are sent to.
+        objective_target (PromptChatTarget): The target that prompts are sent to - must be a PromptChatTarget.
         adversarial_chat (PromptChatTarget): The chat target for red teaming.
         scoring_target (PromptChatTarget): The chat target for scoring.
         adversarial_chat_system_prompt_path (Optional[Path], Optional): The path to the red teaming chat's
@@ -60,7 +60,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
     def __init__(
         self,
-        objective_target: PromptTarget,
+        objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
         scoring_target: PromptChatTarget,
         adversarial_chat_system_prompt_path: Optional[Path] = None,
