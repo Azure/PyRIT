@@ -15,9 +15,9 @@
 # %% [markdown]
 # # Fetching dataset examples
 #
-# This notebook demonstrates how to load datasets as a `SeedPromptDataset` to perform red teaming on a target. 
-# There are several datasets which can be found in the `fetch_example_datasets.py` file. 
-# Three example datasets are shown in this notebook and can be used with orchestrators such as the Prompt Sending Orchestrator. 
+# This notebook demonstrates how to load datasets as a `SeedPromptDataset` to perform red teaming on a target.
+# There are several datasets which can be found in the `fetch_example_datasets.py` file.
+# Three example datasets are shown in this notebook and can be used with orchestrators such as the Prompt Sending Orchestrator.
 # The example below demonstrates loading a HuggingFace dataset as a `SeedPromptDataset`.
 
 # %%
@@ -33,7 +33,7 @@ prompt_target = TextTarget()
 
 # Fetch prompt column from harmful datasets
 prompt_dataset = fetch_llm_latent_adversarial_training_harmful_dataset()
-# Some fetch functions may include parameters such as the below example for unsafe prompts 
+# Some fetch functions may include parameters such as the below example for unsafe prompts
 # prompt_dataset = fetch_pku_safe_rlhf_dataset(False)
 
 # Use the first 8 examples for red teaming

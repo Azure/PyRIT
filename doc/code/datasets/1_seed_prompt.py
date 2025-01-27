@@ -21,8 +21,8 @@
 import pathlib
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.models import SeedPromptDataset
 from pyrit.common.path import DATASETS_PATH
+from pyrit.models import SeedPromptDataset
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -49,7 +49,7 @@ prompt_list = [prompt.value for prompt in xstest_dataset.prompts[:4]]
 print(xstest_dataset.prompts[0])
 
 # %% [markdown]
-# By using `render_template_value`, we can put values into the template. The below example shows a simple use case of using the template in a jailbreak to include in the prompts. 
+# By using `render_template_value`, we can put values into the template. The below example shows a simple use case of using the template in a jailbreak to include in the prompts.
 
 # %%
 from pyrit.models import SeedPrompt
@@ -74,13 +74,9 @@ from pyrit.models import SeedPromptGroup
 
 image_path = pathlib.Path(".") / ".." / ".." / ".." / "assets" / "pyrit_architecture.png"
 
-seed_prompt_group= SeedPromptGroup(
-    prompts= [
-        SeedPrompt(
-            value="Describe the image in the image_path",
-            data_type="text",
-            prompt_group_id=""
-        ),
+seed_prompt_group = SeedPromptGroup(
+    prompts=[
+        SeedPrompt(value="Describe the image in the image_path", data_type="text", prompt_group_id=""),
         SeedPrompt(
             value=str(image_path),
             data_type="image_path",

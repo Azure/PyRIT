@@ -573,6 +573,7 @@ def fetch_adv_bench_dataset(
     seed_prompt_dataset = SeedPromptDataset(prompts=seed_prompts)
     return seed_prompt_dataset
 
+
 def fetch_pku_safe_rlhf_dataset(include_safe_prompts: bool = True) -> SeedPromptDataset:
     """
     Fetch PKU-SafeRLHF examples and create a SeedPromptDataset.
@@ -774,6 +775,7 @@ def fetch_librAI_do_not_answer_dataset() -> SeedPromptDataset:
 
     # Create a SeedPromptDataset from the list of SeedPrompt instances
     return SeedPromptDataset(prompts=seed_prompts)
+
 
 def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDataset:
     """

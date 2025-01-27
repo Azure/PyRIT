@@ -4,8 +4,8 @@ The datasets component within PyRIT is the first piece of an attack. By fetching
 
 **Seed Prompts**:
 
-By using `SeedPrompts` through loading from a YAML file or loading them via system prompt, the following sections will demonstrate specific examples using prompts or templates. These currently support multi-modal datasets including images, audio, and videos. 
+By using `SeedPrompts` through loading from a YAML file or loading them via system prompt, the following sections will demonstrate specific examples using prompts or templates. These currently support multi-modal datasets including images, audio, and videos.
 
 **Loading Datasets**:
 
-We also show examples of common methods to fetch datasets into PyRIT from different sources. Most datasets will be loaded as a `SeedPromptDataset`. Outside of these examples, the fetch functions which are currently available can be found in `fetch_example_datasets.py` and are organized by similar method type. There is a wide range of datasets which are included and can be used as example to also load in other datasets. As these datasets are the first component of building an attack in PyRIT, the following notebooks also continue to demonstrate how these prompts can be used in the process.  
+We also show examples of common methods to fetch datasets into PyRIT from different sources. Most datasets will be loaded as a `SeedPromptDataset`. Outside of these examples, the fetch functions which are currently available can be found in `fetch_example_datasets.py` and are organized by similar method type. There is a wide range of datasets which are included and can be used as example to also load in other datasets. As these datasets are the first component of building an attack in PyRIT, the following notebooks also continue to demonstrate how these prompts can be used in the process.
