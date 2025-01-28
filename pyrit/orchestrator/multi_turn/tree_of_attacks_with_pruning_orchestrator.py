@@ -15,7 +15,7 @@ from pyrit.models import SeedPrompt
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.orchestrator.multi_turn.tree_of_attacks_node import TreeOfAttacksNode
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SelfAskScaleScorer, SelfAskTrueFalseScorer, TrueFalseQuestion
 from pyrit.score.scorer import Scorer
 
@@ -42,12 +42,40 @@ class TAPAttackResult(MultiTurnAttackResult):
 
 
 class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
+    """
+    TreeOfAttacksWithPruningOrchestrator follows the TAP alogrithm to attack a chat target.
+
+    Args:
+        objective_target (PromptChatTarget): The target for the objective prompt. Must be a PromptChatTarget.
+        adversarial_chat (PromptChatTarget): The target for the adversarial chat prompt.
+        scoring_target (PromptChatTarget): The target for scoring the responses.
+        adversarial_chat_seed_prompt (Optional[SeedPrompt], optional): The seed prompt for adversarial chat. Defaults
+        to None.
+        adversarial_chat_system_prompt_path (Optional[Path], optional): The path to the system prompt for adversarial
+        chat. Defaults to None.
+        width (int, optional): The width of the attack tree. Defaults to 3.
+        depth (int, optional): The depth of the attack tree. Defaults to 5.
+        branching_factor (int, optional): The branching factor of the attack tree. Defaults to 2.
+        on_topic_checking_enabled (bool, optional): Flag to enable on-topic checking. Defaults to True.
+        prompt_converters (Optional[list[PromptConverter]], optional): List of prompt converters. Defaults to None.
+        objective_achieved_score_threshold (float, optional): The score threshold to determine if the objective is
+        achieved. Defaults to 0.8.
+        desired_response_prefix (str, optional): The desired prefix for responses. Defaults to "Sure, here is".
+        verbose (bool, optional): Flag to enable verbose logging. Defaults to False.
+    Raises:
+        ValueError: If the adversarial seed prompt does not have a desired_prefix.
+            ValueError: If the width of the tree is less than 1.
+            ValueError: If the depth of the tree is less than 1.
+            ValueError: If the branching factor of the tree is less than 1.
+            ValueError: If the objective achieved score threshold is not between 0 and 1.
+    """
+
     _memory: MemoryInterface
 
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
         scoring_target: PromptChatTarget,
         adversarial_chat_seed_prompt: Optional[SeedPrompt] = None,
@@ -152,7 +180,7 @@ class TreeOfAttacksWithPruningOrchestrator(MultiTurnOrchestrator):
                 # Initialize branch nodes that execute a single branch of the attack
                 nodes = [
                     TreeOfAttacksNode(
-                        objective_target=self._objective_target,
+                        objective_target=self._objective_target,  # type: ignore
                         adversarial_chat=self._adversarial_chat,
                         adversarial_chat_seed_prompt=self._adversarial_chat_seed_prompt,
                         adversarial_chat_system_seed_prompt=self._adversarial_chat_system_seed_prompt,

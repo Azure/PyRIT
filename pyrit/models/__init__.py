@@ -7,6 +7,8 @@ from pyrit.models.chat_message import (
     ChatMessageListDictContent,
     ChatMessagesDataset,
 )
+from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_pieces
+
 from pyrit.models.data_type_serializer import (
     AllowedCategories,
     AudioPathDataTypeSerializer,
@@ -19,7 +21,6 @@ from pyrit.models.data_type_serializer import (
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
-from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_pieces
 from pyrit.models.prompt_request_response import (
     PromptRequestResponse,
     construct_response_from_request,

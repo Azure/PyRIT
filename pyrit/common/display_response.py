@@ -7,7 +7,6 @@ import logging
 from PIL import Image
 
 from pyrit.common.notebook_utils import is_in_ipython_session
-from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece
 
 logger = logging.getLogger(__name__)
@@ -19,6 +18,8 @@ async def display_image_response(response_piece: PromptRequestPiece) -> None:
     Args:
         response_piece (PromptRequestPiece): The response piece to display.
     """
+    from pyrit.memory import CentralMemory
+
     memory = CentralMemory.get_memory_instance()
     if (
         response_piece.response_error == "none"

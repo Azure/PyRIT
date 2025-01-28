@@ -14,7 +14,7 @@ from pyrit.models.filter_criteria import PromptFilterCriteria, PromptConverterSt
 from pyrit.orchestrator import Orchestrator, ScoringOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer()
         self._scorers = scorers or []
 
-        self._prompt_target = objective_target
+        self._objective_target = objective_target
 
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
@@ -61,6 +61,12 @@ class PromptSendingOrchestrator(Orchestrator):
 
         This is sent along with each prompt request and can be the first part of aa conversation.
         """
+        if prepended_conversation and not isinstance(self._objective_target, PromptChatTarget):
+            raise TypeError(
+                f"Only PromptChatTargets are able to modify conversation history. Instead objective_target is: "
+                f"{type(self._objective_target)}."
+            )
+
         self._prepended_conversation = prepended_conversation
 
     def set_skip_criteria(self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "converted"):
@@ -88,7 +94,7 @@ class PromptSendingOrchestrator(Orchestrator):
         # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
-            target=self._prompt_target,
+            target=self._objective_target,
             labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,

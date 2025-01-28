@@ -4,7 +4,7 @@ The Orchestrator is a top-level component that red team operators will interact 
 
 In general, a strategy for tackling a scenario will be:
 
-1. Creating/using a `PromptTarget`
+1. Creating/using a `PromptTarget` or `PromptChatTarget` (depending on if conversation history needs to be set)
 2. Creating/using a set of initial prompts
 3. Creating/using a `PromptConverter` (default is often to not transform)
 4. Creating/using a `Scorer` (this is often to self-ask)

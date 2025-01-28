@@ -535,7 +535,7 @@ class MemoryInterface(abc.ABC):
         Args:
             value (str): The value to match by substring. If None, all values are returned.
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
-            data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
+            data_types (Optional[list[str], Optional): List of data types to filter seed prompts by
                 (e.g., text, image_path).
             harm_categories (list[str]): A list of harm categories to filter by. If None,
             all harm categories are considered.
@@ -716,12 +716,12 @@ class MemoryInterface(abc.ABC):
 
         Args:
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
-            data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
+            data_types (Optional[list[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
             harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
             added_by (Optional[str], Optional): The user who added the seed prompt groups to filter by.
-            authors (Optional[Sequence[str]], Optional): List of authors to filter seed prompt groups by.
-            groups (Optional[Sequence[str]], Optional): List of groups to filter seed prompt groups by.
+            authors (Optional[list[str]], Optional): List of authors to filter seed prompt groups by.
+            groups (Optional[list[str]], Optional): List of groups to filter seed prompt groups by.
             source (Optional[str], Optional): The source from which the seed prompts originated.
 
         Returns:
