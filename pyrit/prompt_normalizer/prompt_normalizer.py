@@ -17,8 +17,7 @@ from pyrit.models import (
 )
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
 from pyrit.models.seed_prompt import SeedPromptGroup
-from pyrit.prompt_normalizer import PromptConverterConfiguration
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
@@ -107,7 +106,7 @@ class PromptNormalizer(abc.ABC):
 
         except Exception as ex:
             # Ensure request to memory before processing exception
-            await self._memory.add_request_response_to_memory(request=request)
+            self._memory.add_request_response_to_memory(request=request)
 
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
@@ -246,7 +245,7 @@ class PromptNormalizer(abc.ABC):
 
         self._skip_value_type = skip_value_type
 
-    def _should_skip_based_on_skip_criteria(self, prompt_request: PromptRequestResponse) -> None:
+    def _should_skip_based_on_skip_criteria(self, prompt_request: PromptRequestResponse) -> bool:
         """
         Filters out prompts from prompt_request_list that match the skip criteria.
 
@@ -264,52 +263,6 @@ class PromptNormalizer(abc.ABC):
                     if user_prompt.original_value_sha256 != sent_prompt.original_value_sha256:
                         return False
         return True
-
-    def set_skip_criteria(self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState) -> None:
-        """
-        Sets the skip criteria for the orchestrator.
-
-        If prompts match this in memory and are the same as one being sent, then they won't be sent to a target.
-
-        Prompts are the same if either the original prompt or the converted prompt, determined by skip_value_type flag.
-        """
-        self._skip_criteria = skip_criteria
-
-        self._prompts_to_skip = self._memory.get_prompt_request_pieces(
-            orchestrator_id=self._skip_criteria.orchestrator_id,
-            role="user",
-            conversation_id=self._skip_criteria.conversation_id,
-            prompt_ids=self._skip_criteria.prompt_ids,
-            labels=self._skip_criteria.labels,
-            sent_after=self._skip_criteria.sent_after,
-            sent_before=self._skip_criteria.sent_before,
-            original_values=self._skip_criteria.original_values,
-            converted_values=self._skip_criteria.converted_values,
-            data_type=self._skip_criteria.data_type,
-            not_data_type=self._skip_criteria.not_data_type,
-            converted_value_sha256=self._skip_criteria.converted_value_sha256,
-        )
-
-        self._skip_value_type = skip_value_type
-
-    def _should_skip_based_on_skip_criteria(self, prompt_request: PromptRequestResponse) -> None:
-        """
-        Filters out prompts from prompt_request_list that match the skip criteria.
-
-        Every request_piece of the prompt_request needs to have matching sha256 to skip.
-        """
-        if not self._skip_criteria:
-            return False
-
-        for user_prompt in prompt_request.request_pieces:
-            for sent_prompt in self._prompts_to_skip:
-                if self._skip_value_type == "converted":
-                    if user_prompt.converted_value_sha256 == sent_prompt.converted_value_sha256:
-                        return True
-                else:
-                    if user_prompt.original_value_sha256 == sent_prompt.original_value_sha256:
-                        return True
-        return False
 
     async def _calc_hash(self, request: PromptRequestResponse) -> None:
         """

@@ -451,7 +451,6 @@ async def test_should_skip_based_on_skip_criteria_match_found(mock_memory_instan
 
     request = PromptRequestResponse(request_pieces=[request_piece])
 
-
     # Set skip criteria with 'converted' skip_value_type
     normalizer.set_skip_criteria(skip_criteria, skip_value_type="converted")
 

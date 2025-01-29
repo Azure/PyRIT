@@ -759,7 +759,7 @@ class MemoryInterface(abc.ABC):
         converted_value_sha256: Optional[list[str]] = None,
         file_path: Optional[Path] = None,
         export_type: str = "json",
-    ) -> str:
+    ) -> Path:
         """
         Exports conversation data with the given inputs to a specified file.
             Defaults to all conversations if no filters are provided.

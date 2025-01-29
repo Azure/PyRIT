@@ -11,7 +11,7 @@ from pyrit.common.display_response import display_image_response
 from pyrit.common.utils import combine_dict
 from pyrit.models import PromptDataType, PromptRequestResponse
 from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
-from pyrit.orchestrator import Orchestrator, ScoringOrchestrator
+from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
@@ -149,7 +149,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
                     metadata=metadata,
-                    conversation_id=uuid.uuid4(),
+                    conversation_id=str(uuid.uuid4()),
                 )
             )
 
