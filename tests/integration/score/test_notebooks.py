@@ -12,7 +12,6 @@ from pyrit.common import path
 
 nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "scoring").resolve()
 
-
 @pytest.mark.parametrize(
     "file_name",
     [file for file in os.listdir(nb_directory_path) if file.endswith(".ipynb")],
