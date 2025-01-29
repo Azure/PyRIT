@@ -14,9 +14,6 @@ nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "targets").resolve()
 
 skipped_files = ["4_non_llm_targets.ipynb", "playwright_target.ipynb"]
 
-# "4_non_llm_targets.ipynb" # has known bug
-# playwright_target.ipynb # skipping for now
-
 
 @pytest.mark.parametrize(
     "file_name",
