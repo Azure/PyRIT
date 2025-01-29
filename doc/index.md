@@ -2,11 +2,20 @@
 
 Welcome to the Python Risk Identification Tool for generative AI (PyRIT)! PyRIT is designed to be a flexible and extensible tool that can be used to assess the security and safety issues of generative AI systems in a variety of ways.
 
+Before starting with AI Red Teaming, we recommend reading the following article from Microsoft:
+["Planning red teaming for large language models (LLMs) and their applications"](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/red-teaming).
+
+LLMs introduce many categories of risk, which can be difficult to mitigate even with a red teaming
+plan in place. To quote the article above, "with LLMs, both benign and adversarial usage can produce
+potentially harmful outputs, which can take many forms, including harmful content such as hate speech,
+incitement or glorification of violence, or sexual content." Additionally, a variety of security risks
+can be introduced by the deployment of an AI system.
+
 ## Recommended Docs Reading Order
 
 There is no single way to read the documentation, and it's perfectly fine to jump around. However, here is a recommended reading order. Note that in many sections there are numbered documentation pages. If there is no number attached, it is supplemental and the recommended reading order would be to skip it on a first pass.
 
-1. [How to Guide](./how_to_guide.ipynb): This provides an overview of the PyRIT framework.
+1. [Cookbooks](./cookbooks/README.md): This provides an overview of PyRIT. It's useful to have an installation, but this is a good place to look to see all the functionality.
 2. **Installation**: Before diving in, it's useful to have a working version so you can follow along.
   - [Setup](./setup/install_pyrit.md): Includes help setting up PyRIT and related resources for users.
   - [Contributing](./contributing/README.md): Contains information for people contributing to the project.
@@ -17,7 +26,6 @@ There is no single way to read the documentation, and it's perfectly fine to jum
 7. [Scorers](./code/scoring/0_scoring.md): These are how PyRIT makes decisions and records output.
 8. [Memory](./code/memory/0_memory.md): This is how PyRIT components communicate about the state of things.
 9. [Auxiliary Attacks](./code/auxiliary_attacks/0_auxiliary_attacks.ipynb): (Optional) Attacks and techniques that do not fit into the core PyRIT functionality.
-10. [Cookbooks](./cookbooks/README.md): Cookebooks put it all together. If you want to see things in action right off, this may also be a good place to start.
 
 Miscellaneous Extra Docs:
 
