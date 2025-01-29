@@ -14,9 +14,9 @@ from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.question_answer_scorer import QuestionAnswerScorer
+from pyrit.orchestrator.single_turn.prompt_sending_orchestrator import PromptSendingOrchestrator
 
-
-class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
+class QuestionAnsweringBenchmarkOrchestrator(PromptSendingOrchestrator):
     """Question Answering Benchmark Orchestrator class is responsible for evaluating a question answering dataset
     using a scoring mechanism.
 
@@ -49,8 +49,10 @@ class QuestionAnsweringBenchmarkOrchestrator(Orchestrator):
             verbose (bool, Optional): Whether to print verbose output. Defaults to False.
         """
         super().__init__(
+            objective_target=chat_model_under_evaluation,
             prompt_converters=prompt_converters,
             verbose=verbose,
+            scorers = [scorer]
         )
 
         self._chat_model_under_evaluation = chat_model_under_evaluation
