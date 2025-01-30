@@ -15,13 +15,13 @@ can be introduced by the deployment of an AI system.
 
 There is no single way to read the documentation, and it's perfectly fine to jump around. However, here is a recommended reading order. Note that in many sections there are numbered documentation pages. If there is no number attached, it is supplemental and the recommended reading order would be to skip it on a first pass.
 
-1. [Cookbooks](./cookbooks/README.md): This provides an overview of PyRIT. It's useful to have an installation, but this is a good place to look to see all the functionality.
+1. [Cookbooks](./cookbooks/README.md): This provides an overview of PyRIT. It's useful to have an installation, but this is a good place to look to see PyRIT in action.
 2. **Installation**: Before diving in, it's useful to have a working version so you can follow along.
    - [Setup](./setup/install_pyrit.md): Includes help setting up PyRIT and related resources for users.
    - [Contributing](./contributing/README.md): Contains information for people contributing to the project.
 3. [Architecture](./code/architecture.md): This section provides a high-level overview of all the components. Understanding any single component is difficult without some knowledge of the others.
-4. [Datasets](./code/datasets/0_dataset.md): This is the first piece of building an attack using seed prompts and fetching datasets.
-5. [Orchestrators](./code/orchestrators/0_orchestrator.md): These are the top-level components of PyRIT. Reviewing their usage can help users understand where all components fit.
+4. [Orchestrators](./code/orchestrators/0_orchestrator.md): These are the top-level components of PyRIT. Reviewing their usage can help users understand where all components fit.
+5. [Datasets](./code/datasets/0_dataset.md): This is the first piece of building an attack using seed prompts and fetching datasets.
 6. [Targets](./code/targets/0_prompt_targets.md): These are the endpoints that PyRIT sends prompts to. Nearly any scenario where PyRIT is used will need targets. This section dives into what targets are available and how to use them.
 7. [Converters](./code/converters/0_converters.ipynb): These transform prompts from one format to another. This is one of the most powerful capabilities within PyRIT.
 8. [Scorers](./code/scoring/0_scoring.md): These are how PyRIT makes decisions and records output.
