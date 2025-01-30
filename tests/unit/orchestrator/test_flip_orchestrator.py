@@ -9,12 +9,12 @@ from pyrit.memory import MemoryInterface
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
 from pyrit.orchestrator import FlipAttackOrchestrator, PromptSendingOrchestrator
 from pyrit.prompt_converter import FlipConverter
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptChatTarget
 
 
 @pytest.fixture
-def mock_objective_target():
-    return MagicMock(spec=PromptTarget)
+def mock_objective_target(patch_central_database):
+    return MagicMock(spec=PromptChatTarget)
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ async def test_send_prompts_async(flip_attack_orchestrator):
 
 
 def test_init(flip_attack_orchestrator):
-    assert isinstance(flip_attack_orchestrator._prompt_target, PromptTarget)
+    assert isinstance(flip_attack_orchestrator._objective_target, PromptChatTarget)
     assert isinstance(flip_attack_orchestrator._memory, MemoryInterface)
     assert flip_attack_orchestrator._batch_size == 5
     assert flip_attack_orchestrator._verbose is True

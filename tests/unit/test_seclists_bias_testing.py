@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pyrit.datasets import fetch_seclists_bias_testing_examples
+from pyrit.datasets import fetch_seclists_bias_testing_dataset
 
 # Mock data used for testing
 MOCKED_EXAMPLES = [
@@ -28,8 +28,8 @@ def sample_examples():
 def test_random_seed_consistency(mock_fetch_examples):
     """Test that using the same random seed produces consistent results."""
     seed = 1337
-    dataset1 = fetch_seclists_bias_testing_examples(random_seed=seed)
-    dataset2 = fetch_seclists_bias_testing_examples(random_seed=seed)
+    dataset1 = fetch_seclists_bias_testing_dataset(random_seed=seed)
+    dataset2 = fetch_seclists_bias_testing_dataset(random_seed=seed)
     assert (
         dataset1.prompts[0].value == dataset2.prompts[0].value
     ), "Outputs should be consistent when using the same seed"
@@ -44,7 +44,7 @@ def test_custom_parameters_override_randomness(mock_fetch_examples):
     specific_gender = "non-binary"
     specific_skin_color = "brown"
 
-    dataset = fetch_seclists_bias_testing_examples(
+    dataset = fetch_seclists_bias_testing_dataset(
         country=specific_country,
         region=specific_region,
         nationality=specific_nationality,
@@ -70,8 +70,8 @@ def test_custom_parameters_override_randomness(mock_fetch_examples):
 @patch("pyrit.datasets.fetch_examples", return_value=MOCKED_EXAMPLES)
 def test_default_random_behavior(mock_fetch_examples):
     """Test that random values are used when no parameters are provided."""
-    dataset1 = fetch_seclists_bias_testing_examples()
-    dataset2 = fetch_seclists_bias_testing_examples()
+    dataset1 = fetch_seclists_bias_testing_dataset()
+    dataset2 = fetch_seclists_bias_testing_dataset()
 
     # Check for different outputs due to randomness
     assert (
@@ -82,7 +82,7 @@ def test_default_random_behavior(mock_fetch_examples):
 @patch("pyrit.datasets.fetch_examples", return_value=MOCKED_EXAMPLES)
 def test_placeholder_replacement(mock_fetch_examples):
     """Ensure that placeholders are replaced."""
-    dataset = fetch_seclists_bias_testing_examples()
+    dataset = fetch_seclists_bias_testing_dataset()
     for prompt in dataset.prompts:
         prompt_value = prompt.value
         assert "[Country]" not in prompt_value

@@ -52,7 +52,7 @@ def get_prompt_response_with_content(content: str) -> PromptRequestResponse:
     )
 
 
-def test_invalid_width():
+def test_invalid_width(patch_central_database):
     with pytest.raises(ValueError) as e:
         TreeOfAttacksWithPruningOrchestrator(
             objective_target=MagicMock(),
@@ -63,7 +63,7 @@ def test_invalid_width():
     assert e.match("The width of the tree must be at least 1.")
 
 
-def test_invalid_branching_factor():
+def test_invalid_branching_factor(patch_central_database):
     with pytest.raises(ValueError) as e:
         TreeOfAttacksWithPruningOrchestrator(
             objective_target=MagicMock(),
@@ -74,7 +74,7 @@ def test_invalid_branching_factor():
     assert e.match("The branching factor of the tree must be at least 1.")
 
 
-def test_invalid_depth():
+def test_invalid_depth(patch_central_database):
     with pytest.raises(ValueError) as e:
         TreeOfAttacksWithPruningOrchestrator(
             objective_target=MagicMock(),
@@ -85,7 +85,7 @@ def test_invalid_depth():
     assert e.match("The depth of the tree must be at least 1.")
 
 
-def test_system_prompt_without_desired_prefix():
+def test_system_prompt_without_desired_prefix(patch_central_database):
     # This is mostly valid but missing 'desired_prefix'
     invald_system_prompt = Path(DATASETS_PATH / "orchestrators" / "red_teaming" / "text_generation.yaml")
 

@@ -53,7 +53,9 @@ class PromptRequestPiece(abc.ABC):
         *,
         role: ChatMessageRole,
         original_value: str,
+        original_value_sha256: Optional[str] = None,
         converted_value: Optional[str] = None,
+        converted_value_sha256: Optional[str] = None,
         id: Optional[uuid.UUID | str] = None,
         conversation_id: Optional[str] = None,
         sequence: int = -1,
@@ -81,6 +83,7 @@ class PromptRequestPiece(abc.ABC):
 
         if converted_value is None:
             converted_value = original_value
+            converted_value_data_type = original_value_data_type
 
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
@@ -89,7 +92,7 @@ class PromptRequestPiece(abc.ABC):
         self.labels = labels
         self.prompt_metadata = prompt_metadata
 
-        self.converter_identifiers = converter_identifiers
+        self.converter_identifiers = converter_identifiers if converter_identifiers else []
 
         self.prompt_target_identifier = prompt_target_identifier
         self.orchestrator_identifier = orchestrator_identifier
@@ -102,7 +105,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.original_value_data_type = original_value_data_type
 
-        self.original_value_sha256 = None
+        self.original_value_sha256 = original_value_sha256
 
         self.converted_value = converted_value
 
@@ -111,7 +114,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.converted_value_data_type = converted_value_data_type
 
-        self.converted_value_sha256 = None
+        self.converted_value_sha256 = converted_value_sha256
 
         if response_error not in get_args(PromptResponseError):
             raise ValueError(f"response_error {response_error} is not a valid response error.")
