@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -31,9 +31,6 @@
 #
 # Additionally, you need to install playwright by executing `playwright install`.
 
-
-import os
-
 # %% [markdown]
 # ## Example: Interacting with a Web Application using `PlaywrightTarget`
 #
@@ -45,6 +42,7 @@ import os
 # ## Start the Flask App
 # Before we can interact with the web application, we need to start the Flask app that serves the chatbot, this will be done in a subprocess
 # %%
+import os
 import subprocess
 import sys
 import time
@@ -84,23 +82,22 @@ def start_flask_app():
 # Start the Flask app
 flask_process = start_flask_app()
 
-from playwright.async_api import Page, async_playwright
-
 # %% [markdown]
 # The flask app should now be running locally:
 #
-# ![image-2.png](attachment:image-2.png)
+# ![image-2.png](../../../assets/playwright_demo.png)
 #
 # ### Interaction Function
 # This is playwright script that interacts with the chatbot web application.
 # %%
-from pyrit.common import default_values
+from playwright.async_api import Page, async_playwright
+
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.models import PromptRequestPiece
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import PlaywrightTarget
 
-# Load environment variables (optional)
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 
 # Define the interaction function
@@ -188,3 +185,10 @@ if __name__ == "__main__":
 flask_process.terminate()
 flask_process.wait()  # Ensure the process has terminated
 print("Flask app has been terminated.")
+
+# %%
+# Close connection to memory
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

@@ -7,7 +7,11 @@ from typing import Optional
 from httpx import HTTPStatusError
 
 from pyrit.common import default_values, net_utility
-from pyrit.exceptions import EmptyResponseException, handle_bad_request_exception, pyrit_target_retry
+from pyrit.exceptions import (
+    EmptyResponseException,
+    handle_bad_request_exception,
+    pyrit_target_retry,
+)
 from pyrit.models import PromptRequestResponse, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 

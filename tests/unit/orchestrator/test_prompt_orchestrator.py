@@ -10,9 +10,11 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score
+from pyrit.models.seed_prompt import SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter, StringJoinConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece
+from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import SubStringScorer
 
 
@@ -47,11 +49,30 @@ async def test_send_prompts_async_no_converter(mock_target: MockPromptTarget):
 
 
 @pytest.mark.asyncio
-async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget):
+@pytest.mark.parametrize(
+    "prepended_conversation",
+    [
+        [],
+        [
+            PromptRequestResponse(request_pieces=[PromptRequestPiece(role="system", original_value="Hello")]),
+        ],
+    ],
+)
+async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget, prepended_conversation):
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
-    await orchestrator.send_prompts_async(prompt_list=["Hello", "my", "name"])
+    # Check behavior with and without prepended conversations
+    orchestrator._prepended_conversation = prepended_conversation
+
+    list_responses = await orchestrator.send_prompts_async(prompt_list=["Hello", "my", "name"])
     assert mock_target.prompt_sent == ["Hello", "my", "name"]
+
+    response_ids = []
+    for response in list_responses:
+        response_ids.append(response.request_pieces[0].conversation_id)
+
+    # Check that each response has a unique conversation ID from the other
+    assert len(set(response_ids)) == len(response_ids)
 
 
 @pytest.mark.asyncio
@@ -87,13 +108,21 @@ async def test_send_normalizer_requests_async(mock_target: MockPromptTarget):
 
         f.write(b"test")
         f.flush()
-        req = NormalizerRequestPiece(
-            request_converters=[Base64Converter()],
-            prompt_data_type="image_path",
-            prompt_value=f.name,
+
+        group = SeedPromptGroup(
+            prompts=[
+                SeedPrompt(
+                    value=f.name,
+                    data_type="image_path",
+                )
+            ]
         )
 
-        await orchestrator.send_normalizer_requests_async(prompt_request_list=[NormalizerRequest(request_pieces=[req])])
+        req = NormalizerRequest(
+            seed_prompt_group=group,
+        )
+
+        await orchestrator.send_normalizer_requests_async(prompt_request_list=[req])
         assert orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.called
 
 
@@ -309,11 +338,11 @@ def test_orchestrator_unique_id(orchestrator_count: int):
     assert not duplicate_found
 
 
-def test_prepare_conversation_with_prepended_conversation():
+def test_prepare_conversation_with_prepended_conversation(patch_central_database):
     with patch("pyrit.orchestrator.single_turn.prompt_sending_orchestrator.uuid.uuid4") as mock_uuid:
 
         mock_uuid.return_value = "mocked-uuid"
-        objective_target_mock = MagicMock()
+        objective_target_mock = MagicMock(spec=PromptChatTarget)
         memory_mock = MagicMock()
         orchestrator = PromptSendingOrchestrator(objective_target=objective_target_mock)
         orchestrator._memory = memory_mock
@@ -328,6 +357,21 @@ def test_prepare_conversation_with_prepended_conversation():
                 assert piece.conversation_id == "mocked-uuid"
 
         memory_mock.add_request_response_to_memory.assert_called_with(request=prepended_conversation[0])
+
+
+def test_prepare_conversation_raises_non_chat_target(patch_central_database):
+    with patch("pyrit.orchestrator.single_turn.prompt_sending_orchestrator.uuid.uuid4") as mock_uuid:
+
+        mock_uuid.return_value = "mocked-uuid"
+        non_chat_target_mock = MagicMock()
+        memory_mock = MagicMock()
+        orchestrator = PromptSendingOrchestrator(objective_target=non_chat_target_mock)
+        orchestrator._memory = memory_mock
+        prepended_conversation = [PromptRequestResponse(request_pieces=[MagicMock(conversation_id=None)])]
+        with pytest.raises(TypeError) as exc:
+            orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
+
+        assert "Only PromptChatTargets are able to modify conversation history" in str(exc.value)
 
 
 def test_prepare_conversation_without_prepended_conversation():

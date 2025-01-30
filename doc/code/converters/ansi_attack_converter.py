@@ -12,12 +12,12 @@
 # - **Attack scenarios:** These involve crafting malicious or deceptive escape sequences.
 
 # %%
-from pyrit.common import default_values
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import AnsiAttackConverter
 from pyrit.prompt_target import OpenAIChatTarget
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Comprehensive prompts including both useful tasks and attack-oriented scenarios
 prompts = [
@@ -49,9 +49,11 @@ ansi_converter = AnsiAttackConverter(
 # Final target that receives the processed prompt
 prompt_target = OpenAIChatTarget()
 
-with PromptSendingOrchestrator(
+orchestrator = PromptSendingOrchestrator(
     objective_target=prompt_target, prompt_converters=[ansi_converter]  # Only the ANSI converter
-) as orchestrator:
-    responses = await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+)
 
-    await orchestrator.print_conversations_async()  # type: ignore
+responses = await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
+
+orchestrator.dispose_db_engine()

@@ -11,7 +11,12 @@ from unittest.mock import MagicMock
 import pytest
 from unit.mocks import MockPromptTarget, get_sample_conversations
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, group_conversation_request_pieces_by_sequence
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    group_conversation_request_pieces_by_sequence,
+)
 from pyrit.models.prompt_request_piece import sort_request_pieces
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
@@ -117,6 +122,25 @@ async def test_hashes_generated_files():
         await entry.set_sha256_values_async()
         assert entry.original_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
         assert entry.converted_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
+
+    os.remove(filename)
+
+
+@pytest.mark.asyncio
+async def test_converted_datatype_default():
+    filename = ""
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+        f.write(b"Hello1")
+        f.flush()
+        f.close()
+        entry = PromptRequestPiece(
+            role="user",
+            original_value=filename,
+            original_value_data_type="image_path",
+        )
+        assert entry.converted_value_data_type == "image_path"
+        assert entry.converted_value == filename
 
     os.remove(filename)
 
@@ -368,6 +392,83 @@ def test_order_request_pieces_by_conversation_multiple_conversations():
     ]
 
     assert sort_request_pieces(pieces) == expected
+
+
+def test_order_request_pieces_by_conversation_same_timestamp():
+    timestamp = datetime.now()
+
+    pieces = [
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 4",
+            conversation_id="conv2",
+            timestamp=timestamp,
+            sequence=2,
+            id="4",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 1",
+            conversation_id="conv1",
+            timestamp=timestamp,
+            sequence=1,
+            id="1",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 3",
+            conversation_id="conv2",
+            timestamp=timestamp,
+            sequence=1,
+            id="3",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 2",
+            conversation_id="conv1",
+            timestamp=timestamp,
+            sequence=2,
+            id="2",
+        ),
+    ]
+
+    expected = [
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 1",
+            conversation_id="conv1",
+            timestamp=pieces[1].timestamp,
+            sequence=1,
+            id="1",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 2",
+            conversation_id="conv1",
+            timestamp=pieces[3].timestamp,
+            sequence=2,
+            id="2",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 3",
+            conversation_id="conv2",
+            timestamp=pieces[2].timestamp,
+            sequence=1,
+            id="3",
+        ),
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 4",
+            conversation_id="conv2",
+            timestamp=pieces[0].timestamp,
+            sequence=2,
+            id="4",
+        ),
+    ]
+
+    sorted = sort_request_pieces(pieces)
+    assert sorted == expected
 
 
 def test_order_request_pieces_by_conversation_empty_list():

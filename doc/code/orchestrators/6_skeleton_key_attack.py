@@ -1,3 +1,18 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.4
+#   kernelspec:
+#     display_name: pyrit-dev
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # 6. Skeleton Key Orchestrator
 #
@@ -7,11 +22,11 @@
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 # %%
-from pyrit.common import default_values
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator.skeleton_key_orchestrator import SkeletonKeyOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 # Step 1: Instantiate the PromptTarget (the LLM you're targeting)
 prompt_target = OpenAIChatTarget()
@@ -33,3 +48,6 @@ response = await skeleton_key_orchestrator.send_skeleton_key_with_prompt_async(p
 
 # Step 5: Print the conversation to see the interaction
 skeleton_key_orchestrator.print_conversation()
+
+# %%
+skeleton_key_orchestrator.dispose_db_engine()

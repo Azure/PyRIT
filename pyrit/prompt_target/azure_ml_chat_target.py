@@ -14,7 +14,11 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
-from pyrit.models import ChatMessage, PromptRequestResponse, construct_response_from_request
+from pyrit.models import (
+    ChatMessage,
+    PromptRequestResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -267,3 +271,7 @@ class AzureMLChatTarget(PromptChatTarget):
 
         if prompt_request.request_pieces[0].converted_value_data_type != "text":
             raise ValueError("This target only supports text prompt input.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False

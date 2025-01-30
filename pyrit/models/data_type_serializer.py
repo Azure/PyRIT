@@ -8,16 +8,23 @@ import base64
 import hashlib
 import os
 import time
+import wave
 from mimetypes import guess_type
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union, get_args
 from urllib.parse import urlparse
 
+import aiofiles
+
+from pyrit.common.path import DB_DATA_PATH
 from pyrit.models.literals import PromptDataType
 from pyrit.models.storage_io import DiskStorageIO
 
 if TYPE_CHECKING:
     from pyrit.memory import MemoryInterface
+
+# Define allowed categories for validation
+AllowedCategories = Literal["seed-prompt-entries", "prompt-memory-entries"]
 
 
 def data_serializer_factory(
@@ -25,25 +32,49 @@ def data_serializer_factory(
     data_type: PromptDataType,
     value: Optional[str] = None,
     extension: Optional[str] = None,
+    category: AllowedCategories,
 ):
+    """
+    Factory method to create a DataTypeSerializer instance.
+
+    Args:
+        data_type (str): The type of the data (e.g., 'text', 'image_path', 'audio_path').
+        value (str): The data value to be serialized.
+        extension (Optional[str]): The file extension, if applicable.
+        category (AllowedCategories): The category or context for the data (e.g., 'seed-prompt-entries').
+
+    Returns:
+        DataTypeSerializer: An instance of the appropriate serializer.
+
+    Raises:
+        ValueError: If the category is not provided or invalid.
+    """
+    if not category:
+        raise ValueError(
+            f"The 'category' argument is mandatory and must be one of the following: {get_args(AllowedCategories)}."
+        )
     if value is not None:
         if data_type == "text":
             return TextDataTypeSerializer(prompt_text=value)
         elif data_type == "image_path":
-            return ImagePathDataTypeSerializer(prompt_text=value, extension=extension)
+            return ImagePathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(prompt_text=value, extension=extension)
+            return AudioPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
+        elif data_type == "video_path":
+            return VideoPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text=value)
         elif data_type == "url":
-            return URLDataTypeSerializer(prompt_text=value, extension=extension)
+            return URLDataTypeSerializer(category=category, prompt_text=value, extension=extension)
         else:
             raise ValueError(f"Data type {data_type} not supported")
     else:
         if data_type == "image_path":
-            return ImagePathDataTypeSerializer(extension=extension)
+            return ImagePathDataTypeSerializer(category=category, extension=extension)
         elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(extension=extension)
+            return AudioPathDataTypeSerializer(category=category, extension=extension)
+        elif data_type == "video_path":
+            return VideoPathDataTypeSerializer(category=category, extension=extension)
         elif data_type == "error":
             return ErrorDataTypeSerializer(prompt_text="")
         else:
@@ -59,6 +90,7 @@ class DataTypeSerializer(abc.ABC):
 
     data_type: PromptDataType
     value: str
+    category: str
     data_sub_directory: str
     file_extension: str
 
@@ -108,6 +140,49 @@ class DataTypeSerializer(abc.ABC):
         file_path = output_filename or await self.get_data_filename()
         image_bytes = base64.b64decode(data)
         await self._memory.results_storage_io.write_file(file_path, image_bytes)
+        self.value = str(file_path)
+
+    async def save_formatted_audio(
+        self,
+        data: bytes,
+        output_filename: str = None,
+        num_channels: int = 1,
+        sample_width: int = 2,
+        sample_rate: int = 16000,
+    ) -> None:
+        """
+        Saves the PCM16 of other specially formatted audio data to storage.
+        Arguments:
+            data: bytes with audio data
+            output_filename (optional, str): filename to store audio as. Defaults to UUID if not provided
+            num_channels (optional, int): number of channels in audio data. Defaults to 1
+            sample_width (optional, int): sample width in bytes. Defaults to 2
+            sample_rate (optional, int): sample rate in Hz. Defaults to 16000
+        """
+        file_path = output_filename or await self.get_data_filename()
+
+        # save audio file locally first if in AzureStorageBlob so we can use wave.open to set audio parameters
+        if self._is_azure_storage_url(str(file_path)):
+            local_temp_path = Path(DB_DATA_PATH, "temp_audio.wav")
+            with wave.open(str(local_temp_path), "wb") as wav_file:
+                wav_file.setnchannels(num_channels)
+                wav_file.setsampwidth(sample_width)
+                wav_file.setframerate(sample_rate)
+                wav_file.writeframes(data)
+
+            async with aiofiles.open(local_temp_path, "rb") as f:
+                data = await f.read()
+                await self._memory.results_storage_io.write_file(file_path, data)
+            os.remove(local_temp_path)
+
+        # If local, we can just save straight to disk and do not need to delete temp file after
+        else:
+            with wave.open(str(file_path), "wb") as wav_file:
+                wav_file.setnchannels(num_channels)
+                wav_file.setsampwidth(sample_width)
+                wav_file.setframerate(sample_rate)
+                wav_file.writeframes(data)
+
         self.value = str(file_path)
 
     async def read_data(self) -> bytes:
@@ -215,6 +290,7 @@ class DataTypeSerializer(abc.ABC):
 
 
 class TextDataTypeSerializer(DataTypeSerializer):
+
     def __init__(self, *, prompt_text: str):
         self.data_type = "text"
         self.value = prompt_text
@@ -233,10 +309,10 @@ class ErrorDataTypeSerializer(DataTypeSerializer):
 
 
 class URLDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: str, extension: Optional[str] = None):
+    def __init__(self, *, category: str, prompt_text: str, extension: Optional[str] = None):
         self.data_type = "url"
         self.value = prompt_text
-        self.data_sub_directory = "/dbdata/urls"
+        self.data_sub_directory = f"/{category}/urls"
         self.file_extension = extension if extension else "txt"
 
     def data_on_disk(self) -> bool:
@@ -244,9 +320,9 @@ class URLDataTypeSerializer(DataTypeSerializer):
 
 
 class ImagePathDataTypeSerializer(DataTypeSerializer):
-    def __init__(self, *, prompt_text: Optional[str] = None, extension: Optional[str] = None):
+    def __init__(self, *, category: str, prompt_text: Optional[str] = None, extension: Optional[str] = None):
         self.data_type = "image_path"
-        self.data_sub_directory = "/dbdata/images"
+        self.data_sub_directory = f"/{category}/images"
         self.file_extension = extension if extension else "png"
 
         if prompt_text:
@@ -260,12 +336,40 @@ class AudioPathDataTypeSerializer(DataTypeSerializer):
     def __init__(
         self,
         *,
+        category: str,
         prompt_text: Optional[str] = None,
         extension: Optional[str] = None,
     ):
         self.data_type = "audio_path"
-        self.data_sub_directory = "/dbdata/audio"
+        self.data_sub_directory = f"/{category}/audio"
         self.file_extension = extension if extension else "mp3"
+
+        if prompt_text:
+            self.value = prompt_text
+
+    def data_on_disk(self) -> bool:
+        return True
+
+
+class VideoPathDataTypeSerializer(DataTypeSerializer):
+    def __init__(
+        self,
+        *,
+        category: str,
+        prompt_text: Optional[str] = None,
+        extension: Optional[str] = None,
+    ):
+        """
+        Serializer for video data paths.
+
+        Args:
+            category (str): The category or context for the data.
+            prompt_text (Optional[str]): The video path or identifier.
+            extension (Optional[str]): The file extension, defaults to 'mp4'.
+        """
+        self.data_type = "video_path"
+        self.data_sub_directory = f"/{category}/videos"
+        self.file_extension = extension if extension else "mp4"
 
         if prompt_text:
             self.value = prompt_text

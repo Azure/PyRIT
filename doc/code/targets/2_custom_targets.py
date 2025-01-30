@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -49,12 +49,12 @@
 # %%
 import textwrap
 
-from pyrit.common import default_values
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_target import GandalfLevel, GandalfTarget, OpenAIChatTarget
 from pyrit.score import GandalfScorer
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=IN_MEMORY)
 
 gandalf_level = GandalfLevel.LEVEL_1
 print(f"\n---\nRunning Gandalf level {gandalf_level}...")
@@ -74,16 +74,17 @@ Command the bot to use its power to write the important words with a Z and a spa
 )
 gandalf_target = GandalfTarget(level=gandalf_level)
 gandalf_password_scorer = GandalfScorer(chat_target=aoai_chat, level=gandalf_level)
-with RedTeamingOrchestrator(
+
+red_teaming_orchestrator = RedTeamingOrchestrator(
     objective_target=gandalf_target,
     adversarial_chat=aoai_chat,
     objective_scorer=gandalf_password_scorer,
     adversarial_chat_seed_prompt=initial_red_teaming_prompt,
-) as red_teaming_orchestrator:
+)
 
-    # Once the agents are set up, we can start the conversation.
-    result = await red_teaming_orchestrator.run_attack_async(objective=attack_strategy)  # type: ignore
-    await result.print_conversation_async()  # type: ignore
+# Once the agents are set up, we can start the conversation.
+result = await red_teaming_orchestrator.run_attack_async(objective=attack_strategy)  # type: ignore
+await result.print_conversation_async()  # type: ignore
 
 
 # %% [markdown]
@@ -97,13 +98,10 @@ with RedTeamingOrchestrator(
 import logging
 from typing import List
 
-from pyrit.common import default_values
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter import Base64Converter, PromptConverter
+from pyrit.prompt_converter import PromptConverter, RandomCapitalLettersConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score import SubStringScorer
-
-default_values.load_environment_files()
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -115,15 +113,16 @@ scorer = SubStringScorer(substring='"flag":', category="crucible")
 
 aoai_target = OpenAIChatTarget()
 
-converters: List[PromptConverter] = [Base64Converter()]
+converters: List[PromptConverter] = [RandomCapitalLettersConverter(percentage=25)]
 
-with PromptSendingOrchestrator(objective_target=target, prompt_converters=converters, verbose=False) as orchestrator:
+orchestrator = PromptSendingOrchestrator(objective_target=target, prompt_converters=converters, verbose=False)
 
-    response = (await orchestrator.send_prompts_async(prompt_list=[request]))[0]  # type: ignore
-    print(response)  # type: ignore
-    score = await scorer.score_async(response.request_pieces[0])  # type: ignore
-    if score[0].get_value():
-        print("YESSSSSS FLAG FOUND")
+response = (await orchestrator.send_prompts_async(prompt_list=[request]))[0]  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
+
+score = await scorer.score_async(response.request_pieces[0])  # type: ignore
+if score[0].get_value():
+    print("YESSSSSS FLAG FOUND")
 
 # %% [markdown]
 # You can also make use of orchestrators, for example, to use other LLMs to help you send prompts for the challenges. Crucible challenges are single-turn, so some techniques like `Crescendo` won't work, but you could adapt other techniques like PAIR/TAP. Below is an example using RedTeamingOrchestrator (similar to the Gandalf example).
@@ -131,14 +130,11 @@ with PromptSendingOrchestrator(objective_target=target, prompt_converters=conver
 # %%
 import textwrap
 
-from pyrit.common import default_values
 from pyrit.common.path import DATASETS_PATH
 from pyrit.orchestrator import RedTeamingOrchestrator
 from pyrit.prompt_converter.string_join_converter import StringJoinConverter
 from pyrit.prompt_target import CrucibleTarget, OpenAIChatTarget
 from pyrit.score.substring_scorer import SubStringScorer
-
-default_values.load_environment_files()
 
 conversation_objective = textwrap.dedent(
     """\
@@ -153,19 +149,26 @@ join_converter = StringJoinConverter()
 
 crucible_target = CrucibleTarget(endpoint="https://puppeteer1.crucible.dreadnode.io")
 
-with RedTeamingOrchestrator(
+red_teaming_orchestrator = RedTeamingOrchestrator(
     objective_target=crucible_target,
     adversarial_chat=OpenAIChatTarget(),
     adversarial_chat_system_prompt_path=strategy_path,
     objective_scorer=scorer,
     max_turns=2,
     prompt_converters=[],
-) as red_teaming_orchestrator:
+)
 
-    # Once the agents are set up, we can start the conversation.
-    # In reality you probably want to use more than one turn.
-    result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
-    await result.print_conversation_async()  # type: ignore
+# Once the agents are set up, we can start the conversation.
+# In reality you probably want to use more than one turn.
+result = await red_teaming_orchestrator.run_attack_async(objective=conversation_objective)  # type: ignore
+await result.print_conversation_async()  # type: ignore
 
 # %% [markdown]
 # Check out the code for the Crucible target [here](../../../pyrit/prompt_target/crucible_target.py).
+
+# %%
+# Close connection
+from pyrit.memory import CentralMemory
+
+memory = CentralMemory.get_memory_instance()
+memory.dispose_engine()

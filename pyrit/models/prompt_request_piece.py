@@ -28,9 +28,10 @@ class PromptRequestPiece(abc.ABC):
             Can be the same number for multi-part requests or multi-part responses.
         timestamp (DateTime): The timestamp of the memory entry.
         labels (Dict[str, str]): The labels associated with the memory entry. Several can be standardized.
-        prompt_metadata (JSON): The metadata associated with the prompt. This can be specific to any scenarios.
-            Because memory is how components talk with each other, this can be component specific.
-            e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
+        prompt_metadata (Dict[str, str]): The metadata associated with the prompt. This can be
+            specific to any scenarios. Because memory is how components talk with each other, this
+            can be component specific. e.g. the URI from a file uploaded to a blob store,
+            or a document type you want to upload.
         converters (list[PromptConverter]): The converters for the prompt.
         prompt_target (PromptTarget): The target for the prompt.
         orchestrator_identifier (Dict[str, str]): The orchestrator identifier for the prompt.
@@ -52,12 +53,14 @@ class PromptRequestPiece(abc.ABC):
         *,
         role: ChatMessageRole,
         original_value: str,
+        original_value_sha256: Optional[str] = None,
         converted_value: Optional[str] = None,
+        converted_value_sha256: Optional[str] = None,
         id: Optional[uuid.UUID | str] = None,
         conversation_id: Optional[str] = None,
         sequence: int = -1,
         labels: Optional[Dict[str, str]] = None,
-        prompt_metadata: Optional[str] = None,
+        prompt_metadata: Optional[Dict[str, str]] = None,
         converter_identifiers: Optional[List[Dict[str, str]]] = None,
         prompt_target_identifier: Optional[Dict[str, str]] = None,
         orchestrator_identifier: Optional[Dict[str, str]] = None,
@@ -80,6 +83,7 @@ class PromptRequestPiece(abc.ABC):
 
         if converted_value is None:
             converted_value = original_value
+            converted_value_data_type = original_value_data_type
 
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
@@ -88,7 +92,7 @@ class PromptRequestPiece(abc.ABC):
         self.labels = labels
         self.prompt_metadata = prompt_metadata
 
-        self.converter_identifiers = converter_identifiers
+        self.converter_identifiers = converter_identifiers if converter_identifiers else []
 
         self.prompt_target_identifier = prompt_target_identifier
         self.orchestrator_identifier = orchestrator_identifier
@@ -101,7 +105,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.original_value_data_type = original_value_data_type
 
-        self.original_value_sha256 = None
+        self.original_value_sha256 = original_value_sha256
 
         self.converted_value = converted_value
 
@@ -110,7 +114,7 @@ class PromptRequestPiece(abc.ABC):
 
         self.converted_value_data_type = converted_value_data_type
 
-        self.converted_value_sha256 = None
+        self.converted_value_sha256 = converted_value_sha256
 
         if response_error not in get_args(PromptResponseError):
             raise ValueError(f"response_error {response_error} is not a valid response error.")
@@ -134,12 +138,12 @@ class PromptRequestPiece(abc.ABC):
         from pyrit.models.data_type_serializer import data_serializer_factory
 
         original_serializer = data_serializer_factory(
-            data_type=self.original_value_data_type, value=self.original_value
+            category="prompt-memory-entries", data_type=self.original_value_data_type, value=self.original_value
         )
         self.original_value_sha256 = await original_serializer.get_sha256()
 
         converted_serializer = data_serializer_factory(
-            data_type=self.converted_value_data_type, value=self.converted_value
+            category="prompt-memory-entries", data_type=self.converted_value_data_type, value=self.converted_value
         )
         self.converted_value_sha256 = await converted_serializer.get_sha256()
 
@@ -208,4 +212,4 @@ def sort_request_pieces(prompt_pieces: list[PromptRequestPiece]) -> list[PromptR
     }
 
     # Sort using the precomputed timestamp values, then by sequence
-    return sorted(prompt_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.sequence))
+    return sorted(prompt_pieces, key=lambda x: (earliest_timestamps[x.conversation_id], x.conversation_id, x.sequence))

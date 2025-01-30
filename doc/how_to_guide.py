@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-experimental
+#     display_name: pyrit-dev
 #     language: python
 #     name: python3
 # ---
@@ -50,13 +50,12 @@
 # %%
 
 import os
-from pathlib import Path
 
-from pyrit.common import default_values
+from pyrit.common import DUCK_DB, initialize_pyrit
 from pyrit.models import PromptRequestPiece
 from pyrit.prompt_target import OpenAIChatTarget
 
-default_values.load_environment_files()
+initialize_pyrit(memory_db_type=DUCK_DB)
 
 # Note: parameters are not required here. They are added here to show how they can be used.
 with OpenAIChatTarget(
@@ -78,7 +77,6 @@ with OpenAIChatTarget(
 # parameters to fill in. The prompt template might look as follows:
 
 # %%
-
 from pyrit.models import SeedPrompt
 
 template = SeedPrompt(
@@ -93,7 +91,6 @@ template = SeedPrompt(
 # LLM makes any objectionable statements about any of them.
 
 # %%
-
 prompt = template.render_template_value(food_item="pizza", food_location="Italy")
 
 # %% [markdown]
@@ -189,7 +186,6 @@ with RedTeamingOrchestrator(
 # can use the snipped code below:
 
 # %%
-
 text_to_be_scored = "This is amazing!"
 score = await scorer.score_text_async(text=text_to_be_scored)  # type: ignore
 print(score[0])
@@ -215,7 +211,7 @@ print(score[0])
 # - The `DuckDBMemory` class, implementation of `MemoryInterface`, specializes in handling conversation data using a DuckDB database, enabling easy manipulation and access to conversational data.
 # - The `AzureSQLMemory` class, another implementation of `MemoryInterface`, facilitates storing data in an Azure SQL Database, providing cloud-based persistence for conversation history.
 #
-# You can manually set these memory using `CentralMemory` class or configure them automatically based on environment variables. For more details, check out the memory guide [here](../doc/code/memory/0_memory.md).
+# You can manually set these memory using `CentralMemory` class. For more details, check out the memory guide [here](../doc/code/memory/0_memory.md).
 #
 # Together, these implementations ensure flexibility, allowing users to choose a storage solution that best meets their requirements.
 #

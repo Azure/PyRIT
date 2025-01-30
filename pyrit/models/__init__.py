@@ -7,7 +7,10 @@ from pyrit.models.chat_message import (
     ChatMessageListDictContent,
     ChatMessagesDataset,
 )
+from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_pieces
+
 from pyrit.models.data_type_serializer import (
+    AllowedCategories,
     AudioPathDataTypeSerializer,
     DataTypeSerializer,
     ErrorDataTypeSerializer,
@@ -18,7 +21,6 @@ from pyrit.models.data_type_serializer import (
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
-from pyrit.models.prompt_request_piece import PromptRequestPiece, sort_request_pieces
 from pyrit.models.prompt_request_response import (
     PromptRequestResponse,
     construct_response_from_request,
@@ -32,6 +34,7 @@ from pyrit.models.storage_io import AzureBlobStorageIO, DiskStorageIO, StorageIO
 
 __all__ = [
     "ALLOWED_CHAT_MESSAGE_ROLES",
+    "AllowedCategories",
     "AudioPathDataTypeSerializer",
     "AzureBlobStorageIO",
     "ChatMessage",

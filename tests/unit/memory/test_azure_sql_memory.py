@@ -254,18 +254,13 @@ def test_get_memories_with_orchestrator_id(memory_interface: AzureSQLMemory):
 
     orchestrator1_id = orchestrator1.get_identifier()["id"]
     # Mock the query_entries method
-    with (
-        mock.patch.object(
-            memory_interface,
-            "_query_entries",
-            return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
-        ),
-        mock.patch.object(
-            memory_interface,
-            "populate_prompt_piece_scores",
-        ),
+    with mock.patch.object(
+        memory_interface,
+        "_query_entries",
+        return_value=[entry for entry in entries if entry.orchestrator_identifier["id"] == orchestrator1_id],
     ):
         # Call the method under test
+        memory_interface._insert_entries(entries=entries)
         retrieved_entries = memory_interface.get_prompt_request_pieces(orchestrator_id=orchestrator1_id)
 
         # Verify the returned entries
@@ -391,16 +386,18 @@ def test_update_prompt_metadata_by_conversation_id(memory_interface: AzureSQLMem
             role="user",
             original_value="Hello",
             converted_value="Hello",
-            prompt_metadata="test",
+            prompt_metadata={"test": "test"},
         )
     )
 
     memory_interface._insert_entry(entry)
 
     # Update the metadata using the update_prompt_metadata_by_conversation_id method
-    memory_interface.update_prompt_metadata_by_conversation_id(conversation_id="123", prompt_metadata="updated")
+    memory_interface.update_prompt_metadata_by_conversation_id(
+        conversation_id="123", prompt_metadata={"updated": "updated"}
+    )
 
     # Verify the metadata was updated
     with memory_interface.get_session() as session:  # type: ignore
         updated_entry = session.query(PromptMemoryEntry).filter_by(conversation_id="123").first()
-        assert updated_entry.prompt_metadata == "updated"
+        assert updated_entry.prompt_metadata == {"updated": "updated"}

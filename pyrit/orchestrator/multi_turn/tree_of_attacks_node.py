@@ -8,12 +8,19 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import SeedPrompt
+from pyrit.models import SeedPrompt, SeedPromptGroup
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_normalizer import NormalizerRequest, NormalizerRequestPiece, PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_normalizer import PromptNormalizer
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
@@ -29,7 +36,7 @@ class TreeOfAttacksNode:
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
         adversarial_chat_seed_prompt: SeedPrompt,
         adversarial_chat_prompt_template: SeedPrompt,
@@ -94,20 +101,14 @@ class TreeOfAttacksNode:
                 self.off_topic = True
                 return
 
-        objective_target_request = NormalizerRequest(
-            request_pieces=[
-                NormalizerRequestPiece(
-                    request_converters=self._prompt_converters,
-                    prompt_value=prompt,
-                    prompt_data_type="text",
-                )
-            ],
-            conversation_id=self.objective_target_conversation_id,
-        )
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=prompt, data_type="text")])
+        converters = PromptConverterConfiguration(converters=self._prompt_converters)
 
         response = (
             await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=objective_target_request,
+                seed_prompt_group=seed_prompt_group,
+                request_converter_configurations=[converters],
+                conversation_id=self.objective_target_conversation_id,
                 target=self._objective_target,
                 labels=self._global_memory_labels,
                 orchestrator_identifier=self._orchestrator_id,
@@ -203,17 +204,16 @@ class TreeOfAttacksNode:
                 score=str(score),
             )
 
-        adversarial_chat_request = NormalizerRequest(
-            request_pieces=[
-                NormalizerRequestPiece(request_converters=[], prompt_value=prompt_text, prompt_data_type="text")
-            ],
-            conversation_id=self.adversarial_chat_conversation_id,
+        prompt_metadata = {"response_format": "json"}
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
         )
 
         adversarial_chat_response = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=adversarial_chat_request,
+                    seed_prompt_group=seed_prompt_group,
+                    conversation_id=self.adversarial_chat_conversation_id,
                     target=self._adversarial_chat,
                     labels=self._global_memory_labels,
                     orchestrator_identifier=self._orchestrator_id,

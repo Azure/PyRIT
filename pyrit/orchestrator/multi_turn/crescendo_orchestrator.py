@@ -7,15 +7,26 @@ from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
-from pyrit.common.utils import combine_dict
 from pyrit.common.path import DATASETS_PATH
-from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
-from pyrit.models import PromptRequestPiece, Score
+from pyrit.common.utils import combine_dict
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
+from pyrit.models import PromptRequestPiece, Score, SeedPrompt, SeedPromptGroup
 from pyrit.orchestrator import MultiTurnAttackResult, MultiTurnOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer, SelfAskScaleScorer
+from pyrit.prompt_normalizer.prompt_converter_configuration import (
+    PromptConverterConfiguration,
+)
+from pyrit.prompt_target import PromptChatTarget
+from pyrit.score import (
+    FloatScaleThresholdScorer,
+    SelfAskRefusalScorer,
+    SelfAskScaleScorer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +43,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
     https://crescendo-the-multiturn-jailbreak.github.io/
 
     Args:
-        objective_target (PromptTarget): The target that prompts are sent to.
+        objective_target (PromptChatTarget): The target that prompts are sent to - must be a PromptChatTarget.
         adversarial_chat (PromptChatTarget): The chat target for red teaming.
         scoring_target (PromptChatTarget): The chat target for scoring.
         adversarial_chat_system_prompt_path (Optional[Path], Optional): The path to the red teaming chat's
@@ -49,7 +60,7 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
 
     def __init__(
         self,
-        objective_target: PromptTarget,
+        objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
         scoring_target: PromptChatTarget,
         adversarial_chat_system_prompt_path: Optional[Path] = None,
@@ -332,14 +343,16 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
                 f"This is the rationale behind the score: {objective_score.score_rationale}\n\n"
             )
 
-        normalizer_request = self._create_normalizer_request(
-            prompt_text=prompt_text, conversation_id=adversarial_chat_conversation_id
+        prompt_metadata = {"response_format": "json"}
+        seed_prompt_group = SeedPromptGroup(
+            prompts=[SeedPrompt(value=prompt_text, data_type="text", metadata=prompt_metadata)]
         )
 
         response_text = (
             (
                 await self._prompt_normalizer.send_prompt_async(
-                    normalizer_request=normalizer_request,
+                    seed_prompt_group=seed_prompt_group,
+                    conversation_id=adversarial_chat_conversation_id,
                     target=self._adversarial_chat,
                     orchestrator_identifier=self.get_identifier(),
                     labels=memory_labels,
@@ -378,16 +391,17 @@ class CrescendoOrchestrator(MultiTurnOrchestrator):
     ) -> PromptRequestPiece:
 
         # Sends the attack prompt to the objective target and returns the response
-        normalizer_request = self._create_normalizer_request(
-            prompt_text=attack_prompt,
-            conversation_id=objective_target_conversation_id,
-            converters=self._prompt_converters,
-        )
+
+        seed_prompt_group = SeedPromptGroup(prompts=[SeedPrompt(value=attack_prompt, data_type="text")])
+
+        converter_configuration = PromptConverterConfiguration(converters=self._prompt_converters)
 
         return (
             await self._prompt_normalizer.send_prompt_async(
-                normalizer_request=normalizer_request,
+                seed_prompt_group=seed_prompt_group,
                 target=self._objective_target,
+                conversation_id=objective_target_conversation_id,
+                request_converter_configurations=[converter_configuration],
                 orchestrator_identifier=self.get_identifier(),
                 labels=memory_labels,
             )
