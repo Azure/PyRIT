@@ -126,12 +126,11 @@ await orchestrator.print_conversations_async()  # type: ignore
 # %%
 from pathlib import Path
 
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import HOME_PATH
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
-from pyrit.orchestrator import PromptSendingOrchestrator
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 

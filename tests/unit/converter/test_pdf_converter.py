@@ -2,13 +2,13 @@
 # Licensed under the MIT license.
 
 
-from pathlib import Path
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fpdf import FPDF
-from pypdf import PdfReader, PageObject
+from pypdf import PageObject, PdfReader
 
 from pyrit.models import DataTypeSerializer, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PDFConverter

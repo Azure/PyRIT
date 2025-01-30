@@ -3,12 +3,11 @@
 
 import ast
 from io import BytesIO
-import ast
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 from fpdf import FPDF
-from pypdf import PdfReader, PdfWriter, PageObject
+from pypdf import PageObject, PdfReader, PdfWriter
 
 from pyrit.common.logger import logger
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
