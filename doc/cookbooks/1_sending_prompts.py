@@ -45,7 +45,7 @@ print(len(groups))
 # Now that you have prompts loaded, you're ready to send them!
 #
 # 1. If your set is gigantic, be sure to check your connection before you start by sending just a couple. Check your target and retry threshhold. For starters, you may want to try the first example [here](../code/orchestrators/1_prompt_sending_orchestrator.ipynb)
-# 2. Be careful about labeling! With 100,000 prompts it's likely something might go wrong. Maybe your endpoint will be overwhelmed after 2,000, and you likely want a way to keep track so you don't have to start over!
+# 2. Be careful about labeling! With a million prompts it's likely something might go wrong. Maybe your endpoint will be overwhelmed after 2,000, and you likely want a way to keep track so you don't have to start over!
 # 3. PyRIT is meant to be flexible! Change the scorers, change the converters, etc.
 #
 #
@@ -64,7 +64,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import AzureContentFilterScorer, SelfAskRefusalScorer
 
 # Configure this to load the prompts loaded in the previous step.
-# In the last section, they were in the illegal.yaml file
+# In the last section, they were in the illegal.yaml file (which has a configured name of "test illegal")
 prompt_groups = memory.get_seed_prompt_groups(dataset_name="test illegal")
 
 # Configure the labels you want to send
