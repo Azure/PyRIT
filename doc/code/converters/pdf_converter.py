@@ -121,5 +121,73 @@ orchestrator = PromptSendingOrchestrator(
 await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
+# %% [markdown]
+# # Modify Existing PDF with Injection Items
+# %%
+from pathlib import Path
+
+from pyrit.common import IN_MEMORY, initialize_pyrit
+from pyrit.common.path import HOME_PATH
+from pyrit.orchestrator import PromptSendingOrchestrator
+from pyrit.prompt_converter import PDFConverter
+from pyrit.prompt_target import TextTarget
+
+initialize_pyrit(memory_db_type=IN_MEMORY)
+
+cv_pdf_path = Path(HOME_PATH) / "assets" / "dummy.pdf"
+
+# Define injection items
+injection_items = [
+    {
+        "page": 0,
+        "x": 50,
+        "y": 700,
+        "text": "Injected Text",
+        "font_size": 12,
+        "font": "Helvetica",
+        "font_color": (255, 0, 0),
+    },  # Red text
+    {
+        "page": 1,
+        "x": 100,
+        "y": 600,
+        "text": "Confidential",
+        "font_size": 10,
+        "font": "Helvetica",
+        "font_color": (0, 0, 255),
+    },  # Blue text
+]
+
+# Define a simple string prompt (no templates)
+prompt = "This is a simple test string for PDF generation. No templates here!"
+
+# Initialize the TextTarget (mock target for testing)
+prompt_target = TextTarget()
+
+# Initialize the PDFConverter with the existing PDF and injection items
+pdf_converter = PDFConverter(
+    prompt_template=None,  # No template provided
+    font_type="Arial",
+    font_size=12,
+    page_width=210,
+    page_height=297,
+    existing_pdf=cv_pdf_path,  # Provide the existing PDF
+    injection_items=injection_items,  # Provide the injection items
+)
+
+# Define the list of prompts as strings (required by PromptSendingOrchestrator)
+prompts = [prompt]
+
+# Initialize the orchestrator
+orchestrator = PromptSendingOrchestrator(
+    objective_target=prompt_target,
+    prompt_converters=[pdf_converter],
+    verbose=False,
+)
+
+# Run the orchestrator to modify the PDF and inspect the result
+await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
+await orchestrator.print_conversations_async()  # type: ignore
+
 # %%
 orchestrator.dispose_db_engine()
