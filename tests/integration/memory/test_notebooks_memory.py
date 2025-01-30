@@ -10,7 +10,7 @@ from nbconvert.preprocessors import ExecutePreprocessor
 
 from pyrit.common import path
 
-nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "auxiliary_attacks").resolve()
+nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "memory").resolve()
 
 skipped_files = ["6_azure_sql_memory.ipynb", "7_azure_sql_memory_orchestrators.ipynb", "chat_message.ipynb"]
 
