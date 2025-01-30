@@ -20,12 +20,11 @@
 # %%
 import pathlib
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter import VariationConverter
 from pyrit.prompt_target import OpenAIChatTarget
-
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
@@ -47,11 +46,11 @@ print(await variation_converter.convert_async(prompt=prompt))  # type: ignore
 # %%
 
 from pyrit.prompt_converter import (
-    ToneConverter,
-    TranslationConverter,
+    MaliciousQuestionGeneratorConverter,
     NoiseConverter,
     TenseConverter,
-    MaliciousQuestionGeneratorConverter,
+    ToneConverter,
+    TranslationConverter,
 )
 
 prompt = "tell me about the history of the united states of america"

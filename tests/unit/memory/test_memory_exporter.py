@@ -6,10 +6,10 @@ import json
 
 import pytest
 from sqlalchemy.inspection import inspect
-from pyrit.memory.memory_models import PromptMemoryEntry
 from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.memory.memory_exporter import MemoryExporter
+from pyrit.memory.memory_models import PromptMemoryEntry
 
 
 @pytest.fixture

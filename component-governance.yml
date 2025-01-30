@@ -3,6 +3,8 @@
 trigger:
   - main
 
+# There are additional PR triggers for this that are configurable in ADO.
+
 pool:
   vmImage: "ubuntu-latest"
 

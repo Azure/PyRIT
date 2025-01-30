@@ -13,7 +13,7 @@ from pyrit.models import PromptDataType, PromptRequestResponse
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prompt_normalizer = PromptNormalizer()
         self._scorers = scorers or []
 
-        self._prompt_target = objective_target
+        self._objective_target = objective_target
 
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
@@ -58,6 +58,12 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         Prepends a conversation to the prompt target.
         """
+        if prepended_conversation and not isinstance(self._objective_target, PromptChatTarget):
+            raise TypeError(
+                f"Only PromptChatTargets are able to modify conversation history. Instead objective_target is: "
+                f"{type(self._objective_target)}."
+            )
+
         self._prepended_conversation = prepended_conversation
 
     async def send_normalizer_requests_async(
@@ -69,14 +75,12 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         Sends the normalized prompts to the prompt target.
         """
-        for request in prompt_request_list:
-            request.validate()
 
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=prompt_request_list,
-            target=self._prompt_target,
+            target=self._objective_target,
             labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
             orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
@@ -98,7 +102,7 @@ class PromptSendingOrchestrator(Orchestrator):
         prompt_list: list[str],
         prompt_type: PromptDataType = "text",
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[str] = None,
+        metadata: Optional[dict[str, str]] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target.
@@ -110,7 +114,8 @@ class PromptSendingOrchestrator(Orchestrator):
                 prompts. Any labels passed in will be combined with self._global_memory_labels (from the
                 GLOBAL_MEMORY_LABELS environment variable) into one dictionary. In the case of collisions,
                 the passed-in labels take precedence. Defaults to None.
-            metadata: Any additional information to be added to the memory entry corresponding to the prompts sent.
+            metadata (Optional(dict[str, str]): Any additional information to be added to the memory entry corresponding
+                to the prompts sent.
 
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.

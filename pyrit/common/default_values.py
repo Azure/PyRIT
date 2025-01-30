@@ -1,9 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 import logging
-
+import os
 
 logger = logging.getLogger(__name__)
 

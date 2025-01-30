@@ -11,7 +11,12 @@ from unittest.mock import MagicMock
 import pytest
 from unit.mocks import MockPromptTarget, get_sample_conversations
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, group_conversation_request_pieces_by_sequence
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    group_conversation_request_pieces_by_sequence,
+)
 from pyrit.models.prompt_request_piece import sort_request_pieces
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import Base64Converter
@@ -117,6 +122,25 @@ async def test_hashes_generated_files():
         await entry.set_sha256_values_async()
         assert entry.original_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
         assert entry.converted_value_sha256 == "948edbe7ede5aa7423476ae29dcd7d61e7711a071aea0d83698377effa896525"
+
+    os.remove(filename)
+
+
+@pytest.mark.asyncio
+async def test_converted_datatype_default():
+    filename = ""
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        filename = f.name
+        f.write(b"Hello1")
+        f.flush()
+        f.close()
+        entry = PromptRequestPiece(
+            role="user",
+            original_value=filename,
+            original_value_data_type="image_path",
+        )
+        assert entry.converted_value_data_type == "image_path"
+        assert entry.converted_value == filename
 
     os.remove(filename)
 

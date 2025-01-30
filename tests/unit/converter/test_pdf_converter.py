@@ -10,7 +10,7 @@ import pytest
 from fpdf import FPDF
 from pypdf import PdfReader, PageObject
 
-from pyrit.models import SeedPrompt, DataTypeSerializer
+from pyrit.models import DataTypeSerializer, SeedPrompt
 from pyrit.prompt_converter import ConverterResult, PDFConverter
 
 

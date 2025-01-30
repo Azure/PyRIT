@@ -8,15 +8,26 @@ from unit.mocks import MockPromptTarget
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.exceptions import MissingPromptPlaceholderException
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptDataset
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    SeedPrompt,
+    SeedPromptDataset,
+)
 from pyrit.orchestrator import FuzzerOrchestrator
 from pyrit.orchestrator.fuzzer_orchestrator import PromptNode
-from pyrit.prompt_converter import ConverterResult, FuzzerConverter, FuzzerExpandConverter, FuzzerShortenConverter
+from pyrit.prompt_converter import (
+    ConverterResult,
+    FuzzerConverter,
+    FuzzerExpandConverter,
+    FuzzerShortenConverter,
+)
 from pyrit.score import Scorer
 
 
 @pytest.fixture
-def scoring_target() -> MockPromptTarget:
+def scoring_target(patch_central_database) -> MockPromptTarget:
     return MockPromptTarget()
 
 
@@ -201,7 +212,7 @@ async def test_max_query(simple_prompts: list, simple_prompt_templates: list, sc
     prompt_expand_converter = FuzzerExpandConverter(converter_target=scoring_target)
     template_converters = [prompt_shorten_converter, prompt_expand_converter]
     fuzzer_orchestrator = FuzzerOrchestrator(
-        prompts=simple_prompts,
+        prompts=simple_prompts[:3],
         prompt_templates=simple_prompt_templates,
         prompt_target=scoring_target,
         template_converters=template_converters,

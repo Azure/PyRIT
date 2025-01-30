@@ -13,7 +13,7 @@ from pyrit.score.scorer import Scorer
 
 
 @pytest.fixture
-def tree_of_attack_node():
+def tree_of_attack_node(patch_central_database):
     return TreeOfAttacksNode(
         objective_target=MagicMock(spec=PromptTarget),
         adversarial_chat=MagicMock(spec=PromptChatTarget),

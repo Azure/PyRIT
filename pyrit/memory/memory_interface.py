@@ -13,9 +13,18 @@ from sqlalchemy import and_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from pyrit.common.path import DB_DATA_PATH
-from pyrit.memory.memory_embedding import MemoryEmbedding, default_memory_embedding_factory
+from pyrit.memory.memory_embedding import (
+    MemoryEmbedding,
+    default_memory_embedding_factory,
+)
 from pyrit.memory.memory_exporter import MemoryExporter
-from pyrit.memory.memory_models import Base, EmbeddingDataEntry, PromptMemoryEntry, ScoreEntry, SeedPromptEntry
+from pyrit.memory.memory_models import (
+    Base,
+    EmbeddingDataEntry,
+    PromptMemoryEntry,
+    ScoreEntry,
+    SeedPromptEntry,
+)
 from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
@@ -471,13 +480,15 @@ class MemoryInterface(abc.ABC):
             conversation_id=conversation_id, update_fields={"labels": labels}
         )
 
-    def update_prompt_metadata_by_conversation_id(self, *, conversation_id: str, prompt_metadata: str) -> bool:
+    def update_prompt_metadata_by_conversation_id(
+        self, *, conversation_id: str, prompt_metadata: dict[str, str]
+    ) -> bool:
         """
         Updates the metadata of prompt entries in memory for a given conversation ID.
 
         Args:
             conversation_id (str): The conversation ID of the entries to be updated.
-            metadata (str): New metadata.
+            metadata (dict[str, str]): New metadata.
 
         Returns:
             bool: True if the update was successful, False otherwise.
@@ -510,6 +521,7 @@ class MemoryInterface(abc.ABC):
         *,
         value: Optional[str] = None,
         dataset_name: Optional[str] = None,
+        data_types: Optional[list[str]] = None,
         harm_categories: Optional[list[str]] = None,
         added_by: Optional[str] = None,
         authors: Optional[list[str]] = None,
@@ -523,6 +535,8 @@ class MemoryInterface(abc.ABC):
         Args:
             value (str): The value to match by substring. If None, all values are returned.
             dataset_name (str): The dataset name to match. If None, all dataset names are considered.
+            data_types (Optional[list[str], Optional): List of data types to filter seed prompts by
+                (e.g., text, image_path).
             harm_categories (list[str]): A list of harm categories to filter by. If None,
             all harm categories are considered.
                 Specifying multiple harm categories returns only prompts that are marked with all harm categories.
@@ -534,7 +548,6 @@ class MemoryInterface(abc.ABC):
             source (str): The source to filter by. If None, all sources are considered.
             parameters (list[str]): A list of parameters to filter by. Specifying parameters effectively returns
                 prompt templates instead of prompts.
-                If None, only prompts without parameters are returned.
 
         Returns:
             list[SeedPrompt]: A list of prompts matching the criteria.
@@ -546,6 +559,9 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedPromptEntry.value.contains(value))
         if dataset_name:
             conditions.append(SeedPromptEntry.dataset_name == dataset_name)
+        if data_types:
+            data_type_conditions = SeedPromptEntry.data_type.in_(data_types)
+            conditions.append(data_type_conditions)
         if added_by:
             conditions.append(SeedPromptEntry.added_by == added_by)
         if source:
@@ -554,7 +570,9 @@ class MemoryInterface(abc.ABC):
         self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
         self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
         self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
-        self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
+
+        if parameters:
+            self._add_list_conditions(SeedPromptEntry.parameters, parameters, conditions)
 
         try:
             memory_entries = self._query_entries(
@@ -694,47 +712,30 @@ class MemoryInterface(abc.ABC):
         groups: Optional[list[str]] = None,
         source: Optional[str] = None,
     ) -> list[SeedPromptGroup]:
-        """Retrieves groups of seed prompts based on the provided filtering criteria._summary_
+        """Retrieves groups of seed prompts based on the provided filtering criteria.
 
         Args:
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
-            data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
+            data_types (Optional[list[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
             harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
             added_by (Optional[str], Optional): The user who added the seed prompt groups to filter by.
-            authors (Optional[Sequence[str]], Optional): List of authors to filter seed prompt groups by.
-            groups (Optional[Sequence[str]], Optional): List of groups to filter seed prompt groups by.
+            authors (Optional[list[str]], Optional): List of authors to filter seed prompt groups by.
+            groups (Optional[list[str]], Optional): List of groups to filter seed prompt groups by.
             source (Optional[str], Optional): The source from which the seed prompts originated.
 
         Returns:
             list[SeedPromptGroup]: A list of `SeedPromptGroup` objects that match the filtering criteria.
         """
-        conditions = []
-
-        # Apply basic filters if provided
-        if dataset_name:
-            conditions.append(SeedPromptEntry.dataset_name == dataset_name)
-        if added_by:
-            conditions.append(SeedPromptEntry.added_by == added_by)
-        if source:
-            conditions.append(SeedPromptEntry.source == source)
-        if data_types:
-            data_type_conditions = SeedPromptEntry.data_type.in_(data_types)
-            conditions.append(data_type_conditions)
-
-        # Add conditions for lists: harm categories, authors, and groups
-        self._add_list_conditions(SeedPromptEntry.harm_categories, harm_categories, conditions)
-        self._add_list_conditions(SeedPromptEntry.authors, authors, conditions)
-        self._add_list_conditions(SeedPromptEntry.groups, groups, conditions)
-
-        # Query DB for matching entries
-        memory_entries = self._query_entries(
-            SeedPromptEntry,
-            conditions=and_(*conditions) if conditions else None,
-        )  # type: ignore
-
-        # Extract seed prompts and group them by prompt group ID
-        seed_prompts = [memory_entry.get_seed_prompt() for memory_entry in memory_entries]
+        seed_prompts = self.get_seed_prompts(
+            dataset_name=dataset_name,
+            data_types=data_types,
+            harm_categories=harm_categories,
+            added_by=added_by,
+            authors=authors,
+            groups=groups,
+            source=source,
+        )
         seed_prompt_groups = SeedPromptDataset.group_seed_prompts_by_prompt_group_id(seed_prompts)
         return seed_prompt_groups
 

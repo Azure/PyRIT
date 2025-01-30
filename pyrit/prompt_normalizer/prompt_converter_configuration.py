@@ -8,7 +8,7 @@ from pyrit.prompt_converter import PromptConverter
 
 
 @dataclass
-class PromptResponseConverterConfiguration:
+class PromptConverterConfiguration:
     """
     Represents the configuration for a prompt response converter.
 

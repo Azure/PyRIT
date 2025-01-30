@@ -7,7 +7,11 @@ from typing import Optional
 from openai import NOT_GIVEN, NotGiven
 from openai.types.completion import Completion
 
-from pyrit.models import PromptRequestResponse, PromptResponse, construct_response_from_request
+from pyrit.models import (
+    PromptRequestResponse,
+    PromptResponse,
+    construct_response_from_request,
+)
 from pyrit.prompt_target import OpenAITarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -77,7 +81,6 @@ class OpenAICompletionTarget(OpenAITarget):
         response_entry = construct_response_from_request(
             request=request,
             response_text_pieces=[prompt_response.completion],
-            prompt_metadata=prompt_response.to_json(),
         )
 
         return response_entry
@@ -94,3 +97,7 @@ class OpenAICompletionTarget(OpenAITarget):
 
         if len(messages) > 0:
             raise ValueError("This target only supports a single turn conversation.")
+
+    def is_json_response_supported(self) -> bool:
+        """Indicates that this target supports JSON response format."""
+        return False

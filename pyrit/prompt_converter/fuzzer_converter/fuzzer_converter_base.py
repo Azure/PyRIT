@@ -6,8 +6,17 @@ import logging
 import uuid
 from typing import Optional
 
-from pyrit.exceptions import InvalidJsonException, pyrit_json_retry, remove_markdown_json
-from pyrit.models import PromptDataType, PromptRequestPiece, PromptRequestResponse, SeedPrompt
+from pyrit.exceptions import (
+    InvalidJsonException,
+    pyrit_json_retry,
+    remove_markdown_json,
+)
+from pyrit.models import (
+    PromptDataType,
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+)
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
@@ -56,7 +65,7 @@ class FuzzerConverter(PromptConverter):
         )
 
         formatted_prompt = f"===={self.template_label} BEGINS====\n{prompt}\n===={self.template_label} ENDS===="
-
+        prompt_metadata = {"response_format": "json"}
         request = PromptRequestResponse(
             [
                 PromptRequestPiece(
@@ -69,6 +78,7 @@ class FuzzerConverter(PromptConverter):
                     original_value_data_type=input_type,
                     converted_value_data_type=input_type,
                     converter_identifiers=[self.get_identifier()],
+                    prompt_metadata=prompt_metadata,
                 )
             ]
         )

@@ -17,7 +17,13 @@ from unit.mocks import get_sample_conversation_entries, get_sample_conversations
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory import MemoryExporter, MemoryInterface, PromptMemoryEntry
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, Score, SeedPrompt, SeedPromptGroup
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    Score,
+    SeedPrompt,
+    SeedPromptGroup,
+)
 from pyrit.orchestrator import Orchestrator
 
 
@@ -1172,13 +1178,12 @@ async def test_add_seed_prompt_groups_to_memory_multiple_elements_no_added_by(du
 
 @pytest.mark.asyncio
 async def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(duckdb_instance: MemoryInterface):
-    prompt1 = SeedPrompt(
-        value="Test prompt 1", added_by="tester", prompt_group_id=uuid4(), data_type="text", sequence=0
-    )
-    prompt2 = SeedPrompt(
-        value="Test prompt 2", added_by="tester", prompt_group_id=uuid4(), data_type="text", sequence=1
-    )
+    prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
+    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
+
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
+    prompt_group.prompts[0].prompt_group_id = uuid4()
+
     with pytest.raises(ValueError):
         await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
@@ -1859,3 +1864,28 @@ def test_prompt_piece_scores_duplicate_piece(duckdb_instance: MemoryInterface):
     # Check that the duplicate piece has the same score as the original
     assert len(retrieved_pieces[1].scores) == 1
     assert retrieved_pieces[1].scores[0].score_value == "0.8"
+
+
+@pytest.mark.asyncio
+async def test_prompt_piece_hash_stored_and_retrieved(duckdb_instance: MemoryInterface):
+    entries = [
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 1",
+        ),
+        PromptRequestPiece(
+            role="assistant",
+            original_value="Hello 2",
+        ),
+    ]
+
+    for entry in entries:
+        await entry.set_sha256_values_async()
+
+    duckdb_instance.add_request_pieces_to_memory(request_pieces=entries)
+    retrieved_entries = duckdb_instance.get_prompt_request_pieces()
+
+    assert len(retrieved_entries) == 2
+    for prompt in retrieved_entries:
+        assert prompt.converted_value_sha256
+        assert prompt.original_value_sha256

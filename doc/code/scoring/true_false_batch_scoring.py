@@ -5,12 +5,11 @@
 # %%
 import uuid
 
-from pyrit.common import initialize_pyrit, IN_MEMORY
+from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.memory import CentralMemory
 from pyrit.models import PromptRequestPiece, PromptRequestResponse
-from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 from pyrit.prompt_target import OpenAIChatTarget
-
+from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 memory = CentralMemory.get_memory_instance()

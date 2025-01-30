@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.common.logger import logger
+import ast
 from io import BytesIO
 import ast
 from pathlib import Path
@@ -10,8 +10,9 @@ from typing import Optional, List, Dict
 from fpdf import FPDF
 from pypdf import PdfReader, PdfWriter, PageObject
 
+from pyrit.common.logger import logger
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
-from pyrit.prompt_converter import PromptConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, PromptConverter
 
 
 class PDFConverter(PromptConverter):
