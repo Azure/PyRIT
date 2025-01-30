@@ -5,9 +5,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.6
 #   kernelspec:
-#     display_name: pyrit-311
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -15,7 +15,7 @@
 # %% [markdown]
 # # Sending a Million Prompts
 #
-# Here is a scenario; you have a CSV full of 100,000 prompts and you're trying to send them all for evaluation. This takes you step by step on best practices, including comments around the pieces you may want to configure.
+# Here is a scenario; you have 1,000,000 prompts and you're trying to send them all for evaluation. This takes you step by step on best practices, including comments around the pieces you may want to configure.
 #
 # ## Gather Prompts
 #
@@ -69,7 +69,7 @@ prompt_groups = memory.get_seed_prompt_groups(dataset_name="test illegal")
 
 # Configure the labels you want to send
 # These should be unique to this test to make it easier to retrieve
-memory_labels = {"dataset": "test"}
+memory_labels = {"op_name": "new_op", "user_name": "rlundeen"}
 
 
 # Configure the target you are testing
@@ -154,7 +154,9 @@ requests.append(
     )
 )
 
-skip_criteria = PromptFilterCriteria(orchestrator_id=orchestrator.get_identifier()["id"], not_data_type="error")
+skip_lables = {"op_name": "new_op"}
+
+skip_criteria = PromptFilterCriteria(labels=skip_lables, not_data_type="error")
 
 orchestrator.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type="original")
 
@@ -212,8 +214,21 @@ for result in new_results:
 # As a last step, you may want to export all the results for things like a report.
 
 # %%
-# Configure how you want to export the conversations
+# Configure how you want to export the conversations - this exports to a json
 
 memory.export_conversations(
     labels=memory_labels,
 )
+
+# %% [markdown]
+# Some operators also like to work locally and then upload to a central db. You can upload your prompts like this.
+
+# %%
+all_prompt_pieces = memory.get_prompt_request_pieces(labels=memory_labels)
+
+initialize_pyrit(memory_db_type="AzureSQL")
+
+central_memory = CentralMemory.get_memory_instance()
+
+# This last piece is commented out because we run this automatically and we don't want to upload this to our central db :)
+# central_memory.add_request_pieces_to_memory(request_pieces=all_prompt_pieces)

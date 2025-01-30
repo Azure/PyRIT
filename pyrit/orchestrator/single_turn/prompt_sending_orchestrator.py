@@ -70,7 +70,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._prepended_conversation = prepended_conversation
 
     def set_skip_criteria(
-        self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "converted"
+        self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "original"
     ):
         """
         Sets the skip criteria for the orchestrator.

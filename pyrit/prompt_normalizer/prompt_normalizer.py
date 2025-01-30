@@ -228,7 +228,7 @@ class PromptNormalizer(abc.ABC):
         """
         self._skip_criteria = skip_criteria
 
-        self._prompts_to_skip = self._memory.get_prompt_request_pieces(
+        prompts_to_skip = self._memory.get_prompt_request_pieces(
             role="user",
             orchestrator_id=self._skip_criteria.orchestrator_id,
             conversation_id=self._skip_criteria.conversation_id,
@@ -243,6 +243,14 @@ class PromptNormalizer(abc.ABC):
             converted_value_sha256=self._skip_criteria.converted_value_sha256,
         )
 
+        self._original_sha256_prompts_to_skip = [
+            prompt.original_value_sha256 for prompt in prompts_to_skip if prompt.original_value_sha256
+        ]
+
+        self._converted_sha256_prompts_to_skip = [
+            prompt.converted_value_sha256 for prompt in prompts_to_skip if prompt.converted_value_sha256
+        ]
+
         self._skip_value_type = skip_value_type
 
     def _should_skip_based_on_skip_criteria(self, prompt_request: PromptRequestResponse) -> bool:
@@ -255,13 +263,12 @@ class PromptNormalizer(abc.ABC):
             return False
 
         for user_prompt in prompt_request.request_pieces:
-            for sent_prompt in self._prompts_to_skip:
-                if self._skip_value_type == "converted":
-                    if user_prompt.converted_value_sha256 != sent_prompt.converted_value_sha256:
-                        return False
-                else:
-                    if user_prompt.original_value_sha256 != sent_prompt.original_value_sha256:
-                        return False
+            if self._skip_value_type == "converted":
+                if user_prompt.converted_value_sha256 not in self._converted_sha256_prompts_to_skip:
+                    return False
+            else:
+                if user_prompt.original_value_sha256 not in self._original_sha256_prompts_to_skip:
+                    return False
         return True
 
     async def _calc_hash(self, request: PromptRequestResponse) -> None:
