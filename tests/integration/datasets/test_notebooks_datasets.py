@@ -19,7 +19,7 @@ nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "datasets").resolve()
 )
 def test_execute_notebooks(file_name):
     nb_path = pathlib.Path(nb_directory_path, file_name).resolve()
-    with open(nb_path, encoding='utf-8') as f:
+    with open(nb_path, encoding="utf-8") as f:
         nb = nbformat.read(f, as_version=4)
 
     ep = ExecutePreprocessor(timeout=600)

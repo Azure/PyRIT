@@ -12,8 +12,9 @@ from pyrit.common import path
 
 nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "converters").resolve()
 
-# These notebooks will need to be re-run manually as they require human input
-skipped_files = ["6_human_converter.ipynb"]
+skipped_files = [
+    "6_human_converter.ipynb",  # requires human input
+]
 
 
 @pytest.mark.parametrize(
