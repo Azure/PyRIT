@@ -524,7 +524,7 @@ class MemoryInterface(abc.ABC):
         self,
         *,
         value: Optional[str] = None,
-        value_sha256: Optional[str] = None,
+        value_sha256: Optional[list[str]] = None,
         dataset_name: Optional[str] = None,
         data_types: Optional[list[str]] = None,
         harm_categories: Optional[list[str]] = None,
@@ -564,7 +564,7 @@ class MemoryInterface(abc.ABC):
         if value:
             conditions.append(SeedPromptEntry.value.contains(value))
         if value_sha256:
-            conditions.append(SeedPromptEntry.value_sha256 == value_sha256)
+            conditions.append(SeedPromptEntry.value_sha256.in_(value_sha256))
         if dataset_name:
             conditions.append(SeedPromptEntry.dataset_name == dataset_name)
         if data_types:
@@ -629,7 +629,9 @@ class MemoryInterface(abc.ABC):
             serialized_prompt_value = str(serializer.value)
         return serialized_prompt_value
 
-    async def add_seed_prompts_to_memory(self, *, prompts: list[SeedPrompt], added_by: Optional[str] = None) -> None:
+    async def add_seed_prompts_to_memory_async(
+        self, *, prompts: list[SeedPrompt], added_by: Optional[str] = None
+    ) -> None:
         """
         Inserts a list of prompts into the memory storage.
 
@@ -711,12 +713,12 @@ class MemoryInterface(abc.ABC):
             for prompt in prompt_group.prompts:
                 prompt.prompt_group_id = prompt_group_id
             all_prompts.extend(prompt_group.prompts)
-        await self.add_seed_prompts_to_memory(prompts=all_prompts, added_by=added_by)
+        await self.add_seed_prompts_to_memory_async(prompts=all_prompts, added_by=added_by)
 
     def get_seed_prompt_groups(
         self,
         *,
-        value_sha256: Optional[str] = None,
+        value_sha256: Optional[list[str]] = None,
         dataset_name: Optional[str] = None,
         data_types: Optional[list[str]] = None,
         harm_categories: Optional[list[str]] = None,
@@ -728,7 +730,7 @@ class MemoryInterface(abc.ABC):
         """Retrieves groups of seed prompts based on the provided filtering criteria.
 
         Args:
-            value_sha256 (Optional[str], Optional): SHA256 hash of value to filter seed prompt groups by.
+            value_sha256 (Optional[list[str]], Optional): SHA256 hash of value to filter seed prompt groups by.
             dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
             data_types (Optional[list[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
