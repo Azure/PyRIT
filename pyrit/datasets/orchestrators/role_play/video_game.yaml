@@ -4,8 +4,6 @@ description: This is an example first turn response to a video game role play sc
 authors:
   - Mark Russinovich
   - AI Red Team
-groups:
-  - AI Red Team
 prompts:
   - description: This used to rephrase the user's objective (second user turn)
     parameters:

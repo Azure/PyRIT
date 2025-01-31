@@ -1,15 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyrit.models import PromptRequestPiece, PromptRequestResponse, SeedPrompt, SeedPromptDataset
+import pytest
+
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptDataset,
+)
+from pyrit.orchestrator import RolePlayOrchestrator
+from pyrit.orchestrator.single_turn.role_play_orchestrator import RolePlayPaths
 from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
-
-from pyrit.orchestrator import RolePlayOrchestrator
 
 
 @pytest.fixture
@@ -63,7 +70,7 @@ def role_play_orchestrator(
     mock_prompt_converter,
     mock_scorer,
     mock_seed_prompt_dataset,
-    patch_central_database
+    patch_central_database,
 ):
     """
     A fixture that patches the from_yaml_file method so that
@@ -71,7 +78,7 @@ def role_play_orchestrator(
     """
     with patch(
         "pyrit.orchestrator.single_turn.role_play_orchestrator.SeedPromptDataset.from_yaml_file",
-        return_value=mock_seed_prompt_dataset
+        return_value=mock_seed_prompt_dataset,
     ):
         orchestrator = RolePlayOrchestrator(
             objective_target=mock_objective_target,
@@ -126,23 +133,37 @@ async def test_get_role_playing_prompts_async(role_play_orchestrator):
             ),
             PromptRequestResponse(
                 request_pieces=[PromptRequestPiece(role="assistant", original_value="role-played 2")]
-            )
+            ),
         ]
     )
 
     objectives = ["Objective 1", "Objective 2"]
     prompts = await role_play_orchestrator._get_role_playing_prompts_async(objectives)
 
-    # We should end up with the role-played strings from the mock responses
     assert prompts == ["role-played 1", "role-played 2"]
 
-    # Also confirm the normalizer received the NormalizerRequest objects
     role_play_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.assert_called_once()
     normalizer_call_args = role_play_orchestrator._prompt_normalizer.send_prompt_batch_to_target_async.call_args
     requests_sent = normalizer_call_args.kwargs["requests"]
 
-    # We expect 2 NormalizerRequest objects, each containing a single prompt in a SeedPromptGroup
     assert len(requests_sent) == 2
     assert isinstance(requests_sent[0], NormalizerRequest)
     assert requests_sent[0].seed_prompt_group.prompts[0].value == "Rephrased objective"
     assert isinstance(requests_sent[1], NormalizerRequest)
+
+
+@pytest.mark.parametrize("role_play_path", list(RolePlayPaths))
+def test_role_play_paths(role_play_path):
+    """
+    For each path in RolePlayPaths, verify that:
+      1) The file actually exists on disk.
+      2) The YAML loads into a SeedPromptDataset without error.
+      3) The dataset has exactly three prompts.
+    """
+    path: Path = role_play_path.value
+    assert path.is_file(), f"Path does not exist or is not a file: {path}"
+
+    dataset = SeedPromptDataset.from_yaml_file(path)
+    assert hasattr(dataset, "prompts"), f"File {path} didn't load a dataset with 'prompts'"
+    assert len(dataset.prompts) == 3, f"Expected 3 prompts in {path}, found {len(dataset.prompts)}"
+    assert "objective" in dataset.prompts[0].parameters, "The first prompt should have an 'objective' parameter"

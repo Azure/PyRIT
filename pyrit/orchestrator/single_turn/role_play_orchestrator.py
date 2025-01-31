@@ -7,13 +7,18 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestResponse, SeedPrompt, PromptRequestPiece, SeedPromptDataset, SeedPromptGroup
+from pyrit.models import (
+    PromptRequestPiece,
+    PromptRequestResponse,
+    SeedPrompt,
+    SeedPromptDataset,
+    SeedPromptGroup,
+)
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
-
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +26,6 @@ logger = logging.getLogger(__name__)
 class RolePlayPaths(enum.Enum):
     VIDEO_GAME = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "video_game.yaml"
     MOVIE_SCRIPT = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "movie_script.yaml"
-
 
 
 class RolePlayOrchestrator(PromptSendingOrchestrator):
@@ -33,7 +37,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self,
         objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
-        role_play_definition: pathlib.Path,
+        role_play_definition_path: pathlib.Path,
         prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
@@ -62,9 +66,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
 
         self._adversarial_chat = adversarial_chat
 
-        role_play_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(
-            role_play_definition
-        )
+        role_play_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(role_play_definition_path)
 
         self._rephrase_instructions = role_play_definition.prompts[0]
         self._user_start_turn = role_play_definition.prompts[1]
@@ -77,7 +79,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         *,
         prompt_list: list[str],
         memory_labels: Optional[dict[str, str]] = None,
-        metadata: Optional[str] = None,
+        metadata: Optional[dict[str, str] | None] = None,
     ) -> list[PromptRequestResponse]:
         """
         Sends the prompts to the prompt target using flip attack.
@@ -92,7 +94,6 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         Returns:
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
-
 
         role_playing_prompts = await self._get_role_playing_prompts_async(prompt_list)
 
@@ -124,15 +125,14 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
                 )
             )
 
-            requests.append(
-                normalizer_request
+            requests.append(normalizer_request)
+
+        role_playing_prompts: list[PromptRequestResponse] = (
+            await self._prompt_normalizer.send_prompt_batch_to_target_async(
+                requests=requests,
+                target=self._adversarial_chat,
+                batch_size=self._batch_size,
             )
-
-
-        role_playing_prompts: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
-            requests=requests,
-            target=self._adversarial_chat,
-            batch_size=self._batch_size,
         )
 
         return [role_playing_prompt.request_pieces[0].original_value for role_playing_prompt in role_playing_prompts]
@@ -145,7 +145,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
                     PromptRequestPiece(
                         role="user",
                         original_value=self._user_start_turn.value,
-                        )
+                    )
                 ]
             ),
             PromptRequestResponse(
@@ -155,8 +155,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
                         original_value=self._assistant_start_turn.value,
                     )
                 ]
-            )
+            ),
         ]
 
         self.set_prepended_conversation(prepended_conversation=prepended_conversation)
-
