@@ -5,7 +5,7 @@ Welcome to the Python Risk Identification Tool for generative AI (PyRIT)! PyRIT 
 Before starting with AI Red Teaming, we recommend reading the following article from Microsoft:
 ["Planning red teaming for large language models (LLMs) and their applications"](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/red-teaming).
 
-LLMs introduce many categories of risk, which can be difficult to mitigate even with a red teaming
+Generative AI systems introduce many categories of risk, which can be difficult to mitigate even with a red teaming
 plan in place. To quote the article above, "with LLMs, both benign and adversarial usage can produce
 potentially harmful outputs, which can take many forms, including harmful content such as hate speech,
 incitement or glorification of violence, or sexual content." Additionally, a variety of security risks
