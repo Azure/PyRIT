@@ -10,11 +10,9 @@ from nbconvert.preprocessors import ExecutePreprocessor
 
 from pyrit.common import path
 
-nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "converters").resolve()
+nb_directory_path = path.DOCS_CODE_PATH / ".." / "cookbooks"
 
-skipped_files = [
-    "6_human_converter.ipynb",  # requires human input
-]
+skipped_files: list[str] = []
 
 
 @pytest.mark.parametrize(
@@ -23,7 +21,7 @@ skipped_files = [
 )
 def test_execute_notebooks(file_name):
     nb_path = pathlib.Path(nb_directory_path, file_name).resolve()
-    with open(nb_path, encoding="utf-8") as f:
+    with open(nb_path) as f:
         nb = nbformat.read(f, as_version=4)
 
     ep = ExecutePreprocessor(timeout=600)

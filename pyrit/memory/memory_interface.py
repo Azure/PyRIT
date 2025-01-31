@@ -238,6 +238,7 @@ class MemoryInterface(abc.ABC):
         self,
         *,
         orchestrator_id: Optional[str | uuid.UUID] = None,
+        role: Optional[str] = None,
         conversation_id: Optional[str | uuid.UUID] = None,
         prompt_ids: Optional[list[str] | list[uuid.UUID]] = None,
         labels: Optional[dict[str, str]] = None,
@@ -254,6 +255,7 @@ class MemoryInterface(abc.ABC):
 
         Args:
             orchestrator_id (Optional[str | uuid.UUID], optional): The ID of the orchestrator. Defaults to None.
+            role (Optional[str], optional): The role of the prompt. Defaults to None.
             conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
             prompt_ids (Optional[list[str] | list[uuid.UUID]], optional): A list of prompt IDs. Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
@@ -274,6 +276,8 @@ class MemoryInterface(abc.ABC):
         conditions = []
         if orchestrator_id:
             conditions.append(self._get_prompt_pieces_orchestrator_conditions(orchestrator_id=str(orchestrator_id)))
+        if role:
+            conditions.append(PromptMemoryEntry.role == role)
         if conversation_id:
             conditions.append(PromptMemoryEntry.conversation_id == conversation_id)
         if prompt_ids:
@@ -755,7 +759,7 @@ class MemoryInterface(abc.ABC):
         converted_value_sha256: Optional[list[str]] = None,
         file_path: Optional[Path] = None,
         export_type: str = "json",
-    ):
+    ) -> Path:
         """
         Exports conversation data with the given inputs to a specified file.
             Defaults to all conversations if no filters are provided.
@@ -797,3 +801,5 @@ class MemoryInterface(abc.ABC):
             file_path = DB_DATA_PATH / file_name
 
         self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+
+        return file_path
