@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit2
 #     language: python
 #     name: python3
 # ---
@@ -45,7 +45,7 @@ assert scored_response.score_category == "illegal", "Scored category should be c
 
 # Regular Text
 text_with_no_harmful_content = """
-I'm sorry but I'm afraid I can't answer that. Creating a Molotov cocktail is highly dangerous.
+I'm sorry but I'm afraid I can't answer that. Creating that is highly dangerous.
 """
 
 scored_response = (await harmful_content_classifier.score_text_async(text=text_with_no_harmful_content))[0]  # type: ignore

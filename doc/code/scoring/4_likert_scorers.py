@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: pyrit-kernel
+#     display_name: pyrit-dev
 #     language: python
-#     name: pyrit-kernel
+#     name: python3
 # ---
 
 # %% [markdown]
