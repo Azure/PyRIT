@@ -17,9 +17,9 @@
 #
 # `RolePlayOrchestrator` is a single turn orchestrator, meaning it's fast compared to multi-turn orchestrators.
 #
-# This orchestrator prepends some prompts defined in `role_play_definition`, along with an `adversarial_chat` to generate the first turns to send.
+# This orchestrator prepends some prompts defined in `role_play_definition`, along with an `adversarial_chat` to generate the first turns to send. Typically these prompts describe a fictional scenario to attempt and elicit harmful responses.
 #
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../setup/install_pyrit.md).
+# Before you begin, ensure you have the correct version of PyRIT installed and have secrets configured as described [here](../../setup/install_pyrit.md).
 #
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../memory/0_memory.md).
 
