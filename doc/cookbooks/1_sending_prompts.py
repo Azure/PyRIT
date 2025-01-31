@@ -88,7 +88,7 @@ orchestrator = PromptSendingOrchestrator(
 )
 
 
-# Configure any prepended prompts you want. Eg. a SYSTEM prompt
+# Configure any prepended prompts you want, e.g., a SYSTEM prompt
 system_prompts = [
     PromptRequestResponse(
         request_pieces=[
