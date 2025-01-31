@@ -29,6 +29,7 @@ from pyrit.common.path import DATASETS_PATH
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import SeedPromptDataset
 
+# Configure memory. For this notebook, we're using in-memory. In reality, you will likely want something more permanent (like AzureSQL or DuckDB)
 initialize_pyrit(memory_db_type="InMemory")
 
 memory = CentralMemory.get_memory_instance()
@@ -187,7 +188,7 @@ interesting_prompts = []
 # Configure the types of scores you are interested in;
 for piece in result_pieces:
     for score in piece.scores:
-        if (score.score_type == "float_scale" and float(score.score_value) > 0) or (
+        if (score.score_type == "float_scale" and score.get_value() > 0) or (
             score.scorer_class_identifier["__type__"] == "SelfAskRefusalScorer" and score.get_value() == False
         ):
             interesting_prompts.append(piece)
@@ -197,6 +198,7 @@ for piece in result_pieces:
 print(f"Found {len(interesting_prompts)} interesting prompts")
 
 # Configure how you want to re-score the prompts. For example, you could use HumanInTheLoopScorer
+# (which would make more sense for this example, but it would make things stop in our notebook test pipelines)
 
 new_scorer = SelfAskLikertScorer(likert_scale_path=LikertScalePaths.HARM_SCALE.value, chat_target=OpenAIChatTarget())
 
