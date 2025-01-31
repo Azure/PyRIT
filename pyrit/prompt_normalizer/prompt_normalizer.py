@@ -3,6 +3,7 @@
 
 import abc
 import asyncio
+import logging
 from typing import Any, List, Optional
 from uuid import uuid4
 
@@ -14,10 +15,12 @@ from pyrit.models import (
     PromptRequestResponse,
     construct_response_from_request,
 )
+from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
 from pyrit.models.seed_prompt import SeedPromptGroup
-from pyrit.prompt_normalizer import PromptConverterConfiguration
-from pyrit.prompt_normalizer.normalizer_request import NormalizerRequest
+from pyrit.prompt_normalizer import NormalizerRequest, PromptConverterConfiguration
 from pyrit.prompt_target import PromptTarget
+
+logger = logging.getLogger(__name__)
 
 
 class PromptNormalizer(abc.ABC):
@@ -33,6 +36,7 @@ class PromptNormalizer(abc.ABC):
         self._start_token = start_token
         self._end_token = end_token
         self.id = str(uuid4())
+        self._skip_criteria: Optional[PromptFilterCriteria] = None
 
     async def send_prompt_async(
         self,
@@ -79,14 +83,19 @@ class PromptNormalizer(abc.ABC):
             orchestrator_identifier=orchestrator_identifier,
         )
 
+        await self._calc_hash(request=request)
+
+        if self._should_skip_based_on_skip_criteria(request):
+            return None
+
         response = None
 
         try:
             response = await target.send_prompt_async(prompt_request=request)
-            await self._calc_hash_and_add_request_to_memory(request=request)
+            self._memory.add_request_response_to_memory(request=request)
         except EmptyResponseException:
             # Empty responses are retried, but we don't want them to stop execution
-            await self._calc_hash_and_add_request_to_memory(request=request)
+            self._memory.add_request_response_to_memory(request=request)
 
             response = construct_response_from_request(
                 request=request.request_pieces[0],
@@ -97,7 +106,7 @@ class PromptNormalizer(abc.ABC):
 
         except Exception as ex:
             # Ensure request to memory before processing exception
-            await self._calc_hash_and_add_request_to_memory(request=request)
+            self._memory.add_request_response_to_memory(request=request)
 
             error_response = construct_response_from_request(
                 request=request.request_pieces[0],
@@ -106,7 +115,8 @@ class PromptNormalizer(abc.ABC):
                 error="processing",
             )
 
-            await self._calc_hash_and_add_request_to_memory(request=error_response)
+            await self._calc_hash(request=error_response)
+            self._memory.add_request_response_to_memory(request=error_response)
             raise
 
         if response is None:
@@ -114,7 +124,8 @@ class PromptNormalizer(abc.ABC):
 
         await self.convert_values(converter_configurations=response_converter_configurations, request_response=response)
 
-        await self._calc_hash_and_add_request_to_memory(request=response)
+        await self._calc_hash(request=response)
+        self._memory.add_request_response_to_memory(request=response)
         return response
 
     async def send_prompt_batch_to_target_async(
@@ -157,7 +168,7 @@ class PromptNormalizer(abc.ABC):
             "conversation_id",
         ]
 
-        return await batch_task_async(
+        responses = await batch_task_async(
             prompt_target=target,
             batch_size=batch_size,
             items_to_batch=batch_items,
@@ -167,6 +178,9 @@ class PromptNormalizer(abc.ABC):
             labels=labels,
             orchestrator_identifier=orchestrator_identifier,
         )
+
+        # send_prompt_async can return None if the prompt is skipped
+        return [response for response in responses if response is not None]
 
     async def convert_values(
         self,
@@ -204,13 +218,65 @@ class PromptNormalizer(abc.ABC):
                 piece.converted_value = converted_text
                 piece.converted_value_data_type = converted_text_data_type
 
-    async def _calc_hash_and_add_request_to_memory(self, request: PromptRequestResponse) -> None:
+    def set_skip_criteria(self, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState) -> None:
+        """
+        Sets the skip criteria for the orchestrator.
+
+        If prompts match this in memory and are the same as one being sent, then they won't be sent to a target.
+
+        Prompts are the same if either the original prompt or the converted prompt, determined by skip_value_type flag.
+        """
+        self._skip_criteria = skip_criteria
+
+        prompts_to_skip = self._memory.get_prompt_request_pieces(
+            role="user",
+            orchestrator_id=self._skip_criteria.orchestrator_id,
+            conversation_id=self._skip_criteria.conversation_id,
+            prompt_ids=self._skip_criteria.prompt_ids,
+            labels=self._skip_criteria.labels,
+            sent_after=self._skip_criteria.sent_after,
+            sent_before=self._skip_criteria.sent_before,
+            original_values=self._skip_criteria.original_values,
+            converted_values=self._skip_criteria.converted_values,
+            data_type=self._skip_criteria.data_type,
+            not_data_type=self._skip_criteria.not_data_type,
+            converted_value_sha256=self._skip_criteria.converted_value_sha256,
+        )
+
+        self._original_sha256_prompts_to_skip = [
+            prompt.original_value_sha256 for prompt in prompts_to_skip if prompt.original_value_sha256
+        ]
+
+        self._converted_sha256_prompts_to_skip = [
+            prompt.converted_value_sha256 for prompt in prompts_to_skip if prompt.converted_value_sha256
+        ]
+
+        self._skip_value_type = skip_value_type
+
+    def _should_skip_based_on_skip_criteria(self, prompt_request: PromptRequestResponse) -> bool:
+        """
+        Filters out prompts from prompt_request_list that match the skip criteria.
+
+        Every request_piece of the prompt_request needs to have matching sha256 to skip.
+        """
+        if not self._skip_criteria:
+            return False
+
+        for user_prompt in prompt_request.request_pieces:
+            if self._skip_value_type == "converted":
+                if user_prompt.converted_value_sha256 not in self._converted_sha256_prompts_to_skip:
+                    return False
+            else:
+                if user_prompt.original_value_sha256 not in self._original_sha256_prompts_to_skip:
+                    return False
+        return True
+
+    async def _calc_hash(self, request: PromptRequestResponse) -> None:
         """
         Adds a request to the memory.
         """
         tasks = [asyncio.create_task(piece.set_sha256_values_async()) for piece in request.request_pieces]
         await asyncio.gather(*tasks)
-        self._memory.add_request_response_to_memory(request=request)
 
     async def _build_prompt_request_response(
         self,
@@ -265,5 +331,4 @@ class PromptNormalizer(abc.ABC):
         response = PromptRequestResponse(request_pieces=entries)
 
         await self.convert_values(converter_configurations=request_converter_configurations, request_response=response)
-
         return response
