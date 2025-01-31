@@ -10,14 +10,15 @@ from nbconvert.preprocessors import ExecutePreprocessor
 
 from pyrit.common import path
 
-nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "orchestrators").resolve()
+nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "targets").resolve()
+
+skipped_files = ["4_non_llm_targets.ipynb", "playwright_target.ipynb"]
 
 
 @pytest.mark.parametrize(
     "file_name",
-    ["2_multi_turn_orchestrators.ipynb", "3_xpia_orchestrator.ipynb"],
+    [file for file in os.listdir(nb_directory_path) if file.endswith(".ipynb") and file not in skipped_files],
 )
-#
 def test_execute_notebooks(file_name):
     nb_path = pathlib.Path(nb_directory_path, file_name).resolve()
     with open(nb_path, encoding='utf-8') as f:
