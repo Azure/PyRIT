@@ -13,6 +13,10 @@ from pyrit.prompt_target.http_target.http_target_callback_functions import (
     get_http_target_regex_matching_callback_function,
 )
 
+sample_request = (
+    'POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{"prompt": "{PLACEHOLDER_PROMPT}"}'
+)
+
 
 @pytest.fixture
 def mock_callback_function() -> Callable:
@@ -21,10 +25,7 @@ def mock_callback_function() -> Callable:
 
 
 @pytest.fixture
-def mock_http_target(mock_callback_function) -> HTTPTarget:
-    sample_request = (
-        'POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{"prompt": "{PLACEHOLDER_PROMPT}"}'
-    )
+def mock_http_target(mock_callback_function, duckdb_instance) -> HTTPTarget:
     return HTTPTarget(
         http_request=sample_request,
         prompt_regex_string="{PLACEHOLDER_PROMPT}",
@@ -51,7 +52,7 @@ def test_parse_json_response_match(mock_http_response, mock_callback_function):
 
 
 def test_parse_raw_http_request(mock_http_target):
-    headers, body, url, method, version = mock_http_target.parse_raw_http_request()
+    headers, body, url, method, version = mock_http_target.parse_raw_http_request(sample_request)
     assert url == "https://example.com/"
     assert method == "POST"
     assert headers == {"Host": "example.com", "Content-Type": "application/json"}

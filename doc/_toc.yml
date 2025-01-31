@@ -1,7 +1,9 @@
 format: jb-book
 root: index
 chapters:
-  - file: how_to_guide
+  - file: cookbooks/README
+    sections:
+    - file: cookbooks/1_sending_prompts
   - file: setup/install_pyrit
     sections:
     - file: setup/jupyter_setup
@@ -108,5 +110,6 @@ chapters:
   - file: api.rst
   - file: blog/README
     sections:
+    - file: blog/2025_01_27
     - file: blog/2025_01_14
     - file: blog/2024_12_3
