@@ -7,15 +7,12 @@ import pathlib
 from typing import Optional
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.models import PromptRequestResponse, SeedPrompt
-from pyrit.models.prompt_request_piece import PromptRequestPiece
-from pyrit.models.seed_prompt import SeedPromptDataset
+from pyrit.models import PromptRequestResponse, SeedPrompt, PromptRequestPiece, SeedPromptDataset, SeedPromptGroup
 from pyrit.orchestrator import PromptSendingOrchestrator
-from pyrit.prompt_converter.flip_converter import FlipConverter
-from pyrit.prompt_target import PromptTarget
-from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_converter import PromptConverter
+from pyrit.prompt_normalizer import NormalizerRequest
+from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer
-from pyrit.common.utils import combine_dict
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class RolePlayPaths(enum.Enum):
     VIDEO_GAME = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "video_game.yaml"
+    MOVIE_SCRIPT = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "movie_script.yaml"
 
 
 
@@ -33,9 +31,10 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
 
     def __init__(
         self,
-        objective_target: PromptTarget,
+        objective_target: PromptChatTarget,
         adversarial_chat: PromptChatTarget,
         role_play_definition: pathlib.Path,
+        prompt_converters: Optional[list[PromptConverter]] = None,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
         verbose: bool = False,
@@ -53,10 +52,9 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             verbose (bool, Optional): Whether to log debug information. Defaults to False.
         """
 
-        # TODO converters
         super().__init__(
             objective_target=objective_target,
-            prompt_converters=[],
+            prompt_converters=prompt_converters,
             scorers=scorers,
             batch_size=batch_size,
             verbose=verbose,
@@ -65,12 +63,14 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         self._adversarial_chat = adversarial_chat
 
         role_play_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(
-            pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "video_game.yaml"
+            role_play_definition
         )
 
         self._rephrase_instructions = role_play_definition.prompts[0]
         self._user_start_turn = role_play_definition.prompts[1]
         self._assistant_start_turn = role_play_definition.prompts[2]
+
+        self._set_default_conversation_start()
 
     async def send_prompts_async(  # type: ignore[override]
         self,
@@ -93,45 +93,58 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
 
-        self._set_default_conversation_start()
 
-        for i in range(0, len(prompt_list)):
-            prompt_list[i] = self.rephrase_as_roleplay_template.render_template_value(objective=prompt_list[i])
+        role_playing_prompts = await self._get_role_playing_prompts_async(prompt_list)
+
+        return await super().send_prompts_async(
+            prompt_list=role_playing_prompts, prompt_type="text", memory_labels=memory_labels, metadata=metadata
+        )
+
+    async def _get_role_playing_prompts_async(self, objective_list: list[str]) -> list[str]:
+        """
+        Returns the role playing prompts for the given list of prompts.
+
+        Args:
+            prompt_list (list[str]): The list of prompts to be role played.
+
+        Returns:
+            list[str]: The role playing prompts.
+        """
+        requests = []
+
+        for objective in objective_list:
+            normalizer_request = NormalizerRequest(
+                seed_prompt_group=SeedPromptGroup(
+                    prompts=[
+                        SeedPrompt(
+                            value=self._rephrase_instructions.render_template_value(objective=objective),
+                            data_type="text",
+                        )
+                    ]
+                )
+            )
+
+            requests.append(
+                normalizer_request
+            )
 
 
-        # TODO do we have labels on adversarial chats?
-        specific_objective_roleplay_requests = await self._prompt_normalizer.send_prompt_async(
-            requests=prompt_list,
+        role_playing_prompts: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
+            requests=requests,
             target=self._adversarial_chat,
-            labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
-            orchestrator_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
 
-        # setting the first two turns manually
-        # TODO allow for specific system prompt?
-
-        return await super().send_prompts_async(
-            prompt_list=prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
-        )
+        return [role_playing_prompt.request_pieces[0].original_value for role_playing_prompt in role_playing_prompts]
 
     def _set_default_conversation_start(self):
-
-        default_user_prompt = SeedPrompt.from_yaml_file(
-            pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "user_turn_video_game.yaml"
-        ).render_template_value()
-
-        default_assistant_prompt = SeedPrompt.from_yaml_file(
-            pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" /  "assistant_turn_video_game.yaml"
-        ).render_template_value()
-
 
         prepended_conversation = [
             PromptRequestResponse(
                 request_pieces=[
                     PromptRequestPiece(
                         role="user",
-                        original_value=default_user_prompt,
+                        original_value=self._user_start_turn.value,
                         )
                 ]
             ),
@@ -139,11 +152,11 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
                 request_pieces=[
                     PromptRequestPiece(
                         role="assistant",
-                        original_value=default_assistant_prompt,
+                        original_value=self._assistant_start_turn.value,
                     )
                 ]
             )
         ]
 
-        self.set_prepended_conversation(prepended_conversation)
+        self.set_prepended_conversation(prepended_conversation=prepended_conversation)
 
