@@ -54,6 +54,7 @@ class PromptSendingOrchestrator(Orchestrator):
         self._batch_size = batch_size
         self._prepended_conversation: list[PromptRequestResponse] = None
 
+
     def set_prepended_conversation(self, *, prepended_conversation: list[PromptRequestResponse]):
         """
         Prepends a conversation to the prompt target.

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import enum
 import logging
 import pathlib
 from typing import Optional
@@ -8,31 +9,35 @@ from typing import Optional
 from pyrit.common.path import DATASETS_PATH
 from pyrit.models import PromptRequestResponse, SeedPrompt
 from pyrit.models.prompt_request_piece import PromptRequestPiece
+from pyrit.models.seed_prompt import SeedPromptDataset
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import Scorer
+from pyrit.common.utils import combine_dict
+
 
 logger = logging.getLogger(__name__)
 
 
+class RolePlayPaths(enum.Enum):
+    VIDEO_GAME = pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "video_game.yaml"
+
+
+
 class RolePlayOrchestrator(PromptSendingOrchestrator):
     """
-    This orchestrator implements a game role play:
-    https://arxiv.org/html/2410.02832v1.
-
-    Essentially, adds a system prompt to the beginning of the conversation to flip each word in the prompt.
+    This orchestrator implements a game role play
     """
 
     def __init__(
         self,
         objective_target: PromptTarget,
         adversarial_chat: PromptChatTarget,
+        role_play_definition: pathlib.Path,
         scorers: Optional[list[Scorer]] = None,
         batch_size: int = 10,
-        rephrase_as_role_play_prompt: SeedPrompt = None,
-        prepended_conversation: list[PromptRequestPiece] = None,
         verbose: bool = False,
     ) -> None:
         """
@@ -57,14 +62,15 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             verbose=verbose,
         )
 
-    
+        self._adversarial_chat = adversarial_chat
 
-        if not rephrase_as_role_play_prompt:
-            self.rephrase_as_roleplay_template = SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "orchestrator" / "role_play" / "rephrase_video_game.yaml"
-            )
+        role_play_definition: SeedPromptDataset = SeedPromptDataset.from_yaml_file(
+            pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "video_game.yaml"
+        )
 
-        super().set_prepended_conversation(prepended_conversation=[system_prompt])
+        self._rephrase_instructions = role_play_definition.prompts[0]
+        self._user_start_turn = role_play_definition.prompts[1]
+        self._assistant_start_turn = role_play_definition.prompts[2]
 
     async def send_prompts_async(  # type: ignore[override]
         self,
@@ -77,7 +83,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         Sends the prompts to the prompt target using flip attack.
 
         Args:
-            prompt_list (list[str]): The list of prompts to be sent.
+            prompt_list (list[str]): The list of prompts (objectives) to be sent.
             memory_labels (dict[str, str], Optional): A free-form dictionary of additional labels to apply to the
                 prompts. Any labels passed in will be combined with self._global_memory_labels with the passed
                 in labels taking precedence in the case of collisions. Defaults to None.
@@ -87,46 +93,57 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
             list[PromptRequestResponse]: The responses from sending the prompts.
         """
 
+        self._set_default_conversation_start()
 
         for i in range(0, len(prompt_list)):
             prompt_list[i] = self.rephrase_as_roleplay_template.render_template_value(objective=prompt_list[i])
 
+
+        # TODO do we have labels on adversarial chats?
+        specific_objective_roleplay_requests = await self._prompt_normalizer.send_prompt_async(
+            requests=prompt_list,
+            target=self._adversarial_chat,
+            labels=combine_dict(existing_dict=self._global_memory_labels, new_dict=memory_labels),
+            orchestrator_identifier=self.get_identifier(),
+            batch_size=self._batch_size,
+        )
+
+        # setting the first two turns manually
+        # TODO allow for specific system prompt?
+
         return await super().send_prompts_async(
             prompt_list=prompt_list, prompt_type="text", memory_labels=memory_labels, metadata=metadata
         )
-    
+
     def _set_default_conversation_start(self):
-        default_system_prompt = SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_templates" / "role_play.yaml"
-            ).render_template_value()
 
         default_user_prompt = SeedPrompt.from_yaml_file(
-            pathlib.Path(DATASETS_PATH) / "prompt_templates" / "role_play_user_prompt.yaml"
+            pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" / "user_turn_video_game.yaml"
         ).render_template_value()
 
         default_assistant_prompt = SeedPrompt.from_yaml_file(
-            pathlib.Path(DATASETS_PATH) / "prompt_templates" / "role_play_assistant_prompt.yaml"
+            pathlib.Path(DATASETS_PATH) / "orchestrators" / "role_play" /  "assistant_turn_video_game.yaml"
         ).render_template_value()
-
-        prepended_conversation = []
 
 
         prepended_conversation = [
             PromptRequestResponse(
                 request_pieces=[
                     PromptRequestPiece(
-                        role="system",
-                        original_value=default_system_prompt,
+                        role="user",
+                        original_value=default_user_prompt,
                         )
                 ]
             ),
             PromptRequestResponse(
                 request_pieces=[
                     PromptRequestPiece(
-                        role="user",
-                        original_value=default_system_prompt,
+                        role="assistant",
+                        original_value=default_assistant_prompt,
                     )
                 ]
             )
         ]
+
+        self.set_prepended_conversation(prepended_conversation)
 
