@@ -333,6 +333,8 @@ class SeedPromptDataset(YamlLoadable):
         for prompt in seed_prompts:
             if prompt.prompt_group_id:
                 grouped_prompts[prompt.prompt_group_id].append(prompt)
+            else:
+                grouped_prompts[uuid.uuid4()].append(prompt)
 
         # Create SeedPromptGroup instances from grouped prompts
         seed_prompt_groups = []
