@@ -221,7 +221,7 @@ memory.export_conversations(
 )
 
 # %% [markdown]
-# Some operators also like to work locally and then upload to a central db. You can upload your prompts like this.
+# Some operators also like to work locally and then upload to a central DB. You can upload your prompts like this.
 
 # %%
 all_prompt_pieces = memory.get_prompt_request_pieces(labels=memory_labels)
