@@ -230,5 +230,5 @@ initialize_pyrit(memory_db_type="AzureSQL")
 
 central_memory = CentralMemory.get_memory_instance()
 
-# This last piece is commented out because we run this automatically and we don't want to upload this to our central db :)
+# This last piece is commented out because we run this automatically and we don't want to upload this to our central DB.
 # central_memory.add_request_pieces_to_memory(request_pieces=all_prompt_pieces)
