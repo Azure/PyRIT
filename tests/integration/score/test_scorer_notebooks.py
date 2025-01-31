@@ -10,7 +10,7 @@ from nbconvert.preprocessors import ExecutePreprocessor
 
 from pyrit.common import path
 
-nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "targets").resolve()
+nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "scoring").resolve()
 
 
 @pytest.mark.parametrize(
