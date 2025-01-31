@@ -24,7 +24,7 @@ from pyrit.models import (
     QuestionAnsweringEntry,
     QuestionChoice,
 )
-from pyrit.orchestrator.question_answer_benchmark_orchestrator import (
+from pyrit.orchestrator.single_turn.question_answer_benchmark_orchestrator import (
     QuestionAnsweringBenchmarkOrchestrator,
 )
 from pyrit.prompt_target import OpenAIChatTarget
