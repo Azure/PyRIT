@@ -35,7 +35,7 @@ initialize_pyrit(memory_db_type="InMemory")
 memory = CentralMemory.get_memory_instance()
 
 seed_prompts = SeedPromptDataset.from_yaml_file(pathlib.Path(DATASETS_PATH) / "seed_prompts" / "illegal.prompt")
-await memory.add_seed_prompts_to_memory(prompts=seed_prompts.prompts, added_by="rlundeen")  # type: ignore
+await memory.add_seed_prompts_to_memory_async(prompts=seed_prompts.prompts, added_by="rlundeen")  # type: ignore
 
 groups = memory.get_seed_prompt_groups()
 print(len(groups))
