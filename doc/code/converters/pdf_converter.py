@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.6
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: pyrit-312
 #     language: python
 #     name: python3
 # ---
@@ -124,17 +124,14 @@ await orchestrator.print_conversations_async()  # type: ignore
 # %% [markdown]
 # # Modify Existing PDF with Injection Items
 # %%
-from pathlib import Path
-
 from pyrit.common import IN_MEMORY, initialize_pyrit
-from pyrit.common.path import HOME_PATH
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PDFConverter
 from pyrit.prompt_target import TextTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-cv_pdf_path = Path(HOME_PATH) / "assets" / "dummy.pdf"
+cv_pdf_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "fake_CV.pdf"
 
 # Define injection items
 injection_items = [
