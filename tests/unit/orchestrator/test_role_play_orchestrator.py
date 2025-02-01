@@ -83,7 +83,7 @@ def role_play_orchestrator(
         orchestrator = RolePlayOrchestrator(
             objective_target=mock_objective_target,
             adversarial_chat=mock_adversarial_chat,
-            role_play_definition="fake/path/role_play.yaml",
+            role_play_definition_path="fake/path/role_play.yaml",
             prompt_converters=[mock_prompt_converter],
             scorers=[mock_scorer],
             batch_size=3,
