@@ -75,7 +75,7 @@ memory_labels = {"op_name": "new_op", "user_name": "rlundeen"}
 
 # Configure the target you are testing
 # Be sure to add max_requests_per_minute to throttle if required
-objective_target = OpenAIChatTarget(is_azure_target=False)
+objective_target = OpenAIChatTarget()
 
 # Configure the different scorers you want to score automatically with (you can always rescore later)
 scorers = [
