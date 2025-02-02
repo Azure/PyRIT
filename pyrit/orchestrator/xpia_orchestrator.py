@@ -93,8 +93,8 @@ class XPIAOrchestrator(Orchestrator):
         logger.info(f'Received the following response from the processing target "{processing_response}"')
 
         if not self._scorer:
-            logger.info("No scorer provided, skipping scoring")
-            return None
+            logger.info("No scorer provided. Returning the raw processing response.")
+            return processing_response
 
         pool = concurrent.futures.ThreadPoolExecutor()
         score = pool.submit(asyncio.run, self._scorer.score_text_async(processing_response)).result()[0]
