@@ -121,9 +121,15 @@ orchestrator = PromptSendingOrchestrator(
 await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
+import tempfile
+
 # %% [markdown]
 # # Modify Existing PDF with Injection Items
 # %%
+from pathlib import Path
+
+import requests
+
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_converter import PDFConverter
@@ -131,7 +137,14 @@ from pyrit.prompt_target import TextTarget
 
 initialize_pyrit(memory_db_type=IN_MEMORY)
 
-cv_pdf_path = pathlib.Path(DATASETS_PATH) / "prompt_converters" / "pdf_converters" / "fake_CV.pdf"
+# This file isn't copied to our pipeline
+url = "https://raw.githubusercontent.com/Azure/PyRIT/main/pyrit/datasets/prompt_converters/pdf_converters/fake_CV.pdf"
+
+with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+    response = requests.get(url)
+    tmp_file.write(response.content)
+
+cv_pdf_path = Path(tmp_file.name)
 
 # Define injection items
 injection_items = [
@@ -187,4 +200,7 @@ await orchestrator.send_prompts_async(prompt_list=prompts)  # type: ignore
 await orchestrator.print_conversations_async()  # type: ignore
 
 # %%
+import os
+
 orchestrator.dispose_db_engine()
+os.remove(cv_pdf_path)
