@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import base64
-
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import ConverterResult, PromptConverter
 
@@ -24,4 +22,3 @@ class TextToHexConverter(PromptConverter):
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         return input_type == "text"
-
