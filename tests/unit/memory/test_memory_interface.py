@@ -742,7 +742,7 @@ async def test_get_seed_prompts_no_filters(duckdb_instance: MemoryInterface):
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts()
     assert len(result) == 2
@@ -765,7 +765,7 @@ async def test_get_seed_prompts_with_audio(duckdb_instance: MemoryInterface):
         audio_prompt = SeedPrompt(value=audio_file.name, dataset_name="dataset_audio", data_type="audio_path")
 
         # Add seed prompt to memory
-        await duckdb_instance.add_seed_prompts_to_memory(prompts=[audio_prompt], added_by="test_audio")
+        await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[audio_prompt], added_by="test_audio")
 
         # Retrieve and verify the seed prompts
         result = duckdb_instance.get_seed_prompts()
@@ -794,7 +794,7 @@ async def test_get_seed_prompts_with_video(duckdb_instance: MemoryInterface):
         video_prompt = SeedPrompt(value=video_file.name, dataset_name="dataset_video", data_type="video_path")
 
         # Add seed prompt to memory
-        await duckdb_instance.add_seed_prompts_to_memory(prompts=[video_prompt], added_by="test_video")
+        await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[video_prompt], added_by="test_video")
 
         # Retrieve and verify the seed prompts
         result = duckdb_instance.get_seed_prompts()
@@ -823,7 +823,7 @@ async def test_get_seed_prompts_with_image(duckdb_instance: MemoryInterface):
         image_prompt = SeedPrompt(value=image_file.name, dataset_name="dataset_image", data_type="image_path")
 
         # Add seed prompt to memory
-        await duckdb_instance.add_seed_prompts_to_memory(prompts=[image_prompt], added_by="test_image")
+        await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[image_prompt], added_by="test_image")
 
         # Retrieve and verify the seed prompts
         result = duckdb_instance.get_seed_prompts()
@@ -843,7 +843,7 @@ async def test_get_seed_prompts_with_value_filter(duckdb_instance: MemoryInterfa
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="another prompt", dataset_name="dataset2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(value="prompt1")
     assert len(result) == 1
@@ -856,7 +856,7 @@ async def test_get_seed_prompts_with_dataset_name_filter(duckdb_instance: Memory
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(dataset_name="dataset1")
     assert len(result) == 1
@@ -869,7 +869,7 @@ async def test_get_seed_prompts_with_added_by_filter(duckdb_instance: MemoryInte
         SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", added_by="user2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts)
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
 
     result = duckdb_instance.get_seed_prompts(added_by="user1")
     assert len(result) == 1
@@ -882,7 +882,7 @@ async def test_get_seed_prompts_with_source_filter(duckdb_instance: MemoryInterf
         SeedPrompt(value="prompt1", dataset_name="dataset1", source="source1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", source="source2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(source="source1")
     assert len(result) == 1
@@ -895,7 +895,7 @@ async def test_get_seed_prompts_with_harm_categories_filter(duckdb_instance: Mem
         SeedPrompt(value="prompt1", harm_categories=["category1"], data_type="text"),
         SeedPrompt(value="prompt2", harm_categories=["category2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(harm_categories=["category1"])
     assert len(result) == 1
@@ -908,7 +908,7 @@ async def test_get_seed_prompts_with_authors_filter(duckdb_instance: MemoryInter
         SeedPrompt(value="prompt1", authors=["author1"], data_type="text"),
         SeedPrompt(value="prompt2", authors=["author2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(authors=["author1"])
     assert len(result) == 1
@@ -921,7 +921,7 @@ async def test_get_seed_prompts_with_groups_filter(duckdb_instance: MemoryInterf
         SeedPrompt(value="prompt1", groups=["group1"], data_type="text"),
         SeedPrompt(value="prompt2", groups=["group2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(groups=["group1"])
     assert len(result) == 1
@@ -934,7 +934,7 @@ async def test_get_seed_prompts_with_parameters_filter(duckdb_instance: MemoryIn
         SeedPrompt(value="prompt1", parameters=["param1"], data_type="text"),
         SeedPrompt(value="prompt2", parameters=["param2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(parameters=["param1"])
     assert len(result) == 1
@@ -947,7 +947,7 @@ async def test_get_seed_prompts_with_multiple_filters(duckdb_instance: MemoryInt
         SeedPrompt(value="prompt1", dataset_name="dataset1", added_by="user1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", added_by="user2", data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts)
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
 
     result = duckdb_instance.get_seed_prompts(dataset_name="dataset1", added_by="user1")
     assert len(result) == 1
@@ -961,7 +961,7 @@ async def test_get_seed_prompts_with_empty_list_filters(duckdb_instance: MemoryI
         SeedPrompt(value="prompt1", harm_categories=["harm1"], authors=["author1"], data_type="text"),
         SeedPrompt(value="prompt2", harm_categories=["harm2"], authors=["author2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(harm_categories=[], authors=[])
     assert len(result) == 2
@@ -973,7 +973,7 @@ async def test_get_seed_prompts_with_single_element_list_filters(duckdb_instance
         SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"], data_type="text"),
         SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(harm_categories=["category1"], authors=["author1"])
     assert len(result) == 1
@@ -992,7 +992,7 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters(duckdb_insta
         ),
         SeedPrompt(value="prompt2", harm_categories=["category3"], authors=["author3"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(
         harm_categories=["category1", "category2"], authors=["author1", "author2"]
@@ -1019,7 +1019,7 @@ async def test_get_seed_prompts_with_multiple_elements_list_filters_additional(d
             data_type="text",
         ),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(
         harm_categories=["category1", "category3"], authors=["author1", "author3"]
@@ -1035,7 +1035,7 @@ async def test_get_seed_prompts_with_substring_filters_harm_categories(duckdb_in
         SeedPrompt(value="prompt1", harm_categories=["category1"], authors=["author1"], data_type="text"),
         SeedPrompt(value="prompt2", harm_categories=["category2"], authors=["author2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(harm_categories=["ory1"])
     assert len(result) == 1
@@ -1053,7 +1053,7 @@ async def test_get_seed_prompts_with_substring_filters_groups(duckdb_instance: M
         SeedPrompt(value="prompt1", groups=["group1"], data_type="text"),
         SeedPrompt(value="prompt2", groups=["group2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(groups=["oup1"])
     assert len(result) == 1
@@ -1071,7 +1071,7 @@ async def test_get_seed_prompts_with_substring_filters_parameters(duckdb_instanc
         SeedPrompt(value="prompt1", parameters=["param1"], data_type="text"),
         SeedPrompt(value="prompt2", parameters=["param2"], data_type="text"),
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts, added_by="test")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts, added_by="test")
 
     result = duckdb_instance.get_seed_prompts(parameters=["ram1"])
     assert len(result) == 1
@@ -1086,7 +1086,7 @@ async def test_get_seed_prompts_with_substring_filters_parameters(duckdb_instanc
 @pytest.mark.asyncio
 async def test_add_seed_prompts_to_memory_empty_list(duckdb_instance: MemoryInterface):
     prompts: list[SeedPrompt] = []
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=prompts, added_by="tester")
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=prompts, added_by="tester")
     stored_prompts = duckdb_instance.get_seed_prompts(dataset_name="test_dataset")
     assert len(stored_prompts) == 0
 
@@ -1099,7 +1099,7 @@ def test_get_seed_prompt_dataset_names_empty(duckdb_instance: MemoryInterface):
 async def test_get_seed_prompt_dataset_names_single(duckdb_instance: MemoryInterface):
     dataset_name = "test_dataset"
     seed_prompt = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=[seed_prompt])
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt])
     assert duckdb_instance.get_seed_prompt_dataset_names() == [dataset_name]
 
 
@@ -1108,7 +1108,7 @@ async def test_get_seed_prompt_dataset_names_single_dataset_multiple_entries(duc
     dataset_name = "test_dataset"
     seed_prompt1 = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
     seed_prompt2 = SeedPrompt(value="test_value", dataset_name=dataset_name, added_by="tester", data_type="text")
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=[seed_prompt1, seed_prompt2])
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[seed_prompt1, seed_prompt2])
     assert duckdb_instance.get_seed_prompt_dataset_names() == [dataset_name]
 
 
@@ -1119,7 +1119,7 @@ async def test_get_seed_prompt_dataset_names_multiple(duckdb_instance: MemoryInt
         SeedPrompt(value=f"value_{i}", dataset_name=dataset_name, added_by="tester", data_type="text")
         for i, dataset_name in enumerate(dataset_names)
     ]
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=seed_prompts)
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=seed_prompts)
     assert len(duckdb_instance.get_seed_prompt_dataset_names()) == 5
     assert sorted(duckdb_instance.get_seed_prompt_dataset_names()) == sorted(dataset_names)
 
@@ -1178,13 +1178,12 @@ async def test_add_seed_prompt_groups_to_memory_multiple_elements_no_added_by(du
 
 @pytest.mark.asyncio
 async def test_add_seed_prompt_groups_to_memory_inconsistent_group_ids(duckdb_instance: MemoryInterface):
-    prompt1 = SeedPrompt(
-        value="Test prompt 1", added_by="tester", prompt_group_id=uuid4(), data_type="text", sequence=0
-    )
-    prompt2 = SeedPrompt(
-        value="Test prompt 2", added_by="tester", prompt_group_id=uuid4(), data_type="text", sequence=1
-    )
+    prompt1 = SeedPrompt(value="Test prompt 1", added_by="tester", data_type="text", sequence=0)
+    prompt2 = SeedPrompt(value="Test prompt 2", added_by="tester", data_type="text", sequence=1)
+
     prompt_group = SeedPromptGroup(prompts=[prompt1, prompt2])
+    prompt_group.prompts[0].prompt_group_id = uuid4()
+
     with pytest.raises(ValueError):
         await duckdb_instance.add_seed_prompt_groups_to_memory(prompt_groups=[prompt_group])
 
@@ -1358,7 +1357,7 @@ async def test_get_seed_prompts_with_param_filters(duckdb_instance: MemoryInterf
         added_by=added_by,
         data_type="text",
     )
-    await duckdb_instance.add_seed_prompts_to_memory(prompts=[template])
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=[template])
 
     templates = duckdb_instance.get_seed_prompts(
         value=template_value,
@@ -1731,35 +1730,46 @@ def test_get_prompt_request_pieces_by_value(duckdb_instance: MemoryInterface):
 
 def test_get_prompt_request_pieces_by_hash(duckdb_instance: MemoryInterface):
     entries = [
-        PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                role="user",
-                original_value="Hello 1",
-            )
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 1",
         ),
-        PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                role="assistant",
-                original_value="Hello 2",
-            )
+        PromptRequestPiece(
+            role="assistant",
+            original_value="Hello 2",
         ),
-        PromptMemoryEntry(
-            entry=PromptRequestPiece(
-                role="user",
-                original_value="Hello 3",
-            )
+        PromptRequestPiece(
+            role="user",
+            original_value="Hello 3",
         ),
     ]
 
     entries[0].converted_value_sha256 = "hash1"
     entries[1].converted_value_sha256 = "hash1"
 
-    duckdb_instance._insert_entries(entries=entries)
+    duckdb_instance.add_request_pieces_to_memory(request_pieces=entries)
     retrieved_entries = duckdb_instance.get_prompt_request_pieces(converted_value_sha256=["hash1"])
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
     assert_original_value_in_list("Hello 2", retrieved_entries)
+
+
+@pytest.mark.asyncio
+async def test_get_seed_prompts_by_hash(duckdb_instance: MemoryInterface):
+    entries = [
+        SeedPrompt(value="Hello 1", data_type="text"),
+        SeedPrompt(value="Hello 2", data_type="text"),
+    ]
+
+    hello_1_hash = "724c531a3bc130eb46fbc4600064779552682ef4f351976fe75d876d94e8088c"
+
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=entries, added_by="rlundeen")
+    retrieved_entries = duckdb_instance.get_seed_prompts(value_sha256=[hello_1_hash])
+
+    assert len(retrieved_entries) == 1
+    assert retrieved_entries[0].value == "Hello 1"
+    assert retrieved_entries[0].value_sha256 == hello_1_hash
 
 
 def test_get_prompt_request_pieces_with_non_matching_memory_labels(duckdb_instance: MemoryInterface):
@@ -1890,3 +1900,18 @@ async def test_prompt_piece_hash_stored_and_retrieved(duckdb_instance: MemoryInt
     for prompt in retrieved_entries:
         assert prompt.converted_value_sha256
         assert prompt.original_value_sha256
+
+
+@pytest.mark.asyncio
+async def test_seed_prompt_hash_stored_and_retrieved(duckdb_instance: MemoryInterface):
+    entries = [
+        SeedPrompt(value="Hello 1", data_type="text"),
+        SeedPrompt(value="Hello 2", data_type="text"),
+    ]
+
+    await duckdb_instance.add_seed_prompts_to_memory_async(prompts=entries, added_by="rlundeen")
+    retrieved_entries = duckdb_instance.get_seed_prompts()
+
+    assert len(retrieved_entries) == 2
+    for prompt in retrieved_entries:
+        assert prompt.value_sha256

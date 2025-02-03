@@ -28,7 +28,7 @@ from pathlib import Path
 
 from pyrit.common import IN_MEMORY, initialize_pyrit
 from pyrit.common.path import DATASETS_PATH
-from pyrit.datasets import fetch_many_shot_jailbreaking_examples
+from pyrit.datasets import fetch_many_shot_jailbreaking_dataset
 from pyrit.models import SeedPrompt
 from pyrit.orchestrator import PromptSendingOrchestrator
 from pyrit.prompt_target import OpenAIChatTarget
@@ -58,7 +58,7 @@ orchestrator = PromptSendingOrchestrator(objective_target=prompt_target, scorers
 template = SeedPrompt.from_yaml_file(template_path)
 
 # Import examples
-examples = fetch_many_shot_jailbreaking_examples()
+examples = fetch_many_shot_jailbreaking_dataset()
 
 # Use only 4 examples
 examples = examples[3:7]
