@@ -91,7 +91,7 @@ class AzureChatCompletionsTarget(PromptChatTarget):
         )
 
         response_text = response.choices[0].message.content
-        azure_filter_scores = response.choices[0].message.get("content_filter_results")
+        azure_filter_scores = response.choices[0].get("content_filter_results")
         if azure_filter_scores:
             self._add_scores(azure_filter_scores=azure_filter_scores, prompt_request=request_piece)
         finish_reason = response.choices[0]["finish_reason"] # should be stop if things were a success
@@ -109,11 +109,11 @@ class AzureChatCompletionsTarget(PromptChatTarget):
     # The response contains scores that are automatically detected by Azure. We add these scores to the memory.
     def _add_scores(self, *, azure_filter_scores, prompt_request):
         scores = []
-        for key, value in azure_filter_scores:
+        for key, value in azure_filter_scores.items():
             score_value = value.get("detected", value.get("filtered", False))
-            if score_value:
+            if score_value != None:
                 score = Score(
-                    score_value=score_value,
+                    score_value=str(score_value),
                     score_value_description="Detected automatically from Azure Completion Response",
                     score_type="true_false",
                     score_category=key,
@@ -126,7 +126,10 @@ class AzureChatCompletionsTarget(PromptChatTarget):
                 scores.append(score)
 
         if scores:
-            self._memory.add_scores_to_memory(scores=[score])
+            # need to insert the prompt first since it has a primary key constraint
+            # this will be re-inserted by prompt_normalizer, but that's okay
+            self._memory.add_request_pieces_to_memory(request_pieces=[prompt_request])
+            self._memory.add_scores_to_memory(scores=scores)
 
 
 
