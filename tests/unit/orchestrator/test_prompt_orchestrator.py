@@ -62,7 +62,7 @@ async def test_send_multiple_prompts_no_converter(mock_target: MockPromptTarget,
     orchestrator = PromptSendingOrchestrator(objective_target=mock_target)
 
     # Check behavior with and without prepended conversations
-    orchestrator._prepended_conversation = prepended_conversation
+    orchestrator.set_prepended_conversation(prepended_conversation=prepended_conversation)
 
     list_responses = await orchestrator.send_prompts_async(prompt_list=["Hello", "my", "name"])
     assert mock_target.prompt_sent == ["Hello", "my", "name"]
@@ -374,7 +374,7 @@ def test_prepare_conversation_raises_non_chat_target(patch_central_database):
         assert "Only PromptChatTargets are able to modify conversation history" in str(exc.value)
 
 
-def test_prepare_conversation_without_prepended_conversation():
+def test_prepare_conversation_without_prepended_conversation(patch_central_database):
     objective_target_mock = MagicMock()
     orchestrator = PromptSendingOrchestrator(objective_target=objective_target_mock)
     memory_mock = MagicMock()
@@ -382,5 +382,6 @@ def test_prepare_conversation_without_prepended_conversation():
     orchestrator._memory = memory_mock
     conversation_id = orchestrator._prepare_conversation()
 
-    assert not conversation_id
+    assert conversation_id
+
     memory_mock.add_request_response_to_memory.assert_not_called()

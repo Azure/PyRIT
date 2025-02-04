@@ -10,6 +10,7 @@ from colorama import Fore, Style
 from pyrit.common.display_response import display_image_response
 from pyrit.common.utils import combine_dict
 from pyrit.models import PromptDataType, PromptRequestResponse
+from pyrit.models.filter_criteria import PromptConverterState, PromptFilterCriteria
 from pyrit.orchestrator import Orchestrator
 from pyrit.prompt_converter import PromptConverter
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
@@ -57,6 +58,8 @@ class PromptSendingOrchestrator(Orchestrator):
     def set_prepended_conversation(self, *, prepended_conversation: list[PromptRequestResponse]):
         """
         Prepends a conversation to the prompt target.
+
+        This is sent along with each prompt request and can be the first part of aa conversation.
         """
         if prepended_conversation and not isinstance(self._objective_target, PromptChatTarget):
             raise TypeError(
@@ -65,6 +68,16 @@ class PromptSendingOrchestrator(Orchestrator):
             )
 
         self._prepended_conversation = prepended_conversation
+
+    def set_skip_criteria(
+        self, *, skip_criteria: PromptFilterCriteria, skip_value_type: PromptConverterState = "original"
+    ):
+        """
+        Sets the skip criteria for the orchestrator.
+
+        If prompts match this in memory, then they won't be sent to a target.
+        """
+        self._prompt_normalizer.set_skip_criteria(skip_criteria=skip_criteria, skip_value_type=skip_value_type)
 
     async def send_normalizer_requests_async(
         self,
@@ -76,6 +89,9 @@ class PromptSendingOrchestrator(Orchestrator):
         Sends the normalized prompts to the prompt target.
         """
 
+        for prompt in prompt_request_list:
+            prompt.conversation_id = self._prepare_conversation()
+
         # Normalizer is responsible for storing the requests in memory
         # The labels parameter may allow me to stash class information for each kind of prompt.
         responses: list[PromptRequestResponse] = await self._prompt_normalizer.send_prompt_batch_to_target_async(
@@ -86,7 +102,7 @@ class PromptSendingOrchestrator(Orchestrator):
             batch_size=self._batch_size,
         )
 
-        if self._scorers:
+        if self._scorers and responses:
             response_pieces = PromptRequestResponse.flatten_to_prompt_request_pieces(responses)
 
             for scorer in self._scorers:
@@ -126,7 +142,6 @@ class PromptSendingOrchestrator(Orchestrator):
 
         requests: list[NormalizerRequest] = []
         for prompt in prompt_list:
-            conversation_id = self._prepare_conversation()
 
             requests.append(
                 self._create_normalizer_request(
@@ -134,7 +149,7 @@ class PromptSendingOrchestrator(Orchestrator):
                     prompt_type=prompt_type,
                     converters=self._prompt_converters,
                     metadata=metadata,
-                    conversation_id=conversation_id,
+                    conversation_id=str(uuid.uuid4()),
                 )
             )
 
@@ -147,12 +162,17 @@ class PromptSendingOrchestrator(Orchestrator):
         """Prints the conversation between the objective target and the red teaming bot."""
         messages = self.get_memory()
 
+        last_conversation_id = None
+
         for message in messages:
+            if message.conversation_id != last_conversation_id:
+                print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {message.conversation_id}")
+                last_conversation_id = message.conversation_id
+
             if message.role == "user" or message.role == "system":
                 print(f"{Style.BRIGHT}{Fore.BLUE}{message.role}: {message.converted_value}")
             else:
                 print(f"{Style.NORMAL}{Fore.YELLOW}{message.role}: {message.converted_value}")
-                print(f"{Style.NORMAL}{Fore.RESET}Conversation ID: {message.conversation_id}")
                 await display_image_response(message)
 
             for score in message.scores:
@@ -162,9 +182,8 @@ class PromptSendingOrchestrator(Orchestrator):
         """
         Adds the conversation to memory if there is a prepended conversation, and return the conversation ID.
         """
-        conversation_id = None
+        conversation_id = uuid.uuid4()
         if self._prepended_conversation:
-            conversation_id = uuid.uuid4()
             for request in self._prepended_conversation:
                 for piece in request.request_pieces:
                     piece.conversation_id = conversation_id

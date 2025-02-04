@@ -20,7 +20,7 @@ def mock_callback_function() -> Callable:
 
 
 @pytest.fixture
-def mock_http_target(mock_callback_function) -> HTTPTarget:
+def mock_http_target(mock_callback_function, duckdb_instance) -> HTTPTarget:
     sample_request = (
         'POST / HTTP/1.1\nHost: example.com\nContent-Type: application/json\n\n{"prompt": "{PLACEHOLDER_PROMPT}"}'
     )
@@ -60,7 +60,7 @@ async def test_send_prompt_async(mock_request, mock_http_target, mock_http_respo
         method="POST",
         url="https://example.com/",
         headers={"Host": "example.com", "Content-Type": "application/json"},
-        data='{"prompt": "test_prompt"}',
+        content='{"prompt": "test_prompt"}',
         follow_redirects=True,
     )
 
@@ -117,6 +117,57 @@ async def test_send_prompt_regex_parse_async(mock_request, mock_http_target):
         method="POST",
         url="https://example.com/",
         headers={"Host": "example.com", "Content-Type": "application/json"},
-        data='{"prompt": "test_prompt"}',
+        content='{"prompt": "test_prompt"}',
+        follow_redirects=True,
+    )
+
+
+@pytest.mark.asyncio
+@patch("httpx.AsyncClient.request")
+async def test_send_prompt_async_keeps_original_template(mock_request, mock_http_target, mock_http_response):
+
+    original_http_request = mock_http_target.http_request
+    mock_request.return_value = mock_http_response
+
+    # Send first prompt
+    prompt_request = MagicMock()
+    prompt_request.request_pieces = [MagicMock(converted_value="test_prompt")]
+    response = await mock_http_target.send_prompt_async(prompt_request=prompt_request)
+
+    assert response.request_pieces[0].converted_value == "value1"
+    assert mock_http_target.http_request == original_http_request
+
+    assert mock_request.call_count == 1
+    mock_request.assert_called_with(
+        method="POST",
+        url="https://example.com/",
+        headers={"Host": "example.com", "Content-Type": "application/json"},
+        content='{"prompt": "test_prompt"}',
+        follow_redirects=True,
+    )
+
+    # Send second prompt
+    second_prompt_request = MagicMock()
+    second_prompt_request.request_pieces = [MagicMock(converted_value="second_test_prompt")]
+    await mock_http_target.send_prompt_async(prompt_request=second_prompt_request)
+
+    # Assert that the original template is still the same
+    assert mock_http_target.http_request == original_http_request
+
+    assert mock_request.call_count == 2
+    # Verify HTTP requests were made with the correct prompts
+
+    mock_request.assert_any_call(
+        method="POST",
+        url="https://example.com/",
+        headers={"Host": "example.com", "Content-Type": "application/json"},
+        content='{"prompt": "test_prompt"}',
+        follow_redirects=True,
+    )
+    mock_request.assert_any_call(
+        method="POST",
+        url="https://example.com/",
+        headers={"Host": "example.com", "Content-Type": "application/json"},
+        content='{"prompt": "second_test_prompt"}',
         follow_redirects=True,
     )
