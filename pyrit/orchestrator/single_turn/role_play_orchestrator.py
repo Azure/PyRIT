@@ -82,7 +82,7 @@ class RolePlayOrchestrator(PromptSendingOrchestrator):
         metadata: Optional[dict[str, str] | None] = None,
     ) -> list[PromptRequestResponse]:
         """
-        Sends the prompts to the prompt target using flip attack.
+        Sends the prompts to the prompt target using a defined role playing scenario.
 
         Args:
             prompt_list (list[str]): The list of prompts (objectives) to be sent.
